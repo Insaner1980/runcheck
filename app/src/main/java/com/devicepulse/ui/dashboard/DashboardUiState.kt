@@ -14,7 +14,9 @@ sealed interface DashboardUiState {
         val batteryState: BatteryState,
         val networkState: NetworkState,
         val thermalState: ThermalState,
-        val storageState: StorageState
+        val storageState: StorageState,
+        val batterySparkline: List<Float> = emptyList(),
+        val thermalSparkline: List<Float> = emptyList()
     ) : DashboardUiState
 
     data class Error(val message: String) : DashboardUiState

@@ -3,6 +3,7 @@ package com.devicepulse.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.devicepulse.domain.usecase.CalculateHealthScoreUseCase
+import com.devicepulse.domain.usecase.GetBatteryHistoryUseCase
 import com.devicepulse.domain.usecase.GetBatteryStateUseCase
 import com.devicepulse.domain.usecase.GetNetworkStateUseCase
 import com.devicepulse.domain.usecase.GetStorageStateUseCase
@@ -22,7 +23,8 @@ class DashboardViewModel @Inject constructor(
     private val getBatteryState: GetBatteryStateUseCase,
     private val getNetworkState: GetNetworkStateUseCase,
     private val getThermalState: GetThermalStateUseCase,
-    private val getStorageState: GetStorageStateUseCase
+    private val getStorageState: GetStorageStateUseCase,
+    private val getBatteryHistory: GetBatteryHistoryUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<DashboardUiState>(DashboardUiState.Loading)
@@ -43,14 +45,35 @@ class DashboardViewModel @Inject constructor(
                 getBatteryState(),
                 getNetworkState(),
                 getThermalState(),
-                getStorageState()
-            ) { healthScore, battery, network, thermal, storage ->
+                getStorageState(),
+                getBatteryHistory()
+            ) { values ->
+                @Suppress("UNCHECKED_CAST")
+                val healthScore = values[0] as com.devicepulse.domain.model.HealthScore
+                val battery = values[1] as com.devicepulse.domain.model.BatteryState
+                val network = values[2] as com.devicepulse.domain.model.NetworkState
+                val thermal = values[3] as com.devicepulse.domain.model.ThermalState
+                val storage = values[4] as com.devicepulse.domain.model.StorageState
+                val history = values[5] as List<*>
+
+                val batterySparkline = history
+                    .filterIsInstance<com.devicepulse.data.db.entity.BatteryReadingEntity>()
+                    .takeLast(SPARKLINE_POINTS)
+                    .map { it.level.toFloat() }
+
+                val thermalSparkline = history
+                    .filterIsInstance<com.devicepulse.data.db.entity.BatteryReadingEntity>()
+                    .takeLast(SPARKLINE_POINTS)
+                    .map { it.temperatureC }
+
                 DashboardUiState.Success(
                     healthScore = healthScore,
                     batteryState = battery,
                     networkState = network,
                     thermalState = thermal,
-                    storageState = storage
+                    storageState = storage,
+                    batterySparkline = batterySparkline,
+                    thermalSparkline = thermalSparkline
                 )
             }.catch { e ->
                 _uiState.value = DashboardUiState.Error(
@@ -60,5 +83,9 @@ class DashboardViewModel @Inject constructor(
                 _uiState.value = state
             }
         }
+    }
+
+    companion object {
+        private const val SPARKLINE_POINTS = 20
     }
 }

@@ -36,7 +36,6 @@ import com.devicepulse.ui.components.CategoryCard
 import com.devicepulse.ui.components.HealthGauge
 import com.devicepulse.ui.components.PullToRefreshWrapper
 import com.devicepulse.ui.theme.spacing
-import kotlinx.coroutines.delay
 
 @Composable
 fun DashboardScreen(
@@ -104,12 +103,15 @@ private fun DashboardContent(
         cardsVisible = true
     }
 
+    LaunchedEffect(state) {
+        isRefreshing = false
+    }
+
     PullToRefreshWrapper(
         isRefreshing = isRefreshing,
         onRefresh = {
             isRefreshing = true
             onRefresh()
-            isRefreshing = false
         }
     ) {
         Column(
@@ -146,7 +148,8 @@ private fun DashboardContent(
                         status = HealthScore.statusFromScore(state.healthScore.batteryScore),
                         subtitle = state.batteryState.chargingStatus.name.lowercase()
                             .replaceFirstChar { it.uppercase() },
-                        onClick = onNavigateToBattery
+                        onClick = onNavigateToBattery,
+                        sparkline = state.batterySparkline
                     ),
                     CardData(
                         title = stringResource(R.string.dashboard_network_card),
@@ -166,7 +169,8 @@ private fun DashboardContent(
                         status = HealthScore.statusFromScore(state.healthScore.thermalScore),
                         subtitle = state.thermalState.thermalStatus.name.lowercase()
                             .replaceFirstChar { it.uppercase() },
-                        onClick = onNavigateToThermal
+                        onClick = onNavigateToThermal,
+                        sparkline = state.thermalSparkline
                     ),
                     CardData(
                         title = stringResource(R.string.dashboard_storage_card),
@@ -198,7 +202,8 @@ private fun DashboardContent(
                             value = card.value,
                             status = card.status,
                             subtitle = card.subtitle,
-                            onClick = card.onClick
+                            onClick = card.onClick,
+                            sparklineData = card.sparkline
                         )
                     }
                 }
@@ -214,7 +219,8 @@ private data class CardData(
     val value: String,
     val status: com.devicepulse.domain.model.HealthStatus,
     val subtitle: String?,
-    val onClick: () -> Unit
+    val onClick: () -> Unit,
+    val sparkline: List<Float> = emptyList()
 )
 
 private fun formatBytes(bytes: Long): String {
