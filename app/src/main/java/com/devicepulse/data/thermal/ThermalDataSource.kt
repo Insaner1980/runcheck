@@ -38,10 +38,31 @@ class ThermalDataSource @Inject constructor(
     }
 
     fun getCpuTemperature(thermalZones: List<String>): Flow<Float?> = flow {
-        while (true) {
-            val temp = readCpuTemperature(thermalZones)
-            emit(temp)
-            delay(POLLING_INTERVAL_MS)
+        // Try once — if it fails, emit null and stop (avoids SELinux log spam)
+        val temp = readCpuTemperature(thermalZones)
+        emit(temp)
+        if (temp != null) {
+            while (true) {
+                delay(POLLING_INTERVAL_MS)
+                emit(readCpuTemperature(thermalZones))
+            }
+        }
+    }
+
+    fun getThermalHeadroom(): Flow<Float?> = flow {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            while (true) {
+                val headroom = try {
+                    val value = powerManager.getThermalHeadroom(HEADROOM_FORECAST_SECONDS)
+                    if (value.isNaN() || value < 0f) null else value
+                } catch (_: Exception) {
+                    null
+                }
+                emit(headroom)
+                delay(POLLING_INTERVAL_MS)
+            }
+        } else {
+            emit(null)
         }
     }
 
@@ -59,32 +80,35 @@ class ThermalDataSource @Inject constructor(
 
     private fun readCpuTemperature(zones: List<String>): Float? {
         val thermalDir = File("/sys/class/thermal/")
-        if (!thermalDir.exists()) return null
+        if (!thermalDir.exists() || !thermalDir.canRead()) return null
 
-        val zoneFiles = thermalDir.listFiles()
-            ?.filter { it.name.startsWith("thermal_zone") }
-            ?: return null
+        return try {
+            val zoneFiles = thermalDir.listFiles()
+                ?.filter { it.name.startsWith("thermal_zone") }
+                ?: return null
 
-        for (zone in zoneFiles) {
-            val typeFile = File(zone, "type")
-            val tempFile = File(zone, "temp")
+            for (zone in zoneFiles) {
+                val typeFile = File(zone, "type")
+                val tempFile = File(zone, "temp")
 
-            if (!tempFile.exists() || !tempFile.canRead()) continue
+                if (!tempFile.exists() || !tempFile.canRead()) continue
 
-            val type = if (typeFile.exists() && typeFile.canRead()) {
-                typeFile.readText().trim()
-            } else {
-                zone.name
+                val type = if (typeFile.exists() && typeFile.canRead()) {
+                    typeFile.readText().trim()
+                } else {
+                    zone.name
+                }
+
+                if (zones.isEmpty() || zones.contains(type)) {
+                    val tempStr = tempFile.readText().trim()
+                    val tempValue = tempStr.toIntOrNull() ?: continue
+                    return if (tempValue > 1000) tempValue / 1000f else tempValue.toFloat()
+                }
             }
-
-            if (zones.isEmpty() || zones.contains(type)) {
-                val tempStr = tempFile.readText().trim()
-                val tempValue = tempStr.toIntOrNull() ?: continue
-                // Thermal zone temps are usually in millidegrees
-                return if (tempValue > 1000) tempValue / 1000f else tempValue.toFloat()
-            }
+            null
+        } catch (_: SecurityException) {
+            null
         }
-        return null
     }
 
     private fun mapThermalStatus(status: Int): ThermalStatus {
@@ -103,5 +127,6 @@ class ThermalDataSource @Inject constructor(
 
     companion object {
         private const val POLLING_INTERVAL_MS = 3000L
+        private const val HEADROOM_FORECAST_SECONDS = 10
     }
 }

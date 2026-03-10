@@ -102,6 +102,7 @@
     <string name="thermal_throttling_active">Aktiivinen</string>
     <string name="thermal_throttling_none">Ei rajoitusta</string>
     <string name="thermal_cpu_unavailable">Ei saatavilla</string>
+    <string name="thermal_headroom">Lämpövara</string>
     <string name="thermal_throttling_log">Rajoitusloki</string>
     <string name="thermal_event_at">%s</string>
     <string name="thermal_no_events">Ei tallennettuja rajoitustapahtumia</string>

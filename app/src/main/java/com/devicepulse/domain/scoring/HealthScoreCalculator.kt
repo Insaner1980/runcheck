@@ -5,6 +5,7 @@ import com.devicepulse.domain.model.BatteryState
 import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.HealthScore
 import com.devicepulse.domain.model.NetworkState
+import com.devicepulse.domain.model.SignalQuality
 import com.devicepulse.domain.model.StorageState
 import com.devicepulse.domain.model.ThermalState
 import com.devicepulse.domain.model.ThermalStatus
@@ -93,19 +94,13 @@ class HealthScoreCalculator @Inject constructor() {
 
         var score = 100
 
-        // Signal strength impact (null = unavailable, minor deduction)
-        // 5G NR uses wider dBm range than LTE
-        val dbm = network.signalDbm
-        score -= if (dbm == null) {
-            5 // Unknown signal — connected, so assume OK
-        } else when {
-            dbm >= -65 -> 0
-            dbm >= -75 -> 5
-            dbm >= -85 -> 10
-            dbm >= -95 -> 20
-            dbm >= -105 -> 30
-            dbm >= -115 -> 50
-            else -> 70
+        // Signal quality impact — uses Android's own level (matches status bar)
+        score -= when (network.signalQuality) {
+            SignalQuality.EXCELLENT -> 0
+            SignalQuality.GOOD -> 5
+            SignalQuality.FAIR -> 15
+            SignalQuality.POOR -> 35
+            SignalQuality.NO_SIGNAL -> 70
         }
 
         // Latency impact

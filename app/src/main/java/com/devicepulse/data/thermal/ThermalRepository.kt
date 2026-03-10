@@ -24,11 +24,13 @@ class ThermalRepository @Inject constructor(
         combine(
             thermalDataSource.getBatteryTemperature(),
             thermalDataSource.getCpuTemperature(profile.thermalZonesAvailable),
-            thermalDataSource.getThermalStatus()
-        ) { batteryTemp, cpuTemp, thermalStatus ->
+            thermalDataSource.getThermalStatus(),
+            thermalDataSource.getThermalHeadroom()
+        ) { batteryTemp, cpuTemp, thermalStatus, headroom ->
             ThermalState(
                 batteryTempC = batteryTemp,
                 cpuTempC = cpuTemp,
+                thermalHeadroom = headroom,
                 thermalStatus = thermalStatus,
                 isThrottling = thermalStatus >= ThermalStatus.MODERATE
             )

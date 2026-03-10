@@ -1,10 +1,12 @@
 package com.devicepulse.data.storage
 
+import android.app.AppOpsManager
+import android.app.usage.StorageStatsManager
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.os.Environment
 import android.os.StatFs
-import android.provider.MediaStore
+import android.os.storage.StorageManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,14 +18,31 @@ class StorageDataSource @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
 
+    private val storageStatsManager =
+        context.getSystemService(Context.STORAGE_STATS_SERVICE) as? StorageStatsManager
+
     suspend fun getStorageInfo(): StorageInfo = withContext(Dispatchers.IO) {
-        val stat = StatFs(Environment.getDataDirectory().path)
-        val totalBytes = stat.totalBytes
-        val availableBytes = stat.availableBytes
+        // StorageStatsManager reports full disk (matches Settings), StatFs only /data
+        val ssm = storageStatsManager
+        val uuid = StorageManager.UUID_DEFAULT
+        val totalBytes = try {
+            ssm?.getTotalBytes(uuid) ?: StatFs(Environment.getDataDirectory().path).totalBytes
+        } catch (_: Exception) {
+            StatFs(Environment.getDataDirectory().path).totalBytes
+        }
+        val freeBytes = try {
+            ssm?.getFreeBytes(uuid) ?: StatFs(Environment.getDataDirectory().path).availableBytes
+        } catch (_: Exception) {
+            StatFs(Environment.getDataDirectory().path).availableBytes
+        }
+        val availableBytes = freeBytes
         val usedBytes = totalBytes - availableBytes
 
-        val appsBytes = calculateInstalledAppsSize()
-        val mediaBytes = calculateMediaSize()
+        val appsBytes = if (hasUsageStatsPermission()) {
+            calculateAppsSizeAccurate()
+        } else {
+            null
+        }
         val sdCard = getExternalSdCard()
 
         StorageInfo(
@@ -31,49 +50,36 @@ class StorageDataSource @Inject constructor(
             availableBytes = availableBytes,
             usedBytes = usedBytes,
             appsBytes = appsBytes,
-            mediaBytes = mediaBytes,
+            mediaBytes = null,
             sdCardAvailable = sdCard != null,
             sdCardTotalBytes = sdCard?.totalBytes,
             sdCardAvailableBytes = sdCard?.availableBytes
         )
     }
 
-    private fun calculateInstalledAppsSize(): Long? {
-        return try {
-            val pm = context.packageManager
-            pm.getInstalledApplications(0)
-                .filter { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 }
-                .sumOf { app ->
-                    try {
-                        java.io.File(app.sourceDir).length()
-                    } catch (_: Exception) {
-                        0L
-                    }
-                }
-        } catch (_: Exception) {
-            null
-        }
+    private fun hasUsageStatsPermission(): Boolean {
+        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        val mode = appOps.checkOpNoThrow(
+            AppOpsManager.OPSTR_GET_USAGE_STATS,
+            android.os.Process.myUid(),
+            context.packageName
+        )
+        return mode == AppOpsManager.MODE_ALLOWED
     }
 
-    private fun calculateMediaSize(): Long? {
+    private fun calculateAppsSizeAccurate(): Long? {
+        val ssm = storageStatsManager ?: return null
         return try {
-            val collections = listOf(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
-            )
+            val uuid = StorageManager.UUID_DEFAULT
+            val user = android.os.Process.myUserHandle()
+            val packages = context.packageManager.getInstalledApplications(0)
+
             var total = 0L
-            for (uri in collections) {
-                context.contentResolver.query(
-                    uri,
-                    arrayOf(MediaStore.MediaColumns.SIZE),
-                    null, null, null
-                )?.use { cursor ->
-                    val sizeIndex = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
-                    while (cursor.moveToNext()) {
-                        total += cursor.getLong(sizeIndex)
-                    }
-                }
+            for (app in packages) {
+                try {
+                    val stats = ssm.queryStatsForPackage(uuid, app.packageName, user)
+                    total += stats.appBytes + stats.dataBytes + stats.cacheBytes
+                } catch (_: Exception) { }
             }
             if (total > 0) total else null
         } catch (_: Exception) {

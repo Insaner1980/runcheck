@@ -35,23 +35,28 @@ class BatteryRepository @Inject constructor(
             BatteryStatePartial(level, voltage, temp, current, status)
         }
 
-        combine(
-            stateFlow,
+        val extraFlow = combine(
             source.getPlugType(),
             source.getHealth(),
             source.getTechnology(),
-            source.getCycleCount()
-        ) { partial, plug, health, tech, cycle ->
+            source.getCycleCount(),
+            source.getHealthPercent()
+        ) { plug, health, tech, cycle, healthPct ->
+            BatteryStateExtra(plug, health, tech, cycle, healthPct)
+        }
+
+        combine(stateFlow, extraFlow) { partial, extra ->
             BatteryState(
                 level = partial.level,
                 voltageMv = partial.voltage,
                 temperatureC = partial.temp,
                 currentMa = partial.current,
                 chargingStatus = partial.status,
-                plugType = plug,
-                health = health,
-                technology = tech,
-                cycleCount = cycle
+                plugType = extra.plug,
+                health = extra.health,
+                technology = extra.tech,
+                cycleCount = extra.cycle,
+                healthPercent = extra.healthPct
             )
         }.collect { emit(it) }
     }
@@ -85,5 +90,13 @@ class BatteryRepository @Inject constructor(
         val temp: Float,
         val current: MeasuredValue<Int>,
         val status: com.devicepulse.domain.model.ChargingStatus
+    )
+
+    private data class BatteryStateExtra(
+        val plug: com.devicepulse.domain.model.PlugType,
+        val health: com.devicepulse.domain.model.BatteryHealth,
+        val tech: String,
+        val cycle: Int?,
+        val healthPct: Int?
     )
 }

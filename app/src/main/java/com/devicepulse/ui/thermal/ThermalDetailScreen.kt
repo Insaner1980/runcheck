@@ -110,16 +110,19 @@ private fun ThermalContent(
                 unit = stringResource(R.string.unit_celsius)
             )
 
-            if (thermal.cpuTempC != null) {
+            thermal.cpuTempC?.let { cpuTemp ->
                 MetricTile(
                     label = stringResource(R.string.thermal_cpu_temp),
-                    value = "%.1f".format(thermal.cpuTempC),
+                    value = "%.1f".format(cpuTemp),
                     unit = stringResource(R.string.unit_celsius)
                 )
-            } else {
+            }
+
+            thermal.thermalHeadroom?.let { headroom ->
                 MetricTile(
-                    label = stringResource(R.string.thermal_cpu_temp),
-                    value = stringResource(R.string.thermal_cpu_unavailable)
+                    label = stringResource(R.string.thermal_headroom),
+                    value = "%.0f".format((1f - headroom.coerceIn(0f, 1f)) * 100),
+                    unit = "%"
                 )
             }
 
