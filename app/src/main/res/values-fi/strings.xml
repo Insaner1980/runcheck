@@ -9,8 +9,21 @@
     <string name="nav_network">Verkko</string>
     <string name="nav_more">Lisää</string>
 
+    <!-- Home Screen -->
+    <string name="home_dashboard_card">Etusivu</string>
+    <string name="home_battery_card">Akku</string>
+    <string name="home_network_card">Verkko</string>
+    <string name="home_thermal_card">Lämpötila</string>
+    <string name="home_storage_card">Tallennustila</string>
+    <string name="home_chargers_card">Laturit</string>
+    <string name="home_app_usage_card">Sovellusten käyttö</string>
+    <string name="home_pro_title">Avaa DevicePulse Pro</string>
+    <string name="home_pro_subtitle">Trendit, laturitestit, oivallukset ja muuta</string>
+    <string name="home_insights_title">Oivallukset</string>
+    <string name="home_locked_pro">Pro</string>
+
     <!-- Dashboard -->
-    <string name="dashboard_title">Laitteen tila</string>
+    <string name="dashboard_title">Etusivu</string>
     <string name="dashboard_health_score">Kuntopisteet</string>
     <string name="dashboard_battery_card">Akku</string>
     <string name="dashboard_network_card">Verkko</string>

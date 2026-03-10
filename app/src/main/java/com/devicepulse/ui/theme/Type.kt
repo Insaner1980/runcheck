@@ -18,6 +18,12 @@ val DevicePulseTypography = Typography(
         fontWeight = FontWeight.Normal,
         lineHeight = 64.sp
     ),
+    displaySmall = TextStyle(
+        fontFamily = RobotoMono,
+        fontSize = 32.sp,
+        fontWeight = FontWeight.Normal,
+        lineHeight = 40.sp
+    ),
     headlineMedium = TextStyle(
         fontSize = 28.sp,
         fontWeight = FontWeight.Normal,

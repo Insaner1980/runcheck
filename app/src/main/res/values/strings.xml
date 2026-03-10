@@ -9,8 +9,21 @@
     <string name="nav_network">Network</string>
     <string name="nav_more">More</string>
 
+    <!-- Home Screen -->
+    <string name="home_dashboard_card">Dashboard</string>
+    <string name="home_battery_card">Battery</string>
+    <string name="home_network_card">Network</string>
+    <string name="home_thermal_card">Thermal</string>
+    <string name="home_storage_card">Storage</string>
+    <string name="home_chargers_card">Chargers</string>
+    <string name="home_app_usage_card">App Usage</string>
+    <string name="home_pro_title">Unlock DevicePulse Pro</string>
+    <string name="home_pro_subtitle">Trends, charger testing, insights &amp; more</string>
+    <string name="home_insights_title">Insights</string>
+    <string name="home_locked_pro">Pro</string>
+
     <!-- Dashboard -->
-    <string name="dashboard_title">Device Health</string>
+    <string name="dashboard_title">Dashboard</string>
     <string name="dashboard_health_score">Health Score</string>
     <string name="dashboard_battery_card">Battery</string>
     <string name="dashboard_network_card">Network</string>
