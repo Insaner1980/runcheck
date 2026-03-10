@@ -101,6 +101,9 @@ dependencies {
     // Google Mobile Ads (AdMob)
     implementation(libs.play.services.ads)
 
+    // Google Play Billing
+    implementation(libs.billing)
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)

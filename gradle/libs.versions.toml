@@ -64,6 +64,9 @@ activity-compose = { group = "androidx.activity", name = "activity-compose", ver
 # Google Mobile Ads (AdMob)
 play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version = "25.0.0" }
 
+# Google Play Billing
+billing = { group = "com.android.billingclient", name = "billing-ktx", version = "8.3.0" }
+
 # Gson for JSON serialization
 gson = { group = "com.google.code.gson", name = "gson", version = "2.11.0" }
 

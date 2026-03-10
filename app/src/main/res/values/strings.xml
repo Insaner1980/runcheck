@@ -146,6 +146,9 @@
     <string name="settings_measurement_info">Measurement Info</string>
     <string name="settings_about">About</string>
     <string name="settings_upgrade_pro">Upgrade to Pro</string>
+    <string name="settings_pro_active">Pro Active</string>
+    <string name="settings_pro_desc">Extended history, widgets, no ads, CSV export</string>
+    <string name="settings_pro_thank_you">Thank you for supporting DevicePulse!</string>
     <string name="settings_version">Version %1$s</string>
 
     <!-- More Menu -->

@@ -1,5 +1,6 @@
 package com.devicepulse.ui.settings
 
+import android.app.Activity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -20,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -168,6 +171,43 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = MaterialTheme.spacing.md))
+
+        // Upgrade to Pro
+        SectionHeader(
+            if (uiState.isPro) stringResource(R.string.settings_pro_active)
+            else stringResource(R.string.settings_upgrade_pro)
+        )
+        if (uiState.isPro) {
+            Text(
+                text = stringResource(R.string.settings_pro_thank_you),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        } else {
+            Text(
+                text = stringResource(R.string.settings_pro_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            val context = LocalContext.current
+            Button(
+                onClick = {
+                    (context as? Activity)?.let { activity ->
+                        viewModel.purchasePro(activity)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = uiState.proPrice?.let {
+                        "${stringResource(R.string.settings_upgrade_pro)} — $it"
+                    } ?: stringResource(R.string.settings_upgrade_pro)
+                )
+            }
         }
 
         HorizontalDivider(modifier = Modifier.padding(vertical = MaterialTheme.spacing.md))

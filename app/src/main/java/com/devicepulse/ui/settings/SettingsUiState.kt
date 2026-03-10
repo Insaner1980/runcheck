@@ -5,5 +5,7 @@ import com.devicepulse.domain.model.UserPreferences
 
 data class SettingsUiState(
     val preferences: UserPreferences = UserPreferences(),
-    val deviceProfile: DeviceProfile? = null
+    val deviceProfile: DeviceProfile? = null,
+    val isPro: Boolean = false,
+    val proPrice: String? = null
 )
