@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Spacing tokens (4dp grid) -->
+    <dimen name="space_xs">4dp</dimen>
+    <dimen name="space_sm">8dp</dimen>
+    <dimen name="space_md">12dp</dimen>
+    <dimen name="space_base">16dp</dimen>
+    <dimen name="space_lg">24dp</dimen>
+    <dimen name="space_xl">32dp</dimen>
+
+    <!-- Layout dimensions -->
+    <dimen name="screen_horizontal_padding">16dp</dimen>
+    <dimen name="card_inner_padding">16dp</dimen>
+    <dimen name="card_corner_radius">16dp</dimen>
+    <dimen name="card_gap">12dp</dimen>
+    <dimen name="dashboard_gauge_diameter">200dp</dimen>
+    <dimen name="detail_gauge_diameter">160dp</dimen>
+    <dimen name="bottom_nav_height">80dp</dimen>
+    <dimen name="metric_tile_min_height">72dp</dimen>
+    <dimen name="sparkline_height">40dp</dimen>
+    <dimen name="trend_chart_height">200dp</dimen>
+    <dimen name="confidence_badge_height">24dp</dimen>
+    <dimen name="min_touch_target">48dp</dimen>
+</resources>
