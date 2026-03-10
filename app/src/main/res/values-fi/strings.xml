@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DevicePulse</string>
+
+    <!-- Navigation -->
+    <string name="nav_dashboard">Etusivu</string>
+    <string name="nav_battery">Akku</string>
+    <string name="nav_network">Verkko</string>
+    <string name="nav_more">Lisää</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_title">Laitteen tila</string>
+    <string name="dashboard_health_score">Kuntopisteet</string>
+    <string name="dashboard_battery_card">Akku</string>
+    <string name="dashboard_network_card">Verkko</string>
+    <string name="dashboard_thermal_card">Lämpötila</string>
+    <string name="dashboard_storage_card">Tallennustila</string>
+
+    <!-- Health Status -->
+    <string name="status_healthy">Hyvä</string>
+    <string name="status_fair">Kohtalainen</string>
+    <string name="status_poor">Heikko</string>
+    <string name="status_critical">Kriittinen</string>
+
+    <!-- Confidence Badges -->
+    <string name="confidence_accurate">Tarkka</string>
+    <string name="confidence_estimated">Arvioitu</string>
+    <string name="confidence_unavailable">Ei saatavilla</string>
+
+    <!-- Battery Detail -->
+    <string name="battery_title">Akku</string>
+    <string name="battery_level">Akun varaus</string>
+    <string name="battery_voltage">Jännite</string>
+    <string name="battery_temperature">Lämpötila</string>
+    <string name="battery_current">Latausvirta</string>
+    <string name="battery_status">Lataustila</string>
+    <string name="battery_plug_type">Laturin tyyppi</string>
+    <string name="battery_health">Akun kunto</string>
+    <string name="battery_technology">Teknologia</string>
+    <string name="battery_cycle_count">Lataussyklit</string>
+    <string name="battery_health_percent">Kuntoprosentti</string>
+    <string name="battery_history_24h">Viimeiset 24 tuntia</string>
+    <string name="history_period_day">24h</string>
+    <string name="history_period_week">Viikko</string>
+    <string name="history_period_month">Kuukausi</string>
+    <string name="history_period_all">Kaikki</string>
+    <string name="battery_history_title">Historia</string>
+    <string name="battery_not_available">Ei saatavilla tällä laitteella</string>
+
+    <!-- Charging Status -->
+    <string name="charging_status_charging">Lataa</string>
+    <string name="charging_status_discharging">Purkautuu</string>
+    <string name="charging_status_full">Täynnä</string>
+    <string name="charging_status_not_charging">Ei lataudu</string>
+
+    <!-- Plug Type -->
+    <string name="plug_type_ac">Verkkovirta</string>
+    <string name="plug_type_usb">USB</string>
+    <string name="plug_type_wireless">Langaton</string>
+    <string name="plug_type_none">Ei latausta</string>
+
+    <!-- Battery Health -->
+    <string name="battery_health_good">Hyvä</string>
+    <string name="battery_health_overheat">Ylikuumentunut</string>
+    <string name="battery_health_dead">Kuollut</string>
+    <string name="battery_health_over_voltage">Ylijännite</string>
+    <string name="battery_health_cold">Kylmä</string>
+    <string name="battery_health_unknown">Tuntematon</string>
+
+    <!-- Network Detail -->
+    <string name="network_title">Verkko</string>
+    <string name="network_connection_type">Yhteystyyppi</string>
+    <string name="network_signal_strength">Signaalivahvuus</string>
+    <string name="network_signal_quality">Signaalin laatu</string>
+    <string name="network_wifi_ssid">WiFi-verkko</string>
+    <string name="network_wifi_speed">Linkkinopeus</string>
+    <string name="network_wifi_frequency">Taajuus</string>
+    <string name="network_carrier">Operaattori</string>
+    <string name="network_subtype">Verkkotyyppi</string>
+    <string name="network_latency">Viive</string>
+    <string name="network_no_connection">Ei yhteyttä</string>
+
+    <!-- Signal Quality -->
+    <string name="signal_excellent">Erinomainen</string>
+    <string name="signal_good">Hyvä</string>
+    <string name="signal_fair">Kohtalainen</string>
+    <string name="signal_poor">Heikko</string>
+    <string name="signal_none">Ei signaalia</string>
+
+    <!-- Connection Type -->
+    <string name="connection_wifi">WiFi</string>
+    <string name="connection_cellular">Mobiiliverkko</string>
+    <string name="connection_none">Ei yhteyttä</string>
+
+    <!-- Thermal Detail -->
+    <string name="thermal_title">Lämpötila</string>
+    <string name="thermal_battery_temp">Akun lämpötila</string>
+    <string name="thermal_cpu_temp">Suorittimen lämpötila</string>
+    <string name="thermal_status">Lämpötilan tila</string>
+    <string name="thermal_throttling">Suorituskyvyn rajoitus</string>
+    <string name="thermal_throttling_active">Aktiivinen</string>
+    <string name="thermal_throttling_none">Ei rajoitusta</string>
+    <string name="thermal_cpu_unavailable">Suorittimen lämpötila ei saatavilla tällä laitteella</string>
+    <string name="thermal_throttling_log">Rajoitusloki</string>
+    <string name="thermal_event_at">%s</string>
+    <string name="thermal_no_events">Ei tallennettuja rajoitustapahtumia</string>
+
+    <!-- Thermal Status Levels -->
+    <string name="thermal_status_none">Normaali</string>
+    <string name="thermal_status_light">Lievä</string>
+    <string name="thermal_status_moderate">Kohtalainen</string>
+    <string name="thermal_status_severe">Vakava</string>
+    <string name="thermal_status_critical">Kriittinen</string>
+    <string name="thermal_status_emergency">Hätätila</string>
+    <string name="thermal_status_shutdown">Sammutus</string>
+
+    <!-- Storage Detail -->
+    <string name="storage_title">Tallennustila</string>
+    <string name="storage_total">Kokonaistila</string>
+    <string name="storage_used">Käytössä</string>
+    <string name="storage_available">Vapaana</string>
+    <string name="storage_apps">Sovellukset</string>
+    <string name="storage_media">Media</string>
+    <string name="storage_fill_rate">Täyttymisennuste</string>
+    <string name="storage_fill_rate_value">Nykyisellä vauhdilla täynnä ~%1$s</string>
+    <string name="storage_sd_card">SD-kortti</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Asetukset</string>
+    <string name="settings_theme">Teema</string>
+    <string name="settings_theme_light">Vaalea</string>
+    <string name="settings_theme_dark">Tumma</string>
+    <string name="settings_theme_system">Järjestelmä</string>
+    <string name="settings_amoled_black">AMOLED-musta</string>
+    <string name="settings_amoled_black_desc">Puhdas musta tausta OLED-näytöille</string>
+    <string name="settings_dynamic_colors">Dynaamiset värit</string>
+    <string name="settings_dynamic_colors_desc">Käytä taustakuvan värejä</string>
+    <string name="settings_monitoring_interval">Seurantaväli</string>
+    <string name="settings_interval_15">15 minuuttia</string>
+    <string name="settings_interval_30">30 minuuttia</string>
+    <string name="settings_interval_60">60 minuuttia</string>
+    <string name="settings_notifications">Ilmoitukset</string>
+    <string name="settings_notifications_desc">Hälytykset: matala akku, korkea lämpötila, vähän tilaa</string>
+    <string name="settings_measurement_info">Mittaustiedot</string>
+    <string name="settings_about">Tietoja</string>
+    <string name="settings_upgrade_pro">Päivitä Pro-versioon</string>
+    <string name="settings_pro_active">Pro aktiivinen</string>
+    <string name="settings_pro_desc">Laajennettu historia, widgetit, ei mainoksia, CSV-vienti</string>
+    <string name="settings_pro_thank_you">Kiitos DevicePulsen tukemisesta!</string>
+    <string name="settings_version">Versio %1$s</string>
+
+    <!-- More Menu -->
+    <string name="more_thermal">Lämpötila</string>
+    <string name="more_storage">Tallennustila</string>
+    <string name="more_charger">Laturit</string>
+    <string name="more_app_usage">Sovellusten käyttö</string>
+    <string name="more_settings">Asetukset</string>
+
+    <!-- Widgets -->
+    <string name="widget_battery_name">Akun tila</string>
+    <string name="widget_battery_description">Näyttää akun varauksen, lämpötilan ja virran</string>
+    <string name="widget_health_name">Laitteen kunto</string>
+    <string name="widget_health_description">Näyttää kokonaiskuntopisteet kategoriamittareilla</string>
+    <string name="widget_pro_required">Vaatii Pro-version</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_alerts">Laitehälytykset</string>
+    <string name="notification_channel_status">Laitteen tila</string>
+    <string name="notification_low_battery_title">Akku vähissä</string>
+    <string name="notification_low_battery_text">Akkua jäljellä %d%%</string>
+    <string name="notification_high_temp_title">Korkea lämpötila</string>
+    <string name="notification_high_temp_text">Laitteen lämpötila: %.1f\u00B0C</string>
+    <string name="notification_low_storage_title">Tallennustila vähissä</string>
+    <string name="notification_low_storage_text">Tallennustilasta käytössä %.0f%%</string>
+    <string name="notification_charge_complete_title">Lataus valmis</string>
+
+    <!-- Export -->
+    <string name="settings_export_data">Vie data (CSV)</string>
+    <string name="settings_export_success">Data viety Lataukset-kansioon</string>
+    <string name="settings_export_error">Vienti epäonnistui</string>
+
+    <!-- Charger Comparison -->
+    <string name="charger_title">Laturivertailu</string>
+    <string name="charger_add">Lisää laturi</string>
+    <string name="charger_add_hint">Laturin nimi (esim. Samsung 25W)</string>
+    <string name="charger_sessions">%d latauskertaa</string>
+    <string name="charger_avg_speed">Keskim. %d mA</string>
+    <string name="charger_no_chargers">Ei tallennettuja latureita</string>
+    <string name="charger_last_used">Viimeksi käytetty: %s</string>
+    <string name="charger_delete">Poista</string>
+
+    <!-- App Battery Usage -->
+    <string name="app_usage_title">Sovellusten akunkäyttö</string>
+    <string name="app_usage_no_data">Ei käyttötietoja viimeiseltä 24 tunnilta</string>
+    <string name="app_usage_drain">Arvioitu kulutus: %s mAh</string>
+
+    <!-- General -->
+    <string name="loading">Ladataan…</string>
+    <string name="error_generic">Jokin meni pieleen</string>
+    <string name="retry">Yritä uudelleen</string>
+    <string name="not_supported">Ei tuettu tällä laitteella</string>
+</resources>

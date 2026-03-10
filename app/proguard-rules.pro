@@ -14,3 +14,17 @@
 -keep class dagger.hilt.** { *; }
 -keep class javax.inject.** { *; }
 -keep class * extends dagger.hilt.android.lifecycle.HiltViewModel
+
+# Google Play Billing
+-keep class com.android.vending.billing.** { *; }
+
+# Glance widgets
+-keep class * extends androidx.glance.appwidget.GlanceAppWidget
+-keep class * extends androidx.glance.appwidget.GlanceAppWidgetReceiver
+
+# Coroutines
+-dontwarn kotlinx.coroutines.**
+
+# Domain model classes (used by Room/Gson)
+-keep class com.devicepulse.data.db.entity.** { *; }
+-keep class com.devicepulse.domain.model.** { *; }
