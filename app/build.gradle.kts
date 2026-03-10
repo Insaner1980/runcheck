@@ -23,6 +23,21 @@ android {
         resourceConfigurations += listOf("en", "fi")
     }
 
+    signingConfigs {
+        create("release") {
+            // Set these via environment variables or local.properties before release:
+            // DEVICEPULSE_KEYSTORE_PATH, DEVICEPULSE_KEYSTORE_PASSWORD,
+            // DEVICEPULSE_KEY_ALIAS, DEVICEPULSE_KEY_PASSWORD
+            val keystorePath = System.getenv("DEVICEPULSE_KEYSTORE_PATH")
+            if (keystorePath != null) {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("DEVICEPULSE_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("DEVICEPULSE_KEY_ALIAS")
+                keyPassword = System.getenv("DEVICEPULSE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -31,6 +46,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            val keystorePath = System.getenv("DEVICEPULSE_KEYSTORE_PATH")
+            if (keystorePath != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 

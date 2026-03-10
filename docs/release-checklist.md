@@ -1,0 +1,77 @@
+# DevicePulse Release Checklist
+
+## Before First Release
+
+### Firebase
+- [ ] Create Firebase project at https://console.firebase.google.com/
+- [ ] Download `google-services.json` and place in `app/`
+- [ ] Enable Crashlytics in Firebase Console
+- [ ] Remove placeholder `google-services.json` from version control if repo is public
+
+### AdMob
+- [ ] Create AdMob account at https://admob.google.com/
+- [ ] Create ad unit for banner ads
+- [ ] Replace test App ID in `AndroidManifest.xml` (`ca-app-pub-3940256099942544~3347511713`) with production ID
+- [ ] Replace test ad unit ID in `AdBanner.kt` with production unit ID
+
+### Billing
+- [ ] Create in-app product `devicepulse_pro` in Google Play Console
+- [ ] Set price for Pro upgrade
+- [ ] Test purchase flow with license testers
+
+### Signing
+- [ ] Generate upload keystore:
+  ```bash
+  keytool -genkey -v -keystore devicepulse-upload.jks \
+    -keyalg RSA -keysize 2048 -validity 10000 \
+    -alias devicepulse
+  ```
+- [ ] Set environment variables:
+  ```bash
+  export DEVICEPULSE_KEYSTORE_PATH=/path/to/devicepulse-upload.jks
+  export DEVICEPULSE_KEYSTORE_PASSWORD=your_password
+  export DEVICEPULSE_KEY_ALIAS=devicepulse
+  export DEVICEPULSE_KEY_PASSWORD=your_password
+  ```
+- [ ] Enable Play App Signing in Google Play Console
+- [ ] **NEVER** commit your keystore or passwords to version control
+
+### Privacy Policy
+- [ ] Update email address in `docs/privacy-policy.md`
+- [ ] Host privacy policy at a public URL (e.g., GitHub Pages)
+- [ ] Add URL to Google Play Console
+
+### Assets
+- [ ] Design final app icon (512x512 for Play Store, adaptive icon for app)
+- [ ] Create feature graphic (1024x500)
+- [ ] Take screenshots on phone (minimum 2, recommended 4-8)
+- [ ] Take screenshots on tablet (if targeting tablets)
+
+## Release Build
+
+```bash
+# Set signing environment variables first, then:
+./gradlew bundleRelease
+```
+
+The AAB file will be at `app/build/outputs/bundle/release/app-release.aab`.
+
+## Version Bumping
+
+Update `app/build.gradle.kts`:
+- `versionCode`: Increment by 1 for each upload (1, 2, 3...)
+- `versionName`: Follow semantic versioning (1.0.0, 1.1.0, 1.2.0...)
+
+## Google Play Console Upload
+
+1. Go to Production > Create new release
+2. Upload the AAB file
+3. Add release notes (Finnish + English)
+4. Submit for review
+
+## Post-Release
+
+- [ ] Monitor Crashlytics dashboard for crash reports
+- [ ] Monitor Play Console vitals (ANRs, crashes)
+- [ ] Respond to user reviews
+- [ ] Track conversion rate for Pro upgrade

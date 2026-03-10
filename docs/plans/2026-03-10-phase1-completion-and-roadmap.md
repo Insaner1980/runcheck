@@ -1,7 +1,7 @@
 # DevicePulse — Phase 1 Completion & Roadmap
 
 **Päivämäärä:** 2026-03-10
-**Tila:** Phase 3 valmis — Phase 4 (julkaisu) seuraavaksi
+**Tila:** Kaikki vaiheet (Phase 1-4) valmiit — julkaisuvalmis
 **Repo:** https://github.com/Insaner1980/DevicePulse
 
 ### Toteutetut korjaukset (Phase 1 — Sessiot A-D):
