@@ -66,7 +66,9 @@ class NetworkDataSource @Inject constructor(
             else -> ConnectionType.NONE
         }
 
-        val signalDbm = capabilities.signalStrength
+        val rawSignalDbm = capabilities.signalStrength
+        // signalStrength returns Integer.MIN_VALUE when unavailable
+        val signalDbm = if (rawSignalDbm == Int.MIN_VALUE) null else rawSignalDbm
         val signalQuality = classifySignal(signalDbm, connectionType)
 
         val wifiInfo = if (isWifi) getWifiDetails() else null
@@ -123,8 +125,9 @@ class NetworkDataSource @Inject constructor(
         }
     }
 
-    private fun classifySignal(dbm: Int, type: ConnectionType): SignalQuality {
+    private fun classifySignal(dbm: Int?, type: ConnectionType): SignalQuality {
         if (type == ConnectionType.NONE) return SignalQuality.NO_SIGNAL
+        if (dbm == null) return SignalQuality.FAIR // Connected but strength unknown
         return when {
             dbm >= -50 -> SignalQuality.EXCELLENT
             dbm >= -70 -> SignalQuality.GOOD
@@ -136,7 +139,7 @@ class NetworkDataSource @Inject constructor(
 
     data class NetworkInfo(
         val connectionType: ConnectionType,
-        val signalDbm: Int,
+        val signalDbm: Int?,
         val signalQuality: SignalQuality,
         val wifiSsid: String? = null,
         val wifiSpeedMbps: Int? = null,
@@ -147,7 +150,7 @@ class NetworkDataSource @Inject constructor(
         companion object {
             fun disconnected() = NetworkInfo(
                 connectionType = ConnectionType.NONE,
-                signalDbm = -999,
+                signalDbm = null,
                 signalQuality = SignalQuality.NO_SIGNAL
             )
         }

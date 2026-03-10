@@ -44,7 +44,7 @@ class BatteryViewModel @Inject constructor(
         viewModelScope.launch {
             combine(
                 getBatteryState(),
-                getBatteryHistory(selectedPeriod),
+                getBatteryHistory(selectedPeriod).catch { emit(emptyList()) },
                 proStatusRepository.isProUser
             ) { state, history, isPro ->
                 BatteryUiState.Success(

@@ -58,7 +58,7 @@ class ExportDataUseCase @Inject constructor(
         sb.appendLine("timestamp,type,signal_dbm,wifi_speed_mbps,wifi_frequency,carrier,network_subtype,latency_ms")
         for (r in readings) {
             sb.appendLine(
-                "${formatTimestamp(r.timestamp)},${escapeCsv(r.type)},${r.signalDbm}," +
+                "${formatTimestamp(r.timestamp)},${escapeCsv(r.type)},${r.signalDbm ?: ""}," +
                     "${r.wifiSpeedMbps ?: ""},${r.wifiFrequency ?: ""},${escapeCsv(r.carrier)}," +
                     "${escapeCsv(r.networkSubtype)},${r.latencyMs ?: ""}"
             )

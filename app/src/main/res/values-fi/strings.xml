@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">DevicePulse</string>
+    <string name="not_available">Ei saatavilla</string>
 
     <!-- Navigation -->
     <string name="nav_dashboard">Etusivu</string>

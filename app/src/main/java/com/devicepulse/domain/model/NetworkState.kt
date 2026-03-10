@@ -2,7 +2,7 @@ package com.devicepulse.domain.model
 
 data class NetworkState(
     val connectionType: ConnectionType,
-    val signalDbm: Int,
+    val signalDbm: Int?,
     val signalQuality: SignalQuality,
     val wifiSsid: String? = null,
     val wifiSpeedMbps: Int? = null,

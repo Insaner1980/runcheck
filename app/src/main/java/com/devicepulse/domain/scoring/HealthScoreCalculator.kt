@@ -93,9 +93,11 @@ class HealthScoreCalculator @Inject constructor() {
 
         var score = 100
 
-        // Signal strength impact
+        // Signal strength impact (null = unavailable, assume moderate)
         val dbm = network.signalDbm
-        score -= when {
+        score -= if (dbm == null) {
+            15 // Unknown signal, assume moderate deduction
+        } else when {
             dbm >= -50 -> 0
             dbm >= -60 -> 5
             dbm >= -70 -> 15

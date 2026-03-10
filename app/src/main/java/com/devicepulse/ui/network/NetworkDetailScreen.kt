@@ -103,8 +103,8 @@ private fun NetworkContent(
 
             MetricTile(
                 label = stringResource(R.string.network_signal_strength),
-                value = network.signalDbm.toString(),
-                unit = stringResource(R.string.unit_dbm)
+                value = network.signalDbm?.toString() ?: stringResource(R.string.not_available),
+                unit = if (network.signalDbm != null) stringResource(R.string.unit_dbm) else ""
             )
 
             MetricTile(
