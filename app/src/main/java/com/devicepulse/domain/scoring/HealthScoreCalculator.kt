@@ -6,6 +6,7 @@ import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.HealthScore
 import com.devicepulse.domain.model.NetworkState
 import com.devicepulse.domain.model.SignalQuality
+import com.devicepulse.domain.model.SpeedTestResult
 import com.devicepulse.domain.model.StorageState
 import com.devicepulse.domain.model.ThermalState
 import com.devicepulse.domain.model.ThermalStatus
@@ -19,10 +20,11 @@ class HealthScoreCalculator @Inject constructor() {
         battery: BatteryState,
         network: NetworkState,
         thermal: ThermalState,
-        storage: StorageState
+        storage: StorageState,
+        recentSpeedTest: SpeedTestResult? = null
     ): HealthScore {
         val batteryScore = calculateBatteryScore(battery)
-        val networkScore = calculateNetworkScore(network)
+        val networkScore = calculateNetworkScore(network, recentSpeedTest)
         val thermalScore = calculateThermalScore(thermal)
         val storageScore = calculateStorageScore(storage)
 
@@ -89,9 +91,26 @@ class HealthScoreCalculator @Inject constructor() {
         return score.coerceIn(0, 100)
     }
 
-    private fun calculateNetworkScore(network: NetworkState): Int {
+    private fun calculateNetworkScore(
+        network: NetworkState,
+        recentSpeedTest: SpeedTestResult? = null
+    ): Int {
         if (network.connectionType == ConnectionType.NONE) return 0
 
+        // Check if speed test is recent (< 1 hour)
+        val hasRecentSpeedTest = recentSpeedTest != null &&
+            (System.currentTimeMillis() - recentSpeedTest.timestamp) < SPEED_TEST_MAX_AGE_MS
+
+        // With speed test: signal 40%, latency 30%, download 20%, stability 10%
+        // Without speed test: signal + latency only (re-weighted)
+        return if (hasRecentSpeedTest && recentSpeedTest != null) {
+            calculateNetworkScoreWithSpeedTest(network, recentSpeedTest)
+        } else {
+            calculateNetworkScoreBasic(network)
+        }
+    }
+
+    private fun calculateNetworkScoreBasic(network: NetworkState): Int {
         var score = 100
 
         // Signal quality impact — uses Android's own level (matches status bar)
@@ -116,6 +135,58 @@ class HealthScoreCalculator @Inject constructor() {
         }
 
         return score.coerceIn(0, 100)
+    }
+
+    private fun calculateNetworkScoreWithSpeedTest(
+        network: NetworkState,
+        speedTest: SpeedTestResult
+    ): Int {
+        // Signal quality: 40% weight
+        val signalScore = 100 - when (network.signalQuality) {
+            SignalQuality.EXCELLENT -> 0
+            SignalQuality.GOOD -> 10
+            SignalQuality.FAIR -> 30
+            SignalQuality.POOR -> 60
+            SignalQuality.NO_SIGNAL -> 100
+        }
+
+        // Latency (ping): 30% weight
+        val latencyScore = 100 - when {
+            speedTest.pingMs < 30 -> 0
+            speedTest.pingMs < 50 -> 5
+            speedTest.pingMs < 100 -> 15
+            speedTest.pingMs < 200 -> 30
+            speedTest.pingMs < 500 -> 50
+            else -> 70
+        }
+
+        // Download speed: 20% weight (relative to connection type expectations)
+        val expectedDownload = when (network.connectionType) {
+            ConnectionType.WIFI -> 50.0 // 50 Mbps considered good for WiFi
+            ConnectionType.CELLULAR -> 20.0 // 20 Mbps considered good for cellular
+            ConnectionType.NONE -> 1.0
+        }
+        val downloadRatio = (speedTest.downloadMbps / expectedDownload).coerceAtMost(1.0)
+        val downloadScore = (downloadRatio * 100).toInt()
+
+        // Connection stability: 10% weight (approximated from jitter)
+        val stabilityScore = when {
+            speedTest.jitterMs == null -> 80
+            speedTest.jitterMs < 5 -> 100
+            speedTest.jitterMs < 15 -> 85
+            speedTest.jitterMs < 30 -> 65
+            speedTest.jitterMs < 50 -> 45
+            else -> 20
+        }
+
+        val weightedScore = (
+            signalScore * 0.40f +
+            latencyScore * 0.30f +
+            downloadScore * 0.20f +
+            stabilityScore * 0.10f
+        ).toInt()
+
+        return weightedScore.coerceIn(0, 100)
     }
 
     private fun calculateThermalScore(thermal: ThermalState): Int {
@@ -178,5 +249,6 @@ class HealthScoreCalculator @Inject constructor() {
         private const val NETWORK_WEIGHT = 0.20f
         private const val THERMAL_WEIGHT = 0.25f
         private const val STORAGE_WEIGHT = 0.20f
+        private const val SPEED_TEST_MAX_AGE_MS = 3_600_000L // 1 hour
     }
 }

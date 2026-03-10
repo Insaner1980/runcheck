@@ -12,6 +12,7 @@ import com.devicepulse.data.db.dao.DeviceDao
 import com.devicepulse.data.db.dao.NetworkReadingDao
 import com.devicepulse.data.db.dao.StorageReadingDao
 import com.devicepulse.data.db.dao.ThermalReadingDao
+import com.devicepulse.data.db.dao.SpeedTestResultDao
 import com.devicepulse.data.db.dao.ThrottlingEventDao
 import dagger.Module
 import dagger.Provides
@@ -98,6 +99,29 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """CREATE TABLE IF NOT EXISTS `speed_test_results` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `timestamp` INTEGER NOT NULL,
+                    `download_mbps` REAL NOT NULL,
+                    `upload_mbps` REAL NOT NULL,
+                    `ping_ms` INTEGER NOT NULL,
+                    `jitter_ms` INTEGER,
+                    `server_name` TEXT,
+                    `server_location` TEXT,
+                    `connection_type` TEXT NOT NULL,
+                    `network_subtype` TEXT,
+                    `signal_dbm` INTEGER
+                )"""
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_speed_test_results_timestamp` ON `speed_test_results` (`timestamp`)"
+            )
+        }
+    }
+
     private val MIGRATION_4_5 = object : Migration(4, 5) {
         override fun migrate(db: SupportSQLiteDatabase) {
             // Recreate network_readings with nullable signal_dbm (was NOT NULL)
@@ -133,7 +157,7 @@ object DatabaseModule {
             DevicePulseDatabase::class.java,
             "devicepulse.db"
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
             .fallbackToDestructiveMigration()
             .build()
     }
@@ -169,4 +193,8 @@ object DatabaseModule {
     @Provides
     fun provideAppBatteryUsageDao(db: DevicePulseDatabase): AppBatteryUsageDao =
         db.appBatteryUsageDao()
+
+    @Provides
+    fun provideSpeedTestResultDao(db: DevicePulseDatabase): SpeedTestResultDao =
+        db.speedTestResultDao()
 }
