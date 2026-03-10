@@ -71,9 +71,13 @@ class NetworkDataSource @Inject constructor(
             else -> ConnectionType.NONE
         }
 
-        val rawSignalDbm = capabilities.signalStrength
-        // signalStrength returns Integer.MIN_VALUE when unavailable
-        val signalDbm = if (rawSignalDbm == Int.MIN_VALUE) null else rawSignalDbm
+        // Try NetworkCapabilities first, fall back to TelephonyManager for cellular
+        var signalDbm: Int? = capabilities.signalStrength.let {
+            if (it == Int.MIN_VALUE) null else it
+        }
+        if (signalDbm == null && isCellular) {
+            signalDbm = getCellularSignalDbm()
+        }
         val signalQuality = classifySignal(signalDbm, connectionType)
 
         val wifiInfo = if (isWifi) getWifiDetails() else null
@@ -89,6 +93,23 @@ class NetworkDataSource @Inject constructor(
             carrier = cellInfo?.carrier,
             networkSubtype = cellInfo?.networkType
         )
+    }
+
+    private fun getCellularSignalDbm(): Int? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return null
+        return try {
+            val signalStrength = telephonyManager?.signalStrength ?: return null
+            // Get the strongest signal from all cell technologies
+            val dbm = signalStrength.cellSignalStrengths
+                .mapNotNull { css ->
+                    val d = css.dbm
+                    if (d == Int.MIN_VALUE || d == Int.MAX_VALUE) null else d
+                }
+                .maxOrNull()
+            dbm
+        } catch (_: Exception) {
+            null
+        }
     }
 
     @Suppress("DEPRECATION")
