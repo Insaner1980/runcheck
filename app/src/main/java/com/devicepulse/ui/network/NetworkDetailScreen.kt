@@ -96,7 +96,7 @@ private fun NetworkContent(
                 label = stringResource(R.string.network_connection_type),
                 value = when (network.connectionType) {
                     ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
-                    ConnectionType.CELLULAR -> stringResource(R.string.connection_cellular)
+                    ConnectionType.CELLULAR -> network.networkSubtype ?: stringResource(R.string.connection_cellular)
                     ConnectionType.NONE -> stringResource(R.string.connection_none)
                 }
             )

@@ -146,8 +146,7 @@ private fun DashboardContent(
                         title = stringResource(R.string.dashboard_battery_card),
                         value = "${state.batteryState.level}%",
                         status = HealthScore.statusFromScore(state.healthScore.batteryScore),
-                        subtitle = state.batteryState.chargingStatus.name.lowercase()
-                            .replaceFirstChar { it.uppercase() },
+                        subtitle = formatEnumName(state.batteryState.chargingStatus.name),
                         onClick = onNavigateToBattery,
                         sparkline = state.batterySparkline
                     ),
@@ -159,16 +158,14 @@ private fun DashboardContent(
                             ConnectionType.NONE -> stringResource(R.string.network_no_connection)
                         },
                         status = HealthScore.statusFromScore(state.healthScore.networkScore),
-                        subtitle = state.networkState.signalQuality.name.lowercase()
-                            .replaceFirstChar { it.uppercase() },
+                        subtitle = formatEnumName(state.networkState.signalQuality.name),
                         onClick = onNavigateToNetwork
                     ),
                     CardData(
                         title = stringResource(R.string.dashboard_thermal_card),
                         value = "${state.thermalState.batteryTempC}°C",
                         status = HealthScore.statusFromScore(state.healthScore.thermalScore),
-                        subtitle = state.thermalState.thermalStatus.name.lowercase()
-                            .replaceFirstChar { it.uppercase() },
+                        subtitle = formatEnumName(state.thermalState.thermalStatus.name),
                         onClick = onNavigateToThermal,
                         sparkline = state.thermalSparkline
                     ),
@@ -222,6 +219,9 @@ private data class CardData(
     val onClick: () -> Unit,
     val sparkline: List<Float> = emptyList()
 )
+
+private fun formatEnumName(name: String): String =
+    name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }
 
 private fun formatBytes(bytes: Long): String {
     val gb = bytes / (1024.0 * 1024.0 * 1024.0)

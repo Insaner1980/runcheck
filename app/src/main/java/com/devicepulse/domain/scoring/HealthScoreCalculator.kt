@@ -93,10 +93,10 @@ class HealthScoreCalculator @Inject constructor() {
 
         var score = 100
 
-        // Signal strength impact (null = unavailable, assume moderate)
+        // Signal strength impact (null = unavailable, minor deduction)
         val dbm = network.signalDbm
         score -= if (dbm == null) {
-            15 // Unknown signal, assume moderate deduction
+            5 // Unknown signal — connected, so assume OK
         } else when {
             dbm >= -50 -> 0
             dbm >= -60 -> 5
@@ -110,11 +110,11 @@ class HealthScoreCalculator @Inject constructor() {
         // Latency impact
         network.latencyMs?.let { latency ->
             score -= when {
-                latency < 30 -> 0
-                latency < 60 -> 5
-                latency < 100 -> 10
-                latency < 200 -> 20
-                latency < 500 -> 35
+                latency < 50 -> 0
+                latency < 100 -> 5
+                latency < 200 -> 10
+                latency < 500 -> 20
+                latency < 1000 -> 35
                 else -> 50
             }
         }
