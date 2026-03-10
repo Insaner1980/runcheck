@@ -98,6 +98,9 @@ dependencies {
     // Gson
     implementation(libs.gson)
 
+    // Google Mobile Ads (AdMob)
+    implementation(libs.play.services.ads)
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)

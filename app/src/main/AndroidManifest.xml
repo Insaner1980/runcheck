@@ -53,6 +53,11 @@
             </intent-filter>
         </receiver>
 
+        <!-- AdMob App ID (test ID for development, replace before release) -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
+
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"

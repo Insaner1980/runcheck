@@ -61,6 +61,9 @@ vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", ve
 core-ktx = { group = "androidx.core", name = "core-ktx", version = "1.15.0" }
 activity-compose = { group = "androidx.activity", name = "activity-compose", version = "1.10.1" }
 
+# Google Mobile Ads (AdMob)
+play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version = "25.0.0" }
+
 # Gson for JSON serialization
 gson = { group = "com.google.code.gson", name = "gson", version = "2.11.0" }
 

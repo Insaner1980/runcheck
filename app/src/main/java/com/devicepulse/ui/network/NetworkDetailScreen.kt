@@ -27,6 +27,7 @@ import com.devicepulse.R
 import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.SignalQuality
 import com.devicepulse.ui.components.MetricTile
+import com.devicepulse.ui.components.AdBanner
 import com.devicepulse.ui.components.PullToRefreshWrapper
 import com.devicepulse.ui.theme.spacing
 
@@ -162,6 +163,8 @@ private fun NetworkContent(
                     unit = stringResource(R.string.unit_ms)
                 )
             }
+
+            AdBanner()
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }

@@ -27,6 +27,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
 import com.devicepulse.ui.components.MetricTile
+import com.devicepulse.ui.components.AdBanner
 import com.devicepulse.ui.components.PullToRefreshWrapper
 import com.devicepulse.ui.theme.spacing
 
@@ -153,6 +154,8 @@ private fun StorageContent(
                     )
                 }
             }
+
+            AdBanner()
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }

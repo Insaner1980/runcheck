@@ -27,6 +27,7 @@ import com.devicepulse.R
 import com.devicepulse.domain.model.ThermalStatus
 import com.devicepulse.ui.components.HeatStrip
 import com.devicepulse.ui.components.MetricTile
+import com.devicepulse.ui.components.AdBanner
 import com.devicepulse.ui.components.PullToRefreshWrapper
 import com.devicepulse.ui.theme.spacing
 
@@ -135,6 +136,8 @@ private fun ThermalContent(
                     stringResource(R.string.thermal_throttling_none)
                 }
             )
+
+            AdBanner()
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }

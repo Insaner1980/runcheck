@@ -28,6 +28,7 @@ import com.devicepulse.domain.model.Confidence
 import com.devicepulse.ui.components.ConfidenceBadge
 import com.devicepulse.ui.components.MetricTile
 import com.devicepulse.ui.components.PullToRefreshWrapper
+import com.devicepulse.ui.components.AdBanner
 import com.devicepulse.ui.components.TrendChart
 import com.devicepulse.ui.theme.spacing
 
@@ -193,6 +194,8 @@ private fun BatteryContent(
                     data = state.history.map { it.level.toFloat() }
                 )
             }
+
+            AdBanner()
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }
