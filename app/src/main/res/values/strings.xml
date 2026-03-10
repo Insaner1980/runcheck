@@ -111,6 +111,9 @@
     <string name="thermal_throttling_active">Active</string>
     <string name="thermal_throttling_none">None</string>
     <string name="thermal_cpu_unavailable">CPU temperature not available on this device</string>
+    <string name="thermal_throttling_log">Throttling Log</string>
+    <string name="thermal_event_at">%s</string>
+    <string name="thermal_no_events">No throttling events recorded</string>
 
     <!-- Thermal Status Levels -->
     <string name="thermal_status_none">Normal</string>
@@ -159,6 +162,8 @@
     <!-- More Menu -->
     <string name="more_thermal">Thermal</string>
     <string name="more_storage">Storage</string>
+    <string name="more_charger">Chargers</string>
+    <string name="more_app_usage">App Usage</string>
     <string name="more_settings">Settings</string>
 
     <!-- Widgets -->
@@ -167,6 +172,37 @@
     <string name="widget_health_name">Device Health</string>
     <string name="widget_health_description">Shows overall health score with category indicators</string>
     <string name="widget_pro_required">Pro required</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_alerts">Device Alerts</string>
+    <string name="notification_channel_status">Device Status</string>
+    <string name="notification_low_battery_title">Low Battery</string>
+    <string name="notification_low_battery_text">Battery at %d%%</string>
+    <string name="notification_high_temp_title">High Temperature</string>
+    <string name="notification_high_temp_text">Device temperature: %.1f\u00B0C</string>
+    <string name="notification_low_storage_title">Low Storage</string>
+    <string name="notification_low_storage_text">Storage %.0f%% full</string>
+    <string name="notification_charge_complete_title">Charging Complete</string>
+
+    <!-- Export -->
+    <string name="settings_export_data">Export Data (CSV)</string>
+    <string name="settings_export_success">Data exported to Downloads</string>
+    <string name="settings_export_error">Export failed</string>
+
+    <!-- Charger Comparison -->
+    <string name="charger_title">Charger Comparison</string>
+    <string name="charger_add">Add Charger</string>
+    <string name="charger_add_hint">Charger name (e.g. Samsung 25W)</string>
+    <string name="charger_sessions">%d sessions</string>
+    <string name="charger_avg_speed">Avg %d mA</string>
+    <string name="charger_no_chargers">No chargers saved yet</string>
+    <string name="charger_last_used">Last used: %s</string>
+    <string name="charger_delete">Delete</string>
+
+    <!-- App Battery Usage -->
+    <string name="app_usage_title">App Battery Usage</string>
+    <string name="app_usage_no_data">No usage data available for the last 24 hours</string>
+    <string name="app_usage_drain">Est. drain: %s mAh</string>
 
     <!-- General -->
     <string name="loading">Loading…</string>

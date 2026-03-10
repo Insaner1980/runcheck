@@ -23,4 +23,7 @@ interface BatteryReadingDao {
 
     @Query("SELECT COUNT(*) FROM battery_readings")
     suspend fun getCount(): Int
+
+    @Query("SELECT * FROM battery_readings ORDER BY timestamp ASC")
+    suspend fun getAll(): List<BatteryReadingEntity>
 }

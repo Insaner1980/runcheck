@@ -23,4 +23,7 @@ interface NetworkReadingDao {
 
     @Query("SELECT COUNT(*) FROM network_readings")
     suspend fun getCount(): Int
+
+    @Query("SELECT * FROM network_readings ORDER BY timestamp ASC")
+    suspend fun getAll(): List<NetworkReadingEntity>
 }

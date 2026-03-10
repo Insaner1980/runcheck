@@ -23,4 +23,7 @@ interface ThermalReadingDao {
 
     @Query("SELECT COUNT(*) FROM thermal_readings")
     suspend fun getCount(): Int
+
+    @Query("SELECT * FROM thermal_readings ORDER BY timestamp ASC")
+    suspend fun getAll(): List<ThermalReadingEntity>
 }

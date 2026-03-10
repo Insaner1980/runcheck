@@ -7,4 +7,6 @@ sealed class Screen(val route: String) {
     data object Thermal : Screen("thermal")
     data object Storage : Screen("storage")
     data object Settings : Screen("settings")
+    data object Charger : Screen("charger")
+    data object AppUsage : Screen("app_usage")
 }

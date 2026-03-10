@@ -3,16 +3,23 @@ package com.devicepulse.data.db
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.devicepulse.data.db.dao.AppBatteryUsageDao
 import com.devicepulse.data.db.dao.BatteryReadingDao
+import com.devicepulse.data.db.dao.ChargerDao
 import com.devicepulse.data.db.dao.DeviceDao
 import com.devicepulse.data.db.dao.NetworkReadingDao
 import com.devicepulse.data.db.dao.StorageReadingDao
 import com.devicepulse.data.db.dao.ThermalReadingDao
+import com.devicepulse.data.db.dao.ThrottlingEventDao
+import com.devicepulse.data.db.entity.AppBatteryUsageEntity
 import com.devicepulse.data.db.entity.BatteryReadingEntity
+import com.devicepulse.data.db.entity.ChargerProfileEntity
+import com.devicepulse.data.db.entity.ChargingSessionEntity
 import com.devicepulse.data.db.entity.DeviceEntity
 import com.devicepulse.data.db.entity.NetworkReadingEntity
 import com.devicepulse.data.db.entity.StorageReadingEntity
 import com.devicepulse.data.db.entity.ThermalReadingEntity
+import com.devicepulse.data.db.entity.ThrottlingEventEntity
 
 @Database(
     entities = [
@@ -20,9 +27,13 @@ import com.devicepulse.data.db.entity.ThermalReadingEntity
         NetworkReadingEntity::class,
         ThermalReadingEntity::class,
         StorageReadingEntity::class,
-        DeviceEntity::class
+        DeviceEntity::class,
+        ThrottlingEventEntity::class,
+        ChargerProfileEntity::class,
+        ChargingSessionEntity::class,
+        AppBatteryUsageEntity::class
     ],
-    version = 1,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -32,4 +43,7 @@ abstract class DevicePulseDatabase : RoomDatabase() {
     abstract fun thermalReadingDao(): ThermalReadingDao
     abstract fun storageReadingDao(): StorageReadingDao
     abstract fun deviceDao(): DeviceDao
+    abstract fun throttlingEventDao(): ThrottlingEventDao
+    abstract fun chargerDao(): ChargerDao
+    abstract fun appBatteryUsageDao(): AppBatteryUsageDao
 }

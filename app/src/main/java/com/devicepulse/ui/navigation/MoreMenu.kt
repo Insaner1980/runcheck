@@ -1,6 +1,8 @@
 package com.devicepulse.ui.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.DataUsage
 import androidx.compose.material.icons.filled.SdStorage
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Thermostat
@@ -43,6 +45,26 @@ fun MoreMenu(
             },
             leadingIcon = {
                 Icon(Icons.Filled.SdStorage, contentDescription = null)
+            }
+        )
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.more_charger)) },
+            onClick = {
+                onNavigate(Screen.Charger.route)
+                onDismiss()
+            },
+            leadingIcon = {
+                Icon(Icons.Filled.BatteryChargingFull, contentDescription = null)
+            }
+        )
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.more_app_usage)) },
+            onClick = {
+                onNavigate(Screen.AppUsage.route)
+                onDismiss()
+            },
+            leadingIcon = {
+                Icon(Icons.Filled.DataUsage, contentDescription = null)
             }
         )
         DropdownMenuItem(

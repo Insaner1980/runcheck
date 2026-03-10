@@ -5,6 +5,7 @@ import com.devicepulse.data.db.dao.BatteryReadingDao
 import com.devicepulse.data.db.dao.NetworkReadingDao
 import com.devicepulse.data.db.dao.StorageReadingDao
 import com.devicepulse.data.db.dao.ThermalReadingDao
+import com.devicepulse.data.db.dao.ThrottlingEventDao
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -19,6 +20,7 @@ class CleanupOldReadingsUseCaseTest {
     private lateinit var networkDao: NetworkReadingDao
     private lateinit var thermalDao: ThermalReadingDao
     private lateinit var storageDao: StorageReadingDao
+    private lateinit var throttlingEventDao: ThrottlingEventDao
     private lateinit var proStatusRepository: ProStatusRepository
     private lateinit var useCase: CleanupOldReadingsUseCase
 
@@ -28,10 +30,11 @@ class CleanupOldReadingsUseCaseTest {
         networkDao = mockk(relaxed = true)
         thermalDao = mockk(relaxed = true)
         storageDao = mockk(relaxed = true)
+        throttlingEventDao = mockk(relaxed = true)
         proStatusRepository = mockk()
 
         useCase = CleanupOldReadingsUseCase(
-            batteryDao, networkDao, thermalDao, storageDao, proStatusRepository
+            batteryDao, networkDao, thermalDao, storageDao, throttlingEventDao, proStatusRepository
         )
     }
 

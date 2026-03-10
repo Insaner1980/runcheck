@@ -23,4 +23,7 @@ interface StorageReadingDao {
 
     @Query("SELECT COUNT(*) FROM storage_readings")
     suspend fun getCount(): Int
+
+    @Query("SELECT * FROM storage_readings ORDER BY timestamp ASC")
+    suspend fun getAll(): List<StorageReadingEntity>
 }

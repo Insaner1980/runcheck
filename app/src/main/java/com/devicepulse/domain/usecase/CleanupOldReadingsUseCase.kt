@@ -5,6 +5,7 @@ import com.devicepulse.data.db.dao.BatteryReadingDao
 import com.devicepulse.data.db.dao.NetworkReadingDao
 import com.devicepulse.data.db.dao.StorageReadingDao
 import com.devicepulse.data.db.dao.ThermalReadingDao
+import com.devicepulse.data.db.dao.ThrottlingEventDao
 import javax.inject.Inject
 
 class CleanupOldReadingsUseCase @Inject constructor(
@@ -12,6 +13,7 @@ class CleanupOldReadingsUseCase @Inject constructor(
     private val networkReadingDao: NetworkReadingDao,
     private val thermalReadingDao: ThermalReadingDao,
     private val storageReadingDao: StorageReadingDao,
+    private val throttlingEventDao: ThrottlingEventDao,
     private val proStatusRepository: ProStatusRepository
 ) {
     suspend operator fun invoke() {
@@ -22,6 +24,7 @@ class CleanupOldReadingsUseCase @Inject constructor(
         networkReadingDao.deleteOlderThan(cutoff)
         thermalReadingDao.deleteOlderThan(cutoff)
         storageReadingDao.deleteOlderThan(cutoff)
+        throttlingEventDao.deleteOlderThan(cutoff)
     }
 
     companion object {

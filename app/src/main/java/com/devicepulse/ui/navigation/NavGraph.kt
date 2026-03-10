@@ -17,7 +17,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.devicepulse.ui.appusage.AppUsageScreen
 import com.devicepulse.ui.battery.BatteryDetailScreen
+import com.devicepulse.ui.charger.ChargerComparisonScreen
 import com.devicepulse.ui.dashboard.DashboardScreen
 import com.devicepulse.ui.network.NetworkDetailScreen
 import com.devicepulse.ui.settings.SettingsScreen
@@ -119,6 +121,12 @@ fun DevicePulseNavHost() {
             }
             composable(Screen.Storage.route) {
                 StorageDetailScreen()
+            }
+            composable(Screen.Charger.route) {
+                ChargerComparisonScreen()
+            }
+            composable(Screen.AppUsage.route) {
+                AppUsageScreen()
             }
             composable(Screen.Settings.route) {
                 SettingsScreen()

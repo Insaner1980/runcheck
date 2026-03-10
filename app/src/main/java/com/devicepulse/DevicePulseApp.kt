@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.devicepulse.data.billing.ProStatusRepository
+import com.devicepulse.service.monitor.NotificationHelper
 import com.google.android.gms.ads.MobileAds
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
@@ -17,10 +18,14 @@ class DevicePulseApp : Application(), Configuration.Provider {
     @Inject
     lateinit var proStatusRepository: ProStatusRepository
 
+    @Inject
+    lateinit var notificationHelper: NotificationHelper
+
     override fun onCreate() {
         super.onCreate()
         MobileAds.initialize(this)
         proStatusRepository.initialize()
+        notificationHelper.createChannels()
     }
 
     override val workManagerConfiguration: Configuration

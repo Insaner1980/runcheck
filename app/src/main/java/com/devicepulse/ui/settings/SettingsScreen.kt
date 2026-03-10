@@ -1,6 +1,7 @@
 package com.devicepulse.ui.settings
 
 import android.app.Activity
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,10 +16,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -207,6 +210,27 @@ fun SettingsScreen(
                         "${stringResource(R.string.settings_upgrade_pro)} — $it"
                     } ?: stringResource(R.string.settings_upgrade_pro)
                 )
+            }
+        }
+
+        // Export Data (Pro only)
+        if (uiState.isPro) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = MaterialTheme.spacing.md))
+
+            OutlinedButton(
+                onClick = { viewModel.exportData() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = stringResource(R.string.settings_export_data))
+            }
+        }
+
+        // Show export status as a toast
+        val exportContext = LocalContext.current
+        uiState.exportStatus?.let { status ->
+            LaunchedEffect(status) {
+                Toast.makeText(exportContext, status, Toast.LENGTH_SHORT).show()
+                viewModel.clearExportStatus()
             }
         }
 
