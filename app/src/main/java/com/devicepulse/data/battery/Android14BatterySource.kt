@@ -14,19 +14,24 @@ class Android14BatterySource(
 ) : GenericBatterySource(context, profile) {
 
     override fun getCycleCount(): Flow<Int?> = flow {
-        // BatteryManager.BATTERY_PROPERTY_CHARGING_CYCLE_COUNT = 8 (API 34, not in public SDK)
-        val cycleCount = batteryManager.getIntProperty(PROPERTY_CHARGING_CYCLE_COUNT)
+        val cycleCount = try {
+            batteryManager.getIntProperty(PROPERTY_CHARGING_CYCLE_COUNT)
+        } catch (_: SecurityException) {
+            Int.MIN_VALUE
+        }
         emit(if (cycleCount > 0) cycleCount else null)
     }
 
     override fun getHealthPercent(): Flow<Int?> = flow {
-        // BatteryManager.BATTERY_PROPERTY_STATE_OF_HEALTH (API 34, not in public SDK)
-        val health = batteryManager.getIntProperty(PROPERTY_STATE_OF_HEALTH)
+        val health = try {
+            batteryManager.getIntProperty(PROPERTY_STATE_OF_HEALTH)
+        } catch (_: SecurityException) {
+            Int.MIN_VALUE
+        }
         emit(if (health > 0) health else null)
     }
 
     companion object {
-        // These constants are defined in BatteryManager source but not exposed in public SDK
         private const val PROPERTY_CHARGING_CYCLE_COUNT = 8
         private const val PROPERTY_STATE_OF_HEALTH = 12
     }

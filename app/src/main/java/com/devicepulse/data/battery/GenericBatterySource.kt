@@ -40,11 +40,17 @@ open class GenericBatterySource(
 
     override fun getCurrentNow(): Flow<MeasuredValue<Int>> = flow {
         while (true) {
-            val rawCurrent = batteryManager.getIntProperty(
-                BatteryManager.BATTERY_PROPERTY_CURRENT_NOW
-            )
+            val rawCurrent = try {
+                batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+            } catch (_: SecurityException) {
+                0
+            }
             val currentMa = normalizeCurrent(rawCurrent)
-            val confidence = if (profile.currentNowReliable) Confidence.HIGH else Confidence.LOW
+            val confidence = if (rawCurrent == 0 || !profile.currentNowReliable) {
+                Confidence.UNAVAILABLE
+            } else {
+                Confidence.HIGH
+            }
 
             emit(MeasuredValue(currentMa, confidence))
             delay(POLLING_INTERVAL_MS)

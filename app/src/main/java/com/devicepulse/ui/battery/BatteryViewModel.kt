@@ -1,5 +1,6 @@
 package com.devicepulse.ui.battery
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.devicepulse.data.billing.ProStatusRepository
@@ -54,6 +55,7 @@ class BatteryViewModel @Inject constructor(
                     isPro = isPro
                 )
             }.catch { e ->
+                Log.e("BatteryVM", "Battery data failed", e)
                 _uiState.value = BatteryUiState.Error(e.message ?: "Unknown error")
             }.collect { state ->
                 _uiState.value = state

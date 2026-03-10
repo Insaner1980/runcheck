@@ -23,6 +23,7 @@ import com.devicepulse.domain.usecase.GetBatteryStateUseCase
 import com.devicepulse.domain.usecase.GetNetworkStateUseCase
 import com.devicepulse.domain.usecase.GetStorageStateUseCase
 import com.devicepulse.domain.usecase.GetThermalStateUseCase
+import android.util.Log
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -59,15 +60,15 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             // Wrap each flow with catch to prevent one failure from breaking everything
             val batteryFlow = getBatteryState()
-                .catch { emit(DEFAULT_BATTERY) }
+                .catch { e -> Log.e(TAG, "Battery flow failed", e); emit(DEFAULT_BATTERY) }
             val networkFlow = getNetworkState()
-                .catch { emit(DEFAULT_NETWORK) }
+                .catch { e -> Log.e(TAG, "Network flow failed", e); emit(DEFAULT_NETWORK) }
             val thermalFlow = getThermalState()
-                .catch { emit(DEFAULT_THERMAL) }
+                .catch { e -> Log.e(TAG, "Thermal flow failed", e); emit(DEFAULT_THERMAL) }
             val storageFlow = getStorageState()
-                .catch { emit(DEFAULT_STORAGE) }
+                .catch { e -> Log.e(TAG, "Storage flow failed", e); emit(DEFAULT_STORAGE) }
             val historyFlow = getBatteryHistory()
-                .catch { emit(emptyList()) }
+                .catch { e -> Log.e(TAG, "History flow failed", e); emit(emptyList()) }
 
             // Use typed combine (max 5 flows) instead of fragile vararg
             val dataFlow = combine(
@@ -120,6 +121,7 @@ class DashboardViewModel @Inject constructor(
     )
 
     companion object {
+        private const val TAG = "DashboardVM"
         private const val SPARKLINE_POINTS = 20
 
         private val DEFAULT_BATTERY = BatteryState(

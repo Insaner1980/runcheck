@@ -45,7 +45,15 @@ class DeviceCapabilityManager @Inject constructor(
         val readings = mutableListOf<Int>()
 
         repeat(VALIDATION_SAMPLE_COUNT) {
-            val current = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+            val current = try {
+                batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+            } catch (_: SecurityException) {
+                return CurrentValidation(
+                    isReliable = false,
+                    unit = CurrentUnit.MILLIAMPS,
+                    signConvention = SignConvention.POSITIVE_CHARGING
+                )
+            }
             readings.add(current)
             if (it < VALIDATION_SAMPLE_COUNT - 1) {
                 delay(VALIDATION_SAMPLE_DELAY_MS)
