@@ -95,23 +95,31 @@ class NetworkDataSource @Inject constructor(
     }
 
     private fun getCellularDetails(): CellularDetails? {
-        return CellularDetails(
-            carrier = telephonyManager?.networkOperatorName ?: "Unknown",
-            networkType = getNetworkTypeName()
-        )
+        return try {
+            CellularDetails(
+                carrier = telephonyManager?.networkOperatorName ?: "Unknown",
+                networkType = getNetworkTypeName()
+            )
+        } catch (_: SecurityException) {
+            CellularDetails(carrier = telephonyManager?.networkOperatorName ?: "Unknown", networkType = "Unknown")
+        }
     }
 
     @Suppress("DEPRECATION")
     private fun getNetworkTypeName(): String {
-        return when (telephonyManager?.dataNetworkType) {
-            TelephonyManager.NETWORK_TYPE_NR -> "5G NR"
-            TelephonyManager.NETWORK_TYPE_LTE -> "4G LTE"
-            TelephonyManager.NETWORK_TYPE_HSPAP,
-            TelephonyManager.NETWORK_TYPE_HSPA -> "3G HSPA"
-            TelephonyManager.NETWORK_TYPE_UMTS -> "3G UMTS"
-            TelephonyManager.NETWORK_TYPE_EDGE -> "2G EDGE"
-            TelephonyManager.NETWORK_TYPE_GPRS -> "2G GPRS"
-            else -> "Unknown"
+        return try {
+            when (telephonyManager?.dataNetworkType) {
+                TelephonyManager.NETWORK_TYPE_NR -> "5G NR"
+                TelephonyManager.NETWORK_TYPE_LTE -> "4G LTE"
+                TelephonyManager.NETWORK_TYPE_HSPAP,
+                TelephonyManager.NETWORK_TYPE_HSPA -> "3G HSPA"
+                TelephonyManager.NETWORK_TYPE_UMTS -> "3G UMTS"
+                TelephonyManager.NETWORK_TYPE_EDGE -> "2G EDGE"
+                TelephonyManager.NETWORK_TYPE_GPRS -> "2G GPRS"
+                else -> "Unknown"
+            }
+        } catch (_: SecurityException) {
+            "Unknown"
         }
     }
 
