@@ -3,12 +3,15 @@ package com.devicepulse.ui.battery
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,6 +28,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
 import com.devicepulse.domain.model.Confidence
+import com.devicepulse.domain.model.HistoryPeriod
 import com.devicepulse.ui.components.ConfidenceBadge
 import com.devicepulse.ui.components.MetricTile
 import com.devicepulse.ui.components.PullToRefreshWrapper
@@ -55,7 +59,11 @@ fun BatteryDetailScreen(
             }
         }
         is BatteryUiState.Success -> {
-            BatteryContent(state = state, onRefresh = { viewModel.refresh() })
+            BatteryContent(
+                state = state,
+                onRefresh = { viewModel.refresh() },
+                onPeriodChange = { viewModel.setHistoryPeriod(it) }
+            )
         }
     }
 }
@@ -63,7 +71,8 @@ fun BatteryDetailScreen(
 @Composable
 private fun BatteryContent(
     state: BatteryUiState.Success,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onPeriodChange: (HistoryPeriod) -> Unit
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     val battery = state.batteryState
@@ -182,14 +191,36 @@ private fun BatteryContent(
                 )
             }
 
-            // 24h history chart
+            // History chart with period selector
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            Text(
+                text = stringResource(R.string.battery_history_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            if (state.isPro) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+                ) {
+                    HistoryPeriod.entries.forEach { period ->
+                        val label = when (period) {
+                            HistoryPeriod.DAY -> stringResource(R.string.history_period_day)
+                            HistoryPeriod.WEEK -> stringResource(R.string.history_period_week)
+                            HistoryPeriod.MONTH -> stringResource(R.string.history_period_month)
+                            HistoryPeriod.ALL -> stringResource(R.string.history_period_all)
+                        }
+                        FilterChip(
+                            selected = state.selectedPeriod == period,
+                            onClick = { onPeriodChange(period) },
+                            label = { Text(label) }
+                        )
+                    }
+                }
+            }
+
             if (state.history.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                Text(
-                    text = stringResource(R.string.battery_history_24h),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
                 TrendChart(
                     data = state.history.map { it.level.toFloat() }
                 )

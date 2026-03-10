@@ -40,6 +40,11 @@
     <string name="battery_cycle_count">Cycle Count</string>
     <string name="battery_health_percent">Health Percentage</string>
     <string name="battery_history_24h">Last 24 Hours</string>
+    <string name="history_period_day">24h</string>
+    <string name="history_period_week">Week</string>
+    <string name="history_period_month">Month</string>
+    <string name="history_period_all">All</string>
+    <string name="battery_history_title">History</string>
     <string name="battery_not_available">Not available on this device</string>
 
     <!-- Charging Status -->

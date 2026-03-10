@@ -2,6 +2,8 @@ package com.devicepulse.ui.battery
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.devicepulse.data.billing.ProStatusRepository
+import com.devicepulse.domain.model.HistoryPeriod
 import com.devicepulse.domain.usecase.GetBatteryHistoryUseCase
 import com.devicepulse.domain.usecase.GetBatteryStateUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,11 +18,14 @@ import javax.inject.Inject
 @HiltViewModel
 class BatteryViewModel @Inject constructor(
     private val getBatteryState: GetBatteryStateUseCase,
-    private val getBatteryHistory: GetBatteryHistoryUseCase
+    private val getBatteryHistory: GetBatteryHistoryUseCase,
+    private val proStatusRepository: ProStatusRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<BatteryUiState>(BatteryUiState.Loading)
     val uiState: StateFlow<BatteryUiState> = _uiState.asStateFlow()
+
+    private var selectedPeriod = HistoryPeriod.DAY
 
     init {
         loadBatteryData()
@@ -30,15 +35,23 @@ class BatteryViewModel @Inject constructor(
         loadBatteryData()
     }
 
+    fun setHistoryPeriod(period: HistoryPeriod) {
+        selectedPeriod = period
+        loadBatteryData()
+    }
+
     private fun loadBatteryData() {
         viewModelScope.launch {
             combine(
                 getBatteryState(),
-                getBatteryHistory()
-            ) { state, history ->
+                getBatteryHistory(selectedPeriod),
+                proStatusRepository.isProUser
+            ) { state, history, isPro ->
                 BatteryUiState.Success(
                     batteryState = state,
-                    history = history
+                    history = history,
+                    selectedPeriod = selectedPeriod,
+                    isPro = isPro
                 )
             }.catch { e ->
                 _uiState.value = BatteryUiState.Error(e.message ?: "Unknown error")
