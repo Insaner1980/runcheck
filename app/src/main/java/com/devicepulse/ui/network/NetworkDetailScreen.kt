@@ -1,15 +1,33 @@
 package com.devicepulse.ui.network
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CellTower
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -21,21 +39,29 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
 import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.SignalQuality
-import com.devicepulse.ui.components.MetricTile
+import com.devicepulse.domain.model.SpeedTestResult
 import com.devicepulse.ui.components.AdBanner
+import com.devicepulse.ui.components.MetricTile
 import com.devicepulse.ui.components.PullToRefreshWrapper
+import com.devicepulse.ui.components.SpeedGauge
 import com.devicepulse.ui.theme.spacing
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun NetworkDetailScreen(
     viewModel: NetworkViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val speedTestState by viewModel.speedTestState.collectAsStateWithLifecycle()
 
     when (val state = uiState) {
         is NetworkUiState.Loading -> {
@@ -54,7 +80,13 @@ fun NetworkDetailScreen(
             }
         }
         is NetworkUiState.Success -> {
-            NetworkContent(state = state, onRefresh = { viewModel.refresh() })
+            NetworkContent(
+                state = state,
+                speedTestState = speedTestState,
+                isCellular = viewModel.isCellular(),
+                onRefresh = { viewModel.refresh() },
+                onStartSpeedTest = { viewModel.startSpeedTest() }
+            )
         }
     }
 }
@@ -62,7 +94,10 @@ fun NetworkDetailScreen(
 @Composable
 private fun NetworkContent(
     state: NetworkUiState.Success,
-    onRefresh: () -> Unit
+    speedTestState: SpeedTestUiState,
+    isCellular: Boolean,
+    onRefresh: () -> Unit,
+    onStartSpeedTest: () -> Unit
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     val network = state.networkState
@@ -164,9 +199,517 @@ private fun NetworkContent(
                 )
             }
 
+            HorizontalDivider(modifier = Modifier.padding(vertical = MaterialTheme.spacing.sm))
+
+            // Speed Test Section
+            SpeedTestSection(
+                speedTestState = speedTestState,
+                isCellular = isCellular,
+                hasConnection = network.connectionType != ConnectionType.NONE,
+                onStartSpeedTest = onStartSpeedTest
+            )
+
             AdBanner()
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }
     }
+}
+
+@Composable
+private fun SpeedTestSection(
+    speedTestState: SpeedTestUiState,
+    isCellular: Boolean,
+    hasConnection: Boolean,
+    onStartSpeedTest: () -> Unit
+) {
+    var showCellularWarning by remember { mutableStateOf(false) }
+
+    Text(
+        text = stringResource(R.string.speed_test_title),
+        style = MaterialTheme.typography.headlineMedium,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+
+    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+
+    // Start button or progress
+    if (!speedTestState.isRunning && speedTestState.phase !is SpeedTestPhase.Completed) {
+        StartTestButton(
+            hasConnection = hasConnection,
+            onClick = {
+                if (isCellular) {
+                    showCellularWarning = true
+                } else {
+                    onStartSpeedTest()
+                }
+            }
+        )
+    }
+
+    // Active test display
+    if (speedTestState.isRunning) {
+        SpeedTestActiveDisplay(speedTestState)
+    }
+
+    // Completed results
+    val phase = speedTestState.phase
+    if (phase is SpeedTestPhase.Completed) {
+        SpeedTestResultsDisplay(speedTestState)
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        Button(
+            onClick = {
+                if (isCellular) {
+                    showCellularWarning = true
+                } else {
+                    onStartSpeedTest()
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                Icons.Default.Speed,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.size(MaterialTheme.spacing.sm))
+            Text(stringResource(R.string.speed_test_start))
+        }
+    }
+
+    // Failed state
+    if (phase is SpeedTestPhase.Failed) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer
+            )
+        ) {
+            Row(
+                modifier = Modifier.padding(MaterialTheme.spacing.base),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onErrorContainer
+                )
+                Text(
+                    text = phase.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        Button(
+            onClick = {
+                if (isCellular) {
+                    showCellularWarning = true
+                } else {
+                    onStartSpeedTest()
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(stringResource(R.string.retry))
+        }
+    }
+
+    // Last saved result (when idle and not just completed)
+    if (speedTestState.phase is SpeedTestPhase.Idle && speedTestState.lastResult != null) {
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        LastResultCard(speedTestState.lastResult)
+    }
+
+    // History
+    if (speedTestState.recentResults.size > 1) {
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        Text(
+            text = stringResource(R.string.speed_test_history),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        speedTestState.recentResults.drop(1).forEach { result ->
+            HistoryResultRow(result)
+        }
+    }
+
+    // Privacy notice
+    Text(
+        text = stringResource(R.string.speed_test_mlab_notice),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = MaterialTheme.spacing.sm)
+    )
+
+    // Cellular data warning dialog
+    if (showCellularWarning) {
+        CellularDataWarningDialog(
+            onConfirm = {
+                showCellularWarning = false
+                onStartSpeedTest()
+            },
+            onDismiss = { showCellularWarning = false }
+        )
+    }
+}
+
+@Composable
+private fun StartTestButton(
+    hasConnection: Boolean,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        enabled = hasConnection,
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary
+        )
+    ) {
+        Icon(
+            Icons.Default.Speed,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.size(MaterialTheme.spacing.sm))
+        Text(
+            text = stringResource(R.string.speed_test_start),
+            style = MaterialTheme.typography.titleMedium
+        )
+    }
+}
+
+@Composable
+private fun SpeedTestActiveDisplay(state: SpeedTestUiState) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MaterialTheme.spacing.base),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+        ) {
+            // Phase indicator
+            val phaseText = when (state.phase) {
+                is SpeedTestPhase.Ping -> stringResource(R.string.speed_test_phase_ping)
+                is SpeedTestPhase.Download -> stringResource(R.string.speed_test_phase_download)
+                is SpeedTestPhase.Upload -> stringResource(R.string.speed_test_phase_upload)
+                else -> stringResource(R.string.speed_test_running)
+            }
+            Text(
+                text = phaseText,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            // Progress bar
+            val progress = when (state.phase) {
+                is SpeedTestPhase.Ping -> -1f // indeterminate
+                is SpeedTestPhase.Download -> state.downloadProgress
+                is SpeedTestPhase.Upload -> state.uploadProgress
+                else -> 0f
+            }
+            if (progress < 0) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            } else {
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // Gauges row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SpeedGauge(
+                    value = state.downloadMbps,
+                    maxValue = 1000.0,
+                    label = stringResource(R.string.speed_test_download),
+                    unit = stringResource(R.string.unit_mbps),
+                    size = 100.dp,
+                    strokeWidth = 8.dp
+                )
+                SpeedGauge(
+                    value = state.uploadMbps,
+                    maxValue = 500.0,
+                    label = stringResource(R.string.speed_test_upload),
+                    unit = stringResource(R.string.unit_mbps),
+                    size = 100.dp,
+                    strokeWidth = 8.dp
+                )
+            }
+
+            if (state.pingMs > 0) {
+                Text(
+                    text = "${stringResource(R.string.speed_test_ping)}: ${state.pingMs} ${stringResource(R.string.unit_ms)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SpeedTestResultsDisplay(state: SpeedTestUiState) {
+    AnimatedVisibility(
+        visible = true,
+        enter = fadeIn() + slideInVertically(initialOffsetY = { it / 4 })
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(MaterialTheme.spacing.base),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+            ) {
+                Text(
+                    text = stringResource(R.string.speed_test_completed),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SpeedGauge(
+                        value = state.downloadMbps,
+                        maxValue = 1000.0,
+                        label = stringResource(R.string.speed_test_download),
+                        unit = stringResource(R.string.unit_mbps),
+                        size = 120.dp,
+                        strokeWidth = 10.dp
+                    )
+                    SpeedGauge(
+                        value = state.uploadMbps,
+                        maxValue = 500.0,
+                        label = stringResource(R.string.speed_test_upload),
+                        unit = stringResource(R.string.unit_mbps),
+                        size = 120.dp,
+                        strokeWidth = 10.dp
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "${state.pingMs}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "${stringResource(R.string.speed_test_ping)} (${stringResource(R.string.unit_ms)})",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (state.jitterMs > 0) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "${state.jitterMs}",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "${stringResource(R.string.speed_test_jitter)} (${stringResource(R.string.unit_ms)})",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LastResultCard(result: SpeedTestResult) {
+    val dateFormat = remember { SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MaterialTheme.spacing.base),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = stringResource(R.string.speed_test_last_result),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = dateFormat.format(Date(result.timestamp)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                ResultMetric(
+                    label = stringResource(R.string.speed_test_download),
+                    value = "%.1f".format(result.downloadMbps),
+                    unit = stringResource(R.string.unit_mbps)
+                )
+                ResultMetric(
+                    label = stringResource(R.string.speed_test_upload),
+                    value = "%.1f".format(result.uploadMbps),
+                    unit = stringResource(R.string.unit_mbps)
+                )
+                ResultMetric(
+                    label = stringResource(R.string.speed_test_ping),
+                    value = result.pingMs.toString(),
+                    unit = stringResource(R.string.unit_ms)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ResultMetric(
+    label: String,
+    value: String,
+    unit: String
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = unit,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun HistoryResultRow(result: SpeedTestResult) {
+    val dateFormat = remember { SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = MaterialTheme.spacing.xs),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MaterialTheme.spacing.md),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = dateFormat.format(Date(result.timestamp)),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "%.1f".format(result.downloadMbps),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "%.1f".format(result.uploadMbps),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "${result.pingMs} ms",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun CellularDataWarningDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                Icons.Default.CellTower,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+        },
+        title = {
+            Text(stringResource(R.string.speed_test_title))
+        },
+        text = {
+            Text(stringResource(R.string.speed_test_cellular_warning))
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(R.string.speed_test_cellular_proceed))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.speed_test_cellular_cancel))
+            }
+        }
+    )
 }
