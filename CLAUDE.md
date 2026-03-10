@@ -6,16 +6,17 @@ DevicePulse is a native Android app (Kotlin + Jetpack Compose) that monitors dev
 
 ## Tech Stack
 
-- **Language:** Kotlin
-- **UI:** Jetpack Compose with Material 3 / Material You
+- **Language:** Kotlin (via AGP 9.1.0 built-in Kotlin, `android.builtInKotlin` disabled for KSP compatibility)
+- **UI:** Jetpack Compose with Material 3 / Material You (BOM 2026.02.01)
 - **Min SDK:** 26 (Android 8.0)
 - **Target SDK:** 35 (Android 15)
+- **Compile SDK:** 36 (required by Vico 3.x)
 - **Architecture:** MVVM with Clean Architecture layers (data → domain → ui)
-- **Database:** Room for local historical data
-- **Async:** Kotlin Coroutines + Flow
-- **DI:** Hilt
-- **Charts:** Vico (Compose-native charting library) or equivalent
-- **Build:** Gradle with Kotlin DSL (build.gradle.kts)
+- **Database:** Room 2.8.4 for local historical data
+- **Async:** Kotlin Coroutines 1.10.2 + Flow
+- **DI:** Hilt 2.59.2
+- **Charts:** Vico 3.0.3 (Compose-native charting library)
+- **Build:** Gradle 9.4.0 with Kotlin DSL, AGP 9.1.0, KSP 2.3.1
 
 ## Project Structure
 
@@ -139,9 +140,19 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 - Version code: auto-increment
 - Version name: semver (1.0.0)
 
+## Build Notes
+
+- AGP 9.1.0 built-in Kotlin is disabled (`android.builtInKotlin=false`) because KSP 2.3.1 requires the separate Kotlin plugin
+- `android.disallowKotlinSourceSets=false` is needed for KSP generated sources with AGP 9
+- `kotlin.compose` plugin is applied separately for Compose compiler support
+- `BatteryManager.BATTERY_PROPERTY_CHARGING_CYCLE_COUNT` and `STATE_OF_HEALTH` are not in the public SDK — use raw integer constants (8 and 12)
+- Pull-to-refresh uses `PullToRefreshBox` (not the deprecated `PullToRefreshContainer`)
+- Vico 3.x removed the `core` module (merged into `views`); only `compose` and `compose-m3` are needed
+
 ## Important Notes
 
 - This is an Android-only app — no iOS, no cross-platform
 - Privacy-first: no analytics, no tracking, no account system, no network calls except optional latency ping
 - All data stays on device
 - The spec file `device-health-monitor-spec.md` in the repo root contains the full feature specification — refer to it for detailed feature requirements and UI design guidelines
+- The roadmap and next steps are documented in `docs/plans/2026-03-10-phase1-completion-and-roadmap.md`
