@@ -67,6 +67,10 @@ play-services-ads = { group = "com.google.android.gms", name = "play-services-ad
 # Google Play Billing
 billing = { group = "com.android.billingclient", name = "billing-ktx", version = "8.3.0" }
 
+# Glance (Compose widgets)
+glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version = "1.1.1" }
+glance-material3 = { group = "androidx.glance", name = "glance-material3", version = "1.1.1" }
+
 # Gson for JSON serialization
 gson = { group = "com.google.code.gson", name = "gson", version = "2.11.0" }
 

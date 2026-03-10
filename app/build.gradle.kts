@@ -104,6 +104,10 @@ dependencies {
     // Google Play Billing
     implementation(libs.billing)
 
+    // Glance (home screen widgets)
+    implementation(libs.glance.appwidget)
+    implementation(libs.glance.material3)
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)

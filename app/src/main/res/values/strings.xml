@@ -161,6 +161,13 @@
     <string name="more_storage">Storage</string>
     <string name="more_settings">Settings</string>
 
+    <!-- Widgets -->
+    <string name="widget_battery_name">Battery Status</string>
+    <string name="widget_battery_description">Shows battery level, temperature, and current</string>
+    <string name="widget_health_name">Device Health</string>
+    <string name="widget_health_description">Shows overall health score with category indicators</string>
+    <string name="widget_pro_required">Pro required</string>
+
     <!-- General -->
     <string name="loading">Loading…</string>
     <string name="error_generic">Something went wrong</string>

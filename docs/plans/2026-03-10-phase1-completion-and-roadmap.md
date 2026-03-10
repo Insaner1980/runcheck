@@ -1,10 +1,10 @@
 # DevicePulse — Phase 1 Completion & Roadmap
 
 **Päivämäärä:** 2026-03-10
-**Tila:** Phase 1 MVP kääntyy ja testit menevät läpi
+**Tila:** Phase 2 käynnissä (Session I seuraavaksi)
 **Repo:** https://github.com/Insaner1980/DevicePulse
 
-### Toteutetut korjaukset (Sessio A + D):
+### Toteutetut korjaukset (Phase 1 — Sessiot A-D):
 - [x] Gradle wrapper 9.4.0 luotu
 - [x] `.gitignore` lisätty
 - [x] `settings.gradle.kts` korjattu (`dependencyResolutionManagement`)
@@ -18,7 +18,18 @@
 - [x] Roboto Mono -fonttitiedosto ladattu
 - [x] `local.properties` luotu SDK-polulla
 - [x] **BUILD SUCCESSFUL** — 21MB debug APK
-- [x] **Kaikki 9 yksikkötestiä menevät läpi**
+- [x] **29 yksikkötestiä menevät läpi**
+
+### Toteutetut Phase 2 -ominaisuudet (Sessiot E-H):
+- [x] Sparkline-kaaviot dashboard-kortteihin (akku + lämpötila)
+- [x] Pull-to-refresh korjattu (LaunchedEffect-pohjainen state tracking)
+- [x] AdMob SDK 25.0.0 integraatio (bannerimainos detail-näyttöihin, ei dashboardiin)
+- [x] AdBanner-composable Hilt-injektoidulla Pro-tarkistuksella
+- [x] Google Play Billing Library 8.3.0 integraatio
+- [x] ProStatusRepository toteutettu oikeasti (ei enää stub)
+- [x] Settings: "Upgrade to Pro" -osio hintoineen
+- [x] HistoryPeriod: 24h / Week / Month / All -aikajännevalinta
+- [x] Pro-käyttäjien laajennettu historia (FilterChip-napit)
 
 ---
 
