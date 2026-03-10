@@ -1,0 +1,158 @@
+package com.devicepulse.data.network
+
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.wifi.WifiManager
+import android.telephony.TelephonyManager
+import com.devicepulse.domain.model.ConnectionType
+import com.devicepulse.domain.model.SignalQuality
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class NetworkDataSource @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+
+    private val connectivityManager =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    private val wifiManager =
+        context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+    private val telephonyManager =
+        context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+
+    fun getNetworkInfo(): Flow<NetworkInfo> = callbackFlow {
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onCapabilitiesChanged(
+                network: Network,
+                capabilities: NetworkCapabilities
+            ) {
+                trySend(buildNetworkInfo(capabilities))
+            }
+
+            override fun onLost(network: Network) {
+                trySend(NetworkInfo.disconnected())
+            }
+        }
+
+        connectivityManager.registerDefaultNetworkCallback(callback)
+
+        // Emit initial state
+        val activeNetwork = connectivityManager.activeNetwork
+        val capabilities = activeNetwork?.let {
+            connectivityManager.getNetworkCapabilities(it)
+        }
+        trySend(
+            if (capabilities != null) buildNetworkInfo(capabilities)
+            else NetworkInfo.disconnected()
+        )
+
+        awaitClose { connectivityManager.unregisterNetworkCallback(callback) }
+    }
+
+    private fun buildNetworkInfo(capabilities: NetworkCapabilities): NetworkInfo {
+        val isWifi = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+        val isCellular = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+
+        val connectionType = when {
+            isWifi -> ConnectionType.WIFI
+            isCellular -> ConnectionType.CELLULAR
+            else -> ConnectionType.NONE
+        }
+
+        val signalDbm = capabilities.signalStrength
+        val signalQuality = classifySignal(signalDbm, connectionType)
+
+        val wifiInfo = if (isWifi) getWifiDetails() else null
+        val cellInfo = if (isCellular) getCellularDetails() else null
+
+        return NetworkInfo(
+            connectionType = connectionType,
+            signalDbm = signalDbm,
+            signalQuality = signalQuality,
+            wifiSsid = wifiInfo?.ssid,
+            wifiSpeedMbps = wifiInfo?.speedMbps,
+            wifiFrequencyMhz = wifiInfo?.frequencyMhz,
+            carrier = cellInfo?.carrier,
+            networkSubtype = cellInfo?.networkType
+        )
+    }
+
+    @Suppress("DEPRECATION")
+    private fun getWifiDetails(): WifiDetails? {
+        val info = wifiManager.connectionInfo ?: return null
+        return WifiDetails(
+            ssid = info.ssid?.removeSurrounding("\"") ?: "Unknown",
+            speedMbps = info.linkSpeed,
+            frequencyMhz = info.frequency
+        )
+    }
+
+    private fun getCellularDetails(): CellularDetails? {
+        return CellularDetails(
+            carrier = telephonyManager?.networkOperatorName ?: "Unknown",
+            networkType = getNetworkTypeName()
+        )
+    }
+
+    @Suppress("DEPRECATION")
+    private fun getNetworkTypeName(): String {
+        return when (telephonyManager?.dataNetworkType) {
+            TelephonyManager.NETWORK_TYPE_NR -> "5G NR"
+            TelephonyManager.NETWORK_TYPE_LTE -> "4G LTE"
+            TelephonyManager.NETWORK_TYPE_HSPAP,
+            TelephonyManager.NETWORK_TYPE_HSPA -> "3G HSPA"
+            TelephonyManager.NETWORK_TYPE_UMTS -> "3G UMTS"
+            TelephonyManager.NETWORK_TYPE_EDGE -> "2G EDGE"
+            TelephonyManager.NETWORK_TYPE_GPRS -> "2G GPRS"
+            else -> "Unknown"
+        }
+    }
+
+    private fun classifySignal(dbm: Int, type: ConnectionType): SignalQuality {
+        if (type == ConnectionType.NONE) return SignalQuality.NO_SIGNAL
+        return when {
+            dbm >= -50 -> SignalQuality.EXCELLENT
+            dbm >= -70 -> SignalQuality.GOOD
+            dbm >= -85 -> SignalQuality.FAIR
+            dbm >= -100 -> SignalQuality.POOR
+            else -> SignalQuality.NO_SIGNAL
+        }
+    }
+
+    data class NetworkInfo(
+        val connectionType: ConnectionType,
+        val signalDbm: Int,
+        val signalQuality: SignalQuality,
+        val wifiSsid: String? = null,
+        val wifiSpeedMbps: Int? = null,
+        val wifiFrequencyMhz: Int? = null,
+        val carrier: String? = null,
+        val networkSubtype: String? = null
+    ) {
+        companion object {
+            fun disconnected() = NetworkInfo(
+                connectionType = ConnectionType.NONE,
+                signalDbm = -999,
+                signalQuality = SignalQuality.NO_SIGNAL
+            )
+        }
+    }
+
+    private data class WifiDetails(
+        val ssid: String,
+        val speedMbps: Int,
+        val frequencyMhz: Int
+    )
+
+    private data class CellularDetails(
+        val carrier: String,
+        val networkType: String
+    )
+}

@@ -1,0 +1,54 @@
+package com.devicepulse.service.monitor
+
+import android.content.Context
+import androidx.hilt.work.HiltWorker
+import androidx.work.CoroutineWorker
+import androidx.work.WorkerParameters
+import com.devicepulse.data.battery.BatteryRepository
+import com.devicepulse.data.network.NetworkRepository
+import com.devicepulse.data.storage.StorageRepository
+import com.devicepulse.data.thermal.ThermalRepository
+import com.devicepulse.domain.usecase.CleanupOldReadingsUseCase
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import kotlinx.coroutines.flow.first
+
+@HiltWorker
+class HealthMonitorWorker @AssistedInject constructor(
+    @Assisted context: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val batteryRepository: BatteryRepository,
+    private val networkRepository: NetworkRepository,
+    private val thermalRepository: ThermalRepository,
+    private val storageRepository: StorageRepository,
+    private val cleanupOldReadings: CleanupOldReadingsUseCase
+) : CoroutineWorker(context, workerParams) {
+
+    override suspend fun doWork(): Result {
+        return try {
+            // Collect one reading from each source
+            val batteryState = batteryRepository.getBatteryState().first()
+            batteryRepository.saveReading(batteryState)
+
+            val networkState = networkRepository.getNetworkState().first()
+            networkRepository.saveReading(networkState)
+
+            val thermalState = thermalRepository.getThermalState().first()
+            thermalRepository.saveReading(thermalState)
+
+            val storageState = storageRepository.getStorageState().first()
+            storageRepository.saveReading(storageState)
+
+            // Clean up old readings based on retention policy
+            cleanupOldReadings()
+
+            Result.success()
+        } catch (e: Exception) {
+            Result.retry()
+        }
+    }
+
+    companion object {
+        const val WORK_NAME = "health_monitor"
+    }
+}
