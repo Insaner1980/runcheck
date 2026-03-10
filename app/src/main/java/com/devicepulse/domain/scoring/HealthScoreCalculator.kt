@@ -94,17 +94,18 @@ class HealthScoreCalculator @Inject constructor() {
         var score = 100
 
         // Signal strength impact (null = unavailable, minor deduction)
+        // 5G NR uses wider dBm range than LTE
         val dbm = network.signalDbm
         score -= if (dbm == null) {
             5 // Unknown signal — connected, so assume OK
         } else when {
-            dbm >= -50 -> 0
-            dbm >= -60 -> 5
-            dbm >= -70 -> 15
-            dbm >= -80 -> 30
-            dbm >= -90 -> 50
-            dbm >= -100 -> 70
-            else -> 90
+            dbm >= -65 -> 0
+            dbm >= -75 -> 5
+            dbm >= -85 -> 10
+            dbm >= -95 -> 20
+            dbm >= -105 -> 30
+            dbm >= -115 -> 50
+            else -> 70
         }
 
         // Latency impact

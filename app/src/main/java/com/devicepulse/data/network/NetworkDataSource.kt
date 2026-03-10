@@ -181,11 +181,13 @@ class NetworkDataSource @Inject constructor(
     private fun classifySignal(dbm: Int?, type: ConnectionType): SignalQuality {
         if (type == ConnectionType.NONE) return SignalQuality.NO_SIGNAL
         if (dbm == null) return SignalQuality.FAIR // Connected but strength unknown
+        // 5G NR operates at wider dBm range than LTE (-120 to -44 typical)
+        // LTE typical range: -110 to -44 dBm
         return when {
-            dbm >= -50 -> SignalQuality.EXCELLENT
-            dbm >= -70 -> SignalQuality.GOOD
-            dbm >= -85 -> SignalQuality.FAIR
-            dbm >= -100 -> SignalQuality.POOR
+            dbm >= -65 -> SignalQuality.EXCELLENT
+            dbm >= -85 -> SignalQuality.GOOD
+            dbm >= -105 -> SignalQuality.FAIR
+            dbm >= -120 -> SignalQuality.POOR
             else -> SignalQuality.NO_SIGNAL
         }
     }

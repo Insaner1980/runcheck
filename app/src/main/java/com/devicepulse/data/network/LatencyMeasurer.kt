@@ -35,8 +35,8 @@ class LatencyMeasurer @Inject constructor() {
     }
 
     companion object {
-        // Google Public DNS — fast, reliable, worldwide
-        private const val DNS_HOST = "8.8.8.8"
+        // Cloudflare DNS — anycast, very low latency globally
+        private const val DNS_HOST = "1.1.1.1"
         private const val DNS_PORT = 53
         private const val TIMEOUT_MS = 3000
         private const val SAMPLE_COUNT = 3

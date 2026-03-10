@@ -111,7 +111,7 @@
     <string name="thermal_throttling">Throttling</string>
     <string name="thermal_throttling_active">Active</string>
     <string name="thermal_throttling_none">None</string>
-    <string name="thermal_cpu_unavailable">CPU temperature not available on this device</string>
+    <string name="thermal_cpu_unavailable">N/A</string>
     <string name="thermal_throttling_log">Throttling Log</string>
     <string name="thermal_event_at">%s</string>
     <string name="thermal_no_events">No throttling events recorded</string>
