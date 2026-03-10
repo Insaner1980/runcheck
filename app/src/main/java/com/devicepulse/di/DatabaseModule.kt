@@ -98,6 +98,33 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Recreate network_readings with nullable signal_dbm (was NOT NULL)
+            db.execSQL(
+                """CREATE TABLE IF NOT EXISTS `network_readings_new` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `timestamp` INTEGER NOT NULL,
+                    `type` TEXT NOT NULL,
+                    `signal_dbm` INTEGER,
+                    `wifi_speed_mbps` INTEGER,
+                    `wifi_frequency` INTEGER,
+                    `carrier` TEXT,
+                    `network_subtype` TEXT,
+                    `latency_ms` INTEGER
+                )"""
+            )
+            db.execSQL(
+                "INSERT INTO `network_readings_new` SELECT * FROM `network_readings`"
+            )
+            db.execSQL("DROP TABLE `network_readings`")
+            db.execSQL("ALTER TABLE `network_readings_new` RENAME TO `network_readings`")
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_network_readings_timestamp` ON `network_readings` (`timestamp`)"
+            )
+        }
+    }
+
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): DevicePulseDatabase {
@@ -106,7 +133,8 @@ object DatabaseModule {
             DevicePulseDatabase::class.java,
             "devicepulse.db"
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            .fallbackToDestructiveMigration()
             .build()
     }
 
