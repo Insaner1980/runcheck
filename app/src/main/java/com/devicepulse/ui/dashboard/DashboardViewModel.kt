@@ -152,9 +152,7 @@ class DashboardViewModel @Inject constructor(
             totalBytes = 0,
             availableBytes = 0,
             usedBytes = 0,
-            usagePercent = 0f,
-            appsBytes = 0,
-            mediaBytes = 0
+            usagePercent = 0f
         )
 
         private val DEFAULT_HEALTH = HealthScore(

@@ -5,13 +5,18 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
+import android.os.Build
+import android.telephony.TelephonyCallback
+import android.telephony.TelephonyDisplayInfo
 import android.telephony.TelephonyManager
+import androidx.annotation.RequiresApi
 import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.SignalQuality
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import java.util.concurrent.Executors
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -96,33 +101,60 @@ class NetworkDataSource @Inject constructor(
         )
     }
 
-    private fun getCellularDetails(): CellularDetails? {
-        return try {
-            CellularDetails(
-                carrier = telephonyManager?.networkOperatorName ?: "Unknown",
-                networkType = getNetworkTypeName()
-            )
-        } catch (_: SecurityException) {
-            CellularDetails(carrier = telephonyManager?.networkOperatorName ?: "Unknown", networkType = "Unknown")
+    // Cached network type name from TelephonyCallback (API 31+)
+    @Volatile
+    private var cachedNetworkTypeName: String = "Unknown"
+
+    init {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            registerTelephonyCallback()
         }
     }
 
-    @Suppress("DEPRECATION")
-    private fun getNetworkTypeName(): String {
-        return try {
-            when (telephonyManager?.dataNetworkType) {
-                TelephonyManager.NETWORK_TYPE_NR -> "5G NR"
-                TelephonyManager.NETWORK_TYPE_LTE -> "4G LTE"
-                TelephonyManager.NETWORK_TYPE_HSPAP,
-                TelephonyManager.NETWORK_TYPE_HSPA -> "3G HSPA"
-                TelephonyManager.NETWORK_TYPE_UMTS -> "3G UMTS"
-                TelephonyManager.NETWORK_TYPE_EDGE -> "2G EDGE"
-                TelephonyManager.NETWORK_TYPE_GPRS -> "2G GPRS"
-                else -> "Unknown"
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun registerTelephonyCallback() {
+        telephonyManager ?: return
+        try {
+            val executor = Executors.newSingleThreadExecutor()
+            val callback = object : TelephonyCallback(), TelephonyCallback.DisplayInfoListener {
+                override fun onDisplayInfoChanged(displayInfo: TelephonyDisplayInfo) {
+                    cachedNetworkTypeName = mapDisplayInfo(displayInfo)
+                }
             }
-        } catch (_: SecurityException) {
-            "Unknown"
+            telephonyManager.registerTelephonyCallback(executor, callback)
+        } catch (_: Exception) {
+            // Ignore if registration fails
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun mapDisplayInfo(info: TelephonyDisplayInfo): String {
+        // Check override type first (e.g. 5G NSA shown as 5G icon)
+        return when (info.overrideNetworkType) {
+            TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA -> "5G"
+            TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_ADVANCED -> "5G+"
+            TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_LTE_ADVANCED_PRO -> "4G+"
+            TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_LTE_CA -> "4G LTE"
+            else -> mapNetworkType(info.networkType)
+        }
+    }
+
+    private fun mapNetworkType(networkType: Int): String = when (networkType) {
+        TelephonyManager.NETWORK_TYPE_NR -> "5G NR"
+        TelephonyManager.NETWORK_TYPE_LTE -> "4G LTE"
+        TelephonyManager.NETWORK_TYPE_HSPAP,
+        TelephonyManager.NETWORK_TYPE_HSPA -> "3G HSPA"
+        TelephonyManager.NETWORK_TYPE_UMTS -> "3G UMTS"
+        TelephonyManager.NETWORK_TYPE_EDGE -> "2G EDGE"
+        TelephonyManager.NETWORK_TYPE_GPRS -> "2G GPRS"
+        else -> "Cellular"
+    }
+
+    private fun getCellularDetails(): CellularDetails {
+        return CellularDetails(
+            carrier = telephonyManager?.networkOperatorName ?: "Unknown",
+            networkType = cachedNetworkTypeName
+        )
     }
 
     private fun classifySignal(dbm: Int?, type: ConnectionType): SignalQuality {

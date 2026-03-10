@@ -58,8 +58,8 @@ class StorageRepository @Inject constructor(
             timestamp = System.currentTimeMillis(),
             totalBytes = state.totalBytes,
             availableBytes = state.availableBytes,
-            appsBytes = state.appsBytes,
-            mediaBytes = state.mediaBytes
+            appsBytes = state.appsBytes ?: 0L,
+            mediaBytes = state.mediaBytes ?: 0L
         )
         storageReadingDao.insert(entity)
     }

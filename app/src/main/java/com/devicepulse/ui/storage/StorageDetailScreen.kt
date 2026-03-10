@@ -117,15 +117,19 @@ private fun StorageContent(
                 value = formatBytes(storage.availableBytes)
             )
 
-            MetricTile(
-                label = stringResource(R.string.storage_apps),
-                value = formatBytes(storage.appsBytes)
-            )
+            storage.appsBytes?.let { bytes ->
+                MetricTile(
+                    label = stringResource(R.string.storage_apps),
+                    value = formatBytes(bytes)
+                )
+            }
 
-            MetricTile(
-                label = stringResource(R.string.storage_media),
-                value = formatBytes(storage.mediaBytes)
-            )
+            storage.mediaBytes?.let { bytes ->
+                MetricTile(
+                    label = stringResource(R.string.storage_media),
+                    value = formatBytes(bytes)
+                )
+            }
 
             storage.fillRateEstimate?.let { estimate ->
                 MetricTile(
