@@ -1,7 +1,7 @@
 package com.devicepulse.domain.usecase
 
-import com.devicepulse.data.storage.StorageRepository
 import com.devicepulse.domain.model.StorageState
+import com.devicepulse.domain.repository.StorageRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 

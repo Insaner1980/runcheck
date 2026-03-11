@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
-import com.devicepulse.data.db.entity.AppBatteryUsageEntity
+import com.devicepulse.domain.model.AppBatteryUsage
 import com.devicepulse.ui.components.AdBanner
 import com.devicepulse.ui.theme.spacing
 
@@ -108,7 +108,7 @@ private fun AppUsageContent(state: AppUsageUiState.Success) {
 }
 
 @Composable
-private fun AppUsageItem(app: AppBatteryUsageEntity, maxTime: Long) {
+private fun AppUsageItem(app: AppBatteryUsage, maxTime: Long) {
     val hours = app.foregroundTimeMs / 3_600_000
     val minutes = (app.foregroundTimeMs % 3_600_000) / 60_000
     val timeText = if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"

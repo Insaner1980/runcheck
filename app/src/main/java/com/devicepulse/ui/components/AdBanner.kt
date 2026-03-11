@@ -11,7 +11,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
-import com.devicepulse.data.billing.ProStatusRepository
+import com.devicepulse.domain.repository.ProStatusProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -20,7 +20,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 
 @HiltViewModel
 class AdViewModel @Inject constructor(
-    proStatusRepository: ProStatusRepository
+    proStatusRepository: ProStatusProvider
 ) : ViewModel() {
     val isPro = proStatusRepository.isProUser
 }

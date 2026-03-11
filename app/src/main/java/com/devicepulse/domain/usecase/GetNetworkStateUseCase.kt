@@ -1,7 +1,7 @@
 package com.devicepulse.domain.usecase
 
-import com.devicepulse.data.network.NetworkRepository
 import com.devicepulse.domain.model.NetworkState
+import com.devicepulse.domain.repository.NetworkRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 

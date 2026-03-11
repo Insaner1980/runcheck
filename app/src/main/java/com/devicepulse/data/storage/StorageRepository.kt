@@ -3,6 +3,8 @@ package com.devicepulse.data.storage
 import com.devicepulse.data.db.dao.StorageReadingDao
 import com.devicepulse.data.db.entity.StorageReadingEntity
 import com.devicepulse.domain.model.StorageState
+import com.devicepulse.domain.repository.StorageReadingData
+import com.devicepulse.domain.repository.StorageRepository as StorageRepositoryContract
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -13,9 +15,9 @@ import javax.inject.Singleton
 class StorageRepository @Inject constructor(
     private val storageDataSource: StorageDataSource,
     private val storageReadingDao: StorageReadingDao
-) {
+) : StorageRepositoryContract {
 
-    fun getStorageState(): Flow<StorageState> = flow {
+    override fun getStorageState(): Flow<StorageState> = flow {
         while (true) {
             val info = storageDataSource.getStorageInfo()
             val usagePercent = if (info.totalBytes > 0) {
@@ -43,17 +45,10 @@ class StorageRepository @Inject constructor(
     }
 
     private suspend fun calculateFillRate(currentInfo: StorageDataSource.StorageInfo): String? {
-        // Compare with oldest reading to estimate fill rate
-        val oneDayAgo = System.currentTimeMillis() - 24 * 60 * 60 * 1000
-        // This is a simplified version; a production version would use historical data
         return null
     }
 
-    fun getReadingsSince(since: Long): Flow<List<StorageReadingEntity>> {
-        return storageReadingDao.getReadingsSince(since)
-    }
-
-    suspend fun saveReading(state: StorageState) {
+    override suspend fun saveReading(state: StorageState) {
         val entity = StorageReadingEntity(
             timestamp = System.currentTimeMillis(),
             totalBytes = state.totalBytes,
@@ -64,7 +59,23 @@ class StorageRepository @Inject constructor(
         storageReadingDao.insert(entity)
     }
 
+    override suspend fun getAllReadings(): List<StorageReadingData> {
+        return storageReadingDao.getAll().map { it.toDomain() }
+    }
+
+    override suspend fun deleteOlderThan(cutoff: Long) {
+        storageReadingDao.deleteOlderThan(cutoff)
+    }
+
     companion object {
         private const val REFRESH_INTERVAL_MS = 30_000L
     }
 }
+
+private fun StorageReadingEntity.toDomain() = StorageReadingData(
+    timestamp = timestamp,
+    totalBytes = totalBytes,
+    availableBytes = availableBytes,
+    appsBytes = appsBytes,
+    mediaBytes = mediaBytes
+)

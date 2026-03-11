@@ -1,0 +1,15 @@
+package com.devicepulse.domain.repository
+
+import com.devicepulse.domain.model.MonitoringInterval
+import com.devicepulse.domain.model.ThemeMode
+import com.devicepulse.domain.model.UserPreferences
+import kotlinx.coroutines.flow.Flow
+
+interface UserPreferencesRepository {
+    fun getPreferences(): Flow<UserPreferences>
+    suspend fun setThemeMode(mode: ThemeMode)
+    suspend fun setAmoledBlack(enabled: Boolean)
+    suspend fun setDynamicColors(enabled: Boolean)
+    suspend fun setMonitoringInterval(interval: MonitoringInterval)
+    suspend fun setNotificationsEnabled(enabled: Boolean)
+}

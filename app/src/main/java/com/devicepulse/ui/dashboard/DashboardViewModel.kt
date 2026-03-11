@@ -2,7 +2,7 @@ package com.devicepulse.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devicepulse.data.db.entity.BatteryReadingEntity
+import com.devicepulse.domain.model.BatteryReading
 import com.devicepulse.domain.model.BatteryState
 import com.devicepulse.domain.model.ChargingStatus
 import com.devicepulse.domain.model.Confidence
@@ -117,7 +117,7 @@ class DashboardViewModel @Inject constructor(
         val network: NetworkState,
         val thermal: ThermalState,
         val storage: StorageState,
-        val history: List<BatteryReadingEntity>
+        val history: List<BatteryReading>
     )
 
     companion object {

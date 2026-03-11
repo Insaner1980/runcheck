@@ -29,17 +29,17 @@ import javax.inject.Singleton
 @Singleton
 class ProStatusRepository @Inject constructor(
     @ApplicationContext private val context: Context
-) : PurchasesUpdatedListener {
+) : PurchasesUpdatedListener, com.devicepulse.domain.repository.ProStatusProvider {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private val _isProState = MutableStateFlow(false)
-    val isProUser: Flow<Boolean> = _isProState.asStateFlow()
+    override val isProUser: Flow<Boolean> = _isProState.asStateFlow()
 
     private var billingClient: BillingClient? = null
     private var cachedProductDetails: com.android.billingclient.api.ProductDetails? = null
 
-    fun isPro(): Boolean = _isProState.value
+    override fun isPro(): Boolean = _isProState.value
 
     fun initialize() {
         billingClient = BillingClient.newBuilder(context)

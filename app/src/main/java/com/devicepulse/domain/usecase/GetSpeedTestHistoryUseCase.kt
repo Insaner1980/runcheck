@@ -1,7 +1,7 @@
 package com.devicepulse.domain.usecase
 
-import com.devicepulse.data.network.SpeedTestRepository
 import com.devicepulse.domain.model.SpeedTestResult
+import com.devicepulse.domain.repository.SpeedTestRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 

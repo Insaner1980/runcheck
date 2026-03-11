@@ -21,9 +21,9 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 @Singleton
 class UserPreferencesRepository @Inject constructor(
     @ApplicationContext private val context: Context
-) {
+) : com.devicepulse.domain.repository.UserPreferencesRepository {
 
-    fun getPreferences(): Flow<UserPreferences> = context.dataStore.data.map { prefs ->
+    override fun getPreferences(): Flow<UserPreferences> = context.dataStore.data.map { prefs ->
         UserPreferences(
             themeMode = prefs[KEY_THEME_MODE]?.let { ThemeMode.valueOf(it) }
                 ?: ThemeMode.SYSTEM,
@@ -36,23 +36,23 @@ class UserPreferencesRepository @Inject constructor(
         )
     }
 
-    suspend fun setThemeMode(mode: ThemeMode) {
+    override suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { it[KEY_THEME_MODE] = mode.name }
     }
 
-    suspend fun setAmoledBlack(enabled: Boolean) {
+    override suspend fun setAmoledBlack(enabled: Boolean) {
         context.dataStore.edit { it[KEY_AMOLED_BLACK] = enabled }
     }
 
-    suspend fun setDynamicColors(enabled: Boolean) {
+    override suspend fun setDynamicColors(enabled: Boolean) {
         context.dataStore.edit { it[KEY_DYNAMIC_COLORS] = enabled }
     }
 
-    suspend fun setMonitoringInterval(interval: MonitoringInterval) {
+    override suspend fun setMonitoringInterval(interval: MonitoringInterval) {
         context.dataStore.edit { it[KEY_MONITORING_INTERVAL] = interval.name }
     }
 
-    suspend fun setNotificationsEnabled(enabled: Boolean) {
+    override suspend fun setNotificationsEnabled(enabled: Boolean) {
         context.dataStore.edit { it[KEY_NOTIFICATIONS] = enabled }
     }
 

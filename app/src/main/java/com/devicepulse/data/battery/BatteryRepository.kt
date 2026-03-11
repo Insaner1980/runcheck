@@ -3,14 +3,15 @@ package com.devicepulse.data.battery
 import com.devicepulse.data.db.dao.BatteryReadingDao
 import com.devicepulse.data.db.entity.BatteryReadingEntity
 import com.devicepulse.data.device.DeviceProfileRepository
+import com.devicepulse.domain.model.BatteryReading
 import com.devicepulse.domain.model.BatteryState
 import com.devicepulse.domain.model.Confidence
 import com.devicepulse.domain.model.MeasuredValue
+import com.devicepulse.domain.repository.BatteryRepository as BatteryRepositoryContract
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,10 +20,10 @@ class BatteryRepository @Inject constructor(
     private val batteryDataSourceFactory: BatteryDataSourceFactory,
     private val deviceProfileRepository: DeviceProfileRepository,
     private val batteryReadingDao: BatteryReadingDao
-) {
+) : BatteryRepositoryContract {
 
-    fun getBatteryState(): Flow<BatteryState> = flow {
-        val profile = deviceProfileRepository.ensureProfile()
+    override fun getBatteryState(): Flow<BatteryState> = flow {
+        val profile = deviceProfileRepository.ensureProfileInternal()
         val source = batteryDataSourceFactory.create(profile)
 
         val stateFlow = combine(
@@ -61,11 +62,13 @@ class BatteryRepository @Inject constructor(
         }.collect { emit(it) }
     }
 
-    fun getReadingsSince(since: Long): Flow<List<BatteryReadingEntity>> {
-        return batteryReadingDao.getReadingsSince(since)
+    override fun getReadingsSince(since: Long): Flow<List<BatteryReading>> {
+        return batteryReadingDao.getReadingsSince(since).map { entities ->
+            entities.map { it.toDomain() }
+        }
     }
 
-    suspend fun saveReading(state: BatteryState) {
+    override suspend fun saveReading(state: BatteryState) {
         val entity = BatteryReadingEntity(
             timestamp = System.currentTimeMillis(),
             level = state.level,
@@ -84,6 +87,14 @@ class BatteryRepository @Inject constructor(
         batteryReadingDao.insert(entity)
     }
 
+    override suspend fun getAllReadings(): List<BatteryReading> {
+        return batteryReadingDao.getAll().map { it.toDomain() }
+    }
+
+    override suspend fun deleteOlderThan(cutoff: Long) {
+        batteryReadingDao.deleteOlderThan(cutoff)
+    }
+
     private data class BatteryStatePartial(
         val level: Int,
         val voltage: Int,
@@ -100,3 +111,18 @@ class BatteryRepository @Inject constructor(
         val healthPct: Int?
     )
 }
+
+private fun BatteryReadingEntity.toDomain() = BatteryReading(
+    id = id,
+    timestamp = timestamp,
+    level = level,
+    voltageMv = voltageMv,
+    temperatureC = temperatureC,
+    currentMa = currentMa,
+    currentConfidence = currentConfidence,
+    status = status,
+    plugType = plugType,
+    health = health,
+    cycleCount = cycleCount,
+    healthPct = healthPct
+)

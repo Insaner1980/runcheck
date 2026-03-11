@@ -3,6 +3,8 @@ package com.devicepulse.data.network
 import com.devicepulse.data.db.dao.NetworkReadingDao
 import com.devicepulse.data.db.entity.NetworkReadingEntity
 import com.devicepulse.domain.model.NetworkState
+import com.devicepulse.domain.repository.NetworkReadingData
+import com.devicepulse.domain.repository.NetworkRepository as NetworkRepositoryContract
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
@@ -14,9 +16,9 @@ class NetworkRepository @Inject constructor(
     private val networkDataSource: NetworkDataSource,
     private val latencyMeasurer: LatencyMeasurer,
     private val networkReadingDao: NetworkReadingDao
-) {
+) : NetworkRepositoryContract {
 
-    fun getNetworkState(): Flow<NetworkState> = combine(
+    override fun getNetworkState(): Flow<NetworkState> = combine(
         networkDataSource.getNetworkInfo(),
         latencyFlow()
     ) { info, latency ->
@@ -37,11 +39,7 @@ class NetworkRepository @Inject constructor(
         emit(latencyMeasurer.measureLatency())
     }
 
-    fun getReadingsSince(since: Long): Flow<List<NetworkReadingEntity>> {
-        return networkReadingDao.getReadingsSince(since)
-    }
-
-    suspend fun saveReading(state: NetworkState) {
+    override suspend fun saveReading(state: NetworkState) {
         val entity = NetworkReadingEntity(
             timestamp = System.currentTimeMillis(),
             type = state.connectionType.name,
@@ -54,4 +52,23 @@ class NetworkRepository @Inject constructor(
         )
         networkReadingDao.insert(entity)
     }
+
+    override suspend fun getAllReadings(): List<NetworkReadingData> {
+        return networkReadingDao.getAll().map { it.toDomain() }
+    }
+
+    override suspend fun deleteOlderThan(cutoff: Long) {
+        networkReadingDao.deleteOlderThan(cutoff)
+    }
 }
+
+private fun NetworkReadingEntity.toDomain() = NetworkReadingData(
+    timestamp = timestamp,
+    type = type,
+    signalDbm = signalDbm,
+    wifiSpeedMbps = wifiSpeedMbps,
+    wifiFrequency = wifiFrequency,
+    carrier = carrier,
+    networkSubtype = networkSubtype,
+    latencyMs = latencyMs
+)
