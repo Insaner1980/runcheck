@@ -63,8 +63,10 @@ class HealthScoreCalculator @Inject constructor() {
         score -= when {
             temp < 0 -> 30
             temp < 10 -> 15
-            temp in 10f..35f -> 0
-            temp in 35f..40f -> 10
+            temp < 20f -> 6
+            temp < 32f -> 0
+            temp < 35f -> 3
+            temp < 40f -> 10
             temp in 40f..45f -> 25
             else -> 40
         }
@@ -81,10 +83,15 @@ class HealthScoreCalculator @Inject constructor() {
         // Health percent if available
         battery.healthPercent?.let { pct ->
             score -= when {
-                pct >= 80 -> 0
-                pct >= 60 -> 15
-                pct >= 40 -> 30
-                else -> 50
+                pct >= 95 -> 0
+                pct >= 90 -> 3
+                pct >= 85 -> 7
+                pct >= 80 -> 12
+                pct >= 75 -> 18
+                pct >= 70 -> 24
+                pct >= 60 -> 35
+                pct >= 50 -> 45
+                else -> 60
             }
         }
 
@@ -196,8 +203,11 @@ class HealthScoreCalculator @Inject constructor() {
         val temp = thermal.batteryTempC
         score -= when {
             temp < 10 -> 20
-            temp in 10f..35f -> 0
-            temp in 35f..40f -> 15
+            temp < 20f -> 8
+            temp < 30f -> 0
+            temp < 33f -> 2
+            temp < 35f -> 5
+            temp < 40f -> 15
             temp in 40f..45f -> 35
             else -> 60
         }
@@ -211,6 +221,8 @@ class HealthScoreCalculator @Inject constructor() {
                 cpuTemp < 80 -> 30
                 else -> 50
             }
+        } ?: run {
+            score -= 2
         }
 
         // Thermal status impact
@@ -233,6 +245,8 @@ class HealthScoreCalculator @Inject constructor() {
         // Usage percentage impact
         val usagePct = storage.usagePercent
         score -= when {
+            usagePct < 10 -> 4
+            usagePct < 25 -> 2
             usagePct < 50 -> 0
             usagePct < 70 -> 5
             usagePct < 80 -> 15

@@ -10,7 +10,6 @@ import com.devicepulse.domain.model.ChargingStatus
 import com.devicepulse.domain.model.Confidence
 import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.HealthScore
-import com.devicepulse.domain.model.HealthStatus
 import com.devicepulse.domain.model.MeasuredValue
 import com.devicepulse.domain.model.NetworkState
 import com.devicepulse.domain.model.PlugType
@@ -18,7 +17,7 @@ import com.devicepulse.domain.model.SignalQuality
 import com.devicepulse.domain.model.StorageState
 import com.devicepulse.domain.model.ThermalState
 import com.devicepulse.domain.model.ThermalStatus
-import com.devicepulse.domain.usecase.CalculateHealthScoreUseCase
+import com.devicepulse.domain.scoring.HealthScoreCalculator
 import com.devicepulse.domain.usecase.GetBatteryStateUseCase
 import com.devicepulse.domain.usecase.GetNetworkStateUseCase
 import com.devicepulse.domain.usecase.GetStorageStateUseCase
@@ -29,21 +28,23 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val calculateHealthScore: CalculateHealthScoreUseCase,
     private val getBatteryState: GetBatteryStateUseCase,
     private val getNetworkState: GetNetworkStateUseCase,
     private val getThermalState: GetThermalStateUseCase,
     private val getStorageState: GetStorageStateUseCase,
-    private val proStatusProvider: ProStatusProvider
+    private val proStatusProvider: ProStatusProvider,
+    private val healthScoreCalculator: HealthScoreCalculator
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    private var loadJob: Job? = null
 
     init {
         loadHome()
@@ -54,7 +55,8 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun loadHome() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             val batteryFlow = getBatteryState()
                 .catch { e -> Log.e(TAG, "Battery flow failed", e); emit(DEFAULT_BATTERY) }
             val networkFlow = getNetworkState()
@@ -63,18 +65,26 @@ class HomeViewModel @Inject constructor(
                 .catch { e -> Log.e(TAG, "Thermal flow failed", e); emit(DEFAULT_THERMAL) }
             val storageFlow = getStorageState()
                 .catch { e -> Log.e(TAG, "Storage flow failed", e); emit(DEFAULT_STORAGE) }
-            val healthFlow = calculateHealthScore()
-                .catch { emit(DEFAULT_HEALTH) }
             val proFlow = proStatusProvider.isProUser
 
             val dataFlow = combine(
                 batteryFlow,
                 networkFlow,
                 thermalFlow,
-                storageFlow,
-                healthFlow
-            ) { battery, network, thermal, storage, health ->
-                DataSnapshot(battery, network, thermal, storage, health)
+                storageFlow
+            ) { battery, network, thermal, storage ->
+                DataSnapshot(
+                    battery = battery,
+                    network = network,
+                    thermal = thermal,
+                    storage = storage,
+                    health = healthScoreCalculator.calculate(
+                        battery = battery,
+                        network = network,
+                        thermal = thermal,
+                        storage = storage
+                    )
+                )
             }
 
             combine(dataFlow, proFlow) { data, isPro ->
@@ -134,15 +144,6 @@ class HomeViewModel @Inject constructor(
             availableBytes = 0,
             usedBytes = 0,
             usagePercent = 0f
-        )
-
-        private val DEFAULT_HEALTH = HealthScore(
-            overallScore = 50,
-            batteryScore = 50,
-            networkScore = 50,
-            thermalScore = 50,
-            storageScore = 50,
-            status = HealthStatus.FAIR
         )
     }
 }

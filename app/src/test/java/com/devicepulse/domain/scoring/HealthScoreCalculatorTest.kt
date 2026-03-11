@@ -174,6 +174,51 @@ class HealthScoreCalculatorTest {
     }
 
     @Test
+    fun `battery health percent of 80 is not treated as perfect`() {
+        val score = calculator.calculate(
+            healthyBattery().copy(
+                level = 80,
+                temperatureC = 33.6f,
+                healthPercent = 80
+            ),
+            healthyNetwork(),
+            healthyThermal(),
+            healthyStorage()
+        )
+        assertTrue("Expected battery score below 100, got ${score.batteryScore}", score.batteryScore < 100)
+    }
+
+    @Test
+    fun `good thermal reading is not automatically perfect`() {
+        val score = calculator.calculate(
+            healthyBattery(),
+            healthyNetwork(),
+            healthyThermal().copy(
+                batteryTempC = 33.6f,
+                cpuTempC = null,
+                thermalStatus = ThermalStatus.NONE
+            ),
+            healthyStorage()
+        )
+        assertTrue("Expected thermal score below 100, got ${score.thermalScore}", score.thermalScore < 100)
+    }
+
+    @Test
+    fun `very low storage usage is excellent but not always perfect`() {
+        val score = calculator.calculate(
+            healthyBattery(),
+            healthyNetwork(),
+            healthyThermal(),
+            healthyStorage().copy(
+                usagePercent = 21.3f,
+                availableBytes = 100_736_000_000L,
+                usedBytes = 27_264_000_000L
+            )
+        )
+        assertTrue("Expected storage score below 100, got ${score.storageScore}", score.storageScore < 100)
+    }
+
+    @Test
     fun `status thresholds are correct`() {
         assertEquals(HealthStatus.HEALTHY, com.devicepulse.domain.model.HealthScore.statusFromScore(100))
         assertEquals(HealthStatus.HEALTHY, com.devicepulse.domain.model.HealthScore.statusFromScore(75))

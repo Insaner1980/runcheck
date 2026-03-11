@@ -10,7 +10,7 @@
     <string name="nav_more">Lisää</string>
 
     <!-- Home Screen -->
-    <string name="home_dashboard_card">Etusivu</string>
+    <string name="home_dashboard_card">Kunto</string>
     <string name="home_battery_card">Akku</string>
     <string name="home_network_card">Verkko</string>
     <string name="home_thermal_card">Lämpötila</string>
@@ -21,9 +21,11 @@
     <string name="home_pro_subtitle">Trendit, laturitestit, oivallukset ja muuta</string>
     <string name="home_insights_title">Oivallukset</string>
     <string name="home_locked_pro">Pro</string>
+    <string name="home_chargers_desc">Testaa ja vertaile latureitasi</string>
+    <string name="home_app_usage_desc">Katso mitkä sovellukset kuluttavat akkua</string>
 
     <!-- Dashboard -->
-    <string name="dashboard_title">Etusivu</string>
+    <string name="dashboard_title">Terveys</string>
     <string name="dashboard_health_score">Kuntopisteet</string>
     <string name="dashboard_battery_card">Akku</string>
     <string name="dashboard_network_card">Verkko</string>
@@ -35,6 +37,17 @@
     <string name="status_fair">Kohtalainen</string>
     <string name="status_poor">Heikko</string>
     <string name="status_critical">Kriittinen</string>
+
+    <!-- Health Score Labels -->
+    <string name="score_excellent">Erinomainen</string>
+    <string name="score_good">Hyvä</string>
+    <string name="score_fair">Kohtalainen</string>
+    <string name="score_poor">Heikko</string>
+
+    <!-- Thermal Labels -->
+    <string name="thermal_cool">Viileä</string>
+    <string name="thermal_warm">Lämmin</string>
+    <string name="thermal_hot">Kuuma</string>
 
     <!-- Confidence Badges -->
     <string name="confidence_accurate">Tarkka</string>
@@ -50,6 +63,7 @@
     <string name="battery_status">Lataustila</string>
     <string name="battery_plug_type">Laturin tyyppi</string>
     <string name="battery_health">Akun kunto</string>
+    <string name="battery_health_unavailable_short">Kuntotieto ei saatavilla</string>
     <string name="battery_technology">Teknologia</string>
     <string name="battery_cycle_count">Lataussyklit</string>
     <string name="battery_health_percent">Kuntoprosentti</string>
