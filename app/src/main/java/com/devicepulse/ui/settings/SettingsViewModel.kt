@@ -1,16 +1,14 @@
 package com.devicepulse.ui.settings
 
 import android.app.Activity
-import android.content.ContentValues
 import android.content.Context
-import android.os.Environment
-import android.provider.MediaStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.devicepulse.R
 import com.devicepulse.data.billing.ProStatusRepository
-import com.devicepulse.data.device.DeviceProfileRepository
-import com.devicepulse.data.preferences.UserPreferencesRepository
+import com.devicepulse.domain.repository.DeviceProfileRepository
+import com.devicepulse.domain.repository.FileExportRepository
+import com.devicepulse.domain.repository.UserPreferencesRepository
 import com.devicepulse.domain.model.MonitoringInterval
 import com.devicepulse.domain.model.ThemeMode
 import com.devicepulse.domain.usecase.ExportDataUseCase
@@ -29,7 +27,8 @@ class SettingsViewModel @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val deviceProfileRepository: DeviceProfileRepository,
     private val proStatusRepository: ProStatusRepository,
-    private val exportDataUseCase: ExportDataUseCase
+    private val exportDataUseCase: ExportDataUseCase,
+    private val fileExportRepository: FileExportRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -83,28 +82,14 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { preferencesRepository.setNotificationsEnabled(enabled) }
     }
 
-    /** Exports all reading data as CSV files to the Downloads folder via MediaStore. */
+    /** Exports all reading data as CSV files to the Downloads folder via FileExportRepository. */
     fun exportData() {
         viewModelScope.launch {
             try {
                 val csvFiles = exportDataUseCase.exportAllCsv()
-                val resolver = context.contentResolver
 
                 for ((fileName, content) in csvFiles) {
-                    val contentValues = ContentValues().apply {
-                        put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-                        put(MediaStore.Downloads.MIME_TYPE, "text/csv")
-                        put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-                    }
-                    val uri = resolver.insert(
-                        MediaStore.Downloads.EXTERNAL_CONTENT_URI,
-                        contentValues
-                    )
-                    uri?.let {
-                        resolver.openOutputStream(it)?.use { stream ->
-                            stream.write(content.toByteArray())
-                        }
-                    }
+                    fileExportRepository.saveCsvToDownloads(fileName, content)
                 }
 
                 _uiState.value = _uiState.value.copy(

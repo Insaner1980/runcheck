@@ -1,23 +1,19 @@
 package com.devicepulse.domain.usecase
 
-import com.devicepulse.data.db.dao.BatteryReadingDao
-import com.devicepulse.data.db.dao.NetworkReadingDao
-import com.devicepulse.data.db.dao.StorageReadingDao
-import com.devicepulse.data.db.dao.ThermalReadingDao
+import com.devicepulse.domain.repository.BatteryRepository
+import com.devicepulse.domain.repository.NetworkRepository
+import com.devicepulse.domain.repository.StorageRepository
+import com.devicepulse.domain.repository.ThermalRepository
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
-/**
- * Exports stored device readings as CSV strings.
- * Timestamps are formatted as ISO 8601 in the device's local timezone.
- */
 class ExportDataUseCase @Inject constructor(
-    private val batteryReadingDao: BatteryReadingDao,
-    private val networkReadingDao: NetworkReadingDao,
-    private val thermalReadingDao: ThermalReadingDao,
-    private val storageReadingDao: StorageReadingDao
+    private val batteryRepository: BatteryRepository,
+    private val networkRepository: NetworkRepository,
+    private val thermalRepository: ThermalRepository,
+    private val storageRepository: StorageRepository
 ) {
 
     private val isoFormatter: DateTimeFormatter =
@@ -26,7 +22,6 @@ class ExportDataUseCase @Inject constructor(
     private fun formatTimestamp(epochMs: Long): String =
         isoFormatter.format(Instant.ofEpochMilli(epochMs))
 
-    /** Escapes a CSV field value, wrapping in quotes if it contains commas or quotes. */
     private fun escapeCsv(value: String?): String {
         if (value == null) return ""
         return if (value.contains(',') || value.contains('"') || value.contains('\n')) {
@@ -36,9 +31,8 @@ class ExportDataUseCase @Inject constructor(
         }
     }
 
-    /** Returns a CSV string of all battery readings. */
     suspend fun exportBatteryCsv(): String {
-        val readings = batteryReadingDao.getAll()
+        val readings = batteryRepository.getAllReadings()
         val sb = StringBuilder()
         sb.appendLine("timestamp,level,voltage_mv,temperature_c,current_ma,current_confidence,status,plug_type,health,cycle_count,health_pct")
         for (r in readings) {
@@ -51,9 +45,8 @@ class ExportDataUseCase @Inject constructor(
         return sb.toString()
     }
 
-    /** Returns a CSV string of all network readings. */
     suspend fun exportNetworkCsv(): String {
-        val readings = networkReadingDao.getAll()
+        val readings = networkRepository.getAllReadings()
         val sb = StringBuilder()
         sb.appendLine("timestamp,type,signal_dbm,wifi_speed_mbps,wifi_frequency,carrier,network_subtype,latency_ms")
         for (r in readings) {
@@ -66,9 +59,8 @@ class ExportDataUseCase @Inject constructor(
         return sb.toString()
     }
 
-    /** Returns a CSV string of all thermal readings. */
     suspend fun exportThermalCsv(): String {
-        val readings = thermalReadingDao.getAll()
+        val readings = thermalRepository.getAllReadings()
         val sb = StringBuilder()
         sb.appendLine("timestamp,battery_temp_c,cpu_temp_c,thermal_status,throttling")
         for (r in readings) {
@@ -80,9 +72,8 @@ class ExportDataUseCase @Inject constructor(
         return sb.toString()
     }
 
-    /** Returns a CSV string of all storage readings. */
     suspend fun exportStorageCsv(): String {
-        val readings = storageReadingDao.getAll()
+        val readings = storageRepository.getAllReadings()
         val sb = StringBuilder()
         sb.appendLine("timestamp,total_bytes,available_bytes,apps_bytes,media_bytes")
         for (r in readings) {
@@ -94,7 +85,6 @@ class ExportDataUseCase @Inject constructor(
         return sb.toString()
     }
 
-    /** Returns a map of filename to CSV content for all reading types. */
     suspend fun exportAllCsv(): Map<String, String> = mapOf(
         "devicepulse_battery.csv" to exportBatteryCsv(),
         "devicepulse_network.csv" to exportNetworkCsv(),

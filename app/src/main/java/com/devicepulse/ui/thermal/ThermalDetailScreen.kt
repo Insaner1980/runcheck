@@ -28,7 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
-import com.devicepulse.data.db.entity.ThrottlingEventEntity
+import com.devicepulse.domain.model.ThrottlingEvent
 import com.devicepulse.domain.model.ThermalStatus
 import com.devicepulse.ui.components.HeatStrip
 import com.devicepulse.ui.components.MetricTile
@@ -160,7 +160,7 @@ private fun ThermalContent(
 }
 
 @Composable
-private fun ThrottlingLogSection(events: List<ThrottlingEventEntity>) {
+private fun ThrottlingLogSection(events: List<ThrottlingEvent>) {
     Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
         Text(
             text = stringResource(R.string.thermal_throttling_log),
@@ -183,7 +183,7 @@ private fun ThrottlingLogSection(events: List<ThrottlingEventEntity>) {
 }
 
 @Composable
-private fun ThrottlingEventItem(event: ThrottlingEventEntity) {
+private fun ThrottlingEventItem(event: ThrottlingEvent) {
     val dateFormat = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()) }
     val formattedTime = remember(event.timestamp) {
         dateFormat.format(Date(event.timestamp))

@@ -1,19 +1,15 @@
 package com.devicepulse.domain.usecase
 
-import com.devicepulse.data.db.dao.ChargerDao
-import com.devicepulse.data.db.entity.ChargingSessionEntity
+import com.devicepulse.domain.model.ChargingSession
+import com.devicepulse.domain.repository.ChargerRepository
 import javax.inject.Inject
 
 class ManageChargingSessionUseCase @Inject constructor(
-    private val chargerDao: ChargerDao
+    private val chargerRepository: ChargerRepository
 ) {
 
-    /**
-     * Start a new charging session for the given charger.
-     * Returns the ID of the newly created session.
-     */
     suspend fun startSession(chargerId: Long, level: Int, plugType: String): Long {
-        val session = ChargingSessionEntity(
+        val session = ChargingSession(
             chargerId = chargerId,
             startTime = System.currentTimeMillis(),
             endTime = null,
@@ -25,12 +21,9 @@ class ManageChargingSessionUseCase @Inject constructor(
             avgPowerMw = null,
             plugType = plugType
         )
-        return chargerDao.insertSession(session)
+        return chargerRepository.insertSession(session)
     }
 
-    /**
-     * Complete an active charging session with the final measurements.
-     */
     suspend fun completeSession(
         sessionId: Long,
         endLevel: Int,
@@ -39,7 +32,7 @@ class ManageChargingSessionUseCase @Inject constructor(
         avgVoltageMv: Int?,
         avgPowerMw: Int?
     ) {
-        chargerDao.completeSession(
+        chargerRepository.completeSession(
             id = sessionId,
             endTime = System.currentTimeMillis(),
             endLevel = endLevel,
@@ -50,10 +43,7 @@ class ManageChargingSessionUseCase @Inject constructor(
         )
     }
 
-    /**
-     * Get the currently active (incomplete) charging session, if any.
-     */
-    suspend fun getActiveSession(): ChargingSessionEntity? {
-        return chargerDao.getActiveSession()
+    suspend fun getActiveSession(): ChargingSession? {
+        return chargerRepository.getActiveSession()
     }
 }

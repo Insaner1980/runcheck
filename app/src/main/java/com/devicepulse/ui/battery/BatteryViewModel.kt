@@ -3,8 +3,8 @@ package com.devicepulse.ui.battery
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devicepulse.data.billing.ProStatusRepository
 import com.devicepulse.domain.model.HistoryPeriod
+import com.devicepulse.domain.repository.ProStatusProvider
 import com.devicepulse.domain.usecase.GetBatteryHistoryUseCase
 import com.devicepulse.domain.usecase.GetBatteryStateUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,7 +20,7 @@ import javax.inject.Inject
 class BatteryViewModel @Inject constructor(
     private val getBatteryState: GetBatteryStateUseCase,
     private val getBatteryHistory: GetBatteryHistoryUseCase,
-    private val proStatusRepository: ProStatusRepository
+    private val proStatusProvider: ProStatusProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<BatteryUiState>(BatteryUiState.Loading)
@@ -46,7 +46,7 @@ class BatteryViewModel @Inject constructor(
             combine(
                 getBatteryState(),
                 getBatteryHistory(selectedPeriod).catch { emit(emptyList()) },
-                proStatusRepository.isProUser
+                proStatusProvider.isProUser
             ) { state, history, isPro ->
                 BatteryUiState.Success(
                     batteryState = state,

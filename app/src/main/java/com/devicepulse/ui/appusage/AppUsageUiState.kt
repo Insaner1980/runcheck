@@ -1,11 +1,11 @@
 package com.devicepulse.ui.appusage
 
-import com.devicepulse.data.db.entity.AppBatteryUsageEntity
+import com.devicepulse.domain.model.AppBatteryUsage
 
 sealed interface AppUsageUiState {
     data object Loading : AppUsageUiState
     data class Success(
-        val apps: List<AppBatteryUsageEntity>
+        val apps: List<AppBatteryUsage>
     ) : AppUsageUiState
     data class Error(val message: String) : AppUsageUiState
 }

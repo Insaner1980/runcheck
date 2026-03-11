@@ -3,7 +3,7 @@ package com.devicepulse.service.monitor
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.devicepulse.data.preferences.UserPreferencesRepository
+import com.devicepulse.domain.repository.UserPreferencesRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

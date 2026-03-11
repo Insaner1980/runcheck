@@ -1,11 +1,11 @@
 package com.devicepulse.domain.usecase
 
-import com.devicepulse.data.db.dao.ThrottlingEventDao
-import com.devicepulse.data.db.entity.ThrottlingEventEntity
+import com.devicepulse.domain.model.ThrottlingEvent
+import com.devicepulse.domain.repository.ThrottlingRepository
 import javax.inject.Inject
 
 class RecordThrottlingEventUseCase @Inject constructor(
-    private val throttlingEventDao: ThrottlingEventDao
+    private val throttlingRepository: ThrottlingRepository
 ) {
     suspend operator fun invoke(
         thermalStatus: String,
@@ -13,7 +13,7 @@ class RecordThrottlingEventUseCase @Inject constructor(
         cpuTempC: Float?,
         foregroundApp: String?
     ) {
-        val event = ThrottlingEventEntity(
+        val event = ThrottlingEvent(
             timestamp = System.currentTimeMillis(),
             thermalStatus = thermalStatus,
             batteryTempC = batteryTempC,
@@ -21,6 +21,6 @@ class RecordThrottlingEventUseCase @Inject constructor(
             foregroundApp = foregroundApp,
             durationMs = null
         )
-        throttlingEventDao.insert(event)
+        throttlingRepository.insert(event)
     }
 }

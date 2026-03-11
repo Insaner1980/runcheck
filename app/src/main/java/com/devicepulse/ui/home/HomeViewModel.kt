@@ -3,7 +3,7 @@ package com.devicepulse.ui.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devicepulse.data.billing.ProStatusRepository
+import com.devicepulse.domain.repository.ProStatusProvider
 import com.devicepulse.domain.model.BatteryHealth
 import com.devicepulse.domain.model.BatteryState
 import com.devicepulse.domain.model.ChargingStatus
@@ -39,7 +39,7 @@ class HomeViewModel @Inject constructor(
     private val getNetworkState: GetNetworkStateUseCase,
     private val getThermalState: GetThermalStateUseCase,
     private val getStorageState: GetStorageStateUseCase,
-    private val proStatusRepository: ProStatusRepository
+    private val proStatusProvider: ProStatusProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -65,7 +65,7 @@ class HomeViewModel @Inject constructor(
                 .catch { e -> Log.e(TAG, "Storage flow failed", e); emit(DEFAULT_STORAGE) }
             val healthFlow = calculateHealthScore()
                 .catch { emit(DEFAULT_HEALTH) }
-            val proFlow = proStatusRepository.isProUser
+            val proFlow = proStatusProvider.isProUser
 
             val dataFlow = combine(
                 batteryFlow,

@@ -2,8 +2,7 @@ package com.devicepulse.ui.charger
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devicepulse.data.db.dao.ChargerDao
-import com.devicepulse.data.db.entity.ChargerProfileEntity
+import com.devicepulse.domain.repository.ChargerRepository
 import com.devicepulse.domain.usecase.GetChargerComparisonUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +16,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ChargerViewModel @Inject constructor(
     private val getChargerComparison: GetChargerComparisonUseCase,
-    private val chargerDao: ChargerDao
+    private val chargerRepository: ChargerRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ChargerUiState>(ChargerUiState.Loading)
@@ -33,18 +32,13 @@ class ChargerViewModel @Inject constructor(
 
     fun addCharger(name: String) {
         viewModelScope.launch {
-            chargerDao.insertCharger(
-                ChargerProfileEntity(
-                    name = name.trim(),
-                    created = System.currentTimeMillis()
-                )
-            )
+            chargerRepository.insertCharger(name)
         }
     }
 
     fun deleteCharger(id: Long) {
         viewModelScope.launch {
-            chargerDao.deleteChargerById(id)
+            chargerRepository.deleteChargerById(id)
         }
     }
 
@@ -52,7 +46,7 @@ class ChargerViewModel @Inject constructor(
         viewModelScope.launch {
             combine(
                 getChargerComparison(),
-                chargerDao.getAllSessions()
+                chargerRepository.getAllSessions()
             ) { chargers, sessions ->
                 ChargerUiState.Success(
                     chargers = chargers,

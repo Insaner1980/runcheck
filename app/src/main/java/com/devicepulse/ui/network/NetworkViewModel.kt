@@ -2,11 +2,11 @@ package com.devicepulse.ui.network
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devicepulse.data.billing.ProStatusRepository
-import com.devicepulse.data.network.SpeedTestRepository
-import com.devicepulse.data.network.SpeedTestService
 import com.devicepulse.domain.model.ConnectionType
+import com.devicepulse.domain.model.SpeedTestProgress
 import com.devicepulse.domain.model.SpeedTestResult
+import com.devicepulse.domain.repository.ProStatusProvider
+import com.devicepulse.domain.repository.SpeedTestRepository
 import com.devicepulse.domain.usecase.GetNetworkStateUseCase
 import com.devicepulse.domain.usecase.GetSpeedTestHistoryUseCase
 import com.devicepulse.domain.usecase.RunSpeedTestUseCase
@@ -25,7 +25,7 @@ class NetworkViewModel @Inject constructor(
     private val runSpeedTest: RunSpeedTestUseCase,
     private val getSpeedTestHistory: GetSpeedTestHistoryUseCase,
     private val speedTestRepository: SpeedTestRepository,
-    private val proStatusRepository: ProStatusRepository
+    private val proStatusProvider: ProStatusProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<NetworkUiState>(NetworkUiState.Loading)
@@ -71,7 +71,7 @@ class NetworkViewModel @Inject constructor(
                 }
                 .collect { progress ->
                     when (progress) {
-                        is SpeedTestService.SpeedTestProgress.PingPhase -> {
+                        is SpeedTestProgress.PingPhase -> {
                             _speedTestState.update {
                                 it.copy(
                                     phase = SpeedTestPhase.Download,
@@ -80,7 +80,7 @@ class NetworkViewModel @Inject constructor(
                                 )
                             }
                         }
-                        is SpeedTestService.SpeedTestProgress.DownloadPhase -> {
+                        is SpeedTestProgress.DownloadPhase -> {
                             _speedTestState.update {
                                 it.copy(
                                     phase = SpeedTestPhase.Download,
@@ -89,7 +89,7 @@ class NetworkViewModel @Inject constructor(
                                 )
                             }
                         }
-                        is SpeedTestService.SpeedTestProgress.UploadPhase -> {
+                        is SpeedTestProgress.UploadPhase -> {
                             _speedTestState.update {
                                 it.copy(
                                     phase = SpeedTestPhase.Upload,
@@ -98,7 +98,7 @@ class NetworkViewModel @Inject constructor(
                                 )
                             }
                         }
-                        is SpeedTestService.SpeedTestProgress.Completed -> {
+                        is SpeedTestProgress.Completed -> {
                             val networkState = (_uiState.value as? NetworkUiState.Success)?.networkState
                             val result = SpeedTestResult(
                                 timestamp = System.currentTimeMillis(),
@@ -114,7 +114,7 @@ class NetworkViewModel @Inject constructor(
                             )
                             speedTestRepository.saveResult(result)
 
-                            val maxHistory = if (proStatusRepository.isPro()) Int.MAX_VALUE else FREE_HISTORY_LIMIT
+                            val maxHistory = if (proStatusProvider.isPro()) Int.MAX_VALUE else FREE_HISTORY_LIMIT
                             speedTestRepository.trimResults(maxHistory)
 
                             _speedTestState.update {
@@ -130,7 +130,7 @@ class NetworkViewModel @Inject constructor(
                             }
                             loadSpeedTestHistory()
                         }
-                        is SpeedTestService.SpeedTestProgress.Failed -> {
+                        is SpeedTestProgress.Failed -> {
                             _speedTestState.update {
                                 it.copy(
                                     phase = SpeedTestPhase.Failed(progress.error),
@@ -157,7 +157,7 @@ class NetworkViewModel @Inject constructor(
 
     private fun loadSpeedTestHistory() {
         viewModelScope.launch {
-            val limit = if (proStatusRepository.isPro()) Int.MAX_VALUE else FREE_HISTORY_LIMIT
+            val limit = if (proStatusProvider.isPro()) Int.MAX_VALUE else FREE_HISTORY_LIMIT
             getSpeedTestHistory(limit)
                 .catch { /* ignore */ }
                 .collect { results ->

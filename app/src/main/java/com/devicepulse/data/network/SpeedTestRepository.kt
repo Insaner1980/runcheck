@@ -3,7 +3,9 @@ package com.devicepulse.data.network
 import com.devicepulse.data.db.dao.SpeedTestResultDao
 import com.devicepulse.data.db.entity.SpeedTestResultEntity
 import com.devicepulse.domain.model.ConnectionType
+import com.devicepulse.domain.model.SpeedTestProgress
 import com.devicepulse.domain.model.SpeedTestResult
+import com.devicepulse.domain.repository.SpeedTestRepository as SpeedTestRepositoryContract
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -13,12 +15,12 @@ import javax.inject.Singleton
 class SpeedTestRepository @Inject constructor(
     private val speedTestService: SpeedTestService,
     private val speedTestResultDao: SpeedTestResultDao
-) {
+) : SpeedTestRepositoryContract {
 
-    fun runSpeedTest(): Flow<SpeedTestService.SpeedTestProgress> =
-        speedTestService.runSpeedTest()
+    override fun runSpeedTest(): Flow<SpeedTestProgress> =
+        speedTestService.runSpeedTest().map { it.toDomain() }
 
-    suspend fun saveResult(result: SpeedTestResult) {
+    override suspend fun saveResult(result: SpeedTestResult) {
         val entity = SpeedTestResultEntity(
             timestamp = result.timestamp,
             downloadMbps = result.downloadMbps,
@@ -34,15 +36,15 @@ class SpeedTestRepository @Inject constructor(
         speedTestResultDao.insert(entity)
     }
 
-    fun getLatestResult(): Flow<SpeedTestResult?> =
+    override fun getLatestResult(): Flow<SpeedTestResult?> =
         speedTestResultDao.getLatestResult().map { it?.toDomain() }
 
-    fun getRecentResults(limit: Int): Flow<List<SpeedTestResult>> =
+    override fun getRecentResults(limit: Int): Flow<List<SpeedTestResult>> =
         speedTestResultDao.getRecentResults(limit).map { list ->
             list.map { it.toDomain() }
         }
 
-    suspend fun trimResults(keepCount: Int) {
+    override suspend fun trimResults(keepCount: Int) {
         speedTestResultDao.deleteOldResults(keepCount)
     }
 
@@ -63,4 +65,17 @@ class SpeedTestRepository @Inject constructor(
         networkSubtype = networkSubtype,
         signalDbm = signalDbm
     )
+}
+
+private fun SpeedTestService.SpeedTestProgress.toDomain(): SpeedTestProgress = when (this) {
+    is SpeedTestService.SpeedTestProgress.PingPhase ->
+        SpeedTestProgress.PingPhase(pingMs, jitterMs)
+    is SpeedTestService.SpeedTestProgress.DownloadPhase ->
+        SpeedTestProgress.DownloadPhase(currentMbps, progress)
+    is SpeedTestService.SpeedTestProgress.UploadPhase ->
+        SpeedTestProgress.UploadPhase(currentMbps, progress)
+    is SpeedTestService.SpeedTestProgress.Completed ->
+        SpeedTestProgress.Completed(downloadMbps, uploadMbps, pingMs, jitterMs, serverName, serverLocation)
+    is SpeedTestService.SpeedTestProgress.Failed ->
+        SpeedTestProgress.Failed(error)
 }

@@ -2,9 +2,9 @@ package com.devicepulse.ui.thermal
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devicepulse.data.billing.ProStatusRepository
-import com.devicepulse.data.db.entity.ThrottlingEventEntity
 import com.devicepulse.domain.model.ThermalState
+import com.devicepulse.domain.model.ThrottlingEvent
+import com.devicepulse.domain.repository.ProStatusProvider
 import com.devicepulse.domain.usecase.GetThermalStateUseCase
 import com.devicepulse.domain.usecase.GetThrottlingHistoryUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,7 +20,7 @@ import javax.inject.Inject
 class ThermalViewModel @Inject constructor(
     private val getThermalState: GetThermalStateUseCase,
     private val getThrottlingHistory: GetThrottlingHistoryUseCase,
-    private val proStatusRepository: ProStatusRepository
+    private val proStatusProvider: ProStatusProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ThermalUiState>(ThermalUiState.Loading)
@@ -39,8 +39,8 @@ class ThermalViewModel @Inject constructor(
             combine(
                 getThermalState(),
                 getThrottlingHistory(),
-                proStatusRepository.isProUser
-            ) { thermalState: ThermalState, events: List<ThrottlingEventEntity>, isPro: Boolean ->
+                proStatusProvider.isProUser
+            ) { thermalState: ThermalState, events: List<ThrottlingEvent>, isPro: Boolean ->
                 ThermalUiState.Success(
                     thermalState = thermalState,
                     throttlingEvents = events,

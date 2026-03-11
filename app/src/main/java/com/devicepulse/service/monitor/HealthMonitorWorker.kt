@@ -4,10 +4,10 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.devicepulse.data.battery.BatteryRepository
-import com.devicepulse.data.network.NetworkRepository
-import com.devicepulse.data.storage.StorageRepository
-import com.devicepulse.data.thermal.ThermalRepository
+import com.devicepulse.domain.repository.BatteryRepository
+import com.devicepulse.domain.repository.NetworkRepository
+import com.devicepulse.domain.repository.StorageRepository
+import com.devicepulse.domain.repository.ThermalRepository
 import com.devicepulse.domain.usecase.CleanupOldReadingsUseCase
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
