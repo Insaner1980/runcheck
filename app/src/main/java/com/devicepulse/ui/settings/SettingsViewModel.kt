@@ -87,10 +87,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val csvFiles = exportDataUseCase.exportAllCsv()
-
-                for ((fileName, content) in csvFiles) {
-                    fileExportRepository.saveCsvToDownloads(fileName, content)
-                }
+                fileExportRepository.exportToDownloads(csvFiles)
 
                 _uiState.value = _uiState.value.copy(
                     exportStatus = context.getString(R.string.settings_export_success)

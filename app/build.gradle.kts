@@ -123,6 +123,10 @@ dependencies {
     // Gson
     implementation(libs.gson)
 
+    // M-Lab NDT7 speed test
+    implementation(libs.ndt7)
+    implementation(libs.okhttp)
+
     // Google Mobile Ads (AdMob)
     implementation(libs.play.services.ads)
 

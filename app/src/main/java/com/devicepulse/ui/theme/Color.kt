@@ -2,11 +2,11 @@ package com.devicepulse.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Fallback palette — Light theme
-val LightPrimary = Color(0xFF0D9488)
+// Fallback palette — Light theme (Transformative Teal accent)
+val LightPrimary = Color(0xFF2F6364)
 val LightOnPrimary = Color(0xFFFFFFFF)
-val LightPrimaryContainer = Color(0xFFB2F5EA)
-val LightOnPrimaryContainer = Color(0xFF003731)
+val LightPrimaryContainer = Color(0xFFCBE6E6)
+val LightOnPrimaryContainer = Color(0xFF0A2E2F)
 val LightSurface = Color(0xFFFAFAFA)
 val LightSurfaceContainer = Color(0xFFF0F0F0)
 val LightSurfaceContainerHigh = Color(0xFFE8E8E8)
@@ -16,11 +16,11 @@ val LightOutline = Color(0xFFC4C4C4)
 val LightBackground = Color(0xFFFAFAFA)
 val LightOnBackground = Color(0xFF1A1A1A)
 
-// Fallback palette — Dark theme
-val DarkPrimary = Color(0xFF5EEAD4)
-val DarkOnPrimary = Color(0xFF003731)
-val DarkPrimaryContainer = Color(0xFF1A3B36)
-val DarkOnPrimaryContainer = Color(0xFFB2F5EA)
+// Fallback palette — Dark theme (Transformative Teal accent)
+val DarkPrimary = Color(0xFF80CBCC)
+val DarkOnPrimary = Color(0xFF0A2E2F)
+val DarkPrimaryContainer = Color(0xFF1A4E4F)
+val DarkOnPrimaryContainer = Color(0xFFCBE6E6)
 val DarkSurface = Color(0xFF121212)
 val DarkSurfaceContainer = Color(0xFF1E1E1E)
 val DarkSurfaceContainerHigh = Color(0xFF2A2A2A)

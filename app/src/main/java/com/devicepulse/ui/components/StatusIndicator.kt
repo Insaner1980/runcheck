@@ -23,7 +23,8 @@ import com.devicepulse.ui.theme.statusColors
 @Composable
 fun StatusIndicator(
     status: HealthStatus,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    customLabel: String? = null
 ) {
     val statusColors = MaterialTheme.statusColors
 
@@ -41,7 +42,7 @@ fun StatusIndicator(
         HealthStatus.CRITICAL -> Icons.Filled.Error
     }
 
-    val label = when (status) {
+    val label = customLabel ?: when (status) {
         HealthStatus.HEALTHY -> stringResource(R.string.status_healthy)
         HealthStatus.FAIR -> stringResource(R.string.status_fair)
         HealthStatus.POOR -> stringResource(R.string.status_poor)

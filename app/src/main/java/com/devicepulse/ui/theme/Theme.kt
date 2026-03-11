@@ -78,7 +78,7 @@ fun DevicePulseTheme(
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             if (darkTheme) {
-                if (amoledBlack) {
+                val base = if (amoledBlack) {
                     dynamicDarkColorScheme(context).copy(
                         surface = AmoledSurface,
                         surfaceContainer = AmoledSurfaceContainer,
@@ -88,8 +88,19 @@ fun DevicePulseTheme(
                 } else {
                     dynamicDarkColorScheme(context)
                 }
+                base.copy(
+                    primary = DarkPrimary,
+                    onPrimary = DarkOnPrimary,
+                    primaryContainer = DarkPrimaryContainer,
+                    onPrimaryContainer = DarkOnPrimaryContainer
+                )
             } else {
-                dynamicLightColorScheme(context)
+                dynamicLightColorScheme(context).copy(
+                    primary = LightPrimary,
+                    onPrimary = LightOnPrimary,
+                    primaryContainer = LightPrimaryContainer,
+                    onPrimaryContainer = LightOnPrimaryContainer
+                )
             }
         }
         darkTheme && amoledBlack -> AmoledBlackColorScheme
