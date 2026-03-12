@@ -15,6 +15,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.devicepulse.domain.model.HealthStatus
@@ -31,17 +33,27 @@ fun CategoryCard(
     subtitle: String? = null,
     statusLabel: String? = null
 ) {
+    val isDark = isSystemInDarkTheme()
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+            containerColor = if (isDark) {
+                MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.82f)
+            } else {
+                MaterialTheme.colorScheme.surfaceContainer
+            }
+        ),
+        border = if (isDark) {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
+        } else {
+            null
+        }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(MaterialTheme.spacing.base),
+                .padding(20.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column(
@@ -68,7 +80,7 @@ fun CategoryCard(
                 }
                 Text(
                     text = value,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 subtitle?.let {

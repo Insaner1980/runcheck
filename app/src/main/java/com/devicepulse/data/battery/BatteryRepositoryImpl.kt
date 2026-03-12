@@ -2,7 +2,7 @@ package com.devicepulse.data.battery
 
 import com.devicepulse.data.db.dao.BatteryReadingDao
 import com.devicepulse.data.db.entity.BatteryReadingEntity
-import com.devicepulse.data.device.DeviceProfileRepository
+import com.devicepulse.data.device.DeviceProfileRepositoryImpl
 import com.devicepulse.domain.model.BatteryReading
 import com.devicepulse.domain.model.BatteryState
 import com.devicepulse.domain.model.Confidence
@@ -16,9 +16,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class BatteryRepository @Inject constructor(
+class BatteryRepositoryImpl @Inject constructor(
     private val batteryDataSourceFactory: BatteryDataSourceFactory,
-    private val deviceProfileRepository: DeviceProfileRepository,
+    private val deviceProfileRepository: DeviceProfileRepositoryImpl,
     private val batteryReadingDao: BatteryReadingDao
 ) : BatteryRepositoryContract {
 

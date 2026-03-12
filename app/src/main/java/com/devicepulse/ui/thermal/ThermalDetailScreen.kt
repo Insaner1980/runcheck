@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,11 +30,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
+import com.devicepulse.ui.components.DetailTopBar
 import com.devicepulse.domain.model.ThrottlingEvent
 import com.devicepulse.domain.model.ThermalStatus
 import com.devicepulse.ui.components.HeatStrip
 import com.devicepulse.ui.components.MetricTile
-import com.devicepulse.ui.components.AdBanner
 import com.devicepulse.ui.components.PullToRefreshWrapper
 import com.devicepulse.ui.theme.spacing
 import java.text.SimpleDateFormat
@@ -42,28 +43,35 @@ import java.util.Locale
 
 @Composable
 fun ThermalDetailScreen(
+    onBack: () -> Unit,
     viewModel: ThermalViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    when (val state = uiState) {
-        is ThermalUiState.Loading -> {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+    Column(modifier = Modifier.fillMaxSize()) {
+        DetailTopBar(
+            title = stringResource(R.string.thermal_title),
+            onBack = onBack
+        )
+        when (val state = uiState) {
+            is ThermalUiState.Loading -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             }
-        }
-        is ThermalUiState.Error -> {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(stringResource(R.string.error_generic))
-                    TextButton(onClick = { viewModel.refresh() }) {
-                        Text(stringResource(R.string.retry))
+            is ThermalUiState.Error -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(stringResource(R.string.error_generic))
+                        TextButton(onClick = { viewModel.refresh() }) {
+                            Text(stringResource(R.string.retry))
+                        }
                     }
                 }
             }
-        }
-        is ThermalUiState.Success -> {
-            ThermalContent(state = state, onRefresh = { viewModel.refresh() })
+            is ThermalUiState.Success -> {
+                ThermalContent(state = state, onRefresh = { viewModel.refresh() })
+            }
         }
     }
 }
@@ -76,30 +84,24 @@ private fun ThermalContent(
     var isRefreshing by remember { mutableStateOf(false) }
     val thermal = state.thermalState
 
+    LaunchedEffect(state) {
+        isRefreshing = false
+    }
+
     PullToRefreshWrapper(
         isRefreshing = isRefreshing,
         onRefresh = {
             isRefreshing = true
             onRefresh()
-            isRefreshing = false
         }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = MaterialTheme.spacing.base),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
         ) {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
-
-            Text(
-                text = stringResource(R.string.thermal_title),
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
             HeatStrip(temperatureC = thermal.batteryTempC)
@@ -153,8 +155,6 @@ private fun ThermalContent(
             if (state.isPro) {
                 ThrottlingLogSection(events = state.throttlingEvents)
             }
-
-            AdBanner()
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }

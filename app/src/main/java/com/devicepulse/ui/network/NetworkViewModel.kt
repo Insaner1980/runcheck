@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -33,6 +34,8 @@ class NetworkViewModel @Inject constructor(
 
     private val _speedTestState = MutableStateFlow(SpeedTestUiState())
     val speedTestState: StateFlow<SpeedTestUiState> = _speedTestState.asStateFlow()
+    private var networkJob: Job? = null
+    private var historyJob: Job? = null
 
     init {
         loadNetworkData()
@@ -55,7 +58,8 @@ class NetworkViewModel @Inject constructor(
                 downloadMbps = 0.0,
                 uploadMbps = 0.0,
                 downloadProgress = 0f,
-                uploadProgress = 0f
+                uploadProgress = 0f,
+                historyLoadError = null
             )
         }
 
@@ -144,7 +148,8 @@ class NetworkViewModel @Inject constructor(
     }
 
     private fun loadNetworkData() {
-        viewModelScope.launch {
+        networkJob?.cancel()
+        networkJob = viewModelScope.launch {
             getNetworkState()
                 .catch { e ->
                     _uiState.value = NetworkUiState.Error(e.message ?: "Unknown error")
@@ -156,24 +161,25 @@ class NetworkViewModel @Inject constructor(
     }
 
     private fun loadSpeedTestHistory() {
-        viewModelScope.launch {
+        historyJob?.cancel()
+        historyJob = viewModelScope.launch {
             val limit = if (proStatusProvider.isPro()) Int.MAX_VALUE else FREE_HISTORY_LIMIT
             getSpeedTestHistory(limit)
-                .catch { /* ignore */ }
+                .catch { e ->
+                    _speedTestState.update {
+                        it.copy(historyLoadError = e.message ?: "Unable to load speed test history")
+                    }
+                }
                 .collect { results ->
                     _speedTestState.update {
                         it.copy(
+                            historyLoadError = null,
                             lastResult = results.firstOrNull(),
                             recentResults = results
                         )
                     }
                 }
         }
-    }
-
-    fun isCellular(): Boolean {
-        val state = (_uiState.value as? NetworkUiState.Success)?.networkState
-        return state?.connectionType == ConnectionType.CELLULAR
     }
 
     companion object {

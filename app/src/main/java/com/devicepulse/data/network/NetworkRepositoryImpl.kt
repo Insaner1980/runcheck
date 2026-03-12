@@ -12,7 +12,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class NetworkRepository @Inject constructor(
+class NetworkRepositoryImpl @Inject constructor(
     private val networkDataSource: NetworkDataSource,
     private val latencyMeasurer: LatencyMeasurer,
     private val networkReadingDao: NetworkReadingDao

@@ -16,7 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.unit.dp
+import com.devicepulse.ui.theme.statusColors
 
 @Composable
 fun HeatStrip(
@@ -40,9 +42,9 @@ fun HeatStrip(
         label = "heat_alpha"
     )
 
-    val coolColor = Color(0xFF3B82F6) // Blue
-    val warmColor = Color(0xFFFBBF24) // Yellow
-    val hotColor = Color(0xFFEF4444)  // Red
+    val coolColor = MaterialTheme.statusColors.healthy
+    val warmColor = MaterialTheme.statusColors.fair
+    val hotColor = MaterialTheme.statusColors.critical
 
     Canvas(
         modifier = modifier

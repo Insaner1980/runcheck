@@ -1,16 +1,17 @@
 package com.devicepulse.di
 
+import com.devicepulse.billing.ProPurchaseManager
 import com.devicepulse.data.appusage.AppBatteryUsageRepositoryImpl
-import com.devicepulse.data.battery.BatteryRepository
+import com.devicepulse.data.battery.BatteryRepositoryImpl
 import com.devicepulse.data.billing.ProStatusRepository
 import com.devicepulse.data.charger.ChargerRepositoryImpl
-import com.devicepulse.data.device.DeviceProfileRepository
+import com.devicepulse.data.device.DeviceProfileRepositoryImpl
 import com.devicepulse.data.export.FileExportRepositoryImpl
-import com.devicepulse.data.network.NetworkRepository
-import com.devicepulse.data.network.SpeedTestRepository
-import com.devicepulse.data.preferences.UserPreferencesRepository
-import com.devicepulse.data.storage.StorageRepository
-import com.devicepulse.data.thermal.ThermalRepository
+import com.devicepulse.data.network.NetworkRepositoryImpl
+import com.devicepulse.data.network.SpeedTestRepositoryImpl
+import com.devicepulse.data.preferences.UserPreferencesRepositoryImpl
+import com.devicepulse.data.storage.StorageRepositoryImpl
+import com.devicepulse.data.thermal.ThermalRepositoryImpl
 import com.devicepulse.data.thermal.ThrottlingRepositoryImpl
 import com.devicepulse.domain.repository.AppBatteryUsageRepository
 import com.devicepulse.domain.repository.BatteryRepository as BatteryRepositoryContract
@@ -36,27 +37,31 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindBatteryRepository(impl: BatteryRepository): BatteryRepositoryContract
+    abstract fun bindBatteryRepository(impl: BatteryRepositoryImpl): BatteryRepositoryContract
 
     @Binds
     @Singleton
-    abstract fun bindNetworkRepository(impl: NetworkRepository): NetworkRepositoryContract
+    abstract fun bindNetworkRepository(impl: NetworkRepositoryImpl): NetworkRepositoryContract
 
     @Binds
     @Singleton
-    abstract fun bindThermalRepository(impl: ThermalRepository): ThermalRepositoryContract
+    abstract fun bindThermalRepository(impl: ThermalRepositoryImpl): ThermalRepositoryContract
 
     @Binds
     @Singleton
-    abstract fun bindStorageRepository(impl: StorageRepository): StorageRepositoryContract
+    abstract fun bindStorageRepository(impl: StorageRepositoryImpl): StorageRepositoryContract
 
     @Binds
     @Singleton
-    abstract fun bindSpeedTestRepository(impl: SpeedTestRepository): SpeedTestRepositoryContract
+    abstract fun bindSpeedTestRepository(impl: SpeedTestRepositoryImpl): SpeedTestRepositoryContract
 
     @Binds
     @Singleton
     abstract fun bindProStatusProvider(impl: ProStatusRepository): ProStatusProvider
+
+    @Binds
+    @Singleton
+    abstract fun bindProPurchaseManager(impl: ProStatusRepository): ProPurchaseManager
 
     @Binds
     @Singleton
@@ -72,11 +77,11 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindDeviceProfileRepository(impl: DeviceProfileRepository): DeviceProfileRepositoryContract
+    abstract fun bindDeviceProfileRepository(impl: DeviceProfileRepositoryImpl): DeviceProfileRepositoryContract
 
     @Binds
     @Singleton
-    abstract fun bindUserPreferencesRepository(impl: UserPreferencesRepository): UserPreferencesRepositoryContract
+    abstract fun bindUserPreferencesRepository(impl: UserPreferencesRepositoryImpl): UserPreferencesRepositoryContract
 
     @Binds
     @Singleton

@@ -29,33 +29,40 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
 import com.devicepulse.domain.model.AppBatteryUsage
-import com.devicepulse.ui.components.AdBanner
+import com.devicepulse.ui.components.DetailTopBar
 import com.devicepulse.ui.theme.spacing
 
 @Composable
 fun AppUsageScreen(
+    onBack: () -> Unit,
     viewModel: AppUsageViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    when (val state = uiState) {
-        is AppUsageUiState.Loading -> {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+    Column(modifier = Modifier.fillMaxSize()) {
+        DetailTopBar(
+            title = stringResource(R.string.app_usage_title),
+            onBack = onBack
+        )
+        when (val state = uiState) {
+            is AppUsageUiState.Loading -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             }
-        }
-        is AppUsageUiState.Error -> {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(stringResource(R.string.error_generic))
-                    TextButton(onClick = { viewModel.refresh() }) {
-                        Text(stringResource(R.string.retry))
+            is AppUsageUiState.Error -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(stringResource(R.string.error_generic))
+                        TextButton(onClick = { viewModel.refresh() }) {
+                            Text(stringResource(R.string.retry))
+                        }
                     }
                 }
             }
-        }
-        is AppUsageUiState.Success -> {
-            AppUsageContent(state = state)
+            is AppUsageUiState.Success -> {
+                AppUsageContent(state = state)
+            }
         }
     }
 }
@@ -73,12 +80,6 @@ private fun AppUsageContent(state: AppUsageUiState.Success) {
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
     ) {
         item {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
-            Text(
-                text = stringResource(R.string.app_usage_title),
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
         }
 
@@ -101,7 +102,6 @@ private fun AppUsageContent(state: AppUsageUiState.Success) {
 
         item {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-            AdBanner()
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }
     }

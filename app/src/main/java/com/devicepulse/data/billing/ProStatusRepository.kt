@@ -15,6 +15,7 @@ import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.queryProductDetails
 import com.android.billingclient.api.queryPurchasesAsync
+import com.devicepulse.billing.ProPurchaseManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +30,9 @@ import javax.inject.Singleton
 @Singleton
 class ProStatusRepository @Inject constructor(
     @ApplicationContext private val context: Context
-) : PurchasesUpdatedListener, com.devicepulse.domain.repository.ProStatusProvider {
+) : PurchasesUpdatedListener,
+    com.devicepulse.domain.repository.ProStatusProvider,
+    ProPurchaseManager {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -95,9 +98,13 @@ class ProStatusRepository @Inject constructor(
         return cachedProductDetails
     }
 
-    fun launchPurchaseFlow(activity: Activity): BillingResult? {
-        val productDetails = cachedProductDetails ?: return null
-        val client = billingClient ?: return null
+    override suspend fun getFormattedPrice(): String? {
+        return queryProductDetails()?.oneTimePurchaseOfferDetails?.formattedPrice
+    }
+
+    override fun launchPurchaseFlow(activity: Activity) {
+        val productDetails = cachedProductDetails ?: return
+        val client = billingClient ?: return
 
         val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
             .setProductDetails(productDetails)
@@ -106,7 +113,7 @@ class ProStatusRepository @Inject constructor(
             .setProductDetailsParamsList(listOf(productDetailsParams))
             .build()
 
-        return client.launchBillingFlow(activity, billingFlowParams)
+        client.launchBillingFlow(activity, billingFlowParams)
     }
 
     override fun onPurchasesUpdated(

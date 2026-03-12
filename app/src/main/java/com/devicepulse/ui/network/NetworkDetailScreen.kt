@@ -1,5 +1,13 @@
 package com.devicepulse.ui.network
 
+import android.Manifest
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.LocationManager
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -14,6 +22,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -33,23 +42,27 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.core.location.LocationManagerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
 import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.SignalQuality
 import com.devicepulse.domain.model.SpeedTestResult
-import com.devicepulse.ui.components.AdBanner
 import com.devicepulse.ui.components.MetricTile
+import com.devicepulse.ui.components.PrimaryTopBar
 import com.devicepulse.ui.components.PullToRefreshWrapper
 import com.devicepulse.ui.components.SpeedGauge
 import com.devicepulse.ui.theme.spacing
@@ -59,10 +72,10 @@ import java.util.Locale
 
 @Composable
 fun NetworkDetailScreen(
+    onNavigateToSpeedTest: () -> Unit,
     viewModel: NetworkViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val speedTestState by viewModel.speedTestState.collectAsStateWithLifecycle()
 
     when (val state = uiState) {
         is NetworkUiState.Loading -> {
@@ -81,13 +94,14 @@ fun NetworkDetailScreen(
             }
         }
         is NetworkUiState.Success -> {
-            NetworkContent(
-                state = state,
-                speedTestState = speedTestState,
-                isCellular = viewModel.isCellular(),
-                onRefresh = { viewModel.refresh() },
-                onStartSpeedTest = { viewModel.startSpeedTest() }
-            )
+            Column(modifier = Modifier.fillMaxSize()) {
+                PrimaryTopBar(title = stringResource(R.string.network_title))
+                NetworkContent(
+                    state = state,
+                    onRefresh = { viewModel.refresh() },
+                    onNavigateToSpeedTest = onNavigateToSpeedTest
+                )
+            }
         }
     }
 }
@@ -95,38 +109,33 @@ fun NetworkDetailScreen(
 @Composable
 private fun NetworkContent(
     state: NetworkUiState.Success,
-    speedTestState: SpeedTestUiState,
-    isCellular: Boolean,
     onRefresh: () -> Unit,
-    onStartSpeedTest: () -> Unit
+    onNavigateToSpeedTest: () -> Unit
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     val network = state.networkState
+    val context = LocalContext.current
+    val hasLocationPermission = context.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+    val locationEnabled = context.isLocationEnabled()
+
+    LaunchedEffect(state) {
+        isRefreshing = false
+    }
 
     PullToRefreshWrapper(
         isRefreshing = isRefreshing,
         onRefresh = {
             isRefreshing = true
             onRefresh()
-            isRefreshing = false
         }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = MaterialTheme.spacing.base),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
         ) {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
-
-            Text(
-                text = stringResource(R.string.network_title),
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
             MetricTile(
@@ -156,6 +165,23 @@ private fun NetworkContent(
             )
 
             if (network.connectionType == ConnectionType.WIFI) {
+                if (network.wifiSsid == null) {
+                    WifiNameHelpCard(
+                        hasLocationPermission = hasLocationPermission,
+                        locationEnabled = locationEnabled,
+                        onOpenSettings = {
+                            if (!hasLocationPermission) {
+                                context.startActivity(
+                                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                        data = Uri.fromParts("package", context.packageName, null)
+                                    }
+                                )
+                            } else if (!locationEnabled) {
+                                context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                            }
+                        }
+                    )
+                }
                 network.wifiSsid?.let { ssid ->
                     MetricTile(
                         label = stringResource(R.string.network_wifi_ssid),
@@ -203,17 +229,132 @@ private fun NetworkContent(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = MaterialTheme.spacing.sm))
 
-            // Speed Test Section
-            SpeedTestSection(
-                speedTestState = speedTestState,
-                isCellular = isCellular,
-                hasConnection = network.connectionType != ConnectionType.NONE,
-                onStartSpeedTest = onStartSpeedTest
+            SpeedTestEntryCard(
+                connectionType = network.connectionType,
+                onOpen = onNavigateToSpeedTest
             )
 
-            AdBanner()
-
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
+        }
+    }
+}
+
+@Composable
+private fun WifiNameHelpCard(
+    hasLocationPermission: Boolean,
+    locationEnabled: Boolean,
+    onOpenSettings: () -> Unit
+) {
+    val message = when {
+        !hasLocationPermission -> stringResource(R.string.network_wifi_name_permission_needed)
+        !locationEnabled -> stringResource(R.string.network_wifi_name_location_needed)
+        else -> stringResource(R.string.network_wifi_name_unavailable)
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MaterialTheme.spacing.base),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.network_wifi_name_help_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Button(onClick = onOpenSettings) {
+                Text(
+                    text = if (!hasLocationPermission) {
+                        stringResource(R.string.network_wifi_name_open_app_settings)
+                    } else {
+                        stringResource(R.string.location_services_open_settings)
+                    }
+                )
+            }
+        }
+    }
+}
+
+private fun Context.hasPermission(permission: String): Boolean {
+    return ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+}
+
+private fun Context.isLocationEnabled(): Boolean {
+    val locationManager = getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+        ?: return false
+    return LocationManagerCompat.isLocationEnabled(locationManager)
+}
+
+@Composable
+private fun SpeedTestEntryCard(
+    connectionType: ConnectionType,
+    onOpen: () -> Unit
+) {
+    val isAvailable = connectionType != ConnectionType.NONE
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onOpen,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MaterialTheme.spacing.base),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.speed_test_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = if (isAvailable) {
+                        stringResource(R.string.speed_test_entry_subtitle)
+                    } else {
+                        stringResource(R.string.speed_test_no_connection_hint)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Button(
+                onClick = onOpen,
+                enabled = isAvailable
+            ) {
+                Text(text = stringResource(R.string.speed_test_open))
+            }
         }
     }
 }

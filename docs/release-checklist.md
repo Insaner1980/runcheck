@@ -8,12 +8,6 @@
 - [ ] Enable Crashlytics in Firebase Console
 - [ ] Remove placeholder `google-services.json` from version control if repo is public
 
-### AdMob
-- [ ] Create AdMob account at https://admob.google.com/
-- [ ] Create ad unit for banner ads
-- [ ] Replace test App ID in `AndroidManifest.xml` (`ca-app-pub-3940256099942544~3347511713`) with production ID
-- [ ] Replace test ad unit ID in `AdBanner.kt` with production unit ID
-
 ### Billing
 - [ ] Create in-app product `devicepulse_pro` in Google Play Console
 - [ ] Set price for Pro upgrade

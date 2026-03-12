@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,40 +32,47 @@ import com.devicepulse.R
 import com.devicepulse.domain.model.Confidence
 import com.devicepulse.domain.model.HistoryPeriod
 import com.devicepulse.ui.components.ConfidenceBadge
+import com.devicepulse.ui.components.DetailTopBar
 import com.devicepulse.ui.components.MetricTile
 import com.devicepulse.ui.components.PullToRefreshWrapper
-import com.devicepulse.ui.components.AdBanner
 import com.devicepulse.ui.components.TrendChart
 import com.devicepulse.ui.theme.spacing
 
 @Composable
 fun BatteryDetailScreen(
+    onBack: () -> Unit,
     viewModel: BatteryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    when (val state = uiState) {
-        is BatteryUiState.Loading -> {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+    Column(modifier = Modifier.fillMaxSize()) {
+        DetailTopBar(
+            title = stringResource(R.string.battery_title),
+            onBack = onBack
+        )
+        when (val state = uiState) {
+            is BatteryUiState.Loading -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             }
-        }
-        is BatteryUiState.Error -> {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(stringResource(R.string.error_generic))
-                    TextButton(onClick = { viewModel.refresh() }) {
-                        Text(stringResource(R.string.retry))
+            is BatteryUiState.Error -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(stringResource(R.string.error_generic))
+                        TextButton(onClick = { viewModel.refresh() }) {
+                            Text(stringResource(R.string.retry))
+                        }
                     }
                 }
             }
-        }
-        is BatteryUiState.Success -> {
-            BatteryContent(
-                state = state,
-                onRefresh = { viewModel.refresh() },
-                onPeriodChange = { viewModel.setHistoryPeriod(it) }
-            )
+            is BatteryUiState.Success -> {
+                BatteryContent(
+                    state = state,
+                    onRefresh = { viewModel.refresh() },
+                    onPeriodChange = { viewModel.setHistoryPeriod(it) }
+                )
+            }
         }
     }
 }
@@ -78,30 +86,24 @@ private fun BatteryContent(
     var isRefreshing by remember { mutableStateOf(false) }
     val battery = state.batteryState
 
+    LaunchedEffect(state) {
+        isRefreshing = false
+    }
+
     PullToRefreshWrapper(
         isRefreshing = isRefreshing,
         onRefresh = {
             isRefreshing = true
             onRefresh()
-            isRefreshing = false
         }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = MaterialTheme.spacing.base),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
         ) {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
-
-            Text(
-                text = stringResource(R.string.battery_title),
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
             MetricTile(
@@ -227,8 +229,6 @@ private fun BatteryContent(
                     data = state.history.map { it.level.toFloat() }
                 )
             }
-
-            AdBanner()
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }

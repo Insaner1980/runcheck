@@ -39,6 +39,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
 import com.devicepulse.domain.model.ChargerSummary
+import com.devicepulse.ui.components.DetailTopBar
 import com.devicepulse.ui.theme.spacing
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -46,33 +47,45 @@ import java.util.Locale
 
 @Composable
 fun ChargerComparisonScreen(
+    onBack: () -> Unit,
     viewModel: ChargerViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
 
-    when (val state = uiState) {
-        is ChargerUiState.Loading -> {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+    Column(modifier = Modifier.fillMaxSize()) {
+        when (val state = uiState) {
+            is ChargerUiState.Loading -> {
+                DetailTopBar(
+                    title = stringResource(R.string.charger_title),
+                    onBack = onBack
+                )
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             }
-        }
-        is ChargerUiState.Error -> {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(stringResource(R.string.error_generic))
-                    TextButton(onClick = { viewModel.refresh() }) {
-                        Text(stringResource(R.string.retry))
+            is ChargerUiState.Error -> {
+                DetailTopBar(
+                    title = stringResource(R.string.charger_title),
+                    onBack = onBack
+                )
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(stringResource(R.string.error_generic))
+                        TextButton(onClick = { viewModel.refresh() }) {
+                            Text(stringResource(R.string.retry))
+                        }
                     }
                 }
             }
-        }
-        is ChargerUiState.Success -> {
-            ChargerContent(
-                state = state,
-                onAddClick = { showAddDialog = true },
-                onDeleteCharger = { viewModel.deleteCharger(it) }
-            )
+            is ChargerUiState.Success -> {
+                ChargerContent(
+                    state = state,
+                    onBack = onBack,
+                    onAddClick = { showAddDialog = true },
+                    onDeleteCharger = { viewModel.deleteCharger(it) }
+                )
+            }
         }
     }
 
@@ -90,10 +103,17 @@ fun ChargerComparisonScreen(
 @Composable
 private fun ChargerContent(
     state: ChargerUiState.Success,
+    onBack: () -> Unit,
     onAddClick: () -> Unit,
     onDeleteCharger: (Long) -> Unit
 ) {
     Scaffold(
+        topBar = {
+            DetailTopBar(
+                title = stringResource(R.string.charger_title),
+                onBack = onBack
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddClick,
@@ -128,12 +148,6 @@ private fun ChargerContent(
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
             ) {
                 item {
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
-                    Text(
-                        text = stringResource(R.string.charger_title),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                 }
 

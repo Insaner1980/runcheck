@@ -125,8 +125,8 @@ Use `BatteryDataSourceFactory` to select the best battery data source:
 
 ## Monetization
 
-- Free version: small banner ad on detail screens only, not on the dashboard
-- Pro version: one-time in-app purchase unlocking extended history, widgets, charger comparison, export, and ad removal
+- Free version: core monitoring with locked Pro feature entry points where applicable
+- Pro version: one-time in-app purchase unlocking extended history, widgets, charger comparison, export, and advanced insights
 - Use Google Play Billing
 - Gate pro features through `ProStatusRepository`
 

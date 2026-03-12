@@ -12,7 +12,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class StorageRepository @Inject constructor(
+class StorageRepositoryImpl @Inject constructor(
     private val storageDataSource: StorageDataSource,
     private val storageReadingDao: StorageReadingDao
 ) : StorageRepositoryContract {

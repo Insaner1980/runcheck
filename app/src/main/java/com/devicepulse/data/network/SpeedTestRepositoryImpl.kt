@@ -12,7 +12,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SpeedTestRepository @Inject constructor(
+class SpeedTestRepositoryImpl @Inject constructor(
     private val speedTestService: SpeedTestService,
     private val speedTestResultDao: SpeedTestResultDao
 ) : SpeedTestRepositoryContract {

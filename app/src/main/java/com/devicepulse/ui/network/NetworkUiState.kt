@@ -27,6 +27,7 @@ data class SpeedTestUiState(
     val uploadMbps: Double = 0.0,
     val downloadProgress: Float = 0f,
     val uploadProgress: Float = 0f,
+    val historyLoadError: String? = null,
     val lastResult: SpeedTestResult? = null,
     val recentResults: List<SpeedTestResult> = emptyList()
 )

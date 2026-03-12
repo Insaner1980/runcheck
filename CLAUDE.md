@@ -127,8 +127,8 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 
 ## Monetization
 
-- Free version: small banner ad on detail screens only (not dashboard)
-- Pro version: one-time in-app purchase (€3.49), unlocks extended history, widgets, charger comparison, export, ad removal
+- Free version: core monitoring with locked Pro feature entry points where applicable
+- Pro version: one-time in-app purchase (€3.49), unlocks extended history, widgets, charger comparison, export, and advanced insights
 - Use Google Play Billing Library
 - Gate pro features with a simple `ProStatusRepository` that checks purchase state
 

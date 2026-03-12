@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -18,6 +19,7 @@ class AppUsageViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow<AppUsageUiState>(AppUsageUiState.Loading)
     val uiState: StateFlow<AppUsageUiState> = _uiState.asStateFlow()
+    private var loadJob: Job? = null
 
     init {
         loadUsageData()
@@ -29,7 +31,8 @@ class AppUsageViewModel @Inject constructor(
 
     private fun loadUsageData() {
         val since = System.currentTimeMillis() - 24 * 60 * 60 * 1000L
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             getAppBatteryUsage(since)
                 .catch { e ->
                     _uiState.value = AppUsageUiState.Error(e.message ?: "Unknown error")

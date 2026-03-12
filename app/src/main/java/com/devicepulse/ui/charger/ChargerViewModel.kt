@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,6 +22,7 @@ class ChargerViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow<ChargerUiState>(ChargerUiState.Loading)
     val uiState: StateFlow<ChargerUiState> = _uiState.asStateFlow()
+    private var loadJob: Job? = null
 
     init {
         loadChargerData()
@@ -43,7 +45,8 @@ class ChargerViewModel @Inject constructor(
     }
 
     private fun loadChargerData() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             combine(
                 getChargerComparison(),
                 chargerRepository.getAllSessions()

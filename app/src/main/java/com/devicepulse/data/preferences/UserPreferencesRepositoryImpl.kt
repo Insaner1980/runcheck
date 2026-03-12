@@ -19,7 +19,7 @@ import javax.inject.Singleton
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 @Singleton
-class UserPreferencesRepository @Inject constructor(
+class UserPreferencesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context
 ) : com.devicepulse.domain.repository.UserPreferencesRepository {
 
@@ -56,11 +56,20 @@ class UserPreferencesRepository @Inject constructor(
         context.dataStore.edit { it[KEY_NOTIFICATIONS] = enabled }
     }
 
+    override fun getPermissionEducationSeen(): Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_PERMISSION_EDUCATION_SEEN] ?: false
+    }
+
+    override suspend fun setPermissionEducationSeen(seen: Boolean) {
+        context.dataStore.edit { it[KEY_PERMISSION_EDUCATION_SEEN] = seen }
+    }
+
     companion object {
         private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
         private val KEY_AMOLED_BLACK = booleanPreferencesKey("amoled_black")
         private val KEY_DYNAMIC_COLORS = booleanPreferencesKey("dynamic_colors")
         private val KEY_MONITORING_INTERVAL = stringPreferencesKey("monitoring_interval")
         private val KEY_NOTIFICATIONS = booleanPreferencesKey("notifications")
+        private val KEY_PERMISSION_EDUCATION_SEEN = booleanPreferencesKey("permission_education_seen")
     }
 }

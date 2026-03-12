@@ -4,7 +4,9 @@
     <string name="not_available">N/A</string>
 
     <!-- Navigation -->
-    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_home">Home</string>
+    <string name="navigate_back">Back</string>
+    <string name="nav_dashboard">Health</string>
     <string name="nav_battery">Battery</string>
     <string name="nav_network">Network</string>
     <string name="nav_more">More</string>
@@ -129,6 +131,18 @@
     <string name="connection_wifi">WiFi</string>
     <string name="connection_cellular">Cellular</string>
     <string name="connection_none">None</string>
+    <string name="permissions_intro_title">Allow access for full device data</string>
+    <string name="permissions_intro_message">DevicePulse uses Android system permissions to show WiFi network names, mobile network details, and optional alerts. Android will show the native permission dialogs next.</string>
+    <string name="permissions_intro_continue">Continue</string>
+    <string name="permissions_intro_not_now">Not now</string>
+    <string name="location_services_title">Turn on device location</string>
+    <string name="location_services_message">Android hides WiFi network names unless device location is turned on. DevicePulse uses this only to read the current WiFi name and network details.</string>
+    <string name="location_services_open_settings">Open settings</string>
+    <string name="network_wifi_name_help_title">WiFi name is unavailable</string>
+    <string name="network_wifi_name_permission_needed">Allow location permission to show the current WiFi network name.</string>
+    <string name="network_wifi_name_location_needed">Turn on device location to let Android share the current WiFi network name.</string>
+    <string name="network_wifi_name_unavailable">Android is not currently exposing the WiFi network name to the app.</string>
+    <string name="network_wifi_name_open_app_settings">App settings</string>
 
     <!-- Thermal Detail -->
     <string name="thermal_title">Thermal</string>
@@ -184,7 +198,7 @@
     <string name="settings_about">About</string>
     <string name="settings_upgrade_pro">Upgrade to Pro</string>
     <string name="settings_pro_active">Pro Active</string>
-    <string name="settings_pro_desc">Extended history, widgets, no ads, CSV export</string>
+    <string name="settings_pro_desc">Extended history, widgets, and CSV export</string>
     <string name="settings_pro_thank_you">Thank you for supporting DevicePulse!</string>
     <string name="settings_version">Version %1$s</string>
 
@@ -243,6 +257,12 @@
     <string name="speed_test_jitter">Jitter</string>
     <string name="speed_test_server">Server</string>
     <string name="speed_test_connection">Connection</string>
+    <string name="speed_test_open">Open</string>
+    <string name="speed_test_entry_subtitle">Run a full-screen speed test with live results and history.</string>
+    <string name="speed_test_tap_ring_start">Tap the ring to start a speed test</string>
+    <string name="speed_test_tap_ring_restart">Tap the ring to run another test</string>
+    <string name="speed_test_tap_ring_retry">Tap the ring to try again</string>
+    <string name="speed_test_no_connection_hint">Connect to WiFi or cellular to run a speed test</string>
     <string name="speed_test_phase_ping">Measuring latency…</string>
     <string name="speed_test_phase_download">Testing download…</string>
     <string name="speed_test_phase_upload">Testing upload…</string>

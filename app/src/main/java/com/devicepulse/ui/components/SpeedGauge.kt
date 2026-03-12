@@ -1,8 +1,8 @@
 package com.devicepulse.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,7 +41,10 @@ fun SpeedGauge(
         animationSpec = if (reducedMotion) {
             tween(durationMillis = 0)
         } else {
-            spring(dampingRatio = 0.8f, stiffness = 150f)
+            tween(
+                durationMillis = 700,
+                easing = FastOutSlowInEasing
+            )
         },
         label = "speed_gauge_sweep"
     )
@@ -83,12 +86,22 @@ fun SpeedGauge(
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = if (value > 0) "%.1f".format(value) else "—",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
-            )
+            if (value > 0) {
+                AnimatedFloatText(
+                    value = value.toFloat(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    decimalPlaces = 1,
+                    modifier = Modifier,
+                    suffix = ""
+                )
+            } else {
+                Text(
+                    text = "—",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center
+                )
+            }
             Text(
                 text = unit,
                 style = MaterialTheme.typography.labelSmall,

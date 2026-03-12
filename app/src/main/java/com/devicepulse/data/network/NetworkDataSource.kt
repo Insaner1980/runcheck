@@ -1,18 +1,23 @@
 package com.devicepulse.data.network
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
+import android.location.LocationManager
 import android.os.Build
 import android.telephony.CellSignalStrengthNr
 import android.telephony.TelephonyCallback
 import android.telephony.TelephonyDisplayInfo
 import android.telephony.TelephonyManager
 import androidx.annotation.RequiresApi
+import androidx.core.location.LocationManagerCompat
 import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.SignalQuality
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -63,24 +68,35 @@ class NetworkDataSource @Inject constructor(
             }
         }
 
-        connectivityManager.registerDefaultNetworkCallback(callback)
-
-        // Emit initial state
-        val activeNetwork = connectivityManager.activeNetwork
-        val capabilities = activeNetwork?.let {
-            connectivityManager.getNetworkCapabilities(it)
+        val locationModeReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action != LocationManager.MODE_CHANGED_ACTION) return
+                if (!isLocationEnabled()) {
+                    cachedWifiDetails = null
+                }
+                emitCurrentNetworkInfo()
+            }
         }
-        trySend(
-            if (capabilities != null) buildNetworkInfo(capabilities)
-            else NetworkInfo.disconnected()
+
+        connectivityManager.registerDefaultNetworkCallback(callback)
+        context.registerReceiver(
+            locationModeReceiver,
+            IntentFilter(LocationManager.MODE_CHANGED_ACTION)
         )
 
-        awaitClose { connectivityManager.unregisterNetworkCallback(callback) }
+        // Emit initial state
+        emitCurrentNetworkInfo()
+
+        awaitClose {
+            connectivityManager.unregisterNetworkCallback(callback)
+            context.unregisterReceiver(locationModeReceiver)
+        }
     }
 
     private fun buildNetworkInfo(capabilities: NetworkCapabilities): NetworkInfo {
         val isWifi = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
         val isCellular = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+        val locationEnabled = isLocationEnabled()
 
         val connectionType = when {
             isWifi -> ConnectionType.WIFI
@@ -96,7 +112,7 @@ class NetworkDataSource @Inject constructor(
             signalDbm = getCellularSignalDbm()
         }
 
-        val wifiInfo = if (isWifi) getWifiDetails(capabilities) else null
+        val wifiInfo = if (isWifi && locationEnabled) getWifiDetails(capabilities) else null
 
         // For WiFi, use RSSI if NetworkCapabilities didn't provide signal
         if (isWifi && signalDbm == null && wifiInfo != null) {
@@ -114,6 +130,17 @@ class NetworkDataSource @Inject constructor(
             wifiFrequencyMhz = wifiInfo?.frequencyMhz,
             carrier = cellInfo?.carrier,
             networkSubtype = cellInfo?.networkType
+        )
+    }
+
+    private fun kotlinx.coroutines.channels.ProducerScope<NetworkInfo>.emitCurrentNetworkInfo() {
+        val activeNetwork = connectivityManager.activeNetwork
+        val capabilities = activeNetwork?.let {
+            connectivityManager.getNetworkCapabilities(it)
+        }
+        trySend(
+            if (capabilities != null) buildNetworkInfo(capabilities)
+            else NetworkInfo.disconnected()
         )
     }
 
@@ -155,8 +182,8 @@ class NetworkDataSource @Inject constructor(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val wifiInfo = capabilities.transportInfo as? WifiInfo
             if (wifiInfo != null) {
-                val ssid = wifiInfo.ssid?.removeSurrounding("\"")
-                if (ssid != null && ssid != "<unknown ssid>" && ssid != "Unknown") {
+                val ssid = normalizeSsid(wifiInfo.ssid)
+                if (ssid != null) {
                     val rssi = wifiInfo.rssi
                     return WifiDetails(
                         ssid = ssid,
@@ -172,8 +199,9 @@ class NetworkDataSource @Inject constructor(
         // Fallback: WifiManager.connectionInfo (pre-API 31)
         val info = wifiManager.connectionInfo ?: return null
         val rssi = info.rssi
+        val ssid = normalizeSsid(info.ssid) ?: return null
         return WifiDetails(
-            ssid = info.ssid?.removeSurrounding("\"") ?: "Unknown",
+            ssid = ssid,
             speedMbps = info.linkSpeed,
             frequencyMhz = info.frequency,
             rssi = if (rssi != -127 && rssi != 0) rssi else null
@@ -198,10 +226,10 @@ class NetworkDataSource @Inject constructor(
                     capabilities: NetworkCapabilities
                 ) {
                     val wifiInfo = capabilities.transportInfo as? WifiInfo ?: return
-                    val ssid = wifiInfo.ssid?.removeSurrounding("\"")
+                    val ssid = normalizeSsid(wifiInfo.ssid) ?: return
                     val rssi = wifiInfo.rssi
                     cachedWifiDetails = WifiDetails(
-                        ssid = ssid ?: "Unknown",
+                        ssid = ssid,
                         speedMbps = wifiInfo.linkSpeed,
                         frequencyMhz = wifiInfo.frequency,
                         rssi = if (rssi != -127 && rssi != 0) rssi else null
@@ -262,10 +290,39 @@ class NetworkDataSource @Inject constructor(
     }
 
     private fun getCellularDetails(): CellularDetails {
+        val runtimeType = telephonyManager?.let { manager ->
+            @Suppress("DEPRECATION")
+            mapNetworkType(manager.dataNetworkType)
+        } ?: "Cellular"
+
         return CellularDetails(
             carrier = telephonyManager?.networkOperatorName ?: "Unknown",
-            networkType = cachedNetworkTypeName
+            networkType = if (cachedNetworkTypeName == "Unknown") runtimeType else cachedNetworkTypeName
         )
+    }
+
+    private fun isLocationEnabled(): Boolean {
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+            ?: return false
+        return LocationManagerCompat.isLocationEnabled(locationManager)
+    }
+
+    private fun normalizeSsid(rawSsid: String?): String? {
+        val normalized = rawSsid
+            ?.removeSurrounding("\"")
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?: return null
+
+        return if (
+            normalized.equals("<unknown ssid>", ignoreCase = true) ||
+            normalized.equals("unknown ssid", ignoreCase = true) ||
+            normalized.equals("unknown", ignoreCase = true)
+        ) {
+            null
+        } else {
+            normalized
+        }
     }
 
     @Suppress("DEPRECATION")

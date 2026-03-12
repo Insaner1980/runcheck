@@ -1,8 +1,8 @@
 package com.devicepulse.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -18,7 +18,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.unit.Dp
@@ -46,7 +49,10 @@ fun HealthGauge(
         animationSpec = if (reducedMotion) {
             tween(durationMillis = 0)
         } else {
-            spring(dampingRatio = 0.7f, stiffness = 200f)
+            tween(
+                durationMillis = 850,
+                easing = FastOutSlowInEasing
+            )
         },
         label = "gauge_sweep"
     )
@@ -54,6 +60,8 @@ fun HealthGauge(
     val accentColor = MaterialTheme.colorScheme.primary
     val trackColor = accentColor.copy(alpha = 0.28f)
     val innerColor = accentColor.copy(alpha = 0.16f)
+    val progressBrush = rememberGaugeSweepBrush(accentColor)
+    val innerBrush = rememberGaugeSweepBrush(innerColor)
 
     Box(
         modifier = modifier.size(size),
@@ -98,7 +106,7 @@ fun HealthGauge(
             )
 
             drawArc(
-                color = accentColor,
+                brush = progressBrush,
                 startAngle = -90f,
                 sweepAngle = sweepAngle,
                 useCenter = false,
@@ -108,7 +116,7 @@ fun HealthGauge(
             )
 
             drawArc(
-                color = innerColor,
+                brush = innerBrush,
                 startAngle = -90f,
                 sweepAngle = sweepAngle,
                 useCenter = false,
@@ -119,11 +127,26 @@ fun HealthGauge(
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "${score}%",
+            AnimatedIntText(
+                value = score,
+                suffix = "%",
                 style = MaterialTheme.typography.displayLarge,
-                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
+}
+
+private fun rememberGaugeSweepBrush(baseColor: Color): Brush {
+    val seamStart = lerp(baseColor, Color.White, 0.02f)
+    val highlight = lerp(baseColor, Color.White, 0.05f)
+    val middle = baseColor
+    val shadow = lerp(baseColor, Color.Black, 0.03f)
+    val seamEnd = lerp(baseColor, Color.White, 0.018f)
+    return Brush.sweepGradient(
+        0.0f to seamStart,
+        0.18f to highlight,
+        0.52f to middle,
+        0.82f to shadow,
+        1.0f to seamEnd
+    )
 }

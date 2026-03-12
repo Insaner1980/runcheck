@@ -127,9 +127,6 @@ dependencies {
     implementation(libs.ndt7)
     implementation(libs.okhttp)
 
-    // Google Mobile Ads (AdMob)
-    implementation(libs.play.services.ads)
-
     // Google Play Billing
     implementation(libs.billing)
 

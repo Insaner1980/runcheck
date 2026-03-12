@@ -4,7 +4,9 @@
     <string name="not_available">Ei saatavilla</string>
 
     <!-- Navigation -->
-    <string name="nav_dashboard">Etusivu</string>
+    <string name="nav_home">Koti</string>
+    <string name="navigate_back">Takaisin</string>
+    <string name="nav_dashboard">Terveys</string>
     <string name="nav_battery">Akku</string>
     <string name="nav_network">Verkko</string>
     <string name="nav_more">Lisää</string>
@@ -119,6 +121,18 @@
     <string name="connection_wifi">WiFi</string>
     <string name="connection_cellular">Mobiiliverkko</string>
     <string name="connection_none">Ei yhteyttä</string>
+    <string name="permissions_intro_title">Salli käyttö täydellisiä laitetietoja varten</string>
+    <string name="permissions_intro_message">DevicePulse käyttää Androidin järjestelmälupia näyttääkseen WiFi-verkon nimen, mobiiliverkon tiedot ja valinnaiset ilmoitukset. Android näyttää seuraavaksi natiivit lupadialogit.</string>
+    <string name="permissions_intro_continue">Jatka</string>
+    <string name="permissions_intro_not_now">Ei nyt</string>
+    <string name="location_services_title">Ota sijainti käyttöön</string>
+    <string name="location_services_message">Android piilottaa WiFi-verkon nimen, ellei laitteen sijainti ole päällä. DevicePulse käyttää tätä vain nykyisen WiFi-nimen ja verkkotietojen lukemiseen.</string>
+    <string name="location_services_open_settings">Avaa asetukset</string>
+    <string name="network_wifi_name_help_title">WiFi-nimi ei ole saatavilla</string>
+    <string name="network_wifi_name_permission_needed">Salli sijaintilupa, jotta nykyinen WiFi-verkon nimi voidaan näyttää.</string>
+    <string name="network_wifi_name_location_needed">Ota laitteen sijainti käyttöön, jotta Android voi jakaa nykyisen WiFi-verkon nimen.</string>
+    <string name="network_wifi_name_unavailable">Android ei juuri nyt anna sovellukselle WiFi-verkon nimeä.</string>
+    <string name="network_wifi_name_open_app_settings">Sovelluksen asetukset</string>
 
     <!-- Thermal Detail -->
     <string name="thermal_title">Lämpötila</string>
@@ -174,7 +188,7 @@
     <string name="settings_about">Tietoja</string>
     <string name="settings_upgrade_pro">Päivitä Pro-versioon</string>
     <string name="settings_pro_active">Pro aktiivinen</string>
-    <string name="settings_pro_desc">Laajennettu historia, widgetit, ei mainoksia, CSV-vienti</string>
+    <string name="settings_pro_desc">Laajennettu historia, widgetit ja CSV-vienti</string>
     <string name="settings_pro_thank_you">Kiitos DevicePulsen tukemisesta!</string>
     <string name="settings_version">Versio %1$s</string>
 
@@ -222,6 +236,29 @@
     <string name="app_usage_title">Sovellusten akunkäyttö</string>
     <string name="app_usage_no_data">Ei käyttötietoja viimeiseltä 24 tunnilta</string>
     <string name="app_usage_drain">Arvioitu kulutus: %s mAh</string>
+
+    <!-- Speed Test -->
+    <string name="speed_test_title">Nopeustesti</string>
+    <string name="speed_test_open">Avaa</string>
+    <string name="speed_test_download">Lataus</string>
+    <string name="speed_test_upload">Lähetys</string>
+    <string name="speed_test_ping">Viive</string>
+    <string name="speed_test_jitter">Jitter</string>
+    <string name="speed_test_connection">Yhteys</string>
+    <string name="speed_test_history">Historia</string>
+    <string name="speed_test_last_result">Viimeisin tulos</string>
+    <string name="speed_test_mlab_notice">Nopeustesti toimii M-Labin avulla. Testidata tukee avointa internet-tutkimusta.</string>
+    <string name="speed_test_entry_subtitle">Aja koko näytön nopeustesti, jossa on live-tulokset ja historia.</string>
+    <string name="speed_test_tap_ring_start">Napauta rengasta aloittaaksesi nopeustestin</string>
+    <string name="speed_test_tap_ring_restart">Napauta rengasta ajaaksesi uuden testin</string>
+    <string name="speed_test_tap_ring_retry">Napauta rengasta yrittääksesi uudelleen</string>
+    <string name="speed_test_no_connection_hint">Yhdistä WiFiin tai mobiiliverkkoon ajaaksesi nopeustestin</string>
+    <string name="speed_test_phase_ping">Mitataan viivettä…</string>
+    <string name="speed_test_phase_download">Mitataan latausnopeutta…</string>
+    <string name="speed_test_phase_upload">Mitataan lähetysnopeutta…</string>
+    <string name="speed_test_cellular_warning">Tämä testi käyttää noin 20–50 Mt mobiilidataa</string>
+    <string name="speed_test_cellular_proceed">Jatka</string>
+    <string name="speed_test_cellular_cancel">Peruuta</string>
 
     <!-- General -->
     <string name="loading">Ladataan…</string>

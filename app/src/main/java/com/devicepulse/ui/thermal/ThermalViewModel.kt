@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -25,6 +26,7 @@ class ThermalViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow<ThermalUiState>(ThermalUiState.Loading)
     val uiState: StateFlow<ThermalUiState> = _uiState.asStateFlow()
+    private var loadJob: Job? = null
 
     init {
         loadThermalData()
@@ -35,7 +37,8 @@ class ThermalViewModel @Inject constructor(
     }
 
     private fun loadThermalData() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             combine(
                 getThermalState(),
                 getThrottlingHistory(),

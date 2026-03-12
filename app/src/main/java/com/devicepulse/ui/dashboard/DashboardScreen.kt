@@ -2,15 +2,21 @@ package com.devicepulse.ui.dashboard
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,14 +25,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BatteryChargingFull
-import androidx.compose.material.icons.filled.Memory
-import androidx.compose.material.icons.filled.SignalCellularAlt
-import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material.icons.outlined.BatteryChargingFull
+import androidx.compose.material.icons.outlined.SignalCellularAlt
+import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material.icons.outlined.Thermostat
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,25 +50,44 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
 import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.BatteryHealth
+import com.devicepulse.domain.model.BatteryState
+import com.devicepulse.domain.model.ChargingStatus
+import com.devicepulse.domain.model.Confidence
 import com.devicepulse.domain.model.HealthScore
 import com.devicepulse.domain.model.HealthStatus
+import com.devicepulse.domain.model.MeasuredValue
+import com.devicepulse.domain.model.NetworkState
+import com.devicepulse.domain.model.PlugType
+import com.devicepulse.domain.model.SignalQuality
+import com.devicepulse.domain.model.StorageState
+import com.devicepulse.domain.model.ThermalState
+import com.devicepulse.domain.model.ThermalStatus
+import com.devicepulse.ui.components.AnimatedIntText
 import com.devicepulse.ui.components.CategoryCard
 import com.devicepulse.ui.components.HealthGauge
+import com.devicepulse.ui.components.PrimaryTopBar
 import com.devicepulse.ui.components.PullToRefreshWrapper
+import com.devicepulse.ui.theme.DevicePulseTheme
+import com.devicepulse.ui.theme.reducedMotion
 import com.devicepulse.ui.theme.spacing
+import com.devicepulse.ui.theme.statusColors
 
 @Composable
 fun DashboardScreen(
@@ -99,14 +127,17 @@ fun DashboardScreen(
         }
 
         is DashboardUiState.Success -> {
-            DashboardContent(
-                state = state,
-                onRefresh = { viewModel.refresh() },
-                onNavigateToBattery = onNavigateToBattery,
-                onNavigateToNetwork = onNavigateToNetwork,
-                onNavigateToThermal = onNavigateToThermal,
-                onNavigateToStorage = onNavigateToStorage
-            )
+            Column(modifier = Modifier.fillMaxSize()) {
+                PrimaryTopBar(title = stringResource(R.string.dashboard_title))
+                DashboardContent(
+                    state = state,
+                    onRefresh = { viewModel.refresh() },
+                    onNavigateToBattery = onNavigateToBattery,
+                    onNavigateToNetwork = onNavigateToNetwork,
+                    onNavigateToThermal = onNavigateToThermal,
+                    onNavigateToStorage = onNavigateToStorage
+                )
+            }
         }
     }
 }
@@ -141,21 +172,11 @@ private fun DashboardContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = MaterialTheme.spacing.base),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
-
-            Text(
-                text = stringResource(R.string.dashboard_title),
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
             HealthGauge(
                 score = state.healthScore.overallScore
@@ -188,7 +209,7 @@ private fun DashboardContent(
 
             // 2x2 grid
             Row(
-                modifier = Modifier.fillMaxWidth().height(160.dp),
+                modifier = Modifier.fillMaxWidth().height(172.dp),
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
             ) {
                 AnimatedGridCard(visible = cardsVisible, index = 0, modifier = Modifier.weight(1f).fillMaxHeight()) {
@@ -202,7 +223,7 @@ private fun DashboardContent(
                             healthPercent = state.batteryState.healthPercent,
                             health = state.batteryState.health
                         ),
-                        icon = Icons.Default.BatteryChargingFull,
+                        icon = Icons.Outlined.BatteryChargingFull,
                         subtitle = batteryDashboardSubtitle(
                             healthPercent = state.batteryState.healthPercent,
                             chargingStatusName = state.batteryState.chargingStatus.name
@@ -220,8 +241,8 @@ private fun DashboardContent(
                             ConnectionType.NONE -> stringResource(R.string.network_no_connection)
                         },
                         status = HealthScore.statusFromScore(state.healthScore.networkScore),
-                        icon = Icons.Default.SignalCellularAlt,
-                        subtitle = null,
+                        icon = Icons.Outlined.SignalCellularAlt,
+                        subtitle = state.networkState.signalDbm?.let { "$it ${stringResource(R.string.unit_dbm)}" },
                         statusLabel = scoreLabel(state.healthScore.networkScore),
                         onClick = onNavigateToNetwork
                     )
@@ -231,7 +252,7 @@ private fun DashboardContent(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
 
             Row(
-                modifier = Modifier.fillMaxWidth().height(160.dp),
+                modifier = Modifier.fillMaxWidth().height(172.dp),
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
             ) {
                 AnimatedGridCard(visible = cardsVisible, index = 2, modifier = Modifier.weight(1f).fillMaxHeight()) {
@@ -239,7 +260,7 @@ private fun DashboardContent(
                         title = stringResource(R.string.dashboard_thermal_card),
                         value = "${"%.1f".format(state.thermalState.batteryTempC)}°C",
                         status = HealthScore.statusFromScore(state.healthScore.thermalScore),
-                        icon = Icons.Default.Thermostat,
+                        icon = Icons.Outlined.Thermostat,
                         subtitle = null,
                         statusLabel = scoreLabel(state.healthScore.thermalScore),
                         onClick = onNavigateToThermal
@@ -250,7 +271,7 @@ private fun DashboardContent(
                         title = stringResource(R.string.dashboard_storage_card),
                         value = "${"%.1f".format(state.storageState.usagePercent)}%",
                         status = HealthScore.statusFromScore(state.healthScore.storageScore),
-                        icon = Icons.Default.Memory,
+                        icon = Icons.Outlined.Storage,
                         subtitle = formatBytes(state.storageState.availableBytes),
                         statusLabel = scoreLabel(state.healthScore.storageScore),
                         onClick = onNavigateToStorage
@@ -271,28 +292,30 @@ private fun ScoreBreakdown(
     storageScore: Int,
     modifier: Modifier = Modifier
 ) {
-    val items = listOf(
-        BreakdownItem(
-            icon = Icons.Default.BatteryChargingFull,
-            label = stringResource(R.string.dashboard_battery_card),
-            score = batteryScore
-        ),
-        BreakdownItem(
-            icon = Icons.Default.SignalCellularAlt,
-            label = stringResource(R.string.dashboard_network_card),
-            score = networkScore
-        ),
-        BreakdownItem(
-            icon = Icons.Default.Thermostat,
-            label = stringResource(R.string.dashboard_thermal_card),
-            score = thermalScore
-        ),
-        BreakdownItem(
-            icon = Icons.Default.Memory,
-            label = stringResource(R.string.dashboard_storage_card),
-            score = storageScore
+    val items = remember(batteryScore, networkScore, thermalScore, storageScore) {
+        listOf(
+            BreakdownItem(
+                type = BreakdownType.BATTERY,
+                icon = Icons.Outlined.BatteryChargingFull,
+                score = batteryScore
+            ),
+            BreakdownItem(
+                type = BreakdownType.NETWORK,
+                icon = Icons.Outlined.SignalCellularAlt,
+                score = networkScore
+            ),
+            BreakdownItem(
+                type = BreakdownType.THERMAL,
+                icon = Icons.Outlined.Thermostat,
+                score = thermalScore
+            ),
+            BreakdownItem(
+                type = BreakdownType.STORAGE,
+                icon = Icons.Outlined.Storage,
+                score = storageScore
+            )
         )
-    )
+    }
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -304,9 +327,9 @@ private fun ScoreBreakdown(
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
             ) {
                 rowItems.forEach { item ->
-                    MiniRingScore(
+                    MiniHealthCard(
+                        type = item.type,
                         icon = item.icon,
-                        label = item.label,
                         score = item.score,
                         modifier = Modifier.weight(1f)
                     )
@@ -320,113 +343,269 @@ private fun ScoreBreakdown(
 }
 
 @Composable
-private fun MiniRingScore(
+private fun MiniHealthCard(
+    type: BreakdownType,
     icon: ImageVector,
-    label: String,
     score: Int,
     modifier: Modifier = Modifier
 ) {
+    val isDark = isSystemInDarkTheme()
     val accentColor = MaterialTheme.colorScheme.primary
-    val trackColor = accentColor.copy(alpha = 0.28f)
-    val innerColor = accentColor.copy(alpha = 0.16f)
-    val targetSweep = (score / 100f) * 360f
 
-    var animTarget by remember { mutableFloatStateOf(0f) }
-    LaunchedEffect(score) { animTarget = targetSweep }
-    val animatedSweep by animateFloatAsState(
-        targetValue = animTarget,
-        animationSpec = tween(durationMillis = 550, delayMillis = 120),
-        label = "mini_ring_score"
-    )
-
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isDark) {
+                MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.82f)
+            } else {
+                MaterialTheme.colorScheme.surfaceContainer
+            }
+        ),
+        border = if (isDark) {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
+        } else {
+            null
+        },
+        shape = RoundedCornerShape(20.dp)
     ) {
         Box(
-            modifier = Modifier.size(72.dp),
-            contentAlignment = Alignment.Center
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp)
         ) {
-            Canvas(modifier = Modifier.size(72.dp)) {
-                val progressStroke = 7.dp.toPx()
-                val outerStroke = 3.dp.toPx()
-
-                val progressInset = progressStroke / 2
-                val progressArcSize = Size(size.width - progressInset * 2, size.height - progressInset * 2)
-                val progressTopLeft = Offset(progressInset, progressInset)
-
-                val innerInset = progressStroke + outerStroke / 2
-                val innerArcSize = Size(size.width - innerInset * 2, size.height - innerInset * 2)
-                val innerTopLeft = Offset(innerInset, innerInset)
-
-                drawArc(
-                    color = trackColor,
-                    startAngle = -90f,
-                    sweepAngle = 360f,
-                    useCenter = false,
-                    topLeft = progressTopLeft,
-                    size = progressArcSize,
-                    style = Stroke(width = progressStroke, cap = StrokeCap.Butt)
-                )
-
-                drawArc(
-                    color = trackColor,
-                    startAngle = -90f,
-                    sweepAngle = 360f,
-                    useCenter = false,
-                    topLeft = innerTopLeft,
-                    size = innerArcSize,
-                    style = Stroke(width = outerStroke, cap = StrokeCap.Butt)
-                )
-
-                drawArc(
-                    color = accentColor,
-                    startAngle = -90f,
-                    sweepAngle = animatedSweep,
-                    useCenter = false,
-                    topLeft = progressTopLeft,
-                    size = progressArcSize,
-                    style = Stroke(width = progressStroke, cap = StrokeCap.Round)
-                )
-
-                drawArc(
-                    color = innerColor,
-                    startAngle = -90f,
-                    sweepAngle = animatedSweep,
-                    useCenter = false,
-                    topLeft = innerTopLeft,
-                    size = innerArcSize,
-                    style = Stroke(width = outerStroke, cap = StrokeCap.Round)
-                )
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = accentColor,
+                modifier = Modifier
+                    .size(22.dp)
+                    .align(Alignment.TopEnd)
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(92.dp)
+                    .align(Alignment.Center),
+                contentAlignment = Alignment.Center
+            ) {
+                when (type) {
+                    BreakdownType.BATTERY -> BatteryCellVisual(score = score)
+                    BreakdownType.NETWORK -> NetworkBarsVisual(score = score)
+                    BreakdownType.THERMAL -> ThermalScaleVisual(score = score)
+                    BreakdownType.STORAGE -> StorageSegmentsVisual(score = score)
+                }
             }
+        }
+    }
+}
 
-            Text(
-                text = "$score",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+@Composable
+private fun BatteryCellVisual(score: Int) {
+    val reducedMotion = MaterialTheme.reducedMotion
+    val accentColor = MaterialTheme.colorScheme.primary
+    val fillTarget = score.coerceIn(0, 100) / 100f
+    var animTarget by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(score) { animTarget = fillTarget }
+    val animatedFill by animateFloatAsState(
+        targetValue = animTarget,
+        animationSpec = if (reducedMotion) tween(0) else tween(700, easing = FastOutSlowInEasing),
+        label = "battery_cell_fill"
+    )
+
+    Box(
+        modifier = Modifier
+            .width(70.dp)
+            .height(40.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val strokeWidth = 3.dp.toPx()
+            val tipWidth = 6.dp.toPx()
+            val bodyWidth = size.width - tipWidth - strokeWidth
+            val bodyHeight = size.height - strokeWidth
+            val bodyTop = strokeWidth / 2
+            val bodyLeft = strokeWidth / 2
+            val corner = 10.dp.toPx()
+
+            drawRoundRect(
+                color = accentColor.copy(alpha = 0.24f),
+                topLeft = Offset(bodyLeft, bodyTop),
+                size = Size(bodyWidth, bodyHeight),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner, corner),
+                style = Stroke(width = strokeWidth)
+            )
+            drawRoundRect(
+                color = accentColor,
+                topLeft = Offset(bodyLeft + 4.dp.toPx(), bodyTop + 4.dp.toPx()),
+                size = Size((bodyWidth - 8.dp.toPx()) * animatedFill, bodyHeight - 8.dp.toPx()),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner * 0.7f, corner * 0.7f)
+            )
+            drawRoundRect(
+                color = accentColor.copy(alpha = 0.8f),
+                topLeft = Offset(bodyLeft + bodyWidth, size.height * 0.3f),
+                size = Size(tipWidth, size.height * 0.4f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx(), 4.dp.toPx())
             )
         }
-
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = accentColor,
-            modifier = Modifier.size(18.dp)
-        )
-
         Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            text = score.toString(),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
 
+@Composable
+private fun NetworkBarsVisual(score: Int) {
+    val reducedMotion = MaterialTheme.reducedMotion
+    val accentColor = MaterialTheme.colorScheme.primary
+    val activeBarsTarget = when {
+        score >= 85 -> 4f
+        score >= 65 -> 3f
+        score >= 45 -> 2f
+        score >= 20 -> 1f
+        else -> 0f
+    }
+    var animTarget by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(score) { animTarget = activeBarsTarget }
+    val animatedBars by animateFloatAsState(
+        targetValue = animTarget,
+        animationSpec = if (reducedMotion) tween(0) else tween(650, easing = FastOutSlowInEasing),
+        label = "network_bar_count"
+    )
+    val dimColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Bottom) {
+            repeat(4) { index ->
+                val barHeight = (20 + index * 12).dp
+                Box(
+                    modifier = Modifier
+                        .width(10.dp)
+                        .height(barHeight)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(if (animatedBars > index + 0.15f) accentColor else dimColor)
+                )
+            }
+        }
+        Text(
+            text = score.toString(),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
+private fun ThermalScaleVisual(score: Int) {
+    val reducedMotion = MaterialTheme.reducedMotion
+    val progressTarget = score.coerceIn(0, 100) / 100f
+    var animTarget by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(score) { animTarget = progressTarget }
+    val animatedProgress by animateFloatAsState(
+        targetValue = animTarget,
+        animationSpec = if (reducedMotion) tween(0) else tween(700, easing = FastOutSlowInEasing),
+        label = "thermal_scale_progress"
+    )
+    val statusColors = MaterialTheme.statusColors
+    val gradient = Brush.horizontalGradient(
+        listOf(
+            statusColors.healthy,
+            statusColors.fair,
+            statusColors.poor,
+            statusColors.critical
+        )
+    )
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(
+            modifier = Modifier
+                .widthIn(min = 76.dp)
+                .height(18.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f))
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(animatedProgress.coerceIn(0f, 1f))
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(gradient)
+            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = (68.dp * animatedProgress.coerceIn(0f, 1f)))
+                    .size(12.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceBright)
+            )
+        }
+        Text(
+            text = score.toString(),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
+private fun StorageSegmentsVisual(score: Int) {
+    val reducedMotion = MaterialTheme.reducedMotion
+    val filledSegmentsTarget = when {
+        score >= 88 -> 5f
+        score >= 70 -> 4f
+        score >= 50 -> 3f
+        score >= 30 -> 2f
+        score >= 10 -> 1f
+        else -> 0f
+    }
+    var animTarget by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(score) { animTarget = filledSegmentsTarget }
+    val animatedSegments by animateFloatAsState(
+        targetValue = animTarget,
+        animationSpec = if (reducedMotion) tween(0) else tween(650, easing = FastOutSlowInEasing),
+        label = "storage_segment_count"
+    )
+    val accentColor = MaterialTheme.colorScheme.primary
+    val dimColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
+            repeat(5) { index ->
+                Box(
+                    modifier = Modifier
+                        .width(11.dp)
+                        .height(30.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(if (animatedSegments > index + 0.15f) accentColor else dimColor)
+                )
+            }
+        }
+        Text(
+            text = score.toString(),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+private enum class BreakdownType {
+    BATTERY,
+    NETWORK,
+    THERMAL,
+    STORAGE
+}
+
 private data class BreakdownItem(
+    val type: BreakdownType,
     val icon: ImageVector,
-    val label: String,
     val score: Int
 )
 
@@ -441,10 +620,10 @@ private fun AnimatedGridCard(
         visible = visible,
         modifier = modifier,
         enter = fadeIn(
-            animationSpec = tween(durationMillis = 300, delayMillis = index * 60)
+            animationSpec = tween(durationMillis = 220, delayMillis = index * 32)
         ) + slideInVertically(
-            animationSpec = tween(durationMillis = 300, delayMillis = index * 60),
-            initialOffsetY = { it / 4 }
+            animationSpec = tween(durationMillis = 220, delayMillis = index * 32),
+            initialOffsetY = { it / 8 }
         )
     ) {
         content()
@@ -457,6 +636,22 @@ private fun scoreLabel(score: Int): String = when {
     score >= 70 -> stringResource(R.string.score_good)
     score >= 50 -> stringResource(R.string.score_fair)
     else -> stringResource(R.string.score_poor)
+}
+
+@Composable
+private fun rememberGaugeSweepBrush(baseColor: Color): Brush {
+    val seamStart = lerp(baseColor, Color.White, 0.02f)
+    val highlight = lerp(baseColor, Color.White, 0.05f)
+    val middle = baseColor
+    val shadow = lerp(baseColor, Color.Black, 0.03f)
+    val seamEnd = lerp(baseColor, Color.White, 0.018f)
+    return Brush.sweepGradient(
+        0.0f to seamStart,
+        0.18f to highlight,
+        0.52f to middle,
+        0.82f to shadow,
+        1.0f to seamEnd
+    )
 }
 
 private fun formatEnumName(name: String): String =
@@ -509,5 +704,60 @@ private fun formatBytes(bytes: Long): String {
     } else {
         val mb = bytes / (1024.0 * 1024.0)
         "${"%.0f".format(mb)} MB"
+    }
+}
+
+@Preview(showBackground = true, widthDp = 412, heightDp = 915)
+@Composable
+private fun DashboardContentPreview() {
+    DevicePulseTheme {
+        DashboardContent(
+            state = DashboardUiState.Success(
+                healthScore = HealthScore(
+                    overallScore = 86,
+                    batteryScore = 82,
+                    networkScore = 78,
+                    thermalScore = 91,
+                    storageScore = 73,
+                    status = HealthStatus.HEALTHY
+                ),
+                batteryState = BatteryState(
+                    level = 84,
+                    voltageMv = 4021,
+                    temperatureC = 33.4f,
+                    currentMa = MeasuredValue(-420, Confidence.HIGH),
+                    chargingStatus = ChargingStatus.DISCHARGING,
+                    plugType = PlugType.NONE,
+                    health = BatteryHealth.GOOD,
+                    technology = "Li-ion",
+                    healthPercent = 93
+                ),
+                networkState = NetworkState(
+                    connectionType = ConnectionType.WIFI,
+                    signalDbm = -61,
+                    signalQuality = SignalQuality.EXCELLENT,
+                    wifiSsid = "Office Wi-Fi",
+                    latencyMs = 18
+                ),
+                thermalState = ThermalState(
+                    batteryTempC = 34.1f,
+                    cpuTempC = 40.3f,
+                    thermalHeadroom = 0.72f,
+                    thermalStatus = ThermalStatus.NONE,
+                    isThrottling = false
+                ),
+                storageState = StorageState(
+                    totalBytes = 256L * 1024 * 1024 * 1024,
+                    availableBytes = 104L * 1024 * 1024 * 1024,
+                    usedBytes = 152L * 1024 * 1024 * 1024,
+                    usagePercent = 59.4f
+                )
+            ),
+            onRefresh = {},
+            onNavigateToBattery = {},
+            onNavigateToNetwork = {},
+            onNavigateToThermal = {},
+            onNavigateToStorage = {}
+        )
     }
 }

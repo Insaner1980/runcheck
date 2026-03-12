@@ -59,9 +59,9 @@ val DevicePulseTypography = Typography(
     ),
     titleLarge = TextStyle(
         fontFamily = InterFontFamily,
-        fontSize = 22.sp,
+        fontSize = 24.sp,
         fontWeight = FontWeight.Normal,
-        lineHeight = 28.sp
+        lineHeight = 30.sp
     ),
     titleMedium = TextStyle(
         fontFamily = InterFontFamily,
@@ -90,9 +90,9 @@ val DevicePulseTypography = Typography(
     ),
     bodySmall = TextStyle(
         fontFamily = InterFontFamily,
-        fontSize = 12.sp,
+        fontSize = 13.sp,
         fontWeight = FontWeight.Normal,
-        lineHeight = 16.sp
+        lineHeight = 18.sp
     ),
     labelLarge = TextStyle(
         fontFamily = InterFontFamily,
@@ -102,13 +102,13 @@ val DevicePulseTypography = Typography(
     ),
     labelMedium = TextStyle(
         fontFamily = InterFontFamily,
-        fontSize = 12.sp,
+        fontSize = 13.sp,
         fontWeight = FontWeight.Medium,
-        lineHeight = 16.sp
+        lineHeight = 18.sp
     ),
     labelSmall = TextStyle(
         fontFamily = InterFontFamily,
-        fontSize = 11.sp,
+        fontSize = 12.sp,
         fontWeight = FontWeight.Medium,
         lineHeight = 16.sp
     )

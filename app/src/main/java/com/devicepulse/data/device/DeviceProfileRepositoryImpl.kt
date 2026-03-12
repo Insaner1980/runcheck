@@ -11,7 +11,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class DeviceProfileRepository @Inject constructor(
+class DeviceProfileRepositoryImpl @Inject constructor(
     private val deviceDao: DeviceDao,
     private val capabilityManager: DeviceCapabilityManager,
     private val gson: Gson

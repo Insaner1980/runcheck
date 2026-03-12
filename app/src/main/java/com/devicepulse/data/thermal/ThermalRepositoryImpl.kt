@@ -2,7 +2,7 @@ package com.devicepulse.data.thermal
 
 import com.devicepulse.data.db.dao.ThermalReadingDao
 import com.devicepulse.data.db.entity.ThermalReadingEntity
-import com.devicepulse.data.device.DeviceProfileRepository
+import com.devicepulse.data.device.DeviceProfileRepositoryImpl
 import com.devicepulse.domain.model.ThermalState
 import com.devicepulse.domain.model.ThermalStatus
 import com.devicepulse.domain.repository.ThermalReadingData
@@ -14,9 +14,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ThermalRepository @Inject constructor(
+class ThermalRepositoryImpl @Inject constructor(
     private val thermalDataSource: ThermalDataSource,
-    private val deviceProfileRepository: DeviceProfileRepository,
+    private val deviceProfileRepository: DeviceProfileRepositoryImpl,
     private val thermalReadingDao: ThermalReadingDao
 ) : ThermalRepositoryContract {
 

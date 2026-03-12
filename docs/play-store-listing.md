@@ -33,7 +33,7 @@ Add battery status and health score widgets to your home screen for at-a-glance 
 - Charger comparison and charging session tracking
 - Thermal throttling log
 - CSV data export
-- No advertisements
+- Widgets and advanced insights
 
 **Privacy First**
 All data stays on your device. No cloud uploads, no tracking. See our privacy policy for details.
@@ -87,7 +87,7 @@ Lisää akun tila ja kuntopisteet kotinäytölle.
 - Laturivertailu ja lataussessioiden seuranta
 - Lämpötilan rajoitusloki
 - CSV-datavienti
-- Ei mainoksia
+- Widgetit ja laajemmat insights-näkymät
 
 **Yksityisyys ensin**
 Kaikki data pysyy laitteellasi. Ei pilvipalvelua, ei seurantaa.

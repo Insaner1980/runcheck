@@ -3,6 +3,7 @@ package com.devicepulse.ui.home
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -15,6 +16,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -27,14 +29,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BatteryChargingFull
-import androidx.compose.material.icons.filled.DataUsage
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.BatteryChargingFull
+import androidx.compose.material.icons.outlined.DataUsage
+import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.SignalCellularAlt
+import androidx.compose.material.icons.outlined.Thermostat
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -45,8 +52,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -59,8 +64,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -68,25 +75,42 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
+import com.devicepulse.domain.model.BatteryHealth
+import com.devicepulse.domain.model.BatteryState
+import com.devicepulse.domain.model.ChargingStatus
+import com.devicepulse.domain.model.Confidence
 import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.HealthScore
 import com.devicepulse.domain.model.HealthStatus
+import com.devicepulse.domain.model.MeasuredValue
+import com.devicepulse.domain.model.NetworkState
+import com.devicepulse.domain.model.PlugType
+import com.devicepulse.domain.model.SignalQuality
+import com.devicepulse.domain.model.StorageState
+import com.devicepulse.domain.model.ThermalState
+import com.devicepulse.domain.model.ThermalStatus
+import com.devicepulse.ui.components.AnimatedIntText
+import com.devicepulse.ui.components.PrimaryTopBar
+import com.devicepulse.ui.theme.DevicePulseTheme
 import com.devicepulse.ui.theme.InterFontFamily
 import com.devicepulse.ui.theme.JetBrainsMonoFontFamily
+import com.devicepulse.ui.theme.reducedMotion
 import com.devicepulse.ui.theme.statusColors
 
 // Fixed text styles — uses JetBrains Mono for hero numbers, Inter for labels.
 // Every hero value on the home screen uses the exact same TextStyle object.
 private val HeroValueStyle = TextStyle(
-    fontSize = 32.sp,
+    fontSize = 26.sp,
     fontFamily = JetBrainsMonoFontFamily,
     fontWeight = FontWeight.Normal,
+    lineHeight = 30.sp,
     letterSpacing = 0.sp
 )
 
@@ -100,39 +124,27 @@ private val CardLabelStyle = TextStyle(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onNavigateToDashboard: () -> Unit,
-    onNavigateToBattery: () -> Unit,
+    onNavigateToHealth: () -> Unit,
     onNavigateToNetwork: () -> Unit,
-    onNavigateToThermal: () -> Unit,
-    onNavigateToCharger: () -> Unit,
-    onNavigateToAppUsage: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onNavigateToMore: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                },
+            PrimaryTopBar(
+                title = stringResource(R.string.app_name),
                 actions = {
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(
-                            imageVector = Icons.Default.Settings,
+                            imageVector = Icons.Outlined.Settings,
                             contentDescription = stringResource(R.string.more_settings),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                }
             )
         }
     ) { innerPadding ->
@@ -159,13 +171,9 @@ fun HomeScreen(
             is HomeUiState.Success -> {
                 HomeContent(
                     state = state, innerPadding = innerPadding,
-                    onNavigateToDashboard = onNavigateToDashboard,
-                    onNavigateToBattery = onNavigateToBattery,
+                    onNavigateToHealth = onNavigateToHealth,
                     onNavigateToNetwork = onNavigateToNetwork,
-                    onNavigateToThermal = onNavigateToThermal,
-                    onNavigateToCharger = onNavigateToCharger,
-                    onNavigateToAppUsage = onNavigateToAppUsage,
-                    onNavigateToSettings = onNavigateToSettings
+                    onNavigateToMore = onNavigateToMore
                 )
             }
         }
@@ -176,73 +184,106 @@ fun HomeScreen(
 private fun HomeContent(
     state: HomeUiState.Success,
     innerPadding: PaddingValues,
-    onNavigateToDashboard: () -> Unit,
-    onNavigateToBattery: () -> Unit,
+    onNavigateToHealth: () -> Unit,
     onNavigateToNetwork: () -> Unit,
-    onNavigateToThermal: () -> Unit,
-    onNavigateToCharger: () -> Unit,
-    onNavigateToAppUsage: () -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToMore: () -> Unit
 ) {
     var cardsVisible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { cardsVisible = true }
 
-    Column(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .padding(innerPadding)
-            .padding(horizontal = 16.dp)
-            .padding(top = 8.dp, bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Row 1: Health + Battery
-        Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            AnimatedGridCard(visible = cardsVisible, index = 0, modifier = Modifier.weight(1f).fillMaxHeight()) {
-                HealthCard(score = state.healthScore.overallScore, status = state.healthScore.status, onClick = onNavigateToDashboard)
-            }
-            AnimatedGridCard(visible = cardsVisible, index = 1, modifier = Modifier.weight(1f).fillMaxHeight()) {
-                BatteryCard(level = state.batteryState.level, chargingStatus = formatEnumName(state.batteryState.chargingStatus.name),
-                    onClick = onNavigateToBattery)
-            }
+        val verticalGap = 10.dp
+        val contentPaddingTop = 2.dp
+        val contentPaddingBottom = 12.dp
+        val totalGap = verticalGap * 3
+        val availableHeight = maxHeight - contentPaddingTop - contentPaddingBottom - totalGap
+
+        val bannerHeight = (availableHeight * 0.12f).coerceIn(64.dp, 82.dp)
+        val utilityRowHeight = (availableHeight * 0.20f).coerceIn(132.dp, 148.dp)
+        val primaryRowHeight = ((availableHeight - bannerHeight - utilityRowHeight) / 2f).coerceIn(168.dp, 196.dp)
+        val shouldScroll = maxHeight < 620.dp
+        val contentModifier = if (shouldScroll) {
+            Modifier.verticalScroll(rememberScrollState())
+        } else {
+            Modifier
         }
-        // Row 2: Network + Thermal
-        Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            AnimatedGridCard(visible = cardsVisible, index = 2, modifier = Modifier.weight(1f).fillMaxHeight()) {
-                NetworkCard(
-                    connectionType = state.networkState.connectionType, networkSubtype = state.networkState.networkSubtype,
-                    wifiSsid = state.networkState.wifiSsid, signalDbm = state.networkState.signalDbm,
-                    subtitle = formatEnumName(state.networkState.signalQuality.name),
-                    status = HealthScore.statusFromScore(state.healthScore.networkScore), onClick = onNavigateToNetwork)
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+                .padding(top = contentPaddingTop, bottom = contentPaddingBottom)
+                .then(contentModifier),
+            verticalArrangement = Arrangement.spacedBy(verticalGap)
+        ) {
+            Row(modifier = Modifier.fillMaxWidth().height(primaryRowHeight), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                AnimatedGridCard(visible = cardsVisible, index = 0, modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    HealthCard(score = state.healthScore.overallScore, status = state.healthScore.status, onClick = onNavigateToHealth)
+                }
+                AnimatedGridCard(visible = cardsVisible, index = 1, modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    BatteryCard(level = state.batteryState.level, chargingStatus = formatEnumName(state.batteryState.chargingStatus.name),
+                        onClick = onNavigateToHealth)
+                }
             }
-            AnimatedGridCard(visible = cardsVisible, index = 3, modifier = Modifier.weight(1f).fillMaxHeight()) {
-                ThermalCard(tempC = state.thermalState.batteryTempC,
-                    status = HealthScore.statusFromScore(state.healthScore.thermalScore), onClick = onNavigateToThermal)
+            Row(modifier = Modifier.fillMaxWidth().height(primaryRowHeight), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                AnimatedGridCard(visible = cardsVisible, index = 2, modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    NetworkCard(
+                        connectionType = state.networkState.connectionType, networkSubtype = state.networkState.networkSubtype,
+                        wifiSsid = state.networkState.wifiSsid, signalDbm = state.networkState.signalDbm,
+                        subtitle = formatEnumName(state.networkState.signalQuality.name),
+                        status = HealthScore.statusFromScore(state.healthScore.networkScore), onClick = onNavigateToNetwork)
+                }
+                AnimatedGridCard(visible = cardsVisible, index = 3, modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    ThermalCard(tempC = state.thermalState.batteryTempC,
+                        status = HealthScore.statusFromScore(state.healthScore.thermalScore), onClick = onNavigateToHealth)
+                }
             }
-        }
-        // Row 3: Chargers + App Usage
-        Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            AnimatedGridCard(visible = cardsVisible, index = 4, modifier = Modifier.weight(1f).fillMaxHeight()) {
-                if (state.isPro) MetricCard(label = stringResource(R.string.home_chargers_card), heroValue = "---", onClick = onNavigateToCharger)
-                else LockedProCard(
-                    icon = Icons.Default.BatteryChargingFull,
-                    title = stringResource(R.string.home_chargers_card),
-                    description = stringResource(R.string.home_chargers_desc),
-                    onClick = onNavigateToCharger
+            Row(modifier = Modifier.fillMaxWidth().height(utilityRowHeight), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                AnimatedGridCard(visible = cardsVisible, index = 4, modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    if (state.isPro) MetricCard(
+                        label = stringResource(R.string.home_chargers_card),
+                        heroValue = "---",
+                        icon = Icons.Outlined.BatteryChargingFull,
+                        onClick = onNavigateToMore
+                    )
+                    else LockedProCard(
+                        icon = Icons.Outlined.BatteryChargingFull,
+                        title = stringResource(R.string.home_chargers_card),
+                        description = stringResource(R.string.home_chargers_desc),
+                        onClick = onNavigateToMore
+                    )
+                }
+                AnimatedGridCard(visible = cardsVisible, index = 5, modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    if (state.isPro) MetricCard(
+                        label = stringResource(R.string.home_app_usage_card),
+                        heroValue = "---",
+                        icon = Icons.Outlined.DataUsage,
+                        onClick = onNavigateToMore
+                    )
+                    else LockedProCard(
+                        icon = Icons.Outlined.DataUsage,
+                        title = stringResource(R.string.home_app_usage_card),
+                        description = stringResource(R.string.home_app_usage_desc),
+                        onClick = onNavigateToMore
+                    )
+                }
+            }
+            AnimatedGridCard(
+                visible = cardsVisible,
+                index = 6,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(bannerHeight)
+            ) {
+                if (state.isPro) InsightsCard(modifier = Modifier.fillMaxHeight()) else ProPromotionCard(
+                    onClick = onNavigateToMore,
+                    modifier = Modifier.fillMaxHeight()
                 )
             }
-            AnimatedGridCard(visible = cardsVisible, index = 5, modifier = Modifier.weight(1f).fillMaxHeight()) {
-                if (state.isPro) MetricCard(label = stringResource(R.string.home_app_usage_card), heroValue = "---", onClick = onNavigateToAppUsage)
-                else LockedProCard(
-                    icon = Icons.Default.DataUsage,
-                    title = stringResource(R.string.home_app_usage_card),
-                    description = stringResource(R.string.home_app_usage_desc),
-                    onClick = onNavigateToAppUsage
-                )
-            }
-        }
-        // Pro banner
-        AnimatedGridCard(visible = cardsVisible, index = 6, extraDelay = 80, modifier = Modifier.fillMaxWidth()) {
-            if (state.isPro) InsightsCard() else ProPromotionCard(onClick = onNavigateToSettings)
         }
     }
 }
@@ -264,10 +305,9 @@ private fun HealthCard(score: Int, status: HealthStatus, onClick: () -> Unit, mo
     }
     PressableCard(onClick = onClick, modifier = modifier.fillMaxHeight()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.home_dashboard_card),
-                style = CardLabelStyle,
-                color = MaterialTheme.colorScheme.onSurface
+            CardHeader(
+                title = stringResource(R.string.home_dashboard_card),
+                icon = Icons.Outlined.Favorite
             )
             Box(
                 modifier = Modifier.fillMaxWidth().weight(1f),
@@ -275,13 +315,15 @@ private fun HealthCard(score: Int, status: HealthStatus, onClick: () -> Unit, mo
             ) {
                 FullRingGauge(
                     fraction = score / 100f,
-                    label = "${score}%"
+                    label = "${score}%",
+                    animatedValue = score,
+                    animatedSuffix = "%",
+                    gaugeSize = 108.dp
                 )
             }
-            Text(
-                text = scoreLabel,
-                style = MaterialTheme.typography.bodySmall,
-                color = accentColor
+            StatusText(
+                label = scoreLabel,
+                accentColor = accentColor
             )
         }
     }
@@ -291,10 +333,9 @@ private fun HealthCard(score: Int, status: HealthStatus, onClick: () -> Unit, mo
 private fun BatteryCard(level: Int, chargingStatus: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     PressableCard(onClick = onClick, modifier = modifier.fillMaxHeight()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.home_battery_card),
-                style = CardLabelStyle,
-                color = MaterialTheme.colorScheme.onSurface
+            CardHeader(
+                title = stringResource(R.string.home_battery_card),
+                icon = Icons.Outlined.BatteryChargingFull
             )
             Box(
                 modifier = Modifier.fillMaxWidth().weight(1f),
@@ -302,7 +343,10 @@ private fun BatteryCard(level: Int, chargingStatus: String, onClick: () -> Unit,
             ) {
                 FullRingGauge(
                     fraction = level / 100f,
-                    label = "${level}%"
+                    label = "${level}%",
+                    animatedValue = level,
+                    animatedSuffix = "%",
+                    gaugeSize = 108.dp
                 )
             }
             Text(
@@ -328,10 +372,9 @@ private fun NetworkCard(
 
     PressableCard(onClick = onClick, modifier = modifier.fillMaxHeight()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.home_network_card),
-                style = CardLabelStyle,
-                color = MaterialTheme.colorScheme.onSurface
+            CardHeader(
+                title = stringResource(R.string.home_network_card),
+                icon = Icons.Outlined.SignalCellularAlt
             )
             // Center: signal bars + hero value stacked
             Column(
@@ -352,10 +395,9 @@ private fun NetworkCard(
                     textAlign = TextAlign.Center
                 )
             }
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = accentColor
+            StatusText(
+                label = subtitle,
+                accentColor = accentColor
             )
         }
     }
@@ -366,10 +408,9 @@ private fun ThermalCard(tempC: Float, status: HealthStatus, onClick: () -> Unit,
     val accentColor = statusColor(status)
     PressableCard(onClick = onClick, modifier = modifier.fillMaxHeight()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.home_thermal_card),
-                style = CardLabelStyle,
-                color = MaterialTheme.colorScheme.onSurface
+            CardHeader(
+                title = stringResource(R.string.home_thermal_card),
+                icon = Icons.Outlined.Thermostat
             )
             Box(
                 modifier = Modifier.fillMaxWidth().weight(1f),
@@ -403,10 +444,16 @@ private fun ThermalCard(tempC: Float, status: HealthStatus, onClick: () -> Unit,
 // ── Generic / Locked / Pro Cards ──────────────────────────────────────────
 
 @Composable
-private fun MetricCard(label: String, heroValue: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun MetricCard(
+    label: String,
+    heroValue: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     PressableCard(onClick = onClick, modifier = modifier.fillMaxHeight()) {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            Text(text = label, style = CardLabelStyle, color = MaterialTheme.colorScheme.onSurface)
+        Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
+            CardHeader(title = label, icon = icon)
             Box(
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 contentAlignment = Alignment.Center
@@ -414,6 +461,27 @@ private fun MetricCard(label: String, heroValue: String, onClick: () -> Unit, mo
                 Text(text = heroValue, style = HeroValueStyle, color = MaterialTheme.colorScheme.onSurface)
             }
         }
+    }
+}
+
+@Composable
+private fun CardHeader(title: String, icon: ImageVector) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = CardLabelStyle,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(18.dp)
+        )
     }
 }
 
@@ -427,12 +495,12 @@ private fun LockedProCard(
         onClick = onClick,
         modifier = modifier.fillMaxWidth().fillMaxHeight(),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) Color.White.copy(alpha = 0.02f)
+            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f)
             else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f)
         ),
-        border = if (isDark) BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)) else null
+        border = if (isDark) BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.42f)) else null
     ) {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -444,7 +512,7 @@ private fun LockedProCard(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
                 Icon(
-                    imageVector = Icons.Default.Lock,
+                    imageVector = Icons.Outlined.Lock,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                     modifier = Modifier.size(14.dp)
@@ -476,15 +544,15 @@ private fun ProPromotionCard(onClick: () -> Unit, modifier: Modifier = Modifier)
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f))
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.Star,
+                imageVector = Icons.Outlined.Star,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
@@ -509,9 +577,20 @@ private fun ProPromotionCard(onClick: () -> Unit, modifier: Modifier = Modifier)
 private fun InsightsCard(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSystemInDarkTheme()) {
+                MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.82f)
+            } else {
+                MaterialTheme.colorScheme.surfaceContainer
+            }
+        ),
+        border = if (isSystemInDarkTheme()) {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
+        } else {
+            null
+        }
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
             Text(
                 text = stringResource(R.string.home_insights_title),
                 style = MaterialTheme.typography.titleMedium,
@@ -535,14 +614,31 @@ private fun FullRingGauge(
     label: String,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
+    animatedValue: Int? = null,
+    animatedSuffix: String = "",
     gaugeSize: Dp = 120.dp,
     outerWidth: Dp = 3.dp,
     progressWidth: Dp = 8.dp
 ) {
+    val reducedMotion = MaterialTheme.reducedMotion
     val accentColor = MaterialTheme.colorScheme.primary
     val trackColor = accentColor.copy(alpha = 0.28f)
     val innerColor = accentColor.copy(alpha = 0.16f)
-    val sweepAngle = fraction * 360f
+    val progressBrush = rememberGaugeSweepBrush(accentColor)
+    val innerBrush = rememberGaugeSweepBrush(innerColor)
+    val targetSweep = fraction * 360f
+    val sweepAngle by animateFloatAsState(
+        targetValue = targetSweep,
+        animationSpec = if (reducedMotion) {
+            tween(durationMillis = 0)
+        } else {
+            tween(
+                durationMillis = 800,
+                easing = FastOutSlowInEasing
+            )
+        },
+        label = "home_full_ring_gauge"
+    )
 
     Box(modifier = modifier.requiredSize(gaugeSize), contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -572,25 +668,33 @@ private fun FullRingGauge(
 
             // Accent progress ring
             drawArc(
-                color = accentColor, startAngle = -90f, sweepAngle = sweepAngle,
+                brush = progressBrush, startAngle = -90f, sweepAngle = sweepAngle,
                 useCenter = false, topLeft = progressTopLeft, size = progressArcSize,
                 style = Stroke(width = progressStroke, cap = StrokeCap.Round)
             )
 
-            // Neutral inner border
+            // Subtle inner accent
             drawArc(
-                color = innerColor, startAngle = -90f, sweepAngle = sweepAngle,
+                brush = innerBrush, startAngle = -90f, sweepAngle = sweepAngle,
                 useCenter = false, topLeft = innerTopLeft, size = innerArcSize,
                 style = Stroke(width = outerStroke, cap = StrokeCap.Round)
             )
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = label,
-                style = HeroValueStyle,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            if (animatedValue != null) {
+                AnimatedIntText(
+                    value = animatedValue,
+                    suffix = animatedSuffix,
+                    style = HeroValueStyle
+                )
+            } else {
+                Text(
+                    text = label,
+                    style = HeroValueStyle,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
             if (subtitle != null) {
                 Text(
                     text = subtitle,
@@ -600,6 +704,22 @@ private fun FullRingGauge(
             }
         }
     }
+}
+
+@Composable
+private fun rememberGaugeSweepBrush(baseColor: Color): Brush {
+    val seamStart = lerp(baseColor, Color.White, 0.02f)
+    val highlight = lerp(baseColor, Color.White, 0.05f)
+    val middle = baseColor
+    val shadow = lerp(baseColor, Color.Black, 0.03f)
+    val seamEnd = lerp(baseColor, Color.White, 0.018f)
+    return Brush.sweepGradient(
+        0.0f to seamStart,
+        0.18f to highlight,
+        0.52f to middle,
+        0.82f to shadow,
+        1.0f to seamEnd
+    )
 }
 
 @Composable
@@ -654,6 +774,27 @@ private fun StatusChip(status: HealthStatus, accentColor: Color, modifier: Modif
     }
 }
 
+@Composable
+private fun StatusText(label: String, accentColor: Color, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(accentColor)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
 // ── Shared Utilities ──────────────────────────────────────────────────────
 
 @Composable
@@ -671,10 +812,10 @@ private fun PressableCard(onClick: () -> Unit, modifier: Modifier = Modifier, co
         modifier = modifier.fillMaxWidth().scale(scale),
         interactionSource = interactionSource,
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) Color.White.copy(alpha = 0.04f)
+            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.82f)
             else MaterialTheme.colorScheme.surfaceContainer
         ),
-        border = if (isDark) BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)) else null
+        border = if (isDark) BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)) else null
     ) { content() }
 }
 
@@ -682,8 +823,8 @@ private fun PressableCard(onClick: () -> Unit, modifier: Modifier = Modifier, co
 private fun AnimatedGridCard(visible: Boolean, index: Int, modifier: Modifier = Modifier, extraDelay: Int = 0, content: @Composable () -> Unit) {
     AnimatedVisibility(
         visible = visible, modifier = modifier,
-        enter = fadeIn(animationSpec = tween(durationMillis = 300, delayMillis = index * 40 + extraDelay)) +
-                slideInVertically(animationSpec = tween(durationMillis = 300, delayMillis = index * 40 + extraDelay), initialOffsetY = { it / 4 })
+        enter = fadeIn(animationSpec = tween(durationMillis = 220, delayMillis = index * 28 + extraDelay)) +
+                slideInVertically(animationSpec = tween(durationMillis = 220, delayMillis = index * 28 + extraDelay), initialOffsetY = { it / 8 })
     ) { content() }
 }
 
@@ -700,3 +841,58 @@ private fun statusColor(status: HealthStatus): Color {
 
 private fun formatEnumName(name: String): String =
     name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }
+
+@Preview(showBackground = true, widthDp = 412, heightDp = 915)
+@Composable
+private fun HomeContentPreview() {
+    DevicePulseTheme {
+        HomeContent(
+            state = HomeUiState.Success(
+                healthScore = HealthScore(
+                    overallScore = 88,
+                    batteryScore = 81,
+                    networkScore = 76,
+                    thermalScore = 90,
+                    storageScore = 69,
+                    status = HealthStatus.HEALTHY
+                ),
+                batteryState = BatteryState(
+                    level = 87,
+                    voltageMv = 4110,
+                    temperatureC = 32.8f,
+                    currentMa = MeasuredValue(-315, Confidence.HIGH),
+                    chargingStatus = ChargingStatus.DISCHARGING,
+                    plugType = PlugType.NONE,
+                    health = BatteryHealth.GOOD,
+                    technology = "Li-ion",
+                    healthPercent = 94
+                ),
+                networkState = NetworkState(
+                    connectionType = ConnectionType.WIFI,
+                    signalDbm = -58,
+                    signalQuality = SignalQuality.EXCELLENT,
+                    wifiSsid = "DevicePulse Lab",
+                    latencyMs = 22
+                ),
+                thermalState = ThermalState(
+                    batteryTempC = 33.1f,
+                    cpuTempC = 39.4f,
+                    thermalHeadroom = 0.76f,
+                    thermalStatus = ThermalStatus.NONE,
+                    isThrottling = false
+                ),
+                storageState = StorageState(
+                    totalBytes = 128L * 1024 * 1024 * 1024,
+                    availableBytes = 42L * 1024 * 1024 * 1024,
+                    usedBytes = 86L * 1024 * 1024 * 1024,
+                    usagePercent = 67.2f
+                ),
+                isPro = false
+            ),
+            innerPadding = PaddingValues(),
+            onNavigateToHealth = {},
+            onNavigateToNetwork = {},
+            onNavigateToMore = {}
+        )
+    }
+}

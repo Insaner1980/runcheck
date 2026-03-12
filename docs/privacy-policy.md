@@ -23,12 +23,11 @@ Free users' data is automatically cleaned up after 24 hours. Pro users can retai
 DevicePulse uses network access only for:
 
 - **Latency measurement**: A single HTTPS request to measure network response time
-- **Ads**: Google AdMob displays banner advertisements to free users
 - **In-app purchases**: Google Play Billing for the Pro upgrade
+- **Speed testing**: Optional network throughput testing initiated by the user
 
 ## Third-party services
 
-- **Google AdMob**: Displays ads to free users. AdMob may collect device identifiers and usage data per [Google's privacy policy](https://policies.google.com/privacy).
 - **Google Play Billing**: Processes in-app purchases. Subject to [Google Play's terms](https://play.google.com/about/play-terms/).
 
 ## Permissions
@@ -41,7 +40,7 @@ DevicePulse uses network access only for:
 | FOREGROUND_SERVICE | Run background monitoring service |
 | POST_NOTIFICATIONS | Send alerts (low battery, high temp, etc.) |
 | RECEIVE_BOOT_COMPLETED | Restart monitoring after device reboot |
-| INTERNET | Latency measurement and ad delivery |
+| INTERNET | Latency measurement, speed testing, and billing-related network access |
 | READ_PHONE_STATE | Read cellular network info |
 | PACKAGE_USAGE_STATS | Per-app battery usage tracking |
 

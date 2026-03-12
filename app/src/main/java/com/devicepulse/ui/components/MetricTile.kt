@@ -51,7 +51,7 @@ fun MetricTile(
                 ) {
                     Text(
                         text = value,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     if (unit.isNotEmpty()) {

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -27,6 +28,7 @@ class BatteryViewModel @Inject constructor(
     val uiState: StateFlow<BatteryUiState> = _uiState.asStateFlow()
 
     private var selectedPeriod = HistoryPeriod.DAY
+    private var loadJob: Job? = null
 
     init {
         loadBatteryData()
@@ -42,7 +44,8 @@ class BatteryViewModel @Inject constructor(
     }
 
     private fun loadBatteryData() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             combine(
                 getBatteryState(),
                 getBatteryHistory(selectedPeriod).catch { emit(emptyList()) },

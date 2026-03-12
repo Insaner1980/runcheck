@@ -12,4 +12,6 @@ interface UserPreferencesRepository {
     suspend fun setDynamicColors(enabled: Boolean)
     suspend fun setMonitoringInterval(interval: MonitoringInterval)
     suspend fun setNotificationsEnabled(enabled: Boolean)
+    fun getPermissionEducationSeen(): Flow<Boolean>
+    suspend fun setPermissionEducationSeen(seen: Boolean)
 }

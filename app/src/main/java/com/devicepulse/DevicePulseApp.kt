@@ -5,7 +5,6 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.devicepulse.data.billing.ProStatusRepository
 import com.devicepulse.service.monitor.NotificationHelper
-import com.google.android.gms.ads.MobileAds
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
@@ -30,7 +29,6 @@ class DevicePulseApp : Application(), Configuration.Provider {
             setCrashlyticsCollectionEnabled(!BuildConfig.DEBUG)
         }
 
-        MobileAds.initialize(this)
         proStatusRepository.initialize()
         notificationHelper.createChannels()
     }

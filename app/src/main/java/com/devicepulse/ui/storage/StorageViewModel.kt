@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -18,6 +19,7 @@ class StorageViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow<StorageUiState>(StorageUiState.Loading)
     val uiState: StateFlow<StorageUiState> = _uiState.asStateFlow()
+    private var loadJob: Job? = null
 
     init {
         loadStorageData()
@@ -28,7 +30,8 @@ class StorageViewModel @Inject constructor(
     }
 
     private fun loadStorageData() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             getStorageState()
                 .catch { e ->
                     _uiState.value = StorageUiState.Error(e.message ?: "Unknown error")

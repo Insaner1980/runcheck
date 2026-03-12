@@ -1,8 +1,8 @@
 package com.devicepulse.ui.navigation
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Battery4Bar
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.SignalCellularAlt
 import androidx.compose.material3.Icon
@@ -22,10 +22,10 @@ data class BottomNavItem(
 )
 
 val bottomNavItems = listOf(
-    BottomNavItem(Screen.Dashboard.route, R.string.nav_dashboard, Icons.Filled.Dashboard),
-    BottomNavItem(Screen.Battery.route, R.string.nav_battery, Icons.Filled.Battery4Bar),
+    BottomNavItem(Screen.Home.route, R.string.nav_home, Icons.Filled.Home),
+    BottomNavItem(Screen.Health.route, R.string.nav_dashboard, Icons.Filled.Dashboard),
     BottomNavItem(Screen.Network.route, R.string.nav_network, Icons.Filled.SignalCellularAlt),
-    BottomNavItem("more", R.string.nav_more, Icons.Filled.MoreHoriz)
+    BottomNavItem(Screen.More.route, R.string.nav_more, Icons.Filled.MoreHoriz)
 )
 
 @Composable
@@ -36,14 +36,7 @@ fun BottomNavBar(
 ) {
     NavigationBar(modifier = modifier) {
         bottomNavItems.forEach { item ->
-            val selected = when {
-                item.route == "more" -> currentRoute in listOf(
-                    Screen.Thermal.route,
-                    Screen.Storage.route,
-                    Screen.Settings.route
-                )
-                else -> currentRoute == item.route
-            }
+            val selected = item.route == currentRoute
 
             NavigationBarItem(
                 selected = selected,

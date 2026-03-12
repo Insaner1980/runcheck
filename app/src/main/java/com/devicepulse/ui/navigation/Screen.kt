@@ -2,9 +2,11 @@ package com.devicepulse.ui.navigation
 
 sealed class Screen(val route: String) {
     data object Home : Screen("home")
-    data object Dashboard : Screen("dashboard")
+    data object Health : Screen("health")
     data object Battery : Screen("battery")
     data object Network : Screen("network")
+    data object SpeedTest : Screen("speed_test")
+    data object More : Screen("more")
     data object Thermal : Screen("thermal")
     data object Storage : Screen("storage")
     data object Settings : Screen("settings")
