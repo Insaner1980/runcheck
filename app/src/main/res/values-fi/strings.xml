@@ -4,15 +4,9 @@
     <string name="not_available">Ei saatavilla</string>
 
     <!-- Navigation -->
-    <string name="nav_home">Koti</string>
     <string name="navigate_back">Takaisin</string>
-    <string name="nav_dashboard">Terveys</string>
-    <string name="nav_battery">Akku</string>
-    <string name="nav_network">Verkko</string>
-    <string name="nav_more">Lisää</string>
 
     <!-- Home Screen -->
-    <string name="home_dashboard_card">Kunto</string>
     <string name="home_battery_card">Akku</string>
     <string name="home_network_card">Verkko</string>
     <string name="home_thermal_card">Lämpötila</string>
@@ -20,9 +14,6 @@
     <string name="home_chargers_card">Laturit</string>
     <string name="home_app_usage_card">Sovellusten käyttö</string>
     <string name="home_pro_title">Avaa DevicePulse Pro</string>
-    <string name="home_pro_subtitle">Trendit, laturitestit, oivallukset ja muuta</string>
-    <string name="home_insights_title">Oivallukset</string>
-    <string name="home_locked_pro">Pro</string>
     <string name="home_chargers_desc">Testaa ja vertaile latureitasi</string>
     <string name="home_app_usage_desc">Katso mitkä sovellukset kuluttavat akkua</string>
     <string name="home_health_score">KUNTOPISTEET</string>
@@ -33,14 +24,6 @@
     <string name="home_test_compare">Testaa ja vertaile</string>
     <string name="home_pro_history_desc">Historia, laturitestit, vienti ja muuta</string>
     <string name="home_free_suffix">vapaana</string>
-
-    <!-- Dashboard -->
-    <string name="dashboard_title">Terveys</string>
-    <string name="dashboard_health_score">Kuntopisteet</string>
-    <string name="dashboard_battery_card">Akku</string>
-    <string name="dashboard_network_card">Verkko</string>
-    <string name="dashboard_thermal_card">Lämpötila</string>
-    <string name="dashboard_storage_card">Tallennustila</string>
 
     <!-- Health Status -->
     <string name="status_healthy">Hyvä</string>
@@ -178,14 +161,6 @@
 
     <!-- Settings -->
     <string name="settings_title">Asetukset</string>
-    <string name="settings_theme">Teema</string>
-    <string name="settings_theme_light">Vaalea</string>
-    <string name="settings_theme_dark">Tumma</string>
-    <string name="settings_theme_system">Järjestelmä</string>
-    <string name="settings_amoled_black">AMOLED-musta</string>
-    <string name="settings_amoled_black_desc">Puhdas musta tausta OLED-näytöille</string>
-    <string name="settings_dynamic_colors">Dynaamiset värit</string>
-    <string name="settings_dynamic_colors_desc">Käytä taustakuvan värejä</string>
     <string name="settings_monitoring_interval">Seurantaväli</string>
     <string name="settings_interval_15">15 minuuttia</string>
     <string name="settings_interval_30">30 minuuttia</string>
@@ -213,10 +188,6 @@
     <string name="pro_feature_export_message">CSV-vienti vaatii DevicePulse Pron.</string>
 
     <!-- More Menu -->
-    <string name="more_thermal">Lämpötila</string>
-    <string name="more_storage">Tallennustila</string>
-    <string name="more_charger">Laturit</string>
-    <string name="more_app_usage">Sovellusten käyttö</string>
     <string name="more_settings">Asetukset</string>
 
     <!-- Widgets -->

@@ -4,15 +4,9 @@
     <string name="not_available">N/A</string>
 
     <!-- Navigation -->
-    <string name="nav_home">Home</string>
     <string name="navigate_back">Back</string>
-    <string name="nav_dashboard">Health</string>
-    <string name="nav_battery">Battery</string>
-    <string name="nav_network">Network</string>
-    <string name="nav_more">More</string>
 
     <!-- Home Screen -->
-    <string name="home_dashboard_card">Health</string>
     <string name="home_battery_card">Battery</string>
     <string name="home_network_card">Network</string>
     <string name="home_thermal_card">Thermal</string>
@@ -20,9 +14,6 @@
     <string name="home_chargers_card">Chargers</string>
     <string name="home_app_usage_card">App Usage</string>
     <string name="home_pro_title">Unlock DevicePulse Pro</string>
-    <string name="home_pro_subtitle">Trends, charger testing, insights &amp; more</string>
-    <string name="home_insights_title">Insights</string>
-    <string name="home_locked_pro">Pro</string>
     <string name="home_chargers_desc">Test &amp; compare your chargers</string>
     <string name="home_app_usage_desc">See which apps drain battery</string>
     <string name="home_health_score">HEALTH SCORE</string>
@@ -33,14 +24,6 @@
     <string name="home_test_compare">Test &amp; compare</string>
     <string name="home_pro_history_desc">History, charger testing, export &amp; more</string>
     <string name="home_free_suffix">free</string>
-
-    <!-- Dashboard -->
-    <string name="dashboard_title">Health</string>
-    <string name="dashboard_health_score">Health Score</string>
-    <string name="dashboard_battery_card">Battery</string>
-    <string name="dashboard_network_card">Network</string>
-    <string name="dashboard_thermal_card">Thermal</string>
-    <string name="dashboard_storage_card">Storage</string>
 
     <!-- Health Status -->
     <string name="status_healthy">Healthy</string>
@@ -188,14 +171,6 @@
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
-    <string name="settings_theme">Theme</string>
-    <string name="settings_theme_light">Light</string>
-    <string name="settings_theme_dark">Dark</string>
-    <string name="settings_theme_system">System</string>
-    <string name="settings_amoled_black">AMOLED Black</string>
-    <string name="settings_amoled_black_desc">Pure black background for OLED displays</string>
-    <string name="settings_dynamic_colors">Dynamic Colors</string>
-    <string name="settings_dynamic_colors_desc">Use colors from your wallpaper</string>
     <string name="settings_monitoring_interval">Monitoring Interval</string>
     <string name="settings_interval_15">15 minutes</string>
     <string name="settings_interval_30">30 minutes</string>
@@ -233,10 +208,6 @@
     <string name="pro_feature_export_message">CSV export requires DevicePulse Pro.</string>
 
     <!-- More Menu -->
-    <string name="more_thermal">Thermal</string>
-    <string name="more_storage">Storage</string>
-    <string name="more_charger">Chargers</string>
-    <string name="more_app_usage">App Usage</string>
     <string name="more_settings">Settings</string>
 
     <!-- Widgets -->

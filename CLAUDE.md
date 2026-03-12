@@ -34,15 +34,21 @@ app/src/main/java/com/devicepulse/
 │   ├── usecase/        # Business logic (CalculateHealthScore, GetBatteryTrend, etc.)
 │   └── scoring/        # Health score algorithm
 ├── ui/
-│   ├── dashboard/      # Main dashboard screen + ViewModel
+│   ├── home/           # Single home screen (hub) + ViewModel
 │   ├── battery/        # Battery detail screen + ViewModel
 │   ├── network/        # Network detail screen + ViewModel
 │   ├── thermal/        # Thermal detail screen + ViewModel
 │   ├── storage/        # Storage detail screen + ViewModel
+│   ├── charger/        # Charger comparison screen + ViewModel
+│   ├── appusage/       # App battery usage screen + ViewModel
 │   ├── settings/       # Settings screen + ViewModel
-│   ├── theme/          # Material You theme, color schemes, typography
-│   ├── components/     # Shared composables (gauges, charts, cards, badges)
-│   └── navigation/     # Navigation graph, bottom nav setup
+│   ├── theme/          # Dark theme, color tokens, typography, spacing
+│   ├── common/         # Shared formatting helpers (formatPercent, formatTemp, etc.)
+│   ├── components/     # Shared composables: ProgressRing, MiniBar, GridCard, ListRow,
+│   │                   #   SectionHeader, IconCircle, StatusDot, ProBadgePill,
+│   │                   #   PrimaryTopBar, DetailTopBar, MetricTile, ConfidenceBadge,
+│   │                   #   ProFeatureCalloutCard, ProFeatureLockedState, charts, etc.
+│   └── navigation/     # NavGraph + Screen sealed class (push-based from Home)
 └── service/
     └── monitor/        # Background WorkManager jobs for periodic readings
 ```
@@ -53,36 +59,35 @@ app/src/main/java/com/devicepulse/
 - All UI in Jetpack Compose — no XML layouts, no Fragments
 - Use `StateFlow` for ViewModel → UI state
 - Use `sealed interface` for UI state (Loading / Success / Error)
-- Name ViewModels as `[Screen]ViewModel` (e.g., `DashboardViewModel`)
+- Name ViewModels as `[Screen]ViewModel` (e.g., `HomeViewModel`, `BatteryViewModel`)
 - Name UseCases as verb phrases (e.g., `CalculateHealthScoreUseCase`)
-- Name composables as nouns (e.g., `HealthGauge`, `BatteryCard`)
+- Name composables as nouns (e.g., `ProgressRing`, `GridCard`)
 - Keep composables small and focused — extract when > ~50 lines
 - All hardcoded strings must go into `strings.xml` for localization
 - Comments in English
 - No `!!` operator — use safe calls, `requireNotNull`, or sealed error types
 
-## Material You / Design Rules
+## Design System
 
-- Use `MaterialTheme.colorScheme` everywhere — never hardcode colors
-- Support dynamic colors (`DynamicColors`) on Android 12+
-- Provide fallback color scheme (teal/cyan primary) for older devices
-- **Three theme modes:** Light, Dark (#121212 surface), AMOLED Black (#000000 surface)
-  - Dark is the default dark mode — best readability and no OLED smearing
-  - AMOLED Black is opt-in toggle within dark mode settings — maximum battery saving on OLED
-- **Never use pure white (#FFFFFF) text on dark backgrounds** — use #E0E0E0 for primary text, #ABABAB for secondary. Pure white causes halation and eye strain.
-- **AMOLED Black cards use #0A0A0A**, not pure black, to maintain visual hierarchy
-- Use semantic status colors via custom theme extensions:
-  - Green for healthy/good
-  - Yellow/amber for fair/attention
-  - Red for poor/critical
-- Status colors must ALWAYS be paired with icons or text labels — never color alone (color blindness accessibility)
+- **Single dark theme** — no light mode, no AMOLED toggle, no dynamic colors
+- **Dark palette:**
+  - BgPage = `#0B1E24`, BgCard = `#133040`, BgIconCircle = `#1A3A4D`
+  - Accent Teal `#4DD0B8`, Accent Blue `#5BA8F5`, Accent Orange `#F5A05B`, Accent Red `#F55B5B`
+  - Accent Lime `#A8F55B`, Accent Yellow `#F5D45B`
+  - TextPrimary `#E0E0E0`, TextSecondary `#ABABAB`, TextMuted `#707070`
+- **Typography:** System Roboto (no custom fonts) — M3 defaults via `MaterialTheme.typography`
+- **Navigation:** Push-based from single Home screen (no bottom nav bar)
+- **Cards:** Flat `BgCard` background, no borders, no shadows, no elevation, 16dp rounded corners
+- **Core components:** ProgressRing, MiniBar, GridCard, ListRow, SectionHeader, IconCircle, StatusDot, ProBadgePill, PrimaryTopBar, DetailTopBar, MetricTile
+- **Status colors** via `MaterialTheme.statusColors` extension (healthy/fair/poor/critical) — always paired with icons or text labels for accessibility
+- **Animations:**
+  - ProgressRing: 1200ms ease-out (`FastOutSlowInEasing`) from 0 to target
+  - MiniBar: 800ms ease-out from 0 to target
+  - Both respect `MaterialTheme.reducedMotion` (instant when true)
+  - No card entrance animations
 - Contrast ratio minimum: **4.5:1** body text, **3:1** large text (WCAG AA)
-- All shapes use M3 shape system (no custom hardcoded corner radii)
-- Light, Dark, and AMOLED Black themes must all look polished — test all three
 - Minimum touch target: 48dp
-- Use **Roboto Mono** for real-time numeric values (mA, mV, °C) to prevent layout jitter
-- Respect `AccessibilityManager.isReducedMotionEnabled` — disable or simplify animations when set
-- Spacing based on 4dp grid: 4/8/12/16/24/32dp tokens
+- Spacing based on 4dp grid: 4/8/12/16/24/32dp tokens via `MaterialTheme.spacing`
 
 ## Device Detection System
 
