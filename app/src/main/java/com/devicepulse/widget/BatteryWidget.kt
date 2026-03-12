@@ -2,6 +2,8 @@ package com.devicepulse.widget
 
 import android.content.Context
 import android.os.BatteryManager
+import com.devicepulse.R
+import com.devicepulse.data.billing.ProStatusCache
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
@@ -20,23 +22,26 @@ import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.glance.unit.ColorProvider
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.background
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 class BatteryWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        if (!ProStatusCache.isPro(context)) {
+            provideLockedContent(context)
+            return
+        }
         val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
         val level = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
         val tempRaw = batteryManager.getIntProperty(4) // BATTERY_PROPERTY_TEMPERATURE isn't public
         val tempC = if (tempRaw > 0) tempRaw / 10f else null
         val currentMa = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+        val levelText = context.getString(R.string.widget_percent_value, level)
         val currentDisplay = if (currentMa != 0 && currentMa != Int.MIN_VALUE) {
-            "${currentMa / 1000} mA"
+            context.getString(R.string.widget_current_value, currentMa / 1000)
         } else null
 
         provideContent {
@@ -54,7 +59,7 @@ class BatteryWidget : GlanceAppWidget() {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "$level%",
+                            text = levelText,
                             style = TextStyle(
                                 fontSize = 28.sp,
                                 fontWeight = FontWeight.Bold,
@@ -65,7 +70,7 @@ class BatteryWidget : GlanceAppWidget() {
                         Column {
                             tempC?.let {
                                 Text(
-                                    text = "${"%.1f".format(it)}°C",
+                                    text = context.getString(R.string.widget_temperature_value, it),
                                     style = TextStyle(
                                         fontSize = 12.sp,
                                         color = GlanceTheme.colors.onSurfaceVariant
@@ -83,6 +88,38 @@ class BatteryWidget : GlanceAppWidget() {
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    private suspend fun provideLockedContent(context: Context) {
+        provideContent {
+            GlanceTheme {
+                Column(
+                    modifier = GlanceModifier
+                        .fillMaxSize()
+                        .padding(12.dp)
+                        .cornerRadius(16.dp)
+                        .background(GlanceTheme.colors.widgetBackground),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = context.getString(R.string.widget_battery_name),
+                        style = TextStyle(
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = GlanceTheme.colors.onSurface
+                        )
+                    )
+                    Text(
+                        text = context.getString(R.string.widget_pro_required),
+                        style = TextStyle(
+                            fontSize = 12.sp,
+                            color = GlanceTheme.colors.onSurfaceVariant
+                        )
+                    )
                 }
             }
         }

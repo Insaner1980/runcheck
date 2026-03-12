@@ -4,7 +4,10 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.devicepulse.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -62,6 +65,7 @@ class NotificationHelper @Inject constructor(
 
     /** Posts a notification when battery drops below the user-defined threshold. */
     fun showLowBatteryAlert(level: Int) {
+        if (!canPostNotifications()) return
         val notification = NotificationCompat.Builder(context, CHANNEL_ALERTS)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentTitle(context.getString(R.string.notification_low_battery_title))
@@ -75,6 +79,7 @@ class NotificationHelper @Inject constructor(
 
     /** Posts a notification when device temperature exceeds 42 degrees C. */
     fun showHighTempAlert(tempC: Float) {
+        if (!canPostNotifications()) return
         val notification = NotificationCompat.Builder(context, CHANNEL_ALERTS)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentTitle(context.getString(R.string.notification_high_temp_title))
@@ -88,6 +93,7 @@ class NotificationHelper @Inject constructor(
 
     /** Posts a notification when storage usage exceeds 90%. */
     fun showLowStorageAlert(percentUsed: Float) {
+        if (!canPostNotifications()) return
         val notification = NotificationCompat.Builder(context, CHANNEL_ALERTS)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentTitle(context.getString(R.string.notification_low_storage_title))
@@ -101,6 +107,7 @@ class NotificationHelper @Inject constructor(
 
     /** Posts a notification when charging completes, with an optional summary. */
     fun showChargeCompleteNotification(summary: String) {
+        if (!canPostNotifications()) return
         val notification = NotificationCompat.Builder(context, CHANNEL_STATUS)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(context.getString(R.string.notification_charge_complete_title))
@@ -115,5 +122,13 @@ class NotificationHelper @Inject constructor(
     /** Cancels a notification by its ID. */
     fun cancelNotification(id: Int) {
         notificationManager.cancel(id)
+    }
+
+    private fun canPostNotifications(): Boolean {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
     }
 }

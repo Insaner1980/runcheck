@@ -31,6 +31,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
 import com.devicepulse.domain.model.Confidence
 import com.devicepulse.domain.model.HistoryPeriod
+import com.devicepulse.ui.common.formatDecimal
+import com.devicepulse.ui.components.ProFeatureCalloutCard
 import com.devicepulse.ui.components.ConfidenceBadge
 import com.devicepulse.ui.components.DetailTopBar
 import com.devicepulse.ui.components.MetricTile
@@ -41,6 +43,7 @@ import com.devicepulse.ui.theme.spacing
 @Composable
 fun BatteryDetailScreen(
     onBack: () -> Unit,
+    onUpgradeToPro: () -> Unit,
     viewModel: BatteryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -70,7 +73,8 @@ fun BatteryDetailScreen(
                 BatteryContent(
                     state = state,
                     onRefresh = { viewModel.refresh() },
-                    onPeriodChange = { viewModel.setHistoryPeriod(it) }
+                    onPeriodChange = { viewModel.setHistoryPeriod(it) },
+                    onUpgradeToPro = onUpgradeToPro
                 )
             }
         }
@@ -81,7 +85,8 @@ fun BatteryDetailScreen(
 private fun BatteryContent(
     state: BatteryUiState.Success,
     onRefresh: () -> Unit,
-    onPeriodChange: (HistoryPeriod) -> Unit
+    onPeriodChange: (HistoryPeriod) -> Unit,
+    onUpgradeToPro: () -> Unit
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     val battery = state.batteryState
@@ -120,7 +125,7 @@ private fun BatteryContent(
 
             MetricTile(
                 label = stringResource(R.string.battery_temperature),
-                value = "%.1f".format(battery.temperatureC),
+                value = formatDecimal(battery.temperatureC, 1),
                 unit = stringResource(R.string.unit_celsius)
             )
 
@@ -222,6 +227,12 @@ private fun BatteryContent(
                         )
                     }
                 }
+            } else {
+                ProFeatureCalloutCard(
+                    message = stringResource(R.string.pro_feature_battery_history_message),
+                    actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+                    onAction = onUpgradeToPro
+                )
             }
 
             if (state.history.isNotEmpty()) {

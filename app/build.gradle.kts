@@ -3,13 +3,15 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
     namespace = "com.devicepulse"
     compileSdk = 36
+
+    androidResources {
+        localeFilters += listOf("en", "fi")
+    }
 
     defaultConfig {
         applicationId = "com.devicepulse"
@@ -19,8 +21,6 @@ android {
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        resourceConfigurations += listOf("en", "fi")
     }
 
     signingConfigs {
@@ -66,6 +66,20 @@ android {
 
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
+}
+
+hilt {
+    enableAggregatingTask = true
+}
+
+tasks.configureEach {
+    if (name.startsWith("hiltJavaCompile") && name.endsWith("UnitTest")) {
+        enabled = false
+    }
+}
+
+configurations.configureEach {
+    resolutionStrategy.activateDependencyLocking()
 }
 
 dependencies {
@@ -133,11 +147,6 @@ dependencies {
     // Glance (home screen widgets)
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
-
-    // Firebase
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.crashlytics)
-    implementation(libs.firebase.analytics)
 
     // Testing
     testImplementation(libs.junit)

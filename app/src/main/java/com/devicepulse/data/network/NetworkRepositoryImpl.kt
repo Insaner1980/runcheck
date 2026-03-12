@@ -6,8 +6,7 @@ import com.devicepulse.domain.model.NetworkState
 import com.devicepulse.domain.repository.NetworkReadingData
 import com.devicepulse.domain.repository.NetworkRepository as NetworkRepositoryContract
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,10 +17,8 @@ class NetworkRepositoryImpl @Inject constructor(
     private val networkReadingDao: NetworkReadingDao
 ) : NetworkRepositoryContract {
 
-    override fun getNetworkState(): Flow<NetworkState> = combine(
-        networkDataSource.getNetworkInfo(),
-        latencyFlow()
-    ) { info, latency ->
+    override fun getNetworkState(): Flow<NetworkState> =
+        networkDataSource.getNetworkInfo().map { info ->
         NetworkState(
             connectionType = info.connectionType,
             signalDbm = info.signalDbm,
@@ -31,12 +28,15 @@ class NetworkRepositoryImpl @Inject constructor(
             wifiFrequencyMhz = info.wifiFrequencyMhz,
             carrier = info.carrier,
             networkSubtype = info.networkSubtype,
-            latencyMs = latency
+            latencyMs = null
         )
     }
 
-    private fun latencyFlow(): Flow<Int?> = flow {
-        emit(latencyMeasurer.measureLatency())
+    override suspend fun measureLatency(): Int? {
+        if (!networkDataSource.hasValidatedConnection()) {
+            return null
+        }
+        return latencyMeasurer.measureLatency()
     }
 
     override suspend fun saveReading(state: NetworkState) {

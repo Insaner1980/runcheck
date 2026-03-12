@@ -3,6 +3,7 @@ package com.devicepulse.ui.storage
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.devicepulse.domain.usecase.GetStorageStateUseCase
+import com.devicepulse.ui.common.messageOr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,7 +35,7 @@ class StorageViewModel @Inject constructor(
         loadJob = viewModelScope.launch {
             getStorageState()
                 .catch { e ->
-                    _uiState.value = StorageUiState.Error(e.message ?: "Unknown error")
+                    _uiState.value = StorageUiState.Error(e.messageOr("Unknown error"))
                 }
                 .collect { state ->
                     _uiState.value = StorageUiState.Success(storageState = state)

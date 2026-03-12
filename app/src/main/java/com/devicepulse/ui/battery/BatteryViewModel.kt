@@ -1,12 +1,13 @@
 package com.devicepulse.ui.battery
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.devicepulse.domain.model.HistoryPeriod
 import com.devicepulse.domain.repository.ProStatusProvider
 import com.devicepulse.domain.usecase.GetBatteryHistoryUseCase
 import com.devicepulse.domain.usecase.GetBatteryStateUseCase
+import com.devicepulse.ui.common.messageOr
+import com.devicepulse.util.ReleaseSafeLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -58,8 +59,8 @@ class BatteryViewModel @Inject constructor(
                     isPro = isPro
                 )
             }.catch { e ->
-                Log.e("BatteryVM", "Battery data failed", e)
-                _uiState.value = BatteryUiState.Error(e.message ?: "Unknown error")
+                ReleaseSafeLog.error("BatteryVM", "Battery data failed", e)
+                _uiState.value = BatteryUiState.Error(e.messageOr("Unknown error"))
             }.collect { state ->
                 _uiState.value = state
             }

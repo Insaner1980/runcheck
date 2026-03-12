@@ -17,6 +17,7 @@ import android.telephony.TelephonyCallback
 import android.telephony.TelephonyDisplayInfo
 import android.telephony.TelephonyManager
 import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
 import androidx.core.location.LocationManagerCompat
 import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.SignalQuality
@@ -24,7 +25,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import java.util.concurrent.Executors
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -79,9 +79,11 @@ class NetworkDataSource @Inject constructor(
         }
 
         connectivityManager.registerDefaultNetworkCallback(callback)
-        context.registerReceiver(
+        ContextCompat.registerReceiver(
+            context,
             locationModeReceiver,
-            IntentFilter(LocationManager.MODE_CHANGED_ACTION)
+            IntentFilter(LocationManager.MODE_CHANGED_ACTION),
+            ContextCompat.RECEIVER_NOT_EXPORTED
         )
 
         // Emit initial state
@@ -91,6 +93,13 @@ class NetworkDataSource @Inject constructor(
             connectivityManager.unregisterNetworkCallback(callback)
             context.unregisterReceiver(locationModeReceiver)
         }
+    }
+
+    fun hasValidatedConnection(): Boolean {
+        val activeNetwork = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
     private fun buildNetworkInfo(capabilities: NetworkCapabilities): NetworkInfo {
@@ -254,13 +263,15 @@ class NetworkDataSource @Inject constructor(
     private fun registerTelephonyCallback() {
         telephonyManager ?: return
         try {
-            val executor = Executors.newSingleThreadExecutor()
             val callback = object : TelephonyCallback(), TelephonyCallback.DisplayInfoListener {
                 override fun onDisplayInfoChanged(displayInfo: TelephonyDisplayInfo) {
                     cachedNetworkTypeName = mapDisplayInfo(displayInfo)
                 }
             }
-            telephonyManager.registerTelephonyCallback(executor, callback)
+            telephonyManager.registerTelephonyCallback(
+                ContextCompat.getMainExecutor(context),
+                callback
+            )
         } catch (_: Exception) {
             // Ignore if registration fails
         }

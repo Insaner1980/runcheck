@@ -7,6 +7,7 @@ import com.devicepulse.domain.model.ThrottlingEvent
 import com.devicepulse.domain.repository.ProStatusProvider
 import com.devicepulse.domain.usecase.GetThermalStateUseCase
 import com.devicepulse.domain.usecase.GetThrottlingHistoryUseCase
+import com.devicepulse.ui.common.messageOr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,7 +52,7 @@ class ThermalViewModel @Inject constructor(
                 )
             }
                 .catch { e ->
-                    _uiState.value = ThermalUiState.Error(e.message ?: "Unknown error")
+                    _uiState.value = ThermalUiState.Error(e.messageOr("Unknown error"))
                 }
                 .collect { state ->
                     _uiState.value = state

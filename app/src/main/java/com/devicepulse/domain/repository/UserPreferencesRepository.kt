@@ -14,4 +14,6 @@ interface UserPreferencesRepository {
     suspend fun setNotificationsEnabled(enabled: Boolean)
     fun getPermissionEducationSeen(): Flow<Boolean>
     suspend fun setPermissionEducationSeen(seen: Boolean)
+    suspend fun getAppUsageLastCollectedAt(): Long?
+    suspend fun setAppUsageLastCollectedAt(timestamp: Long)
 }

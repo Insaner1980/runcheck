@@ -1,17 +1,22 @@
 package com.devicepulse.data.preferences
 
 import android.content.Context
+import androidx.datastore.core.IOException
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.devicepulse.domain.model.MonitoringInterval
 import com.devicepulse.domain.model.ThemeMode
 import com.devicepulse.domain.model.UserPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,7 +28,15 @@ class UserPreferencesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context
 ) : com.devicepulse.domain.repository.UserPreferencesRepository {
 
-    override fun getPreferences(): Flow<UserPreferences> = context.dataStore.data.map { prefs ->
+    private val preferencesFlow: Flow<Preferences> = context.dataStore.data.catch { error ->
+        if (error is IOException) {
+            emit(emptyPreferences())
+        } else {
+            throw error
+        }
+    }
+
+    override fun getPreferences(): Flow<UserPreferences> = preferencesFlow.map { prefs ->
         UserPreferences(
             themeMode = prefs[KEY_THEME_MODE]?.let { ThemeMode.valueOf(it) }
                 ?: ThemeMode.SYSTEM,
@@ -56,12 +69,19 @@ class UserPreferencesRepositoryImpl @Inject constructor(
         context.dataStore.edit { it[KEY_NOTIFICATIONS] = enabled }
     }
 
-    override fun getPermissionEducationSeen(): Flow<Boolean> = context.dataStore.data.map { prefs ->
+    override fun getPermissionEducationSeen(): Flow<Boolean> = preferencesFlow.map { prefs ->
         prefs[KEY_PERMISSION_EDUCATION_SEEN] ?: false
     }
 
     override suspend fun setPermissionEducationSeen(seen: Boolean) {
         context.dataStore.edit { it[KEY_PERMISSION_EDUCATION_SEEN] = seen }
+    }
+
+    override suspend fun getAppUsageLastCollectedAt(): Long? =
+        preferencesFlow.map { prefs -> prefs[KEY_APP_USAGE_LAST_COLLECTED_AT] }.first()
+
+    override suspend fun setAppUsageLastCollectedAt(timestamp: Long) {
+        context.dataStore.edit { it[KEY_APP_USAGE_LAST_COLLECTED_AT] = timestamp }
     }
 
     companion object {
@@ -71,5 +91,6 @@ class UserPreferencesRepositoryImpl @Inject constructor(
         private val KEY_MONITORING_INTERVAL = stringPreferencesKey("monitoring_interval")
         private val KEY_NOTIFICATIONS = booleanPreferencesKey("notifications")
         private val KEY_PERMISSION_EDUCATION_SEEN = booleanPreferencesKey("permission_education_seen")
+        private val KEY_APP_USAGE_LAST_COLLECTED_AT = longPreferencesKey("app_usage_last_collected_at")
     }
 }

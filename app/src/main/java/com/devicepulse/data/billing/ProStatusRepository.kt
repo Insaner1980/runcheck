@@ -15,6 +15,7 @@ import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.queryProductDetails
 import com.android.billingclient.api.queryPurchasesAsync
+import com.devicepulse.billing.ProPurchaseRefreshResult
 import com.devicepulse.billing.ProPurchaseManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -36,7 +37,7 @@ class ProStatusRepository @Inject constructor(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    private val _isProState = MutableStateFlow(false)
+    private val _isProState = MutableStateFlow(ProStatusCache.isPro(context))
     override val isProUser: Flow<Boolean> = _isProState.asStateFlow()
 
     private var billingClient: BillingClient? = null
@@ -45,6 +46,8 @@ class ProStatusRepository @Inject constructor(
     override fun isPro(): Boolean = _isProState.value
 
     fun initialize() {
+        if (billingClient?.isReady == true) return
+
         billingClient = BillingClient.newBuilder(context)
             .setListener(this)
             .enablePendingPurchases(
@@ -57,29 +60,40 @@ class ProStatusRepository @Inject constructor(
         billingClient?.startConnection(object : BillingClientStateListener {
             override fun onBillingSetupFinished(billingResult: BillingResult) {
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    scope.launch { queryExistingPurchases() }
+                    scope.launch {
+                        queryExistingPurchases()
+                        queryProductDetails()
+                    }
                 }
             }
 
             override fun onBillingServiceDisconnected() {
-                // BillingClient reconnects automatically
+                scope.launch { reconnect() }
             }
         })
     }
 
-    private suspend fun queryExistingPurchases() {
-        val client = billingClient ?: return
+    private suspend fun reconnect() {
+        billingClient?.endConnection()
+        billingClient = null
+        initialize()
+    }
+
+    private suspend fun queryExistingPurchases(): ProPurchaseRefreshResult {
+        val client = billingClient ?: return ProPurchaseRefreshResult.UNAVAILABLE
+        if (!client.isReady) return ProPurchaseRefreshResult.UNAVAILABLE
         val params = QueryPurchasesParams.newBuilder()
             .setProductType(BillingClient.ProductType.INAPP)
             .build()
         val result = client.queryPurchasesAsync(params)
         if (result.billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-            val hasPro = result.purchasesList.any { purchase ->
-                purchase.products.contains(PRODUCT_ID_PRO) &&
-                    purchase.purchaseState == Purchase.PurchaseState.PURCHASED
+            return if (syncPurchases(result.purchasesList)) {
+                ProPurchaseRefreshResult.ACTIVE
+            } else {
+                ProPurchaseRefreshResult.NOT_ACTIVE
             }
-            _isProState.value = hasPro
         }
+        return ProPurchaseRefreshResult.UNAVAILABLE
     }
 
     suspend fun queryProductDetails(): com.android.billingclient.api.ProductDetails? {
@@ -102,6 +116,10 @@ class ProStatusRepository @Inject constructor(
         return queryProductDetails()?.oneTimePurchaseOfferDetails?.formattedPrice
     }
 
+    override suspend fun refreshPurchaseStatus(): ProPurchaseRefreshResult {
+        return queryExistingPurchases()
+    }
+
     override fun launchPurchaseFlow(activity: Activity) {
         val productDetails = cachedProductDetails ?: return
         val client = billingClient ?: return
@@ -121,15 +139,25 @@ class ProStatusRepository @Inject constructor(
         purchases: List<Purchase>?
     ) {
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
-            for (purchase in purchases) {
-                if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                    _isProState.value = true
-                    if (!purchase.isAcknowledged) {
-                        acknowledgePurchase(purchase)
-                    }
-                }
-            }
+            syncPurchases(purchases)
         }
+    }
+
+    private fun syncPurchases(purchases: List<Purchase>): Boolean {
+        val proPurchases = purchases
+            .filter(::isEligibleProPurchase)
+
+        updateProState(proPurchases.isNotEmpty())
+
+        proPurchases
+            .filter { !it.isAcknowledged }
+            .forEach { acknowledgePurchase(it) }
+        return proPurchases.isNotEmpty()
+    }
+
+    private fun isEligibleProPurchase(purchase: Purchase): Boolean {
+        return purchase.products.contains(PRODUCT_ID_PRO) &&
+            purchase.purchaseState == Purchase.PurchaseState.PURCHASED
     }
 
     private fun acknowledgePurchase(purchase: Purchase) {
@@ -137,7 +165,16 @@ class ProStatusRepository @Inject constructor(
         val params = AcknowledgePurchaseParams.newBuilder()
             .setPurchaseToken(purchase.purchaseToken)
             .build()
-        client.acknowledgePurchase(params) { /* acknowledged */ }
+        client.acknowledgePurchase(params) { billingResult ->
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                updateProState(true)
+            }
+        }
+    }
+
+    private fun updateProState(isPro: Boolean) {
+        _isProState.value = isPro
+        ProStatusCache.setPro(context, isPro)
     }
 
     fun destroy() {

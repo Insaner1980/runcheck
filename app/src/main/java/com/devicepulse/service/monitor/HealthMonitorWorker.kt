@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.devicepulse.domain.repository.AppBatteryUsageRepository
 import com.devicepulse.domain.repository.BatteryRepository
 import com.devicepulse.domain.repository.NetworkRepository
 import com.devicepulse.domain.repository.StorageRepository
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.first
 class HealthMonitorWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
+    private val appBatteryUsageRepository: AppBatteryUsageRepository,
     private val batteryRepository: BatteryRepository,
     private val networkRepository: NetworkRepository,
     private val thermalRepository: ThermalRepository,
@@ -38,6 +40,8 @@ class HealthMonitorWorker @AssistedInject constructor(
 
             val storageState = storageRepository.getStorageState().first()
             storageRepository.saveReading(storageState)
+
+            appBatteryUsageRepository.collectUsageSnapshot()
 
             // Clean up old readings based on retention policy
             cleanupOldReadings()

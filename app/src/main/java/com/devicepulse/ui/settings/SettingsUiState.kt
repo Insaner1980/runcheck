@@ -8,6 +8,7 @@ data class SettingsUiState(
     val deviceProfile: DeviceProfileInfo? = null,
     val isPro: Boolean = false,
     val proPrice: String? = null,
+    val billingStatus: String? = null,
     val exportStatus: String? = null,
     val errorMessage: String? = null
 )

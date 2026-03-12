@@ -16,7 +16,7 @@ interface AppBatteryUsageDao {
     suspend fun insertAll(usages: List<AppBatteryUsageEntity>)
 
     @Query("""
-        SELECT package_name, app_label,
+        SELECT package_name, MAX(app_label) as app_label,
                SUM(foreground_time_ms) as foreground_time_ms,
                SUM(estimated_drain_mah) as estimated_drain_mah,
                MAX(timestamp) as timestamp,
