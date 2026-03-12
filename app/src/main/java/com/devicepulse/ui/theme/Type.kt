@@ -2,114 +2,87 @@ package com.devicepulse.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import com.devicepulse.R
-
-val InterFontFamily = FontFamily(
-    Font(R.font.inter_variable, weight = FontWeight.Normal),
-    Font(R.font.inter_variable, weight = FontWeight.Medium),
-    Font(R.font.inter_variable, weight = FontWeight.SemiBold),
-    Font(R.font.inter_variable, weight = FontWeight.Bold)
-)
-
-val JetBrainsMonoFontFamily = FontFamily(
-    Font(R.font.jetbrains_mono_variable, weight = FontWeight.Normal),
-    Font(R.font.jetbrains_mono_variable, weight = FontWeight.Medium)
-)
 
 val DevicePulseTypography = Typography(
     displayLarge = TextStyle(
-        fontFamily = JetBrainsMonoFontFamily,
-        fontSize = 57.sp,
-        fontWeight = FontWeight.Normal,
-        lineHeight = 64.sp
+        fontFamily = FontFamily.Default,
+        fontSize = 48.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = (-0.04).em
     ),
     displayMedium = TextStyle(
-        fontFamily = JetBrainsMonoFontFamily,
-        fontSize = 45.sp,
-        fontWeight = FontWeight.Normal,
-        lineHeight = 52.sp
+        fontFamily = FontFamily.Default,
+        fontSize = 36.sp,
+        fontWeight = FontWeight.Bold
     ),
     displaySmall = TextStyle(
-        fontFamily = JetBrainsMonoFontFamily,
-        fontSize = 32.sp,
-        fontWeight = FontWeight.Normal,
-        lineHeight = 40.sp
+        fontFamily = FontFamily.Default,
+        fontSize = 28.sp,
+        fontWeight = FontWeight.SemiBold
     ),
     headlineLarge = TextStyle(
-        fontFamily = InterFontFamily,
-        fontSize = 32.sp,
-        fontWeight = FontWeight.Normal,
-        lineHeight = 40.sp
+        fontFamily = FontFamily.Default,
+        fontSize = 20.sp,
+        fontWeight = FontWeight.SemiBold
     ),
     headlineMedium = TextStyle(
-        fontFamily = InterFontFamily,
-        fontSize = 28.sp,
-        fontWeight = FontWeight.Normal,
-        lineHeight = 36.sp
+        fontFamily = FontFamily.Default,
+        fontSize = 16.sp,
+        fontWeight = FontWeight.SemiBold
     ),
     headlineSmall = TextStyle(
-        fontFamily = InterFontFamily,
-        fontSize = 24.sp,
-        fontWeight = FontWeight.Normal,
-        lineHeight = 32.sp
+        fontFamily = FontFamily.Default,
+        fontSize = 14.sp,
+        fontWeight = FontWeight.SemiBold
     ),
     titleLarge = TextStyle(
-        fontFamily = InterFontFamily,
-        fontSize = 24.sp,
-        fontWeight = FontWeight.Normal,
-        lineHeight = 30.sp
+        fontFamily = FontFamily.Default,
+        fontSize = 20.sp,
+        fontWeight = FontWeight.Medium
     ),
     titleMedium = TextStyle(
-        fontFamily = InterFontFamily,
+        fontFamily = FontFamily.Default,
         fontSize = 16.sp,
-        fontWeight = FontWeight.Medium,
-        lineHeight = 24.sp
+        fontWeight = FontWeight.Medium
     ),
     titleSmall = TextStyle(
-        fontFamily = InterFontFamily,
+        fontFamily = FontFamily.Default,
         fontSize = 14.sp,
-        fontWeight = FontWeight.Medium,
-        lineHeight = 20.sp
+        fontWeight = FontWeight.Medium
     ),
     bodyLarge = TextStyle(
-        fontFamily = InterFontFamily,
-        fontSize = 18.sp,
-        fontWeight = FontWeight.Normal,
-        lineHeight = 24.sp,
-        fontFeatureSettings = "tnum"
+        fontFamily = FontFamily.Default,
+        fontSize = 15.sp,
+        fontWeight = FontWeight.Normal
     ),
     bodyMedium = TextStyle(
-        fontFamily = InterFontFamily,
+        fontFamily = FontFamily.Default,
         fontSize = 14.sp,
-        fontWeight = FontWeight.Normal,
-        lineHeight = 20.sp
+        fontWeight = FontWeight.Normal
     ),
     bodySmall = TextStyle(
-        fontFamily = InterFontFamily,
+        fontFamily = FontFamily.Default,
         fontSize = 13.sp,
-        fontWeight = FontWeight.Normal,
-        lineHeight = 18.sp
+        fontWeight = FontWeight.Normal
     ),
     labelLarge = TextStyle(
-        fontFamily = InterFontFamily,
-        fontSize = 14.sp,
-        fontWeight = FontWeight.Medium,
-        lineHeight = 20.sp
+        fontFamily = FontFamily.Default,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 0.08.em
     ),
     labelMedium = TextStyle(
-        fontFamily = InterFontFamily,
-        fontSize = 13.sp,
-        fontWeight = FontWeight.Medium,
-        lineHeight = 18.sp
+        fontFamily = FontFamily.Default,
+        fontSize = 10.sp,
+        fontWeight = FontWeight.SemiBold
     ),
     labelSmall = TextStyle(
-        fontFamily = InterFontFamily,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Medium,
-        lineHeight = 16.sp
+        fontFamily = FontFamily.Default,
+        fontSize = 10.sp,
+        fontWeight = FontWeight.Medium
     )
 )

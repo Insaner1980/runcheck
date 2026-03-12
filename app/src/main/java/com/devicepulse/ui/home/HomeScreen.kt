@@ -11,7 +11,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -71,14 +70,12 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
@@ -96,30 +93,15 @@ import com.devicepulse.domain.model.SignalQuality
 import com.devicepulse.domain.model.StorageState
 import com.devicepulse.domain.model.ThermalState
 import com.devicepulse.domain.model.ThermalStatus
+import com.devicepulse.ui.common.connectionDisplayLabel
+import com.devicepulse.ui.common.formatPercent
+import com.devicepulse.ui.common.formatTemperature
+import com.devicepulse.ui.common.scoreLabel
 import com.devicepulse.ui.components.AnimatedIntText
 import com.devicepulse.ui.components.PrimaryTopBar
 import com.devicepulse.ui.theme.DevicePulseTheme
-import com.devicepulse.ui.theme.InterFontFamily
-import com.devicepulse.ui.theme.JetBrainsMonoFontFamily
 import com.devicepulse.ui.theme.reducedMotion
 import com.devicepulse.ui.theme.statusColors
-
-// Fixed text styles — uses JetBrains Mono for hero numbers, Inter for labels.
-// Every hero value on the home screen uses the exact same TextStyle object.
-private val HeroValueStyle = TextStyle(
-    fontSize = 26.sp,
-    fontFamily = JetBrainsMonoFontFamily,
-    fontWeight = FontWeight.Normal,
-    lineHeight = 30.sp,
-    letterSpacing = 0.sp
-)
-
-private val CardLabelStyle = TextStyle(
-    fontFamily = InterFontFamily,
-    fontSize = 16.sp,
-    fontWeight = FontWeight.Medium,
-    letterSpacing = 0.1.sp
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -297,12 +279,7 @@ private fun HomeContent(
 @Composable
 private fun HealthCard(score: Int, status: HealthStatus, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val accentColor = statusColor(status)
-    val scoreLabel = when {
-        score >= 90 -> stringResource(R.string.score_excellent)
-        score >= 70 -> stringResource(R.string.score_good)
-        score >= 50 -> stringResource(R.string.score_fair)
-        else -> stringResource(R.string.score_poor)
-    }
+    val statusLabel = scoreLabel(score)
     PressableCard(onClick = onClick, modifier = modifier.fillMaxHeight()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             CardHeader(
@@ -315,14 +292,14 @@ private fun HealthCard(score: Int, status: HealthStatus, onClick: () -> Unit, mo
             ) {
                 FullRingGauge(
                     fraction = score / 100f,
-                    label = "${score}%",
+                    label = formatPercent(score),
                     animatedValue = score,
                     animatedSuffix = "%",
                     gaugeSize = 108.dp
                 )
             }
             StatusText(
-                label = scoreLabel,
+                label = statusLabel,
                 accentColor = accentColor
             )
         }
@@ -343,7 +320,7 @@ private fun BatteryCard(level: Int, chargingStatus: String, onClick: () -> Unit,
             ) {
                 FullRingGauge(
                     fraction = level / 100f,
-                    label = "${level}%",
+                    label = formatPercent(level),
                     animatedValue = level,
                     animatedSuffix = "%",
                     gaugeSize = 108.dp
@@ -364,11 +341,11 @@ private fun NetworkCard(
     signalDbm: Int?, subtitle: String, status: HealthStatus, onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
     val accentColor = statusColor(status)
-    val heroValue = when (connectionType) {
-        ConnectionType.WIFI -> wifiSsid ?: "WiFi"
-        ConnectionType.CELLULAR -> networkSubtype ?: "4G"
-        ConnectionType.NONE -> "---"
-    }
+    val heroValue = connectionDisplayLabel(
+        connectionType = connectionType,
+        wifiSsid = wifiSsid,
+        networkSubtype = networkSubtype
+    )
 
     PressableCard(onClick = onClick, modifier = modifier.fillMaxHeight()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -388,7 +365,7 @@ private fun NetworkCard(
                 }
                 Text(
                     text = heroValue,
-                    style = HeroValueStyle,
+                    style = MaterialTheme.typography.displayLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -417,8 +394,8 @@ private fun ThermalCard(tempC: Float, status: HealthStatus, onClick: () -> Unit,
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "${"%.1f".format(tempC)}°C",
-                    style = HeroValueStyle,
+                    text = formatTemperature(tempC),
+                    style = MaterialTheme.typography.displayLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -458,7 +435,7 @@ private fun MetricCard(
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = heroValue, style = HeroValueStyle, color = MaterialTheme.colorScheme.onSurface)
+                Text(text = heroValue, style = MaterialTheme.typography.displayLarge, color = MaterialTheme.colorScheme.onSurface)
             }
         }
     }
@@ -473,7 +450,7 @@ private fun CardHeader(title: String, icon: ImageVector) {
     ) {
         Text(
             text = title,
-            style = CardLabelStyle,
+            style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
         Icon(
@@ -490,15 +467,12 @@ private fun LockedProCard(
     icon: ImageVector, title: String, description: String,
     onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth().fillMaxHeight(),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f)
-            else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f)
-        ),
-        border = if (isDark) BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.42f)) else null
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) {
         Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
             Row(
@@ -508,7 +482,7 @@ private fun LockedProCard(
             ) {
                 Text(
                     text = title,
-                    style = CardLabelStyle,
+                    style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
                 Icon(
@@ -578,17 +552,8 @@ private fun InsightsCard(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSystemInDarkTheme()) {
-                MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.82f)
-            } else {
-                MaterialTheme.colorScheme.surfaceContainer
-            }
-        ),
-        border = if (isSystemInDarkTheme()) {
-            BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
-        } else {
-            null
-        }
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
             Text(
@@ -686,12 +651,12 @@ private fun FullRingGauge(
                 AnimatedIntText(
                     value = animatedValue,
                     suffix = animatedSuffix,
-                    style = HeroValueStyle
+                    style = MaterialTheme.typography.displayLarge
                 )
             } else {
                 Text(
                     text = label,
-                    style = HeroValueStyle,
+                    style = MaterialTheme.typography.displayLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -799,7 +764,6 @@ private fun StatusText(label: String, accentColor: Color, modifier: Modifier = M
 
 @Composable
 private fun PressableCard(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    val isDark = isSystemInDarkTheme()
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -812,10 +776,8 @@ private fun PressableCard(onClick: () -> Unit, modifier: Modifier = Modifier, co
         modifier = modifier.fillMaxWidth().scale(scale),
         interactionSource = interactionSource,
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.82f)
-            else MaterialTheme.colorScheme.surfaceContainer
-        ),
-        border = if (isDark) BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)) else null
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) { content() }
 }
 

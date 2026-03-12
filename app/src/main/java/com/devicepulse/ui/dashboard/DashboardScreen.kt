@@ -7,9 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -59,6 +57,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -79,6 +78,11 @@ import com.devicepulse.domain.model.SignalQuality
 import com.devicepulse.domain.model.StorageState
 import com.devicepulse.domain.model.ThermalState
 import com.devicepulse.domain.model.ThermalStatus
+import com.devicepulse.ui.common.connectionDisplayLabel
+import com.devicepulse.ui.common.formatPercent
+import com.devicepulse.ui.common.formatStorageSize
+import com.devicepulse.ui.common.formatTemperature
+import com.devicepulse.ui.common.scoreLabel
 import com.devicepulse.ui.components.AnimatedIntText
 import com.devicepulse.ui.components.CategoryCard
 import com.devicepulse.ui.components.HealthGauge
@@ -153,6 +157,7 @@ private fun DashboardContent(
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     var cardsVisible by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         cardsVisible = true
@@ -185,12 +190,7 @@ private fun DashboardContent(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
             Text(
-                text = when {
-                    state.healthScore.overallScore >= 90 -> stringResource(R.string.score_excellent)
-                    state.healthScore.overallScore >= 70 -> stringResource(R.string.score_good)
-                    state.healthScore.overallScore >= 50 -> stringResource(R.string.score_fair)
-                    else -> stringResource(R.string.score_poor)
-                },
+                text = scoreLabel(state.healthScore.overallScore),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -235,11 +235,11 @@ private fun DashboardContent(
                 AnimatedGridCard(visible = cardsVisible, index = 1, modifier = Modifier.weight(1f).fillMaxHeight()) {
                     CategoryCard(
                         title = stringResource(R.string.dashboard_network_card),
-                        value = when (state.networkState.connectionType) {
-                            ConnectionType.WIFI -> state.networkState.wifiSsid ?: "WiFi"
-                            ConnectionType.CELLULAR -> state.networkState.networkSubtype ?: "Cellular"
-                            ConnectionType.NONE -> stringResource(R.string.network_no_connection)
-                        },
+                        value = connectionDisplayLabel(
+                            connectionType = state.networkState.connectionType,
+                            wifiSsid = state.networkState.wifiSsid,
+                            networkSubtype = state.networkState.networkSubtype
+                        ),
                         status = HealthScore.statusFromScore(state.healthScore.networkScore),
                         icon = Icons.Outlined.SignalCellularAlt,
                         subtitle = state.networkState.signalDbm?.let { "$it ${stringResource(R.string.unit_dbm)}" },
@@ -258,7 +258,7 @@ private fun DashboardContent(
                 AnimatedGridCard(visible = cardsVisible, index = 2, modifier = Modifier.weight(1f).fillMaxHeight()) {
                     CategoryCard(
                         title = stringResource(R.string.dashboard_thermal_card),
-                        value = "${"%.1f".format(state.thermalState.batteryTempC)}°C",
+                        value = formatTemperature(state.thermalState.batteryTempC),
                         status = HealthScore.statusFromScore(state.healthScore.thermalScore),
                         icon = Icons.Outlined.Thermostat,
                         subtitle = null,
@@ -269,10 +269,10 @@ private fun DashboardContent(
                 AnimatedGridCard(visible = cardsVisible, index = 3, modifier = Modifier.weight(1f).fillMaxHeight()) {
                     CategoryCard(
                         title = stringResource(R.string.dashboard_storage_card),
-                        value = "${"%.1f".format(state.storageState.usagePercent)}%",
+                        value = formatPercent(state.storageState.usagePercent),
                         status = HealthScore.statusFromScore(state.healthScore.storageScore),
                         icon = Icons.Outlined.Storage,
-                        subtitle = formatBytes(state.storageState.availableBytes),
+                        subtitle = formatStorageSize(context, state.storageState.availableBytes),
                         statusLabel = scoreLabel(state.healthScore.storageScore),
                         onClick = onNavigateToStorage
                     )
@@ -349,23 +349,13 @@ private fun MiniHealthCard(
     score: Int,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
     val accentColor = MaterialTheme.colorScheme.primary
 
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) {
-                MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.82f)
-            } else {
-                MaterialTheme.colorScheme.surfaceContainer
-            }
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
-        border = if (isDark) {
-            BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
-        } else {
-            null
-        },
         shape = RoundedCornerShape(20.dp)
     ) {
         Box(
@@ -631,14 +621,6 @@ private fun AnimatedGridCard(
 }
 
 @Composable
-private fun scoreLabel(score: Int): String = when {
-    score >= 90 -> stringResource(R.string.score_excellent)
-    score >= 70 -> stringResource(R.string.score_good)
-    score >= 50 -> stringResource(R.string.score_fair)
-    else -> stringResource(R.string.score_poor)
-}
-
-@Composable
 private fun rememberGaugeSweepBrush(baseColor: Color): Brush {
     val seamStart = lerp(baseColor, Color.White, 0.02f)
     val highlight = lerp(baseColor, Color.White, 0.05f)
@@ -661,7 +643,7 @@ private fun formatEnumName(name: String): String =
 private fun batteryDashboardValue(
     healthPercent: Int?,
     chargingStatusName: String
-): String = healthPercent?.let { "$it%" } ?: formatEnumName(chargingStatusName)
+): String = healthPercent?.let(::formatPercent) ?: formatEnumName(chargingStatusName)
 
 @Composable
 private fun batteryDashboardSubtitle(
@@ -695,16 +677,6 @@ private fun batteryDashboardStatus(
     healthPercent != null && healthPercent < 75 -> HealthStatus.FAIR
     health == BatteryHealth.UNKNOWN -> HealthStatus.FAIR
     else -> HealthStatus.HEALTHY
-}
-
-private fun formatBytes(bytes: Long): String {
-    val gb = bytes / (1024.0 * 1024.0 * 1024.0)
-    return if (gb >= 1.0) {
-        "${"%.1f".format(gb)} GB"
-    } else {
-        val mb = bytes / (1024.0 * 1024.0)
-        "${"%.0f".format(mb)} MB"
-    }
 }
 
 @Preview(showBackground = true, widthDp = 412, heightDp = 915)
