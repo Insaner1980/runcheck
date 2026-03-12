@@ -30,9 +30,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
-import com.devicepulse.ui.components.DetailTopBar
 import com.devicepulse.domain.model.ThrottlingEvent
 import com.devicepulse.domain.model.ThermalStatus
+import com.devicepulse.ui.common.formatDecimal
+import com.devicepulse.ui.common.formatTemperature
+import com.devicepulse.ui.components.ProFeatureCalloutCard
+import com.devicepulse.ui.components.DetailTopBar
 import com.devicepulse.ui.components.HeatStrip
 import com.devicepulse.ui.components.MetricTile
 import com.devicepulse.ui.components.PullToRefreshWrapper
@@ -44,6 +47,7 @@ import java.util.Locale
 @Composable
 fun ThermalDetailScreen(
     onBack: () -> Unit,
+    onUpgradeToPro: () -> Unit,
     viewModel: ThermalViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -70,7 +74,11 @@ fun ThermalDetailScreen(
                 }
             }
             is ThermalUiState.Success -> {
-                ThermalContent(state = state, onRefresh = { viewModel.refresh() })
+                ThermalContent(
+                    state = state,
+                    onRefresh = { viewModel.refresh() },
+                    onUpgradeToPro = onUpgradeToPro
+                )
             }
         }
     }
@@ -79,7 +87,8 @@ fun ThermalDetailScreen(
 @Composable
 private fun ThermalContent(
     state: ThermalUiState.Success,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onUpgradeToPro: () -> Unit
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     val thermal = state.thermalState
@@ -110,14 +119,14 @@ private fun ThermalContent(
 
             MetricTile(
                 label = stringResource(R.string.thermal_battery_temp),
-                value = "%.1f".format(thermal.batteryTempC),
+                value = formatDecimal(thermal.batteryTempC, 1),
                 unit = stringResource(R.string.unit_celsius)
             )
 
             thermal.cpuTempC?.let { cpuTemp ->
                 MetricTile(
                     label = stringResource(R.string.thermal_cpu_temp),
-                    value = "%.1f".format(cpuTemp),
+                    value = formatDecimal(cpuTemp, 1),
                     unit = stringResource(R.string.unit_celsius)
                 )
             }
@@ -125,8 +134,8 @@ private fun ThermalContent(
             thermal.thermalHeadroom?.let { headroom ->
                 MetricTile(
                     label = stringResource(R.string.thermal_headroom),
-                    value = "%.0f".format((1f - headroom.coerceIn(0f, 1f)) * 100),
-                    unit = "%"
+                    value = formatDecimal((1f - headroom.coerceIn(0f, 1f)) * 100, 0),
+                    unit = stringResource(R.string.unit_percent)
                 )
             }
 
@@ -154,6 +163,12 @@ private fun ThermalContent(
 
             if (state.isPro) {
                 ThrottlingLogSection(events = state.throttlingEvents)
+            } else {
+                ProFeatureCalloutCard(
+                    message = stringResource(R.string.pro_feature_thermal_log_message),
+                    actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+                    onAction = onUpgradeToPro
+                )
             }
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
@@ -194,7 +209,7 @@ private fun ThrottlingEventItem(event: ThrottlingEvent) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         )
     ) {
         Column(
@@ -217,7 +232,7 @@ private fun ThrottlingEventItem(event: ThrottlingEvent) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "%.1f${stringResource(R.string.unit_celsius)}".format(event.batteryTempC),
+                    text = formatTemperature(event.batteryTempC),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )

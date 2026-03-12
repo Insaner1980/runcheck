@@ -1,5 +1,10 @@
 package com.devicepulse.ui.appusage
 
+import android.app.AppOpsManager
+import android.content.Context
+import android.content.Intent
+import android.os.Process
+import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -30,11 +36,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
 import com.devicepulse.domain.model.AppBatteryUsage
 import com.devicepulse.ui.components.DetailTopBar
+import com.devicepulse.ui.components.ProFeatureLockedState
 import com.devicepulse.ui.theme.spacing
 
 @Composable
 fun AppUsageScreen(
     onBack: () -> Unit,
+    onUpgradeToPro: () -> Unit,
     viewModel: AppUsageViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -63,12 +71,25 @@ fun AppUsageScreen(
             is AppUsageUiState.Success -> {
                 AppUsageContent(state = state)
             }
+            AppUsageUiState.Locked -> {
+                ProFeatureLockedState(
+                    title = stringResource(R.string.app_usage_title),
+                    message = stringResource(
+                        R.string.pro_feature_locked_message,
+                        stringResource(R.string.app_usage_title)
+                    ),
+                    actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+                    onAction = onUpgradeToPro
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun AppUsageContent(state: AppUsageUiState.Success) {
+    val context = LocalContext.current
+    val hasUsageAccess = remember(context) { context.hasUsageStatsAccess() }
     val maxTime = remember(state.apps) {
         state.apps.maxOfOrNull { it.foregroundTimeMs } ?: 1L
     }
@@ -83,7 +104,41 @@ private fun AppUsageContent(state: AppUsageUiState.Success) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
         }
 
-        if (state.apps.isEmpty()) {
+        if (!hasUsageAccess) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(MaterialTheme.spacing.base),
+                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.app_usage_permission_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = stringResource(R.string.app_usage_permission_message),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        TextButton(
+                            onClick = {
+                                context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                            }
+                        ) {
+                            Text(stringResource(R.string.app_usage_permission_open_settings))
+                        }
+                    }
+                }
+            }
+        } else if (state.apps.isEmpty()) {
             item {
                 Text(
                     text = stringResource(R.string.app_usage_no_data),
@@ -111,7 +166,6 @@ private fun AppUsageContent(state: AppUsageUiState.Success) {
 private fun AppUsageItem(app: AppBatteryUsage, maxTime: Long) {
     val hours = app.foregroundTimeMs / 3_600_000
     val minutes = (app.foregroundTimeMs % 3_600_000) / 60_000
-    val timeText = if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
     val progress = (app.foregroundTimeMs.toFloat() / maxTime).coerceIn(0f, 1f)
 
     Card(
@@ -138,7 +192,11 @@ private fun AppUsageItem(app: AppBatteryUsage, maxTime: Long) {
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    text = timeText,
+                    text = if (hours > 0) {
+                        stringResource(R.string.app_usage_time_hours_minutes, hours, minutes)
+                    } else {
+                        stringResource(R.string.app_usage_time_minutes, minutes)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -161,4 +219,14 @@ private fun AppUsageItem(app: AppBatteryUsage, maxTime: Long) {
             }
         }
     }
+}
+
+private fun Context.hasUsageStatsAccess(): Boolean {
+    val appOps = getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return false
+    val mode = appOps.checkOpNoThrow(
+        AppOpsManager.OPSTR_GET_USAGE_STATS,
+        Process.myUid(),
+        packageName
+    )
+    return mode == AppOpsManager.MODE_ALLOWED
 }

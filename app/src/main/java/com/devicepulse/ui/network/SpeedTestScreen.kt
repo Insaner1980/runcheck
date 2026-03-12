@@ -563,7 +563,6 @@ private fun MetricGlowCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, accent.copy(alpha = 0.34f))
     ) {
         Column(
             modifier = Modifier
@@ -629,7 +628,7 @@ private fun StatPill(
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh
+        color = MaterialTheme.colorScheme.surfaceContainer
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),

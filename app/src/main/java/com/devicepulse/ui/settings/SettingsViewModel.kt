@@ -5,13 +5,15 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.devicepulse.R
+import com.devicepulse.billing.ProPurchaseRefreshResult
 import com.devicepulse.billing.ProPurchaseManager
 import com.devicepulse.domain.repository.DeviceProfileRepository
 import com.devicepulse.domain.repository.FileExportRepository
+import com.devicepulse.domain.repository.ProStatusProvider
 import com.devicepulse.domain.repository.UserPreferencesRepository
 import com.devicepulse.domain.model.MonitoringInterval
-import com.devicepulse.domain.model.ThemeMode
 import com.devicepulse.domain.usecase.ExportDataUseCase
+import com.devicepulse.service.monitor.MonitorScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,8 +31,10 @@ class SettingsViewModel @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val deviceProfileRepository: DeviceProfileRepository,
     private val proPurchaseManager: ProPurchaseManager,
+    private val proStatusProvider: ProStatusProvider,
     private val exportDataUseCase: ExportDataUseCase,
-    private val fileExportRepository: FileExportRepository
+    private val fileExportRepository: FileExportRepository,
+    private val monitorScheduler: MonitorScheduler
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -77,20 +81,22 @@ class SettingsViewModel @Inject constructor(
         proPurchaseManager.launchPurchaseFlow(activity)
     }
 
-    fun setThemeMode(mode: ThemeMode) {
-        viewModelScope.launch { preferencesRepository.setThemeMode(mode) }
-    }
-
-    fun setAmoledBlack(enabled: Boolean) {
-        viewModelScope.launch { preferencesRepository.setAmoledBlack(enabled) }
-    }
-
-    fun setDynamicColors(enabled: Boolean) {
-        viewModelScope.launch { preferencesRepository.setDynamicColors(enabled) }
+    fun refreshPurchaseStatus() {
+        viewModelScope.launch {
+            val statusMessage = when (proPurchaseManager.refreshPurchaseStatus()) {
+                ProPurchaseRefreshResult.ACTIVE -> context.getString(R.string.settings_restore_success)
+                ProPurchaseRefreshResult.NOT_ACTIVE -> context.getString(R.string.settings_restore_not_found)
+                ProPurchaseRefreshResult.UNAVAILABLE -> context.getString(R.string.settings_restore_unavailable)
+            }
+            _uiState.update { current -> current.copy(billingStatus = statusMessage) }
+        }
     }
 
     fun setMonitoringInterval(interval: MonitoringInterval) {
-        viewModelScope.launch { preferencesRepository.setMonitoringInterval(interval) }
+        viewModelScope.launch {
+            preferencesRepository.setMonitoringInterval(interval)
+            monitorScheduler.schedule(interval)
+        }
     }
 
     fun setNotifications(enabled: Boolean) {
@@ -99,6 +105,12 @@ class SettingsViewModel @Inject constructor(
 
     /** Exports all reading data as CSV files to the Downloads folder via FileExportRepository. */
     fun exportData() {
+        if (!proStatusProvider.isPro()) {
+            _uiState.update {
+                it.copy(errorMessage = context.getString(R.string.pro_feature_locked_generic))
+            }
+            return
+        }
         viewModelScope.launch {
             try {
                 val csvFiles = exportDataUseCase.exportAllCsv()
@@ -122,6 +134,10 @@ class SettingsViewModel @Inject constructor(
     /** Clears the export status message after it has been shown. */
     fun clearExportStatus() {
         _uiState.update { it.copy(exportStatus = null) }
+    }
+
+    fun clearBillingStatus() {
+        _uiState.update { it.copy(billingStatus = null) }
     }
 
     fun clearErrorMessage() {

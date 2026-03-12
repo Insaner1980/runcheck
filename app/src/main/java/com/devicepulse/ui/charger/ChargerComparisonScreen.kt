@@ -40,6 +40,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
 import com.devicepulse.domain.model.ChargerSummary
 import com.devicepulse.ui.components.DetailTopBar
+import com.devicepulse.ui.components.ProFeatureLockedState
+import androidx.compose.ui.graphics.Color
+import com.devicepulse.ui.theme.AccentLime
 import com.devicepulse.ui.theme.spacing
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -48,6 +51,7 @@ import java.util.Locale
 @Composable
 fun ChargerComparisonScreen(
     onBack: () -> Unit,
+    onUpgradeToPro: () -> Unit,
     viewModel: ChargerViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -86,10 +90,25 @@ fun ChargerComparisonScreen(
                     onDeleteCharger = { viewModel.deleteCharger(it) }
                 )
             }
+            ChargerUiState.Locked -> {
+                DetailTopBar(
+                    title = stringResource(R.string.charger_title),
+                    onBack = onBack
+                )
+                ProFeatureLockedState(
+                    title = stringResource(R.string.charger_title),
+                    message = stringResource(
+                        R.string.pro_feature_locked_message,
+                        stringResource(R.string.charger_title)
+                    ),
+                    actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+                    onAction = onUpgradeToPro
+                )
+            }
         }
     }
 
-    if (showAddDialog) {
+    if (showAddDialog && uiState is ChargerUiState.Success) {
         AddChargerDialog(
             onDismiss = { showAddDialog = false },
             onConfirm = { name ->
@@ -117,7 +136,8 @@ private fun ChargerContent(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddClick,
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = AccentLime,
+                contentColor = Color.Black
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,

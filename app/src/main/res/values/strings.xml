@@ -263,6 +263,7 @@
     <string name="notification_charge_complete_title">Charging Complete</string>
 
     <!-- Export -->
+    <string name="settings_data_section">Data</string>
     <string name="settings_export_data">Export Data (CSV)</string>
     <string name="settings_export_success">Data exported to Downloads</string>
     <string name="settings_export_error">Export failed</string>
