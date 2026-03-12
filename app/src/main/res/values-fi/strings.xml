@@ -25,6 +25,14 @@
     <string name="home_locked_pro">Pro</string>
     <string name="home_chargers_desc">Testaa ja vertaile latureitasi</string>
     <string name="home_app_usage_desc">Katso mitkä sovellukset kuluttavat akkua</string>
+    <string name="home_health_score">KUNTOPISTEET</string>
+    <string name="home_device_good_shape">Laitteesi on %1$s kunnossa.</string>
+    <string name="home_temp_elevated">Lämpötila on hieman koholla.</string>
+    <string name="home_quick_tools">PIKATYÖKALUT</string>
+    <string name="home_speed_test">Nopeustesti</string>
+    <string name="home_test_compare">Testaa ja vertaile</string>
+    <string name="home_pro_history_desc">Historia, laturitestit, vienti ja muuta</string>
+    <string name="home_free_suffix">vapaana</string>
 
     <!-- Dashboard -->
     <string name="dashboard_title">Terveys</string>
@@ -187,10 +195,22 @@
     <string name="settings_measurement_info">Mittaustiedot</string>
     <string name="settings_about">Tietoja</string>
     <string name="settings_upgrade_pro">Päivitä Pro-versioon</string>
+    <string name="settings_restore_purchase">Palauta ostos</string>
+    <string name="settings_refresh_pro_status">Päivitä Pro-tila</string>
+    <string name="settings_restore_success">Pro-ostos vahvistettu</string>
+    <string name="settings_restore_not_found">Tälle Play-tilille ei löytynyt Pro-ostosta</string>
+    <string name="settings_restore_unavailable">Play Billing ei ole vielä valmis. Yritä hetken kuluttua uudelleen.</string>
     <string name="settings_pro_active">Pro aktiivinen</string>
     <string name="settings_pro_desc">Laajennettu historia, widgetit ja CSV-vienti</string>
     <string name="settings_pro_thank_you">Kiitos DevicePulsen tukemisesta!</string>
     <string name="settings_version">Versio %1$s</string>
+    <string name="pro_feature_badge">Pro</string>
+    <string name="pro_feature_locked_message">Päivitä DevicePulse Prohon käyttääksesi ominaisuutta %1$s.</string>
+    <string name="pro_feature_upgrade_action">Päivitä asetuksissa</string>
+    <string name="pro_feature_locked_generic">Tämä ominaisuus vaatii DevicePulse Pron</string>
+    <string name="pro_feature_battery_history_message">Viikon, kuukauden ja koko historian akkudata vaatii DevicePulse Pron.</string>
+    <string name="pro_feature_thermal_log_message">Lämpörajoitusten historia vaatii DevicePulse Pron.</string>
+    <string name="pro_feature_export_message">CSV-vienti vaatii DevicePulse Pron.</string>
 
     <!-- More Menu -->
     <string name="more_thermal">Lämpötila</string>

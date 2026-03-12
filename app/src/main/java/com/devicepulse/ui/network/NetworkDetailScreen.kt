@@ -61,6 +61,7 @@ import com.devicepulse.R
 import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.SignalQuality
 import com.devicepulse.domain.model.SpeedTestResult
+import com.devicepulse.ui.common.formatDecimal
 import com.devicepulse.ui.components.MetricTile
 import com.devicepulse.ui.components.PrimaryTopBar
 import com.devicepulse.ui.components.PullToRefreshWrapper
@@ -72,6 +73,7 @@ import java.util.Locale
 
 @Composable
 fun NetworkDetailScreen(
+    onBack: () -> Unit = {},
     onNavigateToSpeedTest: () -> Unit,
     viewModel: NetworkViewModel = hiltViewModel()
 ) {
@@ -198,7 +200,7 @@ private fun NetworkContent(
                 network.wifiFrequencyMhz?.let { freq ->
                     MetricTile(
                         label = stringResource(R.string.network_wifi_frequency),
-                        value = "%.1f".format(freq / 1000f),
+                        value = formatDecimal(freq / 1000f, 1),
                         unit = stringResource(R.string.unit_ghz)
                     )
                 }
@@ -726,12 +728,12 @@ private fun LastResultCard(result: SpeedTestResult) {
             ) {
                 ResultMetric(
                     label = stringResource(R.string.speed_test_download),
-                    value = "%.1f".format(result.downloadMbps),
+                    value = formatDecimal(result.downloadMbps, 1),
                     unit = stringResource(R.string.unit_mbps)
                 )
                 ResultMetric(
                     label = stringResource(R.string.speed_test_upload),
-                    value = "%.1f".format(result.uploadMbps),
+                    value = formatDecimal(result.uploadMbps, 1),
                     unit = stringResource(R.string.unit_mbps)
                 )
                 ResultMetric(
@@ -800,14 +802,14 @@ private fun HistoryResultRow(result: SpeedTestResult) {
                 modifier = Modifier.weight(1f)
             )
             Text(
-                text = "%.1f".format(result.downloadMbps),
+                text = formatDecimal(result.downloadMbps, 1),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.End,
                 modifier = Modifier.weight(1f)
             )
             Text(
-                text = "%.1f".format(result.uploadMbps),
+                text = formatDecimal(result.uploadMbps, 1),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.End,
