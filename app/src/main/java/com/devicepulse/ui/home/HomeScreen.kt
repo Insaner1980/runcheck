@@ -1,179 +1,151 @@
 package com.devicepulse.ui.home
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
+import android.os.Build
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.DataUsage
-import androidx.compose.material.icons.outlined.Favorite
-import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.SignalCellularAlt
-import androidx.compose.material.icons.outlined.Thermostat
+import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.Thermostat
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
-import com.devicepulse.domain.model.BatteryHealth
-import com.devicepulse.domain.model.BatteryState
-import com.devicepulse.domain.model.ChargingStatus
-import com.devicepulse.domain.model.Confidence
-import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.HealthScore
 import com.devicepulse.domain.model.HealthStatus
-import com.devicepulse.domain.model.MeasuredValue
-import com.devicepulse.domain.model.NetworkState
-import com.devicepulse.domain.model.PlugType
-import com.devicepulse.domain.model.SignalQuality
-import com.devicepulse.domain.model.StorageState
-import com.devicepulse.domain.model.ThermalState
-import com.devicepulse.domain.model.ThermalStatus
-import com.devicepulse.ui.components.AnimatedIntText
+import com.devicepulse.ui.common.connectionDisplayLabel
+import com.devicepulse.ui.common.formatPercent
+import com.devicepulse.ui.common.formatStorageSize
+import com.devicepulse.ui.common.formatTemperature
+import com.devicepulse.ui.common.scoreLabel
+import com.devicepulse.ui.components.GridCard
+import com.devicepulse.ui.components.IconCircle
+import com.devicepulse.ui.components.ListRow
+import com.devicepulse.ui.components.MiniBar
 import com.devicepulse.ui.components.PrimaryTopBar
-import com.devicepulse.ui.theme.DevicePulseTheme
-import com.devicepulse.ui.theme.InterFontFamily
-import com.devicepulse.ui.theme.JetBrainsMonoFontFamily
-import com.devicepulse.ui.theme.reducedMotion
+import com.devicepulse.ui.components.ProBadgePill
+import com.devicepulse.ui.components.ProgressRing
+import com.devicepulse.ui.components.SectionHeader
+import com.devicepulse.ui.components.StatusDot
+import com.devicepulse.ui.theme.AccentBlue
+import com.devicepulse.ui.theme.AccentOrange
+import com.devicepulse.ui.theme.AccentTeal
+import com.devicepulse.ui.theme.AccentYellow
+import com.devicepulse.ui.theme.BgIconCircle
+import com.devicepulse.ui.theme.TextMuted
+import com.devicepulse.ui.theme.TextSecondary
 import com.devicepulse.ui.theme.statusColors
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-// Fixed text styles — uses JetBrains Mono for hero numbers, Inter for labels.
-// Every hero value on the home screen uses the exact same TextStyle object.
-private val HeroValueStyle = TextStyle(
-    fontSize = 26.sp,
-    fontFamily = JetBrainsMonoFontFamily,
-    fontWeight = FontWeight.Normal,
-    lineHeight = 30.sp,
-    letterSpacing = 0.sp
-)
-
-private val CardLabelStyle = TextStyle(
-    fontFamily = InterFontFamily,
-    fontSize = 16.sp,
-    fontWeight = FontWeight.Medium,
-    letterSpacing = 0.1.sp
-)
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onNavigateToHealth: () -> Unit,
+    onNavigateToBattery: () -> Unit,
     onNavigateToNetwork: () -> Unit,
+    onNavigateToThermal: () -> Unit,
+    onNavigateToStorage: () -> Unit,
+    onNavigateToCharger: () -> Unit,
+    onNavigateToSpeedTest: () -> Unit,
+    onNavigateToAppUsage: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onNavigateToMore: () -> Unit,
+    onNavigateToProUpgrade: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold(
-        topBar = {
-            PrimaryTopBar(
-                title = stringResource(R.string.app_name),
-                actions = {
-                    IconButton(onClick = onNavigateToSettings) {
-                        Icon(
-                            imageVector = Icons.Outlined.Settings,
-                            contentDescription = stringResource(R.string.more_settings),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+    Column(modifier = Modifier.fillMaxSize()) {
+        // 1. Header
+        PrimaryTopBar(
+            title = stringResource(R.string.app_name),
+            onMenuClick = onNavigateToSettings,
+            actions = {
+                IconButton(onClick = onNavigateToProUpgrade) {
+                    Icon(
+                        imageVector = Icons.Outlined.Star,
+                        contentDescription = stringResource(R.string.settings_upgrade_pro),
+                        tint = AccentYellow
+                    )
                 }
-            )
-        }
-    ) { innerPadding ->
+            }
+        )
+
         when (val state = uiState) {
             is HomeUiState.Loading -> {
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) { CircularProgressIndicator() }
             }
 
             is HomeUiState.Error -> {
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = stringResource(R.string.error_generic), style = MaterialTheme.typography.bodyMedium)
-                        TextButton(onClick = { viewModel.refresh() }) { Text(stringResource(R.string.retry)) }
+                        Text(
+                            text = stringResource(R.string.error_generic),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        TextButton(onClick = { viewModel.refresh() }) {
+                            Text(stringResource(R.string.retry))
+                        }
                     }
                 }
             }
 
             is HomeUiState.Success -> {
                 HomeContent(
-                    state = state, innerPadding = innerPadding,
-                    onNavigateToHealth = onNavigateToHealth,
+                    state = state,
+                    onNavigateToBattery = onNavigateToBattery,
                     onNavigateToNetwork = onNavigateToNetwork,
-                    onNavigateToMore = onNavigateToMore
+                    onNavigateToThermal = onNavigateToThermal,
+                    onNavigateToStorage = onNavigateToStorage,
+                    onNavigateToCharger = onNavigateToCharger,
+                    onNavigateToSpeedTest = onNavigateToSpeedTest,
+                    onNavigateToAppUsage = onNavigateToAppUsage,
+                    onNavigateToSettings = onNavigateToSettings,
+                    onNavigateToProUpgrade = onNavigateToProUpgrade
                 )
             }
         }
@@ -183,650 +155,445 @@ fun HomeScreen(
 @Composable
 private fun HomeContent(
     state: HomeUiState.Success,
-    innerPadding: PaddingValues,
-    onNavigateToHealth: () -> Unit,
+    onNavigateToBattery: () -> Unit,
     onNavigateToNetwork: () -> Unit,
-    onNavigateToMore: () -> Unit
+    onNavigateToThermal: () -> Unit,
+    onNavigateToStorage: () -> Unit,
+    onNavigateToCharger: () -> Unit,
+    onNavigateToSpeedTest: () -> Unit,
+    onNavigateToAppUsage: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    onNavigateToProUpgrade: () -> Unit
 ) {
-    var cardsVisible by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { cardsVisible = true }
+    val context = LocalContext.current
+    val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+    val currentTime = remember { timeFormat.format(Date()) }
 
-    BoxWithConstraints(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(innerPadding)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp)
     ) {
-        val verticalGap = 10.dp
-        val contentPaddingTop = 2.dp
-        val contentPaddingBottom = 12.dp
-        val totalGap = verticalGap * 3
-        val availableHeight = maxHeight - contentPaddingTop - contentPaddingBottom - totalGap
+        // 2. Device subtitle
+        Text(
+            text = "${Build.MANUFACTURER} ${Build.MODEL} \u00B7 $currentTime",
+            style = MaterialTheme.typography.labelLarge.copy(fontSize = 12.sp),
+            color = TextMuted,
+            modifier = Modifier.padding(top = 4.dp)
+        )
 
-        val bannerHeight = (availableHeight * 0.12f).coerceIn(64.dp, 82.dp)
-        val utilityRowHeight = (availableHeight * 0.20f).coerceIn(132.dp, 148.dp)
-        val primaryRowHeight = ((availableHeight - bannerHeight - utilityRowHeight) / 2f).coerceIn(168.dp, 196.dp)
-        val shouldScroll = maxHeight < 620.dp
-        val contentModifier = if (shouldScroll) {
-            Modifier.verticalScroll(rememberScrollState())
-        } else {
-            Modifier
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // 3. Health Score hero card
+        HealthScoreCard(
+            state = state,
+            onNavigateToBattery = onNavigateToBattery,
+            onNavigateToThermal = onNavigateToThermal,
+            onNavigateToNetwork = onNavigateToNetwork,
+            onNavigateToStorage = onNavigateToStorage
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 4. Battery hero card
+        BatteryHeroCard(
+            state = state,
+            onClick = onNavigateToBattery
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 5. Feature grid 2x2
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            GridCard(
+                icon = Icons.Outlined.SignalCellularAlt,
+                title = stringResource(R.string.home_network_card),
+                subtitle = connectionDisplayLabel(
+                    connectionType = state.networkState.connectionType,
+                    wifiSsid = state.networkState.wifiSsid,
+                    networkSubtype = state.networkState.networkSubtype
+                ),
+                subtitleColor = AccentTeal,
+                onClick = onNavigateToNetwork,
+                modifier = Modifier.weight(1f)
+            )
+            GridCard(
+                icon = Icons.Outlined.Thermostat,
+                title = stringResource(R.string.home_thermal_card),
+                subtitle = formatTemperature(state.thermalState.batteryTempC) + " \u00B7 " + thermalLabel(state.thermalState.batteryTempC),
+                subtitleColor = AccentOrange,
+                onClick = onNavigateToThermal,
+                modifier = Modifier.weight(1f)
+            )
         }
 
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            GridCard(
+                icon = Icons.Outlined.BatteryChargingFull,
+                title = stringResource(R.string.home_chargers_card),
+                subtitle = stringResource(R.string.home_test_compare),
+                subtitleColor = AccentBlue,
+                onClick = onNavigateToCharger,
+                modifier = Modifier.weight(1f)
+            )
+            GridCard(
+                icon = Icons.Outlined.DataUsage,
+                title = stringResource(R.string.home_storage_card),
+                subtitle = formatStorageSize(context, state.storageState.availableBytes) + " " + stringResource(R.string.home_free_suffix),
+                subtitleColor = AccentTeal,
+                onClick = onNavigateToStorage,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // 6. Quick Tools section
+        SectionHeader(stringResource(R.string.home_quick_tools))
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            )
+        ) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                ListRow(
+                    label = stringResource(R.string.home_speed_test),
+                    icon = Icons.Outlined.Speed,
+                    onClick = onNavigateToSpeedTest
+                )
+                HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
+                ListRow(
+                    label = stringResource(R.string.home_app_usage_card),
+                    icon = Icons.Outlined.DataUsage,
+                    onClick = onNavigateToAppUsage,
+                    trailing = if (!state.isPro) {
+                        { ProBadgePill() }
+                    } else null
+                )
+            }
+        }
+
+        // 7. Pro banner (hide if isPro)
+        if (!state.isPro) {
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Card(
+                onClick = onNavigateToProUpgrade,
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    IconCircle(icon = Icons.Outlined.Star)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.home_pro_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = stringResource(R.string.home_pro_history_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        // 8. Settings link
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            TextButton(onClick = onNavigateToSettings) {
+                Icon(
+                    imageVector = Icons.Outlined.Settings,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = TextMuted
+                )
+                Spacer(modifier = Modifier.size(8.dp))
+                Text(
+                    text = stringResource(R.string.more_settings),
+                    color = TextMuted
+                )
+            }
+        }
+
+        // 9. Bottom padding
+        Spacer(modifier = Modifier.height(32.dp))
+    }
+}
+
+// ── Health Score Hero Card ──────────────────────────────────────────────────
+
+@Composable
+private fun HealthScoreCard(
+    state: HomeUiState.Success,
+    onNavigateToBattery: () -> Unit,
+    onNavigateToThermal: () -> Unit,
+    onNavigateToNetwork: () -> Unit,
+    onNavigateToStorage: () -> Unit
+) {
+    val score = state.healthScore.overallScore
+    val statusLabel = scoreLabel(score)
+
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
+    ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
-                .padding(top = contentPaddingTop, bottom = contentPaddingBottom)
-                .then(contentModifier),
-            verticalArrangement = Arrangement.spacedBy(verticalGap)
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(modifier = Modifier.fillMaxWidth().height(primaryRowHeight), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AnimatedGridCard(visible = cardsVisible, index = 0, modifier = Modifier.weight(1f).fillMaxHeight()) {
-                    HealthCard(score = state.healthScore.overallScore, status = state.healthScore.status, onClick = onNavigateToHealth)
-                }
-                AnimatedGridCard(visible = cardsVisible, index = 1, modifier = Modifier.weight(1f).fillMaxHeight()) {
-                    BatteryCard(level = state.batteryState.level, chargingStatus = formatEnumName(state.batteryState.chargingStatus.name),
-                        onClick = onNavigateToHealth)
-                }
-            }
-            Row(modifier = Modifier.fillMaxWidth().height(primaryRowHeight), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AnimatedGridCard(visible = cardsVisible, index = 2, modifier = Modifier.weight(1f).fillMaxHeight()) {
-                    NetworkCard(
-                        connectionType = state.networkState.connectionType, networkSubtype = state.networkState.networkSubtype,
-                        wifiSsid = state.networkState.wifiSsid, signalDbm = state.networkState.signalDbm,
-                        subtitle = formatEnumName(state.networkState.signalQuality.name),
-                        status = HealthScore.statusFromScore(state.healthScore.networkScore), onClick = onNavigateToNetwork)
-                }
-                AnimatedGridCard(visible = cardsVisible, index = 3, modifier = Modifier.weight(1f).fillMaxHeight()) {
-                    ThermalCard(tempC = state.thermalState.batteryTempC,
-                        status = HealthScore.statusFromScore(state.healthScore.thermalScore), onClick = onNavigateToHealth)
-                }
-            }
-            Row(modifier = Modifier.fillMaxWidth().height(utilityRowHeight), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AnimatedGridCard(visible = cardsVisible, index = 4, modifier = Modifier.weight(1f).fillMaxHeight()) {
-                    if (state.isPro) MetricCard(
-                        label = stringResource(R.string.home_chargers_card),
-                        heroValue = "---",
-                        icon = Icons.Outlined.BatteryChargingFull,
-                        onClick = onNavigateToMore
-                    )
-                    else LockedProCard(
-                        icon = Icons.Outlined.BatteryChargingFull,
-                        title = stringResource(R.string.home_chargers_card),
-                        description = stringResource(R.string.home_chargers_desc),
-                        onClick = onNavigateToMore
-                    )
-                }
-                AnimatedGridCard(visible = cardsVisible, index = 5, modifier = Modifier.weight(1f).fillMaxHeight()) {
-                    if (state.isPro) MetricCard(
-                        label = stringResource(R.string.home_app_usage_card),
-                        heroValue = "---",
-                        icon = Icons.Outlined.DataUsage,
-                        onClick = onNavigateToMore
-                    )
-                    else LockedProCard(
-                        icon = Icons.Outlined.DataUsage,
-                        title = stringResource(R.string.home_app_usage_card),
-                        description = stringResource(R.string.home_app_usage_desc),
-                        onClick = onNavigateToMore
-                    )
-                }
-            }
-            AnimatedGridCard(
-                visible = cardsVisible,
-                index = 6,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(bannerHeight)
+            // Progress ring with score
+            ProgressRing(
+                progress = score / 100f,
+                modifier = Modifier.size(170.dp),
+                strokeWidth = 10.dp,
+                progressColor = AccentTeal
             ) {
-                if (state.isPro) InsightsCard(modifier = Modifier.fillMaxHeight()) else ProPromotionCard(
-                    onClick = onNavigateToMore,
-                    modifier = Modifier.fillMaxHeight()
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = score.toString(),
+                        style = MaterialTheme.typography.displayLarge.copy(
+                            fontSize = 48.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = stringResource(R.string.home_health_score),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = TextMuted
+                    )
+                }
             }
-        }
-    }
-}
 
-// ── Card Composables ─────────────────────────────────────────────────────
-// All cards follow the same vertical structure:
-//   Top:    category label (16sp medium)
-//   Center: hero content (gauge or text, weight 1f, centered)
-//   Bottom: status indicator (12sp)
+            Spacer(modifier = Modifier.height(16.dp))
 
-@Composable
-private fun HealthCard(score: Int, status: HealthStatus, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val accentColor = statusColor(status)
-    val scoreLabel = when {
-        score >= 90 -> stringResource(R.string.score_excellent)
-        score >= 70 -> stringResource(R.string.score_good)
-        score >= 50 -> stringResource(R.string.score_fair)
-        else -> stringResource(R.string.score_poor)
-    }
-    PressableCard(onClick = onClick, modifier = modifier.fillMaxHeight()) {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            CardHeader(
-                title = stringResource(R.string.home_dashboard_card),
-                icon = Icons.Outlined.Favorite
-            )
-            Box(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                FullRingGauge(
-                    fraction = score / 100f,
-                    label = "${score}%",
-                    animatedValue = score,
-                    animatedSuffix = "%",
-                    gaugeSize = 108.dp
-                )
-            }
-            StatusText(
-                label = scoreLabel,
-                accentColor = accentColor
-            )
-        }
-    }
-}
-
-@Composable
-private fun BatteryCard(level: Int, chargingStatus: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    PressableCard(onClick = onClick, modifier = modifier.fillMaxHeight()) {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            CardHeader(
-                title = stringResource(R.string.home_battery_card),
-                icon = Icons.Outlined.BatteryChargingFull
-            )
-            Box(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                FullRingGauge(
-                    fraction = level / 100f,
-                    label = "${level}%",
-                    animatedValue = level,
-                    animatedSuffix = "%",
-                    gaugeSize = 108.dp
-                )
-            }
+            // Summary text with colored status word
+            val formattedSummary = stringResource(R.string.home_device_good_shape, statusLabel.lowercase())
+            val statusWord = statusLabel.lowercase()
+            val startIndex = formattedSummary.indexOf(statusWord)
             Text(
-                text = chargingStatus,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = buildAnnotatedString {
+                    if (startIndex >= 0) {
+                        append(formattedSummary.substring(0, startIndex))
+                        withStyle(SpanStyle(color = AccentTeal, fontWeight = FontWeight.Bold)) {
+                            append(statusWord)
+                        }
+                        append(formattedSummary.substring(startIndex + statusWord.length))
+                    } else {
+                        append(formattedSummary)
+                    }
+                },
+                style = MaterialTheme.typography.bodyLarge,
+                color = TextSecondary
             )
-        }
-    }
-}
 
-@Composable
-private fun NetworkCard(
-    connectionType: ConnectionType, networkSubtype: String?, wifiSsid: String?,
-    signalDbm: Int?, subtitle: String, status: HealthStatus, onClick: () -> Unit, modifier: Modifier = Modifier
-) {
-    val accentColor = statusColor(status)
-    val heroValue = when (connectionType) {
-        ConnectionType.WIFI -> wifiSsid ?: "WiFi"
-        ConnectionType.CELLULAR -> networkSubtype ?: "4G"
-        ConnectionType.NONE -> "---"
-    }
-
-    PressableCard(onClick = onClick, modifier = modifier.fillMaxHeight()) {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            CardHeader(
-                title = stringResource(R.string.home_network_card),
-                icon = Icons.Outlined.SignalCellularAlt
-            )
-            // Center: signal bars + hero value stacked
-            Column(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                signalDbm?.let { dbm ->
-                    BigSignalBars(dbm = dbm)
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
+            // Temperature warning if elevated
+            if (state.thermalState.batteryTempC >= 38f) {
                 Text(
-                    text = heroValue,
-                    style = HeroValueStyle,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
-                )
-            }
-            StatusText(
-                label = subtitle,
-                accentColor = accentColor
-            )
-        }
-    }
-}
-
-@Composable
-private fun ThermalCard(tempC: Float, status: HealthStatus, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val accentColor = statusColor(status)
-    PressableCard(onClick = onClick, modifier = modifier.fillMaxHeight()) {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            CardHeader(
-                title = stringResource(R.string.home_thermal_card),
-                icon = Icons.Outlined.Thermostat
-            )
-            Box(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "${"%.1f".format(tempC)}°C",
-                    style = HeroValueStyle,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(accentColor))
-                Text(
-                    text = when {
-                        tempC < 35f -> stringResource(R.string.thermal_cool)
-                        tempC < 40f -> stringResource(R.string.thermal_warm)
-                        else -> stringResource(R.string.thermal_hot)
-                    },
+                    text = stringResource(R.string.home_temp_elevated),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = AccentOrange
                 )
             }
-        }
-    }
-}
 
-// ── Generic / Locked / Pro Cards ──────────────────────────────────────────
+            Spacer(modifier = Modifier.height(20.dp))
 
-@Composable
-private fun MetricCard(
-    label: String,
-    heroValue: String,
-    icon: ImageVector,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    PressableCard(onClick = onClick, modifier = modifier.fillMaxHeight()) {
-        Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
-            CardHeader(title = label, icon = icon)
-            Box(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = heroValue, style = HeroValueStyle, color = MaterialTheme.colorScheme.onSurface)
+            // Status breakdown rows
+            val breakdownItems = listOf(
+                BreakdownItem(
+                    label = stringResource(R.string.home_battery_card),
+                    value = formatPercent(state.healthScore.batteryScore),
+                    status = HealthScore.statusFromScore(state.healthScore.batteryScore),
+                    onClick = onNavigateToBattery
+                ),
+                BreakdownItem(
+                    label = stringResource(R.string.home_thermal_card),
+                    value = formatPercent(state.healthScore.thermalScore),
+                    status = HealthScore.statusFromScore(state.healthScore.thermalScore),
+                    onClick = onNavigateToThermal
+                ),
+                BreakdownItem(
+                    label = stringResource(R.string.home_network_card),
+                    value = formatPercent(state.healthScore.networkScore),
+                    status = HealthScore.statusFromScore(state.healthScore.networkScore),
+                    onClick = onNavigateToNetwork
+                ),
+                BreakdownItem(
+                    label = stringResource(R.string.home_storage_card),
+                    value = formatPercent(state.healthScore.storageScore),
+                    status = HealthScore.statusFromScore(state.healthScore.storageScore),
+                    onClick = onNavigateToStorage
+                )
+            )
+
+            breakdownItems.forEachIndexed { index, item ->
+                if (index > 0) {
+                    HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = item.onClick)
+                        .padding(vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    StatusDot(color = statusColor(item.status))
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text(
+                        text = item.label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = item.value,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                }
             }
         }
     }
 }
 
-@Composable
-private fun CardHeader(title: String, icon: ImageVector) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = title,
-            style = CardLabelStyle,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(18.dp)
-        )
-    }
-}
+private data class BreakdownItem(
+    val label: String,
+    val value: String,
+    val status: HealthStatus,
+    val onClick: () -> Unit
+)
+
+// ── Battery Hero Card ───────────────────────────────────────────────────────
 
 @Composable
-private fun LockedProCard(
-    icon: ImageVector, title: String, description: String,
-    onClick: () -> Unit, modifier: Modifier = Modifier
+private fun BatteryHeroCard(
+    state: HomeUiState.Success,
+    onClick: () -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val battery = state.batteryState
+
     Card(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().fillMaxHeight(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f)
-            else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f)
-        ),
-        border = if (isDark) BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.42f)) else null
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) {
-        Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
-                Text(
-                    text = title,
-                    style = CardLabelStyle,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-                Icon(
-                    imageVector = Icons.Outlined.Lock,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                    modifier = Modifier.size(14.dp)
-                )
-            }
-            Box(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f),
-                    modifier = Modifier.size(56.dp)
-                )
-            }
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-            )
-        }
-    }
-}
+                // Left side
+                Column {
+                    SectionHeader(stringResource(R.string.home_battery_card))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = battery.level.toString(),
+                            style = MaterialTheme.typography.displayLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "%",
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = TextSecondary
+                        )
+                    }
+                    Text(
+                        text = formatEnumName(battery.chargingStatus.name),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+                }
 
-@Composable
-private fun ProPromotionCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Card(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f))
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Star,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
+                // Right side: progress ring with bolt icon
+                ProgressRing(
+                    progress = battery.level / 100f,
+                    modifier = Modifier.size(80.dp),
+                    strokeWidth = 6.dp,
+                    progressColor = AccentBlue
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.BatteryChargingFull,
+                        contentDescription = null,
+                        modifier = Modifier.size(28.dp),
+                        tint = AccentBlue
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Full-width MiniBar
+            MiniBar(
+                progress = battery.level / 100f,
+                fillColor = AccentBlue
             )
-            Column(modifier = Modifier.weight(1f)) {
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Bottom row: Health + Temperature
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Text(
-                    text = stringResource(R.string.home_pro_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Text(
-                    text = stringResource(R.string.home_pro_subtitle),
+                    text = "${stringResource(R.string.battery_health)}: ${formatEnumName(battery.health.name)}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = AccentTeal
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun InsightsCard(modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSystemInDarkTheme()) {
-                MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.82f)
-            } else {
-                MaterialTheme.colorScheme.surfaceContainer
-            }
-        ),
-        border = if (isSystemInDarkTheme()) {
-            BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
-        } else {
-            null
-        }
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
-            Text(
-                text = stringResource(R.string.home_insights_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = stringResource(R.string.loading),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-// ── Visual Components ─────────────────────────────────────────────────────
-
-@Composable
-private fun FullRingGauge(
-    fraction: Float,
-    label: String,
-    modifier: Modifier = Modifier,
-    subtitle: String? = null,
-    animatedValue: Int? = null,
-    animatedSuffix: String = "",
-    gaugeSize: Dp = 120.dp,
-    outerWidth: Dp = 3.dp,
-    progressWidth: Dp = 8.dp
-) {
-    val reducedMotion = MaterialTheme.reducedMotion
-    val accentColor = MaterialTheme.colorScheme.primary
-    val trackColor = accentColor.copy(alpha = 0.28f)
-    val innerColor = accentColor.copy(alpha = 0.16f)
-    val progressBrush = rememberGaugeSweepBrush(accentColor)
-    val innerBrush = rememberGaugeSweepBrush(innerColor)
-    val targetSweep = fraction * 360f
-    val sweepAngle by animateFloatAsState(
-        targetValue = targetSweep,
-        animationSpec = if (reducedMotion) {
-            tween(durationMillis = 0)
-        } else {
-            tween(
-                durationMillis = 800,
-                easing = FastOutSlowInEasing
-            )
-        },
-        label = "home_full_ring_gauge"
-    )
-
-    Box(modifier = modifier.requiredSize(gaugeSize), contentAlignment = Alignment.Center) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val outerStroke = outerWidth.toPx()
-            val progressStroke = progressWidth.toPx()
-
-            // Positions
-            val progressInset = progressStroke / 2
-            val progressArcSize = Size(size.width - progressInset * 2, size.height - progressInset * 2)
-            val progressTopLeft = Offset(progressInset, progressInset)
-
-            val innerInset = progressStroke + outerStroke / 2
-            val innerArcSize = Size(size.width - innerInset * 2, size.height - innerInset * 2)
-            val innerTopLeft = Offset(innerInset, innerInset)
-
-            // Neutral tracks — full circle on both rings
-            drawArc(
-                color = trackColor, startAngle = -90f, sweepAngle = 360f,
-                useCenter = false, topLeft = progressTopLeft, size = progressArcSize,
-                style = Stroke(width = progressStroke, cap = StrokeCap.Butt)
-            )
-            drawArc(
-                color = trackColor, startAngle = -90f, sweepAngle = 360f,
-                useCenter = false, topLeft = innerTopLeft, size = innerArcSize,
-                style = Stroke(width = outerStroke, cap = StrokeCap.Butt)
-            )
-
-            // Accent progress ring
-            drawArc(
-                brush = progressBrush, startAngle = -90f, sweepAngle = sweepAngle,
-                useCenter = false, topLeft = progressTopLeft, size = progressArcSize,
-                style = Stroke(width = progressStroke, cap = StrokeCap.Round)
-            )
-
-            // Subtle inner accent
-            drawArc(
-                brush = innerBrush, startAngle = -90f, sweepAngle = sweepAngle,
-                useCenter = false, topLeft = innerTopLeft, size = innerArcSize,
-                style = Stroke(width = outerStroke, cap = StrokeCap.Round)
-            )
-        }
-
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            if (animatedValue != null) {
-                AnimatedIntText(
-                    value = animatedValue,
-                    suffix = animatedSuffix,
-                    style = HeroValueStyle
-                )
-            } else {
                 Text(
-                    text = label,
-                    style = HeroValueStyle,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            if (subtitle != null) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "${stringResource(R.string.battery_temperature)}: ${formatTemperature(battery.temperatureC)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AccentOrange
                 )
             }
         }
     }
 }
 
-@Composable
-private fun rememberGaugeSweepBrush(baseColor: Color): Brush {
-    val seamStart = lerp(baseColor, Color.White, 0.02f)
-    val highlight = lerp(baseColor, Color.White, 0.05f)
-    val middle = baseColor
-    val shadow = lerp(baseColor, Color.Black, 0.03f)
-    val seamEnd = lerp(baseColor, Color.White, 0.018f)
-    return Brush.sweepGradient(
-        0.0f to seamStart,
-        0.18f to highlight,
-        0.52f to middle,
-        0.82f to shadow,
-        1.0f to seamEnd
-    )
-}
-
-@Composable
-private fun BigSignalBars(dbm: Int, modifier: Modifier = Modifier) {
-    val bars = when {
-        dbm > -70 -> 4
-        dbm > -85 -> 3
-        dbm > -100 -> 2
-        dbm > -110 -> 1
-        else -> 0
-    }
-    val activeColor = MaterialTheme.colorScheme.primary
-    val dimColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.Bottom
-    ) {
-        for (i in 0 until 4) {
-            val barHeight = (28 + i * 16).dp
-            Box(
-                modifier = Modifier
-                    .width(18.dp)
-                    .height(barHeight)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(if (i < bars) activeColor else dimColor)
-            )
-        }
-    }
-}
-
-@Composable
-private fun StatusChip(status: HealthStatus, accentColor: Color, modifier: Modifier = Modifier) {
-    val label = when (status) {
-        HealthStatus.HEALTHY -> stringResource(R.string.status_healthy)
-        HealthStatus.FAIR -> stringResource(R.string.status_fair)
-        HealthStatus.POOR -> stringResource(R.string.status_poor)
-        HealthStatus.CRITICAL -> stringResource(R.string.status_critical)
-    }
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(accentColor.copy(alpha = 0.12f))
-            .padding(horizontal = 10.dp, vertical = 4.dp)
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-            color = accentColor
-        )
-    }
-}
-
-@Composable
-private fun StatusText(label: String, accentColor: Color, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(accentColor)
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-// ── Shared Utilities ──────────────────────────────────────────────────────
-
-@Composable
-private fun PressableCard(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    val isDark = isSystemInDarkTheme()
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.97f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
-        label = "card_press"
-    )
-    Card(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth().scale(scale),
-        interactionSource = interactionSource,
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.82f)
-            else MaterialTheme.colorScheme.surfaceContainer
-        ),
-        border = if (isDark) BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)) else null
-    ) { content() }
-}
-
-@Composable
-private fun AnimatedGridCard(visible: Boolean, index: Int, modifier: Modifier = Modifier, extraDelay: Int = 0, content: @Composable () -> Unit) {
-    AnimatedVisibility(
-        visible = visible, modifier = modifier,
-        enter = fadeIn(animationSpec = tween(durationMillis = 220, delayMillis = index * 28 + extraDelay)) +
-                slideInVertically(animationSpec = tween(durationMillis = 220, delayMillis = index * 28 + extraDelay), initialOffsetY = { it / 8 })
-    ) { content() }
-}
+// ── Shared Utilities ────────────────────────────────────────────────────────
 
 @Composable
 private fun statusColor(status: HealthStatus): Color {
@@ -839,60 +606,12 @@ private fun statusColor(status: HealthStatus): Color {
     }
 }
 
+@Composable
+private fun thermalLabel(tempC: Float): String = when {
+    tempC < 35f -> stringResource(R.string.thermal_cool)
+    tempC < 40f -> stringResource(R.string.thermal_warm)
+    else -> stringResource(R.string.thermal_hot)
+}
+
 private fun formatEnumName(name: String): String =
     name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }
-
-@Preview(showBackground = true, widthDp = 412, heightDp = 915)
-@Composable
-private fun HomeContentPreview() {
-    DevicePulseTheme {
-        HomeContent(
-            state = HomeUiState.Success(
-                healthScore = HealthScore(
-                    overallScore = 88,
-                    batteryScore = 81,
-                    networkScore = 76,
-                    thermalScore = 90,
-                    storageScore = 69,
-                    status = HealthStatus.HEALTHY
-                ),
-                batteryState = BatteryState(
-                    level = 87,
-                    voltageMv = 4110,
-                    temperatureC = 32.8f,
-                    currentMa = MeasuredValue(-315, Confidence.HIGH),
-                    chargingStatus = ChargingStatus.DISCHARGING,
-                    plugType = PlugType.NONE,
-                    health = BatteryHealth.GOOD,
-                    technology = "Li-ion",
-                    healthPercent = 94
-                ),
-                networkState = NetworkState(
-                    connectionType = ConnectionType.WIFI,
-                    signalDbm = -58,
-                    signalQuality = SignalQuality.EXCELLENT,
-                    wifiSsid = "DevicePulse Lab",
-                    latencyMs = 22
-                ),
-                thermalState = ThermalState(
-                    batteryTempC = 33.1f,
-                    cpuTempC = 39.4f,
-                    thermalHeadroom = 0.76f,
-                    thermalStatus = ThermalStatus.NONE,
-                    isThrottling = false
-                ),
-                storageState = StorageState(
-                    totalBytes = 128L * 1024 * 1024 * 1024,
-                    availableBytes = 42L * 1024 * 1024 * 1024,
-                    usedBytes = 86L * 1024 * 1024 * 1024,
-                    usagePercent = 67.2f
-                ),
-                isPro = false
-            ),
-            innerPadding = PaddingValues(),
-            onNavigateToHealth = {},
-            onNavigateToNetwork = {},
-            onNavigateToMore = {}
-        )
-    }
-}

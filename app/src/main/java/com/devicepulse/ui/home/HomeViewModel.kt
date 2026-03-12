@@ -1,6 +1,5 @@
 package com.devicepulse.ui.home
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.devicepulse.domain.repository.ProStatusProvider
@@ -22,6 +21,8 @@ import com.devicepulse.domain.usecase.GetBatteryStateUseCase
 import com.devicepulse.domain.usecase.GetNetworkStateUseCase
 import com.devicepulse.domain.usecase.GetStorageStateUseCase
 import com.devicepulse.domain.usecase.GetThermalStateUseCase
+import com.devicepulse.ui.common.messageOr
+import com.devicepulse.util.ReleaseSafeLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -58,13 +59,13 @@ class HomeViewModel @Inject constructor(
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             val batteryFlow = getBatteryState()
-                .catch { e -> Log.e(TAG, "Battery flow failed", e); emit(DEFAULT_BATTERY) }
+                .catch { e -> ReleaseSafeLog.error(TAG, "Battery flow failed", e); emit(DEFAULT_BATTERY) }
             val networkFlow = getNetworkState()
-                .catch { e -> Log.e(TAG, "Network flow failed", e); emit(DEFAULT_NETWORK) }
+                .catch { e -> ReleaseSafeLog.error(TAG, "Network flow failed", e); emit(DEFAULT_NETWORK) }
             val thermalFlow = getThermalState()
-                .catch { e -> Log.e(TAG, "Thermal flow failed", e); emit(DEFAULT_THERMAL) }
+                .catch { e -> ReleaseSafeLog.error(TAG, "Thermal flow failed", e); emit(DEFAULT_THERMAL) }
             val storageFlow = getStorageState()
-                .catch { e -> Log.e(TAG, "Storage flow failed", e); emit(DEFAULT_STORAGE) }
+                .catch { e -> ReleaseSafeLog.error(TAG, "Storage flow failed", e); emit(DEFAULT_STORAGE) }
             val proFlow = proStatusProvider.isProUser
 
             val dataFlow = combine(
@@ -97,7 +98,7 @@ class HomeViewModel @Inject constructor(
                     isPro = isPro
                 )
             }.catch { e ->
-                _uiState.value = HomeUiState.Error(e.message ?: "Unknown error")
+                _uiState.value = HomeUiState.Error(e.messageOr("Unknown error"))
             }.collect { state ->
                 _uiState.value = state
             }

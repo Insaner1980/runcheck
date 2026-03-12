@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
+import com.devicepulse.ui.common.formatDecimal
 import com.devicepulse.ui.theme.reducedMotion
 import kotlin.math.roundToInt
 
@@ -50,9 +51,8 @@ fun AnimatedFloatText(
         label = "float_anim"
     )
 
-    val format = "%.${decimalPlaces}f"
     Text(
-        text = "${String.format(format, animatedValue)}$suffix",
+        text = "${formatDecimal(animatedValue, decimalPlaces)}$suffix",
         style = style,
         color = MaterialTheme.colorScheme.onSurface,
         modifier = modifier

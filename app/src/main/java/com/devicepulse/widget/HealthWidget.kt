@@ -1,8 +1,9 @@
 package com.devicepulse.widget
 
 import android.content.Context
-import android.content.Intent
 import android.os.BatteryManager
+import com.devicepulse.R
+import com.devicepulse.data.billing.ProStatusCache
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
@@ -28,8 +29,15 @@ import androidx.compose.ui.unit.sp
 class HealthWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        if (!ProStatusCache.isPro(context)) {
+            provideLockedContent(context)
+            return
+        }
         val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
         val batteryLevel = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        val healthScoreLabel = context.getString(R.string.widget_health_score_label)
+        val batteryLabel = context.getString(R.string.widget_battery_short_label)
+        val batteryValue = context.getString(R.string.widget_percent_value, batteryLevel)
 
         // Simple health score estimate based on battery level
         val batteryScore = when {
@@ -62,7 +70,7 @@ class HealthWidget : GlanceAppWidget() {
                         )
                     )
                     Text(
-                        text = "Health Score",
+                        text = healthScoreLabel,
                         style = TextStyle(
                             fontSize = 12.sp,
                             color = GlanceTheme.colors.onSurfaceVariant
@@ -73,8 +81,40 @@ class HealthWidget : GlanceAppWidget() {
                         modifier = GlanceModifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        MiniIndicator(label = "Bat", value = "$batteryLevel%")
+                        MiniIndicator(label = batteryLabel, value = batteryValue)
                     }
+                }
+            }
+        }
+    }
+
+    private suspend fun provideLockedContent(context: Context) {
+        provideContent {
+            GlanceTheme {
+                Column(
+                    modifier = GlanceModifier
+                        .fillMaxSize()
+                        .padding(12.dp)
+                        .cornerRadius(16.dp)
+                        .background(GlanceTheme.colors.widgetBackground),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = context.getString(R.string.widget_health_name),
+                        style = TextStyle(
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = GlanceTheme.colors.onSurface
+                        )
+                    )
+                    Text(
+                        text = context.getString(R.string.widget_pro_required),
+                        style = TextStyle(
+                            fontSize = 12.sp,
+                            color = GlanceTheme.colors.onSurfaceVariant
+                        )
+                    )
                 }
             }
         }

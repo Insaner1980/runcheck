@@ -34,13 +34,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.devicepulse.BuildConfig
 import com.devicepulse.R
 import com.devicepulse.domain.model.CurrentUnit
 import com.devicepulse.domain.model.DeviceProfileInfo
 import com.devicepulse.domain.model.MonitoringInterval
 import com.devicepulse.domain.model.SignConvention
-import com.devicepulse.domain.model.ThemeMode
 import com.devicepulse.ui.components.DetailTopBar
+import com.devicepulse.ui.components.ProFeatureCalloutCard
+import com.devicepulse.ui.components.SectionHeader
+import com.devicepulse.ui.theme.BgIconCircle
 import com.devicepulse.ui.theme.DevicePulseTheme
 import com.devicepulse.ui.theme.spacing
 
@@ -54,13 +57,12 @@ fun SettingsScreen(
     SettingsScreenContent(
         uiState = uiState,
         onBack = onBack,
-        onThemeModeChange = viewModel::setThemeMode,
-        onAmoledBlackChange = viewModel::setAmoledBlack,
-        onDynamicColorsChange = viewModel::setDynamicColors,
         onMonitoringIntervalChange = viewModel::setMonitoringInterval,
         onNotificationsChange = viewModel::setNotifications,
         onPurchasePro = { activity -> viewModel.purchasePro(activity) },
+        onRefreshPurchaseStatus = viewModel::refreshPurchaseStatus,
         onExportData = viewModel::exportData,
+        onClearBillingStatus = viewModel::clearBillingStatus,
         onClearExportStatus = viewModel::clearExportStatus,
         onClearErrorMessage = viewModel::clearErrorMessage
     )
@@ -70,13 +72,12 @@ fun SettingsScreen(
 private fun SettingsScreenContent(
     uiState: SettingsUiState,
     onBack: () -> Unit,
-    onThemeModeChange: (ThemeMode) -> Unit,
-    onAmoledBlackChange: (Boolean) -> Unit,
-    onDynamicColorsChange: (Boolean) -> Unit,
     onMonitoringIntervalChange: (MonitoringInterval) -> Unit,
     onNotificationsChange: (Boolean) -> Unit,
     onPurchasePro: (Activity) -> Unit,
+    onRefreshPurchaseStatus: () -> Unit,
     onExportData: () -> Unit,
+    onClearBillingStatus: () -> Unit,
     onClearExportStatus: () -> Unit,
     onClearErrorMessage: () -> Unit
 ) {
@@ -98,42 +99,9 @@ private fun SettingsScreenContent(
         ) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
 
-            SectionHeader(stringResource(R.string.settings_theme))
-
-            ThemeMode.entries.forEach { mode ->
-                val label = when (mode) {
-                    ThemeMode.LIGHT -> stringResource(R.string.settings_theme_light)
-                    ThemeMode.DARK -> stringResource(R.string.settings_theme_dark)
-                    ThemeMode.SYSTEM -> stringResource(R.string.settings_theme_system)
-                }
-                SettingsRadioRow(
-                    label = label,
-                    selected = uiState.preferences.themeMode == mode,
-                    onSelect = { onThemeModeChange(mode) }
-                )
-            }
-
-            if (uiState.preferences.themeMode == ThemeMode.DARK) {
-                SettingsToggle(
-                    title = stringResource(R.string.settings_amoled_black),
-                    description = stringResource(R.string.settings_amoled_black_desc),
-                    checked = uiState.preferences.amoledBlack,
-                    onCheckedChange = onAmoledBlackChange
-                )
-            }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = MaterialTheme.spacing.md))
-
-            SettingsToggle(
-                title = stringResource(R.string.settings_dynamic_colors),
-                description = stringResource(R.string.settings_dynamic_colors_desc),
-                checked = uiState.preferences.dynamicColors,
-                onCheckedChange = onDynamicColorsChange
-            )
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = MaterialTheme.spacing.md))
-
-            SectionHeader(stringResource(R.string.settings_monitoring_interval))
+            // --- MONITORING ---
+            SectionHeader(text = stringResource(R.string.settings_monitoring_interval))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
             MonitoringInterval.entries.forEach { interval ->
                 val label = when (interval) {
@@ -148,7 +116,12 @@ private fun SettingsScreenContent(
                 )
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = MaterialTheme.spacing.md))
+            HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
+
+            // --- NOTIFICATIONS ---
+            SectionHeader(text = stringResource(R.string.settings_notifications))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
             SettingsToggle(
                 title = stringResource(R.string.settings_notifications),
@@ -157,37 +130,29 @@ private fun SettingsScreenContent(
                 onCheckedChange = onNotificationsChange
             )
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = MaterialTheme.spacing.md))
+            HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
 
-            uiState.deviceProfile?.let { profile ->
-                SectionHeader(stringResource(R.string.settings_measurement_info))
-                Text(
-                    text = "${profile.manufacturer} ${profile.model}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                SettingsInfoLine("API Level: ${profile.apiLevel}")
-                SettingsInfoLine(
-                    "Current reading: ${if (profile.currentNowReliable) "Reliable" else "Unreliable"}"
-                )
-                SettingsInfoLine(
-                    "Cycle count: ${if (profile.cycleCountAvailable) "Available" else "Not available"}"
-                )
-                SettingsInfoLine("Thermal zones: ${profile.thermalZonesAvailable.size} found")
-            }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = MaterialTheme.spacing.md))
-
+            // --- PRO ---
             SectionHeader(
-                if (uiState.isPro) stringResource(R.string.settings_pro_active)
+                text = if (uiState.isPro) stringResource(R.string.settings_pro_active)
                 else stringResource(R.string.settings_upgrade_pro)
             )
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+
             if (uiState.isPro) {
                 Text(
                     text = stringResource(R.string.settings_pro_thank_you),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                OutlinedButton(
+                    onClick = onRefreshPurchaseStatus,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = stringResource(R.string.settings_refresh_pro_status))
+                }
             } else {
                 Text(
                     text = stringResource(R.string.settings_pro_desc),
@@ -204,21 +169,115 @@ private fun SettingsScreenContent(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = uiState.proPrice?.let {
-                            "${stringResource(R.string.settings_upgrade_pro)} — $it"
+                        text = uiState.proPrice?.let { price ->
+                            stringResource(R.string.settings_upgrade_pro_with_price, price)
                         } ?: stringResource(R.string.settings_upgrade_pro)
                     )
                 }
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                OutlinedButton(
+                    onClick = onRefreshPurchaseStatus,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = stringResource(R.string.settings_restore_purchase))
+                }
             }
 
-            if (uiState.isPro) {
-                HorizontalDivider(modifier = Modifier.padding(vertical = MaterialTheme.spacing.md))
+            HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
 
+            // --- DATA ---
+            SectionHeader(text = stringResource(R.string.settings_data_section))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+
+            if (uiState.isPro) {
                 OutlinedButton(
                     onClick = onExportData,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(text = stringResource(R.string.settings_export_data))
+                }
+            } else {
+                ProFeatureCalloutCard(
+                    message = stringResource(R.string.pro_feature_export_message),
+                    actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+                    onAction = {
+                        (context as? Activity)?.let { activity ->
+                            onPurchasePro(activity)
+                        }
+                    }
+                )
+            }
+
+            uiState.deviceProfile?.let { profile ->
+                HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
+
+                SectionHeader(text = stringResource(R.string.settings_measurement_info))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+
+                Text(
+                    text = stringResource(
+                        R.string.settings_device_model,
+                        profile.manufacturer,
+                        profile.model
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                SettingsInfoLine(
+                    stringResource(R.string.settings_api_level, profile.apiLevel)
+                )
+                SettingsInfoLine(
+                    stringResource(
+                        R.string.settings_current_reading,
+                        stringResource(
+                            if (profile.currentNowReliable) {
+                                R.string.settings_measurement_reliable
+                            } else {
+                                R.string.settings_measurement_unreliable
+                            }
+                        )
+                    )
+                )
+                SettingsInfoLine(
+                    stringResource(
+                        R.string.settings_cycle_count,
+                        stringResource(
+                            if (profile.cycleCountAvailable) {
+                                R.string.settings_measurement_available
+                            } else {
+                                R.string.settings_measurement_not_available
+                            }
+                        )
+                    )
+                )
+                SettingsInfoLine(
+                    stringResource(
+                        R.string.settings_thermal_zones_found,
+                        profile.thermalZonesAvailable.size
+                    )
+                )
+            }
+
+            HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
+
+            // --- ABOUT ---
+            SectionHeader(text = stringResource(R.string.settings_about))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+
+            Text(
+                text = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            // Toast side-effects
+            uiState.billingStatus?.let { status ->
+                LaunchedEffect(status) {
+                    Toast.makeText(context, status, Toast.LENGTH_SHORT).show()
+                    onClearBillingStatus()
                 }
             }
 
@@ -236,28 +295,9 @@ private fun SettingsScreenContent(
                 }
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = MaterialTheme.spacing.md))
-
-            SectionHeader(stringResource(R.string.settings_about))
-            Text(
-                text = stringResource(R.string.settings_version, "1.0.0"),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }
     }
-}
-
-@Composable
-private fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier.padding(vertical = MaterialTheme.spacing.sm)
-    )
 }
 
 @Composable
@@ -359,13 +399,12 @@ private fun SettingsScreenContentPreview() {
                 isPro = true
             ),
             onBack = {},
-            onThemeModeChange = {},
-            onAmoledBlackChange = {},
-            onDynamicColorsChange = {},
             onMonitoringIntervalChange = {},
             onNotificationsChange = {},
             onPurchasePro = {},
+            onRefreshPurchaseStatus = {},
             onExportData = {},
+            onClearBillingStatus = {},
             onClearExportStatus = {},
             onClearErrorMessage = {}
         )

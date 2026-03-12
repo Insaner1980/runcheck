@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface NetworkRepository {
     fun getNetworkState(): Flow<NetworkState>
+    suspend fun measureLatency(): Int?
     suspend fun saveReading(state: NetworkState)
     suspend fun getAllReadings(): List<NetworkReadingData>
     suspend fun deleteOlderThan(cutoff: Long)

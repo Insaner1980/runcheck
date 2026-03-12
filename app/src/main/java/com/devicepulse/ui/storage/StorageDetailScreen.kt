@@ -24,10 +24,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
+import com.devicepulse.ui.common.formatPercent
+import com.devicepulse.ui.common.formatStorageSize
 import com.devicepulse.ui.components.DetailTopBar
 import com.devicepulse.ui.components.MetricTile
 import com.devicepulse.ui.components.PullToRefreshWrapper
@@ -75,6 +78,7 @@ private fun StorageContent(
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     val storage = state.storageState
+    val context = LocalContext.current
 
     LaunchedEffect(state) {
         isRefreshing = false
@@ -107,31 +111,31 @@ private fun StorageContent(
 
             MetricTile(
                 label = stringResource(R.string.storage_total),
-                value = formatBytes(storage.totalBytes)
+                value = formatStorageSize(context, storage.totalBytes)
             )
 
             MetricTile(
                 label = stringResource(R.string.storage_used),
-                value = formatBytes(storage.usedBytes),
-                unit = "${"%.1f".format(storage.usagePercent)}%"
+                value = formatStorageSize(context, storage.usedBytes),
+                unit = formatPercent(storage.usagePercent)
             )
 
             MetricTile(
                 label = stringResource(R.string.storage_available),
-                value = formatBytes(storage.availableBytes)
+                value = formatStorageSize(context, storage.availableBytes)
             )
 
             storage.appsBytes?.let { bytes ->
                 MetricTile(
                     label = stringResource(R.string.storage_apps),
-                    value = formatBytes(bytes)
+                    value = formatStorageSize(context, bytes)
                 )
             }
 
             storage.mediaBytes?.let { bytes ->
                 MetricTile(
                     label = stringResource(R.string.storage_media),
-                    value = formatBytes(bytes)
+                    value = formatStorageSize(context, bytes)
                 )
             }
 
@@ -152,28 +156,18 @@ private fun StorageContent(
                 storage.sdCardTotalBytes?.let { total ->
                     MetricTile(
                         label = stringResource(R.string.storage_total),
-                        value = formatBytes(total)
+                        value = formatStorageSize(context, total)
                     )
                 }
                 storage.sdCardAvailableBytes?.let { available ->
                     MetricTile(
                         label = stringResource(R.string.storage_available),
-                        value = formatBytes(available)
+                        value = formatStorageSize(context, available)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }
-    }
-}
-
-private fun formatBytes(bytes: Long): String {
-    val gb = bytes / (1024.0 * 1024.0 * 1024.0)
-    return if (gb >= 1.0) {
-        "${"%.1f".format(gb)} GB"
-    } else {
-        val mb = bytes / (1024.0 * 1024.0)
-        "${"%.0f".format(mb)} MB"
     }
 }

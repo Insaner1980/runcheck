@@ -3,7 +3,6 @@ package com.devicepulse.data.storage
 import android.app.AppOpsManager
 import android.app.usage.StorageStatsManager
 import android.content.Context
-import android.content.pm.ApplicationInfo
 import android.os.Environment
 import android.os.StatFs
 import android.os.storage.StorageManager
@@ -72,15 +71,8 @@ class StorageDataSource @Inject constructor(
         return try {
             val uuid = StorageManager.UUID_DEFAULT
             val user = android.os.Process.myUserHandle()
-            val packages = context.packageManager.getInstalledApplications(0)
-
-            var total = 0L
-            for (app in packages) {
-                try {
-                    val stats = ssm.queryStatsForPackage(uuid, app.packageName, user)
-                    total += stats.appBytes + stats.dataBytes + stats.cacheBytes
-                } catch (_: Exception) { }
-            }
+            val stats = ssm.queryStatsForUser(uuid, user)
+            val total = stats.appBytes + stats.dataBytes + stats.cacheBytes
             if (total > 0) total else null
         } catch (_: Exception) {
             null

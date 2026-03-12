@@ -3,10 +3,11 @@ package com.devicepulse.domain.usecase
 import com.devicepulse.domain.repository.BatteryRepository
 import com.devicepulse.domain.repository.NetworkRepository
 import com.devicepulse.domain.repository.ProStatusProvider
+import com.devicepulse.domain.repository.AppBatteryUsageRepository
+import com.devicepulse.domain.repository.SpeedTestRepository
 import com.devicepulse.domain.repository.StorageRepository
 import com.devicepulse.domain.repository.ThermalRepository
 import com.devicepulse.domain.repository.ThrottlingRepository
-import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -21,6 +22,8 @@ class CleanupOldReadingsUseCaseTest {
     private lateinit var thermalRepository: ThermalRepository
     private lateinit var storageRepository: StorageRepository
     private lateinit var throttlingRepository: ThrottlingRepository
+    private lateinit var appBatteryUsageRepository: AppBatteryUsageRepository
+    private lateinit var speedTestRepository: SpeedTestRepository
     private lateinit var proStatusProvider: ProStatusProvider
     private lateinit var useCase: CleanupOldReadingsUseCase
 
@@ -31,6 +34,8 @@ class CleanupOldReadingsUseCaseTest {
         thermalRepository = mockk(relaxed = true)
         storageRepository = mockk(relaxed = true)
         throttlingRepository = mockk(relaxed = true)
+        appBatteryUsageRepository = mockk(relaxed = true)
+        speedTestRepository = mockk(relaxed = true)
         proStatusProvider = mockk()
 
         useCase = CleanupOldReadingsUseCase(
@@ -39,6 +44,8 @@ class CleanupOldReadingsUseCaseTest {
             thermalRepository,
             storageRepository,
             throttlingRepository,
+            appBatteryUsageRepository,
+            speedTestRepository,
             proStatusProvider
         )
     }
@@ -54,6 +61,8 @@ class CleanupOldReadingsUseCaseTest {
         coVerify { thermalRepository.deleteOlderThan(any()) }
         coVerify { storageRepository.deleteOlderThan(any()) }
         coVerify { throttlingRepository.deleteOlderThan(any()) }
+        coVerify { appBatteryUsageRepository.deleteOlderThan(any()) }
+        coVerify { speedTestRepository.deleteOlderThan(any()) }
     }
 
     @Test
@@ -67,5 +76,7 @@ class CleanupOldReadingsUseCaseTest {
         coVerify(exactly = 0) { thermalRepository.deleteOlderThan(any()) }
         coVerify(exactly = 0) { storageRepository.deleteOlderThan(any()) }
         coVerify(exactly = 0) { throttlingRepository.deleteOlderThan(any()) }
+        coVerify(exactly = 0) { appBatteryUsageRepository.deleteOlderThan(any()) }
+        coVerify(exactly = 0) { speedTestRepository.deleteOlderThan(any()) }
     }
 }

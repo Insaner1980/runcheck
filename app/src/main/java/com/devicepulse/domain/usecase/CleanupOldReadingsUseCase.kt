@@ -3,6 +3,8 @@ package com.devicepulse.domain.usecase
 import com.devicepulse.domain.repository.BatteryRepository
 import com.devicepulse.domain.repository.NetworkRepository
 import com.devicepulse.domain.repository.ProStatusProvider
+import com.devicepulse.domain.repository.AppBatteryUsageRepository
+import com.devicepulse.domain.repository.SpeedTestRepository
 import com.devicepulse.domain.repository.StorageRepository
 import com.devicepulse.domain.repository.ThermalRepository
 import com.devicepulse.domain.repository.ThrottlingRepository
@@ -14,6 +16,8 @@ class CleanupOldReadingsUseCase @Inject constructor(
     private val thermalRepository: ThermalRepository,
     private val storageRepository: StorageRepository,
     private val throttlingRepository: ThrottlingRepository,
+    private val appBatteryUsageRepository: AppBatteryUsageRepository,
+    private val speedTestRepository: SpeedTestRepository,
     private val proStatusProvider: ProStatusProvider
 ) {
     suspend operator fun invoke() {
@@ -25,6 +29,8 @@ class CleanupOldReadingsUseCase @Inject constructor(
         thermalRepository.deleteOlderThan(cutoff)
         storageRepository.deleteOlderThan(cutoff)
         throttlingRepository.deleteOlderThan(cutoff)
+        appBatteryUsageRepository.deleteOlderThan(cutoff)
+        speedTestRepository.deleteOlderThan(cutoff)
     }
 
     companion object {

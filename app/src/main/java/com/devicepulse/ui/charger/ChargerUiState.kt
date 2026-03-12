@@ -5,6 +5,7 @@ import com.devicepulse.domain.model.ChargingSession
 
 sealed interface ChargerUiState {
     data object Loading : ChargerUiState
+    data object Locked : ChargerUiState
 
     data class Success(
         val chargers: List<ChargerSummary>,

@@ -5,11 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.SpeedTestProgress
 import com.devicepulse.domain.model.SpeedTestResult
+import com.devicepulse.domain.repository.NetworkRepository
 import com.devicepulse.domain.repository.ProStatusProvider
 import com.devicepulse.domain.repository.SpeedTestRepository
 import com.devicepulse.domain.usecase.GetNetworkStateUseCase
 import com.devicepulse.domain.usecase.GetSpeedTestHistoryUseCase
 import com.devicepulse.domain.usecase.RunSpeedTestUseCase
+import com.devicepulse.ui.common.messageOr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +27,7 @@ class NetworkViewModel @Inject constructor(
     private val getNetworkState: GetNetworkStateUseCase,
     private val runSpeedTest: RunSpeedTestUseCase,
     private val getSpeedTestHistory: GetSpeedTestHistoryUseCase,
+    private val networkRepository: NetworkRepository,
     private val speedTestRepository: SpeedTestRepository,
     private val proStatusProvider: ProStatusProvider
 ) : ViewModel() {
@@ -68,7 +71,7 @@ class NetworkViewModel @Inject constructor(
                 .catch { e ->
                     _speedTestState.update {
                         it.copy(
-                            phase = SpeedTestPhase.Failed(e.message ?: "Speed test failed"),
+                            phase = SpeedTestPhase.Failed(e.messageOr("Speed test failed")),
                             isRunning = false
                         )
                     }
@@ -152,10 +155,17 @@ class NetworkViewModel @Inject constructor(
         networkJob = viewModelScope.launch {
             getNetworkState()
                 .catch { e ->
-                    _uiState.value = NetworkUiState.Error(e.message ?: "Unknown error")
+                    _uiState.value = NetworkUiState.Error(e.messageOr("Unknown error"))
                 }
                 .collect { state ->
-                    _uiState.value = NetworkUiState.Success(networkState = state)
+                    val latencyMs = if (state.connectionType == ConnectionType.NONE) {
+                        null
+                    } else {
+                        runCatching { networkRepository.measureLatency() }.getOrNull()
+                    }
+                    _uiState.value = NetworkUiState.Success(
+                        networkState = state.copy(latencyMs = latencyMs)
+                    )
                 }
         }
     }
@@ -167,7 +177,7 @@ class NetworkViewModel @Inject constructor(
             getSpeedTestHistory(limit)
                 .catch { e ->
                     _speedTestState.update {
-                        it.copy(historyLoadError = e.message ?: "Unable to load speed test history")
+                        it.copy(historyLoadError = e.messageOr("Unable to load speed test history"))
                     }
                 }
                 .collect { results ->

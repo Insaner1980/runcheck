@@ -21,37 +21,22 @@ data class StatusColors(
     val confidenceUnavailableText: Color
 )
 
-val LightStatusColors = StatusColors(
-    healthy = LightHealthy,
-    fair = LightFair,
-    poor = LightPoor,
-    critical = LightCritical,
-    neutral = LightNeutral,
-    unavailable = LightUnavailable,
-    confidenceAccurateBg = LightConfidenceAccurateBg,
-    confidenceAccurateText = LightConfidenceAccurateText,
-    confidenceEstimatedBg = LightConfidenceEstimatedBg,
-    confidenceEstimatedText = LightConfidenceEstimatedText,
-    confidenceUnavailableBg = LightConfidenceUnavailableBg,
-    confidenceUnavailableText = LightConfidenceUnavailableText
+val DevicePulseStatusColors = StatusColors(
+    healthy = AccentTeal,
+    fair = AccentOrange,
+    poor = AccentOrange,
+    critical = AccentRed,
+    neutral = AccentBlue,
+    unavailable = TextMuted,
+    confidenceAccurateBg = AccentTeal,
+    confidenceAccurateText = BgPage,
+    confidenceEstimatedBg = AccentOrange,
+    confidenceEstimatedText = BgPage,
+    confidenceUnavailableBg = TextMuted,
+    confidenceUnavailableText = TextPrimary
 )
 
-val DarkStatusColors = StatusColors(
-    healthy = DarkHealthy,
-    fair = DarkFair,
-    poor = DarkPoor,
-    critical = DarkCritical,
-    neutral = DarkNeutral,
-    unavailable = DarkUnavailable,
-    confidenceAccurateBg = DarkConfidenceAccurateBg,
-    confidenceAccurateText = DarkConfidenceAccurateText,
-    confidenceEstimatedBg = DarkConfidenceEstimatedBg,
-    confidenceEstimatedText = DarkConfidenceEstimatedText,
-    confidenceUnavailableBg = DarkConfidenceUnavailableBg,
-    confidenceUnavailableText = DarkConfidenceUnavailableText
-)
-
-val LocalStatusColors = staticCompositionLocalOf { LightStatusColors }
+val LocalStatusColors = staticCompositionLocalOf { DevicePulseStatusColors }
 
 val MaterialTheme.statusColors: StatusColors
     @Composable

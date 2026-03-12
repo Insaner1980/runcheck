@@ -14,7 +14,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -30,7 +29,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.location.LocationManagerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import com.devicepulse.domain.model.ThemeMode
 import com.devicepulse.domain.repository.UserPreferencesRepository
 import com.devicepulse.ui.navigation.DevicePulseNavHost
 import com.devicepulse.ui.theme.DevicePulseTheme
@@ -65,8 +63,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val prefs by preferencesRepository.getPreferences()
-                .collectAsStateWithLifecycle(initialValue = null)
             val permissionEducationSeen by preferencesRepository.getPermissionEducationSeen()
                 .collectAsStateWithLifecycle(initialValue = false)
 
@@ -85,17 +81,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            val darkTheme = when (prefs?.themeMode) {
-                ThemeMode.LIGHT -> false
-                ThemeMode.DARK -> true
-                else -> isSystemInDarkTheme()
-            }
-
-            DevicePulseTheme(
-                darkTheme = darkTheme,
-                amoledBlack = prefs?.amoledBlack ?: false,
-                dynamicColor = prefs?.dynamicColors ?: true
-            ) {
+            DevicePulseTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     DevicePulseNavHost()
                 }
@@ -176,9 +162,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        registerReceiver(
+        ContextCompat.registerReceiver(
+            this,
             locationModeReceiver,
-            IntentFilter(LocationManager.MODE_CHANGED_ACTION)
+            IntentFilter(LocationManager.MODE_CHANGED_ACTION),
+            ContextCompat.RECEIVER_NOT_EXPORTED
         )
     }
 
@@ -197,9 +185,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun missingRuntimePermissions(): List<String> = buildList {
-        if (!hasPermission(Manifest.permission.READ_PHONE_STATE)) {
-            add(Manifest.permission.READ_PHONE_STATE)
-        }
         if (!hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
             add(Manifest.permission.ACCESS_FINE_LOCATION)
         }

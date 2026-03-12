@@ -55,6 +55,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -67,9 +68,8 @@ import com.devicepulse.domain.model.NetworkState
 import com.devicepulse.domain.model.SpeedTestResult
 import com.devicepulse.ui.components.AnimatedFloatText
 import com.devicepulse.ui.components.DetailTopBar
+import com.devicepulse.ui.common.formatDecimal
 import com.devicepulse.ui.theme.DevicePulseTheme
-import com.devicepulse.ui.theme.InterFontFamily
-import com.devicepulse.ui.theme.JetBrainsMonoFontFamily
 import com.devicepulse.ui.theme.reducedMotion
 import com.devicepulse.ui.theme.spacing
 import kotlin.math.roundToInt
@@ -476,7 +476,7 @@ private fun SpeedTestHero(
                 AnimatedFloatText(
                     value = centerValue,
                     style = MaterialTheme.typography.displaySmall.copy(
-                        fontFamily = JetBrainsMonoFontFamily,
+                        fontFamily = FontFamily.Default,
                         fontSize = 40.sp,
                         lineHeight = 44.sp
                     ),
@@ -490,7 +490,7 @@ private fun SpeedTestHero(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = centerLabel,
-                    style = MaterialTheme.typography.labelMedium.copy(fontFamily = InterFontFamily),
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -563,7 +563,6 @@ private fun MetricGlowCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, accent.copy(alpha = 0.34f))
     ) {
         Column(
             modifier = Modifier
@@ -583,7 +582,7 @@ private fun MetricGlowCard(
                 AnimatedFloatText(
                     value = value,
                     style = MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = JetBrainsMonoFontFamily,
+                        fontFamily = FontFamily.Default,
                         fontWeight = FontWeight.Normal
                     ),
                     decimalPlaces = 1
@@ -629,7 +628,7 @@ private fun StatPill(
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh
+        color = MaterialTheme.colorScheme.surfaceContainer
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -646,7 +645,7 @@ private fun StatPill(
             ) {
                 Text(
                     text = value,
-                    style = MaterialTheme.typography.titleMedium.copy(fontFamily = JetBrainsMonoFontFamily),
+                    style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Default),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
@@ -763,9 +762,9 @@ private fun ResultColumn(
                 text = if (unit == androidx.compose.ui.res.stringResource(R.string.unit_ms)) {
                     value.roundToInt().toString()
                 } else {
-                    String.format("%.1f", value)
+                    formatDecimal(value, 1)
                 },
-                style = MaterialTheme.typography.titleMedium.copy(fontFamily = JetBrainsMonoFontFamily),
+                style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Default),
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
@@ -825,8 +824,8 @@ private fun HistorySection(results: List<SpeedTestResult>) {
 private fun TinyHistoryMetric(value: Double, label: String) {
     Column(horizontalAlignment = Alignment.End) {
         Text(
-            text = String.format("%.0f", value),
-            style = MaterialTheme.typography.titleSmall.copy(fontFamily = JetBrainsMonoFontFamily),
+            text = formatDecimal(value, 0),
+            style = MaterialTheme.typography.titleSmall.copy(fontFamily = FontFamily.Default),
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
