@@ -24,6 +24,7 @@
     <string name="home_test_compare">Testaa ja vertaile</string>
     <string name="home_pro_history_desc">Historia, laturitestit, vienti ja muuta</string>
     <string name="home_free_suffix">vapaana</string>
+    <string name="home_status_summary">%1$s · %2$s · %3$s</string>
 
     <!-- Health Status -->
     <string name="status_healthy">Hyvä</string>
@@ -67,6 +68,30 @@
     <string name="history_period_all">Kaikki</string>
     <string name="battery_history_title">Historia</string>
     <string name="battery_not_available">Ei saatavilla tällä laitteella</string>
+    <string name="battery_session_title">Nykyinen lataus</string>
+    <string name="battery_session_started">Alkoi</string>
+    <string name="battery_session_gain">Lisäys</string>
+    <string name="battery_session_duration">Kesto</string>
+    <string name="battery_session_peak_temp">Huippulämpö</string>
+    <string name="battery_session_recent_speed">Nykyvauhti</string>
+    <string name="battery_session_avg_speed">Keskivauhti</string>
+    <string name="battery_session_delivered">Ladattu</string>
+    <string name="battery_session_avg_power">Keskiteho</string>
+    <string name="battery_remaining_time_title">Latausta jäljellä</string>
+    <string name="battery_remaining_time_to_80">80 % asti</string>
+    <string name="battery_remaining_time_to_full">100 % asti</string>
+    <string name="battery_remaining_time_estimating">Arvioidaan</string>
+    <string name="battery_remaining_time_reached">Saavutettu</string>
+    <string name="battery_session_graph_title">Latausgraafi</string>
+    <string name="battery_session_graph_metric_power">Teho</string>
+    <string name="battery_session_graph_window_15m">15 min</string>
+    <string name="battery_session_graph_window_30m">30 min</string>
+    <string name="battery_session_graph_unavailable">Graafin piirtämiseen ei ole vielä riittävästi latausdataa</string>
+    <string name="battery_history_metric_level">Varaus</string>
+    <string name="battery_history_metric_temperature">Lämpö</string>
+    <string name="battery_history_metric_current">Virta</string>
+    <string name="battery_history_metric_voltage">Jännite</string>
+    <string name="battery_history_metric_unavailable">Tälle mittarille ei ole vielä riittävästi dataa</string>
 
     <!-- Charging Status -->
     <string name="charging_status_charging">Lataa</string>

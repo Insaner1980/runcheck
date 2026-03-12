@@ -302,12 +302,22 @@ class NetworkDataSource @Inject constructor(
 
     private fun getCellularDetails(): CellularDetails {
         val runtimeType = telephonyManager?.let { manager ->
-            @Suppress("DEPRECATION")
-            mapNetworkType(manager.dataNetworkType)
+            try {
+                @Suppress("DEPRECATION")
+                mapNetworkType(manager.dataNetworkType)
+            } catch (_: SecurityException) {
+                "Cellular"
+            }
         } ?: "Cellular"
 
+        val carrierName = try {
+            telephonyManager?.networkOperatorName?.takeIf { it.isNotBlank() } ?: "Unknown"
+        } catch (_: SecurityException) {
+            "Unknown"
+        }
+
         return CellularDetails(
-            carrier = telephonyManager?.networkOperatorName ?: "Unknown",
+            carrier = carrierName,
             networkType = if (cachedNetworkTypeName == "Unknown") runtimeType else cachedNetworkTypeName
         )
     }

@@ -24,6 +24,7 @@
     <string name="home_test_compare">Test &amp; compare</string>
     <string name="home_pro_history_desc">History, charger testing, export &amp; more</string>
     <string name="home_free_suffix">free</string>
+    <string name="home_status_summary">%1$s · %2$s · %3$s</string>
 
     <!-- Health Status -->
     <string name="status_healthy">Healthy</string>
@@ -67,6 +68,30 @@
     <string name="history_period_all">All</string>
     <string name="battery_history_title">History</string>
     <string name="battery_not_available">Not available on this device</string>
+    <string name="battery_session_title">Current Session</string>
+    <string name="battery_session_started">Started</string>
+    <string name="battery_session_gain">Gain</string>
+    <string name="battery_session_duration">Duration</string>
+    <string name="battery_session_peak_temp">Peak Temp</string>
+    <string name="battery_session_recent_speed">Recent Speed</string>
+    <string name="battery_session_avg_speed">Avg Speed</string>
+    <string name="battery_session_delivered">Delivered</string>
+    <string name="battery_session_avg_power">Avg Power</string>
+    <string name="battery_remaining_time_title">Remaining Charge Time</string>
+    <string name="battery_remaining_time_to_80">To 80%</string>
+    <string name="battery_remaining_time_to_full">To 100%</string>
+    <string name="battery_remaining_time_estimating">Estimating</string>
+    <string name="battery_remaining_time_reached">Reached</string>
+    <string name="battery_session_graph_title">Session Graph</string>
+    <string name="battery_session_graph_metric_power">Power</string>
+    <string name="battery_session_graph_window_15m">15m</string>
+    <string name="battery_session_graph_window_30m">30m</string>
+    <string name="battery_session_graph_unavailable">Not enough charging data to draw this graph yet</string>
+    <string name="battery_history_metric_level">Level</string>
+    <string name="battery_history_metric_temperature">Temp</string>
+    <string name="battery_history_metric_current">Current</string>
+    <string name="battery_history_metric_voltage">Voltage</string>
+    <string name="battery_history_metric_unavailable">Not enough data for this metric yet</string>
 
     <!-- Charging Status -->
     <string name="charging_status_charging">Charging</string>
@@ -92,6 +117,7 @@
     <string name="unit_percent">%</string>
     <string name="unit_millivolts">mV</string>
     <string name="unit_milliamps">mA</string>
+    <string name="unit_milliamp_hours">mAh</string>
     <string name="unit_celsius">°C</string>
     <string name="unit_dbm">dBm</string>
     <string name="unit_mbps">Mbps</string>

@@ -118,8 +118,8 @@ Kotinäkymä (Home)
 
 | Näkymä | Reitti | Kuvaus |
 |--------|--------|--------|
-| **Home** | `home` | Scrollattava päänäkymä: terveyspisteiring, akkukortti, 2×2 ominaisuusruudukko, pikatyökalut, Pro-banneri |
-| **Battery** | `battery` | Akun tila, lataushistoria (Vico-kaaviot), terveysprosentti, syklilaskuri, laturivertailun linkki |
+| **Home** | `home` | Scrollattava päänäkymä: Health Score -hero, Battery-hero, 2×2 ominaisuusruudukko, pikatyökalut, Pro-banneri |
+| **Battery** | `battery` | Hero-rengas, ryhmitellyt akkudetaljit, latausvirta ja istuntokooste, latausajan arvio, istuntograafi, historiapaneeli |
 | **Network** | `network` | Yhteystyyppi, signaalinvoimakkuus, WiFi/mobiili-detaljit, latenssi, nopeustestipainike |
 | **Speed Test** | `speed_test` | NDT7-nopeustesti: latenssi, lataus, lähetys — reaaliaikainen mittarianimaatio |
 | **Thermal** | `thermal` | Akun ja CPU:n lämpötilat, lämpötilaheadroom, throttling-tapahtumat, HeatStrip-visualisointi |
@@ -253,11 +253,22 @@ Molemmat näyttävät lukitun tilan ei-Pro-käyttäjille.
 
 ### Teema
 
-Sovellus käyttää yhtä tummaa teemaa (ei vaaleaa tilaa, ei AMOLED-tilaa, ei dynaamisia värejä).
+Sovellus käyttää tällä hetkellä yhtä tummaa premium-teemaa. Muotokieli nojaa tummiin paneeleihin, kirkkaaseen teal/siniseen aksenttiin ja vahvaan korttihierarkiaan.
+
+Typografia on päivitetty:
+- **Manrope** käyttöliittymän pääfonttina
+- **JetBrains Mono** valituissa numeerisissa mittareissa (esim. prosentit, virta, scoret)
 
 ### Väripaletti
 
 | Rooli | Väri | Käyttö |
+
+### Nykyinen UI-suunta
+
+- Koti- ja Battery-näkymät on viimeistelty dashboard-henkisiksi, ei asetussivumaisiksi listoiksi
+- Pohjanavigaatio on poistettu; liikkuminen tapahtuu kotinäkymästä korttien ja toimintorivien kautta
+- Headerit käyttävät safe area -paddingia, jotta otsikot eivät jää statusbarin alle
+- Battery-näkymässä free- ja pro-history-tilat käyttävät samaa paneelikieltä kuin muut kortit
 |-------|------|--------|
 | BgPage | #0B1E24 | Sivun tausta |
 | BgCard | #133040 | Korttien tausta |
