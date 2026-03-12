@@ -1,6 +1,7 @@
 package com.devicepulse.ui.home
 
-import android.os.Build
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,15 +11,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.DataUsage
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.SignalCellularAlt
 import androidx.compose.material.icons.outlined.Speed
@@ -31,6 +35,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -60,7 +65,6 @@ import com.devicepulse.ui.common.scoreLabel
 import com.devicepulse.ui.components.GridCard
 import com.devicepulse.ui.components.IconCircle
 import com.devicepulse.ui.components.ListRow
-import com.devicepulse.ui.components.MiniBar
 import com.devicepulse.ui.components.PrimaryTopBar
 import com.devicepulse.ui.components.ProBadgePill
 import com.devicepulse.ui.components.ProgressRing
@@ -69,14 +73,12 @@ import com.devicepulse.ui.components.StatusDot
 import com.devicepulse.ui.theme.AccentBlue
 import com.devicepulse.ui.theme.AccentOrange
 import com.devicepulse.ui.theme.AccentTeal
-import com.devicepulse.ui.theme.AccentYellow
 import com.devicepulse.ui.theme.BgIconCircle
+import com.devicepulse.ui.theme.BgCardAlt
 import com.devicepulse.ui.theme.TextMuted
 import com.devicepulse.ui.theme.TextSecondary
+import com.devicepulse.ui.theme.numericFontFamily
 import com.devicepulse.ui.theme.statusColors
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun HomeScreen(
@@ -97,13 +99,12 @@ fun HomeScreen(
         // 1. Header
         PrimaryTopBar(
             title = stringResource(R.string.app_name),
-            onMenuClick = onNavigateToSettings,
             actions = {
-                IconButton(onClick = onNavigateToProUpgrade) {
+                IconButton(onClick = onNavigateToSettings) {
                     Icon(
-                        imageVector = Icons.Outlined.Star,
-                        contentDescription = stringResource(R.string.settings_upgrade_pro),
-                        tint = AccentYellow
+                        imageVector = Icons.Outlined.Settings,
+                        contentDescription = stringResource(R.string.settings_title),
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -166,8 +167,6 @@ private fun HomeContent(
     onNavigateToProUpgrade: () -> Unit
 ) {
     val context = LocalContext.current
-    val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
-    val currentTime = remember { timeFormat.format(Date()) }
 
     Column(
         modifier = Modifier
@@ -175,17 +174,13 @@ private fun HomeContent(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp)
     ) {
-        // 2. Device subtitle
-        Text(
-            text = "${Build.MANUFACTURER} ${Build.MODEL} \u00B7 $currentTime",
-            style = MaterialTheme.typography.labelLarge.copy(fontSize = 12.sp),
-            color = TextMuted,
-            modifier = Modifier.padding(top = 4.dp)
-        )
+        Spacer(modifier = Modifier.height(6.dp))
+
+        HomeStatusSummary(state = state)
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // 3. Health Score hero card
+        // 2. Health Score hero card
         HealthScoreCard(
             state = state,
             onNavigateToBattery = onNavigateToBattery,
@@ -196,7 +191,7 @@ private fun HomeContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // 4. Battery hero card
+        // 3. Battery hero card
         BatteryHeroCard(
             state = state,
             onClick = onNavigateToBattery
@@ -268,7 +263,7 @@ private fun HomeContent(
                 containerColor = MaterialTheme.colorScheme.surfaceContainer
             )
         ) {
-            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
                 ListRow(
                     label = stringResource(R.string.home_speed_test),
                     icon = Icons.Outlined.Speed,
@@ -295,25 +290,34 @@ private fun HomeContent(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    width = 1.dp,
+                    color = AccentBlue.copy(alpha = 0.35f)
                 )
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(18.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    IconCircle(icon = Icons.Outlined.Star)
+                    Surface(
+                        shape = CircleShape,
+                        color = AccentBlue.copy(alpha = 0.18f)
+                    ) {
+                        IconCircle(icon = Icons.Outlined.Lock)
+                    }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = stringResource(R.string.home_pro_title),
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = stringResource(R.string.home_pro_history_desc),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = TextSecondary
                         )
                     }
@@ -327,28 +331,37 @@ private fun HomeContent(
             }
         }
 
-        // 8. Settings link
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            TextButton(onClick = onNavigateToSettings) {
-                Icon(
-                    imageVector = Icons.Outlined.Settings,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = TextMuted
-                )
-                Spacer(modifier = Modifier.size(8.dp))
-                Text(
-                    text = stringResource(R.string.more_settings),
-                    color = TextMuted
-                )
-            }
-        }
-
-        // 9. Bottom padding
         Spacer(modifier = Modifier.height(32.dp))
     }
+}
+
+@Composable
+private fun HomeStatusSummary(state: HomeUiState.Success) {
+    val batteryStatus = when (state.batteryState.chargingStatus) {
+        com.devicepulse.domain.model.ChargingStatus.CHARGING -> stringResource(R.string.charging_status_charging)
+        com.devicepulse.domain.model.ChargingStatus.FULL -> stringResource(R.string.charging_status_full)
+        else -> stringResource(R.string.charging_status_not_charging)
+    }
+    val networkStatus = when (state.networkState.connectionType) {
+        com.devicepulse.domain.model.ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
+        com.devicepulse.domain.model.ConnectionType.CELLULAR -> connectionDisplayLabel(
+            connectionType = state.networkState.connectionType,
+            wifiSsid = state.networkState.wifiSsid,
+            networkSubtype = state.networkState.networkSubtype
+        )
+        else -> stringResource(R.string.connection_none)
+    }
+
+    Text(
+        text = stringResource(
+            R.string.home_status_summary,
+            batteryStatus,
+            thermalLabel(state.thermalState.batteryTempC),
+            networkStatus
+        ),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
 
 // ── Health Score Hero Card ──────────────────────────────────────────────────
@@ -373,13 +386,22 @@ private fun HealthScoreCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 28.dp),
+                .padding(horizontal = 24.dp, vertical = 22.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start
+            ) {
+                SectionHeader(stringResource(R.string.home_health_score))
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             // Progress ring with score
             ProgressRing(
                 progress = score / 100f,
-                modifier = Modifier.size(170.dp),
+                modifier = Modifier.size(152.dp),
                 strokeWidth = 10.dp,
                 progressColor = AccentTeal
             ) {
@@ -387,15 +409,11 @@ private fun HealthScoreCard(
                     Text(
                         text = score.toString(),
                         style = MaterialTheme.typography.displayLarge.copy(
+                            fontFamily = MaterialTheme.numericFontFamily,
                             fontSize = 48.sp,
                             fontWeight = FontWeight.Bold
                         ),
                         color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = stringResource(R.string.home_health_score),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = TextMuted
                     )
                 }
             }
@@ -482,7 +500,9 @@ private fun HealthScoreCard(
                     )
                     Text(
                         text = item.value,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = MaterialTheme.numericFontFamily
+                        ),
                         color = TextSecondary
                     )
                 }
@@ -517,79 +537,157 @@ private fun BatteryHeroCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp)
+                .padding(18.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 // Left side
-                Column {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
                     SectionHeader(stringResource(R.string.home_battery_card))
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             text = battery.level.toString(),
-                            style = MaterialTheme.typography.displayLarge,
+                            style = MaterialTheme.typography.displayLarge.copy(
+                                fontFamily = MaterialTheme.numericFontFamily,
+                                fontSize = 54.sp
+                            ),
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "%",
-                            style = MaterialTheme.typography.headlineLarge,
-                            color = TextSecondary
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                fontFamily = MaterialTheme.numericFontFamily
+                            ),
+                            color = TextSecondary,
+                            modifier = Modifier.padding(start = 2.dp, bottom = 11.dp)
                         )
                     }
                     Text(
                         text = formatEnumName(battery.chargingStatus.name),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )
                 }
 
-                // Right side: progress ring with bolt icon
-                ProgressRing(
+                HomeBatteryChargeIcon(
+                    level = battery.level,
+                    isCharging = battery.chargingStatus == com.devicepulse.domain.model.ChargingStatus.CHARGING,
                     progress = battery.level / 100f,
-                    modifier = Modifier.size(80.dp),
-                    strokeWidth = 6.dp,
-                    progressColor = AccentBlue
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.BatteryChargingFull,
-                        contentDescription = null,
-                        modifier = Modifier.size(28.dp),
-                        tint = AccentBlue
-                    )
-                }
+                    modifier = Modifier.size(84.dp)
+                )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // Full-width MiniBar
-            MiniBar(
-                progress = battery.level / 100f,
-                fillColor = AccentBlue
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Bottom row: Health + Temperature
+            // Bottom row: Health + Charger
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = "${stringResource(R.string.battery_health)}: ${formatEnumName(battery.health.name)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AccentTeal
+                HomeMetricPill(
+                    label = stringResource(R.string.battery_health),
+                    value = formatEnumName(battery.health.name),
+                    valueColor = AccentTeal,
+                    modifier = Modifier.weight(1f)
                 )
-                Text(
-                    text = "${stringResource(R.string.battery_temperature)}: ${formatTemperature(battery.temperatureC)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AccentOrange
+                HomeMetricPill(
+                    label = stringResource(R.string.battery_plug_type),
+                    value = formatPlugTypeName(battery.plugType.name),
+                    valueColor = AccentBlue,
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun HomeBatteryChargeIcon(
+    level: Int,
+    isCharging: Boolean,
+    progress: Float,
+    modifier: Modifier = Modifier
+) {
+    val fillLevel = progress.coerceIn(0f, 1f)
+
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .size(width = 48.dp, height = 78.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .size(width = 16.dp, height = 5.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        shape = RoundedCornerShape(1.dp)
+                    )
+            )
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .padding(top = 4.dp)
+                    .border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .padding(4.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .fillMaxHeight(fillLevel)
+                        .background(
+                            color = AccentBlue,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                )
+            }
+            Text(
+                text = "$level",
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontFamily = MaterialTheme.numericFontFamily,
+                    fontWeight = FontWeight.Bold
+                ),
+                color = if (fillLevel > 0.55f) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeMetricPill(
+    label: String,
+    value: String,
+    valueColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = label.uppercase(),
+            style = MaterialTheme.typography.labelLarge,
+            color = TextMuted
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = valueColor
+        )
     }
 }
 
@@ -615,3 +713,9 @@ private fun thermalLabel(tempC: Float): String = when {
 
 private fun formatEnumName(name: String): String =
     name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }
+
+private fun formatPlugTypeName(name: String): String = when (name.uppercase()) {
+    "USB" -> "USB"
+    "AC" -> "AC"
+    else -> formatEnumName(name)
+}

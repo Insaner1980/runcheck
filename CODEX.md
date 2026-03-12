@@ -34,15 +34,17 @@ app/src/main/java/com/devicepulse/
 │   ├── usecase/        # Business logic
 │   └── scoring/        # Health score algorithm
 ├── ui/
-│   ├── dashboard/      # Main dashboard screen + ViewModel
+│   ├── home/           # Main home screen + ViewModel
 │   ├── battery/        # Battery detail screen + ViewModel
 │   ├── network/        # Network detail screen + ViewModel
 │   ├── thermal/        # Thermal detail screen + ViewModel
 │   ├── storage/        # Storage detail screen + ViewModel
+│   ├── charger/        # Charger comparison screen + ViewModel
+│   ├── appusage/       # App usage screen + ViewModel
 │   ├── settings/       # Settings screen + ViewModel
-│   ├── theme/          # Material You theme, color schemes, typography
+│   ├── theme/          # Dark premium theme, typography, spacing, semantic colors
 │   ├── components/     # Shared composables
-│   └── navigation/     # Navigation graph, bottom nav setup
+│   └── navigation/     # Navigation graph
 └── service/
     └── monitor/        # Background WorkManager jobs for periodic readings
 ```
@@ -61,23 +63,22 @@ app/src/main/java/com/devicepulse/
 - Comments in English
 - No `!!`; use safe calls, `requireNotNull`, or explicit error handling
 
-## Material You / Design Rules
+## Design Rules
 
-- Use `MaterialTheme.colorScheme` everywhere; never hardcode colors in feature code
-- Support dynamic colors on Android 12+
-- Provide fallback color scheme (teal/cyan primary) for older devices
-- Support Light, Dark, and AMOLED Black themes
+- Use `MaterialTheme.colorScheme` everywhere; never hardcode colors in feature code unless extending the design tokens
+- The app currently ships a single dark premium theme; do not reintroduce light/AMOLED/dynamic theme branching without a product reason
 - Never use pure white (`#FFFFFF`) text on dark backgrounds; prefer softer text colors
-- AMOLED Black cards use `#0A0A0A`, not pure black
 - Use semantic status colors through theme extensions:
   - Green for healthy/good
   - Yellow/amber for fair/attention
   - Red for poor/critical
+- Accent teal and blue are the primary emphasis colors for battery/home surfaces
 - Status colors must always be paired with icons or text labels
 - Contrast ratio minimum: 4.5:1 body text, 3:1 large text
 - All shapes use the Material 3 shape system
 - Minimum touch target: 48dp
 - Use monospaced numeric typography for real-time values that would otherwise jitter
+- Main UI font is Manrope; JetBrains Mono is reserved for selected numeric metrics
 - Respect reduced motion accessibility settings
 - Spacing follows a 4dp grid: 4 / 8 / 12 / 16 / 24 / 32dp
 
@@ -155,6 +156,7 @@ Use `BatteryDataSourceFactory` to select the best battery data source:
 - All user data stays on device
 - `device-health-monitor-spec.md` contains the full feature spec
 - `docs/plans/2026-03-10-phase1-completion-and-roadmap.md` contains roadmap and next steps
+- `docs/plans/2026-03-12-battery-detail-redesign-plan.md` documents the Battery-detail redesign direction
 
 ## Modification Rules For Codex
 

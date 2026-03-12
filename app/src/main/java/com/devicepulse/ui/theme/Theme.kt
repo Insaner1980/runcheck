@@ -10,6 +10,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 
 val LocalReducedMotion = staticCompositionLocalOf { false }
+val LocalNumericFontFamily = staticCompositionLocalOf { JetBrainsMonoFontFamily }
 
 val MaterialTheme.reducedMotion: Boolean
     @Composable
@@ -57,7 +58,8 @@ fun DevicePulseTheme(
     CompositionLocalProvider(
         LocalSpacing provides Spacing(),
         LocalStatusColors provides DevicePulseStatusColors,
-        LocalReducedMotion provides reducedMotion
+        LocalReducedMotion provides reducedMotion,
+        LocalNumericFontFamily provides JetBrainsMonoFontFamily
     ) {
         MaterialTheme(
             colorScheme = DevicePulseColorScheme,
