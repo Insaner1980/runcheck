@@ -140,6 +140,7 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 ## Build & Release
 
 - Use a single `app` module (no multi-module until necessary)
+- **Static analysis:** ktlint (formatting) + detekt 2.0.0-alpha.2 (code quality, `ignoreFailures = true` during adoption)
 - ProGuard/R8 minification enabled for release builds
 - Generate signed APK/AAB for Play Store
 - Version code: auto-increment
