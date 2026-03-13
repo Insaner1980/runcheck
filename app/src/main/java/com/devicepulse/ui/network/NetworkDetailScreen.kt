@@ -78,9 +78,7 @@ fun NetworkDetailScreen(
     viewModel: NetworkViewModel = hiltViewModel()
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val networkState = uiState.networkState
-    val errorMessage = uiState.errorMessage
+    val networkUiState by viewModel.networkUiState.collectAsStateWithLifecycle()
 
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer = LifecycleEventObserver { _, event ->
@@ -108,17 +106,17 @@ fun NetworkDetailScreen(
             onBack = onBack
         )
 
-        when {
-            uiState.isLoading && networkState == null -> {
+        when (val state = networkUiState) {
+            is NetworkUiState.Loading -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             }
 
-            errorMessage != null && networkState == null -> {
+            is NetworkUiState.Error -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(errorMessage)
+                        Text(state.message)
                         TextButton(onClick = { viewModel.refresh() }) {
                             Text(stringResource(R.string.common_retry))
                         }
@@ -126,18 +124,12 @@ fun NetworkDetailScreen(
                 }
             }
 
-            networkState != null -> {
+            is NetworkUiState.Success -> {
                 NetworkContent(
-                    networkState = networkState,
+                    networkState = state.networkState,
                     onRefresh = { viewModel.refresh() },
                     onNavigateToSpeedTest = onNavigateToSpeedTest
                 )
-            }
-
-            else -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.common_error_generic))
-                }
             }
         }
     }
