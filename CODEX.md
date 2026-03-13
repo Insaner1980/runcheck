@@ -22,6 +22,9 @@ DevicePulse is a native Android app (Kotlin + Jetpack Compose) that monitors dev
 
 ```text
 app/src/main/java/com/devicepulse/
+├── DevicePulseApp.kt     # Application entry point
+├── MainActivity.kt       # Compose activity host
+├── billing/              # Billing contracts and purchase coordination
 ├── data/
 │   ├── battery/        # BatteryManager wrappers, sysfs readers
 │   ├── network/        # ConnectivityManager, TelephonyManager
@@ -29,6 +32,7 @@ app/src/main/java/com/devicepulse/
 │   ├── storage/        # StorageStatsManager
 │   ├── device/         # Device detection, DeviceProfile, capability mapping
 │   └── db/             # Room database, DAOs, entities, migrations
+├── di/                 # Hilt modules
 ├── domain/
 │   ├── model/          # Domain models (BatteryState, NetworkState, etc.)
 │   ├── usecase/        # Business logic
@@ -45,8 +49,10 @@ app/src/main/java/com/devicepulse/
 │   ├── theme/          # Dark premium theme, typography, spacing, semantic colors
 │   ├── components/     # Shared composables
 │   └── navigation/     # Navigation graph
-└── service/
-    └── monitor/        # Background WorkManager jobs for periodic readings
+├── util/               # Cross-cutting utility helpers
+├── service/
+│   └── monitor/        # Background WorkManager jobs for periodic readings
+└── widget/             # Glance widgets and widget data mappers
 ```
 
 ## Code Style & Conventions
@@ -54,12 +60,16 @@ app/src/main/java/com/devicepulse/
 - Write idiomatic Kotlin: use data classes, sealed classes/interfaces, and extension functions where appropriate
 - All UI is Jetpack Compose: no XML layouts, no Fragments
 - Use `StateFlow` for ViewModel -> UI state
-- Use `sealed interface` for UI state (`Loading / Success / Error`)
+- Prefer a single immutable `XxxUiState` data class per screen when a feature has multiple moving parts or partial-loading regions
+- Existing sealed `Loading / Success / Error` state models are acceptable for simple screens; do not mix multiple top-level `StateFlow`s when one screen state can represent the whole surface
 - Name ViewModels as `[Screen]ViewModel`
 - Name UseCases as verb phrases (for example `CalculateHealthScoreUseCase`)
 - Name composables as nouns (for example `HealthGauge`, `BatteryCard`)
 - Keep composables small and focused; extract when they get too large
 - All hardcoded strings go into `strings.xml`
+- Prefer string resource prefixes by scope: `common_*`, feature prefixes like `home_*` / `battery_*`, plus `widget_*`, `notification_*`, `settings_*`
+- Prefer explicit imports; do not use wildcard imports
+- Default `Modifier` ordering: semantics/testing -> layout -> drawing -> interaction -> graphics
 - Comments in English
 - No `!!`; use safe calls, `requireNotNull`, or explicit error handling
 
@@ -153,7 +163,7 @@ Use `BatteryDataSourceFactory` to select the best battery data source:
 - Android-only app; no iOS or cross-platform targets
 - Privacy-first: no analytics, no tracking, no accounts
 - No external network calls except optional latency / speed-test related checks
-- All user data stays on device
+- Measurement and history data stay on device unless the user explicitly enables crash reporting, which sends crash diagnostics to Firebase Crashlytics
 - `device-health-monitor-spec.md` contains the full feature spec
 - `docs/plans/2026-03-10-phase1-completion-and-roadmap.md` contains roadmap and next steps
 - `docs/plans/2026-03-12-battery-detail-redesign-plan.md` documents the Battery-detail redesign direction

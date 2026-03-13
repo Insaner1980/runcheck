@@ -2,15 +2,21 @@ package com.devicepulse.domain.usecase
 
 import com.devicepulse.domain.model.ChargerSummary
 import com.devicepulse.domain.repository.ChargerRepository
+import com.devicepulse.domain.repository.ProStatusProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 
 class GetChargerComparisonUseCase @Inject constructor(
-    private val chargerRepository: ChargerRepository
+    private val chargerRepository: ChargerRepository,
+    private val proStatusProvider: ProStatusProvider
 ) {
 
     operator fun invoke(): Flow<List<ChargerSummary>> {
+        if (!proStatusProvider.isPro()) {
+            return flowOf(emptyList())
+        }
         return combine(
             chargerRepository.getChargerProfiles(),
             chargerRepository.getAllSessions()
@@ -20,9 +26,7 @@ class GetChargerComparisonUseCase @Inject constructor(
                 val completedSessions = chargerSessions.filter { it.endTime != null }
 
                 val avgSpeed = if (completedSessions.isNotEmpty()) {
-                    completedSessions.mapNotNull { it.avgCurrentMa }.let { currents ->
-                        if (currents.isNotEmpty()) currents.average().toInt() else null
-                    }
+                    completedSessions.mapNotNull { it.avgCurrentMa }.averageOrNull()
                 } else null
 
                 val avgTimeToFull = if (completedSessions.isNotEmpty()) {
@@ -34,9 +38,7 @@ class GetChargerComparisonUseCase @Inject constructor(
                                 (durationMinutes * 100 / levelGain).toInt()
                             } else null
                         }
-                    }.let { times ->
-                        if (times.isNotEmpty()) times.average().toInt() else null
-                    }
+                    }.averageOrNull()
                 } else null
 
                 val lastUsed = chargerSessions.maxByOrNull { it.startTime }?.startTime
@@ -53,3 +55,6 @@ class GetChargerComparisonUseCase @Inject constructor(
         }
     }
 }
+
+private fun List<Int>.averageOrNull(): Int? =
+    takeIf(List<Int>::isNotEmpty)?.average()?.toInt()

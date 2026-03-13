@@ -5,6 +5,11 @@
 
     <!-- Navigation -->
     <string name="navigate_back">Takaisin</string>
+    <string name="navigate_menu">Valikko</string>
+    <string name="a11y_progress_percent">%1$s, %2$d prosenttia</string>
+    <string name="a11y_speed_gauge">%1$s, %2$s %3$s</string>
+    <string name="a11y_heat_strip">Akun lämpötila %1$s, %2$s</string>
+    <string name="a11y_chart_trend">%1$s trendikaavio</string>
 
     <!-- Home Screen -->
     <string name="home_battery_card">Akku</string>
@@ -23,8 +28,12 @@
     <string name="home_speed_test">Nopeustesti</string>
     <string name="home_test_compare">Testaa ja vertaile</string>
     <string name="home_pro_history_desc">Historia, laturitestit, vienti ja muuta</string>
+    <string name="home_insights_title">Lisätiedot käytössä</string>
+    <string name="home_insights_desc">Laajennettu historia, widgetit, viennit ja lämpörajoitustiedot ovat käytössä.</string>
     <string name="home_free_suffix">vapaana</string>
     <string name="home_status_summary">%1$s · %2$s · %3$s</string>
+    <string name="home_thermal_summary">%1$s · %2$s</string>
+    <string name="home_storage_free">%1$s %2$s</string>
 
     <!-- Health Status -->
     <string name="status_healthy">Hyvä</string>
@@ -92,6 +101,7 @@
     <string name="battery_history_metric_current">Virta</string>
     <string name="battery_history_metric_voltage">Jännite</string>
     <string name="battery_history_metric_unavailable">Tälle mittarille ei ole vielä riittävästi dataa</string>
+    <string name="battery_section_details">Tiedot</string>
 
     <!-- Charging Status -->
     <string name="charging_status_charging">Lataa</string>
@@ -112,6 +122,32 @@
     <string name="battery_health_over_voltage">Ylijännite</string>
     <string name="battery_health_cold">Kylmä</string>
     <string name="battery_health_unknown">Tuntematon</string>
+
+    <!-- Units -->
+    <string name="unit_percent">%</string>
+    <string name="unit_millivolts">mV</string>
+    <string name="unit_milliamps">mA</string>
+    <string name="unit_milliamp_hours">mAh</string>
+    <string name="unit_celsius">°C</string>
+    <string name="unit_dbm">dBm</string>
+    <string name="unit_mbps">Mbps</string>
+    <string name="unit_ms">ms</string>
+    <string name="unit_ghz">GHz</string>
+
+    <!-- Value Formatting -->
+    <string name="value_percent">%1$d%%</string>
+    <string name="value_signed_percent">%1$s%2$d%%</string>
+    <string name="value_voltage_volts">%1$.1f V</string>
+    <string name="value_milliamp_hours">%1$d mAh</string>
+    <string name="value_temperature">%1$.1f°C</string>
+    <string name="value_percent_per_hour">%1$.1f%%/h</string>
+    <string name="value_watts">%1$.1f W</string>
+    <string name="value_duration_hours_minutes">%1$dh %2$dmin</string>
+    <string name="value_duration_minutes">%1$dmin</string>
+    <string name="value_with_unit_int">%1$d %2$s</string>
+    <string name="speed_test_ping_line">%1$s: %2$d %3$s</string>
+    <string name="speed_test_metric_with_unit">%1$s (%2$s)</string>
+    <string name="placeholder_dash">—</string>
 
     <!-- Network Detail -->
     <string name="network_title">Verkko</string>
@@ -149,6 +185,7 @@
     <string name="network_wifi_name_location_needed">Ota laitteen sijainti käyttöön, jotta Android voi jakaa nykyisen WiFi-verkon nimen.</string>
     <string name="network_wifi_name_unavailable">Android ei juuri nyt anna sovellukselle WiFi-verkon nimeä.</string>
     <string name="network_wifi_name_open_app_settings">Sovelluksen asetukset</string>
+    <string name="network_wifi_name_grant_permission">Myönnä lupa</string>
 
     <!-- Thermal Detail -->
     <string name="thermal_title">Lämpötila</string>
@@ -192,11 +229,31 @@
     <string name="settings_interval_60">60 minuuttia</string>
     <string name="settings_notifications">Ilmoitukset</string>
     <string name="settings_notifications_desc">Hälytykset: matala akku, korkea lämpötila, vähän tilaa</string>
+    <string name="notification_permission_title">Salli ilmoitukset</string>
+    <string name="notification_permission_message">DevicePulse voi seurata laitetta ilman ilmoituslupaa, mutta hälytykset pysyvät hiljaisina, kunnes sallit ne.</string>
+    <string name="notification_permission_grant">Myönnä lupa</string>
+    <string name="notification_permission_open_settings">Avaa sovelluksen asetukset</string>
     <string name="settings_measurement_info">Mittaustiedot</string>
+    <string name="settings_device_model">%1$s %2$s</string>
+    <string name="settings_api_level">API-taso: %1$d</string>
+    <string name="settings_current_reading">Virran mittaus: %1$s</string>
+    <string name="settings_cycle_count">Syklimäärä: %1$s</string>
+    <string name="settings_thermal_zones_found">Lämpöalueita löytyi: %1$d</string>
+    <string name="settings_measurement_reliable">Luotettava</string>
+    <string name="settings_measurement_unreliable">Epäluotettava</string>
+    <string name="settings_measurement_available">Saatavilla</string>
+    <string name="settings_measurement_not_available">Ei saatavilla</string>
     <string name="settings_about">Tietoja</string>
     <string name="settings_upgrade_pro">Päivitä Pro-versioon</string>
+    <string name="settings_upgrade_pro_with_price">Päivitä Pro-versioon - %1$s</string>
     <string name="settings_restore_purchase">Palauta ostos</string>
     <string name="settings_refresh_pro_status">Päivitä Pro-tila</string>
+    <string name="settings_data_retention_description">Valitse, kuinka pitkään DevicePulse säilyttää historian tällä laitteella.</string>
+    <string name="settings_data_retention_free">Ilmaisversio säilyttää historian viimeiseltä 24 tunnilta. Päivitä Prohon, niin voit säilyttää 3 kuukautta, 6 kuukautta, 1 vuoden tai kaiken.</string>
+    <string name="settings_retention_3_months">3 kuukautta</string>
+    <string name="settings_retention_6_months">6 kuukautta</string>
+    <string name="settings_retention_1_year">1 vuosi</string>
+    <string name="settings_retention_forever">Ikuisesti</string>
     <string name="settings_restore_success">Pro-ostos vahvistettu</string>
     <string name="settings_restore_not_found">Tälle Play-tilille ei löytynyt Pro-ostosta</string>
     <string name="settings_restore_unavailable">Play Billing ei ole vielä valmis. Yritä hetken kuluttua uudelleen.</string>
@@ -212,55 +269,79 @@
     <string name="pro_feature_thermal_log_message">Lämpörajoitusten historia vaatii DevicePulse Pron.</string>
     <string name="pro_feature_export_message">CSV-vienti vaatii DevicePulse Pron.</string>
 
-    <!-- More Menu -->
-    <string name="more_settings">Asetukset</string>
-
     <!-- Widgets -->
     <string name="widget_battery_name">Akun tila</string>
     <string name="widget_battery_description">Näyttää akun varauksen, lämpötilan ja virran</string>
     <string name="widget_health_name">Laitteen kunto</string>
     <string name="widget_health_description">Näyttää kokonaiskuntopisteet kategoriamittareilla</string>
+    <string name="widget_health_score_label">Kuntopisteet</string>
+    <string name="widget_battery_short_label">Akku</string>
+    <string name="widget_percent_value">%1$d%%</string>
+    <string name="widget_temperature_value">%1$.1f°C</string>
+    <string name="widget_current_value">%1$d mA</string>
     <string name="widget_pro_required">Vaatii Pro-version</string>
+    <string name="widget_no_data_title">Ei vielä dataa</string>
+    <string name="widget_no_data_message">Avaa DevicePulse ja kerää mittauksia</string>
 
     <!-- Notifications -->
     <string name="notification_channel_alerts">Laitehälytykset</string>
     <string name="notification_channel_status">Laitteen tila</string>
+    <string name="notification_channel_alerts_description">Hälytykset akku-, lämpötila- ja tallennustilaongelmista</string>
+    <string name="notification_channel_status_description">Laitteen tilapäivitykset</string>
     <string name="notification_low_battery_title">Akku vähissä</string>
     <string name="notification_low_battery_text">Akkua jäljellä %d%%</string>
     <string name="notification_high_temp_title">Korkea lämpötila</string>
-    <string name="notification_high_temp_text">Laitteen lämpötila: %.1f\u00B0C</string>
+    <string name="notification_high_temp_text">Laitteen lämpötila: %1$.1f\u00B0C</string>
     <string name="notification_low_storage_title">Tallennustila vähissä</string>
-    <string name="notification_low_storage_text">Tallennustilasta käytössä %.0f%%</string>
+    <string name="notification_low_storage_text">Tallennustilasta käytössä %1$.0f%%</string>
     <string name="notification_charge_complete_title">Lataus valmis</string>
+    <string name="monitor_realtime_fgs_reason">Edustapalvelua käytetään vain silloin, kun käyttäjä katsoo aktiivisesti reaaliaikaisia laitteen kuntomittareita, jotka vaativat jatkuvia päivityksiä.</string>
+    <string name="monitor_realtime_channel_name">Reaaliaikainen seuranta</string>
+    <string name="monitor_realtime_channel_description">Näyttää laitteen kunnon reaaliaikaiset tiedot</string>
+    <string name="monitor_realtime_notification_text">Seurataan laitteen kuntoa…</string>
 
     <!-- Export -->
     <string name="settings_data_section">Data</string>
     <string name="settings_export_data">Vie data (CSV)</string>
     <string name="settings_export_success">Data viety Lataukset-kansioon</string>
     <string name="settings_export_error">Vienti epäonnistui</string>
+    <string name="settings_export_ready">Vienti valmis jaettavaksi</string>
+    <string name="settings_exporting">Viedään…</string>
+    <string name="settings_export_share_title">Jaa CSV-vienti</string>
 
     <!-- Charger Comparison -->
     <string name="charger_title">Laturivertailu</string>
     <string name="charger_add">Lisää laturi</string>
     <string name="charger_add_hint">Laturin nimi (esim. Samsung 25W)</string>
-    <string name="charger_sessions">%d latauskertaa</string>
     <string name="charger_avg_speed">Keskim. %d mA</string>
     <string name="charger_no_chargers">Ei tallennettuja latureita</string>
     <string name="charger_last_used">Viimeksi käytetty: %s</string>
     <string name="charger_delete">Poista</string>
+    <plurals name="charger_sessions">
+        <item quantity="one">%d latauskerta</item>
+        <item quantity="other">%d latauskertaa</item>
+    </plurals>
 
     <!-- App Battery Usage -->
     <string name="app_usage_title">Sovellusten akunkäyttö</string>
     <string name="app_usage_no_data">Ei käyttötietoja viimeiseltä 24 tunnilta</string>
-    <string name="app_usage_drain">Arvioitu kulutus: %s mAh</string>
+    <string name="app_usage_permission_title">Salli käyttötietojen käyttö</string>
+    <string name="app_usage_permission_message">Android vaatii käyttötietojen käyttöoikeuden ennen kuin DevicePulse voi näyttää sovelluskohtaisen etualan käyttöajan.</string>
+    <string name="app_usage_permission_open_settings">Avaa käyttötietojen käyttö</string>
+    <string name="app_usage_time_hours_minutes">%1$dh %2$dmin</string>
+    <string name="app_usage_time_minutes">%1$dmin</string>
+    <string name="app_usage_drain">Arvioitu kulutus: %1$.1f mAh</string>
 
     <!-- Speed Test -->
     <string name="speed_test_title">Nopeustesti</string>
+    <string name="speed_test_start">Aloita testi</string>
+    <string name="speed_test_running">Testataan…</string>
     <string name="speed_test_open">Avaa</string>
     <string name="speed_test_download">Lataus</string>
     <string name="speed_test_upload">Lähetys</string>
     <string name="speed_test_ping">Viive</string>
     <string name="speed_test_jitter">Jitter</string>
+    <string name="speed_test_server">Palvelin</string>
     <string name="speed_test_connection">Yhteys</string>
     <string name="speed_test_history">Historia</string>
     <string name="speed_test_last_result">Viimeisin tulos</string>
@@ -273,13 +354,28 @@
     <string name="speed_test_phase_ping">Mitataan viivettä…</string>
     <string name="speed_test_phase_download">Mitataan latausnopeutta…</string>
     <string name="speed_test_phase_upload">Mitataan lähetysnopeutta…</string>
+    <string name="speed_test_completed">Testi valmis</string>
+    <string name="speed_test_failed">Nopeustesti epäonnistui</string>
+    <string name="speed_test_error_no_internet">Internet-yhteyttä ei ole saatavilla.</string>
+    <string name="speed_test_error_server_unreachable">Nopeustestipalvelimeen ei saatu yhteyttä.</string>
+    <string name="speed_test_error_timeout">Nopeustesti aikakatkaistiin. Yritä uudelleen.</string>
+    <string name="speed_test_error_generic">Nopeustestin suorittaminen ei onnistunut.</string>
+    <string name="speed_test_no_history">Tallennettuja nopeustestejä ei vielä ole. Aja testi aloittaaksesi historian keräämisen.</string>
     <string name="speed_test_cellular_warning">Tämä testi käyttää noin 20–50 Mt mobiilidataa</string>
     <string name="speed_test_cellular_proceed">Jatka</string>
     <string name="speed_test_cellular_cancel">Peruuta</string>
+    <string name="speed_test_no_results">Ei nopeustestituloksia vielä</string>
 
     <!-- General -->
-    <string name="loading">Ladataan…</string>
-    <string name="error_generic">Jokin meni pieleen</string>
-    <string name="retry">Yritä uudelleen</string>
+    <string name="common_loading">Ladataan…</string>
+    <string name="common_error_generic">Jokin meni pieleen</string>
+    <string name="common_retry">Yritä uudelleen</string>
     <string name="not_supported">Ei tuettu tällä laitteella</string>
+
+    <!-- Settings Privacy -->
+    <string name="settings_privacy">Tietosuoja</string>
+    <string name="settings_crash_reporting">Jaa kaatumisraportit</string>
+    <string name="settings_crash_reporting_desc">Lähetä anonyymejä kaatumisdiagnostiikkatietoja Firebase Crashlyticsiin virheiden korjaamista varten.</string>
+    <string name="settings_crash_reporting_note">Pois oletuksena. Debug-versiot eivät koskaan lähetä raportteja. Kun asetus poistetaan käytöstä, odottavat lähettämättömät raportit poistetaan paikallisesti.</string>
+    <string name="settings_billing_unavailable">Play Billing ei ole käytettävissä tällä laitteella. Pro-oston vaihtoehdot piilotetaan, kunnes laskutus on saatavilla.</string>
 </resources>

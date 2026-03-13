@@ -31,6 +31,10 @@
         android:usesCleartextTraffic="false"
         tools:replace="android:usesCleartextTraffic">
 
+        <meta-data
+            android:name="firebase_crashlytics_collection_enabled"
+            android:value="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -44,7 +48,11 @@
         <service
             android:name=".service.monitor.RealTimeMonitorService"
             android:foregroundServiceType="specialUse"
-            android:exported="false" />
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="@string/monitor_realtime_fgs_reason" />
+        </service>
 
         <receiver
             android:name=".service.monitor.BootReceiver"
@@ -81,6 +89,16 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/health_widget_info" />
         </receiver>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_export_paths" />
+        </provider>
 
         <provider
             android:name="androidx.startup.InitializationProvider"

@@ -31,8 +31,14 @@ class BatteryViewModel @Inject constructor(
     private var selectedPeriod = HistoryPeriod.DAY
     private var loadJob: Job? = null
 
-    init {
+    fun startObserving() {
+        if (loadJob?.isActive == true) return
         loadBatteryData()
+    }
+
+    fun stopObserving() {
+        loadJob?.cancel()
+        loadJob = null
     }
 
     fun refresh() {
@@ -49,7 +55,7 @@ class BatteryViewModel @Inject constructor(
         loadJob = viewModelScope.launch {
             combine(
                 getBatteryState(),
-                getBatteryHistory(selectedPeriod).catch { emit(emptyList()) },
+                getBatteryHistory(selectedPeriod),
                 proStatusProvider.isProUser
             ) { state, history, isPro ->
                 BatteryUiState.Success(

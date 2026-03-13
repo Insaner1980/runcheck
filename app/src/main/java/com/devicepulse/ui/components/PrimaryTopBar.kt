@@ -17,20 +17,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.devicepulse.R
 
 @Composable
 fun PrimaryTopBar(
     title: String,
+    modifier: Modifier = Modifier,
     onMenuClick: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
             .statusBarsPadding()
-            .padding(start = 4.dp, end = 8.dp, top = 2.dp, bottom = 4.dp),
+            .padding(start = 4.dp, end = 8.dp, top = 2.dp, bottom = 4.dp)
+            .background(MaterialTheme.colorScheme.surface),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -38,7 +41,7 @@ fun PrimaryTopBar(
             IconButton(onClick = onMenuClick) {
                 Icon(
                     imageVector = Icons.Default.Menu,
-                    contentDescription = "Menu",
+                    contentDescription = stringResource(R.string.navigate_menu),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }

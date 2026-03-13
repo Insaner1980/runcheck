@@ -6,11 +6,9 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.net.Uri
-import android.os.Build
 import android.provider.Settings
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,28 +18,25 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CellTower
-import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,56 +48,96 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.location.LocationManagerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.devicepulse.R
 import com.devicepulse.domain.model.ConnectionType
+import com.devicepulse.domain.model.NetworkState
 import com.devicepulse.domain.model.SignalQuality
 import com.devicepulse.domain.model.SpeedTestResult
 import com.devicepulse.ui.common.formatDecimal
+import com.devicepulse.ui.common.findActivity
+import com.devicepulse.ui.common.isUnknownValue
+import com.devicepulse.ui.common.rememberFormattedDateTime
+import com.devicepulse.ui.components.DetailTopBar
 import com.devicepulse.ui.components.MetricTile
-import com.devicepulse.ui.components.PrimaryTopBar
 import com.devicepulse.ui.components.PullToRefreshWrapper
-import com.devicepulse.ui.components.SpeedGauge
 import com.devicepulse.ui.theme.spacing
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun NetworkDetailScreen(
-    onBack: () -> Unit = {},
     onNavigateToSpeedTest: () -> Unit,
+    onBack: () -> Unit = {},
+    modifier: Modifier = Modifier,
     viewModel: NetworkViewModel = hiltViewModel()
 ) {
+    val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val networkState = uiState.networkState
+    val errorMessage = uiState.errorMessage
 
-    when (val state = uiState) {
-        is NetworkUiState.Loading -> {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> viewModel.startObserving()
+                Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
+                else -> Unit
             }
         }
-        is NetworkUiState.Error -> {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(stringResource(R.string.error_generic))
-                    TextButton(onClick = { viewModel.refresh() }) {
-                        Text(stringResource(R.string.retry))
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            viewModel.startObserving()
+        }
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            viewModel.stopObserving()
+        }
+    }
+
+    Column(modifier = modifier.fillMaxSize()) {
+        DetailTopBar(
+            title = stringResource(R.string.network_title),
+            onBack = onBack
+        )
+
+        when {
+            uiState.isLoading && networkState == null -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            errorMessage != null && networkState == null -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(errorMessage)
+                        TextButton(onClick = { viewModel.refresh() }) {
+                            Text(stringResource(R.string.common_retry))
+                        }
                     }
                 }
             }
-        }
-        is NetworkUiState.Success -> {
-            Column(modifier = Modifier.fillMaxSize()) {
-                PrimaryTopBar(title = stringResource(R.string.network_title))
+
+            networkState != null -> {
                 NetworkContent(
-                    state = state,
+                    networkState = networkState,
                     onRefresh = { viewModel.refresh() },
                     onNavigateToSpeedTest = onNavigateToSpeedTest
                 )
+            }
+
+            else -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(stringResource(R.string.common_error_generic))
+                }
             }
         }
     }
@@ -110,17 +145,26 @@ fun NetworkDetailScreen(
 
 @Composable
 private fun NetworkContent(
-    state: NetworkUiState.Success,
+    networkState: NetworkState,
     onRefresh: () -> Unit,
     onNavigateToSpeedTest: () -> Unit
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
-    val network = state.networkState
     val context = LocalContext.current
+    val activity = context.findActivity()
     val hasLocationPermission = context.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     val locationEnabled = context.isLocationEnabled()
+    var locationRequestAttempted by remember { mutableStateOf(false) }
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        locationRequestAttempted = true
+        if (granted) {
+            onRefresh()
+        }
+    }
 
-    LaunchedEffect(state) {
+    LaunchedEffect(networkState) {
         isRefreshing = false
     }
 
@@ -142,22 +186,22 @@ private fun NetworkContent(
 
             MetricTile(
                 label = stringResource(R.string.network_connection_type),
-                value = when (network.connectionType) {
+                value = when (networkState.connectionType) {
                     ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
-                    ConnectionType.CELLULAR -> network.networkSubtype ?: stringResource(R.string.connection_cellular)
+                    ConnectionType.CELLULAR -> networkState.networkSubtype ?: stringResource(R.string.connection_cellular)
                     ConnectionType.NONE -> stringResource(R.string.connection_none)
                 }
             )
 
             MetricTile(
                 label = stringResource(R.string.network_signal_strength),
-                value = network.signalDbm?.toString() ?: stringResource(R.string.not_available),
-                unit = if (network.signalDbm != null) stringResource(R.string.unit_dbm) else ""
+                value = networkState.signalDbm?.toString() ?: stringResource(R.string.not_available),
+                unit = if (networkState.signalDbm != null) stringResource(R.string.unit_dbm) else ""
             )
 
             MetricTile(
                 label = stringResource(R.string.network_signal_quality),
-                value = when (network.signalQuality) {
+                value = when (networkState.signalQuality) {
                     SignalQuality.EXCELLENT -> stringResource(R.string.signal_excellent)
                     SignalQuality.GOOD -> stringResource(R.string.signal_good)
                     SignalQuality.FAIR -> stringResource(R.string.signal_fair)
@@ -166,11 +210,22 @@ private fun NetworkContent(
                 }
             )
 
-            if (network.connectionType == ConnectionType.WIFI) {
-                if (network.wifiSsid == null) {
+            if (networkState.connectionType == ConnectionType.WIFI) {
+                if (networkState.wifiSsid == null) {
                     WifiNameHelpCard(
                         hasLocationPermission = hasLocationPermission,
                         locationEnabled = locationEnabled,
+                        showOpenSettings = !hasLocationPermission &&
+                            locationRequestAttempted &&
+                            activity?.let {
+                                !ActivityCompat.shouldShowRequestPermissionRationale(
+                                    it,
+                                    Manifest.permission.ACCESS_FINE_LOCATION
+                                )
+                            } == true,
+                        onRequestPermission = {
+                            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                        },
                         onOpenSettings = {
                             if (!hasLocationPermission) {
                                 context.startActivity(
@@ -184,20 +239,20 @@ private fun NetworkContent(
                         }
                     )
                 }
-                network.wifiSsid?.let { ssid ->
+                networkState.wifiSsid?.let { ssid ->
                     MetricTile(
                         label = stringResource(R.string.network_wifi_ssid),
                         value = ssid
                     )
                 }
-                network.wifiSpeedMbps?.let { speed ->
+                networkState.wifiSpeedMbps?.let { speed ->
                     MetricTile(
                         label = stringResource(R.string.network_wifi_speed),
                         value = speed.toString(),
                         unit = stringResource(R.string.unit_mbps)
                     )
                 }
-                network.wifiFrequencyMhz?.let { freq ->
+                networkState.wifiFrequencyMhz?.let { freq ->
                     MetricTile(
                         label = stringResource(R.string.network_wifi_frequency),
                         value = formatDecimal(freq / 1000f, 1),
@@ -206,22 +261,30 @@ private fun NetworkContent(
                 }
             }
 
-            if (network.connectionType == ConnectionType.CELLULAR) {
-                network.carrier?.let { carrier ->
+            if (networkState.connectionType == ConnectionType.CELLULAR) {
+                networkState.carrier?.let { carrier ->
                     MetricTile(
                         label = stringResource(R.string.network_carrier),
-                        value = carrier
+                        value = if (isUnknownValue(carrier)) {
+                            stringResource(R.string.not_available)
+                        } else {
+                            carrier
+                        }
                     )
                 }
-                network.networkSubtype?.let { subtype ->
+                networkState.networkSubtype?.let { subtype ->
                     MetricTile(
                         label = stringResource(R.string.network_subtype),
-                        value = subtype
+                        value = if (isUnknownValue(subtype)) {
+                            stringResource(R.string.connection_cellular)
+                        } else {
+                            subtype
+                        }
                     )
                 }
             }
 
-            network.latencyMs?.let { latency ->
+            networkState.latencyMs?.let { latency ->
                 MetricTile(
                     label = stringResource(R.string.network_latency),
                     value = latency.toString(),
@@ -232,7 +295,7 @@ private fun NetworkContent(
             HorizontalDivider(modifier = Modifier.padding(vertical = MaterialTheme.spacing.sm))
 
             SpeedTestEntryCard(
-                connectionType = network.connectionType,
+                connectionType = networkState.connectionType,
                 onOpen = onNavigateToSpeedTest
             )
 
@@ -245,8 +308,17 @@ private fun NetworkContent(
 private fun WifiNameHelpCard(
     hasLocationPermission: Boolean,
     locationEnabled: Boolean,
+    showOpenSettings: Boolean,
+    onRequestPermission: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
+    val actionLabel = when {
+        !hasLocationPermission && showOpenSettings ->
+            stringResource(R.string.network_wifi_name_open_app_settings)
+        !hasLocationPermission -> stringResource(R.string.network_wifi_name_grant_permission)
+        !locationEnabled -> stringResource(R.string.location_services_open_settings)
+        else -> null
+    }
     val message = when {
         !hasLocationPermission -> stringResource(R.string.network_wifi_name_permission_needed)
         !locationEnabled -> stringResource(R.string.network_wifi_name_location_needed)
@@ -255,9 +327,11 @@ private fun WifiNameHelpCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -284,14 +358,18 @@ private fun WifiNameHelpCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Button(onClick = onOpenSettings) {
-                Text(
-                    text = if (!hasLocationPermission) {
-                        stringResource(R.string.network_wifi_name_open_app_settings)
-                    } else {
-                        stringResource(R.string.location_services_open_settings)
+            if (actionLabel != null) {
+                Button(
+                    onClick = {
+                        if (!hasLocationPermission && !showOpenSettings) {
+                            onRequestPermission()
+                        } else {
+                            onOpenSettings()
+                        }
                     }
-                )
+                ) {
+                    Text(text = actionLabel)
+                }
             }
         }
     }
@@ -317,9 +395,11 @@ private fun SpeedTestEntryCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         onClick = onOpen,
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -357,344 +437,18 @@ private fun SpeedTestEntryCard(
     }
 }
 
-@Composable
-private fun SpeedTestSection(
-    speedTestState: SpeedTestUiState,
-    isCellular: Boolean,
-    hasConnection: Boolean,
-    onStartSpeedTest: () -> Unit
-) {
-    var showCellularWarning by remember { mutableStateOf(false) }
-
-    Text(
-        text = stringResource(R.string.speed_test_title),
-        style = MaterialTheme.typography.headlineMedium,
-        color = MaterialTheme.colorScheme.onSurface
-    )
-
-    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-
-    // Start button or progress
-    if (!speedTestState.isRunning && speedTestState.phase !is SpeedTestPhase.Completed) {
-        StartTestButton(
-            hasConnection = hasConnection,
-            onClick = {
-                if (isCellular) {
-                    showCellularWarning = true
-                } else {
-                    onStartSpeedTest()
-                }
-            }
-        )
-    }
-
-    // Active test display
-    if (speedTestState.isRunning) {
-        SpeedTestActiveDisplay(speedTestState)
-    }
-
-    // Completed results
-    val phase = speedTestState.phase
-    if (phase is SpeedTestPhase.Completed) {
-        SpeedTestResultsDisplay(speedTestState)
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-        Button(
-            onClick = {
-                if (isCellular) {
-                    showCellularWarning = true
-                } else {
-                    onStartSpeedTest()
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(
-                Icons.Default.Speed,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.size(MaterialTheme.spacing.sm))
-            Text(stringResource(R.string.speed_test_start))
-        }
-    }
-
-    // Failed state
-    if (phase is SpeedTestPhase.Failed) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer
-            )
-        ) {
-            Row(
-                modifier = Modifier.padding(MaterialTheme.spacing.base),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onErrorContainer
-                )
-                Text(
-                    text = phase.error,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-        Button(
-            onClick = {
-                if (isCellular) {
-                    showCellularWarning = true
-                } else {
-                    onStartSpeedTest()
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(stringResource(R.string.retry))
-        }
-    }
-
-    // Last saved result (when idle and not just completed)
-    if (speedTestState.phase is SpeedTestPhase.Idle && speedTestState.lastResult != null) {
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-        LastResultCard(speedTestState.lastResult)
-    }
-
-    // History
-    if (speedTestState.recentResults.size > 1) {
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-        Text(
-            text = stringResource(R.string.speed_test_history),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        speedTestState.recentResults.drop(1).forEach { result ->
-            HistoryResultRow(result)
-        }
-    }
-
-    // Privacy notice
-    Text(
-        text = stringResource(R.string.speed_test_mlab_notice),
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = MaterialTheme.spacing.sm)
-    )
-
-    // Cellular data warning dialog
-    if (showCellularWarning) {
-        CellularDataWarningDialog(
-            onConfirm = {
-                showCellularWarning = false
-                onStartSpeedTest()
-            },
-            onDismiss = { showCellularWarning = false }
-        )
-    }
-}
-
-@Composable
-private fun StartTestButton(
-    hasConnection: Boolean,
-    onClick: () -> Unit
-) {
-    Button(
-        onClick = onClick,
-        enabled = hasConnection,
-        modifier = Modifier.fillMaxWidth(),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary
-        )
-    ) {
-        Icon(
-            Icons.Default.Speed,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.size(MaterialTheme.spacing.sm))
-        Text(
-            text = stringResource(R.string.speed_test_start),
-            style = MaterialTheme.typography.titleMedium
-        )
-    }
-}
-
-@Composable
-private fun SpeedTestActiveDisplay(state: SpeedTestUiState) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(MaterialTheme.spacing.base),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
-        ) {
-            // Phase indicator
-            val phaseText = when (state.phase) {
-                is SpeedTestPhase.Ping -> stringResource(R.string.speed_test_phase_ping)
-                is SpeedTestPhase.Download -> stringResource(R.string.speed_test_phase_download)
-                is SpeedTestPhase.Upload -> stringResource(R.string.speed_test_phase_upload)
-                else -> stringResource(R.string.speed_test_running)
-            }
-            Text(
-                text = phaseText,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            // Progress bar
-            val progress = when (state.phase) {
-                is SpeedTestPhase.Ping -> -1f // indeterminate
-                is SpeedTestPhase.Download -> state.downloadProgress
-                is SpeedTestPhase.Upload -> state.uploadProgress
-                else -> 0f
-            }
-            if (progress < 0) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-            } else {
-                LinearProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            // Gauges row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                SpeedGauge(
-                    value = state.downloadMbps,
-                    maxValue = 1000.0,
-                    label = stringResource(R.string.speed_test_download),
-                    unit = stringResource(R.string.unit_mbps),
-                    size = 100.dp,
-                    strokeWidth = 8.dp
-                )
-                SpeedGauge(
-                    value = state.uploadMbps,
-                    maxValue = 500.0,
-                    label = stringResource(R.string.speed_test_upload),
-                    unit = stringResource(R.string.unit_mbps),
-                    size = 100.dp,
-                    strokeWidth = 8.dp
-                )
-            }
-
-            if (state.pingMs > 0) {
-                Text(
-                    text = "${stringResource(R.string.speed_test_ping)}: ${state.pingMs} ${stringResource(R.string.unit_ms)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SpeedTestResultsDisplay(state: SpeedTestUiState) {
-    AnimatedVisibility(
-        visible = true,
-        enter = fadeIn() + slideInVertically(initialOffsetY = { it / 4 })
-    ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.base),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
-            ) {
-                Text(
-                    text = stringResource(R.string.speed_test_completed),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    SpeedGauge(
-                        value = state.downloadMbps,
-                        maxValue = 1000.0,
-                        label = stringResource(R.string.speed_test_download),
-                        unit = stringResource(R.string.unit_mbps),
-                        size = 120.dp,
-                        strokeWidth = 10.dp
-                    )
-                    SpeedGauge(
-                        value = state.uploadMbps,
-                        maxValue = 500.0,
-                        label = stringResource(R.string.speed_test_upload),
-                        unit = stringResource(R.string.unit_mbps),
-                        size = 120.dp,
-                        strokeWidth = 10.dp
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "${state.pingMs}",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "${stringResource(R.string.speed_test_ping)} (${stringResource(R.string.unit_ms)})",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    if (state.jitterMs > 0) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "${state.jitterMs}",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "${stringResource(R.string.speed_test_jitter)} (${stringResource(R.string.unit_ms)})",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun LastResultCard(result: SpeedTestResult) {
-    val dateFormat = remember { SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()) }
+    val formattedTime = rememberFormattedDateTime(result.timestamp, "MMMdhm")
 
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -712,7 +466,7 @@ private fun LastResultCard(result: SpeedTestResult) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = dateFormat.format(Date(result.timestamp)),
+                    text = formattedTime,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -774,7 +528,7 @@ private fun ResultMetric(
 
 @Composable
 private fun HistoryResultRow(result: SpeedTestResult) {
-    val dateFormat = remember { SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()) }
+    val formattedTime = rememberFormattedDateTime(result.timestamp, "MMMdhm")
 
     Card(
         modifier = Modifier
@@ -792,7 +546,7 @@ private fun HistoryResultRow(result: SpeedTestResult) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = dateFormat.format(Date(result.timestamp)),
+                text = formattedTime,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f)
@@ -812,7 +566,7 @@ private fun HistoryResultRow(result: SpeedTestResult) {
                 modifier = Modifier.weight(1f)
             )
             Text(
-                text = "${result.pingMs} ms",
+                text = stringResource(R.string.value_with_unit_int, result.pingMs, stringResource(R.string.unit_ms)),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.End,

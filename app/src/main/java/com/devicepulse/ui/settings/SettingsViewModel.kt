@@ -7,15 +7,18 @@ import androidx.lifecycle.viewModelScope
 import com.devicepulse.R
 import com.devicepulse.billing.ProPurchaseRefreshResult
 import com.devicepulse.billing.ProPurchaseManager
-import com.devicepulse.domain.repository.DeviceProfileRepository
-import com.devicepulse.domain.repository.FileExportRepository
+import com.devicepulse.domain.model.DataRetention
 import com.devicepulse.domain.repository.ProStatusProvider
-import com.devicepulse.domain.repository.UserPreferencesRepository
 import com.devicepulse.domain.model.MonitoringInterval
 import com.devicepulse.domain.usecase.ExportDataUseCase
-import com.devicepulse.service.monitor.MonitorScheduler
-import dagger.hilt.android.lifecycle.HiltViewModel
+import com.devicepulse.domain.usecase.ObserveSettingsUseCase
+import com.devicepulse.domain.usecase.SetCrashReportingEnabledUseCase
+import com.devicepulse.domain.usecase.SetDataRetentionUseCase
+import com.devicepulse.domain.usecase.SetMonitoringIntervalUseCase
+import com.devicepulse.domain.usecase.SetNotificationsEnabledUseCase
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,14 +30,15 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val preferencesRepository: UserPreferencesRepository,
-    private val deviceProfileRepository: DeviceProfileRepository,
+    @param:ApplicationContext private val context: Context,
+    private val observeSettings: ObserveSettingsUseCase,
     private val proPurchaseManager: ProPurchaseManager,
     private val proStatusProvider: ProStatusProvider,
     private val exportDataUseCase: ExportDataUseCase,
-    private val fileExportRepository: FileExportRepository,
-    private val monitorScheduler: MonitorScheduler
+    private val setDataRetentionUseCase: SetDataRetentionUseCase,
+    private val setMonitoringIntervalUseCase: SetMonitoringIntervalUseCase,
+    private val setNotificationsEnabledUseCase: SetNotificationsEnabledUseCase,
+    private val setCrashReportingEnabledUseCase: SetCrashReportingEnabledUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -43,23 +47,24 @@ class SettingsViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             combine(
-                preferencesRepository.getPreferences(),
-                deviceProfileRepository.getProfile(),
-                proPurchaseManager.isProUser
-            ) { prefs, profile, isPro ->
-                Triple(prefs, profile, isPro)
+                observeSettings(),
+                proPurchaseManager.isProUser,
+                proPurchaseManager.billingAvailable
+            ) { settings, isPro, billingAvailable ->
+                Triple(settings, isPro, billingAvailable)
             }
                 .catch {
                     _uiState.update { current ->
-                        current.copy(errorMessage = context.getString(R.string.error_generic))
+                        current.copy(errorMessage = context.getString(R.string.common_error_generic))
                     }
                 }
-                .collect { (prefs, profile, isPro) ->
+                .collect { (settings, isPro, billingAvailable) ->
                     _uiState.update { current ->
                         current.copy(
-                            preferences = prefs,
-                            deviceProfile = profile,
-                            isPro = isPro
+                            preferences = settings.preferences,
+                            deviceProfile = settings.deviceProfile,
+                            isPro = isPro,
+                            billingAvailable = billingAvailable
                         )
                     }
                 }
@@ -69,38 +74,91 @@ class SettingsViewModel @Inject constructor(
                 proPurchaseManager.getFormattedPrice()?.let { price ->
                     _uiState.update { current -> current.copy(proPrice = price) }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) {
                 _uiState.update { current ->
-                    current.copy(errorMessage = context.getString(R.string.error_generic))
+                    current.copy(errorMessage = context.getString(R.string.common_error_generic))
                 }
             }
         }
     }
 
     fun purchasePro(activity: Activity) {
+        if (!_uiState.value.billingAvailable) {
+            _uiState.update {
+                it.copy(billingStatus = context.getString(R.string.settings_billing_unavailable))
+            }
+            return
+        }
         proPurchaseManager.launchPurchaseFlow(activity)
     }
 
     fun refreshPurchaseStatus() {
         viewModelScope.launch {
-            val statusMessage = when (proPurchaseManager.refreshPurchaseStatus()) {
-                ProPurchaseRefreshResult.ACTIVE -> context.getString(R.string.settings_restore_success)
-                ProPurchaseRefreshResult.NOT_ACTIVE -> context.getString(R.string.settings_restore_not_found)
-                ProPurchaseRefreshResult.UNAVAILABLE -> context.getString(R.string.settings_restore_unavailable)
+            try {
+                val statusMessage = when (proPurchaseManager.refreshPurchaseStatus()) {
+                    ProPurchaseRefreshResult.ACTIVE -> context.getString(R.string.settings_restore_success)
+                    ProPurchaseRefreshResult.NOT_ACTIVE -> context.getString(R.string.settings_restore_not_found)
+                    ProPurchaseRefreshResult.UNAVAILABLE -> context.getString(R.string.settings_restore_unavailable)
+                }
+                _uiState.update { current -> current.copy(billingStatus = statusMessage) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _uiState.update {
+                    it.copy(billingStatus = context.getString(R.string.common_error_generic))
+                }
             }
-            _uiState.update { current -> current.copy(billingStatus = statusMessage) }
         }
     }
 
     fun setMonitoringInterval(interval: MonitoringInterval) {
         viewModelScope.launch {
-            preferencesRepository.setMonitoringInterval(interval)
-            monitorScheduler.schedule(interval)
+            try {
+                setMonitoringIntervalUseCase(interval)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _uiState.update { it.copy(errorMessage = context.getString(R.string.common_error_generic)) }
+            }
         }
     }
 
     fun setNotifications(enabled: Boolean) {
-        viewModelScope.launch { preferencesRepository.setNotificationsEnabled(enabled) }
+        viewModelScope.launch {
+            try {
+                setNotificationsEnabledUseCase(enabled)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _uiState.update { it.copy(errorMessage = context.getString(R.string.common_error_generic)) }
+            }
+        }
+    }
+
+    fun setDataRetention(retention: DataRetention) {
+        viewModelScope.launch {
+            try {
+                setDataRetentionUseCase(retention)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _uiState.update { it.copy(errorMessage = context.getString(R.string.common_error_generic)) }
+            }
+        }
+    }
+
+    fun setCrashReporting(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                setCrashReportingEnabledUseCase(enabled)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _uiState.update { it.copy(errorMessage = context.getString(R.string.common_error_generic)) }
+            }
+        }
     }
 
     /** Exports all reading data as CSV files to the Downloads folder via FileExportRepository. */
@@ -113,19 +171,27 @@ class SettingsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             try {
-                val csvFiles = exportDataUseCase.exportAllCsv()
-                fileExportRepository.exportToDownloads(csvFiles)
-
+                _uiState.update { it.copy(isExporting = true, exportStatus = null) }
+                val exportUris = exportDataUseCase.prepareExportShare()
                 _uiState.update {
                     it.copy(
-                    exportStatus = context.getString(R.string.settings_export_success)
-                )
+                        isExporting = false,
+                        exportUris = exportUris,
+                        exportStatus = if (exportUris.isNotEmpty()) {
+                            context.getString(R.string.settings_export_ready)
+                        } else {
+                            context.getString(R.string.settings_export_error)
+                        }
+                    )
                 }
-            } catch (e: Exception) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
                 _uiState.update {
                     it.copy(
-                    exportStatus = context.getString(R.string.settings_export_error)
-                )
+                        isExporting = false,
+                        exportStatus = context.getString(R.string.settings_export_error)
+                    )
                 }
             }
         }
@@ -134,6 +200,10 @@ class SettingsViewModel @Inject constructor(
     /** Clears the export status message after it has been shown. */
     fun clearExportStatus() {
         _uiState.update { it.copy(exportStatus = null) }
+    }
+
+    fun clearExportUris() {
+        _uiState.update { it.copy(exportUris = null) }
     }
 
     fun clearBillingStatus() {

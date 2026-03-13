@@ -8,10 +8,13 @@ import com.devicepulse.domain.model.BatteryState
 import com.devicepulse.domain.model.Confidence
 import com.devicepulse.domain.model.MeasuredValue
 import com.devicepulse.domain.repository.BatteryRepository as BatteryRepositoryContract
+import com.devicepulse.util.TimestampSanitizer
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,7 +26,9 @@ class BatteryRepositoryImpl @Inject constructor(
 ) : BatteryRepositoryContract {
 
     override fun getBatteryState(): Flow<BatteryState> = flow {
-        val profile = deviceProfileRepository.ensureProfileInternal()
+        val profile = withContext(Dispatchers.IO) {
+            deviceProfileRepository.ensureProfileInternal()
+        }
         val source = batteryDataSourceFactory.create(profile)
 
         val stateFlow = combine(
@@ -62,9 +67,16 @@ class BatteryRepositoryImpl @Inject constructor(
         }.collect { emit(it) }
     }
 
-    override fun getReadingsSince(since: Long): Flow<List<BatteryReading>> {
-        return batteryReadingDao.getReadingsSince(since).map { entities ->
+    override fun getReadingsSince(since: Long, limit: Int?): Flow<List<BatteryReading>> {
+        val now = System.currentTimeMillis()
+        val readingsFlow = if (limit != null) {
+            batteryReadingDao.getReadingsSinceLimited(since, now, limit)
+        } else {
+            batteryReadingDao.getReadingsSince(since, now)
+        }
+        return readingsFlow.map { entities ->
             entities.map { it.toDomain() }
+                .filter { TimestampSanitizer.isUsable(it.timestamp) }
         }
     }
 

@@ -1,10 +1,14 @@
 package com.devicepulse.ui.navigation
 
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -17,68 +21,100 @@ import com.devicepulse.ui.network.SpeedTestScreen
 import com.devicepulse.ui.settings.SettingsScreen
 import com.devicepulse.ui.storage.StorageDetailScreen
 import com.devicepulse.ui.thermal.ThermalDetailScreen
+import com.devicepulse.ui.theme.LocalReducedMotion
 
 @Composable
-fun DevicePulseNavHost() {
+fun DevicePulseNavHost(
+    modifier: Modifier = Modifier
+) {
     val navController = rememberNavController()
+    val reducedMotion = LocalReducedMotion.current
 
     NavHost(
+        modifier = modifier,
         navController = navController,
         startDestination = Screen.Home.route,
         enterTransition = {
-            slideIntoContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.Start,
-                animationSpec = tween(300)
-            ) + fadeIn(animationSpec = tween(300))
+            if (reducedMotion) {
+                EnterTransition.None
+            } else {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = tween(300)
+                ) + fadeIn(animationSpec = tween(300))
+            }
         },
         exitTransition = {
-            slideOutOfContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.Start,
-                animationSpec = tween(300)
-            ) + fadeOut(animationSpec = tween(300))
+            if (reducedMotion) {
+                ExitTransition.None
+            } else {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = tween(300)
+                ) + fadeOut(animationSpec = tween(300))
+            }
         },
         popEnterTransition = {
-            slideIntoContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.End,
-                animationSpec = tween(300)
-            ) + fadeIn(animationSpec = tween(300))
+            if (reducedMotion) {
+                EnterTransition.None
+            } else {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = tween(300)
+                ) + fadeIn(animationSpec = tween(300))
+            }
         },
         popExitTransition = {
-            slideOutOfContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.End,
-                animationSpec = tween(300)
-            ) + fadeOut(animationSpec = tween(300))
+            if (reducedMotion) {
+                ExitTransition.None
+            } else {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = tween(300)
+                ) + fadeOut(animationSpec = tween(300))
+            }
         }
     ) {
         composable(Screen.Home.route) {
             HomeScreen(
-                onNavigateToBattery = { navController.navigate(Screen.Battery.route) },
-                onNavigateToNetwork = { navController.navigate(Screen.Network.route) },
-                onNavigateToThermal = { navController.navigate(Screen.Thermal.route) },
-                onNavigateToStorage = { navController.navigate(Screen.Storage.route) },
-                onNavigateToCharger = { navController.navigate(Screen.Charger.route) },
-                onNavigateToSpeedTest = { navController.navigate(Screen.SpeedTest.route) },
-                onNavigateToAppUsage = { navController.navigate(Screen.AppUsage.route) },
-                onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
-                onNavigateToProUpgrade = { navController.navigate(Screen.Settings.route) }
+                onNavigateToBattery = { navController.navigateSingleTop(Screen.Battery.route) },
+                onNavigateToNetwork = { navController.navigateSingleTop(Screen.Network.route) },
+                onNavigateToThermal = { navController.navigateSingleTop(Screen.Thermal.route) },
+                onNavigateToStorage = { navController.navigateSingleTop(Screen.Storage.route) },
+                onNavigateToCharger = {
+                    navController.navigateNested(
+                        parentRoute = Screen.Battery.route,
+                        childRoute = Screen.Charger.route
+                    )
+                },
+                onNavigateToSpeedTest = {
+                    navController.navigateNested(
+                        parentRoute = Screen.Network.route,
+                        childRoute = Screen.SpeedTest.route
+                    )
+                },
+                onNavigateToAppUsage = { navController.navigateSingleTop(Screen.AppUsage.route) },
+                onNavigateToSettings = { navController.navigateSingleTop(Screen.Settings.route) },
+                onNavigateToProUpgrade = { navController.navigateSingleTop(Screen.Settings.route) }
             )
         }
         composable(Screen.Battery.route) {
             BatteryDetailScreen(
                 onBack = { navController.popBackStack() },
-                onUpgradeToPro = { navController.navigate(Screen.Settings.route) }
+                onNavigateToCharger = { navController.navigateSingleTop(Screen.Charger.route) },
+                onUpgradeToPro = { navController.navigateSingleTop(Screen.Settings.route) }
             )
         }
         composable(Screen.Network.route) {
             NetworkDetailScreen(
                 onBack = { navController.popBackStack() },
-                onNavigateToSpeedTest = { navController.navigate(Screen.SpeedTest.route) }
+                onNavigateToSpeedTest = { navController.navigateSingleTop(Screen.SpeedTest.route) }
             )
         }
         composable(Screen.Thermal.route) {
             ThermalDetailScreen(
                 onBack = { navController.popBackStack() },
-                onUpgradeToPro = { navController.navigate(Screen.Settings.route) }
+                onUpgradeToPro = { navController.navigateSingleTop(Screen.Settings.route) }
             )
         }
         composable(Screen.Storage.route) {
@@ -87,13 +123,13 @@ fun DevicePulseNavHost() {
         composable(Screen.Charger.route) {
             ChargerComparisonScreen(
                 onBack = { navController.popBackStack() },
-                onUpgradeToPro = { navController.navigate(Screen.Settings.route) }
+                onUpgradeToPro = { navController.navigateSingleTop(Screen.Settings.route) }
             )
         }
         composable(Screen.AppUsage.route) {
             AppUsageScreen(
                 onBack = { navController.popBackStack() },
-                onUpgradeToPro = { navController.navigate(Screen.Settings.route) }
+                onUpgradeToPro = { navController.navigateSingleTop(Screen.Settings.route) }
             )
         }
         composable(Screen.Settings.route) {
@@ -103,4 +139,15 @@ fun DevicePulseNavHost() {
             SpeedTestScreen(onBack = { navController.popBackStack() })
         }
     }
+}
+
+private fun NavHostController.navigateSingleTop(route: String) {
+    navigate(route) {
+        launchSingleTop = true
+    }
+}
+
+private fun NavHostController.navigateNested(parentRoute: String, childRoute: String) {
+    navigateSingleTop(parentRoute)
+    navigateSingleTop(childRoute)
 }

@@ -34,6 +34,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,14 +62,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.devicepulse.R
 import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.NetworkState
 import com.devicepulse.domain.model.SpeedTestResult
 import com.devicepulse.ui.components.AnimatedFloatText
 import com.devicepulse.ui.components.DetailTopBar
+import com.devicepulse.ui.common.connectionDisplayLabel
 import com.devicepulse.ui.common.formatDecimal
+import com.devicepulse.ui.common.isUnknownValue
+import com.devicepulse.ui.common.rememberFormattedDateTime
 import com.devicepulse.ui.theme.DevicePulseTheme
 import com.devicepulse.ui.theme.reducedMotion
 import com.devicepulse.ui.theme.spacing
@@ -77,41 +84,74 @@ import kotlin.math.roundToInt
 @Composable
 fun SpeedTestScreen(
     onBack: () -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: NetworkViewModel = hiltViewModel()
 ) {
+    val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val speedTestState by viewModel.speedTestState.collectAsStateWithLifecycle()
+    val networkState = uiState.networkState
+    val errorMessage = uiState.errorMessage
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> viewModel.startObserving()
+                Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
+                else -> Unit
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            viewModel.startObserving()
+        }
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            viewModel.stopObserving()
+        }
+    }
+
+    Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(
             title = androidx.compose.ui.res.stringResource(R.string.speed_test_title),
             onBack = onBack
         )
 
-        when (val networkState = uiState) {
-            is NetworkUiState.Loading -> {
+        when {
+            uiState.isLoading && networkState == null -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     androidx.compose.material3.CircularProgressIndicator()
                 }
             }
 
-            is NetworkUiState.Error -> {
+            errorMessage != null && networkState == null -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        text = androidx.compose.ui.res.stringResource(R.string.error_generic),
+                        text = errorMessage,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
 
-            is NetworkUiState.Success -> {
+            networkState != null -> {
                 SpeedTestContent(
-                    networkState = networkState.networkState,
-                    speedTestState = speedTestState,
-                    isCellular = networkState.networkState.connectionType == ConnectionType.CELLULAR,
+                    networkState = networkState,
+                    speedTestState = uiState.speedTestState,
+                    isCellular = networkState.connectionType == ConnectionType.CELLULAR,
                     onStartSpeedTest = { viewModel.startSpeedTest() }
                 )
+            }
+
+            else -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(R.string.common_error_generic),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
             }
         }
     }
@@ -119,7 +159,7 @@ fun SpeedTestScreen(
 
 @Composable
 private fun SpeedTestContent(
-    networkState: com.devicepulse.domain.model.NetworkState,
+    networkState: NetworkState,
     speedTestState: SpeedTestUiState,
     isCellular: Boolean,
     onStartSpeedTest: () -> Unit
@@ -181,6 +221,8 @@ private fun SpeedTestContent(
 
         if (speedTestState.recentResults.size > 1) {
             HistorySection(results = speedTestState.recentResults.drop(1))
+        } else if (speedTestState.phase == SpeedTestPhase.Idle && speedTestState.lastResult == null) {
+            EmptyHistoryCard()
         }
 
         Text(
@@ -203,18 +245,24 @@ private fun SpeedTestContent(
 }
 
 @Composable
-private fun NetworkContextPanel(networkState: com.devicepulse.domain.model.NetworkState) {
+private fun NetworkContextPanel(networkState: NetworkState) {
     val connectionLabel = when (networkState.connectionType) {
-        ConnectionType.WIFI -> networkState.wifiSsid ?: androidx.compose.ui.res.stringResource(R.string.connection_wifi)
-        ConnectionType.CELLULAR -> networkState.networkSubtype ?: androidx.compose.ui.res.stringResource(R.string.connection_cellular)
         ConnectionType.NONE -> androidx.compose.ui.res.stringResource(R.string.network_no_connection)
+        ConnectionType.WIFI,
+        ConnectionType.CELLULAR -> connectionDisplayLabel(
+            connectionType = networkState.connectionType,
+            wifiSsid = networkState.wifiSsid,
+            networkSubtype = networkState.networkSubtype
+        )
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -243,7 +291,12 @@ private fun NetworkContextPanel(networkState: com.devicepulse.domain.model.Netwo
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "$latency ${androidx.compose.ui.res.stringResource(R.string.unit_ms)}",
+                        text = androidx.compose.ui.res.stringResource(
+                            R.string.speed_test_ping_line,
+                            androidx.compose.ui.res.stringResource(R.string.speed_test_ping),
+                            latency,
+                            androidx.compose.ui.res.stringResource(R.string.unit_ms)
+                        ),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -260,48 +313,59 @@ private fun SpeedTestHero(
     onStart: () -> Unit
 ) {
     val reducedMotion = MaterialTheme.reducedMotion
-    val infiniteTransition = rememberInfiniteTransition(label = "speed_test_hero")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.96f,
-        targetValue = 1.04f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = if (reducedMotion) 0 else 1700,
-                easing = FastOutSlowInEasing
+    val pulseScale: Float
+    val pulseAlpha: Float
+    val rotation: Float
+    if (reducedMotion) {
+        pulseScale = 1f
+        pulseAlpha = 0.12f
+        rotation = 0f
+    } else {
+        val infiniteTransition = rememberInfiniteTransition(label = "speed_test_hero")
+        pulseScale = infiniteTransition.animateFloat(
+            initialValue = 0.96f,
+            targetValue = 1.04f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(
+                    durationMillis = 1700,
+                    easing = FastOutSlowInEasing
+                ),
+                repeatMode = RepeatMode.Reverse
             ),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "speed_test_pulse_scale"
-    )
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.12f,
-        targetValue = 0.26f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = if (reducedMotion) 0 else 1700,
-                easing = FastOutSlowInEasing
+            label = "speed_test_pulse_scale"
+        ).value
+        pulseAlpha = infiniteTransition.animateFloat(
+            initialValue = 0.12f,
+            targetValue = 0.26f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(
+                    durationMillis = 1700,
+                    easing = FastOutSlowInEasing
+                ),
+                repeatMode = RepeatMode.Reverse
             ),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "speed_test_pulse_alpha"
-    )
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = if (reducedMotion) 0 else 1800,
-                easing = LinearEasing
-            )
-        ),
-        label = "speed_test_rotation"
-    )
+            label = "speed_test_pulse_alpha"
+        ).value
+        rotation = infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(
+                    durationMillis = 1800,
+                    easing = LinearEasing
+                )
+            ),
+            label = "speed_test_rotation"
+        ).value
+    }
 
     val accent = MaterialTheme.colorScheme.primary
-    val secondaryAccent = lerp(accent, Color.White, 0.18f)
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val secondaryAccent = lerp(accent, onSurfaceColor, 0.18f)
     val track = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
     val errorAccent = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-    val surfaceTone = MaterialTheme.colorScheme.surface
+    val surfaceTone = surfaceColor
     val surfaceContainerTone = MaterialTheme.colorScheme.surfaceContainerHigh
 
     val targetProgress = when (state.phase) {
@@ -320,17 +384,21 @@ private fun SpeedTestHero(
     )
 
     val centerValue = when (state.phase) {
+        SpeedTestPhase.Idle -> 0f
+        SpeedTestPhase.Ping -> 0f
         SpeedTestPhase.Download -> state.downloadMbps.toFloat()
         SpeedTestPhase.Upload -> state.uploadMbps.toFloat()
         SpeedTestPhase.Completed -> state.downloadMbps.toFloat()
-        else -> 0f
+        is SpeedTestPhase.Failed -> 0f
     }
 
     val centerLabel = when (state.phase) {
+        SpeedTestPhase.Idle -> ""
+        SpeedTestPhase.Ping -> ""
         SpeedTestPhase.Download -> androidx.compose.ui.res.stringResource(R.string.speed_test_download)
         SpeedTestPhase.Upload -> androidx.compose.ui.res.stringResource(R.string.speed_test_upload)
         SpeedTestPhase.Completed -> androidx.compose.ui.res.stringResource(R.string.speed_test_download)
-        else -> ""
+        is SpeedTestPhase.Failed -> ""
     }
     val ringActionLabel = heroInstructionText(
         hasConnection = enabled || state.isRunning,
@@ -440,14 +508,16 @@ private fun SpeedTestHero(
                     )
                 }
 
-                else -> {
+                SpeedTestPhase.Download,
+                SpeedTestPhase.Upload,
+                SpeedTestPhase.Completed -> {
                     drawArc(
                         brush = Brush.sweepGradient(
                             listOf(
-                                lerp(accent, Color.White, 0.06f),
+                                lerp(accent, onSurfaceColor, 0.06f),
                                 accent,
-                                lerp(accent, Color.Black, 0.08f),
-                                lerp(accent, Color.White, 0.05f)
+                                lerp(accent, surfaceColor, 0.08f),
+                                lerp(accent, onSurfaceColor, 0.05f)
                             )
                         ),
                         startAngle = 135f,
@@ -527,7 +597,7 @@ private fun CellularDataWarningDialog(
 @Composable
 private fun SpeedMetricsStrip(state: SpeedTestUiState) {
     val accent = MaterialTheme.colorScheme.primary
-    val softAccent = lerp(accent, Color.White, 0.16f)
+    val softAccent = lerp(accent, MaterialTheme.colorScheme.onSurface, 0.16f)
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -560,9 +630,11 @@ private fun MetricGlowCard(
 ) {
     Card(
         modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -605,13 +677,13 @@ private fun ConnectionStatsRow(state: SpeedTestUiState) {
     ) {
         StatPill(
             label = androidx.compose.ui.res.stringResource(R.string.speed_test_ping),
-            value = if (state.pingMs > 0) state.pingMs.toString() else "—",
+            value = if (state.pingMs > 0) state.pingMs.toString() else androidx.compose.ui.res.stringResource(R.string.placeholder_dash),
             unit = androidx.compose.ui.res.stringResource(R.string.unit_ms),
             modifier = Modifier.weight(1f)
         )
         StatPill(
             label = androidx.compose.ui.res.stringResource(R.string.speed_test_jitter),
-            value = if (state.jitterMs > 0) state.jitterMs.toString() else "—",
+            value = if (state.jitterMs > 0) state.jitterMs.toString() else androidx.compose.ui.res.stringResource(R.string.placeholder_dash),
             unit = androidx.compose.ui.res.stringResource(R.string.unit_ms),
             modifier = Modifier.weight(1f)
         )
@@ -662,9 +734,11 @@ private fun StatPill(
 private fun SpeedTestFailureCard(error: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Text(
             text = error,
@@ -676,17 +750,35 @@ private fun SpeedTestFailureCard(error: String) {
 }
 
 @Composable
+private fun EmptyHistoryCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Text(
+            text = androidx.compose.ui.res.stringResource(R.string.speed_test_no_history),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(MaterialTheme.spacing.base)
+        )
+    }
+}
+
+@Composable
 private fun LatestResultCard(result: SpeedTestResult) {
-    val dateLabel = rememberTimestampLabel(
-        timestamp = result.timestamp,
-        pattern = "dd.MM HH:mm"
-    )
+    val dateLabel = rememberTimestampLabel(result.timestamp)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -791,9 +883,11 @@ private fun HistorySection(results: List<SpeedTestResult>) {
         results.forEach { result ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Row(
                     modifier = Modifier
@@ -804,8 +898,7 @@ private fun HistorySection(results: List<SpeedTestResult>) {
                 ) {
                     Text(
                         text = rememberTimestampLabel(
-                            timestamp = result.timestamp,
-                            pattern = "dd.MM HH:mm"
+                            timestamp = result.timestamp
                         ),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -837,14 +930,8 @@ private fun TinyHistoryMetric(value: Double, label: String) {
 }
 
 @Composable
-private fun rememberTimestampLabel(timestamp: Long, pattern: String): String {
-    val formatter = remember(pattern) {
-        java.text.SimpleDateFormat(pattern, java.util.Locale.getDefault())
-    }
-    return remember(timestamp, formatter) {
-        formatter.format(java.util.Date(timestamp))
-    }
-}
+private fun rememberTimestampLabel(timestamp: Long): String =
+    rememberFormattedDateTime(timestamp, "MMMdhm")
 
 @Composable
 private fun heroInstructionText(

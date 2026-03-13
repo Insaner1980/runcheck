@@ -45,15 +45,17 @@ fun DevicePulseTheme(
     val accessibilityManager = context.getSystemService(
         AccessibilityManager::class.java
     )
-    val reducedMotion = accessibilityManager?.let {
+    val reducedMotion = if (accessibilityManager == null) {
+        false
+    } else {
         try {
             val field = AccessibilityManager::class.java
                 .getDeclaredMethod("isReducedMotionEnabled")
-            field.invoke(it) as? Boolean ?: false
+            field.invoke(accessibilityManager) as? Boolean ?: false
         } catch (e: Exception) {
             false
         }
-    } ?: false
+    }
 
     CompositionLocalProvider(
         LocalSpacing provides Spacing(),

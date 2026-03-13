@@ -1,7 +1,6 @@
 package com.devicepulse.widget
 
 import android.content.Context
-import android.os.BatteryManager
 import com.devicepulse.R
 import com.devicepulse.data.billing.ProStatusCache
 import androidx.glance.GlanceId
@@ -33,22 +32,14 @@ class HealthWidget : GlanceAppWidget() {
             provideLockedContent(context)
             return
         }
-        val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-        val batteryLevel = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        val snapshot = WidgetDataProvider.loadHealthSnapshot(context)
+        if (snapshot == null) {
+            provideEmptyContent(context)
+            return
+        }
         val healthScoreLabel = context.getString(R.string.widget_health_score_label)
         val batteryLabel = context.getString(R.string.widget_battery_short_label)
-        val batteryValue = context.getString(R.string.widget_percent_value, batteryLevel)
-
-        // Simple health score estimate based on battery level
-        val batteryScore = when {
-            batteryLevel >= 50 -> 100
-            batteryLevel >= 20 -> 75
-            batteryLevel >= 10 -> 50
-            else -> 25
-        }
-
-        // Overall score (simplified — real app uses full HealthScoreCalculator)
-        val overallScore = batteryScore
+        val batteryValue = context.getString(R.string.widget_percent_value, snapshot.batteryLevel)
 
         provideContent {
             GlanceTheme {
@@ -62,7 +53,7 @@ class HealthWidget : GlanceAppWidget() {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = overallScore.toString(),
+                        text = snapshot.overallScore.toString(),
                         style = TextStyle(
                             fontSize = 40.sp,
                             fontWeight = FontWeight.Bold,
@@ -109,7 +100,39 @@ class HealthWidget : GlanceAppWidget() {
                         )
                     )
                     Text(
-                        text = context.getString(R.string.widget_pro_required),
+                        text = context.getString(R.string.settings_upgrade_pro),
+                        style = TextStyle(
+                            fontSize = 12.sp,
+                            color = GlanceTheme.colors.onSurfaceVariant
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    private suspend fun provideEmptyContent(context: Context) {
+        provideContent {
+            GlanceTheme {
+                Column(
+                    modifier = GlanceModifier
+                        .fillMaxSize()
+                        .padding(12.dp)
+                        .cornerRadius(16.dp)
+                        .background(GlanceTheme.colors.widgetBackground),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = context.getString(R.string.widget_no_data_title),
+                        style = TextStyle(
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = GlanceTheme.colors.onSurface
+                        )
+                    )
+                    Text(
+                        text = context.getString(R.string.widget_no_data_message),
                         style = TextStyle(
                             fontSize = 12.sp,
                             color = GlanceTheme.colors.onSurfaceVariant

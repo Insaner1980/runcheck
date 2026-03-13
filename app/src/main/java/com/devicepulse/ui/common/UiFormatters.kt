@@ -1,11 +1,18 @@
 package com.devicepulse.ui.common
 
 import android.content.Context
+import android.text.format.DateFormat
 import android.text.format.Formatter
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import com.devicepulse.R
+import com.devicepulse.domain.model.BatteryHealth
+import com.devicepulse.domain.model.ChargingStatus
 import com.devicepulse.domain.model.ConnectionType
+import com.devicepulse.domain.model.PlugType
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 fun Throwable.messageOr(defaultMessage: String): String =
@@ -17,13 +24,31 @@ fun formatStorageSize(context: Context, bytes: Long): String =
 fun formatDecimal(value: Number, fractionDigits: Int): String =
     String.format(Locale.getDefault(), "%.${fractionDigits}f", value.toDouble())
 
-fun formatPercent(value: Int): String = "$value%"
+fun formatLocalizedDateTime(timestamp: Long, skeleton: String): String {
+    val locale = Locale.getDefault()
+    val pattern = DateFormat.getBestDateTimePattern(locale, skeleton)
+    return SimpleDateFormat(pattern, locale).format(Date(timestamp))
+}
 
+@Composable
+fun rememberFormattedDateTime(timestamp: Long, skeleton: String): String =
+    remember(timestamp, skeleton) {
+        formatLocalizedDateTime(timestamp, skeleton)
+    }
+
+fun isUnknownValue(value: String?): Boolean =
+    value.isNullOrBlank() || value.equals("unknown", ignoreCase = true)
+
+@Composable
+fun formatPercent(value: Int): String = stringResource(R.string.value_percent, value)
+
+@Composable
 fun formatPercent(value: Float, fractionDigits: Int = 1): String =
-    "${formatDecimal(value, fractionDigits)}%"
+    "${formatDecimal(value, fractionDigits)}${stringResource(R.string.unit_percent)}"
 
+@Composable
 fun formatTemperature(value: Float, fractionDigits: Int = 1): String =
-    "${formatDecimal(value, fractionDigits)}°C"
+    "${formatDecimal(value, fractionDigits)}${stringResource(R.string.unit_celsius)}"
 
 @Composable
 fun scoreLabel(score: Int): String = when {
@@ -40,6 +65,41 @@ fun connectionDisplayLabel(
     networkSubtype: String?
 ): String = when (connectionType) {
     ConnectionType.WIFI -> wifiSsid ?: stringResource(R.string.connection_wifi)
-    ConnectionType.CELLULAR -> networkSubtype ?: stringResource(R.string.connection_cellular)
+    ConnectionType.CELLULAR -> networkSubtype
+        ?.takeUnless(::isUnknownValue)
+        ?: stringResource(R.string.connection_cellular)
     ConnectionType.NONE -> stringResource(R.string.connection_none)
+}
+
+@Composable
+fun batteryHealthLabel(health: BatteryHealth): String = when (health) {
+    BatteryHealth.GOOD -> stringResource(R.string.battery_health_good)
+    BatteryHealth.OVERHEAT -> stringResource(R.string.battery_health_overheat)
+    BatteryHealth.DEAD -> stringResource(R.string.battery_health_dead)
+    BatteryHealth.OVER_VOLTAGE -> stringResource(R.string.battery_health_over_voltage)
+    BatteryHealth.COLD -> stringResource(R.string.battery_health_cold)
+    BatteryHealth.UNKNOWN -> stringResource(R.string.battery_health_unknown)
+}
+
+@Composable
+fun chargingStatusLabel(status: ChargingStatus): String = when (status) {
+    ChargingStatus.CHARGING -> stringResource(R.string.charging_status_charging)
+    ChargingStatus.DISCHARGING -> stringResource(R.string.charging_status_discharging)
+    ChargingStatus.FULL -> stringResource(R.string.charging_status_full)
+    ChargingStatus.NOT_CHARGING -> stringResource(R.string.charging_status_not_charging)
+}
+
+@Composable
+fun plugTypeLabel(plugType: PlugType): String = when (plugType) {
+    PlugType.AC -> stringResource(R.string.plug_type_ac)
+    PlugType.USB -> stringResource(R.string.plug_type_usb)
+    PlugType.WIRELESS -> stringResource(R.string.plug_type_wireless)
+    PlugType.NONE -> stringResource(R.string.plug_type_none)
+}
+
+@Composable
+fun temperatureBandLabel(temperatureC: Float): String = when {
+    temperatureC >= 40f -> stringResource(R.string.thermal_hot)
+    temperatureC >= 35f -> stringResource(R.string.thermal_warm)
+    else -> stringResource(R.string.thermal_cool)
 }

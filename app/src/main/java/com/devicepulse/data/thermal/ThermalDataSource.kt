@@ -7,20 +7,23 @@ import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager
-import com.devicepulse.data.device.DeviceProfile
+import androidx.core.content.ContextCompat
 import com.devicepulse.domain.model.ThermalStatus
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class ThermalDataSource @Inject constructor(
-    private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
 
     private val powerManager =
@@ -33,11 +36,20 @@ class ThermalDataSource @Inject constructor(
                 trySend(temp)
             }
         }
-        context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val stickyIntent = context.registerReceiver(
+            receiver,
+            IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        )
+        stickyIntent?.let { receiver.onReceive(context, it) }
         awaitClose { context.unregisterReceiver(receiver) }
     }
 
     fun getCpuTemperature(thermalZones: List<String>): Flow<Float?> = flow {
+        if (thermalZones.isEmpty()) {
+            emit(null)
+            return@flow
+        }
+
         // Try once — if it fails, emit null and stop (avoids SELinux log spam)
         val temp = readCpuTemperature(thermalZones)
         emit(temp)
@@ -47,7 +59,7 @@ class ThermalDataSource @Inject constructor(
                 emit(readCpuTemperature(thermalZones))
             }
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
     fun getThermalHeadroom(): Flow<Float?> = flow {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -67,18 +79,17 @@ class ThermalDataSource @Inject constructor(
     }
 
     fun getThermalStatus(): Flow<ThermalStatus> = flow {
-        while (true) {
-            val status = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                mapThermalStatus(powerManager.currentThermalStatus)
-            } else {
-                ThermalStatus.NONE
-            }
-            emit(status)
-            delay(POLLING_INTERVAL_MS)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            emit(ThermalStatus.NONE)
+            return@flow
         }
+
+        emitAllThermalStatus()
     }
 
     private fun readCpuTemperature(zones: List<String>): Float? {
+        if (zones.isEmpty()) return null
+
         val thermalDir = File("/sys/class/thermal/")
         if (!thermalDir.exists() || !thermalDir.canRead()) return null
 
@@ -99,7 +110,7 @@ class ThermalDataSource @Inject constructor(
                     zone.name
                 }
 
-                if (zones.isEmpty() || zones.contains(type)) {
+                if (zones.contains(type)) {
                     val tempStr = tempFile.readText().trim()
                     val tempValue = tempStr.toIntOrNull() ?: continue
                     return if (tempValue > 1000) tempValue / 1000f else tempValue.toFloat()
@@ -128,5 +139,24 @@ class ThermalDataSource @Inject constructor(
     companion object {
         private const val POLLING_INTERVAL_MS = 3000L
         private const val HEADROOM_FORECAST_SECONDS = 10
+    }
+
+    private suspend fun kotlinx.coroutines.flow.FlowCollector<ThermalStatus>.emitAllThermalStatus() {
+        callbackFlow {
+            trySend(mapThermalStatus(powerManager.currentThermalStatus))
+
+            val listener = PowerManager.OnThermalStatusChangedListener { status ->
+                trySend(mapThermalStatus(status))
+            }
+
+            powerManager.addThermalStatusListener(
+                ContextCompat.getMainExecutor(context),
+                listener
+            )
+
+            awaitClose {
+                powerManager.removeThermalStatusListener(listener)
+            }
+        }.collect { emit(it) }
     }
 }

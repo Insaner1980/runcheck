@@ -18,22 +18,27 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.devicepulse.ui.theme.reducedMotion
 
 @Composable
 fun AreaChart(
     data: List<Float>,
     modifier: Modifier = Modifier,
-    lineColor: Color = MaterialTheme.colorScheme.primary
+    lineColor: Color = MaterialTheme.colorScheme.primary,
+    contentDescription: String? = null
 ) {
     if (data.size < 2) return
 
+    val reducedMotion = MaterialTheme.reducedMotion
     var progress by remember { mutableFloatStateOf(0f) }
     LaunchedEffect(data) { progress = 1f }
 
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
-        animationSpec = tween(durationMillis = 800),
+        animationSpec = tween(durationMillis = if (reducedMotion) 0 else 800),
         label = "area_chart_draw"
     )
 
@@ -41,7 +46,14 @@ fun AreaChart(
     val maxVal = data.max()
     val range = (maxVal - minVal).coerceAtLeast(1f)
 
-    Canvas(modifier = modifier.fillMaxSize()) {
+    Canvas(
+        modifier = modifier
+            .fillMaxSize()
+            .then(
+                if (contentDescription == null) Modifier
+                else Modifier.semantics { this.contentDescription = contentDescription }
+            )
+    ) {
         val verticalPadding = size.height * 0.1f
         val chartHeight = size.height - verticalPadding * 2
         val stepX = size.width / (data.size - 1)

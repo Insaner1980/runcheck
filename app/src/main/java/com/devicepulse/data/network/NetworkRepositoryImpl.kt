@@ -5,8 +5,11 @@ import com.devicepulse.data.db.entity.NetworkReadingEntity
 import com.devicepulse.domain.model.NetworkState
 import com.devicepulse.domain.repository.NetworkReadingData
 import com.devicepulse.domain.repository.NetworkRepository as NetworkRepositoryContract
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.sample
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,20 +20,24 @@ class NetworkRepositoryImpl @Inject constructor(
     private val networkReadingDao: NetworkReadingDao
 ) : NetworkRepositoryContract {
 
+    @OptIn(FlowPreview::class)
     override fun getNetworkState(): Flow<NetworkState> =
-        networkDataSource.getNetworkInfo().map { info ->
-        NetworkState(
-            connectionType = info.connectionType,
-            signalDbm = info.signalDbm,
-            signalQuality = info.signalQuality,
-            wifiSsid = info.wifiSsid,
-            wifiSpeedMbps = info.wifiSpeedMbps,
-            wifiFrequencyMhz = info.wifiFrequencyMhz,
-            carrier = info.carrier,
-            networkSubtype = info.networkSubtype,
-            latencyMs = null
-        )
-    }
+        networkDataSource.getNetworkInfo()
+            .sample(DISPLAY_UPDATE_INTERVAL_MS)
+            .map { info ->
+                NetworkState(
+                    connectionType = info.connectionType,
+                    signalDbm = info.signalDbm,
+                    signalQuality = info.signalQuality,
+                    wifiSsid = info.wifiSsid,
+                    wifiSpeedMbps = info.wifiSpeedMbps,
+                    wifiFrequencyMhz = info.wifiFrequencyMhz,
+                    carrier = info.carrier,
+                    networkSubtype = info.networkSubtype,
+                    latencyMs = null
+                )
+            }
+            .conflate()
 
     override suspend fun measureLatency(): Int? {
         if (!networkDataSource.hasValidatedConnection()) {
@@ -59,6 +66,10 @@ class NetworkRepositoryImpl @Inject constructor(
 
     override suspend fun deleteOlderThan(cutoff: Long) {
         networkReadingDao.deleteOlderThan(cutoff)
+    }
+
+    companion object {
+        private const val DISPLAY_UPDATE_INTERVAL_MS = 333L
     }
 }
 

@@ -13,6 +13,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
@@ -20,6 +25,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.devicepulse.R
+import com.devicepulse.ui.common.formatDecimal
 import com.devicepulse.ui.theme.reducedMotion
 
 @Composable
@@ -35,6 +42,8 @@ fun SpeedGauge(
     val reducedMotion = MaterialTheme.reducedMotion
     val fraction = if (maxValue > 0) (value / maxValue).toFloat().coerceIn(0f, 1f) else 0f
     val targetSweep = fraction * 270f
+    val spokenValue = if (value > 0) formatDecimal(value, 1) else stringResource(R.string.not_available)
+    val gaugeContentDescription = stringResource(R.string.a11y_speed_gauge, label, spokenValue, unit)
 
     val sweepAngle by animateFloatAsState(
         targetValue = targetSweep,
@@ -53,7 +62,12 @@ fun SpeedGauge(
     val trackColor = MaterialTheme.colorScheme.surfaceContainerHigh
 
     Box(
-        modifier = modifier.size(size),
+        modifier = modifier
+            .size(size)
+            .semantics(mergeDescendants = true) {
+                contentDescription = gaugeContentDescription
+                progressBarRangeInfo = ProgressBarRangeInfo(fraction, 0f..1f)
+            },
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.size(size)) {
@@ -96,7 +110,7 @@ fun SpeedGauge(
                 )
             } else {
                 Text(
-                    text = "—",
+                    text = stringResource(R.string.placeholder_dash),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center

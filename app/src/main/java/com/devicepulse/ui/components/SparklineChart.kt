@@ -18,22 +18,27 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.devicepulse.ui.theme.reducedMotion
 
 @Composable
 fun SparklineChart(
     data: List<Float>,
     modifier: Modifier = Modifier,
-    lineColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary
+    lineColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary,
+    contentDescription: String? = null
 ) {
     if (data.size < 2) return
 
+    val reducedMotion = MaterialTheme.reducedMotion
     var progress by remember { mutableFloatStateOf(0f) }
     LaunchedEffect(data) { progress = 1f }
 
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
-        animationSpec = tween(durationMillis = 600),
+        animationSpec = tween(durationMillis = if (reducedMotion) 0 else 600),
         label = "sparkline_draw"
     )
 
@@ -45,6 +50,10 @@ fun SparklineChart(
         modifier = modifier
             .fillMaxWidth()
             .height(40.dp)
+            .then(
+                if (contentDescription == null) Modifier
+                else Modifier.semantics { this.contentDescription = contentDescription }
+            )
     ) {
         val stepX = size.width / (data.size - 1)
         val visibleCount = (data.size * animatedProgress).toInt().coerceAtLeast(2)

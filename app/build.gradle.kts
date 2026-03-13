@@ -3,6 +3,9 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.ktlint)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -19,13 +22,19 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
+        val proProductId = System.getenv("DEVICEPULSE_PRO_PRODUCT_ID") ?: "devicepulse_pro"
+        val latencyHost = System.getenv("DEVICEPULSE_LATENCY_HOST") ?: "locate.measurementlab.net"
+        val latencyPort = (System.getenv("DEVICEPULSE_LATENCY_PORT") ?: "443").toIntOrNull() ?: 443
+        buildConfigField("String", "PRO_PRODUCT_ID", "\"$proProductId\"")
+        buildConfigField("String", "LATENCY_HOST", "\"$latencyHost\"")
+        buildConfigField("int", "LATENCY_PORT", latencyPort.toString())
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
         create("release") {
-            // Set these via environment variables or local.properties before release:
+            // Set these via environment variables before release:
             // DEVICEPULSE_KEYSTORE_PATH, DEVICEPULSE_KEYSTORE_PASSWORD,
             // DEVICEPULSE_KEY_ALIAS, DEVICEPULSE_KEY_PASSWORD
             val keystorePath = System.getenv("DEVICEPULSE_KEYSTORE_PATH")
@@ -40,11 +49,12 @@ android {
 
     buildTypes {
         release {
+            isDebuggable = false
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
             val keystorePath = System.getenv("DEVICEPULSE_KEYSTORE_PATH")
             if (keystorePath != null) {
@@ -70,6 +80,16 @@ ksp {
 
 hilt {
     enableAggregatingTask = true
+}
+
+ktlint {
+    android.set(true)
+    ignoreFailures.set(false)
+
+    filter {
+        exclude("**/generated/**")
+        exclude("**/build/**")
+    }
 }
 
 tasks.configureEach {
@@ -126,10 +146,6 @@ dependencies {
     // DataStore
     implementation(libs.datastore.preferences)
 
-    // Vico Charts
-    implementation(libs.vico.compose)
-    implementation(libs.vico.compose.m3)
-
     // Core
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
@@ -137,9 +153,12 @@ dependencies {
     // Gson
     implementation(libs.gson)
 
+    // Firebase Crashlytics
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
+
     // M-Lab NDT7 speed test
     implementation(libs.ndt7)
-    implementation(libs.okhttp)
 
     // Google Play Billing
     implementation(libs.billing)
@@ -152,7 +171,4 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.mockk)
-    androidTestImplementation(composeBom)
-    androidTestImplementation(libs.compose.ui.test.junit4)
-    debugImplementation(libs.compose.ui.test.manifest)
 }

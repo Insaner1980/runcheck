@@ -2,11 +2,14 @@ package com.devicepulse.ui.charger
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devicepulse.domain.repository.ChargerRepository
 import com.devicepulse.domain.repository.ProStatusProvider
+import com.devicepulse.domain.usecase.AddChargerUseCase
+import com.devicepulse.domain.usecase.DeleteChargerUseCase
 import com.devicepulse.domain.usecase.GetChargerComparisonUseCase
+import com.devicepulse.domain.usecase.GetChargerSessionsUseCase
 import com.devicepulse.ui.common.messageOr
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +23,9 @@ import javax.inject.Inject
 @HiltViewModel
 class ChargerViewModel @Inject constructor(
     private val getChargerComparison: GetChargerComparisonUseCase,
-    private val chargerRepository: ChargerRepository,
+    private val getChargerSessions: GetChargerSessionsUseCase,
+    private val addChargerUseCase: AddChargerUseCase,
+    private val deleteChargerUseCase: DeleteChargerUseCase,
     private val proStatusProvider: ProStatusProvider
 ) : ViewModel() {
 
@@ -44,27 +49,45 @@ class ChargerViewModel @Inject constructor(
     fun addCharger(name: String) {
         if (!proStatusProvider.isPro()) return
         viewModelScope.launch {
-            chargerRepository.insertCharger(name)
+            try {
+                addChargerUseCase(name)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.value = ChargerUiState.Error(e.messageOr("Unknown error"))
+            }
         }
     }
 
     fun deleteCharger(id: Long) {
         if (!proStatusProvider.isPro()) return
         viewModelScope.launch {
-            chargerRepository.deleteChargerById(id)
+            try {
+                deleteChargerUseCase(id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.value = ChargerUiState.Error(e.messageOr("Unknown error"))
+            }
         }
     }
 
     private fun observeProState() {
         proObserverJob?.cancel()
         proObserverJob = viewModelScope.launch {
-            proStatusProvider.isProUser.collectLatest { isPro ->
-                if (!isPro) {
-                    loadJob?.cancel()
-                    _uiState.value = ChargerUiState.Locked
-                    return@collectLatest
+            try {
+                proStatusProvider.isProUser.collectLatest { isPro ->
+                    if (!isPro) {
+                        loadJob?.cancel()
+                        _uiState.value = ChargerUiState.Locked
+                        return@collectLatest
+                    }
+                    loadChargerData()
                 }
-                loadChargerData()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.value = ChargerUiState.Error(e.messageOr("Unknown error"))
             }
         }
     }
@@ -74,7 +97,7 @@ class ChargerViewModel @Inject constructor(
         loadJob = viewModelScope.launch {
             combine(
                 getChargerComparison(),
-                chargerRepository.getAllSessions()
+                getChargerSessions()
             ) { chargers, sessions ->
                 ChargerUiState.Success(
                     chargers = chargers,

@@ -1,48 +1,63 @@
 package com.devicepulse.ui.network
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.devicepulse.R
 import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.SpeedTestProgress
 import com.devicepulse.domain.model.SpeedTestResult
-import com.devicepulse.domain.repository.NetworkRepository
 import com.devicepulse.domain.repository.ProStatusProvider
-import com.devicepulse.domain.repository.SpeedTestRepository
-import com.devicepulse.domain.usecase.GetNetworkStateUseCase
+import com.devicepulse.domain.usecase.FinalizeSpeedTestUseCase
+import com.devicepulse.domain.usecase.GetMeasuredNetworkStateUseCase
 import com.devicepulse.domain.usecase.GetSpeedTestHistoryUseCase
 import com.devicepulse.domain.usecase.RunSpeedTestUseCase
 import com.devicepulse.ui.common.messageOr
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val FREE_HISTORY_LIMIT = 5
+private const val PRO_HISTORY_LIMIT = 100
+
 @HiltViewModel
 class NetworkViewModel @Inject constructor(
-    private val getNetworkState: GetNetworkStateUseCase,
+    @param:ApplicationContext private val context: Context,
+    private val getMeasuredNetworkState: GetMeasuredNetworkStateUseCase,
     private val runSpeedTest: RunSpeedTestUseCase,
     private val getSpeedTestHistory: GetSpeedTestHistoryUseCase,
-    private val networkRepository: NetworkRepository,
-    private val speedTestRepository: SpeedTestRepository,
+    private val finalizeSpeedTest: FinalizeSpeedTestUseCase,
     private val proStatusProvider: ProStatusProvider
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<NetworkUiState>(NetworkUiState.Loading)
+    private val _uiState = MutableStateFlow(NetworkUiState())
     val uiState: StateFlow<NetworkUiState> = _uiState.asStateFlow()
-
-    private val _speedTestState = MutableStateFlow(SpeedTestUiState())
-    val speedTestState: StateFlow<SpeedTestUiState> = _speedTestState.asStateFlow()
     private var networkJob: Job? = null
     private var historyJob: Job? = null
+    private var speedTestJob: Job? = null
 
-    init {
-        loadNetworkData()
-        loadSpeedTestHistory()
+    fun startObserving() {
+        if (networkJob?.isActive != true) {
+            loadNetworkData()
+        }
+        if (historyJob?.isActive != true) {
+            loadSpeedTestHistory()
+        }
+    }
+
+    fun stopObserving() {
+        networkJob?.cancel()
+        networkJob = null
+        historyJob?.cancel()
+        historyJob = null
     }
 
     fun refresh() {
@@ -50,10 +65,11 @@ class NetworkViewModel @Inject constructor(
     }
 
     fun startSpeedTest() {
-        if (_speedTestState.value.isRunning) return
+        if (_uiState.value.speedTestState.isRunning) return
 
-        _speedTestState.update {
-            it.copy(
+        speedTestJob?.cancel()
+        updateSpeedTestState {
+            copy(
                 phase = SpeedTestPhase.Ping,
                 isRunning = true,
                 pingMs = 0,
@@ -66,12 +82,14 @@ class NetworkViewModel @Inject constructor(
             )
         }
 
-        viewModelScope.launch {
+        speedTestJob = viewModelScope.launch {
             runSpeedTest()
                 .catch { e ->
-                    _speedTestState.update {
-                        it.copy(
-                            phase = SpeedTestPhase.Failed(e.messageOr("Speed test failed")),
+                    updateSpeedTestState {
+                        copy(
+                            phase = SpeedTestPhase.Failed(
+                                e.messageOr(context.getString(R.string.speed_test_failed))
+                            ),
                             isRunning = false
                         )
                     }
@@ -79,17 +97,17 @@ class NetworkViewModel @Inject constructor(
                 .collect { progress ->
                     when (progress) {
                         is SpeedTestProgress.PingPhase -> {
-                            _speedTestState.update {
-                                it.copy(
-                                    phase = SpeedTestPhase.Download,
+                            updateSpeedTestState {
+                                copy(
+                                    phase = SpeedTestPhase.Ping,
                                     pingMs = progress.pingMs,
                                     jitterMs = progress.jitterMs
                                 )
                             }
                         }
                         is SpeedTestProgress.DownloadPhase -> {
-                            _speedTestState.update {
-                                it.copy(
+                            updateSpeedTestState {
+                                copy(
                                     phase = SpeedTestPhase.Download,
                                     downloadMbps = progress.currentMbps,
                                     downloadProgress = progress.progress
@@ -97,8 +115,8 @@ class NetworkViewModel @Inject constructor(
                             }
                         }
                         is SpeedTestProgress.UploadPhase -> {
-                            _speedTestState.update {
-                                it.copy(
+                            updateSpeedTestState {
+                                copy(
                                     phase = SpeedTestPhase.Upload,
                                     uploadMbps = progress.currentMbps,
                                     uploadProgress = progress.progress
@@ -106,7 +124,7 @@ class NetworkViewModel @Inject constructor(
                             }
                         }
                         is SpeedTestProgress.Completed -> {
-                            val networkState = (_uiState.value as? NetworkUiState.Success)?.networkState
+                            val networkState = _uiState.value.networkState
                             val result = SpeedTestResult(
                                 timestamp = System.currentTimeMillis(),
                                 downloadMbps = progress.downloadMbps,
@@ -119,13 +137,26 @@ class NetworkViewModel @Inject constructor(
                                 networkSubtype = networkState?.networkSubtype,
                                 signalDbm = networkState?.signalDbm
                             )
-                            speedTestRepository.saveResult(result)
+                            try {
+                                finalizeSpeedTest(result, FREE_HISTORY_LIMIT)
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (error: Exception) {
+                                updateSpeedTestState {
+                                    copy(
+                                        phase = SpeedTestPhase.Failed(
+                                            error.messageOr(
+                                                context.getString(R.string.speed_test_error_generic)
+                                            )
+                                        ),
+                                        isRunning = false
+                                    )
+                                }
+                                return@collect
+                            }
 
-                            val maxHistory = if (proStatusProvider.isPro()) Int.MAX_VALUE else FREE_HISTORY_LIMIT
-                            speedTestRepository.trimResults(maxHistory)
-
-                            _speedTestState.update {
-                                it.copy(
+                            updateSpeedTestState {
+                                copy(
                                     phase = SpeedTestPhase.Completed,
                                     isRunning = false,
                                     downloadMbps = progress.downloadMbps,
@@ -138,8 +169,8 @@ class NetworkViewModel @Inject constructor(
                             loadSpeedTestHistory()
                         }
                         is SpeedTestProgress.Failed -> {
-                            _speedTestState.update {
-                                it.copy(
+                            updateSpeedTestState {
+                                copy(
                                     phase = SpeedTestPhase.Failed(progress.error),
                                     isRunning = false
                                 )
@@ -152,20 +183,30 @@ class NetworkViewModel @Inject constructor(
 
     private fun loadNetworkData() {
         networkJob?.cancel()
+        _uiState.update { current ->
+            current.copy(
+                isLoading = current.networkState == null,
+                errorMessage = null
+            )
+        }
         networkJob = viewModelScope.launch {
-            getNetworkState()
+            getMeasuredNetworkState()
                 .catch { e ->
-                    _uiState.value = NetworkUiState.Error(e.messageOr("Unknown error"))
+                    _uiState.update { current ->
+                        current.copy(
+                            isLoading = false,
+                            errorMessage = e.messageOr(context.getString(R.string.common_error_generic))
+                        )
+                    }
                 }
                 .collect { state ->
-                    val latencyMs = if (state.connectionType == ConnectionType.NONE) {
-                        null
-                    } else {
-                        runCatching { networkRepository.measureLatency() }.getOrNull()
+                    _uiState.update { current ->
+                        current.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                            networkState = state
+                        )
                     }
-                    _uiState.value = NetworkUiState.Success(
-                        networkState = state.copy(latencyMs = latencyMs)
-                    )
                 }
         }
     }
@@ -173,16 +214,20 @@ class NetworkViewModel @Inject constructor(
     private fun loadSpeedTestHistory() {
         historyJob?.cancel()
         historyJob = viewModelScope.launch {
-            val limit = if (proStatusProvider.isPro()) Int.MAX_VALUE else FREE_HISTORY_LIMIT
+            val limit = if (proStatusProvider.isPro()) PRO_HISTORY_LIMIT else FREE_HISTORY_LIMIT
             getSpeedTestHistory(limit)
                 .catch { e ->
-                    _speedTestState.update {
-                        it.copy(historyLoadError = e.messageOr("Unable to load speed test history"))
+                    updateSpeedTestState {
+                        copy(
+                            historyLoadError = e.messageOr(
+                                context.getString(R.string.common_error_generic)
+                            )
+                        )
                     }
                 }
                 .collect { results ->
-                    _speedTestState.update {
-                        it.copy(
+                    updateSpeedTestState {
+                        copy(
                             historyLoadError = null,
                             lastResult = results.firstOrNull(),
                             recentResults = results
@@ -192,7 +237,9 @@ class NetworkViewModel @Inject constructor(
         }
     }
 
-    companion object {
-        private const val FREE_HISTORY_LIMIT = 5
+    private fun updateSpeedTestState(transform: SpeedTestUiState.() -> SpeedTestUiState) {
+        _uiState.update { current ->
+            current.copy(speedTestState = current.speedTestState.transform())
+        }
     }
 }

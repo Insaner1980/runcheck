@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -33,31 +34,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
 import com.devicepulse.domain.model.ChargerSummary
+import com.devicepulse.ui.common.rememberFormattedDateTime
 import com.devicepulse.ui.components.DetailTopBar
 import com.devicepulse.ui.components.ProFeatureLockedState
-import androidx.compose.ui.graphics.Color
-import com.devicepulse.ui.theme.AccentLime
 import com.devicepulse.ui.theme.spacing
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun ChargerComparisonScreen(
     onBack: () -> Unit,
     onUpgradeToPro: () -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: ChargerViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize()) {
         when (val state = uiState) {
             is ChargerUiState.Loading -> {
                 DetailTopBar(
@@ -75,9 +74,9 @@ fun ChargerComparisonScreen(
                 )
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.error_generic))
+                        Text(stringResource(R.string.common_error_generic))
                         TextButton(onClick = { viewModel.refresh() }) {
-                            Text(stringResource(R.string.retry))
+                            Text(stringResource(R.string.common_retry))
                         }
                     }
                 }
@@ -136,8 +135,8 @@ private fun ChargerContent(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddClick,
-                containerColor = AccentLime,
-                contentColor = Color.Black
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -196,9 +195,11 @@ private fun ChargerCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -227,7 +228,11 @@ private fun ChargerCard(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = stringResource(R.string.charger_sessions, charger.sessionCount),
+                text = pluralStringResource(
+                    R.plurals.charger_sessions,
+                    charger.sessionCount,
+                    charger.sessionCount
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -241,10 +246,7 @@ private fun ChargerCard(
             }
 
             charger.lastUsed?.let { timestamp ->
-                val formatted = remember(timestamp) {
-                    SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
-                        .format(Date(timestamp))
-                }
+                val formatted = rememberFormattedDateTime(timestamp, "yMMMdHm")
                 Text(
                     text = stringResource(R.string.charger_last_used, formatted),
                     style = MaterialTheme.typography.bodySmall,

@@ -11,6 +11,7 @@ enum class ProPurchaseRefreshResult {
 
 interface ProPurchaseManager {
     val isProUser: Flow<Boolean>
+    val billingAvailable: Flow<Boolean>
     suspend fun getFormattedPrice(): String?
     suspend fun refreshPurchaseStatus(): ProPurchaseRefreshResult
     fun launchPurchaseFlow(activity: Activity)

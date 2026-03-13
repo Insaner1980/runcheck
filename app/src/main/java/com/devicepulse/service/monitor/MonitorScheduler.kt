@@ -5,17 +5,21 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.devicepulse.domain.model.MonitoringInterval
+import com.devicepulse.domain.repository.MonitoringScheduler
+import com.devicepulse.domain.repository.UserPreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class MonitorScheduler @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
+    @param:ApplicationContext private val context: Context,
+    private val preferencesRepository: UserPreferencesRepository
+) : MonitoringScheduler {
 
-    fun schedule(interval: MonitoringInterval) {
+    override fun schedule(interval: MonitoringInterval) {
         val workRequest = PeriodicWorkRequestBuilder<HealthMonitorWorker>(
             interval.minutes.toLong(),
             TimeUnit.MINUTES
@@ -28,8 +32,13 @@ class MonitorScheduler @Inject constructor(
         )
     }
 
-    fun cancel() {
+    override fun cancel() {
         WorkManager.getInstance(context)
             .cancelUniqueWork(HealthMonitorWorker.WORK_NAME)
+    }
+
+    override suspend fun ensureScheduled() {
+        val interval = preferencesRepository.getPreferences().first().monitoringInterval
+        schedule(interval)
     }
 }

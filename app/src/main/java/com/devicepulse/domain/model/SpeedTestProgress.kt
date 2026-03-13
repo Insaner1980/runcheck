@@ -10,7 +10,7 @@ sealed interface SpeedTestProgress {
         val pingMs: Int,
         val jitterMs: Int,
         val serverName: String,
-        val serverLocation: String
+        val serverLocation: String?
     ) : SpeedTestProgress
     data class Failed(val error: String) : SpeedTestProgress
 }

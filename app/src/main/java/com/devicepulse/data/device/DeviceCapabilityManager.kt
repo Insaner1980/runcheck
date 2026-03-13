@@ -14,7 +14,7 @@ import kotlin.math.abs
 
 @Singleton
 class DeviceCapabilityManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
 
     suspend fun detectCapabilities(): DeviceProfile {
@@ -48,6 +48,13 @@ class DeviceCapabilityManager @Inject constructor(
             val current = try {
                 batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
             } catch (_: SecurityException) {
+                return CurrentValidation(
+                    isReliable = false,
+                    unit = CurrentUnit.MILLIAMPS,
+                    signConvention = SignConvention.POSITIVE_CHARGING
+                )
+            }
+            if (current == Int.MIN_VALUE) {
                 return CurrentValidation(
                     isReliable = false,
                     unit = CurrentUnit.MILLIAMPS,

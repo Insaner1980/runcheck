@@ -29,12 +29,18 @@ class ThermalViewModel @Inject constructor(
     val uiState: StateFlow<ThermalUiState> = _uiState.asStateFlow()
     private var loadJob: Job? = null
 
-    init {
+    fun refresh() {
         loadThermalData()
     }
 
-    fun refresh() {
+    fun startObserving() {
+        if (loadJob?.isActive == true) return
         loadThermalData()
+    }
+
+    fun stopObserving() {
+        loadJob?.cancel()
+        loadJob = null
     }
 
     private fun loadThermalData() {

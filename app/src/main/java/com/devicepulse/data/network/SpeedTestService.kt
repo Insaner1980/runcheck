@@ -1,5 +1,10 @@
 package com.devicepulse.data.network
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import com.devicepulse.R
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -7,6 +12,9 @@ import net.measurementlab.ndt7.android.NdtTest
 import net.measurementlab.ndt7.android.models.ClientResponse
 import net.measurementlab.ndt7.android.models.Measurement
 import net.measurementlab.ndt7.android.utils.DataConverter
+import java.net.SocketTimeoutException
+import java.net.URI
+import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,7 +23,10 @@ import javax.inject.Singleton
  * Auto-selects the nearest M-Lab server via https://locate.measurementlab.net/
  */
 @Singleton
-class SpeedTestService @Inject constructor() {
+class SpeedTestService @Inject constructor(
+    @param:ApplicationContext private val context: Context,
+    private val latencyMeasurer: LatencyMeasurer
+) {
 
     sealed interface SpeedTestProgress {
         data class PingPhase(val pingMs: Int, val jitterMs: Int) : SpeedTestProgress
@@ -27,24 +38,42 @@ class SpeedTestService @Inject constructor() {
             val pingMs: Int,
             val jitterMs: Int,
             val serverName: String,
-            val serverLocation: String
+            val serverLocation: String?
         ) : SpeedTestProgress
         data class Failed(val error: String) : SpeedTestProgress
     }
 
     private var activeTest: NdtTest? = null
+    private val connectivityManager =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     fun runSpeedTest(): Flow<SpeedTestProgress> = callbackFlow {
+        if (!hasValidatedConnection()) {
+            trySend(SpeedTestProgress.Failed(context.getString(R.string.speed_test_error_no_internet)))
+            channel.close()
+            return@callbackFlow
+        }
+
         var downloadMbps = 0.0
         var uploadMbps = 0.0
         var latestRttMs = 0
         var latestRttVarMs = 0
+        var serverName = DEFAULT_SERVER_NAME
+        var serverLocation: String? = null
         val downloadStartTime = System.nanoTime()
         var uploadStartTime = 0L
-        var downloadFinished = false
+
+        latencyMeasurer.measureLatency()?.let { initialLatency ->
+            latestRttMs = initialLatency
+            trySend(SpeedTestProgress.PingPhase(initialLatency, 0))
+        }
 
         val test = object : NdtTest() {
             override fun onDownloadProgress(clientResponse: ClientResponse) {
+                updateServerMetadata(clientResponse)?.let { metadata ->
+                    serverName = metadata.name
+                    serverLocation = metadata.location
+                }
                 val mbps = DataConverter.convertToMbps(clientResponse)
                 downloadMbps = mbps
                 val elapsed = (System.nanoTime() - downloadStartTime).toFloat()
@@ -53,6 +82,9 @@ class SpeedTestService @Inject constructor() {
             }
 
             override fun onMeasurementDownloadProgress(measurement: Measurement) {
+                measurement.connectionInfo?.server?.takeIf { it.isNotBlank() }?.let { host ->
+                    serverName = host
+                }
                 val tcpInfo = measurement.tcpInfo
                 if (tcpInfo != null) {
                     val rttUs = tcpInfo.rtt
@@ -65,6 +97,10 @@ class SpeedTestService @Inject constructor() {
             }
 
             override fun onUploadProgress(clientResponse: ClientResponse) {
+                updateServerMetadata(clientResponse)?.let { metadata ->
+                    serverName = metadata.name
+                    serverLocation = metadata.location
+                }
                 val mbps = DataConverter.convertToMbps(clientResponse)
                 uploadMbps = mbps
                 if (uploadStartTime == 0L) uploadStartTime = System.nanoTime()
@@ -90,21 +126,20 @@ class SpeedTestService @Inject constructor() {
                 testType: TestType
             ) {
                 if (error != null && clientResponse == null) {
-                    trySend(SpeedTestProgress.Failed(error.message ?: "Speed test failed"))
+                    trySend(SpeedTestProgress.Failed(mapError(error)))
                     channel.close()
                     return
                 }
 
                 if (testType == TestType.DOWNLOAD) {
-                    downloadFinished = true
                     trySend(SpeedTestProgress.DownloadPhase(downloadMbps, 1f))
-                    // Emit ping results after download (RTT is available from TCP)
-                    if (latestRttMs > 0) {
-                        trySend(SpeedTestProgress.PingPhase(latestRttMs, latestRttVarMs))
-                    }
                     return
                 }
 
+                updateServerMetadata(clientResponse)?.let { metadata ->
+                    serverName = metadata.name
+                    serverLocation = metadata.location
+                }
                 // Upload finished (or both finished) — emit final results
                 trySend(SpeedTestProgress.UploadPhase(uploadMbps, 1f))
                 trySend(
@@ -113,8 +148,8 @@ class SpeedTestService @Inject constructor() {
                         uploadMbps = uploadMbps,
                         pingMs = latestRttMs,
                         jitterMs = latestRttVarMs,
-                        serverName = "M-Lab",
-                        serverLocation = "Nearest Server"
+                        serverName = serverName,
+                        serverLocation = serverLocation
                     )
                 )
                 channel.close()
@@ -122,7 +157,13 @@ class SpeedTestService @Inject constructor() {
         }
 
         activeTest = test
-        test.startTest(NdtTest.TestType.DOWNLOAD_AND_UPLOAD)
+        runCatching {
+            test.startTest(NdtTest.TestType.DOWNLOAD_AND_UPLOAD)
+        }.onFailure { error ->
+            trySend(SpeedTestProgress.Failed(mapError(error)))
+            activeTest = null
+            channel.close()
+        }
 
         awaitClose {
             activeTest?.stopTest()
@@ -135,7 +176,61 @@ class SpeedTestService @Inject constructor() {
         activeTest = null
     }
 
+    private fun hasValidatedConnection(): Boolean {
+        val activeNetwork = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    }
+
+    private fun updateServerMetadata(clientResponse: ClientResponse?): ServerMetadata? {
+        val originHost = clientResponse?.origin?.let(::extractHost)
+        val testHost = clientResponse?.test?.let(::extractHost)
+        val resolvedName = testHost ?: originHost ?: return null
+        return ServerMetadata(
+            name = resolvedName,
+            location = originHost
+                ?.takeUnless { isSameServerLabel(it, resolvedName) }
+        )
+    }
+
+    private fun extractHost(rawValue: String): String {
+        val trimmed = rawValue.trim()
+        return runCatching { URI(trimmed).host?.takeIf { it.isNotBlank() } ?: trimmed }
+            .getOrDefault(trimmed)
+    }
+
+    private fun mapError(error: Throwable): String {
+        val message = error.message.orEmpty()
+        return when {
+            error is SocketTimeoutException || message.contains("timeout", ignoreCase = true) ->
+                context.getString(R.string.speed_test_error_timeout)
+            error is UnknownHostException ||
+                message.contains("unable to resolve host", ignoreCase = true) ||
+                message.contains("unreachable", ignoreCase = true) ||
+                message.contains("failed to connect", ignoreCase = true) ->
+                context.getString(R.string.speed_test_error_server_unreachable)
+            message.contains("network", ignoreCase = true) ||
+                message.contains("internet", ignoreCase = true) ||
+                message.contains("offline", ignoreCase = true) ->
+                context.getString(R.string.speed_test_error_no_internet)
+            else -> context.getString(R.string.speed_test_error_generic)
+        }
+    }
+
+    private fun isSameServerLabel(left: String, right: String): Boolean {
+        return left.equals(right, ignoreCase = true) ||
+            left.contains(right, ignoreCase = true) ||
+            right.contains(left, ignoreCase = true)
+    }
+
+    private data class ServerMetadata(
+        val name: String,
+        val location: String?
+    )
+
     companion object {
         private const val TEST_DURATION_NS = 10_000_000_000f // ~10 seconds per phase
+        private const val DEFAULT_SERVER_NAME = "M-Lab"
     }
 }

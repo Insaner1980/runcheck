@@ -6,12 +6,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -39,6 +40,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -46,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -53,15 +56,22 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.devicepulse.R
 import com.devicepulse.domain.model.HealthScore
 import com.devicepulse.domain.model.HealthStatus
+import com.devicepulse.ui.common.batteryHealthLabel
+import com.devicepulse.ui.common.chargingStatusLabel
 import com.devicepulse.ui.common.connectionDisplayLabel
 import com.devicepulse.ui.common.formatPercent
 import com.devicepulse.ui.common.formatStorageSize
 import com.devicepulse.ui.common.formatTemperature
+import com.devicepulse.ui.common.plugTypeLabel
 import com.devicepulse.ui.common.scoreLabel
+import com.devicepulse.ui.common.temperatureBandLabel
 import com.devicepulse.ui.components.GridCard
 import com.devicepulse.ui.components.IconCircle
 import com.devicepulse.ui.components.ListRow
@@ -69,6 +79,7 @@ import com.devicepulse.ui.components.PrimaryTopBar
 import com.devicepulse.ui.components.ProBadgePill
 import com.devicepulse.ui.components.ProgressRing
 import com.devicepulse.ui.components.SectionHeader
+import com.devicepulse.ui.components.StatusIndicator
 import com.devicepulse.ui.components.StatusDot
 import com.devicepulse.ui.theme.AccentBlue
 import com.devicepulse.ui.theme.AccentOrange
@@ -91,12 +102,33 @@ fun HomeScreen(
     onNavigateToAppUsage: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToProUpgrade: () -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
+    val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // 1. Header
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> viewModel.startObserving()
+                Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
+                else -> Unit
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            viewModel.startObserving()
+        }
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            viewModel.stopObserving()
+        }
+    }
+
+    Column(modifier = modifier.fillMaxSize()) {
         PrimaryTopBar(
             title = stringResource(R.string.app_name),
             actions = {
@@ -125,11 +157,11 @@ fun HomeScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = stringResource(R.string.error_generic),
+                            text = stringResource(R.string.common_error_generic),
                             style = MaterialTheme.typography.bodyMedium
                         )
                         TextButton(onClick = { viewModel.refresh() }) {
-                            Text(stringResource(R.string.retry))
+                            Text(stringResource(R.string.common_retry))
                         }
                     }
                 }
@@ -180,9 +212,9 @@ private fun HomeContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // 2. Health Score hero card
         HealthScoreCard(
-            state = state,
+            healthScore = state.healthScore,
+            batteryTempC = state.thermalState.batteryTempC,
             onNavigateToBattery = onNavigateToBattery,
             onNavigateToThermal = onNavigateToThermal,
             onNavigateToNetwork = onNavigateToNetwork,
@@ -191,15 +223,13 @@ private fun HomeContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // 3. Battery hero card
         BatteryHeroCard(
-            state = state,
+            battery = state.batteryState,
             onClick = onNavigateToBattery
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // 5. Feature grid 2x2
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -219,7 +249,11 @@ private fun HomeContent(
             GridCard(
                 icon = Icons.Outlined.Thermostat,
                 title = stringResource(R.string.home_thermal_card),
-                subtitle = formatTemperature(state.thermalState.batteryTempC) + " \u00B7 " + thermalLabel(state.thermalState.batteryTempC),
+                subtitle = stringResource(
+                    R.string.home_thermal_summary,
+                    formatTemperature(state.thermalState.batteryTempC),
+                    temperatureBandLabel(state.thermalState.batteryTempC)
+                ),
                 subtitleColor = AccentOrange,
                 onClick = onNavigateToThermal,
                 modifier = Modifier.weight(1f)
@@ -237,13 +271,18 @@ private fun HomeContent(
                 title = stringResource(R.string.home_chargers_card),
                 subtitle = stringResource(R.string.home_test_compare),
                 subtitleColor = AccentBlue,
-                onClick = onNavigateToCharger,
+                locked = !state.isPro,
+                onClick = if (state.isPro) onNavigateToCharger else onNavigateToProUpgrade,
                 modifier = Modifier.weight(1f)
             )
             GridCard(
                 icon = Icons.Outlined.DataUsage,
                 title = stringResource(R.string.home_storage_card),
-                subtitle = formatStorageSize(context, state.storageState.availableBytes) + " " + stringResource(R.string.home_free_suffix),
+                subtitle = stringResource(
+                    R.string.home_storage_free,
+                    formatStorageSize(context, state.storageState.availableBytes),
+                    stringResource(R.string.home_free_suffix)
+                ),
                 subtitleColor = AccentTeal,
                 onClick = onNavigateToStorage,
                 modifier = Modifier.weight(1f)
@@ -252,7 +291,6 @@ private fun HomeContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 6. Quick Tools section
         SectionHeader(stringResource(R.string.home_quick_tools))
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -261,7 +299,8 @@ private fun HomeContent(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainer
-            )
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
                 ListRow(
@@ -270,31 +309,51 @@ private fun HomeContent(
                     onClick = onNavigateToSpeedTest
                 )
                 HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
-                ListRow(
-                    label = stringResource(R.string.home_app_usage_card),
-                    icon = Icons.Outlined.DataUsage,
-                    onClick = onNavigateToAppUsage,
-                    trailing = if (!state.isPro) {
-                        { ProBadgePill() }
-                    } else null
-                )
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    ListRow(
+                        label = stringResource(R.string.home_app_usage_card),
+                        icon = Icons.Outlined.DataUsage,
+                        onClick = if (state.isPro) onNavigateToAppUsage else onNavigateToProUpgrade,
+                        trailing = if (!state.isPro) {
+                            { ProBadgePill() }
+                        } else null
+                    )
+
+                    if (!state.isPro) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.14f))
+                        )
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .padding(end = 44.dp),
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Lock,
+                                contentDescription = null,
+                                modifier = Modifier.padding(8.dp),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
             }
         }
 
-        // 7. Pro banner (hide if isPro)
-        if (!state.isPro) {
-            Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
+        if (!state.isPro) {
             Card(
                 onClick = onNavigateToProUpgrade,
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 ),
-                border = androidx.compose.foundation.BorderStroke(
-                    width = 1.dp,
-                    color = AccentBlue.copy(alpha = 0.35f)
-                )
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Row(
                     modifier = Modifier
@@ -329,6 +388,41 @@ private fun HomeContent(
                     )
                 }
             }
+        } else {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = AccentTeal.copy(alpha = 0.16f)
+                    ) {
+                        IconCircle(icon = Icons.Outlined.Star)
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.home_insights_title),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = stringResource(R.string.home_insights_desc),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                    }
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -337,26 +431,19 @@ private fun HomeContent(
 
 @Composable
 private fun HomeStatusSummary(state: HomeUiState.Success) {
-    val batteryStatus = when (state.batteryState.chargingStatus) {
-        com.devicepulse.domain.model.ChargingStatus.CHARGING -> stringResource(R.string.charging_status_charging)
-        com.devicepulse.domain.model.ChargingStatus.FULL -> stringResource(R.string.charging_status_full)
-        else -> stringResource(R.string.charging_status_not_charging)
-    }
-    val networkStatus = when (state.networkState.connectionType) {
-        com.devicepulse.domain.model.ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
-        com.devicepulse.domain.model.ConnectionType.CELLULAR -> connectionDisplayLabel(
-            connectionType = state.networkState.connectionType,
-            wifiSsid = state.networkState.wifiSsid,
-            networkSubtype = state.networkState.networkSubtype
-        )
-        else -> stringResource(R.string.connection_none)
-    }
+    val batteryStatus = chargingStatusLabel(state.batteryState.chargingStatus)
+    val networkStatus = connectionDisplayLabel(
+        connectionType = state.networkState.connectionType,
+        wifiSsid = state.networkState.wifiSsid,
+        networkSubtype = state.networkState.networkSubtype
+    )
+    val temperatureBand = temperatureBandLabel(state.thermalState.batteryTempC)
 
     Text(
         text = stringResource(
             R.string.home_status_summary,
             batteryStatus,
-            thermalLabel(state.thermalState.batteryTempC),
+            temperatureBand,
             networkStatus
         ),
         style = MaterialTheme.typography.titleSmall,
@@ -364,24 +451,40 @@ private fun HomeStatusSummary(state: HomeUiState.Success) {
     )
 }
 
-// ── Health Score Hero Card ──────────────────────────────────────────────────
-
 @Composable
 private fun HealthScoreCard(
-    state: HomeUiState.Success,
+    healthScore: HealthScore,
+    batteryTempC: Float,
     onNavigateToBattery: () -> Unit,
     onNavigateToThermal: () -> Unit,
     onNavigateToNetwork: () -> Unit,
     onNavigateToStorage: () -> Unit
 ) {
-    val score = state.healthScore.overallScore
+    val score = healthScore.overallScore
     val statusLabel = scoreLabel(score)
+    val formattedSummary = stringResource(R.string.home_device_good_shape, statusLabel.lowercase())
+    val statusWord = statusLabel.lowercase()
+    val annotatedSummary = remember(formattedSummary, statusWord) {
+        buildAnnotatedString {
+            val startIndex = formattedSummary.indexOf(statusWord)
+            if (startIndex >= 0) {
+                append(formattedSummary.substring(0, startIndex))
+                withStyle(SpanStyle(color = AccentTeal, fontWeight = FontWeight.Bold)) {
+                    append(statusWord)
+                }
+                append(formattedSummary.substring(startIndex + statusWord.length))
+            } else {
+                append(formattedSummary)
+            }
+        }
+    }
 
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -398,12 +501,16 @@ private fun HealthScoreCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Progress ring with score
             ProgressRing(
                 progress = score / 100f,
                 modifier = Modifier.size(152.dp),
                 strokeWidth = 10.dp,
-                progressColor = AccentTeal
+                progressColor = AccentTeal,
+                contentDescription = stringResource(
+                    R.string.a11y_progress_percent,
+                    stringResource(R.string.home_health_score),
+                    score
+                )
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
@@ -420,28 +527,13 @@ private fun HealthScoreCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Summary text with colored status word
-            val formattedSummary = stringResource(R.string.home_device_good_shape, statusLabel.lowercase())
-            val statusWord = statusLabel.lowercase()
-            val startIndex = formattedSummary.indexOf(statusWord)
             Text(
-                text = buildAnnotatedString {
-                    if (startIndex >= 0) {
-                        append(formattedSummary.substring(0, startIndex))
-                        withStyle(SpanStyle(color = AccentTeal, fontWeight = FontWeight.Bold)) {
-                            append(statusWord)
-                        }
-                        append(formattedSummary.substring(startIndex + statusWord.length))
-                    } else {
-                        append(formattedSummary)
-                    }
-                },
+                text = annotatedSummary,
                 style = MaterialTheme.typography.bodyLarge,
                 color = TextSecondary
             )
 
-            // Temperature warning if elevated
-            if (state.thermalState.batteryTempC >= 38f) {
+            if (batteryTempC >= 38f) {
                 Text(
                     text = stringResource(R.string.home_temp_elevated),
                     style = MaterialTheme.typography.bodySmall,
@@ -451,88 +543,49 @@ private fun HealthScoreCard(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Status breakdown rows
-            val breakdownItems = listOf(
-                BreakdownItem(
-                    label = stringResource(R.string.home_battery_card),
-                    value = formatPercent(state.healthScore.batteryScore),
-                    status = HealthScore.statusFromScore(state.healthScore.batteryScore),
-                    onClick = onNavigateToBattery
-                ),
-                BreakdownItem(
-                    label = stringResource(R.string.home_thermal_card),
-                    value = formatPercent(state.healthScore.thermalScore),
-                    status = HealthScore.statusFromScore(state.healthScore.thermalScore),
-                    onClick = onNavigateToThermal
-                ),
-                BreakdownItem(
-                    label = stringResource(R.string.home_network_card),
-                    value = formatPercent(state.healthScore.networkScore),
-                    status = HealthScore.statusFromScore(state.healthScore.networkScore),
-                    onClick = onNavigateToNetwork
-                ),
-                BreakdownItem(
-                    label = stringResource(R.string.home_storage_card),
-                    value = formatPercent(state.healthScore.storageScore),
-                    status = HealthScore.statusFromScore(state.healthScore.storageScore),
-                    onClick = onNavigateToStorage
-                )
+            HealthBreakdownRow(
+                label = stringResource(R.string.home_battery_card),
+                value = formatPercent(healthScore.batteryScore),
+                status = HealthScore.statusFromScore(healthScore.batteryScore),
+                onClick = onNavigateToBattery
             )
-
-            breakdownItems.forEachIndexed { index, item ->
-                if (index > 0) {
-                    HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = item.onClick)
-                        .padding(vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    StatusDot(color = statusColor(item.status))
-                    Spacer(modifier = Modifier.size(8.dp))
-                    Text(
-                        text = item.label,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = item.value,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = MaterialTheme.numericFontFamily
-                        ),
-                        color = TextSecondary
-                    )
-                }
-            }
+            HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
+            HealthBreakdownRow(
+                label = stringResource(R.string.home_thermal_card),
+                value = formatPercent(healthScore.thermalScore),
+                status = HealthScore.statusFromScore(healthScore.thermalScore),
+                onClick = onNavigateToThermal
+            )
+            HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
+            HealthBreakdownRow(
+                label = stringResource(R.string.home_network_card),
+                value = formatPercent(healthScore.networkScore),
+                status = HealthScore.statusFromScore(healthScore.networkScore),
+                onClick = onNavigateToNetwork
+            )
+            HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
+            HealthBreakdownRow(
+                label = stringResource(R.string.home_storage_card),
+                value = formatPercent(healthScore.storageScore),
+                status = HealthScore.statusFromScore(healthScore.storageScore),
+                onClick = onNavigateToStorage
+            )
         }
     }
 }
 
-private data class BreakdownItem(
-    val label: String,
-    val value: String,
-    val status: HealthStatus,
-    val onClick: () -> Unit
-)
-
-// ── Battery Hero Card ───────────────────────────────────────────────────────
-
 @Composable
 private fun BatteryHeroCard(
-    state: HomeUiState.Success,
+    battery: com.devicepulse.domain.model.BatteryState,
     onClick: () -> Unit
 ) {
-    val battery = state.batteryState
-
     Card(
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -544,7 +597,6 @@ private fun BatteryHeroCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left side
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
@@ -560,7 +612,7 @@ private fun BatteryHeroCard(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "%",
+                            text = stringResource(R.string.unit_percent),
                             style = MaterialTheme.typography.headlineLarge.copy(
                                 fontFamily = MaterialTheme.numericFontFamily
                             ),
@@ -569,7 +621,7 @@ private fun BatteryHeroCard(
                         )
                     }
                     Text(
-                        text = formatEnumName(battery.chargingStatus.name),
+                        text = chargingStatusLabel(battery.chargingStatus),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )
@@ -585,25 +637,60 @@ private fun BatteryHeroCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Bottom row: Health + Charger
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 HomeMetricPill(
                     label = stringResource(R.string.battery_health),
-                    value = formatEnumName(battery.health.name),
+                    value = batteryHealthLabel(battery.health),
                     valueColor = AccentTeal,
                     modifier = Modifier.weight(1f)
                 )
                 HomeMetricPill(
                     label = stringResource(R.string.battery_plug_type),
-                    value = formatPlugTypeName(battery.plugType.name),
+                    value = plugTypeLabel(battery.plugType),
                     valueColor = AccentBlue,
                     modifier = Modifier.weight(1f)
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun HealthBreakdownRow(
+    label: String,
+    value: String,
+    status: HealthStatus,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .semantics(mergeDescendants = true) {}
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 48.dp)
+            .padding(vertical = 10.dp)
+            .clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        StatusIndicator(
+            status = status,
+            modifier = Modifier.padding(end = 8.dp)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontFamily = MaterialTheme.numericFontFamily
+            ),
+            color = TextSecondary
+        )
     }
 }
 
@@ -653,7 +740,7 @@ private fun HomeBatteryChargeIcon(
                 )
             }
             Text(
-                text = "$level",
+                text = level.toString(),
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontFamily = MaterialTheme.numericFontFamily,
                     fontWeight = FontWeight.Bold
@@ -691,8 +778,6 @@ private fun HomeMetricPill(
     }
 }
 
-// ── Shared Utilities ────────────────────────────────────────────────────────
-
 @Composable
 private fun statusColor(status: HealthStatus): Color {
     val colors = MaterialTheme.statusColors
@@ -702,20 +787,4 @@ private fun statusColor(status: HealthStatus): Color {
         HealthStatus.POOR -> colors.poor
         HealthStatus.CRITICAL -> colors.critical
     }
-}
-
-@Composable
-private fun thermalLabel(tempC: Float): String = when {
-    tempC < 35f -> stringResource(R.string.thermal_cool)
-    tempC < 40f -> stringResource(R.string.thermal_warm)
-    else -> stringResource(R.string.thermal_hot)
-}
-
-private fun formatEnumName(name: String): String =
-    name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }
-
-private fun formatPlugTypeName(name: String): String = when (name.uppercase()) {
-    "USB" -> "USB"
-    "AC" -> "AC"
-    else -> formatEnumName(name)
 }
