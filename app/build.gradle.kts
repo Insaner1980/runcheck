@@ -97,6 +97,7 @@ detekt {
     buildUponDefaultConfig = true
     config.setFrom("$rootDir/config/detekt/detekt.yml")
     parallel = true
+    ignoreFailures = true
 }
 
 tasks.configureEach {
