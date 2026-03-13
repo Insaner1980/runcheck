@@ -29,6 +29,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -88,9 +89,8 @@ fun SpeedTestScreen(
     viewModel: NetworkViewModel = hiltViewModel()
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val networkState = uiState.networkState
-    val errorMessage = uiState.errorMessage
+    val networkUiState by viewModel.networkUiState.collectAsStateWithLifecycle()
+    val speedTestState by viewModel.speedTestState.collectAsStateWithLifecycle()
 
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer = LifecycleEventObserver { _, event ->
@@ -118,40 +118,30 @@ fun SpeedTestScreen(
             onBack = onBack
         )
 
-        when {
-            uiState.isLoading && networkState == null -> {
+        when (val netState = networkUiState) {
+            is NetworkUiState.Loading -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    androidx.compose.material3.CircularProgressIndicator()
+                    CircularProgressIndicator()
                 }
             }
 
-            errorMessage != null && networkState == null -> {
+            is NetworkUiState.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        text = errorMessage,
+                        text = netState.message,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
 
-            networkState != null -> {
+            is NetworkUiState.Success -> {
                 SpeedTestContent(
-                    networkState = networkState,
-                    speedTestState = uiState.speedTestState,
-                    isCellular = networkState.connectionType == ConnectionType.CELLULAR,
+                    networkState = netState.networkState,
+                    speedTestState = speedTestState,
+                    isCellular = netState.networkState.connectionType == ConnectionType.CELLULAR,
                     onStartSpeedTest = { viewModel.startSpeedTest() }
                 )
-            }
-
-            else -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = androidx.compose.ui.res.stringResource(R.string.common_error_generic),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
             }
         }
     }
