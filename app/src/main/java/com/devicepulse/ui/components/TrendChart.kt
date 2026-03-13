@@ -20,23 +20,28 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.devicepulse.ui.theme.reducedMotion
 
 @Composable
 fun TrendChart(
     data: List<Float>,
     modifier: Modifier = Modifier,
     lineColor: Color = MaterialTheme.colorScheme.primary,
-    fillColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+    fillColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+    contentDescription: String? = null
 ) {
     if (data.size < 2) return
 
+    val reducedMotion = MaterialTheme.reducedMotion
     var progress by remember { mutableFloatStateOf(0f) }
     LaunchedEffect(data) { progress = 1f }
 
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
-        animationSpec = tween(durationMillis = 800),
+        animationSpec = tween(durationMillis = if (reducedMotion) 0 else 800),
         label = "trend_draw"
     )
 
@@ -48,6 +53,10 @@ fun TrendChart(
         modifier = modifier
             .fillMaxWidth()
             .height(200.dp)
+            .then(
+                if (contentDescription == null) Modifier
+                else Modifier.semantics { this.contentDescription = contentDescription }
+            )
     ) {
         val padding = 8.dp.toPx()
         val chartWidth = size.width - padding * 2

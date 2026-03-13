@@ -47,11 +47,12 @@ import com.devicepulse.ui.theme.spacing
 fun AppUsageScreen(
     onBack: () -> Unit,
     onUpgradeToPro: () -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: AppUsageViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(
             title = stringResource(R.string.app_usage_title),
             onBack = onBack
@@ -65,9 +66,9 @@ fun AppUsageScreen(
             is AppUsageUiState.Error -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.error_generic))
+                        Text(stringResource(R.string.common_error_generic))
                         TextButton(onClick = { viewModel.refresh() }) {
-                            Text(stringResource(R.string.retry))
+                            Text(stringResource(R.string.common_retry))
                         }
                     }
                 }

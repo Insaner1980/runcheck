@@ -6,6 +6,12 @@ import com.devicepulse.domain.repository.NetworkRepository
 import com.devicepulse.domain.repository.ProStatusProvider
 import com.devicepulse.domain.repository.StorageRepository
 import com.devicepulse.domain.repository.ThermalRepository
+import com.devicepulse.domain.repository.UserPreferencesRepository
+import com.devicepulse.domain.model.DataRetention
+import com.devicepulse.domain.model.ThermalStatus
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -17,7 +23,8 @@ class ExportDataUseCase @Inject constructor(
     private val thermalRepository: ThermalRepository,
     private val storageRepository: StorageRepository,
     private val fileExportRepository: FileExportRepository,
-    private val proStatusProvider: ProStatusProvider
+    private val proStatusProvider: ProStatusProvider,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) {
 
     private val isoFormatter: DateTimeFormatter =
@@ -28,7 +35,12 @@ class ExportDataUseCase @Inject constructor(
 
     private fun escapeCsv(value: String?): String {
         if (value == null) return ""
-        return if (value.contains(',') || value.contains('"') || value.contains('\n')) {
+        return if (
+            value.contains(',') ||
+            value.contains('"') ||
+            value.contains('\n') ||
+            value.contains('\r')
+        ) {
             "\"${value.replace("\"", "\"\"")}\""
         } else {
             value
@@ -39,62 +51,92 @@ class ExportDataUseCase @Inject constructor(
         check(proStatusProvider.isPro()) { "CSV export requires DevicePulse Pro" }
     }
 
+    private suspend fun exportCutoff(): Long? {
+        val retention = userPreferencesRepository.getPreferences().first().dataRetention
+        val now = System.currentTimeMillis()
+        return retention.durationMillis?.let { now - it }
+    }
+
+    private fun <T> List<T>.filterByRetention(
+        cutoff: Long?,
+        timestampOf: (T) -> Long
+    ): List<T> = if (cutoff == null) this else filter { timestampOf(it) >= cutoff }
+
+    private fun formatThermalStatus(status: Int): String =
+        ThermalStatus.entries.getOrNull(status)?.name ?: status.toString()
+
     suspend fun exportBatteryCsv(): String {
         requirePro()
-        val readings = batteryRepository.getAllReadings()
-        val sb = StringBuilder()
-        sb.appendLine("timestamp,level,voltage_mv,temperature_c,current_ma,current_confidence,status,plug_type,health,cycle_count,health_pct")
-        for (r in readings) {
-            sb.appendLine(
-                "${formatTimestamp(r.timestamp)},${r.level},${r.voltageMv},${r.temperatureC}," +
-                    "${r.currentMa ?: ""},${escapeCsv(r.currentConfidence)},${escapeCsv(r.status)}," +
-                    "${escapeCsv(r.plugType)},${escapeCsv(r.health)},${r.cycleCount ?: ""},${r.healthPct ?: ""}"
-            )
+        return withContext(Dispatchers.IO) {
+            val cutoff = exportCutoff()
+            val readings = batteryRepository.getAllReadings()
+                .filterByRetention(cutoff) { it.timestamp }
+            buildString {
+                appendLine("timestamp,level,voltage_mv,temperature_c,current_ma,current_confidence,status,plug_type,health,cycle_count,health_pct")
+                for (r in readings) {
+                    appendLine(
+                        "${formatTimestamp(r.timestamp)},${r.level},${r.voltageMv},${r.temperatureC}," +
+                            "${r.currentMa ?: ""},${escapeCsv(r.currentConfidence)},${escapeCsv(r.status)}," +
+                            "${escapeCsv(r.plugType)},${escapeCsv(r.health)},${r.cycleCount ?: ""},${r.healthPct ?: ""}"
+                    )
+                }
+            }
         }
-        return sb.toString()
     }
 
     suspend fun exportNetworkCsv(): String {
         requirePro()
-        val readings = networkRepository.getAllReadings()
-        val sb = StringBuilder()
-        sb.appendLine("timestamp,type,signal_dbm,wifi_speed_mbps,wifi_frequency,carrier,network_subtype,latency_ms")
-        for (r in readings) {
-            sb.appendLine(
-                "${formatTimestamp(r.timestamp)},${escapeCsv(r.type)},${r.signalDbm ?: ""}," +
-                    "${r.wifiSpeedMbps ?: ""},${r.wifiFrequency ?: ""},${escapeCsv(r.carrier)}," +
-                    "${escapeCsv(r.networkSubtype)},${r.latencyMs ?: ""}"
-            )
+        return withContext(Dispatchers.IO) {
+            val cutoff = exportCutoff()
+            val readings = networkRepository.getAllReadings()
+                .filterByRetention(cutoff) { it.timestamp }
+            buildString {
+                appendLine("timestamp,type,signal_dbm,wifi_speed_mbps,wifi_frequency,carrier,network_subtype,latency_ms")
+                for (r in readings) {
+                    appendLine(
+                        "${formatTimestamp(r.timestamp)},${escapeCsv(r.type)},${r.signalDbm ?: ""}," +
+                            "${r.wifiSpeedMbps ?: ""},${r.wifiFrequency ?: ""},${escapeCsv(r.carrier)}," +
+                            "${escapeCsv(r.networkSubtype)},${r.latencyMs ?: ""}"
+                    )
+                }
+            }
         }
-        return sb.toString()
     }
 
     suspend fun exportThermalCsv(): String {
         requirePro()
-        val readings = thermalRepository.getAllReadings()
-        val sb = StringBuilder()
-        sb.appendLine("timestamp,battery_temp_c,cpu_temp_c,thermal_status,throttling")
-        for (r in readings) {
-            sb.appendLine(
-                "${formatTimestamp(r.timestamp)},${r.batteryTempC},${r.cpuTempC ?: ""}," +
-                    "${r.thermalStatus},${r.throttling}"
-            )
+        return withContext(Dispatchers.IO) {
+            val cutoff = exportCutoff()
+            val readings = thermalRepository.getAllReadings()
+                .filterByRetention(cutoff) { it.timestamp }
+            buildString {
+                appendLine("timestamp,battery_temp_c,cpu_temp_c,thermal_status,throttling")
+                for (r in readings) {
+                    appendLine(
+                        "${formatTimestamp(r.timestamp)},${r.batteryTempC},${r.cpuTempC ?: ""}," +
+                            "${escapeCsv(formatThermalStatus(r.thermalStatus))},${r.throttling}"
+                    )
+                }
+            }
         }
-        return sb.toString()
     }
 
     suspend fun exportStorageCsv(): String {
         requirePro()
-        val readings = storageRepository.getAllReadings()
-        val sb = StringBuilder()
-        sb.appendLine("timestamp,total_bytes,available_bytes,apps_bytes,media_bytes")
-        for (r in readings) {
-            sb.appendLine(
-                "${formatTimestamp(r.timestamp)},${r.totalBytes},${r.availableBytes}," +
-                    "${r.appsBytes},${r.mediaBytes}"
-            )
+        return withContext(Dispatchers.IO) {
+            val cutoff = exportCutoff()
+            val readings = storageRepository.getAllReadings()
+                .filterByRetention(cutoff) { it.timestamp }
+            buildString {
+                appendLine("timestamp,total_bytes,available_bytes,apps_bytes,media_bytes")
+                for (r in readings) {
+                    appendLine(
+                        "${formatTimestamp(r.timestamp)},${r.totalBytes},${r.availableBytes}," +
+                            "${r.appsBytes},${r.mediaBytes}"
+                    )
+                }
+            }
         }
-        return sb.toString()
     }
 
     suspend fun exportAllCsv(): Map<String, String> = mapOf(
@@ -104,6 +146,6 @@ class ExportDataUseCase @Inject constructor(
         "devicepulse_storage.csv" to exportStorageCsv()
     )
 
-    suspend fun exportAllToDownloads(): Boolean =
-        fileExportRepository.exportToDownloads(exportAllCsv())
+    suspend fun prepareExportShare() =
+        fileExportRepository.prepareExportShare(exportAllCsv())
 }

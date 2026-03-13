@@ -72,10 +72,10 @@ class RealTimeMonitorService : Service() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            getString(R.string.real_time_monitor_channel_name),
+            getString(R.string.monitor_realtime_channel_name),
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = getString(R.string.real_time_monitor_channel_description)
+            description = getString(R.string.monitor_realtime_channel_description)
             setShowBadge(false)
         }
 
@@ -86,7 +86,7 @@ class RealTimeMonitorService : Service() {
     private fun createNotification(): Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
-            .setContentText(getString(R.string.real_time_monitor_notification_text))
+            .setContentText(getString(R.string.monitor_realtime_notification_text))
             .setSmallIcon(android.R.drawable.ic_menu_info_details)
             .setOngoing(true)
             .setSilent(true)

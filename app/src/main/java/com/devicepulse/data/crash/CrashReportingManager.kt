@@ -3,6 +3,7 @@ package com.devicepulse.data.crash
 import com.devicepulse.BuildConfig
 import com.devicepulse.domain.repository.CrashReportingController
 import com.devicepulse.domain.repository.UserPreferencesRepository
+import com.devicepulse.util.ReleaseSafeLog
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -36,6 +37,12 @@ class CrashReportingManager @Inject constructor(
             } else {
                 FirebaseCrashlytics.getInstance().deleteUnsentReports()
             }
+        }.onFailure { error ->
+            ReleaseSafeLog.error(TAG, "Failed to update Crashlytics collection state", error)
         }
+    }
+
+    companion object {
+        private const val TAG = "CrashReportingManager"
     }
 }

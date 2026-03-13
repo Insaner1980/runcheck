@@ -45,12 +45,8 @@ class CleanupOldReadingsUseCase @Inject constructor(
             return now - TWENTY_FOUR_HOURS_MS
         }
 
-        return when (userPreferencesRepository.getPreferences().first().dataRetention) {
-            DataRetention.THREE_MONTHS -> now - requireNotNull(DataRetention.THREE_MONTHS.durationMillis)
-            DataRetention.SIX_MONTHS -> now - requireNotNull(DataRetention.SIX_MONTHS.durationMillis)
-            DataRetention.ONE_YEAR -> now - requireNotNull(DataRetention.ONE_YEAR.durationMillis)
-            DataRetention.FOREVER -> null
-        }
+        val retention = userPreferencesRepository.getPreferences().first().dataRetention
+        return retention.durationMillis?.let { now - it }
     }
 
     companion object {

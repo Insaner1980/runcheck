@@ -3,6 +3,7 @@ package com.devicepulse.domain.usecase
 import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.NetworkState
 import com.devicepulse.domain.repository.NetworkRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapLatest
@@ -18,7 +19,13 @@ class GetMeasuredNetworkStateUseCase @Inject constructor(
             val latencyMs = if (state.connectionType == ConnectionType.NONE) {
                 null
             } else {
-                runCatching { networkRepository.measureLatency() }.getOrNull()
+                try {
+                    networkRepository.measureLatency()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    null
+                }
             }
             state.copy(latencyMs = latencyMs)
         }

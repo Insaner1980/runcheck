@@ -38,8 +38,8 @@ import com.devicepulse.R
 import com.devicepulse.domain.model.ThrottlingEvent
 import com.devicepulse.domain.model.ThermalStatus
 import com.devicepulse.ui.common.formatDecimal
-import com.devicepulse.ui.common.formatLocalizedDateTime
 import com.devicepulse.ui.common.formatTemperature
+import com.devicepulse.ui.common.rememberFormattedDateTime
 import com.devicepulse.ui.components.ProFeatureCalloutCard
 import com.devicepulse.ui.components.DetailTopBar
 import com.devicepulse.ui.components.HeatStrip
@@ -51,6 +51,7 @@ import com.devicepulse.ui.theme.spacing
 fun ThermalDetailScreen(
     onBack: () -> Unit,
     onUpgradeToPro: () -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: ThermalViewModel = hiltViewModel()
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -75,7 +76,7 @@ fun ThermalDetailScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(
             title = stringResource(R.string.thermal_title),
             onBack = onBack
@@ -89,9 +90,9 @@ fun ThermalDetailScreen(
             is ThermalUiState.Error -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.error_generic))
+                        Text(stringResource(R.string.common_error_generic))
                         TextButton(onClick = { viewModel.refresh() }) {
-                            Text(stringResource(R.string.retry))
+                            Text(stringResource(R.string.common_retry))
                         }
                     }
                 }
@@ -242,9 +243,7 @@ private fun ThermalContent(
 
 @Composable
 private fun ThrottlingEventItem(event: ThrottlingEvent) {
-    val formattedTime = remember(event.timestamp) {
-        formatLocalizedDateTime(event.timestamp, "yMMMdHm")
-    }
+    val formattedTime = rememberFormattedDateTime(event.timestamp, "yMMMdHm")
 
     Card(
         modifier = Modifier.fillMaxWidth(),

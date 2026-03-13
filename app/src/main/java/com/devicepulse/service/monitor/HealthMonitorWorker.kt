@@ -11,6 +11,7 @@ import com.devicepulse.domain.repository.StorageRepository
 import com.devicepulse.domain.repository.ThermalRepository
 import com.devicepulse.domain.usecase.CleanupOldReadingsUseCase
 import com.devicepulse.util.ReleaseSafeLog
+import com.devicepulse.widget.DevicePulseWidgets
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
@@ -26,47 +27,55 @@ class HealthMonitorWorker @AssistedInject constructor(
     private val thermalRepository: ThermalRepository,
     private val storageRepository: StorageRepository,
     private val cleanupOldReadings: CleanupOldReadingsUseCase
-) : CoroutineWorker(context, workerParams) {
+    ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
-        collectStep("battery") {
+        var hadFailure = false
+
+        hadFailure = collectStep("battery") {
             val batteryState = batteryRepository.getBatteryState().first()
             batteryRepository.saveReading(batteryState)
         }
 
-        collectStep("network") {
+        hadFailure = collectStep("network") {
             val networkState = networkRepository.getNetworkState().first()
             networkRepository.saveReading(networkState)
-        }
+        } || hadFailure
 
-        collectStep("thermal") {
+        hadFailure = collectStep("thermal") {
             val thermalState = thermalRepository.getThermalState().first()
             thermalRepository.saveReading(thermalState)
-        }
+        } || hadFailure
 
-        collectStep("storage") {
+        hadFailure = collectStep("storage") {
             val storageState = storageRepository.getStorageState().first()
             storageRepository.saveReading(storageState)
-        }
+        } || hadFailure
 
-        collectStep("app_usage") {
+        hadFailure = collectStep("app_usage") {
             appBatteryUsageRepository.collectUsageSnapshot()
-        }
+        } || hadFailure
 
-        collectStep("cleanup") {
+        hadFailure = collectStep("cleanup") {
             cleanupOldReadings()
-        }
+        } || hadFailure
 
-        return Result.success()
+        hadFailure = collectStep("widgets") {
+            DevicePulseWidgets.updateAll(applicationContext)
+        } || hadFailure
+
+        return if (hadFailure) Result.retry() else Result.success()
     }
 
-    private suspend fun collectStep(stepName: String, block: suspend () -> Unit) {
-        try {
+    private suspend fun collectStep(stepName: String, block: suspend () -> Unit): Boolean {
+        return try {
             block()
+            false
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             ReleaseSafeLog.error(TAG, "Health monitor step failed: $stepName", e)
+            true
         }
     }
 

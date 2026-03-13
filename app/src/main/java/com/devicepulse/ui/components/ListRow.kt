@@ -18,25 +18,28 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun ListRow(
     label: String,
+    modifier: Modifier = Modifier,
     value: String = "",
     icon: ImageVector? = null,
     onClick: (() -> Unit)? = null,
-    trailing: @Composable (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    trailing: @Composable (() -> Unit)? = null
 ) {
     Row(
         modifier = modifier
+            .semantics(mergeDescendants = true) {}
+            .defaultMinSize(minHeight = 48.dp)
+            .padding(vertical = 14.dp)
             .then(
                 if (onClick != null) Modifier.clickable(onClick = onClick)
                 else Modifier
             )
-            .defaultMinSize(minHeight = 48.dp)
-            .padding(vertical = 14.dp),
+            ,
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (icon != null) {

@@ -143,7 +143,7 @@ class ThermalRepositoryImpl @Inject constructor(
 
     companion object {
         private val THROTTLING_THRESHOLD = ThermalStatus.SEVERE
-        private const val STOP_TIMEOUT_MS = 5_000L
+        private const val STOP_TIMEOUT_MS = 0L
     }
 }
 

@@ -24,14 +24,15 @@ import com.devicepulse.R
 @Composable
 fun DetailTopBar(
     title: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
             .statusBarsPadding()
-            .padding(start = 4.dp, end = 4.dp, top = 2.dp, bottom = 4.dp),
+            .padding(start = 4.dp, end = 4.dp, top = 2.dp, bottom = 4.dp)
+            .background(MaterialTheme.colorScheme.surface),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack) {

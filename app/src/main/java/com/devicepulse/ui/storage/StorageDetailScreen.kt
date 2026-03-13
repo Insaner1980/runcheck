@@ -39,11 +39,12 @@ import com.devicepulse.ui.theme.spacing
 @Composable
 fun StorageDetailScreen(
     onBack: () -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: StorageViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(
             title = stringResource(R.string.storage_title),
             onBack = onBack
@@ -57,9 +58,9 @@ fun StorageDetailScreen(
             is StorageUiState.Error -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.error_generic))
+                        Text(stringResource(R.string.common_error_generic))
                         TextButton(onClick = { viewModel.refresh() }) {
-                            Text(stringResource(R.string.retry))
+                            Text(stringResource(R.string.common_retry))
                         }
                     }
                 }

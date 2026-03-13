@@ -30,6 +30,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,7 +45,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.devicepulse.R
 import com.devicepulse.domain.model.BatteryHealth
 import com.devicepulse.domain.model.BatteryReading
@@ -53,7 +57,11 @@ import com.devicepulse.domain.model.ChargingStatus
 import com.devicepulse.domain.model.Confidence
 import com.devicepulse.domain.model.HistoryPeriod
 import com.devicepulse.domain.model.PlugType
+import com.devicepulse.ui.common.batteryHealthLabel
+import com.devicepulse.ui.common.chargingStatusLabel
 import com.devicepulse.ui.common.formatDecimal
+import com.devicepulse.ui.common.plugTypeLabel
+import com.devicepulse.ui.common.temperatureBandLabel
 import com.devicepulse.ui.components.ConfidenceBadge
 import com.devicepulse.ui.components.DetailTopBar
 import com.devicepulse.ui.components.ProgressRing
@@ -69,11 +77,33 @@ fun BatteryDetailScreen(
     onBack: () -> Unit,
     onNavigateToCharger: () -> Unit,
     onUpgradeToPro: () -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: BatteryViewModel = hiltViewModel()
 ) {
+    val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> viewModel.startObserving()
+                Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
+                else -> Unit
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            viewModel.startObserving()
+        }
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            viewModel.stopObserving()
+        }
+    }
+
+    Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(
             title = "",
             onBack = onBack
@@ -87,9 +117,9 @@ fun BatteryDetailScreen(
             is BatteryUiState.Error -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.error_generic))
+                        Text(stringResource(R.string.common_error_generic))
                         TextButton(onClick = { viewModel.refresh() }) {
-                            Text(stringResource(R.string.retry))
+                            Text(stringResource(R.string.common_retry))
                         }
                     }
                 }
@@ -171,7 +201,7 @@ private fun BatteryContent(
                 )
                 BatterySpecRow(
                     label = stringResource(R.string.battery_health),
-                    value = healthText(battery.health),
+                    value = batteryHealthLabel(battery.health),
                     emphasis = BatterySpecEmphasis.High,
                     valueColor = healthColor(battery.health)
                 )
@@ -262,12 +292,12 @@ private fun BatteryContent(
                 ) {
                     BatteryMetaStat(
                         label = stringResource(R.string.battery_status),
-                        value = chargingStatusText(battery.chargingStatus),
+                        value = chargingStatusLabel(battery.chargingStatus),
                         modifier = Modifier.weight(1f)
                     )
                     BatteryMetaStat(
                         label = stringResource(R.string.battery_plug_type),
-                        value = plugTypeText(battery.plugType),
+                        value = plugTypeLabel(battery.plugType),
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -357,7 +387,12 @@ private fun BatteryHeroSection(battery: BatteryState) {
                     .align(Alignment.CenterHorizontally),
                 strokeWidth = 16.dp,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                progressColor = MaterialTheme.colorScheme.primary
+                progressColor = MaterialTheme.colorScheme.primary,
+                contentDescription = stringResource(
+                    R.string.a11y_progress_percent,
+                    stringResource(R.string.battery_level),
+                    battery.level
+                )
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -451,7 +486,11 @@ private fun BatteryHistoryPanel(
                 )
                 TrendChart(
                     data = chartData,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    contentDescription = stringResource(
+                        R.string.a11y_chart_trend,
+                        historyMetricLabel(selectedMetric)
+                    )
                 )
             } else {
                 BatteryHistoryEmptyState()
@@ -688,7 +727,7 @@ private fun BatteryRemainingTimePanel(
                 label = stringResource(R.string.battery_remaining_time_to_80),
                 value = remainingChargeText(
                     currentLevel = currentLevel,
-                    targetLevel = 80,
+                    targetLevel = TARGET_CHARGE_EIGHTY,
                     remainingMs = summary.remainingTo80Ms
                 ),
                 modifier = Modifier.weight(1f)
@@ -697,7 +736,7 @@ private fun BatteryRemainingTimePanel(
                 label = stringResource(R.string.battery_remaining_time_to_full),
                 value = remainingChargeText(
                     currentLevel = currentLevel,
-                    targetLevel = 100,
+                    targetLevel = TARGET_CHARGE_FULL,
                     remainingMs = summary.remainingTo100Ms
                 ),
                 modifier = Modifier.weight(1f)
@@ -762,7 +801,11 @@ private fun BatterySessionGraphPanel(
             )
             TrendChart(
                 data = chartData,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                contentDescription = stringResource(
+                    R.string.a11y_chart_trend,
+                    sessionGraphMetricLabel(selectedMetric)
+                )
             )
         }
     }
@@ -832,6 +875,13 @@ private fun List<Float>.downsampleForChart(maxPoints: Int): List<Float> {
 
 private const val MAX_HISTORY_CHART_POINTS = 300
 private const val MAX_SESSION_CHART_POINTS = 240
+private const val RECENT_SESSION_SAMPLE_COUNT = 4
+private const val MIN_SESSION_SPEED_DURATION_MS = 10 * 60_000L
+private const val MIN_RECENT_SPEED_DURATION_MS = 5 * 60_000L
+private const val MAX_DELIVERY_INTERVAL_MS = 30 * 60_000L
+private const val MIN_ESTIMATE_PACE_PER_HOUR = 0.25f
+private const val TARGET_CHARGE_EIGHTY = 80
+private const val TARGET_CHARGE_FULL = 100
 
 @Composable
 private fun BatteryPanel(
@@ -906,32 +956,6 @@ private fun BatterySpecRow(
 }
 
 @Composable
-private fun chargingStatusText(status: ChargingStatus): String = when (status) {
-    ChargingStatus.CHARGING -> stringResource(R.string.charging_status_charging)
-    ChargingStatus.DISCHARGING -> stringResource(R.string.charging_status_discharging)
-    ChargingStatus.FULL -> stringResource(R.string.charging_status_full)
-    ChargingStatus.NOT_CHARGING -> stringResource(R.string.charging_status_not_charging)
-}
-
-@Composable
-private fun plugTypeText(plugType: PlugType): String = when (plugType) {
-    PlugType.AC -> stringResource(R.string.plug_type_ac)
-    PlugType.USB -> stringResource(R.string.plug_type_usb)
-    PlugType.WIRELESS -> stringResource(R.string.plug_type_wireless)
-    PlugType.NONE -> stringResource(R.string.plug_type_none)
-}
-
-@Composable
-private fun healthText(health: BatteryHealth): String = when (health) {
-    BatteryHealth.GOOD -> stringResource(R.string.battery_health_good)
-    BatteryHealth.OVERHEAT -> stringResource(R.string.battery_health_overheat)
-    BatteryHealth.DEAD -> stringResource(R.string.battery_health_dead)
-    BatteryHealth.OVER_VOLTAGE -> stringResource(R.string.battery_health_over_voltage)
-    BatteryHealth.COLD -> stringResource(R.string.battery_health_cold)
-    BatteryHealth.UNKNOWN -> stringResource(R.string.battery_health_unknown)
-}
-
-@Composable
 private fun temperatureColor(temperatureC: Float): Color = when {
     temperatureC >= 40f -> MaterialTheme.statusColors.critical
     temperatureC >= 35f -> MaterialTheme.statusColors.fair
@@ -979,15 +1003,8 @@ private fun buildTemperatureValue(temperatureC: Float): String {
     return stringResource(
         R.string.home_thermal_summary,
         stringResource(R.string.value_temperature, temperatureC.toDouble()),
-        temperatureStatusLabel(temperatureC)
+        temperatureBandLabel(temperatureC)
     )
-}
-
-@Composable
-private fun temperatureStatusLabel(temperatureC: Float): String = when {
-    temperatureC >= 40f -> stringResource(R.string.thermal_hot)
-    temperatureC >= 35f -> stringResource(R.string.thermal_warm)
-    else -> stringResource(R.string.thermal_cool)
 }
 
 private enum class BatteryHistoryMetric {
@@ -1083,12 +1100,12 @@ private fun calculateChargingSessionSummary(
         recentSpeedPctPerHour = recentSpeedPctPerHour,
         remainingTo80Ms = estimateRemainingChargeMs(
             currentLevel = currentLevel,
-            targetLevel = 80,
+            targetLevel = TARGET_CHARGE_EIGHTY,
             pacePctPerHour = paceForEstimate
         ),
         remainingTo100Ms = estimateRemainingChargeMs(
             currentLevel = currentLevel,
-            targetLevel = 100,
+            targetLevel = TARGET_CHARGE_FULL,
             pacePctPerHour = paceForEstimate
         ),
         readings = session
@@ -1117,18 +1134,18 @@ private fun List<BatteryReading>.graphDataFor(
 }
 
 private fun sessionAverageSpeed(gainPercent: Int, durationMs: Long): Float? {
-    if (durationMs < 10 * 60_000L || gainPercent <= 0) return null
+    if (durationMs < MIN_SESSION_SPEED_DURATION_MS || gainPercent <= 0) return null
     return gainPercent * 3_600_000f / durationMs
 }
 
 private fun sessionRecentSpeed(session: List<BatteryReading>): Float? {
-    val recent = session.takeLast(4)
+    val recent = session.takeLast(RECENT_SESSION_SAMPLE_COUNT)
     if (recent.size < 2) return null
     val first = recent.first()
     val last = recent.last()
     val durationMs = (last.timestamp - first.timestamp).coerceAtLeast(0L)
     val levelGain = last.level - first.level
-    if (durationMs < 5 * 60_000L || levelGain <= 0) return null
+    if (durationMs < MIN_RECENT_SPEED_DURATION_MS || levelGain <= 0) return null
     return levelGain * 3_600_000f / durationMs
 }
 
@@ -1140,7 +1157,7 @@ private fun sessionDeliveredMah(session: List<BatteryReading>): Int? {
         val startCurrent = start.currentMa
         val endCurrent = end.currentMa
         val durationMs = end.timestamp - start.timestamp
-        if (startCurrent != null && endCurrent != null && durationMs in 1..(30 * 60_000L)) {
+        if (startCurrent != null && endCurrent != null && durationMs in 1..MAX_DELIVERY_INTERVAL_MS) {
             val averageCurrent = ((startCurrent + endCurrent) / 2f).coerceAtLeast(0f)
             deliveredMah += averageCurrent * (durationMs / 3_600_000f)
             hasIntervals = true
@@ -1165,13 +1182,15 @@ private fun estimateRemainingChargeMs(
     targetLevel: Int,
     pacePctPerHour: Float?
 ): Long? {
-    if (pacePctPerHour == null || pacePctPerHour < 0.25f || currentLevel >= targetLevel) return null
+    if (pacePctPerHour == null || pacePctPerHour < MIN_ESTIMATE_PACE_PER_HOUR || currentLevel >= targetLevel) {
+        return null
+    }
     return (((targetLevel - currentLevel) / pacePctPerHour) * 3_600_000f).roundToInt().toLong()
 }
 
 private fun ChargingSessionSummary.hasMeaningfulRemainingEstimate(currentLevel: Int): Boolean {
-    val eightyAvailable = currentLevel >= 80 || remainingTo80Ms != null
-    val fullAvailable = currentLevel >= 100 || remainingTo100Ms != null
+    val eightyAvailable = currentLevel >= TARGET_CHARGE_EIGHTY || remainingTo80Ms != null
+    val fullAvailable = currentLevel >= TARGET_CHARGE_FULL || remainingTo100Ms != null
     return eightyAvailable || fullAvailable
 }
 

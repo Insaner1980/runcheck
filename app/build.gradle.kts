@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.ktlint)
     alias(libs.plugins.google.services)
     alias(libs.plugins.firebase.crashlytics)
 }
@@ -48,11 +49,12 @@ android {
 
     buildTypes {
         release {
+            isDebuggable = false
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
             val keystorePath = System.getenv("DEVICEPULSE_KEYSTORE_PATH")
             if (keystorePath != null) {
@@ -78,6 +80,16 @@ ksp {
 
 hilt {
     enableAggregatingTask = true
+}
+
+ktlint {
+    android.set(true)
+    ignoreFailures.set(false)
+
+    filter {
+        exclude("**/generated/**")
+        exclude("**/build/**")
+    }
 }
 
 tasks.configureEach {
@@ -134,10 +146,6 @@ dependencies {
     // DataStore
     implementation(libs.datastore.preferences)
 
-    // Vico Charts
-    implementation(libs.vico.compose)
-    implementation(libs.vico.compose.m3)
-
     // Core
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
@@ -151,7 +159,6 @@ dependencies {
 
     // M-Lab NDT7 speed test
     implementation(libs.ndt7)
-    implementation(libs.okhttp)
 
     // Google Play Billing
     implementation(libs.billing)
@@ -164,7 +171,4 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.mockk)
-    androidTestImplementation(composeBom)
-    androidTestImplementation(libs.compose.ui.test.junit4)
-    debugImplementation(libs.compose.ui.test.manifest)
 }

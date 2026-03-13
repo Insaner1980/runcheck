@@ -1,5 +1,6 @@
 package com.devicepulse.ui.home
 
+import androidx.compose.runtime.Immutable
 import com.devicepulse.domain.model.BatteryState
 import com.devicepulse.domain.model.HealthScore
 import com.devicepulse.domain.model.NetworkState
@@ -9,6 +10,7 @@ import com.devicepulse.domain.model.ThermalState
 sealed interface HomeUiState {
     data object Loading : HomeUiState
 
+    @Immutable
     data class Success(
         val healthScore: HealthScore,
         val batteryState: BatteryState,

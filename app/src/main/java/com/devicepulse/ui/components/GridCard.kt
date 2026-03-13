@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -31,14 +32,14 @@ fun GridCard(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    subtitleColor: Color = MaterialTheme.colorScheme.primary,
-    locked: Boolean = false,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    subtitleColor: Color = MaterialTheme.colorScheme.primary,
+    locked: Boolean = false
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.semantics(mergeDescendants = true) {},
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer

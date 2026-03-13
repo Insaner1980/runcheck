@@ -1,10 +1,13 @@
 package com.devicepulse.ui.navigation
 
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,37 +21,58 @@ import com.devicepulse.ui.network.SpeedTestScreen
 import com.devicepulse.ui.settings.SettingsScreen
 import com.devicepulse.ui.storage.StorageDetailScreen
 import com.devicepulse.ui.thermal.ThermalDetailScreen
+import com.devicepulse.ui.theme.LocalReducedMotion
 
 @Composable
-fun DevicePulseNavHost() {
+fun DevicePulseNavHost(
+    modifier: Modifier = Modifier
+) {
     val navController = rememberNavController()
+    val reducedMotion = LocalReducedMotion.current
 
     NavHost(
+        modifier = modifier,
         navController = navController,
         startDestination = Screen.Home.route,
         enterTransition = {
-            slideIntoContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.Start,
-                animationSpec = tween(300)
-            ) + fadeIn(animationSpec = tween(300))
+            if (reducedMotion) {
+                EnterTransition.None
+            } else {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = tween(300)
+                ) + fadeIn(animationSpec = tween(300))
+            }
         },
         exitTransition = {
-            slideOutOfContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.Start,
-                animationSpec = tween(300)
-            ) + fadeOut(animationSpec = tween(300))
+            if (reducedMotion) {
+                ExitTransition.None
+            } else {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = tween(300)
+                ) + fadeOut(animationSpec = tween(300))
+            }
         },
         popEnterTransition = {
-            slideIntoContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.End,
-                animationSpec = tween(300)
-            ) + fadeIn(animationSpec = tween(300))
+            if (reducedMotion) {
+                EnterTransition.None
+            } else {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = tween(300)
+                ) + fadeIn(animationSpec = tween(300))
+            }
         },
         popExitTransition = {
-            slideOutOfContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.End,
-                animationSpec = tween(300)
-            ) + fadeOut(animationSpec = tween(300))
+            if (reducedMotion) {
+                ExitTransition.None
+            } else {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = tween(300)
+                ) + fadeOut(animationSpec = tween(300))
+            }
         }
     ) {
         composable(Screen.Home.route) {

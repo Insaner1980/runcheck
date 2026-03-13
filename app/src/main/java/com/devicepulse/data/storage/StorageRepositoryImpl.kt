@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val STORAGE_REFRESH_INTERVAL_MS = 30_000L
+
 @Singleton
 class StorageRepositoryImpl @Inject constructor(
     private val storageDataSource: StorageDataSource,
@@ -40,7 +42,7 @@ class StorageRepositoryImpl @Inject constructor(
                     fillRateEstimate = fillRateEstimate
                 )
             )
-            delay(REFRESH_INTERVAL_MS)
+            delay(STORAGE_REFRESH_INTERVAL_MS)
         }
     }
 
@@ -65,10 +67,6 @@ class StorageRepositoryImpl @Inject constructor(
 
     override suspend fun deleteOlderThan(cutoff: Long) {
         storageReadingDao.deleteOlderThan(cutoff)
-    }
-
-    companion object {
-        private const val REFRESH_INTERVAL_MS = 30_000L
     }
 }
 

@@ -8,7 +8,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
 
 object ProStatusCache {
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "pro_status")
@@ -17,10 +16,6 @@ object ProStatusCache {
         context.dataStore.data
             .map { prefs -> prefs[KEY_IS_PRO] ?: false }
             .first()
-
-    fun isProBlocking(context: Context): Boolean = runBlocking {
-        isPro(context)
-    }
 
     suspend fun setPro(context: Context, isPro: Boolean) {
         context.dataStore.edit { prefs ->

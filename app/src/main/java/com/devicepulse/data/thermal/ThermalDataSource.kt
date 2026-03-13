@@ -10,11 +10,13 @@ import android.os.PowerManager
 import androidx.core.content.ContextCompat
 import com.devicepulse.domain.model.ThermalStatus
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -57,7 +59,7 @@ class ThermalDataSource @Inject constructor(
                 emit(readCpuTemperature(thermalZones))
             }
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
     fun getThermalHeadroom(): Flow<Float?> = flow {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

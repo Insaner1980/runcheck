@@ -2,8 +2,6 @@ package com.devicepulse.ui.settings
 
 import android.Manifest
 import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -21,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
@@ -28,6 +27,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -59,6 +59,7 @@ import com.devicepulse.domain.model.DataRetention
 import com.devicepulse.domain.model.DeviceProfileInfo
 import com.devicepulse.domain.model.MonitoringInterval
 import com.devicepulse.domain.model.SignConvention
+import com.devicepulse.ui.common.findActivity
 import com.devicepulse.ui.components.DetailTopBar
 import com.devicepulse.ui.components.ProFeatureCalloutCard
 import com.devicepulse.ui.components.SectionHeader
@@ -69,6 +70,7 @@ import com.devicepulse.ui.theme.spacing
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -84,8 +86,10 @@ fun SettingsScreen(
         onRefreshPurchaseStatus = viewModel::refreshPurchaseStatus,
         onExportData = viewModel::exportData,
         onClearBillingStatus = viewModel::clearBillingStatus,
+        onClearExportUris = viewModel::clearExportUris,
         onClearExportStatus = viewModel::clearExportStatus,
-        onClearErrorMessage = viewModel::clearErrorMessage
+        onClearErrorMessage = viewModel::clearErrorMessage,
+        modifier = modifier
     )
 }
 
@@ -101,8 +105,10 @@ private fun SettingsScreenContent(
     onRefreshPurchaseStatus: () -> Unit,
     onExportData: () -> Unit,
     onClearBillingStatus: () -> Unit,
+    onClearExportUris: () -> Unit,
     onClearExportStatus: () -> Unit,
-    onClearErrorMessage: () -> Unit
+    onClearErrorMessage: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val activity = context.findActivity()
@@ -123,7 +129,7 @@ private fun SettingsScreenContent(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize()
     ) {
         DetailTopBar(
             title = stringResource(R.string.settings_title),
@@ -138,7 +144,6 @@ private fun SettingsScreenContent(
         ) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
 
-            // --- MONITORING ---
             SectionHeader(text = stringResource(R.string.settings_monitoring_interval))
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
@@ -158,7 +163,6 @@ private fun SettingsScreenContent(
             HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
 
-            // --- NOTIFICATIONS ---
             SectionHeader(text = stringResource(R.string.settings_notifications))
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
@@ -225,7 +229,6 @@ private fun SettingsScreenContent(
             HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
 
-            // --- PRO ---
             SectionHeader(
                 text = if (uiState.isPro) stringResource(R.string.settings_pro_active)
                 else stringResource(R.string.settings_upgrade_pro)
@@ -284,7 +287,6 @@ private fun SettingsScreenContent(
             HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
 
-            // --- DATA ---
             SectionHeader(text = stringResource(R.string.settings_data_section))
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
@@ -305,9 +307,23 @@ private fun SettingsScreenContent(
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                 OutlinedButton(
                     onClick = onExportData,
+                    enabled = !uiState.isExporting,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(text = stringResource(R.string.settings_export_data))
+                    if (uiState.isExporting) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Text(text = stringResource(R.string.settings_exporting))
+                        }
+                    } else {
+                        Text(text = stringResource(R.string.settings_export_data))
+                    }
                 }
             } else {
                 Text(
@@ -381,7 +397,6 @@ private fun SettingsScreenContent(
             HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
 
-            // --- PRIVACY ---
             SectionHeader(text = stringResource(R.string.settings_privacy))
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
@@ -402,7 +417,6 @@ private fun SettingsScreenContent(
             HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
 
-            // --- ABOUT ---
             SectionHeader(text = stringResource(R.string.settings_about))
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
@@ -412,7 +426,6 @@ private fun SettingsScreenContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            // Toast side-effects
             uiState.billingStatus?.let { status ->
                 LaunchedEffect(status) {
                     Toast.makeText(context, status, Toast.LENGTH_SHORT).show()
@@ -424,6 +437,39 @@ private fun SettingsScreenContent(
                 LaunchedEffect(status) {
                     Toast.makeText(context, status, Toast.LENGTH_SHORT).show()
                     onClearExportStatus()
+                }
+            }
+
+            uiState.exportUris?.let { exportUris ->
+                LaunchedEffect(exportUris) {
+                    val shareIntent = if (exportUris.size == 1) {
+                        Intent(Intent.ACTION_SEND).apply {
+                            type = "text/csv"
+                            putExtra(Intent.EXTRA_STREAM, exportUris.first())
+                            clipData = android.content.ClipData.newRawUri(null, exportUris.first())
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                    } else {
+                        Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                            type = "text/csv"
+                            putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(exportUris))
+                            clipData = android.content.ClipData.newUri(
+                                context.contentResolver,
+                                null,
+                                exportUris.first()
+                            ).apply {
+                                exportUris.drop(1).forEach { addItem(android.content.ClipData.Item(it)) }
+                            }
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                    }
+                    context.startActivity(
+                        Intent.createChooser(
+                            shareIntent,
+                            context.getString(R.string.settings_export_share_title)
+                        )
+                    )
+                    onClearExportUris()
                 }
             }
 
@@ -562,12 +608,6 @@ private fun PermissionHelpCard(
     }
 }
 
-private fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
-}
-
 @Preview(showBackground = true)
 @Composable
 private fun SettingsScreenContentPreview() {
@@ -597,6 +637,7 @@ private fun SettingsScreenContentPreview() {
             onRefreshPurchaseStatus = {},
             onExportData = {},
             onClearBillingStatus = {},
+            onClearExportUris = {},
             onClearExportStatus = {},
             onClearErrorMessage = {}
         )

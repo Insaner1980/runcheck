@@ -13,6 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.devicepulse.ui.theme.BgIconCircle
@@ -26,6 +30,7 @@ fun ProgressRing(
     trackColor: Color = BgIconCircle,
     progressColor: Color = MaterialTheme.colorScheme.primary,
     animationDuration: Int = 1200,
+    contentDescription: String? = null,
     content: @Composable () -> Unit = {}
 ) {
     val isReducedMotion = MaterialTheme.reducedMotion
@@ -41,7 +46,14 @@ fun ProgressRing(
     )
 
     Box(
-        modifier = modifier,
+        modifier = if (contentDescription == null) {
+            modifier
+        } else {
+            modifier.semantics(mergeDescendants = true) {
+                this.contentDescription = contentDescription
+                progressBarRangeInfo = ProgressBarRangeInfo(animatedProgress, 0f..1f)
+            }
+        },
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.matchParentSize()) {

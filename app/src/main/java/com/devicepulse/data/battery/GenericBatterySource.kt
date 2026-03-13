@@ -13,11 +13,18 @@ import com.devicepulse.domain.model.CurrentUnit
 import com.devicepulse.domain.model.MeasuredValue
 import com.devicepulse.domain.model.PlugType
 import com.devicepulse.domain.model.SignConvention
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 
 open class GenericBatterySource(
     protected val context: Context,
@@ -26,6 +33,14 @@ open class GenericBatterySource(
 
     protected val batteryManager: BatteryManager =
         context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+    private val sourceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val batteryChangedSharedFlow: Flow<Intent> by lazy {
+        batteryChangedFlow().shareIn(
+            scope = sourceScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 0),
+            replay = 1
+        )
+    }
 
     protected fun batteryChangedFlow(): Flow<Intent> = callbackFlow {
         val receiver = object : BroadcastReceiver() {
@@ -54,8 +69,8 @@ open class GenericBatterySource(
 
             emit(MeasuredValue(currentMa, confidence))
             delay(POLLING_INTERVAL_MS)
-        }
-    }
+            }
+        }.flowOn(Dispatchers.IO)
 
     protected fun unavailableCurrent(): MeasuredValue<Int> = MeasuredValue(
         value = 0,
@@ -80,38 +95,21 @@ open class GenericBatterySource(
         }
     }
 
-    override fun getVoltage(): Flow<Int> = callbackFlow {
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                val voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0)
-                trySend(voltage)
-            }
+    override fun getVoltage(): Flow<Int> =
+        batteryChangedSharedFlow.map { intent ->
+            intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0)
         }
-        context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        awaitClose { context.unregisterReceiver(receiver) }
-    }
 
-    override fun getTemperature(): Flow<Float> = callbackFlow {
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                val temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10f
-                trySend(temp)
-            }
+    override fun getTemperature(): Flow<Float> =
+        batteryChangedSharedFlow.map { intent ->
+            intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10f
         }
-        context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        awaitClose { context.unregisterReceiver(receiver) }
-    }
 
-    override fun getHealth(): Flow<BatteryHealth> = callbackFlow {
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                val healthInt = intent.getIntExtra(BatteryManager.EXTRA_HEALTH, 0)
-                trySend(mapHealth(healthInt))
-            }
+    override fun getHealth(): Flow<BatteryHealth> =
+        batteryChangedSharedFlow.map { intent ->
+            val healthInt = intent.getIntExtra(BatteryManager.EXTRA_HEALTH, 0)
+            mapHealth(healthInt)
         }
-        context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        awaitClose { context.unregisterReceiver(receiver) }
-    }
 
     override fun getCycleCount(): Flow<Int?> = flow {
         emit(null)
@@ -121,50 +119,29 @@ open class GenericBatterySource(
         emit(null)
     }
 
-    override fun getChargingStatus(): Flow<ChargingStatus> = callbackFlow {
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, 0)
-                trySend(mapChargingStatus(status))
-            }
+    override fun getChargingStatus(): Flow<ChargingStatus> =
+        batteryChangedSharedFlow.map { intent ->
+            val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, 0)
+            mapChargingStatus(status)
         }
-        context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        awaitClose { context.unregisterReceiver(receiver) }
-    }
 
-    override fun getPlugType(): Flow<PlugType> = callbackFlow {
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                val plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0)
-                trySend(mapPlugType(plugged))
-            }
+    override fun getPlugType(): Flow<PlugType> =
+        batteryChangedSharedFlow.map { intent ->
+            val plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0)
+            mapPlugType(plugged)
         }
-        context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        awaitClose { context.unregisterReceiver(receiver) }
-    }
 
-    override fun getLevel(): Flow<Int> = callbackFlow {
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0)
-                val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100)
-                trySend(if (scale > 0) (level * 100) / scale else 0)
-            }
+    override fun getLevel(): Flow<Int> =
+        batteryChangedSharedFlow.map { intent ->
+            val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0)
+            val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100)
+            if (scale > 0) (level * 100) / scale else 0
         }
-        context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        awaitClose { context.unregisterReceiver(receiver) }
-    }
 
-    override fun getTechnology(): Flow<String> = callbackFlow {
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                val tech = intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY).orEmpty()
-                trySend(tech)
-            }
+    override fun getTechnology(): Flow<String> =
+        batteryChangedSharedFlow.map { intent ->
+            intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY).orEmpty()
         }
-        context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        awaitClose { context.unregisterReceiver(receiver) }
-    }
 
     protected fun mapHealth(health: Int): BatteryHealth = when (health) {
         BatteryManager.BATTERY_HEALTH_GOOD -> BatteryHealth.GOOD

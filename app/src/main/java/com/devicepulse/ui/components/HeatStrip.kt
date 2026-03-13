@@ -16,7 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.devicepulse.R
+import com.devicepulse.ui.common.formatTemperature
+import com.devicepulse.ui.common.temperatureBandLabel
 import com.devicepulse.ui.theme.reducedMotion
 import com.devicepulse.ui.theme.statusColors
 
@@ -30,6 +36,11 @@ fun HeatStrip(
     val normalizedTemp = ((temperatureC - minTemp) / (maxTemp - minTemp)).coerceIn(0f, 1f)
     val isCritical = temperatureC > 42f
     val reducedMotion = MaterialTheme.reducedMotion
+    val stripContentDescription = stringResource(
+        R.string.a11y_heat_strip,
+        formatTemperature(temperatureC),
+        temperatureBandLabel(temperatureC)
+    )
     val pulseAlpha = if (reducedMotion) {
         1f
     } else {
@@ -55,6 +66,9 @@ fun HeatStrip(
             .fillMaxWidth()
             .height(24.dp)
             .clip(RoundedCornerShape(12.dp))
+            .semantics {
+                contentDescription = stripContentDescription
+            }
     ) {
         // Background gradient
         drawRect(

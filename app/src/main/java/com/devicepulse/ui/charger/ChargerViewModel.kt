@@ -9,6 +9,7 @@ import com.devicepulse.domain.usecase.GetChargerComparisonUseCase
 import com.devicepulse.domain.usecase.GetChargerSessionsUseCase
 import com.devicepulse.ui.common.messageOr
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,27 +49,45 @@ class ChargerViewModel @Inject constructor(
     fun addCharger(name: String) {
         if (!proStatusProvider.isPro()) return
         viewModelScope.launch {
-            addChargerUseCase(name)
+            try {
+                addChargerUseCase(name)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.value = ChargerUiState.Error(e.messageOr("Unknown error"))
+            }
         }
     }
 
     fun deleteCharger(id: Long) {
         if (!proStatusProvider.isPro()) return
         viewModelScope.launch {
-            deleteChargerUseCase(id)
+            try {
+                deleteChargerUseCase(id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.value = ChargerUiState.Error(e.messageOr("Unknown error"))
+            }
         }
     }
 
     private fun observeProState() {
         proObserverJob?.cancel()
         proObserverJob = viewModelScope.launch {
-            proStatusProvider.isProUser.collectLatest { isPro ->
-                if (!isPro) {
-                    loadJob?.cancel()
-                    _uiState.value = ChargerUiState.Locked
-                    return@collectLatest
+            try {
+                proStatusProvider.isProUser.collectLatest { isPro ->
+                    if (!isPro) {
+                        loadJob?.cancel()
+                        _uiState.value = ChargerUiState.Locked
+                        return@collectLatest
+                    }
+                    loadChargerData()
                 }
-                loadChargerData()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.value = ChargerUiState.Error(e.messageOr("Unknown error"))
             }
         }
     }

@@ -41,7 +41,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.R
 import com.devicepulse.domain.model.ChargerSummary
-import com.devicepulse.ui.common.formatLocalizedDateTime
+import com.devicepulse.ui.common.rememberFormattedDateTime
 import com.devicepulse.ui.components.DetailTopBar
 import com.devicepulse.ui.components.ProFeatureLockedState
 import com.devicepulse.ui.theme.spacing
@@ -50,12 +50,13 @@ import com.devicepulse.ui.theme.spacing
 fun ChargerComparisonScreen(
     onBack: () -> Unit,
     onUpgradeToPro: () -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: ChargerViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize()) {
         when (val state = uiState) {
             is ChargerUiState.Loading -> {
                 DetailTopBar(
@@ -73,9 +74,9 @@ fun ChargerComparisonScreen(
                 )
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.error_generic))
+                        Text(stringResource(R.string.common_error_generic))
                         TextButton(onClick = { viewModel.refresh() }) {
-                            Text(stringResource(R.string.retry))
+                            Text(stringResource(R.string.common_retry))
                         }
                     }
                 }
@@ -245,9 +246,7 @@ private fun ChargerCard(
             }
 
             charger.lastUsed?.let { timestamp ->
-                val formatted = remember(timestamp) {
-                    formatLocalizedDateTime(timestamp, "yMMMdHm")
-                }
+                val formatted = rememberFormattedDateTime(timestamp, "yMMMdHm")
                 Text(
                     text = stringResource(R.string.charger_last_used, formatted),
                     style = MaterialTheme.typography.bodySmall,

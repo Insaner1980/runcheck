@@ -6,6 +6,10 @@
     <!-- Navigation -->
     <string name="navigate_back">Takaisin</string>
     <string name="navigate_menu">Valikko</string>
+    <string name="a11y_progress_percent">%1$s, %2$d prosenttia</string>
+    <string name="a11y_speed_gauge">%1$s, %2$s %3$s</string>
+    <string name="a11y_heat_strip">Akun lämpötila %1$s, %2$s</string>
+    <string name="a11y_chart_trend">%1$s trendikaavio</string>
 
     <!-- Home Screen -->
     <string name="home_battery_card">Akku</string>
@@ -265,9 +269,6 @@
     <string name="pro_feature_thermal_log_message">Lämpörajoitusten historia vaatii DevicePulse Pron.</string>
     <string name="pro_feature_export_message">CSV-vienti vaatii DevicePulse Pron.</string>
 
-    <!-- More Menu -->
-    <string name="more_settings">Asetukset</string>
-
     <!-- Widgets -->
     <string name="widget_battery_name">Akun tila</string>
     <string name="widget_battery_description">Näyttää akun varauksen, lämpötilan ja virran</string>
@@ -279,13 +280,14 @@
     <string name="widget_temperature_value">%1$.1f°C</string>
     <string name="widget_current_value">%1$d mA</string>
     <string name="widget_pro_required">Vaatii Pro-version</string>
+    <string name="widget_no_data_title">Ei vielä dataa</string>
+    <string name="widget_no_data_message">Avaa DevicePulse ja kerää mittauksia</string>
 
     <!-- Notifications -->
     <string name="notification_channel_alerts">Laitehälytykset</string>
     <string name="notification_channel_status">Laitteen tila</string>
     <string name="notification_channel_alerts_description">Hälytykset akku-, lämpötila- ja tallennustilaongelmista</string>
     <string name="notification_channel_status_description">Laitteen tilapäivitykset</string>
-    <string name="fgs_special_use_subtype_realtime_monitoring">Edustapalvelua käytetään vain, kun käyttäjä tarkastelee aktiivisesti reaaliaikaisia laitteen kuntomittareita, jotka vaativat jatkuvia päivityksiä.</string>
     <string name="notification_low_battery_title">Akku vähissä</string>
     <string name="notification_low_battery_text">Akkua jäljellä %d%%</string>
     <string name="notification_high_temp_title">Korkea lämpötila</string>
@@ -293,15 +295,19 @@
     <string name="notification_low_storage_title">Tallennustila vähissä</string>
     <string name="notification_low_storage_text">Tallennustilasta käytössä %1$.0f%%</string>
     <string name="notification_charge_complete_title">Lataus valmis</string>
-    <string name="real_time_monitor_channel_name">Reaaliaikainen seuranta</string>
-    <string name="real_time_monitor_channel_description">Näyttää laitteen kunnon reaaliaikaiset tiedot</string>
-    <string name="real_time_monitor_notification_text">Seurataan laitteen kuntoa…</string>
+    <string name="monitor_realtime_fgs_reason">Edustapalvelua käytetään vain silloin, kun käyttäjä katsoo aktiivisesti reaaliaikaisia laitteen kuntomittareita, jotka vaativat jatkuvia päivityksiä.</string>
+    <string name="monitor_realtime_channel_name">Reaaliaikainen seuranta</string>
+    <string name="monitor_realtime_channel_description">Näyttää laitteen kunnon reaaliaikaiset tiedot</string>
+    <string name="monitor_realtime_notification_text">Seurataan laitteen kuntoa…</string>
 
     <!-- Export -->
     <string name="settings_data_section">Data</string>
     <string name="settings_export_data">Vie data (CSV)</string>
     <string name="settings_export_success">Data viety Lataukset-kansioon</string>
     <string name="settings_export_error">Vienti epäonnistui</string>
+    <string name="settings_export_ready">Vienti valmis jaettavaksi</string>
+    <string name="settings_exporting">Viedään…</string>
+    <string name="settings_export_share_title">Jaa CSV-vienti</string>
 
     <!-- Charger Comparison -->
     <string name="charger_title">Laturivertailu</string>
@@ -354,14 +360,22 @@
     <string name="speed_test_error_server_unreachable">Nopeustestipalvelimeen ei saatu yhteyttä.</string>
     <string name="speed_test_error_timeout">Nopeustesti aikakatkaistiin. Yritä uudelleen.</string>
     <string name="speed_test_error_generic">Nopeustestin suorittaminen ei onnistunut.</string>
+    <string name="speed_test_no_history">Tallennettuja nopeustestejä ei vielä ole. Aja testi aloittaaksesi historian keräämisen.</string>
     <string name="speed_test_cellular_warning">Tämä testi käyttää noin 20–50 Mt mobiilidataa</string>
     <string name="speed_test_cellular_proceed">Jatka</string>
     <string name="speed_test_cellular_cancel">Peruuta</string>
     <string name="speed_test_no_results">Ei nopeustestituloksia vielä</string>
 
     <!-- General -->
-    <string name="loading">Ladataan…</string>
-    <string name="error_generic">Jokin meni pieleen</string>
-    <string name="retry">Yritä uudelleen</string>
+    <string name="common_loading">Ladataan…</string>
+    <string name="common_error_generic">Jokin meni pieleen</string>
+    <string name="common_retry">Yritä uudelleen</string>
     <string name="not_supported">Ei tuettu tällä laitteella</string>
+
+    <!-- Settings Privacy -->
+    <string name="settings_privacy">Tietosuoja</string>
+    <string name="settings_crash_reporting">Jaa kaatumisraportit</string>
+    <string name="settings_crash_reporting_desc">Lähetä anonyymejä kaatumisdiagnostiikkatietoja Firebase Crashlyticsiin virheiden korjaamista varten.</string>
+    <string name="settings_crash_reporting_note">Pois oletuksena. Debug-versiot eivät koskaan lähetä raportteja. Kun asetus poistetaan käytöstä, odottavat lähettämättömät raportit poistetaan paikallisesti.</string>
+    <string name="settings_billing_unavailable">Play Billing ei ole käytettävissä tällä laitteella. Pro-oston vaihtoehdot piilotetaan, kunnes laskutus on saatavilla.</string>
 </resources>

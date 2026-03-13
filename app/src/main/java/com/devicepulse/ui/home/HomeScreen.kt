@@ -40,6 +40,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -47,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -54,15 +56,22 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.devicepulse.R
 import com.devicepulse.domain.model.HealthScore
 import com.devicepulse.domain.model.HealthStatus
+import com.devicepulse.ui.common.batteryHealthLabel
+import com.devicepulse.ui.common.chargingStatusLabel
 import com.devicepulse.ui.common.connectionDisplayLabel
 import com.devicepulse.ui.common.formatPercent
 import com.devicepulse.ui.common.formatStorageSize
 import com.devicepulse.ui.common.formatTemperature
+import com.devicepulse.ui.common.plugTypeLabel
 import com.devicepulse.ui.common.scoreLabel
+import com.devicepulse.ui.common.temperatureBandLabel
 import com.devicepulse.ui.components.GridCard
 import com.devicepulse.ui.components.IconCircle
 import com.devicepulse.ui.components.ListRow
@@ -70,6 +79,7 @@ import com.devicepulse.ui.components.PrimaryTopBar
 import com.devicepulse.ui.components.ProBadgePill
 import com.devicepulse.ui.components.ProgressRing
 import com.devicepulse.ui.components.SectionHeader
+import com.devicepulse.ui.components.StatusIndicator
 import com.devicepulse.ui.components.StatusDot
 import com.devicepulse.ui.theme.AccentBlue
 import com.devicepulse.ui.theme.AccentOrange
@@ -92,12 +102,33 @@ fun HomeScreen(
     onNavigateToAppUsage: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToProUpgrade: () -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
+    val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // 1. Header
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> viewModel.startObserving()
+                Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
+                else -> Unit
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            viewModel.startObserving()
+        }
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            viewModel.stopObserving()
+        }
+    }
+
+    Column(modifier = modifier.fillMaxSize()) {
         PrimaryTopBar(
             title = stringResource(R.string.app_name),
             actions = {
@@ -126,11 +157,11 @@ fun HomeScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = stringResource(R.string.error_generic),
+                            text = stringResource(R.string.common_error_generic),
                             style = MaterialTheme.typography.bodyMedium
                         )
                         TextButton(onClick = { viewModel.refresh() }) {
-                            Text(stringResource(R.string.retry))
+                            Text(stringResource(R.string.common_retry))
                         }
                     }
                 }
@@ -181,9 +212,9 @@ private fun HomeContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // 2. Health Score hero card
         HealthScoreCard(
-            state = state,
+            healthScore = state.healthScore,
+            batteryTempC = state.thermalState.batteryTempC,
             onNavigateToBattery = onNavigateToBattery,
             onNavigateToThermal = onNavigateToThermal,
             onNavigateToNetwork = onNavigateToNetwork,
@@ -192,15 +223,13 @@ private fun HomeContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // 3. Battery hero card
         BatteryHeroCard(
-            state = state,
+            battery = state.batteryState,
             onClick = onNavigateToBattery
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // 5. Feature grid 2x2
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -223,7 +252,7 @@ private fun HomeContent(
                 subtitle = stringResource(
                     R.string.home_thermal_summary,
                     formatTemperature(state.thermalState.batteryTempC),
-                    thermalLabel(state.thermalState.batteryTempC)
+                    temperatureBandLabel(state.thermalState.batteryTempC)
                 ),
                 subtitleColor = AccentOrange,
                 onClick = onNavigateToThermal,
@@ -262,7 +291,6 @@ private fun HomeContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 6. Quick Tools section
         SectionHeader(stringResource(R.string.home_quick_tools))
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -318,7 +346,6 @@ private fun HomeContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 7. Pro banner / Insights replacement
         if (!state.isPro) {
             Card(
                 onClick = onNavigateToProUpgrade,
@@ -404,26 +431,19 @@ private fun HomeContent(
 
 @Composable
 private fun HomeStatusSummary(state: HomeUiState.Success) {
-    val batteryStatus = when (state.batteryState.chargingStatus) {
-        com.devicepulse.domain.model.ChargingStatus.CHARGING -> stringResource(R.string.charging_status_charging)
-        com.devicepulse.domain.model.ChargingStatus.FULL -> stringResource(R.string.charging_status_full)
-        else -> stringResource(R.string.charging_status_not_charging)
-    }
-    val networkStatus = when (state.networkState.connectionType) {
-        com.devicepulse.domain.model.ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
-        com.devicepulse.domain.model.ConnectionType.CELLULAR -> connectionDisplayLabel(
-            connectionType = state.networkState.connectionType,
-            wifiSsid = state.networkState.wifiSsid,
-            networkSubtype = state.networkState.networkSubtype
-        )
-        else -> stringResource(R.string.connection_none)
-    }
+    val batteryStatus = chargingStatusLabel(state.batteryState.chargingStatus)
+    val networkStatus = connectionDisplayLabel(
+        connectionType = state.networkState.connectionType,
+        wifiSsid = state.networkState.wifiSsid,
+        networkSubtype = state.networkState.networkSubtype
+    )
+    val temperatureBand = temperatureBandLabel(state.thermalState.batteryTempC)
 
     Text(
         text = stringResource(
             R.string.home_status_summary,
             batteryStatus,
-            thermalLabel(state.thermalState.batteryTempC),
+            temperatureBand,
             networkStatus
         ),
         style = MaterialTheme.typography.titleSmall,
@@ -431,18 +451,33 @@ private fun HomeStatusSummary(state: HomeUiState.Success) {
     )
 }
 
-// ── Health Score Hero Card ──────────────────────────────────────────────────
-
 @Composable
 private fun HealthScoreCard(
-    state: HomeUiState.Success,
+    healthScore: HealthScore,
+    batteryTempC: Float,
     onNavigateToBattery: () -> Unit,
     onNavigateToThermal: () -> Unit,
     onNavigateToNetwork: () -> Unit,
     onNavigateToStorage: () -> Unit
 ) {
-    val score = state.healthScore.overallScore
+    val score = healthScore.overallScore
     val statusLabel = scoreLabel(score)
+    val formattedSummary = stringResource(R.string.home_device_good_shape, statusLabel.lowercase())
+    val statusWord = statusLabel.lowercase()
+    val annotatedSummary = remember(formattedSummary, statusWord) {
+        buildAnnotatedString {
+            val startIndex = formattedSummary.indexOf(statusWord)
+            if (startIndex >= 0) {
+                append(formattedSummary.substring(0, startIndex))
+                withStyle(SpanStyle(color = AccentTeal, fontWeight = FontWeight.Bold)) {
+                    append(statusWord)
+                }
+                append(formattedSummary.substring(startIndex + statusWord.length))
+            } else {
+                append(formattedSummary)
+            }
+        }
+    }
 
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -466,12 +501,16 @@ private fun HealthScoreCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Progress ring with score
             ProgressRing(
                 progress = score / 100f,
                 modifier = Modifier.size(152.dp),
                 strokeWidth = 10.dp,
-                progressColor = AccentTeal
+                progressColor = AccentTeal,
+                contentDescription = stringResource(
+                    R.string.a11y_progress_percent,
+                    stringResource(R.string.home_health_score),
+                    score
+                )
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
@@ -488,28 +527,13 @@ private fun HealthScoreCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Summary text with colored status word
-            val formattedSummary = stringResource(R.string.home_device_good_shape, statusLabel.lowercase())
-            val statusWord = statusLabel.lowercase()
-            val startIndex = formattedSummary.indexOf(statusWord)
             Text(
-                text = buildAnnotatedString {
-                    if (startIndex >= 0) {
-                        append(formattedSummary.substring(0, startIndex))
-                        withStyle(SpanStyle(color = AccentTeal, fontWeight = FontWeight.Bold)) {
-                            append(statusWord)
-                        }
-                        append(formattedSummary.substring(startIndex + statusWord.length))
-                    } else {
-                        append(formattedSummary)
-                    }
-                },
+                text = annotatedSummary,
                 style = MaterialTheme.typography.bodyLarge,
                 color = TextSecondary
             )
 
-            // Temperature warning if elevated
-            if (state.thermalState.batteryTempC >= 38f) {
+            if (batteryTempC >= 38f) {
                 Text(
                     text = stringResource(R.string.home_temp_elevated),
                     style = MaterialTheme.typography.bodySmall,
@@ -519,83 +543,42 @@ private fun HealthScoreCard(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Status breakdown rows
-            val breakdownItems = listOf(
-                BreakdownItem(
-                    label = stringResource(R.string.home_battery_card),
-                    value = formatPercent(state.healthScore.batteryScore),
-                    status = HealthScore.statusFromScore(state.healthScore.batteryScore),
-                    onClick = onNavigateToBattery
-                ),
-                BreakdownItem(
-                    label = stringResource(R.string.home_thermal_card),
-                    value = formatPercent(state.healthScore.thermalScore),
-                    status = HealthScore.statusFromScore(state.healthScore.thermalScore),
-                    onClick = onNavigateToThermal
-                ),
-                BreakdownItem(
-                    label = stringResource(R.string.home_network_card),
-                    value = formatPercent(state.healthScore.networkScore),
-                    status = HealthScore.statusFromScore(state.healthScore.networkScore),
-                    onClick = onNavigateToNetwork
-                ),
-                BreakdownItem(
-                    label = stringResource(R.string.home_storage_card),
-                    value = formatPercent(state.healthScore.storageScore),
-                    status = HealthScore.statusFromScore(state.healthScore.storageScore),
-                    onClick = onNavigateToStorage
-                )
+            HealthBreakdownRow(
+                label = stringResource(R.string.home_battery_card),
+                value = formatPercent(healthScore.batteryScore),
+                status = HealthScore.statusFromScore(healthScore.batteryScore),
+                onClick = onNavigateToBattery
             )
-
-            breakdownItems.forEachIndexed { index, item ->
-                if (index > 0) {
-                    HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = item.onClick)
-                        .defaultMinSize(minHeight = 48.dp)
-                        .padding(vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    StatusDot(color = statusColor(item.status))
-                    Spacer(modifier = Modifier.size(8.dp))
-                    Text(
-                        text = item.label,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = item.value,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = MaterialTheme.numericFontFamily
-                        ),
-                        color = TextSecondary
-                    )
-                }
-            }
+            HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
+            HealthBreakdownRow(
+                label = stringResource(R.string.home_thermal_card),
+                value = formatPercent(healthScore.thermalScore),
+                status = HealthScore.statusFromScore(healthScore.thermalScore),
+                onClick = onNavigateToThermal
+            )
+            HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
+            HealthBreakdownRow(
+                label = stringResource(R.string.home_network_card),
+                value = formatPercent(healthScore.networkScore),
+                status = HealthScore.statusFromScore(healthScore.networkScore),
+                onClick = onNavigateToNetwork
+            )
+            HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
+            HealthBreakdownRow(
+                label = stringResource(R.string.home_storage_card),
+                value = formatPercent(healthScore.storageScore),
+                status = HealthScore.statusFromScore(healthScore.storageScore),
+                onClick = onNavigateToStorage
+            )
         }
     }
 }
 
-private data class BreakdownItem(
-    val label: String,
-    val value: String,
-    val status: HealthStatus,
-    val onClick: () -> Unit
-)
-
-// ── Battery Hero Card ───────────────────────────────────────────────────────
-
 @Composable
 private fun BatteryHeroCard(
-    state: HomeUiState.Success,
+    battery: com.devicepulse.domain.model.BatteryState,
     onClick: () -> Unit
 ) {
-    val battery = state.batteryState
-
     Card(
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),
@@ -614,7 +597,6 @@ private fun BatteryHeroCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left side
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
@@ -655,7 +637,6 @@ private fun BatteryHeroCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Bottom row: Health + Charger
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -674,6 +655,42 @@ private fun BatteryHeroCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun HealthBreakdownRow(
+    label: String,
+    value: String,
+    status: HealthStatus,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .semantics(mergeDescendants = true) {}
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 48.dp)
+            .padding(vertical = 10.dp)
+            .clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        StatusIndicator(
+            status = status,
+            modifier = Modifier.padding(end = 8.dp)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontFamily = MaterialTheme.numericFontFamily
+            ),
+            color = TextSecondary
+        )
     }
 }
 
@@ -761,8 +778,6 @@ private fun HomeMetricPill(
     }
 }
 
-// ── Shared Utilities ────────────────────────────────────────────────────────
-
 @Composable
 private fun statusColor(status: HealthStatus): Color {
     val colors = MaterialTheme.statusColors
@@ -772,37 +787,4 @@ private fun statusColor(status: HealthStatus): Color {
         HealthStatus.POOR -> colors.poor
         HealthStatus.CRITICAL -> colors.critical
     }
-}
-
-@Composable
-private fun thermalLabel(tempC: Float): String = when {
-    tempC < 35f -> stringResource(R.string.thermal_cool)
-    tempC < 40f -> stringResource(R.string.thermal_warm)
-    else -> stringResource(R.string.thermal_hot)
-}
-
-@Composable
-private fun chargingStatusLabel(status: com.devicepulse.domain.model.ChargingStatus): String = when (status) {
-    com.devicepulse.domain.model.ChargingStatus.CHARGING -> stringResource(R.string.charging_status_charging)
-    com.devicepulse.domain.model.ChargingStatus.DISCHARGING -> stringResource(R.string.charging_status_discharging)
-    com.devicepulse.domain.model.ChargingStatus.FULL -> stringResource(R.string.charging_status_full)
-    com.devicepulse.domain.model.ChargingStatus.NOT_CHARGING -> stringResource(R.string.charging_status_not_charging)
-}
-
-@Composable
-private fun batteryHealthLabel(health: com.devicepulse.domain.model.BatteryHealth): String = when (health) {
-    com.devicepulse.domain.model.BatteryHealth.GOOD -> stringResource(R.string.battery_health_good)
-    com.devicepulse.domain.model.BatteryHealth.OVERHEAT -> stringResource(R.string.battery_health_overheat)
-    com.devicepulse.domain.model.BatteryHealth.DEAD -> stringResource(R.string.battery_health_dead)
-    com.devicepulse.domain.model.BatteryHealth.OVER_VOLTAGE -> stringResource(R.string.battery_health_over_voltage)
-    com.devicepulse.domain.model.BatteryHealth.COLD -> stringResource(R.string.battery_health_cold)
-    com.devicepulse.domain.model.BatteryHealth.UNKNOWN -> stringResource(R.string.battery_health_unknown)
-}
-
-@Composable
-private fun plugTypeLabel(plugType: com.devicepulse.domain.model.PlugType): String = when (plugType) {
-    com.devicepulse.domain.model.PlugType.AC -> stringResource(R.string.plug_type_ac)
-    com.devicepulse.domain.model.PlugType.USB -> stringResource(R.string.plug_type_usb)
-    com.devicepulse.domain.model.PlugType.WIRELESS -> stringResource(R.string.plug_type_wireless)
-    com.devicepulse.domain.model.PlugType.NONE -> stringResource(R.string.plug_type_none)
 }

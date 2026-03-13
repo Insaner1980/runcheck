@@ -26,9 +26,7 @@ class GetChargerComparisonUseCase @Inject constructor(
                 val completedSessions = chargerSessions.filter { it.endTime != null }
 
                 val avgSpeed = if (completedSessions.isNotEmpty()) {
-                    completedSessions.mapNotNull { it.avgCurrentMa }.let { currents ->
-                        if (currents.isNotEmpty()) currents.average().toInt() else null
-                    }
+                    completedSessions.mapNotNull { it.avgCurrentMa }.averageOrNull()
                 } else null
 
                 val avgTimeToFull = if (completedSessions.isNotEmpty()) {
@@ -40,9 +38,7 @@ class GetChargerComparisonUseCase @Inject constructor(
                                 (durationMinutes * 100 / levelGain).toInt()
                             } else null
                         }
-                    }.let { times ->
-                        if (times.isNotEmpty()) times.average().toInt() else null
-                    }
+                    }.averageOrNull()
                 } else null
 
                 val lastUsed = chargerSessions.maxByOrNull { it.startTime }?.startTime
@@ -59,3 +55,6 @@ class GetChargerComparisonUseCase @Inject constructor(
         }
     }
 }
+
+private fun List<Int>.averageOrNull(): Int? =
+    takeIf(List<Int>::isNotEmpty)?.average()?.toInt()

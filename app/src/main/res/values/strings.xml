@@ -6,6 +6,10 @@
     <!-- Navigation -->
     <string name="navigate_back">Back</string>
     <string name="navigate_menu">Menu</string>
+    <string name="a11y_progress_percent">%1$s, %2$d percent</string>
+    <string name="a11y_speed_gauge">%1$s, %2$s %3$s</string>
+    <string name="a11y_heat_strip">Battery temperature %1$s, %2$s</string>
+    <string name="a11y_chart_trend">%1$s trend chart</string>
 
     <!-- Home Screen -->
     <string name="home_battery_card">Battery</string>
@@ -270,9 +274,6 @@
     <string name="pro_feature_thermal_log_message">Thermal throttling history requires DevicePulse Pro.</string>
     <string name="pro_feature_export_message">CSV export requires DevicePulse Pro.</string>
 
-    <!-- More Menu -->
-    <string name="more_settings">Settings</string>
-
     <!-- Widgets -->
     <string name="widget_battery_name">Battery Status</string>
     <string name="widget_battery_description">Shows battery level, temperature, and current</string>
@@ -284,13 +285,15 @@
     <string name="widget_temperature_value">%1$.1f°C</string>
     <string name="widget_current_value">%1$d mA</string>
     <string name="widget_pro_required">Pro required</string>
+    <string name="widget_no_data_title">No data yet</string>
+    <string name="widget_no_data_message">Open DevicePulse to collect readings</string>
 
     <!-- Notifications -->
     <string name="notification_channel_alerts">Device Alerts</string>
     <string name="notification_channel_status">Device Status</string>
     <string name="notification_channel_alerts_description">Alerts for battery, temperature, and storage issues</string>
     <string name="notification_channel_status_description">Device status updates</string>
-    <string name="fgs_special_use_subtype_realtime_monitoring">Foreground service used only while the user is actively viewing real-time device health metrics that require continuous updates.</string>
+    <string name="monitor_realtime_fgs_reason">Foreground service used only while the user is actively viewing real-time device health metrics that require continuous updates.</string>
     <string name="notification_low_battery_title">Low Battery</string>
     <string name="notification_low_battery_text">Battery at %d%%</string>
     <string name="notification_high_temp_title">High Temperature</string>
@@ -298,15 +301,18 @@
     <string name="notification_low_storage_title">Low Storage</string>
     <string name="notification_low_storage_text">Storage %1$.0f%% full</string>
     <string name="notification_charge_complete_title">Charging Complete</string>
-    <string name="real_time_monitor_channel_name">Real-Time Monitoring</string>
-    <string name="real_time_monitor_channel_description">Shows real-time device health data</string>
-    <string name="real_time_monitor_notification_text">Monitoring device health…</string>
+    <string name="monitor_realtime_channel_name">Real-Time Monitoring</string>
+    <string name="monitor_realtime_channel_description">Shows real-time device health data</string>
+    <string name="monitor_realtime_notification_text">Monitoring device health…</string>
 
     <!-- Export -->
     <string name="settings_data_section">Data</string>
     <string name="settings_export_data">Export Data (CSV)</string>
     <string name="settings_export_success">Data exported to Downloads</string>
     <string name="settings_export_error">Export failed</string>
+    <string name="settings_export_ready">Export ready to share</string>
+    <string name="settings_exporting">Exporting…</string>
+    <string name="settings_export_share_title">Share CSV export</string>
 
     <!-- Charger Comparison -->
     <string name="charger_title">Charger Comparison</string>
@@ -366,8 +372,8 @@
     <string name="speed_test_no_results">No speed test results yet</string>
 
     <!-- General -->
-    <string name="loading">Loading…</string>
-    <string name="error_generic">Something went wrong</string>
-    <string name="retry">Retry</string>
+    <string name="common_loading">Loading…</string>
+    <string name="common_error_generic">Something went wrong</string>
+    <string name="common_retry">Retry</string>
     <string name="not_supported">Not supported on this device</string>
 </resources>

@@ -24,15 +24,16 @@ import com.devicepulse.R
 @Composable
 fun PrimaryTopBar(
     title: String,
+    modifier: Modifier = Modifier,
     onMenuClick: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
             .statusBarsPadding()
-            .padding(start = 4.dp, end = 8.dp, top = 2.dp, bottom = 4.dp),
+            .padding(start = 4.dp, end = 8.dp, top = 2.dp, bottom = 4.dp)
+            .background(MaterialTheme.colorScheme.surface),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

@@ -145,9 +145,8 @@ class NetworkDataSource @Inject constructor(
         }
 
         // Try NetworkCapabilities first, fall back to specific sources
-        var signalDbm: Int? = capabilities.signalStrength.let {
-            if (it == Int.MIN_VALUE) null else it
-        }
+        val rawSignalDbm = capabilities.signalStrength
+        var signalDbm: Int? = rawSignalDbm.takeUnless { it == Int.MIN_VALUE }
         if (signalDbm == null && isCellular) {
             signalDbm = getCellularSignalDbm()
         }
@@ -201,8 +200,8 @@ class NetworkDataSource @Inject constructor(
             // Get the strongest dBm from all cell technologies
             signalStrength.cellSignalStrengths
                 .mapNotNull { css ->
-                    val d = css.dbm
-                    if (d == Int.MIN_VALUE || d == Int.MAX_VALUE) null else d
+                    val signalDbm = css.dbm
+                    if (signalDbm == Int.MIN_VALUE || signalDbm == Int.MAX_VALUE) null else signalDbm
                 }
                 .maxOrNull()
         } catch (_: Exception) {
@@ -441,6 +440,6 @@ class NetworkDataSource @Inject constructor(
     )
 
     companion object {
-        private const val STOP_TIMEOUT_MS = 5_000L
+        private const val STOP_TIMEOUT_MS = 0L
     }
 }

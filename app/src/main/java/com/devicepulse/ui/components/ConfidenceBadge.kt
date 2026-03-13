@@ -70,10 +70,10 @@ fun ConfidenceBadge(
 
     Box(
         modifier = modifier
-            .scale(animatedScale)
             .height(24.dp)
+            .padding(horizontal = 8.dp)
             .background(backgroundColor, RoundedCornerShape(50))
-            .padding(horizontal = 8.dp),
+            .scale(animatedScale),
         contentAlignment = Alignment.Center
     ) {
         Text(

@@ -5,9 +5,11 @@ import android.os.BatteryManager
 import com.devicepulse.data.device.DeviceProfile
 import com.devicepulse.domain.model.Confidence
 import com.devicepulse.domain.model.MeasuredValue
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlin.math.abs
 
 class OnePlusBatterySource(
@@ -40,7 +42,7 @@ class OnePlusBatterySource(
             emit(MeasuredValue(currentMa, confidence))
             delay(POLLING_INTERVAL_MS)
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
     companion object {
         private const val POLLING_INTERVAL_MS = 2000L

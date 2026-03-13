@@ -18,9 +18,8 @@ import com.android.billingclient.api.queryPurchasesAsync
 import com.devicepulse.BuildConfig
 import com.devicepulse.billing.ProPurchaseRefreshResult
 import com.devicepulse.billing.ProPurchaseManager
-import com.devicepulse.widget.BatteryWidget
-import com.devicepulse.widget.HealthWidget
-import androidx.glance.appwidget.updateAll
+import com.devicepulse.util.ReleaseSafeLog
+import com.devicepulse.widget.DevicePulseWidgets
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -41,13 +40,25 @@ class ProStatusRepository @Inject constructor(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    private val _isProState = MutableStateFlow(ProStatusCache.isProBlocking(context))
+    private val _isProState = MutableStateFlow(false)
     override val isProUser: Flow<Boolean> = _isProState.asStateFlow()
     private val _billingAvailable = MutableStateFlow(false)
     override val billingAvailable: Flow<Boolean> = _billingAvailable.asStateFlow()
 
     private var billingClient: BillingClient? = null
     private var cachedProductDetails: com.android.billingclient.api.ProductDetails? = null
+
+    init {
+        scope.launch(Dispatchers.IO) {
+            runCatching {
+                ProStatusCache.isPro(context)
+            }.onSuccess { isPro ->
+                _isProState.value = isPro
+            }.onFailure { error ->
+                ReleaseSafeLog.error(TAG, "Failed to load persisted pro state", error)
+            }
+        }
+    }
 
     override fun isPro(): Boolean = _isProState.value
 
@@ -190,9 +201,12 @@ class ProStatusRepository @Inject constructor(
     private fun updateProState(isPro: Boolean) {
         _isProState.value = isPro
         scope.launch(Dispatchers.IO) {
-            ProStatusCache.setPro(context, isPro)
-            BatteryWidget().updateAll(context)
-            HealthWidget().updateAll(context)
+            runCatching {
+                ProStatusCache.setPro(context, isPro)
+                DevicePulseWidgets.updateAll(context)
+            }.onFailure { error ->
+                ReleaseSafeLog.error(TAG, "Failed to persist pro state", error)
+            }
         }
     }
 
@@ -204,6 +218,7 @@ class ProStatusRepository @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "ProStatusRepository"
         const val PRODUCT_ID_PRO = BuildConfig.PRO_PRODUCT_ID
     }
 }
