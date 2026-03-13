@@ -4,13 +4,16 @@ import androidx.compose.runtime.Immutable
 import com.devicepulse.domain.model.NetworkState
 import com.devicepulse.domain.model.SpeedTestResult
 
-@Immutable
-data class NetworkUiState(
-    val isLoading: Boolean = true,
-    val errorMessage: String? = null,
-    val networkState: NetworkState? = null,
-    val speedTestState: SpeedTestUiState = SpeedTestUiState()
-)
+sealed interface NetworkUiState {
+    data object Loading : NetworkUiState
+
+    @Immutable
+    data class Success(
+        val networkState: NetworkState
+    ) : NetworkUiState
+
+    data class Error(val message: String) : NetworkUiState
+}
 
 sealed interface SpeedTestPhase {
     data object Idle : SpeedTestPhase

@@ -38,8 +38,11 @@ class NetworkViewModel @Inject constructor(
     private val proStatusProvider: ProStatusProvider
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(NetworkUiState())
-    val uiState: StateFlow<NetworkUiState> = _uiState.asStateFlow()
+    private val _networkUiState = MutableStateFlow<NetworkUiState>(NetworkUiState.Loading)
+    val networkUiState: StateFlow<NetworkUiState> = _networkUiState.asStateFlow()
+
+    private val _speedTestState = MutableStateFlow(SpeedTestUiState())
+    val speedTestState: StateFlow<SpeedTestUiState> = _speedTestState.asStateFlow()
     private var networkJob: Job? = null
     private var historyJob: Job? = null
     private var speedTestJob: Job? = null
@@ -65,7 +68,7 @@ class NetworkViewModel @Inject constructor(
     }
 
     fun startSpeedTest() {
-        if (_uiState.value.speedTestState.isRunning) return
+        if (_speedTestState.value.isRunning) return
 
         speedTestJob?.cancel()
         updateSpeedTestState {
@@ -124,7 +127,7 @@ class NetworkViewModel @Inject constructor(
                             }
                         }
                         is SpeedTestProgress.Completed -> {
-                            val networkState = _uiState.value.networkState
+                            val networkState = (_networkUiState.value as? NetworkUiState.Success)?.networkState
                             val result = SpeedTestResult(
                                 timestamp = System.currentTimeMillis(),
                                 downloadMbps = progress.downloadMbps,
@@ -183,30 +186,20 @@ class NetworkViewModel @Inject constructor(
 
     private fun loadNetworkData() {
         networkJob?.cancel()
-        _uiState.update { current ->
-            current.copy(
-                isLoading = current.networkState == null,
-                errorMessage = null
-            )
+        if (_networkUiState.value !is NetworkUiState.Success) {
+            _networkUiState.value = NetworkUiState.Loading
         }
         networkJob = viewModelScope.launch {
             getMeasuredNetworkState()
                 .catch { e ->
-                    _uiState.update { current ->
-                        current.copy(
-                            isLoading = false,
-                            errorMessage = e.messageOr(context.getString(R.string.common_error_generic))
+                    if (_networkUiState.value !is NetworkUiState.Success) {
+                        _networkUiState.value = NetworkUiState.Error(
+                            e.messageOr(context.getString(R.string.common_error_generic))
                         )
                     }
                 }
                 .collect { state ->
-                    _uiState.update { current ->
-                        current.copy(
-                            isLoading = false,
-                            errorMessage = null,
-                            networkState = state
-                        )
-                    }
+                    _networkUiState.value = NetworkUiState.Success(networkState = state)
                 }
         }
     }
@@ -238,8 +231,6 @@ class NetworkViewModel @Inject constructor(
     }
 
     private fun updateSpeedTestState(transform: SpeedTestUiState.() -> SpeedTestUiState) {
-        _uiState.update { current ->
-            current.copy(speedTestState = current.speedTestState.transform())
-        }
+        _speedTestState.update { it.transform() }
     }
 }
