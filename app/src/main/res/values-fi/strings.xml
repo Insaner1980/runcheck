@@ -243,6 +243,10 @@
     <string name="settings_measurement_unreliable">Epäluotettava</string>
     <string name="settings_measurement_available">Saatavilla</string>
     <string name="settings_measurement_not_available">Ei saatavilla</string>
+    <string name="settings_privacy">Tietosuoja</string>
+    <string name="settings_crash_reporting">Jaa kaatumisraportit</string>
+    <string name="settings_crash_reporting_desc">Lähetä anonyymejä kaatumisdiagnostiikkatietoja Firebase Crashlyticsiin virheiden korjaamista varten.</string>
+    <string name="settings_crash_reporting_note">Pois oletuksena. Debug-versiot eivät koskaan lähetä raportteja. Kun asetus poistetaan käytöstä, odottavat lähettämättömät raportit poistetaan paikallisesti.</string>
     <string name="settings_about">Tietoja</string>
     <string name="settings_upgrade_pro">Päivitä Pro-versioon</string>
     <string name="settings_upgrade_pro_with_price">Päivitä Pro-versioon - %1$s</string>
@@ -257,6 +261,7 @@
     <string name="settings_restore_success">Pro-ostos vahvistettu</string>
     <string name="settings_restore_not_found">Tälle Play-tilille ei löytynyt Pro-ostosta</string>
     <string name="settings_restore_unavailable">Play Billing ei ole vielä valmis. Yritä hetken kuluttua uudelleen.</string>
+    <string name="settings_billing_unavailable">Play Billing ei ole käytettävissä tällä laitteella. Pro-oston vaihtoehdot piilotetaan, kunnes laskutus on saatavilla.</string>
     <string name="settings_pro_active">Pro aktiivinen</string>
     <string name="settings_pro_desc">Laajennettu historia, widgetit ja CSV-vienti</string>
     <string name="settings_pro_thank_you">Kiitos DevicePulsen tukemisesta!</string>
@@ -371,11 +376,4 @@
     <string name="common_error_generic">Jokin meni pieleen</string>
     <string name="common_retry">Yritä uudelleen</string>
     <string name="not_supported">Ei tuettu tällä laitteella</string>
-
-    <!-- Settings Privacy -->
-    <string name="settings_privacy">Tietosuoja</string>
-    <string name="settings_crash_reporting">Jaa kaatumisraportit</string>
-    <string name="settings_crash_reporting_desc">Lähetä anonyymejä kaatumisdiagnostiikkatietoja Firebase Crashlyticsiin virheiden korjaamista varten.</string>
-    <string name="settings_crash_reporting_note">Pois oletuksena. Debug-versiot eivät koskaan lähetä raportteja. Kun asetus poistetaan käytöstä, odottavat lähettämättömät raportit poistetaan paikallisesti.</string>
-    <string name="settings_billing_unavailable">Play Billing ei ole käytettävissä tällä laitteella. Pro-oston vaihtoehdot piilotetaan, kunnes laskutus on saatavilla.</string>
 </resources>
