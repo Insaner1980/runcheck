@@ -1,5 +1,6 @@
 package com.devicepulse.domain.repository
 
+import com.devicepulse.domain.model.DataRetention
 import com.devicepulse.domain.model.MonitoringInterval
 import com.devicepulse.domain.model.ThemeMode
 import com.devicepulse.domain.model.UserPreferences
@@ -12,6 +13,8 @@ interface UserPreferencesRepository {
     suspend fun setDynamicColors(enabled: Boolean)
     suspend fun setMonitoringInterval(interval: MonitoringInterval)
     suspend fun setNotificationsEnabled(enabled: Boolean)
+    suspend fun setDataRetention(retention: DataRetention)
+    suspend fun setCrashReportingEnabled(enabled: Boolean)
     fun getPermissionEducationSeen(): Flow<Boolean>
     suspend fun setPermissionEducationSeen(seen: Boolean)
     suspend fun getAppUsageLastCollectedAt(): Long?

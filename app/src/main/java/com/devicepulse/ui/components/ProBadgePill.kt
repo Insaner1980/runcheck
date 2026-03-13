@@ -7,21 +7,24 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.devicepulse.R
 import com.devicepulse.ui.theme.AccentYellow
 
 @Composable
 fun ProBadgePill(
     modifier: Modifier = Modifier,
-    text: String = "PRO"
+    text: String? = null
 ) {
+    val badgeText = text ?: stringResource(R.string.pro_feature_badge)
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(8.dp),
         color = AccentYellow.copy(alpha = 0.12f)
     ) {
         Text(
-            text = text,
+            text = badgeText,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
             style = MaterialTheme.typography.labelMedium,
             color = AccentYellow

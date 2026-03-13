@@ -6,12 +6,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -219,7 +220,11 @@ private fun HomeContent(
             GridCard(
                 icon = Icons.Outlined.Thermostat,
                 title = stringResource(R.string.home_thermal_card),
-                subtitle = formatTemperature(state.thermalState.batteryTempC) + " \u00B7 " + thermalLabel(state.thermalState.batteryTempC),
+                subtitle = stringResource(
+                    R.string.home_thermal_summary,
+                    formatTemperature(state.thermalState.batteryTempC),
+                    thermalLabel(state.thermalState.batteryTempC)
+                ),
                 subtitleColor = AccentOrange,
                 onClick = onNavigateToThermal,
                 modifier = Modifier.weight(1f)
@@ -237,13 +242,18 @@ private fun HomeContent(
                 title = stringResource(R.string.home_chargers_card),
                 subtitle = stringResource(R.string.home_test_compare),
                 subtitleColor = AccentBlue,
-                onClick = onNavigateToCharger,
+                locked = !state.isPro,
+                onClick = if (state.isPro) onNavigateToCharger else onNavigateToProUpgrade,
                 modifier = Modifier.weight(1f)
             )
             GridCard(
                 icon = Icons.Outlined.DataUsage,
                 title = stringResource(R.string.home_storage_card),
-                subtitle = formatStorageSize(context, state.storageState.availableBytes) + " " + stringResource(R.string.home_free_suffix),
+                subtitle = stringResource(
+                    R.string.home_storage_free,
+                    formatStorageSize(context, state.storageState.availableBytes),
+                    stringResource(R.string.home_free_suffix)
+                ),
                 subtitleColor = AccentTeal,
                 onClick = onNavigateToStorage,
                 modifier = Modifier.weight(1f)
@@ -261,7 +271,8 @@ private fun HomeContent(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainer
-            )
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
                 ListRow(
@@ -270,31 +281,52 @@ private fun HomeContent(
                     onClick = onNavigateToSpeedTest
                 )
                 HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
-                ListRow(
-                    label = stringResource(R.string.home_app_usage_card),
-                    icon = Icons.Outlined.DataUsage,
-                    onClick = onNavigateToAppUsage,
-                    trailing = if (!state.isPro) {
-                        { ProBadgePill() }
-                    } else null
-                )
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    ListRow(
+                        label = stringResource(R.string.home_app_usage_card),
+                        icon = Icons.Outlined.DataUsage,
+                        onClick = if (state.isPro) onNavigateToAppUsage else onNavigateToProUpgrade,
+                        trailing = if (!state.isPro) {
+                            { ProBadgePill() }
+                        } else null
+                    )
+
+                    if (!state.isPro) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.14f))
+                        )
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .padding(end = 44.dp),
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Lock,
+                                contentDescription = null,
+                                modifier = Modifier.padding(8.dp),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
             }
         }
 
-        // 7. Pro banner (hide if isPro)
-        if (!state.isPro) {
-            Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
+        // 7. Pro banner / Insights replacement
+        if (!state.isPro) {
             Card(
                 onClick = onNavigateToProUpgrade,
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 ),
-                border = androidx.compose.foundation.BorderStroke(
-                    width = 1.dp,
-                    color = AccentBlue.copy(alpha = 0.35f)
-                )
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Row(
                     modifier = Modifier
@@ -327,6 +359,41 @@ private fun HomeContent(
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+            }
+        } else {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = AccentTeal.copy(alpha = 0.16f)
+                    ) {
+                        IconCircle(icon = Icons.Outlined.Star)
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.home_insights_title),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = stringResource(R.string.home_insights_desc),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                    }
                 }
             }
         }
@@ -381,7 +448,8 @@ private fun HealthScoreCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -487,6 +555,7 @@ private fun HealthScoreCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable(onClick = item.onClick)
+                        .defaultMinSize(minHeight = 48.dp)
                         .padding(vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -532,7 +601,8 @@ private fun BatteryHeroCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -560,7 +630,7 @@ private fun BatteryHeroCard(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "%",
+                            text = stringResource(R.string.unit_percent),
                             style = MaterialTheme.typography.headlineLarge.copy(
                                 fontFamily = MaterialTheme.numericFontFamily
                             ),
@@ -569,7 +639,7 @@ private fun BatteryHeroCard(
                         )
                     }
                     Text(
-                        text = formatEnumName(battery.chargingStatus.name),
+                        text = chargingStatusLabel(battery.chargingStatus),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )
@@ -592,13 +662,13 @@ private fun BatteryHeroCard(
             ) {
                 HomeMetricPill(
                     label = stringResource(R.string.battery_health),
-                    value = formatEnumName(battery.health.name),
+                    value = batteryHealthLabel(battery.health),
                     valueColor = AccentTeal,
                     modifier = Modifier.weight(1f)
                 )
                 HomeMetricPill(
                     label = stringResource(R.string.battery_plug_type),
-                    value = formatPlugTypeName(battery.plugType.name),
+                    value = plugTypeLabel(battery.plugType),
                     valueColor = AccentBlue,
                     modifier = Modifier.weight(1f)
                 )
@@ -653,7 +723,7 @@ private fun HomeBatteryChargeIcon(
                 )
             }
             Text(
-                text = "$level",
+                text = level.toString(),
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontFamily = MaterialTheme.numericFontFamily,
                     fontWeight = FontWeight.Bold
@@ -711,11 +781,28 @@ private fun thermalLabel(tempC: Float): String = when {
     else -> stringResource(R.string.thermal_hot)
 }
 
-private fun formatEnumName(name: String): String =
-    name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }
+@Composable
+private fun chargingStatusLabel(status: com.devicepulse.domain.model.ChargingStatus): String = when (status) {
+    com.devicepulse.domain.model.ChargingStatus.CHARGING -> stringResource(R.string.charging_status_charging)
+    com.devicepulse.domain.model.ChargingStatus.DISCHARGING -> stringResource(R.string.charging_status_discharging)
+    com.devicepulse.domain.model.ChargingStatus.FULL -> stringResource(R.string.charging_status_full)
+    com.devicepulse.domain.model.ChargingStatus.NOT_CHARGING -> stringResource(R.string.charging_status_not_charging)
+}
 
-private fun formatPlugTypeName(name: String): String = when (name.uppercase()) {
-    "USB" -> "USB"
-    "AC" -> "AC"
-    else -> formatEnumName(name)
+@Composable
+private fun batteryHealthLabel(health: com.devicepulse.domain.model.BatteryHealth): String = when (health) {
+    com.devicepulse.domain.model.BatteryHealth.GOOD -> stringResource(R.string.battery_health_good)
+    com.devicepulse.domain.model.BatteryHealth.OVERHEAT -> stringResource(R.string.battery_health_overheat)
+    com.devicepulse.domain.model.BatteryHealth.DEAD -> stringResource(R.string.battery_health_dead)
+    com.devicepulse.domain.model.BatteryHealth.OVER_VOLTAGE -> stringResource(R.string.battery_health_over_voltage)
+    com.devicepulse.domain.model.BatteryHealth.COLD -> stringResource(R.string.battery_health_cold)
+    com.devicepulse.domain.model.BatteryHealth.UNKNOWN -> stringResource(R.string.battery_health_unknown)
+}
+
+@Composable
+private fun plugTypeLabel(plugType: com.devicepulse.domain.model.PlugType): String = when (plugType) {
+    com.devicepulse.domain.model.PlugType.AC -> stringResource(R.string.plug_type_ac)
+    com.devicepulse.domain.model.PlugType.USB -> stringResource(R.string.plug_type_usb)
+    com.devicepulse.domain.model.PlugType.WIRELESS -> stringResource(R.string.plug_type_wireless)
+    com.devicepulse.domain.model.PlugType.NONE -> stringResource(R.string.plug_type_none)
 }

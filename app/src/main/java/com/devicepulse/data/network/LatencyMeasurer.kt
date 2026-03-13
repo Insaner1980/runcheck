@@ -1,5 +1,6 @@
 package com.devicepulse.data.network
 
+import com.devicepulse.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.InetSocketAddress
@@ -23,21 +24,18 @@ class LatencyMeasurer @Inject constructor() {
 
     private fun measureTcpConnect(): Int? {
         return try {
-            val socket = Socket()
-            val startTime = System.nanoTime()
-            socket.connect(InetSocketAddress(DNS_HOST, DNS_PORT), TIMEOUT_MS)
-            val endTime = System.nanoTime()
-            socket.close()
-            ((endTime - startTime) / 1_000_000).toInt()
+            Socket().use { socket ->
+                val startTime = System.nanoTime()
+                socket.connect(InetSocketAddress(BuildConfig.LATENCY_HOST, BuildConfig.LATENCY_PORT), TIMEOUT_MS)
+                val endTime = System.nanoTime()
+                ((endTime - startTime) / 1_000_000).toInt()
+            }
         } catch (_: Exception) {
             null
         }
     }
 
     companion object {
-        // Cloudflare DNS — anycast, very low latency globally
-        private const val DNS_HOST = "1.1.1.1"
-        private const val DNS_PORT = 53
         private const val TIMEOUT_MS = 3000
         private const val SAMPLE_COUNT = 3
     }

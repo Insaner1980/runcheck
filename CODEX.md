@@ -153,7 +153,7 @@ Use `BatteryDataSourceFactory` to select the best battery data source:
 - Android-only app; no iOS or cross-platform targets
 - Privacy-first: no analytics, no tracking, no accounts
 - No external network calls except optional latency / speed-test related checks
-- All user data stays on device
+- Measurement and history data stay on device unless the user explicitly enables crash reporting, which sends crash diagnostics to Firebase Crashlytics
 - `device-health-monitor-spec.md` contains the full feature spec
 - `docs/plans/2026-03-10-phase1-completion-and-roadmap.md` contains roadmap and next steps
 - `docs/plans/2026-03-12-battery-detail-redesign-plan.md` documents the Battery-detail redesign direction

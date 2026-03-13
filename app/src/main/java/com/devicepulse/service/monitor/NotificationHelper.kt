@@ -20,7 +20,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class NotificationHelper @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
 
     companion object {
@@ -46,7 +46,7 @@ class NotificationHelper @Inject constructor(
                 context.getString(R.string.notification_channel_alerts),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Alerts for battery, temperature, and storage issues"
+                description = context.getString(R.string.notification_channel_alerts_description)
                 enableVibration(true)
             }
 
@@ -55,7 +55,7 @@ class NotificationHelper @Inject constructor(
                 context.getString(R.string.notification_channel_status),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Device status updates"
+                description = context.getString(R.string.notification_channel_status_description)
                 setShowBadge(false)
             }
 

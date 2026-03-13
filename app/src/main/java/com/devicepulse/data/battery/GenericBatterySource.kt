@@ -18,7 +18,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
-import kotlin.math.abs
 
 open class GenericBatterySource(
     protected val context: Context,
@@ -40,10 +39,11 @@ open class GenericBatterySource(
 
     override fun getCurrentNow(): Flow<MeasuredValue<Int>> = flow {
         while (true) {
-            val rawCurrent = try {
-                batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
-            } catch (_: SecurityException) {
-                0
+            val rawCurrent = readCurrentNowRaw()
+            if (rawCurrent == null) {
+                emit(unavailableCurrent())
+                delay(POLLING_INTERVAL_MS)
+                continue
             }
             val currentMa = normalizeCurrent(rawCurrent)
             val confidence = if (rawCurrent == 0 || !profile.currentNowReliable) {
@@ -55,6 +55,18 @@ open class GenericBatterySource(
             emit(MeasuredValue(currentMa, confidence))
             delay(POLLING_INTERVAL_MS)
         }
+    }
+
+    protected fun unavailableCurrent(): MeasuredValue<Int> = MeasuredValue(
+        value = 0,
+        confidence = Confidence.UNAVAILABLE
+    )
+
+    protected fun readCurrentNowRaw(): Int? = try {
+        batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+            .takeUnless { it == Int.MIN_VALUE }
+    } catch (_: Exception) {
+        null
     }
 
     protected fun normalizeCurrent(raw: Int): Int {
@@ -146,7 +158,7 @@ open class GenericBatterySource(
     override fun getTechnology(): Flow<String> = callbackFlow {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-                val tech = intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY) ?: "Unknown"
+                val tech = intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY).orEmpty()
                 trySend(tech)
             }
         }

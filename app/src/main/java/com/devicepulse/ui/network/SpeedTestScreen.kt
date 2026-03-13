@@ -69,6 +69,8 @@ import com.devicepulse.domain.model.SpeedTestResult
 import com.devicepulse.ui.components.AnimatedFloatText
 import com.devicepulse.ui.components.DetailTopBar
 import com.devicepulse.ui.common.formatDecimal
+import com.devicepulse.ui.common.formatLocalizedDateTime
+import com.devicepulse.ui.common.isUnknownValue
 import com.devicepulse.ui.theme.DevicePulseTheme
 import com.devicepulse.ui.theme.reducedMotion
 import com.devicepulse.ui.theme.spacing
@@ -181,6 +183,8 @@ private fun SpeedTestContent(
 
         if (speedTestState.recentResults.size > 1) {
             HistorySection(results = speedTestState.recentResults.drop(1))
+        } else if (speedTestState.phase == SpeedTestPhase.Idle && speedTestState.lastResult == null) {
+            EmptyHistoryCard()
         }
 
         Text(
@@ -206,15 +210,19 @@ private fun SpeedTestContent(
 private fun NetworkContextPanel(networkState: com.devicepulse.domain.model.NetworkState) {
     val connectionLabel = when (networkState.connectionType) {
         ConnectionType.WIFI -> networkState.wifiSsid ?: androidx.compose.ui.res.stringResource(R.string.connection_wifi)
-        ConnectionType.CELLULAR -> networkState.networkSubtype ?: androidx.compose.ui.res.stringResource(R.string.connection_cellular)
+        ConnectionType.CELLULAR -> networkState.networkSubtype
+            ?.takeUnless(::isUnknownValue)
+            ?: androidx.compose.ui.res.stringResource(R.string.connection_cellular)
         ConnectionType.NONE -> androidx.compose.ui.res.stringResource(R.string.network_no_connection)
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -243,7 +251,12 @@ private fun NetworkContextPanel(networkState: com.devicepulse.domain.model.Netwo
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "$latency ${androidx.compose.ui.res.stringResource(R.string.unit_ms)}",
+                        text = androidx.compose.ui.res.stringResource(
+                            R.string.speed_test_ping_line,
+                            androidx.compose.ui.res.stringResource(R.string.speed_test_ping),
+                            latency,
+                            androidx.compose.ui.res.stringResource(R.string.unit_ms)
+                        ),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -298,10 +311,12 @@ private fun SpeedTestHero(
     )
 
     val accent = MaterialTheme.colorScheme.primary
-    val secondaryAccent = lerp(accent, Color.White, 0.18f)
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val secondaryAccent = lerp(accent, onSurfaceColor, 0.18f)
     val track = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
     val errorAccent = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-    val surfaceTone = MaterialTheme.colorScheme.surface
+    val surfaceTone = surfaceColor
     val surfaceContainerTone = MaterialTheme.colorScheme.surfaceContainerHigh
 
     val targetProgress = when (state.phase) {
@@ -444,10 +459,10 @@ private fun SpeedTestHero(
                     drawArc(
                         brush = Brush.sweepGradient(
                             listOf(
-                                lerp(accent, Color.White, 0.06f),
+                                lerp(accent, onSurfaceColor, 0.06f),
                                 accent,
-                                lerp(accent, Color.Black, 0.08f),
-                                lerp(accent, Color.White, 0.05f)
+                                lerp(accent, surfaceColor, 0.08f),
+                                lerp(accent, onSurfaceColor, 0.05f)
                             )
                         ),
                         startAngle = 135f,
@@ -527,7 +542,7 @@ private fun CellularDataWarningDialog(
 @Composable
 private fun SpeedMetricsStrip(state: SpeedTestUiState) {
     val accent = MaterialTheme.colorScheme.primary
-    val softAccent = lerp(accent, Color.White, 0.16f)
+    val softAccent = lerp(accent, MaterialTheme.colorScheme.onSurface, 0.16f)
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -560,9 +575,11 @@ private fun MetricGlowCard(
 ) {
     Card(
         modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -605,13 +622,13 @@ private fun ConnectionStatsRow(state: SpeedTestUiState) {
     ) {
         StatPill(
             label = androidx.compose.ui.res.stringResource(R.string.speed_test_ping),
-            value = if (state.pingMs > 0) state.pingMs.toString() else "—",
+            value = if (state.pingMs > 0) state.pingMs.toString() else androidx.compose.ui.res.stringResource(R.string.placeholder_dash),
             unit = androidx.compose.ui.res.stringResource(R.string.unit_ms),
             modifier = Modifier.weight(1f)
         )
         StatPill(
             label = androidx.compose.ui.res.stringResource(R.string.speed_test_jitter),
-            value = if (state.jitterMs > 0) state.jitterMs.toString() else "—",
+            value = if (state.jitterMs > 0) state.jitterMs.toString() else androidx.compose.ui.res.stringResource(R.string.placeholder_dash),
             unit = androidx.compose.ui.res.stringResource(R.string.unit_ms),
             modifier = Modifier.weight(1f)
         )
@@ -662,9 +679,11 @@ private fun StatPill(
 private fun SpeedTestFailureCard(error: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Text(
             text = error,
@@ -676,17 +695,35 @@ private fun SpeedTestFailureCard(error: String) {
 }
 
 @Composable
+private fun EmptyHistoryCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Text(
+            text = androidx.compose.ui.res.stringResource(R.string.speed_test_no_history),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(MaterialTheme.spacing.base)
+        )
+    }
+}
+
+@Composable
 private fun LatestResultCard(result: SpeedTestResult) {
-    val dateLabel = rememberTimestampLabel(
-        timestamp = result.timestamp,
-        pattern = "dd.MM HH:mm"
-    )
+    val dateLabel = rememberTimestampLabel(result.timestamp)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -791,9 +828,11 @@ private fun HistorySection(results: List<SpeedTestResult>) {
         results.forEach { result ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Row(
                     modifier = Modifier
@@ -804,8 +843,7 @@ private fun HistorySection(results: List<SpeedTestResult>) {
                 ) {
                     Text(
                         text = rememberTimestampLabel(
-                            timestamp = result.timestamp,
-                            pattern = "dd.MM HH:mm"
+                            timestamp = result.timestamp
                         ),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -837,14 +875,8 @@ private fun TinyHistoryMetric(value: Double, label: String) {
 }
 
 @Composable
-private fun rememberTimestampLabel(timestamp: Long, pattern: String): String {
-    val formatter = remember(pattern) {
-        java.text.SimpleDateFormat(pattern, java.util.Locale.getDefault())
-    }
-    return remember(timestamp, formatter) {
-        formatter.format(java.util.Date(timestamp))
-    }
-}
+private fun rememberTimestampLabel(timestamp: Long): String =
+    remember(timestamp) { formatLocalizedDateTime(timestamp, "MMMdhm") }
 
 @Composable
 private fun heroInstructionText(

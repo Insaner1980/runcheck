@@ -4,7 +4,6 @@ import android.content.Context
 import android.os.BatteryManager
 import com.devicepulse.data.device.DeviceProfile
 import com.devicepulse.domain.model.Confidence
-import com.devicepulse.domain.model.CurrentUnit
 import com.devicepulse.domain.model.MeasuredValue
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -18,23 +17,26 @@ class OnePlusBatterySource(
 
     override fun getCurrentNow(): Flow<MeasuredValue<Int>> = flow {
         while (true) {
-            val rawCurrent = batteryManager.getIntProperty(
-                BatteryManager.BATTERY_PROPERTY_CURRENT_NOW
-            )
-
-            // OnePlus/SUPERVOOC may use inverted sign convention
-            // Normalize: positive = charging, negative = discharging
-            val milliamps = when (profile.currentNowUnit) {
-                CurrentUnit.MICROAMPS -> rawCurrent / 1000
-                CurrentUnit.MILLIAMPS -> rawCurrent
+            val rawCurrent = readCurrentNowRaw()
+            if (rawCurrent == null) {
+                emit(unavailableCurrent())
+                delay(POLLING_INTERVAL_MS)
+                continue
             }
 
-            // SUPERVOOC sign is often inverted from standard convention
-            val normalizedMa = abs(milliamps)
+            val profileNormalizedMa = normalizeCurrent(rawCurrent)
             val isCharging = batteryManager.isCharging
-            val currentMa = if (isCharging) normalizedMa else -normalizedMa
+            val currentMa = when {
+                isCharging && profileNormalizedMa < 0 -> abs(profileNormalizedMa)
+                !isCharging && profileNormalizedMa > 0 -> -abs(profileNormalizedMa)
+                else -> profileNormalizedMa
+            }
 
-            val confidence = if (profile.currentNowReliable) Confidence.HIGH else Confidence.LOW
+            val confidence = when {
+                rawCurrent == 0 -> Confidence.UNAVAILABLE
+                profile.currentNowReliable -> Confidence.HIGH
+                else -> Confidence.LOW
+            }
             emit(MeasuredValue(currentMa, confidence))
             delay(POLLING_INTERVAL_MS)
         }

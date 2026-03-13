@@ -5,6 +5,7 @@
 
     <!-- Navigation -->
     <string name="navigate_back">Back</string>
+    <string name="navigate_menu">Menu</string>
 
     <!-- Home Screen -->
     <string name="home_battery_card">Battery</string>
@@ -23,8 +24,12 @@
     <string name="home_speed_test">Speed Test</string>
     <string name="home_test_compare">Test &amp; compare</string>
     <string name="home_pro_history_desc">History, charger testing, export &amp; more</string>
+    <string name="home_insights_title">Insights unlocked</string>
+    <string name="home_insights_desc">Extended history, widgets, exports, and throttling insights are active.</string>
     <string name="home_free_suffix">free</string>
     <string name="home_status_summary">%1$s · %2$s · %3$s</string>
+    <string name="home_thermal_summary">%1$s · %2$s</string>
+    <string name="home_storage_free">%1$s %2$s</string>
 
     <!-- Health Status -->
     <string name="status_healthy">Healthy</string>
@@ -92,6 +97,7 @@
     <string name="battery_history_metric_current">Current</string>
     <string name="battery_history_metric_voltage">Voltage</string>
     <string name="battery_history_metric_unavailable">Not enough data for this metric yet</string>
+    <string name="battery_section_details">Details</string>
 
     <!-- Charging Status -->
     <string name="charging_status_charging">Charging</string>
@@ -123,6 +129,21 @@
     <string name="unit_mbps">Mbps</string>
     <string name="unit_ms">ms</string>
     <string name="unit_ghz">GHz</string>
+
+    <!-- Value Formatting -->
+    <string name="value_percent">%1$d%%</string>
+    <string name="value_signed_percent">%1$s%2$d%%</string>
+    <string name="value_voltage_volts">%1$.1f V</string>
+    <string name="value_milliamp_hours">%1$d mAh</string>
+    <string name="value_temperature">%1$.1f°C</string>
+    <string name="value_percent_per_hour">%1$.1f%%/h</string>
+    <string name="value_watts">%1$.1f W</string>
+    <string name="value_duration_hours_minutes">%1$dh %2$dm</string>
+    <string name="value_duration_minutes">%1$dm</string>
+    <string name="value_with_unit_int">%1$d %2$s</string>
+    <string name="speed_test_ping_line">%1$s: %2$d %3$s</string>
+    <string name="speed_test_metric_with_unit">%1$s (%2$s)</string>
+    <string name="placeholder_dash">—</string>
 
     <!-- Network Detail -->
     <string name="network_title">Network</string>
@@ -160,6 +181,7 @@
     <string name="network_wifi_name_location_needed">Turn on device location to let Android share the current WiFi network name.</string>
     <string name="network_wifi_name_unavailable">Android is not currently exposing the WiFi network name to the app.</string>
     <string name="network_wifi_name_open_app_settings">App settings</string>
+    <string name="network_wifi_name_grant_permission">Grant permission</string>
 
     <!-- Thermal Detail -->
     <string name="thermal_title">Thermal</string>
@@ -203,6 +225,10 @@
     <string name="settings_interval_60">60 minutes</string>
     <string name="settings_notifications">Notifications</string>
     <string name="settings_notifications_desc">Alerts for low battery, high temperature, low storage</string>
+    <string name="notification_permission_title">Allow notifications</string>
+    <string name="notification_permission_message">DevicePulse can still monitor your device without notification permission, but alerts will stay silent until you allow them.</string>
+    <string name="notification_permission_grant">Grant permission</string>
+    <string name="notification_permission_open_settings">Open app settings</string>
     <string name="settings_measurement_info">Measurement Info</string>
     <string name="settings_device_model">%1$s %2$s</string>
     <string name="settings_api_level">API Level: %1$d</string>
@@ -213,14 +239,25 @@
     <string name="settings_measurement_unreliable">Unreliable</string>
     <string name="settings_measurement_available">Available</string>
     <string name="settings_measurement_not_available">Not available</string>
+    <string name="settings_privacy">Privacy</string>
+    <string name="settings_crash_reporting">Share crash reports</string>
+    <string name="settings_crash_reporting_desc">Send anonymous crash diagnostics to Firebase Crashlytics to help fix bugs.</string>
+    <string name="settings_crash_reporting_note">Off by default. Debug builds never send reports. When disabled, pending unsent crash reports are deleted locally.</string>
     <string name="settings_about">About</string>
     <string name="settings_upgrade_pro">Upgrade to Pro</string>
     <string name="settings_upgrade_pro_with_price">Upgrade to Pro - %1$s</string>
     <string name="settings_restore_purchase">Restore purchase</string>
     <string name="settings_refresh_pro_status">Refresh Pro status</string>
+    <string name="settings_data_retention_description">Choose how long DevicePulse keeps your history on this device.</string>
+    <string name="settings_data_retention_free">Free keeps the last 24 hours of history. Upgrade to Pro to keep 3 months, 6 months, 1 year, or everything.</string>
+    <string name="settings_retention_3_months">3 months</string>
+    <string name="settings_retention_6_months">6 months</string>
+    <string name="settings_retention_1_year">1 year</string>
+    <string name="settings_retention_forever">Forever</string>
     <string name="settings_restore_success">Pro purchase confirmed</string>
     <string name="settings_restore_not_found">No Pro purchase was found for this Play account</string>
     <string name="settings_restore_unavailable">Play Billing is not ready yet. Try again in a moment.</string>
+    <string name="settings_billing_unavailable">Play Billing is unavailable on this device. Pro purchase options are hidden until billing becomes available.</string>
     <string name="settings_pro_active">Pro Active</string>
     <string name="settings_pro_desc">Extended history, widgets, and CSV export</string>
     <string name="settings_pro_thank_you">Thank you for supporting DevicePulse!</string>
@@ -244,20 +281,26 @@
     <string name="widget_health_score_label">Health Score</string>
     <string name="widget_battery_short_label">Bat</string>
     <string name="widget_percent_value">%1$d%%</string>
-    <string name="widget_temperature_value">%.1f°C</string>
+    <string name="widget_temperature_value">%1$.1f°C</string>
     <string name="widget_current_value">%1$d mA</string>
     <string name="widget_pro_required">Pro required</string>
 
     <!-- Notifications -->
     <string name="notification_channel_alerts">Device Alerts</string>
     <string name="notification_channel_status">Device Status</string>
+    <string name="notification_channel_alerts_description">Alerts for battery, temperature, and storage issues</string>
+    <string name="notification_channel_status_description">Device status updates</string>
+    <string name="fgs_special_use_subtype_realtime_monitoring">Foreground service used only while the user is actively viewing real-time device health metrics that require continuous updates.</string>
     <string name="notification_low_battery_title">Low Battery</string>
     <string name="notification_low_battery_text">Battery at %d%%</string>
     <string name="notification_high_temp_title">High Temperature</string>
-    <string name="notification_high_temp_text">Device temperature: %.1f\u00B0C</string>
+    <string name="notification_high_temp_text">Device temperature: %1$.1f\u00B0C</string>
     <string name="notification_low_storage_title">Low Storage</string>
-    <string name="notification_low_storage_text">Storage %.0f%% full</string>
+    <string name="notification_low_storage_text">Storage %1$.0f%% full</string>
     <string name="notification_charge_complete_title">Charging Complete</string>
+    <string name="real_time_monitor_channel_name">Real-Time Monitoring</string>
+    <string name="real_time_monitor_channel_description">Shows real-time device health data</string>
+    <string name="real_time_monitor_notification_text">Monitoring device health…</string>
 
     <!-- Export -->
     <string name="settings_data_section">Data</string>
@@ -269,11 +312,14 @@
     <string name="charger_title">Charger Comparison</string>
     <string name="charger_add">Add Charger</string>
     <string name="charger_add_hint">Charger name (e.g. Samsung 25W)</string>
-    <string name="charger_sessions">%d sessions</string>
     <string name="charger_avg_speed">Avg %d mA</string>
     <string name="charger_no_chargers">No chargers saved yet</string>
     <string name="charger_last_used">Last used: %s</string>
     <string name="charger_delete">Delete</string>
+    <plurals name="charger_sessions">
+        <item quantity="one">%d session</item>
+        <item quantity="other">%d sessions</item>
+    </plurals>
 
     <!-- App Battery Usage -->
     <string name="app_usage_title">App Battery Usage</string>
@@ -283,7 +329,7 @@
     <string name="app_usage_permission_open_settings">Open usage access</string>
     <string name="app_usage_time_hours_minutes">%1$dh %2$dm</string>
     <string name="app_usage_time_minutes">%1$dm</string>
-    <string name="app_usage_drain">Est. drain: %s mAh</string>
+    <string name="app_usage_drain">Est. drain: %1$.1f mAh</string>
 
     <!-- Speed Test -->
     <string name="speed_test_title">Speed Test</string>
@@ -306,6 +352,11 @@
     <string name="speed_test_phase_upload">Testing upload…</string>
     <string name="speed_test_completed">Test Complete</string>
     <string name="speed_test_failed">Speed test failed</string>
+    <string name="speed_test_error_no_internet">No internet connection available.</string>
+    <string name="speed_test_error_server_unreachable">Could not reach the speed test server.</string>
+    <string name="speed_test_error_timeout">The speed test timed out. Try again.</string>
+    <string name="speed_test_error_generic">Unable to complete the speed test.</string>
+    <string name="speed_test_no_history">No saved speed tests yet. Run a test to start building history.</string>
     <string name="speed_test_cellular_warning">This test will use approximately 20–50 MB of mobile data</string>
     <string name="speed_test_cellular_proceed">Proceed</string>
     <string name="speed_test_cellular_cancel">Cancel</string>

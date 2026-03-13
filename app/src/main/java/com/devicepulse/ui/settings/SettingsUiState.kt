@@ -7,6 +7,7 @@ data class SettingsUiState(
     val preferences: UserPreferences = UserPreferences(),
     val deviceProfile: DeviceProfileInfo? = null,
     val isPro: Boolean = false,
+    val billingAvailable: Boolean = false,
     val proPrice: String? = null,
     val billingStatus: String? = null,
     val exportStatus: String? = null,

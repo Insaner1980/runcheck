@@ -2,9 +2,11 @@ package com.devicepulse.ui.charger
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devicepulse.domain.repository.ChargerRepository
 import com.devicepulse.domain.repository.ProStatusProvider
+import com.devicepulse.domain.usecase.AddChargerUseCase
+import com.devicepulse.domain.usecase.DeleteChargerUseCase
 import com.devicepulse.domain.usecase.GetChargerComparisonUseCase
+import com.devicepulse.domain.usecase.GetChargerSessionsUseCase
 import com.devicepulse.ui.common.messageOr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +22,9 @@ import javax.inject.Inject
 @HiltViewModel
 class ChargerViewModel @Inject constructor(
     private val getChargerComparison: GetChargerComparisonUseCase,
-    private val chargerRepository: ChargerRepository,
+    private val getChargerSessions: GetChargerSessionsUseCase,
+    private val addChargerUseCase: AddChargerUseCase,
+    private val deleteChargerUseCase: DeleteChargerUseCase,
     private val proStatusProvider: ProStatusProvider
 ) : ViewModel() {
 
@@ -44,14 +48,14 @@ class ChargerViewModel @Inject constructor(
     fun addCharger(name: String) {
         if (!proStatusProvider.isPro()) return
         viewModelScope.launch {
-            chargerRepository.insertCharger(name)
+            addChargerUseCase(name)
         }
     }
 
     fun deleteCharger(id: Long) {
         if (!proStatusProvider.isPro()) return
         viewModelScope.launch {
-            chargerRepository.deleteChargerById(id)
+            deleteChargerUseCase(id)
         }
     }
 
@@ -74,7 +78,7 @@ class ChargerViewModel @Inject constructor(
         loadJob = viewModelScope.launch {
             combine(
                 getChargerComparison(),
-                chargerRepository.getAllSessions()
+                getChargerSessions()
             ) { chargers, sessions ->
                 ChargerUiState.Success(
                     chargers = chargers,

@@ -158,6 +158,6 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 
 - This is an Android-only app — no iOS, no cross-platform
 - Privacy-first: no analytics, no tracking, no account system, no network calls except optional latency ping
-- All data stays on device
+- Measurement and history data stay on device unless the user explicitly enables crash reporting, which sends crash diagnostics to Firebase Crashlytics
 - The spec file `device-health-monitor-spec.md` in the repo root contains the full feature specification — refer to it for detailed feature requirements and UI design guidelines
 - The roadmap and next steps are documented in `docs/plans/2026-03-10-phase1-completion-and-roadmap.md`

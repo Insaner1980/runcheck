@@ -22,7 +22,7 @@ class Android14BatterySource(
             // 2. Fall back to BatteryManager property (needs BATTERY_STATS on Android 17+)
             ?: try {
                 val value = batteryManager.getIntProperty(PROPERTY_CHARGING_CYCLE_COUNT)
-                if (value >= 0 && value != Int.MIN_VALUE) value else null
+                if (value > 0 && value != Int.MIN_VALUE) value else null
             } catch (_: Exception) {
                 null
             }
@@ -50,7 +50,7 @@ class Android14BatterySource(
         return try {
             val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
             val cycleCount = intent?.getIntExtra(EXTRA_CYCLE_COUNT, -1) ?: -1
-            if (cycleCount >= 0) cycleCount else null
+            if (cycleCount > 0) cycleCount else null
         } catch (_: Exception) {
             null
         }
@@ -60,7 +60,7 @@ class Android14BatterySource(
         return try {
             val file = File(path)
             if (file.exists() && file.canRead()) {
-                file.readText().trim().toIntOrNull()
+                file.readText().trim().toIntOrNull()?.takeIf { it > 0 }
             } else null
         } catch (_: Exception) {
             null

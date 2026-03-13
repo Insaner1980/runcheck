@@ -19,6 +19,11 @@ class GetBatteryHistoryUseCase @Inject constructor(
             period == HistoryPeriod.ALL -> 0L
             else -> System.currentTimeMillis() - period.durationMs
         }
-        return batteryRepository.getReadingsSince(since)
+        val limit = if (period == HistoryPeriod.ALL) MAX_HISTORY_POINTS else null
+        return batteryRepository.getReadingsSince(since, limit)
+    }
+
+    companion object {
+        private const val MAX_HISTORY_POINTS = 5_000
     }
 }

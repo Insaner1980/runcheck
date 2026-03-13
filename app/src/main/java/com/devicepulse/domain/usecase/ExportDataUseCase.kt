@@ -1,7 +1,9 @@
 package com.devicepulse.domain.usecase
 
 import com.devicepulse.domain.repository.BatteryRepository
+import com.devicepulse.domain.repository.FileExportRepository
 import com.devicepulse.domain.repository.NetworkRepository
+import com.devicepulse.domain.repository.ProStatusProvider
 import com.devicepulse.domain.repository.StorageRepository
 import com.devicepulse.domain.repository.ThermalRepository
 import java.time.Instant
@@ -13,7 +15,9 @@ class ExportDataUseCase @Inject constructor(
     private val batteryRepository: BatteryRepository,
     private val networkRepository: NetworkRepository,
     private val thermalRepository: ThermalRepository,
-    private val storageRepository: StorageRepository
+    private val storageRepository: StorageRepository,
+    private val fileExportRepository: FileExportRepository,
+    private val proStatusProvider: ProStatusProvider
 ) {
 
     private val isoFormatter: DateTimeFormatter =
@@ -31,7 +35,12 @@ class ExportDataUseCase @Inject constructor(
         }
     }
 
+    private fun requirePro() {
+        check(proStatusProvider.isPro()) { "CSV export requires DevicePulse Pro" }
+    }
+
     suspend fun exportBatteryCsv(): String {
+        requirePro()
         val readings = batteryRepository.getAllReadings()
         val sb = StringBuilder()
         sb.appendLine("timestamp,level,voltage_mv,temperature_c,current_ma,current_confidence,status,plug_type,health,cycle_count,health_pct")
@@ -46,6 +55,7 @@ class ExportDataUseCase @Inject constructor(
     }
 
     suspend fun exportNetworkCsv(): String {
+        requirePro()
         val readings = networkRepository.getAllReadings()
         val sb = StringBuilder()
         sb.appendLine("timestamp,type,signal_dbm,wifi_speed_mbps,wifi_frequency,carrier,network_subtype,latency_ms")
@@ -60,6 +70,7 @@ class ExportDataUseCase @Inject constructor(
     }
 
     suspend fun exportThermalCsv(): String {
+        requirePro()
         val readings = thermalRepository.getAllReadings()
         val sb = StringBuilder()
         sb.appendLine("timestamp,battery_temp_c,cpu_temp_c,thermal_status,throttling")
@@ -73,6 +84,7 @@ class ExportDataUseCase @Inject constructor(
     }
 
     suspend fun exportStorageCsv(): String {
+        requirePro()
         val readings = storageRepository.getAllReadings()
         val sb = StringBuilder()
         sb.appendLine("timestamp,total_bytes,available_bytes,apps_bytes,media_bytes")
@@ -91,4 +103,7 @@ class ExportDataUseCase @Inject constructor(
         "devicepulse_thermal.csv" to exportThermalCsv(),
         "devicepulse_storage.csv" to exportStorageCsv()
     )
+
+    suspend fun exportAllToDownloads(): Boolean =
+        fileExportRepository.exportToDownloads(exportAllCsv())
 }

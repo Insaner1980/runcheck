@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
@@ -26,6 +27,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -33,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.devicepulse.R
 import com.devicepulse.domain.model.AppBatteryUsage
 import com.devicepulse.ui.components.DetailTopBar
@@ -89,9 +93,14 @@ fun AppUsageScreen(
 @Composable
 private fun AppUsageContent(state: AppUsageUiState.Success) {
     val context = LocalContext.current
-    val hasUsageAccess = remember(context) { context.hasUsageStatsAccess() }
+    var hasUsageAccess by remember(context) { mutableStateOf(context.hasUsageStatsAccess()) }
     val maxTime = remember(state.apps) {
         state.apps.maxOfOrNull { it.foregroundTimeMs } ?: 1L
+    }
+
+    LifecycleResumeEffect(context) {
+        hasUsageAccess = context.hasUsageStatsAccess()
+        onPauseOrDispose { }
     }
 
     LazyColumn(
@@ -108,9 +117,11 @@ private fun AppUsageContent(state: AppUsageUiState.Success) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainer
-                    )
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Column(
                         modifier = Modifier
@@ -170,9 +181,11 @@ private fun AppUsageItem(app: AppBatteryUsage, maxTime: Long) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -212,7 +225,7 @@ private fun AppUsageItem(app: AppBatteryUsage, maxTime: Long) {
 
             app.estimatedDrainMah?.let { drain ->
                 Text(
-                    text = stringResource(R.string.app_usage_drain, "%.1f".format(drain)),
+                    text = stringResource(R.string.app_usage_drain, drain.toDouble()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

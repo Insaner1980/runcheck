@@ -35,15 +35,16 @@ class HealthWidget : GlanceAppWidget() {
         }
         val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
         val batteryLevel = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        val normalizedBatteryLevel = batteryLevel.takeUnless { it == Int.MIN_VALUE } ?: 0
         val healthScoreLabel = context.getString(R.string.widget_health_score_label)
         val batteryLabel = context.getString(R.string.widget_battery_short_label)
-        val batteryValue = context.getString(R.string.widget_percent_value, batteryLevel)
+        val batteryValue = context.getString(R.string.widget_percent_value, normalizedBatteryLevel)
 
         // Simple health score estimate based on battery level
         val batteryScore = when {
-            batteryLevel >= 50 -> 100
-            batteryLevel >= 20 -> 75
-            batteryLevel >= 10 -> 50
+            normalizedBatteryLevel >= 50 -> 100
+            normalizedBatteryLevel >= 20 -> 75
+            normalizedBatteryLevel >= 10 -> 50
             else -> 25
         }
 

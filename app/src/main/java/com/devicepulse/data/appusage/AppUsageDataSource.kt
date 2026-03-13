@@ -3,7 +3,6 @@ package com.devicepulse.data.appusage
 import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
 import android.content.Context
-import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Process
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -14,7 +13,7 @@ import javax.inject.Singleton
 
 @Singleton
 class AppUsageDataSource @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
 
     private val usageStatsManager =
@@ -48,6 +47,28 @@ class AppUsageDataSource @Inject constructor(
                 .toList()
         }
 
+    suspend fun getCurrentForegroundApp(lookbackWindowMs: Long = RECENT_USAGE_LOOKBACK_MS): String? =
+        withContext(Dispatchers.IO) {
+            if (!hasUsageStatsPermission()) {
+                return@withContext null
+            }
+
+            val endTimeMs = System.currentTimeMillis()
+            val startTimeMs = endTimeMs - lookbackWindowMs
+            val packageManager = context.packageManager
+
+            usageStatsManager?.queryUsageStats(
+                UsageStatsManager.INTERVAL_DAILY,
+                startTimeMs,
+                endTimeMs
+            ).orEmpty()
+                .asSequence()
+                .filter { stat -> stat.packageName.isNotBlank() && stat.lastTimeUsed > 0L }
+                .maxByOrNull { stat -> stat.lastTimeUsed }
+                ?.packageName
+                ?.let { packageName -> resolveAppLabel(packageManager, packageName) }
+        }
+
     fun hasUsageStatsPermission(): Boolean {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager
             ?: return false
@@ -75,4 +96,8 @@ class AppUsageDataSource @Inject constructor(
         val appLabel: String,
         val foregroundTimeMs: Long
     )
+
+    companion object {
+        private const val RECENT_USAGE_LOOKBACK_MS = 2 * 60 * 1000L
+    }
 }

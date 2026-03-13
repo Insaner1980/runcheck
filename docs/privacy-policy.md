@@ -14,7 +14,7 @@ DevicePulse monitors your device's hardware metrics locally on your device:
 
 ## How data is stored
 
-All measurement data is stored **locally on your device** in an encrypted database. DevicePulse does **not** transmit your device data to any external server.
+Measurement history and settings are stored **locally on your device** using on-device Room and DataStore storage. The local database is not encrypted at the application layer.
 
 Free users' data is automatically cleaned up after 24 hours. Pro users can retain data indefinitely and export it as CSV files to their device's Downloads folder.
 
@@ -22,31 +22,34 @@ Free users' data is automatically cleaned up after 24 hours. Pro users can retai
 
 DevicePulse uses network access only for:
 
-- **Latency measurement**: A single HTTPS request to measure network response time
+- **Latency measurement**: A TCP connection sample to the configured latency endpoint. By default this is `locate.measurementlab.net:443`.
 - **In-app purchases**: Google Play Billing for the Pro upgrade
-- **Speed testing**: Optional network throughput testing initiated by the user
+- **Speed testing**: Optional M-Lab NDT7 network throughput testing initiated by the user
+- **Optional crash reporting**: If you enable crash reporting in Settings, crash diagnostics are sent to Firebase Crashlytics
 
 ## Third-party services
 
 - **Google Play Billing**: Processes in-app purchases. Subject to [Google Play's terms](https://play.google.com/about/play-terms/).
+- **M-Lab**: Provides optional speed-test infrastructure and the default latency endpoint.
+- **Firebase Crashlytics**: Optional crash diagnostics, enabled only if you explicitly opt in.
 
 ## Permissions
 
 | Permission | Purpose |
 |-----------|---------|
-| BATTERY_STATS | Read detailed battery statistics |
 | ACCESS_NETWORK_STATE | Monitor network connection type |
 | ACCESS_WIFI_STATE | Read WiFi signal strength and details |
+| ACCESS_FINE_LOCATION | Allow Android to expose current WiFi SSID and related network details |
 | FOREGROUND_SERVICE | Run background monitoring service |
+| FOREGROUND_SERVICE_SPECIAL_USE | Support the real-time monitoring foreground service while actively viewing live metrics |
 | POST_NOTIFICATIONS | Send alerts (low battery, high temp, etc.) |
 | RECEIVE_BOOT_COMPLETED | Restart monitoring after device reboot |
-| INTERNET | Latency measurement, speed testing, and billing-related network access |
-| READ_PHONE_STATE | Read cellular network info |
+| INTERNET | Latency measurement, speed testing, billing, and optional crash reporting |
 | PACKAGE_USAGE_STATS | Per-app battery usage tracking |
 
 ## Data deletion
 
-Uninstalling DevicePulse removes all locally stored data. Free users' data is automatically deleted after 24 hours.
+Uninstalling DevicePulse removes all locally stored app data. If crash reporting is enabled, previously uploaded crash reports are stored by Firebase Crashlytics according to Google's retention policies. Free users' data is automatically deleted after 24 hours.
 
 ## Children's privacy
 

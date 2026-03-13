@@ -15,9 +15,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.unit.dp
+import com.devicepulse.ui.theme.reducedMotion
 import com.devicepulse.ui.theme.statusColors
 
 @Composable
@@ -28,23 +28,27 @@ fun HeatStrip(
     maxTemp: Float = 50f
 ) {
     val normalizedTemp = ((temperatureC - minTemp) / (maxTemp - minTemp)).coerceIn(0f, 1f)
-
     val isCritical = temperatureC > 42f
-
-    val infiniteTransition = rememberInfiniteTransition(label = "heat_pulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = if (isCritical) 0.7f else 1f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "heat_alpha"
-    )
+    val reducedMotion = MaterialTheme.reducedMotion
+    val pulseAlpha = if (reducedMotion) {
+        1f
+    } else {
+        val infiniteTransition = rememberInfiniteTransition(label = "heat_pulse")
+        infiniteTransition.animateFloat(
+            initialValue = if (isCritical) 0.7f else 1f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 2000, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "heat_alpha"
+        ).value
+    }
 
     val coolColor = MaterialTheme.statusColors.healthy
     val warmColor = MaterialTheme.statusColors.fair
     val hotColor = MaterialTheme.statusColors.critical
+    val indicatorColor = MaterialTheme.colorScheme.onSurface
 
     Canvas(
         modifier = modifier
@@ -63,7 +67,7 @@ fun HeatStrip(
         // Indicator position
         val indicatorX = normalizedTemp * size.width
         drawCircle(
-            color = Color.White,
+            color = indicatorColor,
             radius = 8.dp.toPx(),
             center = androidx.compose.ui.geometry.Offset(
                 indicatorX.coerceIn(8.dp.toPx(), size.width - 8.dp.toPx()),

@@ -7,13 +7,15 @@ import androidx.lifecycle.viewModelScope
 import com.devicepulse.R
 import com.devicepulse.billing.ProPurchaseRefreshResult
 import com.devicepulse.billing.ProPurchaseManager
-import com.devicepulse.domain.repository.DeviceProfileRepository
-import com.devicepulse.domain.repository.FileExportRepository
+import com.devicepulse.domain.model.DataRetention
 import com.devicepulse.domain.repository.ProStatusProvider
-import com.devicepulse.domain.repository.UserPreferencesRepository
 import com.devicepulse.domain.model.MonitoringInterval
 import com.devicepulse.domain.usecase.ExportDataUseCase
-import com.devicepulse.service.monitor.MonitorScheduler
+import com.devicepulse.domain.usecase.ObserveSettingsUseCase
+import com.devicepulse.domain.usecase.SetCrashReportingEnabledUseCase
+import com.devicepulse.domain.usecase.SetDataRetentionUseCase
+import com.devicepulse.domain.usecase.SetMonitoringIntervalUseCase
+import com.devicepulse.domain.usecase.SetNotificationsEnabledUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,14 +29,15 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val preferencesRepository: UserPreferencesRepository,
-    private val deviceProfileRepository: DeviceProfileRepository,
+    @param:ApplicationContext private val context: Context,
+    private val observeSettings: ObserveSettingsUseCase,
     private val proPurchaseManager: ProPurchaseManager,
     private val proStatusProvider: ProStatusProvider,
     private val exportDataUseCase: ExportDataUseCase,
-    private val fileExportRepository: FileExportRepository,
-    private val monitorScheduler: MonitorScheduler
+    private val setDataRetentionUseCase: SetDataRetentionUseCase,
+    private val setMonitoringIntervalUseCase: SetMonitoringIntervalUseCase,
+    private val setNotificationsEnabledUseCase: SetNotificationsEnabledUseCase,
+    private val setCrashReportingEnabledUseCase: SetCrashReportingEnabledUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -43,23 +46,24 @@ class SettingsViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             combine(
-                preferencesRepository.getPreferences(),
-                deviceProfileRepository.getProfile(),
-                proPurchaseManager.isProUser
-            ) { prefs, profile, isPro ->
-                Triple(prefs, profile, isPro)
+                observeSettings(),
+                proPurchaseManager.isProUser,
+                proPurchaseManager.billingAvailable
+            ) { settings, isPro, billingAvailable ->
+                Triple(settings, isPro, billingAvailable)
             }
                 .catch {
                     _uiState.update { current ->
                         current.copy(errorMessage = context.getString(R.string.error_generic))
                     }
                 }
-                .collect { (prefs, profile, isPro) ->
+                .collect { (settings, isPro, billingAvailable) ->
                     _uiState.update { current ->
                         current.copy(
-                            preferences = prefs,
-                            deviceProfile = profile,
-                            isPro = isPro
+                            preferences = settings.preferences,
+                            deviceProfile = settings.deviceProfile,
+                            isPro = isPro,
+                            billingAvailable = billingAvailable
                         )
                     }
                 }
@@ -78,6 +82,12 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun purchasePro(activity: Activity) {
+        if (!_uiState.value.billingAvailable) {
+            _uiState.update {
+                it.copy(billingStatus = context.getString(R.string.settings_billing_unavailable))
+            }
+            return
+        }
         proPurchaseManager.launchPurchaseFlow(activity)
     }
 
@@ -94,13 +104,24 @@ class SettingsViewModel @Inject constructor(
 
     fun setMonitoringInterval(interval: MonitoringInterval) {
         viewModelScope.launch {
-            preferencesRepository.setMonitoringInterval(interval)
-            monitorScheduler.schedule(interval)
+            setMonitoringIntervalUseCase(interval)
         }
     }
 
     fun setNotifications(enabled: Boolean) {
-        viewModelScope.launch { preferencesRepository.setNotificationsEnabled(enabled) }
+        viewModelScope.launch { setNotificationsEnabledUseCase(enabled) }
+    }
+
+    fun setDataRetention(retention: DataRetention) {
+        viewModelScope.launch {
+            setDataRetentionUseCase(retention)
+        }
+    }
+
+    fun setCrashReporting(enabled: Boolean) {
+        viewModelScope.launch {
+            setCrashReportingEnabledUseCase(enabled)
+        }
     }
 
     /** Exports all reading data as CSV files to the Downloads folder via FileExportRepository. */
@@ -113,19 +134,20 @@ class SettingsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             try {
-                val csvFiles = exportDataUseCase.exportAllCsv()
-                fileExportRepository.exportToDownloads(csvFiles)
-
                 _uiState.update {
                     it.copy(
-                    exportStatus = context.getString(R.string.settings_export_success)
-                )
+                        exportStatus = if (exportDataUseCase.exportAllToDownloads()) {
+                            context.getString(R.string.settings_export_success)
+                        } else {
+                            context.getString(R.string.settings_export_error)
+                        }
+                    )
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _uiState.update {
                     it.copy(
-                    exportStatus = context.getString(R.string.settings_export_error)
-                )
+                        exportStatus = context.getString(R.string.settings_export_error)
+                    )
                 }
             }
         }

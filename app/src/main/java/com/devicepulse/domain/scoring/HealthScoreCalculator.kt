@@ -104,13 +104,15 @@ class HealthScoreCalculator @Inject constructor() {
     ): Int {
         if (network.connectionType == ConnectionType.NONE) return 0
 
+        val now = System.currentTimeMillis()
         // Check if speed test is recent (< 1 hour)
         val hasRecentSpeedTest = recentSpeedTest != null &&
-            (System.currentTimeMillis() - recentSpeedTest.timestamp) < SPEED_TEST_MAX_AGE_MS
+            recentSpeedTest.timestamp in 0..now &&
+            (now - recentSpeedTest.timestamp) < SPEED_TEST_MAX_AGE_MS
 
         // With speed test: signal 40%, latency 30%, download 20%, stability 10%
         // Without speed test: signal + latency only (re-weighted)
-        return if (hasRecentSpeedTest && recentSpeedTest != null) {
+        return if (hasRecentSpeedTest) {
             calculateNetworkScoreWithSpeedTest(network, recentSpeedTest)
         } else {
             calculateNetworkScoreBasic(network)

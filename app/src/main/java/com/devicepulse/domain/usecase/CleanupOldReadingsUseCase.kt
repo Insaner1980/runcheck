@@ -1,6 +1,8 @@
 package com.devicepulse.domain.usecase
 
+import com.devicepulse.domain.model.DataRetention
 import com.devicepulse.domain.repository.BatteryRepository
+import com.devicepulse.domain.repository.DatabaseTransactionRunner
 import com.devicepulse.domain.repository.NetworkRepository
 import com.devicepulse.domain.repository.ProStatusProvider
 import com.devicepulse.domain.repository.AppBatteryUsageRepository
@@ -8,9 +10,12 @@ import com.devicepulse.domain.repository.SpeedTestRepository
 import com.devicepulse.domain.repository.StorageRepository
 import com.devicepulse.domain.repository.ThermalRepository
 import com.devicepulse.domain.repository.ThrottlingRepository
+import com.devicepulse.domain.repository.UserPreferencesRepository
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 class CleanupOldReadingsUseCase @Inject constructor(
+    private val transactionRunner: DatabaseTransactionRunner,
     private val batteryRepository: BatteryRepository,
     private val networkRepository: NetworkRepository,
     private val thermalRepository: ThermalRepository,
@@ -18,19 +23,34 @@ class CleanupOldReadingsUseCase @Inject constructor(
     private val throttlingRepository: ThrottlingRepository,
     private val appBatteryUsageRepository: AppBatteryUsageRepository,
     private val speedTestRepository: SpeedTestRepository,
-    private val proStatusProvider: ProStatusProvider
+    private val proStatusProvider: ProStatusProvider,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) {
     suspend operator fun invoke() {
-        if (proStatusProvider.isPro()) return
+        val cutoff = resolveCutoff(System.currentTimeMillis()) ?: return
 
-        val cutoff = System.currentTimeMillis() - TWENTY_FOUR_HOURS_MS
-        batteryRepository.deleteOlderThan(cutoff)
-        networkRepository.deleteOlderThan(cutoff)
-        thermalRepository.deleteOlderThan(cutoff)
-        storageRepository.deleteOlderThan(cutoff)
-        throttlingRepository.deleteOlderThan(cutoff)
-        appBatteryUsageRepository.deleteOlderThan(cutoff)
-        speedTestRepository.deleteOlderThan(cutoff)
+        transactionRunner.runInTransaction {
+            batteryRepository.deleteOlderThan(cutoff)
+            networkRepository.deleteOlderThan(cutoff)
+            thermalRepository.deleteOlderThan(cutoff)
+            storageRepository.deleteOlderThan(cutoff)
+            throttlingRepository.deleteOlderThan(cutoff)
+            appBatteryUsageRepository.deleteOlderThan(cutoff)
+            speedTestRepository.deleteOlderThan(cutoff)
+        }
+    }
+
+    private suspend fun resolveCutoff(now: Long): Long? {
+        if (!proStatusProvider.isPro()) {
+            return now - TWENTY_FOUR_HOURS_MS
+        }
+
+        return when (userPreferencesRepository.getPreferences().first().dataRetention) {
+            DataRetention.THREE_MONTHS -> now - requireNotNull(DataRetention.THREE_MONTHS.durationMillis)
+            DataRetention.SIX_MONTHS -> now - requireNotNull(DataRetention.SIX_MONTHS.durationMillis)
+            DataRetention.ONE_YEAR -> now - requireNotNull(DataRetention.ONE_YEAR.durationMillis)
+            DataRetention.FOREVER -> null
+        }
     }
 
     companion object {

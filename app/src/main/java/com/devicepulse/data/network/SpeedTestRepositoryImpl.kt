@@ -6,6 +6,7 @@ import com.devicepulse.domain.model.ConnectionType
 import com.devicepulse.domain.model.SpeedTestProgress
 import com.devicepulse.domain.model.SpeedTestResult
 import com.devicepulse.domain.repository.SpeedTestRepository as SpeedTestRepositoryContract
+import com.devicepulse.util.TimestampSanitizer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -22,7 +23,7 @@ class SpeedTestRepositoryImpl @Inject constructor(
 
     override suspend fun saveResult(result: SpeedTestResult) {
         val entity = SpeedTestResultEntity(
-            timestamp = result.timestamp,
+            timestamp = TimestampSanitizer.clampToNow(result.timestamp),
             downloadMbps = result.downloadMbps,
             uploadMbps = result.uploadMbps,
             pingMs = result.pingMs,
@@ -37,11 +38,14 @@ class SpeedTestRepositoryImpl @Inject constructor(
     }
 
     override fun getLatestResult(): Flow<SpeedTestResult?> =
-        speedTestResultDao.getLatestResult().map { it?.toDomain() }
+        speedTestResultDao.getLatestResult(System.currentTimeMillis()).map { entity ->
+            entity?.toDomain()?.takeIf { TimestampSanitizer.isUsable(it.timestamp) }
+        }
 
     override fun getRecentResults(limit: Int): Flow<List<SpeedTestResult>> =
-        speedTestResultDao.getRecentResults(limit).map { list ->
+        speedTestResultDao.getRecentResults(limit, System.currentTimeMillis()).map { list ->
             list.map { it.toDomain() }
+                .filter { TimestampSanitizer.isUsable(it.timestamp) }
         }
 
     override suspend fun trimResults(keepCount: Int) {
@@ -79,7 +83,14 @@ private fun SpeedTestService.SpeedTestProgress.toDomain(): SpeedTestProgress = w
     is SpeedTestService.SpeedTestProgress.UploadPhase ->
         SpeedTestProgress.UploadPhase(currentMbps, progress)
     is SpeedTestService.SpeedTestProgress.Completed ->
-        SpeedTestProgress.Completed(downloadMbps, uploadMbps, pingMs, jitterMs, serverName, serverLocation)
+        SpeedTestProgress.Completed(
+            downloadMbps,
+            uploadMbps,
+            pingMs,
+            jitterMs,
+            serverName,
+            serverLocation
+        )
     is SpeedTestService.SpeedTestProgress.Failed ->
         SpeedTestProgress.Failed(error)
 }

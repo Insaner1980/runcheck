@@ -3,6 +3,7 @@ package com.devicepulse.ui.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,6 +35,7 @@ fun ListRow(
                 if (onClick != null) Modifier.clickable(onClick = onClick)
                 else Modifier
             )
+            .defaultMinSize(minHeight = 48.dp)
             .padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

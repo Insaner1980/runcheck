@@ -23,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.devicepulse.R
 import com.devicepulse.domain.model.Confidence
+import com.devicepulse.ui.theme.reducedMotion
 import com.devicepulse.ui.theme.statusColors
 
 @Composable
@@ -31,6 +32,7 @@ fun ConfidenceBadge(
     modifier: Modifier = Modifier
 ) {
     val statusColors = MaterialTheme.statusColors
+    val reducedMotion = MaterialTheme.reducedMotion
 
     val backgroundColor = when (confidence) {
         Confidence.HIGH -> statusColors.confidenceAccurateBg
@@ -50,12 +52,19 @@ fun ConfidenceBadge(
         Confidence.UNAVAILABLE -> stringResource(R.string.confidence_unavailable)
     }
 
-    var scale by remember { mutableFloatStateOf(0f) }
-    LaunchedEffect(Unit) { scale = 1f }
+    var scale by remember(reducedMotion) { mutableFloatStateOf(if (reducedMotion) 1f else 0f) }
+    LaunchedEffect(reducedMotion) {
+        if (!reducedMotion) {
+            scale = 1f
+        }
+    }
 
     val animatedScale by animateFloatAsState(
         targetValue = scale,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMedium),
+        animationSpec = spring(
+            dampingRatio = if (reducedMotion) 1f else 0.6f,
+            stiffness = if (reducedMotion) Spring.StiffnessHigh else Spring.StiffnessMedium
+        ),
         label = "badge_scale"
     )
 

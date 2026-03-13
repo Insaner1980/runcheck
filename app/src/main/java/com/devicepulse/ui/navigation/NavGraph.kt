@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -52,33 +53,44 @@ fun DevicePulseNavHost() {
     ) {
         composable(Screen.Home.route) {
             HomeScreen(
-                onNavigateToBattery = { navController.navigate(Screen.Battery.route) },
-                onNavigateToNetwork = { navController.navigate(Screen.Network.route) },
-                onNavigateToThermal = { navController.navigate(Screen.Thermal.route) },
-                onNavigateToStorage = { navController.navigate(Screen.Storage.route) },
-                onNavigateToCharger = { navController.navigate(Screen.Charger.route) },
-                onNavigateToSpeedTest = { navController.navigate(Screen.SpeedTest.route) },
-                onNavigateToAppUsage = { navController.navigate(Screen.AppUsage.route) },
-                onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
-                onNavigateToProUpgrade = { navController.navigate(Screen.Settings.route) }
+                onNavigateToBattery = { navController.navigateSingleTop(Screen.Battery.route) },
+                onNavigateToNetwork = { navController.navigateSingleTop(Screen.Network.route) },
+                onNavigateToThermal = { navController.navigateSingleTop(Screen.Thermal.route) },
+                onNavigateToStorage = { navController.navigateSingleTop(Screen.Storage.route) },
+                onNavigateToCharger = {
+                    navController.navigateNested(
+                        parentRoute = Screen.Battery.route,
+                        childRoute = Screen.Charger.route
+                    )
+                },
+                onNavigateToSpeedTest = {
+                    navController.navigateNested(
+                        parentRoute = Screen.Network.route,
+                        childRoute = Screen.SpeedTest.route
+                    )
+                },
+                onNavigateToAppUsage = { navController.navigateSingleTop(Screen.AppUsage.route) },
+                onNavigateToSettings = { navController.navigateSingleTop(Screen.Settings.route) },
+                onNavigateToProUpgrade = { navController.navigateSingleTop(Screen.Settings.route) }
             )
         }
         composable(Screen.Battery.route) {
             BatteryDetailScreen(
                 onBack = { navController.popBackStack() },
-                onUpgradeToPro = { navController.navigate(Screen.Settings.route) }
+                onNavigateToCharger = { navController.navigateSingleTop(Screen.Charger.route) },
+                onUpgradeToPro = { navController.navigateSingleTop(Screen.Settings.route) }
             )
         }
         composable(Screen.Network.route) {
             NetworkDetailScreen(
                 onBack = { navController.popBackStack() },
-                onNavigateToSpeedTest = { navController.navigate(Screen.SpeedTest.route) }
+                onNavigateToSpeedTest = { navController.navigateSingleTop(Screen.SpeedTest.route) }
             )
         }
         composable(Screen.Thermal.route) {
             ThermalDetailScreen(
                 onBack = { navController.popBackStack() },
-                onUpgradeToPro = { navController.navigate(Screen.Settings.route) }
+                onUpgradeToPro = { navController.navigateSingleTop(Screen.Settings.route) }
             )
         }
         composable(Screen.Storage.route) {
@@ -87,13 +99,13 @@ fun DevicePulseNavHost() {
         composable(Screen.Charger.route) {
             ChargerComparisonScreen(
                 onBack = { navController.popBackStack() },
-                onUpgradeToPro = { navController.navigate(Screen.Settings.route) }
+                onUpgradeToPro = { navController.navigateSingleTop(Screen.Settings.route) }
             )
         }
         composable(Screen.AppUsage.route) {
             AppUsageScreen(
                 onBack = { navController.popBackStack() },
-                onUpgradeToPro = { navController.navigate(Screen.Settings.route) }
+                onUpgradeToPro = { navController.navigateSingleTop(Screen.Settings.route) }
             )
         }
         composable(Screen.Settings.route) {
@@ -103,4 +115,15 @@ fun DevicePulseNavHost() {
             SpeedTestScreen(onBack = { navController.popBackStack() })
         }
     }
+}
+
+private fun NavHostController.navigateSingleTop(route: String) {
+    navigate(route) {
+        launchSingleTop = true
+    }
+}
+
+private fun NavHostController.navigateNested(parentRoute: String, childRoute: String) {
+    navigateSingleTop(parentRoute)
+    navigateSingleTop(childRoute)
 }

@@ -36,10 +36,11 @@ class BatteryWidget : GlanceAppWidget() {
         }
         val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
         val level = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        val normalizedLevel = level.takeUnless { it == Int.MIN_VALUE } ?: 0
         val tempRaw = batteryManager.getIntProperty(4) // BATTERY_PROPERTY_TEMPERATURE isn't public
         val tempC = if (tempRaw > 0) tempRaw / 10f else null
         val currentMa = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
-        val levelText = context.getString(R.string.widget_percent_value, level)
+        val levelText = context.getString(R.string.widget_percent_value, normalizedLevel)
         val currentDisplay = if (currentMa != 0 && currentMa != Int.MIN_VALUE) {
             context.getString(R.string.widget_current_value, currentMa / 1000)
         } else null

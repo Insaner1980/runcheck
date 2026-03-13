@@ -24,11 +24,14 @@ import com.devicepulse.domain.usecase.GetThermalStateUseCase
 import com.devicepulse.ui.common.messageOr
 import com.devicepulse.util.ReleaseSafeLog
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -55,6 +58,7 @@ class HomeViewModel @Inject constructor(
         loadHome()
     }
 
+    @OptIn(FlowPreview::class)
     private fun loadHome() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
@@ -97,7 +101,9 @@ class HomeViewModel @Inject constructor(
                     storageState = data.storage,
                     isPro = isPro
                 )
-            }.catch { e ->
+            }.sample(DISPLAY_UPDATE_INTERVAL_MS)
+                .conflate()
+                .catch { e ->
                 _uiState.value = HomeUiState.Error(e.messageOr("Unknown error"))
             }.collect { state ->
                 _uiState.value = state
@@ -115,6 +121,7 @@ class HomeViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "HomeVM"
+        private const val DISPLAY_UPDATE_INTERVAL_MS = 333L
 
         private val DEFAULT_BATTERY = BatteryState(
             level = 0,
@@ -124,7 +131,7 @@ class HomeViewModel @Inject constructor(
             chargingStatus = ChargingStatus.NOT_CHARGING,
             plugType = PlugType.NONE,
             health = BatteryHealth.UNKNOWN,
-            technology = "Unknown"
+            technology = ""
         )
 
         private val DEFAULT_NETWORK = NetworkState(

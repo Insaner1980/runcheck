@@ -19,8 +19,27 @@ class ThrottlingRepositoryImpl @Inject constructor(
             entities.map { it.toDomain() }
         }
 
-    override suspend fun insert(event: ThrottlingEvent) {
+    override suspend fun insert(event: ThrottlingEvent): Long =
         throttlingEventDao.insert(event.toEntity())
+
+    override suspend fun updateSnapshot(
+        id: Long,
+        thermalStatus: String,
+        batteryTempC: Float,
+        cpuTempC: Float?,
+        foregroundApp: String?
+    ) {
+        throttlingEventDao.updateSnapshot(
+            id = id,
+            thermalStatus = thermalStatus,
+            batteryTempC = batteryTempC,
+            cpuTempC = cpuTempC,
+            foregroundApp = foregroundApp
+        )
+    }
+
+    override suspend fun updateDuration(id: Long, durationMs: Long) {
+        throttlingEventDao.updateDuration(id, durationMs)
     }
 
     override suspend fun deleteOlderThan(cutoff: Long) {

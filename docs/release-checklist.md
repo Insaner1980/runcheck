@@ -4,8 +4,10 @@
 
 ### Firebase
 - [ ] Create Firebase project at https://console.firebase.google.com/
+- [ ] Skip or disable Google Analytics during setup
 - [ ] Download `google-services.json` and place in `app/`
 - [ ] Enable Crashlytics in Firebase Console
+- [ ] Verify crash reporting is off by default on first launch
 - [ ] Remove placeholder `google-services.json` from version control if repo is public
 
 ### Billing

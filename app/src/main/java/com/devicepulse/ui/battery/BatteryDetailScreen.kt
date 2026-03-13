@@ -67,6 +67,7 @@ import kotlin.math.roundToInt
 @Composable
 fun BatteryDetailScreen(
     onBack: () -> Unit,
+    onNavigateToCharger: () -> Unit,
     onUpgradeToPro: () -> Unit,
     viewModel: BatteryViewModel = hiltViewModel()
 ) {
@@ -98,6 +99,7 @@ fun BatteryDetailScreen(
                     state = state,
                     onRefresh = { viewModel.refresh() },
                     onPeriodChange = { viewModel.setHistoryPeriod(it) },
+                    onNavigateToCharger = onNavigateToCharger,
                     onUpgradeToPro = onUpgradeToPro
                 )
             }
@@ -110,6 +112,7 @@ private fun BatteryContent(
     state: BatteryUiState.Success,
     onRefresh: () -> Unit,
     onPeriodChange: (HistoryPeriod) -> Unit,
+    onNavigateToCharger: () -> Unit,
     onUpgradeToPro: () -> Unit
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
@@ -151,11 +154,14 @@ private fun BatteryContent(
             BatteryHeroSection(battery = battery)
 
             BatteryPanel {
-                BatterySectionEyebrow(text = "DETAILS")
+                BatterySectionEyebrow(text = stringResource(R.string.battery_section_details))
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
                 BatterySpecRow(
                     label = stringResource(R.string.battery_voltage),
-                    value = "${formatDecimal(battery.voltageMv / 1000f, 1)}V"
+                    value = stringResource(
+                        R.string.value_voltage_volts,
+                        (battery.voltageMv / 1000f).toDouble()
+                    )
                 )
                 BatterySpecRow(
                     label = stringResource(R.string.battery_temperature),
@@ -171,7 +177,9 @@ private fun BatteryContent(
                 )
                 BatterySpecRow(
                     label = stringResource(R.string.battery_technology),
-                    value = battery.technology
+                    value = battery.technology.takeUnless { it.equals("Unknown", ignoreCase = true) }
+                        ?.takeUnless(String::isBlank)
+                        ?: stringResource(R.string.not_available)
                 )
                 battery.cycleCount?.let { count ->
                     BatterySpecRow(
@@ -183,7 +191,7 @@ private fun BatteryContent(
                 battery.healthPercent?.let { pct ->
                     BatterySpecRow(
                         label = stringResource(R.string.battery_health_percent),
-                        value = "$pct${stringResource(R.string.unit_percent)}",
+                        value = stringResource(R.string.value_percent, pct),
                         emphasis = BatterySpecEmphasis.High,
                         showDivider = false
                     )
@@ -280,6 +288,29 @@ private fun BatteryContent(
                         selectedWindow = sessionWindow,
                         onWindowChange = { selectedSessionWindow = it.name }
                     )
+                }
+            }
+
+            BatteryPanel {
+                BatterySectionEyebrow(text = stringResource(R.string.home_test_compare))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                Text(
+                    text = stringResource(R.string.charger_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                Text(
+                    text = stringResource(R.string.home_chargers_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                Button(
+                    onClick = onNavigateToCharger,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.charger_title))
                 }
             }
 
@@ -407,7 +438,9 @@ private fun BatteryHistoryPanel(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
             val chartData = remember(state.history, selectedMetric) {
-                state.history.chartDataFor(selectedMetric)
+                state.history
+                    .chartDataFor(selectedMetric)
+                    .downsampleForChart(MAX_HISTORY_CHART_POINTS)
             }
 
             if (chartData.size >= 2) {
@@ -567,7 +600,7 @@ private fun BatterySessionSummary(summary: ChargingSessionSummary) {
         summary.deliveredMah?.let {
             BatteryStatItem(
                 label = stringResource(R.string.battery_session_delivered),
-                value = "$it ${stringResource(R.string.unit_milliamp_hours)}"
+                value = stringResource(R.string.value_milliamp_hours, it)
             )
         },
         summary.averagePowerW?.let {
@@ -588,12 +621,16 @@ private fun BatterySessionSummary(summary: ChargingSessionSummary) {
         ) {
             BatterySummaryStat(
                 label = stringResource(R.string.battery_session_started),
-                value = "${summary.startLevel}${stringResource(R.string.unit_percent)}",
+                value = stringResource(R.string.value_percent, summary.startLevel),
                 modifier = Modifier.weight(1f)
             )
             BatterySummaryStat(
                 label = stringResource(R.string.battery_session_gain),
-                value = "${if (summary.gainPercent >= 0) "+" else ""}${summary.gainPercent}${stringResource(R.string.unit_percent)}",
+                value = stringResource(
+                    R.string.value_signed_percent,
+                    if (summary.gainPercent >= 0) "+" else "",
+                    summary.gainPercent
+                ),
                 modifier = Modifier.weight(1f)
             )
         }
@@ -608,7 +645,10 @@ private fun BatterySessionSummary(summary: ChargingSessionSummary) {
             )
             BatterySummaryStat(
                 label = stringResource(R.string.battery_session_peak_temp),
-                value = "${formatDecimal(summary.peakTemperatureC, 1)}${stringResource(R.string.unit_celsius)}",
+                value = stringResource(
+                    R.string.value_temperature,
+                    summary.peakTemperatureC.toDouble()
+                ),
                 modifier = Modifier.weight(1f)
             )
         }
@@ -679,7 +719,7 @@ private fun BatterySessionGraphPanel(
         summary.readings.graphDataFor(
             metric = selectedMetric,
             window = selectedWindow
-        )
+        ).downsampleForChart(MAX_SESSION_CHART_POINTS)
     }
 
     if (!hasAnyGraphData) return
@@ -778,6 +818,21 @@ private fun BatteryMetaStat(
     }
 }
 
+private fun List<Float>.downsampleForChart(maxPoints: Int): List<Float> {
+    if (size <= maxPoints || maxPoints <= 1) return this
+
+    val lastIndex = lastIndex
+    return buildList(maxPoints) {
+        for (index in 0 until maxPoints) {
+            val sourceIndex = ((index.toLong() * lastIndex) / (maxPoints - 1)).toInt()
+            add(this@downsampleForChart[sourceIndex])
+        }
+    }
+}
+
+private const val MAX_HISTORY_CHART_POINTS = 300
+private const val MAX_SESSION_CHART_POINTS = 240
+
 @Composable
 private fun BatteryPanel(
     modifier: Modifier = Modifier,
@@ -789,7 +844,7 @@ private fun BatteryPanel(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = MaterialTheme.shapes.extraLarge
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
             modifier = Modifier
@@ -921,7 +976,11 @@ private fun sessionGraphWindowLabel(window: SessionGraphWindow): String = when (
 
 @Composable
 private fun buildTemperatureValue(temperatureC: Float): String {
-    return "${formatDecimal(temperatureC, 1)}${stringResource(R.string.unit_celsius)} · ${temperatureStatusLabel(temperatureC)}"
+    return stringResource(
+        R.string.home_thermal_summary,
+        stringResource(R.string.value_temperature, temperatureC.toDouble()),
+        temperatureStatusLabel(temperatureC)
+    )
 }
 
 @Composable
@@ -1131,15 +1190,22 @@ private fun remainingChargeText(
     else -> stringResource(R.string.battery_remaining_time_estimating)
 }
 
+@Composable
 private fun formatPercentPerHour(value: Float): String =
-    "${formatDecimal(value, 1)}${"%/h"}"
+    stringResource(R.string.value_percent_per_hour, value.toDouble())
 
+@Composable
 private fun formatWatts(value: Float): String =
-    "${formatDecimal(value, 1)} ${"W"}"
+    stringResource(R.string.value_watts, value.toDouble())
 
+@Composable
 private fun formatDuration(durationMs: Long): String {
     val totalMinutes = durationMs / 60_000
     val hours = totalMinutes / 60
     val minutes = totalMinutes % 60
-    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
+    return if (hours > 0) {
+        stringResource(R.string.value_duration_hours_minutes, hours, minutes)
+    } else {
+        stringResource(R.string.value_duration_minutes, minutes)
+    }
 }

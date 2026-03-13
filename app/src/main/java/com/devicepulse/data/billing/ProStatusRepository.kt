@@ -15,8 +15,12 @@ import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.queryProductDetails
 import com.android.billingclient.api.queryPurchasesAsync
+import com.devicepulse.BuildConfig
 import com.devicepulse.billing.ProPurchaseRefreshResult
 import com.devicepulse.billing.ProPurchaseManager
+import com.devicepulse.widget.BatteryWidget
+import com.devicepulse.widget.HealthWidget
+import androidx.glance.appwidget.updateAll
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,15 +34,17 @@ import javax.inject.Singleton
 
 @Singleton
 class ProStatusRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) : PurchasesUpdatedListener,
     com.devicepulse.domain.repository.ProStatusProvider,
     ProPurchaseManager {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    private val _isProState = MutableStateFlow(ProStatusCache.isPro(context))
+    private val _isProState = MutableStateFlow(ProStatusCache.isProBlocking(context))
     override val isProUser: Flow<Boolean> = _isProState.asStateFlow()
+    private val _billingAvailable = MutableStateFlow(false)
+    override val billingAvailable: Flow<Boolean> = _billingAvailable.asStateFlow()
 
     private var billingClient: BillingClient? = null
     private var cachedProductDetails: com.android.billingclient.api.ProductDetails? = null
@@ -48,6 +54,7 @@ class ProStatusRepository @Inject constructor(
     fun initialize() {
         if (billingClient?.isReady == true) return
 
+        _billingAvailable.value = false
         billingClient = BillingClient.newBuilder(context)
             .setListener(this)
             .enablePendingPurchases(
@@ -60,14 +67,18 @@ class ProStatusRepository @Inject constructor(
         billingClient?.startConnection(object : BillingClientStateListener {
             override fun onBillingSetupFinished(billingResult: BillingResult) {
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    _billingAvailable.value = true
                     scope.launch {
                         queryExistingPurchases()
                         queryProductDetails()
                     }
+                } else {
+                    _billingAvailable.value = false
                 }
             }
 
             override fun onBillingServiceDisconnected() {
+                _billingAvailable.value = false
                 scope.launch { reconnect() }
             }
         })
@@ -108,6 +119,10 @@ class ProStatusRepository @Inject constructor(
         val result: ProductDetailsResult = client.queryProductDetails(params)
         if (result.billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
             cachedProductDetails = result.productDetailsList?.firstOrNull()
+            _billingAvailable.value = cachedProductDetails != null
+        } else {
+            cachedProductDetails = null
+            _billingAvailable.value = false
         }
         return cachedProductDetails
     }
@@ -174,15 +189,21 @@ class ProStatusRepository @Inject constructor(
 
     private fun updateProState(isPro: Boolean) {
         _isProState.value = isPro
-        ProStatusCache.setPro(context, isPro)
+        scope.launch(Dispatchers.IO) {
+            ProStatusCache.setPro(context, isPro)
+            BatteryWidget().updateAll(context)
+            HealthWidget().updateAll(context)
+        }
     }
 
     fun destroy() {
         billingClient?.endConnection()
         billingClient = null
+        cachedProductDetails = null
+        _billingAvailable.value = false
     }
 
     companion object {
-        const val PRODUCT_ID_PRO = "devicepulse_pro"
+        const val PRODUCT_ID_PRO = BuildConfig.PRO_PRODUCT_ID
     }
 }

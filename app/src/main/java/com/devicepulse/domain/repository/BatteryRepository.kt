@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface BatteryRepository {
     fun getBatteryState(): Flow<BatteryState>
-    fun getReadingsSince(since: Long): Flow<List<BatteryReading>>
+    fun getReadingsSince(since: Long, limit: Int? = null): Flow<List<BatteryReading>>
     suspend fun saveReading(state: BatteryState)
     suspend fun getAllReadings(): List<BatteryReading>
     suspend fun deleteOlderThan(cutoff: Long)

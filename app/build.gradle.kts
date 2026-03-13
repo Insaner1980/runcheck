@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -19,13 +21,19 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
+        val proProductId = System.getenv("DEVICEPULSE_PRO_PRODUCT_ID") ?: "devicepulse_pro"
+        val latencyHost = System.getenv("DEVICEPULSE_LATENCY_HOST") ?: "locate.measurementlab.net"
+        val latencyPort = (System.getenv("DEVICEPULSE_LATENCY_PORT") ?: "443").toIntOrNull() ?: 443
+        buildConfigField("String", "PRO_PRODUCT_ID", "\"$proProductId\"")
+        buildConfigField("String", "LATENCY_HOST", "\"$latencyHost\"")
+        buildConfigField("int", "LATENCY_PORT", latencyPort.toString())
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
         create("release") {
-            // Set these via environment variables or local.properties before release:
+            // Set these via environment variables before release:
             // DEVICEPULSE_KEYSTORE_PATH, DEVICEPULSE_KEYSTORE_PASSWORD,
             // DEVICEPULSE_KEY_ALIAS, DEVICEPULSE_KEY_PASSWORD
             val keystorePath = System.getenv("DEVICEPULSE_KEYSTORE_PATH")
@@ -136,6 +144,10 @@ dependencies {
 
     // Gson
     implementation(libs.gson)
+
+    // Firebase Crashlytics
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
 
     // M-Lab NDT7 speed test
     implementation(libs.ndt7)

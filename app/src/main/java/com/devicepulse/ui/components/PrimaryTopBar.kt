@@ -17,7 +17,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.devicepulse.R
 
 @Composable
 fun PrimaryTopBar(
@@ -38,7 +40,7 @@ fun PrimaryTopBar(
             IconButton(onClick = onMenuClick) {
                 Icon(
                     imageVector = Icons.Default.Menu,
-                    contentDescription = "Menu",
+                    contentDescription = stringResource(R.string.navigate_menu),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }

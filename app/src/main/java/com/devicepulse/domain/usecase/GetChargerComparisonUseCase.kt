@@ -2,15 +2,21 @@ package com.devicepulse.domain.usecase
 
 import com.devicepulse.domain.model.ChargerSummary
 import com.devicepulse.domain.repository.ChargerRepository
+import com.devicepulse.domain.repository.ProStatusProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 
 class GetChargerComparisonUseCase @Inject constructor(
-    private val chargerRepository: ChargerRepository
+    private val chargerRepository: ChargerRepository,
+    private val proStatusProvider: ProStatusProvider
 ) {
 
     operator fun invoke(): Flow<List<ChargerSummary>> {
+        if (!proStatusProvider.isPro()) {
+            return flowOf(emptyList())
+        }
         return combine(
             chargerRepository.getChargerProfiles(),
             chargerRepository.getAllSessions()

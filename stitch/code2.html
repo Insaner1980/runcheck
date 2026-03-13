@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Thermal Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25e2f4",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#0B1E24",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+<!-- TopAppBar -->
+<div class="flex items-center p-4 pb-2 justify-between">
+<div class="text-slate-900 dark:text-slate-100 flex size-12 shrink-0 items-center cursor-pointer">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">Thermal</h2>
+</div>
+<!-- Hero Temperature -->
+<div class="flex flex-col items-center justify-center pt-8 pb-4">
+<div class="flex items-baseline gap-1">
+<h1 class="text-slate-900 dark:text-slate-100 tracking-tighter text-[80px] font-bold leading-none">37.2</h1>
+<span class="text-primary text-3xl font-bold">°C</span>
+</div>
+<h2 class="text-orange-500 text-xl font-bold leading-tight tracking-wide mt-2 uppercase">Warm</h2>
+</div>
+<!-- Horizontal Temperature Bar Visualization -->
+<div class="px-6 py-6">
+<div class="relative w-full h-3 rounded-full bg-slate-200 dark:bg-slate-800 overflow-visible bg-gradient-to-r from-blue-500 via-green-500 via-yellow-500 to-red-600">
+<!-- Marker -->
+<div class="absolute top-1/2 -translate-y-1/2 left-[65%] w-1.5 h-6 bg-white border-2 border-background-dark rounded-full shadow-lg"></div>
+</div>
+<div class="flex justify-between mt-3 text-[10px] font-medium uppercase tracking-widest text-slate-500 dark:text-slate-400">
+<span>Cool</span>
+<span>Normal</span>
+<span>Hot</span>
+</div>
+</div>
+<!-- Thermal Status Card -->
+<div class="px-4 py-4">
+<div class="bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-slate-500 dark:text-slate-400 text-sm">Battery Temp</span>
+<span class="text-slate-900 dark:text-slate-100 font-bold">37.2°C</span>
+</div>
+<div class="h-px bg-slate-200 dark:bg-slate-800"></div>
+<div class="flex justify-between items-center">
+<span class="text-slate-500 dark:text-slate-400 text-sm">Thermal Status</span>
+<span class="text-slate-900 dark:text-slate-100 font-bold">Light</span>
+</div>
+<div class="h-px bg-slate-200 dark:bg-slate-800"></div>
+<div class="flex justify-between items-center">
+<span class="text-slate-500 dark:text-slate-400 text-sm">Throttling</span>
+<span class="text-primary font-bold">None</span>
+</div>
+</div>
+</div>
+<!-- Summary Text -->
+<div class="px-6 py-2">
+<p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed text-center italic">
+                Temperature is slightly above normal. No throttling detected.
+            </p>
+</div>
+<!-- Temperature History (Locked) -->
+<div class="mt-8 px-4 pb-12">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-slate-900 dark:text-slate-100 text-base font-bold">Temperature History</h3>
+<span class="bg-primary/20 text-primary text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider">Pro</span>
+</div>
+<div class="relative rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/30 overflow-hidden h-48 flex items-center justify-center">
+<!-- Blurred Line Chart Placeholder -->
+<div class="absolute inset-0 opacity-30 blur-md pointer-events-none" style="background-image: linear-gradient(transparent 90%, rgba(37, 226, 244, 0.1) 90%), linear-gradient(90deg, transparent 90%, rgba(37, 226, 244, 0.1) 90%); background-size: 20px 20px;">
+<svg class="w-full h-full stroke-primary fill-none stroke-2" viewbox="0 0 400 200">
+<path d="M0,150 Q50,140 80,160 T150,120 T220,140 T300,80 T400,100"></path>
+</svg>
+</div>
+<!-- Lock Overlay -->
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="bg-primary/10 p-3 rounded-full">
+<span class="material-symbols-outlined text-primary text-2xl">lock</span>
+</div>
+<p class="text-xs font-bold text-primary uppercase tracking-widest">Upgrade to Unlock</p>
+</div>
+</div>
+</div>
+</div>
+</body></html>

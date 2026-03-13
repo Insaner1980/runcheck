@@ -1,7 +1,17 @@
 package com.devicepulse.ui.settings
 
+import android.Manifest
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,15 +26,21 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -33,10 +49,13 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devicepulse.BuildConfig
 import com.devicepulse.R
 import com.devicepulse.domain.model.CurrentUnit
+import com.devicepulse.domain.model.DataRetention
 import com.devicepulse.domain.model.DeviceProfileInfo
 import com.devicepulse.domain.model.MonitoringInterval
 import com.devicepulse.domain.model.SignConvention
@@ -58,7 +77,9 @@ fun SettingsScreen(
         uiState = uiState,
         onBack = onBack,
         onMonitoringIntervalChange = viewModel::setMonitoringInterval,
+        onDataRetentionChange = viewModel::setDataRetention,
         onNotificationsChange = viewModel::setNotifications,
+        onCrashReportingChange = viewModel::setCrashReporting,
         onPurchasePro = { activity -> viewModel.purchasePro(activity) },
         onRefreshPurchaseStatus = viewModel::refreshPurchaseStatus,
         onExportData = viewModel::exportData,
@@ -73,7 +94,9 @@ private fun SettingsScreenContent(
     uiState: SettingsUiState,
     onBack: () -> Unit,
     onMonitoringIntervalChange: (MonitoringInterval) -> Unit,
+    onDataRetentionChange: (DataRetention) -> Unit,
     onNotificationsChange: (Boolean) -> Unit,
+    onCrashReportingChange: (Boolean) -> Unit,
     onPurchasePro: (Activity) -> Unit,
     onRefreshPurchaseStatus: () -> Unit,
     onExportData: () -> Unit,
@@ -82,6 +105,22 @@ private fun SettingsScreenContent(
     onClearErrorMessage: () -> Unit
 ) {
     val context = LocalContext.current
+    val activity = context.findActivity()
+    val notificationsPermissionRequired = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+    val hasNotificationPermission = !notificationsPermissionRequired ||
+        ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+    var notificationRequestAttempted by remember { mutableStateOf(false) }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        notificationRequestAttempted = true
+        if (granted) {
+            onNotificationsChange(true)
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -127,8 +166,61 @@ private fun SettingsScreenContent(
                 title = stringResource(R.string.settings_notifications),
                 description = stringResource(R.string.settings_notifications_desc),
                 checked = uiState.preferences.notificationsEnabled,
-                onCheckedChange = onNotificationsChange
+                onCheckedChange = { enabled ->
+                    if (!enabled) {
+                        onNotificationsChange(false)
+                    } else if (!hasNotificationPermission && notificationsPermissionRequired) {
+                        onNotificationsChange(true)
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        onNotificationsChange(true)
+                    }
+                }
             )
+
+            if (
+                uiState.preferences.notificationsEnabled &&
+                notificationsPermissionRequired &&
+                !hasNotificationPermission
+            ) {
+                PermissionHelpCard(
+                    title = stringResource(R.string.notification_permission_title),
+                    message = stringResource(R.string.notification_permission_message),
+                    actionLabel = if (
+                        notificationRequestAttempted &&
+                        activity?.let {
+                            !ActivityCompat.shouldShowRequestPermissionRationale(
+                                it,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            )
+                        } == true
+                    ) {
+                        stringResource(R.string.notification_permission_open_settings)
+                    } else {
+                        stringResource(R.string.notification_permission_grant)
+                    },
+                    onAction = {
+                        if (
+                            notificationRequestAttempted &&
+                            activity?.let {
+                                !ActivityCompat.shouldShowRequestPermissionRationale(
+                                    it,
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                )
+                            } == true
+                        ) {
+                            context.startActivity(
+                                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = Uri.fromParts("package", context.packageName, null)
+                                }
+                            )
+                        } else {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }
+                )
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            }
 
             HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
@@ -155,31 +247,37 @@ private fun SettingsScreenContent(
                 }
             } else {
                 Text(
-                    text = stringResource(R.string.settings_pro_desc),
+                    text = if (uiState.billingAvailable) {
+                        stringResource(R.string.settings_pro_desc)
+                    } else {
+                        stringResource(R.string.settings_billing_unavailable)
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                Button(
-                    onClick = {
-                        (context as? Activity)?.let { activity ->
-                            onPurchasePro(activity)
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = uiState.proPrice?.let { price ->
-                            stringResource(R.string.settings_upgrade_pro_with_price, price)
-                        } ?: stringResource(R.string.settings_upgrade_pro)
-                    )
-                }
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                OutlinedButton(
-                    onClick = onRefreshPurchaseStatus,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(text = stringResource(R.string.settings_restore_purchase))
+                if (uiState.billingAvailable) {
+                    Button(
+                        onClick = {
+                            (context as? Activity)?.let { activity ->
+                                onPurchasePro(activity)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = uiState.proPrice?.let { price ->
+                                stringResource(R.string.settings_upgrade_pro_with_price, price)
+                            } ?: stringResource(R.string.settings_upgrade_pro)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                    OutlinedButton(
+                        onClick = onRefreshPurchaseStatus,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(text = stringResource(R.string.settings_restore_purchase))
+                    }
                 }
             }
 
@@ -191,6 +289,20 @@ private fun SettingsScreenContent(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
             if (uiState.isPro) {
+                Text(
+                    text = stringResource(R.string.settings_data_retention_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                DataRetention.entries.forEach { retention ->
+                    SettingsRadioRow(
+                        label = retention.label(),
+                        selected = uiState.preferences.dataRetention == retention,
+                        onSelect = { onDataRetentionChange(retention) }
+                    )
+                }
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                 OutlinedButton(
                     onClick = onExportData,
                     modifier = Modifier.fillMaxWidth()
@@ -198,6 +310,12 @@ private fun SettingsScreenContent(
                     Text(text = stringResource(R.string.settings_export_data))
                 }
             } else {
+                Text(
+                    text = stringResource(R.string.settings_data_retention_free),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                 ProFeatureCalloutCard(
                     message = stringResource(R.string.pro_feature_export_message),
                     actionLabel = stringResource(R.string.pro_feature_upgrade_action),
@@ -263,6 +381,27 @@ private fun SettingsScreenContent(
             HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
 
+            // --- PRIVACY ---
+            SectionHeader(text = stringResource(R.string.settings_privacy))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+
+            SettingsToggle(
+                title = stringResource(R.string.settings_crash_reporting),
+                description = stringResource(R.string.settings_crash_reporting_desc),
+                checked = uiState.preferences.crashReportingEnabled,
+                onCheckedChange = onCrashReportingChange
+            )
+
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+            Text(
+                text = stringResource(R.string.settings_crash_reporting_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
+
             // --- ABOUT ---
             SectionHeader(text = stringResource(R.string.settings_about))
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
@@ -298,6 +437,14 @@ private fun SettingsScreenContent(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }
     }
+}
+
+@Composable
+private fun DataRetention.label(): String = when (this) {
+    DataRetention.THREE_MONTHS -> stringResource(R.string.settings_retention_3_months)
+    DataRetention.SIX_MONTHS -> stringResource(R.string.settings_retention_6_months)
+    DataRetention.ONE_YEAR -> stringResource(R.string.settings_retention_1_year)
+    DataRetention.FOREVER -> stringResource(R.string.settings_retention_forever)
 }
 
 @Composable
@@ -378,6 +525,49 @@ private fun SettingsToggle(
     }
 }
 
+@Composable
+private fun PermissionHelpCard(
+    title: String,
+    message: String,
+    actionLabel: String,
+    onAction: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MaterialTheme.spacing.base),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            TextButton(onClick = onAction) {
+                Text(text = actionLabel)
+            }
+        }
+    }
+}
+
+private fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun SettingsScreenContentPreview() {
@@ -400,7 +590,9 @@ private fun SettingsScreenContentPreview() {
             ),
             onBack = {},
             onMonitoringIntervalChange = {},
+            onDataRetentionChange = {},
             onNotificationsChange = {},
+            onCrashReportingChange = {},
             onPurchasePro = {},
             onRefreshPurchaseStatus = {},
             onExportData = {},
