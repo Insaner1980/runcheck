@@ -9,7 +9,9 @@ import com.runcheck.domain.model.SpeedTestProgress
 import com.runcheck.domain.model.SpeedTestResult
 import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.usecase.FinalizeSpeedTestUseCase
+import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.usecase.GetMeasuredNetworkStateUseCase
+import com.runcheck.domain.usecase.GetNetworkHistoryUseCase
 import com.runcheck.domain.usecase.GetSpeedTestHistoryUseCase
 import com.runcheck.domain.usecase.RunSpeedTestUseCase
 import com.runcheck.ui.common.messageOr
@@ -35,7 +37,8 @@ class NetworkViewModel @Inject constructor(
     private val runSpeedTest: RunSpeedTestUseCase,
     private val getSpeedTestHistory: GetSpeedTestHistoryUseCase,
     private val finalizeSpeedTest: FinalizeSpeedTestUseCase,
-    private val proStatusProvider: ProStatusProvider
+    private val proStatusProvider: ProStatusProvider,
+    private val getNetworkHistory: GetNetworkHistoryUseCase
 ) : ViewModel() {
 
     private val _networkUiState = MutableStateFlow<NetworkUiState>(NetworkUiState.Loading)
@@ -46,6 +49,8 @@ class NetworkViewModel @Inject constructor(
     private var networkJob: Job? = null
     private var historyJob: Job? = null
     private var speedTestJob: Job? = null
+    private var selectedHistoryPeriod = HistoryPeriod.DAY
+    private var historyNetworkJob: Job? = null
 
     fun startObserving() {
         if (networkJob?.isActive != true) {
@@ -61,9 +66,16 @@ class NetworkViewModel @Inject constructor(
         networkJob = null
         historyJob?.cancel()
         historyJob = null
+        historyNetworkJob?.cancel()
+        historyNetworkJob = null
     }
 
     fun refresh() {
+        loadNetworkData()
+    }
+
+    fun setHistoryPeriod(period: HistoryPeriod) {
+        selectedHistoryPeriod = period
         loadNetworkData()
     }
 
@@ -186,6 +198,7 @@ class NetworkViewModel @Inject constructor(
 
     private fun loadNetworkData() {
         networkJob?.cancel()
+        historyNetworkJob?.cancel()
         if (_networkUiState.value !is NetworkUiState.Success) {
             _networkUiState.value = NetworkUiState.Loading
         }
@@ -199,7 +212,26 @@ class NetworkViewModel @Inject constructor(
                     }
                 }
                 .collect { state ->
-                    _networkUiState.value = NetworkUiState.Success(networkState = state)
+                    _networkUiState.update { current ->
+                        val existing = current as? NetworkUiState.Success
+                        NetworkUiState.Success(
+                            networkState = state,
+                            signalHistory = existing?.signalHistory ?: emptyList(),
+                            selectedHistoryPeriod = selectedHistoryPeriod
+                        )
+                    }
+                }
+        }
+        historyNetworkJob = viewModelScope.launch {
+            getNetworkHistory(selectedHistoryPeriod)
+                .catch { /* silently ignore history errors */ }
+                .collect { readings ->
+                    _networkUiState.update { current ->
+                        (current as? NetworkUiState.Success)?.copy(
+                            signalHistory = readings,
+                            selectedHistoryPeriod = selectedHistoryPeriod
+                        ) ?: current
+                    }
                 }
         }
     }
