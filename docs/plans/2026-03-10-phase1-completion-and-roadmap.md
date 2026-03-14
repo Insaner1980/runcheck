@@ -1,8 +1,8 @@
-# DevicePulse — Phase 1 Completion & Roadmap
+# runcheck — Phase 1 Completion & Roadmap
 
 **Päivämäärä:** 2026-03-10
 **Tila:** Kaikki vaiheet (Phase 1-4) valmiit — julkaisuvalmis
-**Repo:** https://github.com/Insaner1980/DevicePulse
+**Repo:** https://github.com/Insaner1980/runcheck
 
 ### Toteutetut korjaukset (Phase 1 — Sessiot A-D):
 - [x] Gradle wrapper 9.4.0 luotu

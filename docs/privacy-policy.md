@@ -1,10 +1,10 @@
-# DevicePulse Privacy Policy
+# runcheck Privacy Policy
 
 **Last updated:** March 10, 2026
 
-## What data DevicePulse collects
+## What data runcheck collects
 
-DevicePulse monitors your device's hardware metrics locally on your device:
+runcheck monitors your device's hardware metrics locally on your device:
 
 - **Battery**: level, voltage, temperature, current, health, cycle count
 - **Network**: connection type, signal strength, WiFi info, latency
@@ -20,7 +20,7 @@ Free users' data is automatically cleaned up after 24 hours. Pro users can retai
 
 ## Network access
 
-DevicePulse uses network access only for:
+runcheck uses network access only for:
 
 - **Latency measurement**: A TCP connection sample to the configured latency endpoint. By default this is `locate.measurementlab.net:443`.
 - **In-app purchases**: Google Play Billing for the Pro upgrade
@@ -49,11 +49,11 @@ DevicePulse uses network access only for:
 
 ## Data deletion
 
-Uninstalling DevicePulse removes all locally stored app data. If crash reporting is enabled, previously uploaded crash reports are stored by Firebase Crashlytics according to Google's retention policies. Free users' data is automatically deleted after 24 hours.
+Uninstalling runcheck removes all locally stored app data. If crash reporting is enabled, previously uploaded crash reports are stored by Firebase Crashlytics according to Google's retention policies. Free users' data is automatically deleted after 24 hours.
 
 ## Children's privacy
 
-DevicePulse is not directed at children under 13 and does not knowingly collect personal information from children.
+runcheck is not directed at children under 13 and does not knowingly collect personal information from children.
 
 ## Contact
 

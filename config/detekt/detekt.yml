@@ -1,0 +1,36 @@
+complexity:
+  CyclomaticComplexMethod:
+    allowedComplexity: 20
+  LongMethod:
+    allowedLines: 80
+  LongParameterList:
+    allowedFunctionParameters: 10
+    allowedConstructorParameters: 10
+    ignoreDefaultParameters: true
+  TooManyFunctions:
+    allowedFunctionsPerFile: 25
+    allowedFunctionsPerClass: 20
+    allowedFunctionsPerInterface: 15
+  NestedBlockDepth:
+    allowedDepth: 5
+
+naming:
+  FunctionNaming:
+    functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
+  TopLevelPropertyNaming:
+    constantPattern: '[A-Z][A-Za-z0-9]*'
+
+style:
+  MagicNumber:
+    active: false
+  ForbiddenComment:
+    active: false
+  ReturnCount:
+    max: 4
+  MaxLineLength:
+    maxLineLength: 120
+    excludeCommentStatements: true
+
+exceptions:
+  TooGenericExceptionCaught:
+    allowedExceptionNameRegex: '_|(ignore|expected).*'

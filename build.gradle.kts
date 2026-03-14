@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.hilt) apply false
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.detekt) apply false
 }
 
 ktlint {

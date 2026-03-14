@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DevicePulse</string>
+    <string name="app_name">runcheck</string>
     <string name="not_available">Ei saatavilla</string>
 
     <!-- Navigation -->
@@ -18,7 +18,7 @@
     <string name="home_storage_card">Tallennustila</string>
     <string name="home_chargers_card">Laturit</string>
     <string name="home_app_usage_card">Sovellusten käyttö</string>
-    <string name="home_pro_title">Avaa DevicePulse Pro</string>
+    <string name="home_pro_title">Avaa runcheck pro</string>
     <string name="home_chargers_desc">Testaa ja vertaile latureitasi</string>
     <string name="home_app_usage_desc">Katso mitkä sovellukset kuluttavat akkua</string>
     <string name="home_health_score">KUNTOPISTEET</string>
@@ -62,9 +62,10 @@
     <string name="battery_level">Akun varaus</string>
     <string name="battery_voltage">Jännite</string>
     <string name="battery_temperature">Lämpötila</string>
-    <string name="battery_current">Latausvirta</string>
-    <string name="battery_status">Lataustila</string>
-    <string name="battery_plug_type">Laturin tyyppi</string>
+    <string name="battery_charging_section">Lataus</string>
+    <string name="battery_current">Virta</string>
+    <string name="battery_status">Tila</string>
+    <string name="battery_plug_type">Tyyppi</string>
     <string name="battery_health">Akun kunto</string>
     <string name="battery_health_unavailable_short">Kuntotieto ei saatavilla</string>
     <string name="battery_technology">Teknologia</string>
@@ -101,6 +102,11 @@
     <string name="battery_history_metric_current">Virta</string>
     <string name="battery_history_metric_voltage">Jännite</string>
     <string name="battery_history_metric_unavailable">Tälle mittarille ei ole vielä riittävästi dataa</string>
+    <string name="battery_hero_status">%1$s · %2$s</string>
+    <string name="battery_drain_rate">Kulutus</string>
+    <string name="battery_power">Teho</string>
+    <string name="battery_remaining">Jäljellä</string>
+    <string name="battery_estimating">…</string>
     <string name="battery_section_details">Tiedot</string>
 
     <!-- Charging Status -->
@@ -174,11 +180,11 @@
     <string name="connection_cellular">Mobiiliverkko</string>
     <string name="connection_none">Ei yhteyttä</string>
     <string name="permissions_intro_title">Salli käyttö täydellisiä laitetietoja varten</string>
-    <string name="permissions_intro_message">DevicePulse käyttää Androidin järjestelmälupia näyttääkseen WiFi-verkon nimen, mobiiliverkon tiedot ja valinnaiset ilmoitukset. Android näyttää seuraavaksi natiivit lupadialogit.</string>
+    <string name="permissions_intro_message">runcheck käyttää Androidin järjestelmälupia näyttääkseen WiFi-verkon nimen, mobiiliverkon tiedot ja valinnaiset ilmoitukset. Android näyttää seuraavaksi natiivit lupadialogit.</string>
     <string name="permissions_intro_continue">Jatka</string>
     <string name="permissions_intro_not_now">Ei nyt</string>
     <string name="location_services_title">Ota sijainti käyttöön</string>
-    <string name="location_services_message">Android piilottaa WiFi-verkon nimen, ellei laitteen sijainti ole päällä. DevicePulse käyttää tätä vain nykyisen WiFi-nimen ja verkkotietojen lukemiseen.</string>
+    <string name="location_services_message">Android piilottaa WiFi-verkon nimen, ellei laitteen sijainti ole päällä. runcheck käyttää tätä vain nykyisen WiFi-nimen ja verkkotietojen lukemiseen.</string>
     <string name="location_services_open_settings">Avaa asetukset</string>
     <string name="network_wifi_name_help_title">WiFi-nimi ei ole saatavilla</string>
     <string name="network_wifi_name_permission_needed">Salli sijaintilupa, jotta nykyinen WiFi-verkon nimi voidaan näyttää.</string>
@@ -230,7 +236,7 @@
     <string name="settings_notifications">Ilmoitukset</string>
     <string name="settings_notifications_desc">Hälytykset: matala akku, korkea lämpötila, vähän tilaa</string>
     <string name="notification_permission_title">Salli ilmoitukset</string>
-    <string name="notification_permission_message">DevicePulse voi seurata laitetta ilman ilmoituslupaa, mutta hälytykset pysyvät hiljaisina, kunnes sallit ne.</string>
+    <string name="notification_permission_message">runcheck voi seurata laitetta ilman ilmoituslupaa, mutta hälytykset pysyvät hiljaisina, kunnes sallit ne.</string>
     <string name="notification_permission_grant">Myönnä lupa</string>
     <string name="notification_permission_open_settings">Avaa sovelluksen asetukset</string>
     <string name="settings_measurement_info">Mittaustiedot</string>
@@ -243,31 +249,36 @@
     <string name="settings_measurement_unreliable">Epäluotettava</string>
     <string name="settings_measurement_available">Saatavilla</string>
     <string name="settings_measurement_not_available">Ei saatavilla</string>
+    <string name="settings_privacy">Tietosuoja</string>
+    <string name="settings_crash_reporting">Jaa kaatumisraportit</string>
+    <string name="settings_crash_reporting_desc">Lähetä anonyymejä kaatumisdiagnostiikkatietoja Firebase Crashlyticsiin virheiden korjaamista varten.</string>
+    <string name="settings_crash_reporting_note">Pois oletuksena. Debug-versiot eivät koskaan lähetä raportteja. Kun asetus poistetaan käytöstä, odottavat lähettämättömät raportit poistetaan paikallisesti.</string>
     <string name="settings_about">Tietoja</string>
-    <string name="settings_upgrade_pro">Päivitä Pro-versioon</string>
-    <string name="settings_upgrade_pro_with_price">Päivitä Pro-versioon - %1$s</string>
+    <string name="settings_upgrade_pro">Päivitä pro-versioon</string>
+    <string name="settings_upgrade_pro_with_price">Päivitä pro-versioon - %1$s</string>
     <string name="settings_restore_purchase">Palauta ostos</string>
-    <string name="settings_refresh_pro_status">Päivitä Pro-tila</string>
-    <string name="settings_data_retention_description">Valitse, kuinka pitkään DevicePulse säilyttää historian tällä laitteella.</string>
-    <string name="settings_data_retention_free">Ilmaisversio säilyttää historian viimeiseltä 24 tunnilta. Päivitä Prohon, niin voit säilyttää 3 kuukautta, 6 kuukautta, 1 vuoden tai kaiken.</string>
+    <string name="settings_refresh_pro_status">Päivitä pro-tila</string>
+    <string name="settings_data_retention_description">Valitse, kuinka pitkään runcheck säilyttää historian tällä laitteella.</string>
+    <string name="settings_data_retention_free">Ilmaisversio säilyttää historian viimeiseltä 24 tunnilta. Päivitä prohon, niin voit säilyttää 3 kuukautta, 6 kuukautta, 1 vuoden tai kaiken.</string>
     <string name="settings_retention_3_months">3 kuukautta</string>
     <string name="settings_retention_6_months">6 kuukautta</string>
     <string name="settings_retention_1_year">1 vuosi</string>
     <string name="settings_retention_forever">Ikuisesti</string>
-    <string name="settings_restore_success">Pro-ostos vahvistettu</string>
-    <string name="settings_restore_not_found">Tälle Play-tilille ei löytynyt Pro-ostosta</string>
+    <string name="settings_restore_success">pro-ostos vahvistettu</string>
+    <string name="settings_restore_not_found">Tälle Play-tilille ei löytynyt pro-ostosta</string>
     <string name="settings_restore_unavailable">Play Billing ei ole vielä valmis. Yritä hetken kuluttua uudelleen.</string>
-    <string name="settings_pro_active">Pro aktiivinen</string>
+    <string name="settings_billing_unavailable">Play Billing ei ole käytettävissä tällä laitteella. pro-oston vaihtoehdot piilotetaan, kunnes laskutus on saatavilla.</string>
+    <string name="settings_pro_active">pro aktiivinen</string>
     <string name="settings_pro_desc">Laajennettu historia, widgetit ja CSV-vienti</string>
-    <string name="settings_pro_thank_you">Kiitos DevicePulsen tukemisesta!</string>
+    <string name="settings_pro_thank_you">Kiitos runcheckin tukemisesta!</string>
     <string name="settings_version">Versio %1$s</string>
-    <string name="pro_feature_badge">Pro</string>
-    <string name="pro_feature_locked_message">Päivitä DevicePulse Prohon käyttääksesi ominaisuutta %1$s.</string>
+    <string name="pro_feature_badge">PRO</string>
+    <string name="pro_feature_locked_message">Päivitä runcheck prohon käyttääksesi ominaisuutta %1$s.</string>
     <string name="pro_feature_upgrade_action">Päivitä asetuksissa</string>
-    <string name="pro_feature_locked_generic">Tämä ominaisuus vaatii DevicePulse Pron</string>
-    <string name="pro_feature_battery_history_message">Viikon, kuukauden ja koko historian akkudata vaatii DevicePulse Pron.</string>
-    <string name="pro_feature_thermal_log_message">Lämpörajoitusten historia vaatii DevicePulse Pron.</string>
-    <string name="pro_feature_export_message">CSV-vienti vaatii DevicePulse Pron.</string>
+    <string name="pro_feature_locked_generic">Tämä ominaisuus vaatii runcheck pron</string>
+    <string name="pro_feature_battery_history_message">Viikon, kuukauden ja koko historian akkudata vaatii runcheck pron.</string>
+    <string name="pro_feature_thermal_log_message">Lämpörajoitusten historia vaatii runcheck pron.</string>
+    <string name="pro_feature_export_message">CSV-vienti vaatii runcheck pron.</string>
 
     <!-- Widgets -->
     <string name="widget_battery_name">Akun tila</string>
@@ -279,9 +290,9 @@
     <string name="widget_percent_value">%1$d%%</string>
     <string name="widget_temperature_value">%1$.1f°C</string>
     <string name="widget_current_value">%1$d mA</string>
-    <string name="widget_pro_required">Vaatii Pro-version</string>
+    <string name="widget_pro_required">Vaatii pro-version</string>
     <string name="widget_no_data_title">Ei vielä dataa</string>
-    <string name="widget_no_data_message">Avaa DevicePulse ja kerää mittauksia</string>
+    <string name="widget_no_data_message">Avaa runcheck ja kerää mittauksia</string>
 
     <!-- Notifications -->
     <string name="notification_channel_alerts">Laitehälytykset</string>
@@ -326,7 +337,7 @@
     <string name="app_usage_title">Sovellusten akunkäyttö</string>
     <string name="app_usage_no_data">Ei käyttötietoja viimeiseltä 24 tunnilta</string>
     <string name="app_usage_permission_title">Salli käyttötietojen käyttö</string>
-    <string name="app_usage_permission_message">Android vaatii käyttötietojen käyttöoikeuden ennen kuin DevicePulse voi näyttää sovelluskohtaisen etualan käyttöajan.</string>
+    <string name="app_usage_permission_message">Android vaatii käyttötietojen käyttöoikeuden ennen kuin runcheck voi näyttää sovelluskohtaisen etualan käyttöajan.</string>
     <string name="app_usage_permission_open_settings">Avaa käyttötietojen käyttö</string>
     <string name="app_usage_time_hours_minutes">%1$dh %2$dmin</string>
     <string name="app_usage_time_minutes">%1$dmin</string>
@@ -371,11 +382,4 @@
     <string name="common_error_generic">Jokin meni pieleen</string>
     <string name="common_retry">Yritä uudelleen</string>
     <string name="not_supported">Ei tuettu tällä laitteella</string>
-
-    <!-- Settings Privacy -->
-    <string name="settings_privacy">Tietosuoja</string>
-    <string name="settings_crash_reporting">Jaa kaatumisraportit</string>
-    <string name="settings_crash_reporting_desc">Lähetä anonyymejä kaatumisdiagnostiikkatietoja Firebase Crashlyticsiin virheiden korjaamista varten.</string>
-    <string name="settings_crash_reporting_note">Pois oletuksena. Debug-versiot eivät koskaan lähetä raportteja. Kun asetus poistetaan käytöstä, odottavat lähettämättömät raportit poistetaan paikallisesti.</string>
-    <string name="settings_billing_unavailable">Play Billing ei ole käytettävissä tällä laitteella. Pro-oston vaihtoehdot piilotetaan, kunnes laskutus on saatavilla.</string>
 </resources>

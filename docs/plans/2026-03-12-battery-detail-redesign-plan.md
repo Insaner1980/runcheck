@@ -1,6 +1,6 @@
 ## Battery Detail Redesign Plan
 
-Goal: move the Battery screen from a stacked metric list to a more intentional "hero + grouped panels" layout inspired by the reference, while preserving DevicePulse's existing dark teal visual language and current data model.
+Goal: move the Battery screen from a stacked metric list to a more intentional "hero + grouped panels" layout inspired by the reference, while preserving runcheck's existing dark teal visual language and current data model.
 
 ### Layout changes
 
@@ -23,7 +23,7 @@ Goal: move the Battery screen from a stacked metric list to a more intentional "
 
 ### Visual direction
 
-- Preserve current DevicePulse color tokens and spacing.
+- Preserve current runcheck color tokens and spacing.
 - Use fewer cards, larger sections, and more hierarchy.
 - Keep important status values color-coded with the existing semantic/status colors.
 

@@ -1,4 +1,4 @@
-# DevicePulse — Visual Direction Notes
+# runcheck — Visual Direction Notes
 
 Based on UI explorations with Google Stitch. These capture the visual feel we're going for beyond what the main spec defines.
 

@@ -1,15 +1,15 @@
 {
   "project_info": {
     "project_number": "000000000000",
-    "project_id": "devicepulse-placeholder",
-    "storage_bucket": "devicepulse-placeholder.appspot.com"
+    "project_id": "runcheck-placeholder",
+    "storage_bucket": "runcheck-placeholder.appspot.com"
   },
   "client": [
     {
       "client_info": {
         "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
         "android_client_info": {
-          "package_name": "com.devicepulse"
+          "package_name": "com.runcheck"
         }
       },
       "oauth_client": [],

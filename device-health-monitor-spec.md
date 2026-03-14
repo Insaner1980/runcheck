@@ -1,4 +1,4 @@
-# DevicePulse — Android Device Health Monitor
+# runcheck — Android Device Health Monitor
 
 ## Project Specification v1.0
 
@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-**DevicePulse** is a comprehensive Android device health monitoring app that provides real-time diagnostics across four key areas: battery, network, thermal performance, and storage. Unlike existing apps that focus on a single metric (e.g., Ampere for charging current, AccuBattery for battery health), DevicePulse combines all critical device health data into one clean, modern interface with long-term trend tracking.
+**runcheck** is a comprehensive Android device health monitoring app that provides real-time diagnostics across four key areas: battery, network, thermal performance, and storage. Unlike existing apps that focus on a single metric (e.g., Ampere for charging current, AccuBattery for battery health), runcheck combines all critical device health data into one clean, modern interface with long-term trend tracking.
 
 ### Core Differentiators
 
@@ -616,8 +616,8 @@ Bottom Navigation (4 items):
 
 ### App Name Options
 
-1. **DevicePulse — Phone Health Monitor**
-2. **DevicePulse — Battery, Network & Thermal Check**
+1. **runcheck — Phone Health Monitor**
+2. **runcheck — Battery, Network & Thermal Check**
 
 ### Category
 
@@ -629,7 +629,7 @@ Tools (primary), optionally also listed under Device Care
 
 ### Competitive Positioning
 
-| Competitor | Focus | DevicePulse Advantage |
+| Competitor | Focus | runcheck Advantage |
 |-----------|-------|----------------------|
 | Ampere | Charging current only | Full device health + honesty about accuracy |
 | AccuBattery | Battery health + wear | Adds network, thermal, storage monitoring |

@@ -1,4 +1,4 @@
-# DevicePulse — UI Specification
+# runcheck — UI Specification
 
 ---
 
@@ -6,7 +6,7 @@
 
 The app opens to a card-grid home screen. There is no bottom navigation. All categories are presented as tappable cards in a 2-column grid. Each card shows a real-time summary of its category; tapping opens the full detail screen. A back button/gesture returns to the home grid.
 
-**Top bar:** "DevicePulse" title on the left, gear icon (Settings) on the right.
+**Top bar:** "runcheck" title on the left, gear icon (Settings) on the right.
 
 ### Card Grid Layout
 
@@ -28,7 +28,7 @@ The app opens to a card-grid home screen. There is no bottom navigation. All cat
 │  [lock] Pro │ │  [lock] Pro │
 └─────────────┘ └─────────────┘
 ┌─────────────────────────────┐
-│  Unlock DevicePulse Pro     │
+│  Unlock runcheck Pro     │
 │  Trends, insights & more    │
 └─────────────────────────────┘
 ```
@@ -208,7 +208,7 @@ The Insights card on the home screen (Pro only, replaces the Pro promotional car
 ```
 Home Screen (card grid):
 ┌─────────────────────────────────┐
-│ DevicePulse              [gear] │ ← top bar
+│ runcheck              [gear] │ ← top bar
 ├────────────┬────────────────────┤
 │ Dashboard  │ Battery            │ ← tap → detail screen
 │ Network    │ Thermal            │ ← tap → detail screen

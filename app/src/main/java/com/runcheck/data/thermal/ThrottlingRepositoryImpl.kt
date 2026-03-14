@@ -1,0 +1,68 @@
+package com.runcheck.data.thermal
+
+import com.runcheck.data.db.dao.ThrottlingEventDao
+import com.runcheck.data.db.entity.ThrottlingEventEntity
+import com.runcheck.domain.model.ThrottlingEvent
+import com.runcheck.domain.repository.ThrottlingRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class ThrottlingRepositoryImpl @Inject constructor(
+    private val throttlingEventDao: ThrottlingEventDao
+) : ThrottlingRepository {
+
+    override fun getRecentEvents(limit: Int): Flow<List<ThrottlingEvent>> =
+        throttlingEventDao.getRecentEvents(limit).map { entities ->
+            entities.map { it.toDomain() }
+        }
+
+    override suspend fun insert(event: ThrottlingEvent): Long =
+        throttlingEventDao.insert(event.toEntity())
+
+    override suspend fun updateSnapshot(
+        id: Long,
+        thermalStatus: String,
+        batteryTempC: Float,
+        cpuTempC: Float?,
+        foregroundApp: String?
+    ) {
+        throttlingEventDao.updateSnapshot(
+            id = id,
+            thermalStatus = thermalStatus,
+            batteryTempC = batteryTempC,
+            cpuTempC = cpuTempC,
+            foregroundApp = foregroundApp
+        )
+    }
+
+    override suspend fun updateDuration(id: Long, durationMs: Long) {
+        throttlingEventDao.updateDuration(id, durationMs)
+    }
+
+    override suspend fun deleteOlderThan(cutoff: Long) {
+        throttlingEventDao.deleteOlderThan(cutoff)
+    }
+}
+
+private fun ThrottlingEventEntity.toDomain() = ThrottlingEvent(
+    id = id,
+    timestamp = timestamp,
+    thermalStatus = thermalStatus,
+    batteryTempC = batteryTempC,
+    cpuTempC = cpuTempC,
+    foregroundApp = foregroundApp,
+    durationMs = durationMs
+)
+
+private fun ThrottlingEvent.toEntity() = ThrottlingEventEntity(
+    id = id,
+    timestamp = timestamp,
+    thermalStatus = thermalStatus,
+    batteryTempC = batteryTempC,
+    cpuTempC = cpuTempC,
+    foregroundApp = foregroundApp,
+    durationMs = durationMs
+)

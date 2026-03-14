@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DevicePulse</string>
+    <string name="app_name">runcheck</string>
     <string name="not_available">N/A</string>
 
     <!-- Navigation -->
@@ -18,7 +18,7 @@
     <string name="home_storage_card">Storage</string>
     <string name="home_chargers_card">Chargers</string>
     <string name="home_app_usage_card">App Usage</string>
-    <string name="home_pro_title">Unlock DevicePulse Pro</string>
+    <string name="home_pro_title">Unlock runcheck pro</string>
     <string name="home_chargers_desc">Test &amp; compare your chargers</string>
     <string name="home_app_usage_desc">See which apps drain battery</string>
     <string name="home_health_score">HEALTH SCORE</string>
@@ -62,9 +62,10 @@
     <string name="battery_level">Battery Level</string>
     <string name="battery_voltage">Voltage</string>
     <string name="battery_temperature">Temperature</string>
-    <string name="battery_current">Charging Current</string>
-    <string name="battery_status">Charging Status</string>
-    <string name="battery_plug_type">Charger Type</string>
+    <string name="battery_charging_section">Charging</string>
+    <string name="battery_current">Current</string>
+    <string name="battery_status">Status</string>
+    <string name="battery_plug_type">Type</string>
     <string name="battery_health">Battery Health</string>
     <string name="battery_health_unavailable_short">Health unavailable</string>
     <string name="battery_technology">Technology</string>
@@ -101,6 +102,11 @@
     <string name="battery_history_metric_current">Current</string>
     <string name="battery_history_metric_voltage">Voltage</string>
     <string name="battery_history_metric_unavailable">Not enough data for this metric yet</string>
+    <string name="battery_hero_status">%1$s · %2$s</string>
+    <string name="battery_drain_rate">Drain</string>
+    <string name="battery_power">Power</string>
+    <string name="battery_remaining">Remaining</string>
+    <string name="battery_estimating">…</string>
     <string name="battery_section_details">Details</string>
 
     <!-- Charging Status -->
@@ -174,11 +180,11 @@
     <string name="connection_cellular">Cellular</string>
     <string name="connection_none">None</string>
     <string name="permissions_intro_title">Allow access for full device data</string>
-    <string name="permissions_intro_message">DevicePulse uses Android system permissions to show WiFi network names, mobile network details, and optional alerts. Android will show the native permission dialogs next.</string>
+    <string name="permissions_intro_message">runcheck uses Android system permissions to show WiFi network names, mobile network details, and optional alerts. Android will show the native permission dialogs next.</string>
     <string name="permissions_intro_continue">Continue</string>
     <string name="permissions_intro_not_now">Not now</string>
     <string name="location_services_title">Turn on device location</string>
-    <string name="location_services_message">Android hides WiFi network names unless device location is turned on. DevicePulse uses this only to read the current WiFi name and network details.</string>
+    <string name="location_services_message">Android hides WiFi network names unless device location is turned on. runcheck uses this only to read the current WiFi name and network details.</string>
     <string name="location_services_open_settings">Open settings</string>
     <string name="network_wifi_name_help_title">WiFi name is unavailable</string>
     <string name="network_wifi_name_permission_needed">Allow location permission to show the current WiFi network name.</string>
@@ -230,7 +236,7 @@
     <string name="settings_notifications">Notifications</string>
     <string name="settings_notifications_desc">Alerts for low battery, high temperature, low storage</string>
     <string name="notification_permission_title">Allow notifications</string>
-    <string name="notification_permission_message">DevicePulse can still monitor your device without notification permission, but alerts will stay silent until you allow them.</string>
+    <string name="notification_permission_message">runcheck can still monitor your device without notification permission, but alerts will stay silent until you allow them.</string>
     <string name="notification_permission_grant">Grant permission</string>
     <string name="notification_permission_open_settings">Open app settings</string>
     <string name="settings_measurement_info">Measurement Info</string>
@@ -248,31 +254,31 @@
     <string name="settings_crash_reporting_desc">Send anonymous crash diagnostics to Firebase Crashlytics to help fix bugs.</string>
     <string name="settings_crash_reporting_note">Off by default. Debug builds never send reports. When disabled, pending unsent crash reports are deleted locally.</string>
     <string name="settings_about">About</string>
-    <string name="settings_upgrade_pro">Upgrade to Pro</string>
-    <string name="settings_upgrade_pro_with_price">Upgrade to Pro - %1$s</string>
+    <string name="settings_upgrade_pro">Upgrade to pro</string>
+    <string name="settings_upgrade_pro_with_price">Upgrade to pro - %1$s</string>
     <string name="settings_restore_purchase">Restore purchase</string>
-    <string name="settings_refresh_pro_status">Refresh Pro status</string>
-    <string name="settings_data_retention_description">Choose how long DevicePulse keeps your history on this device.</string>
-    <string name="settings_data_retention_free">Free keeps the last 24 hours of history. Upgrade to Pro to keep 3 months, 6 months, 1 year, or everything.</string>
+    <string name="settings_refresh_pro_status">Refresh pro status</string>
+    <string name="settings_data_retention_description">Choose how long runcheck keeps your history on this device.</string>
+    <string name="settings_data_retention_free">Free keeps the last 24 hours of history. Upgrade to pro to keep 3 months, 6 months, 1 year, or everything.</string>
     <string name="settings_retention_3_months">3 months</string>
     <string name="settings_retention_6_months">6 months</string>
     <string name="settings_retention_1_year">1 year</string>
     <string name="settings_retention_forever">Forever</string>
-    <string name="settings_restore_success">Pro purchase confirmed</string>
-    <string name="settings_restore_not_found">No Pro purchase was found for this Play account</string>
+    <string name="settings_restore_success">Purchase confirmed — pro unlocked</string>
+    <string name="settings_restore_not_found">No pro purchase found for this Play account</string>
     <string name="settings_restore_unavailable">Play Billing is not ready yet. Try again in a moment.</string>
-    <string name="settings_billing_unavailable">Play Billing is unavailable on this device. Pro purchase options are hidden until billing becomes available.</string>
-    <string name="settings_pro_active">Pro Active</string>
+    <string name="settings_billing_unavailable">Play Billing is unavailable on this device. Upgrade options are hidden until billing becomes available.</string>
+    <string name="settings_pro_active">pro active</string>
     <string name="settings_pro_desc">Extended history, widgets, and CSV export</string>
-    <string name="settings_pro_thank_you">Thank you for supporting DevicePulse!</string>
+    <string name="settings_pro_thank_you">Thank you for supporting runcheck!</string>
     <string name="settings_version">Version %1$s</string>
-    <string name="pro_feature_badge">Pro</string>
-    <string name="pro_feature_locked_message">Upgrade to DevicePulse Pro to use %1$s.</string>
+    <string name="pro_feature_badge">PRO</string>
+    <string name="pro_feature_locked_message">Upgrade to runcheck pro to use %1$s.</string>
     <string name="pro_feature_upgrade_action">Upgrade in Settings</string>
-    <string name="pro_feature_locked_generic">This feature requires DevicePulse Pro</string>
-    <string name="pro_feature_battery_history_message">Week, month, and all-time battery history require DevicePulse Pro.</string>
-    <string name="pro_feature_thermal_log_message">Thermal throttling history requires DevicePulse Pro.</string>
-    <string name="pro_feature_export_message">CSV export requires DevicePulse Pro.</string>
+    <string name="pro_feature_locked_generic">This feature requires runcheck pro</string>
+    <string name="pro_feature_battery_history_message">Week, month, and all-time battery history require runcheck pro.</string>
+    <string name="pro_feature_thermal_log_message">Thermal throttling history requires runcheck pro.</string>
+    <string name="pro_feature_export_message">CSV export requires runcheck pro.</string>
 
     <!-- Widgets -->
     <string name="widget_battery_name">Battery Status</string>
@@ -284,9 +290,9 @@
     <string name="widget_percent_value">%1$d%%</string>
     <string name="widget_temperature_value">%1$.1f°C</string>
     <string name="widget_current_value">%1$d mA</string>
-    <string name="widget_pro_required">Pro required</string>
+    <string name="widget_pro_required">pro required</string>
     <string name="widget_no_data_title">No data yet</string>
-    <string name="widget_no_data_message">Open DevicePulse to collect readings</string>
+    <string name="widget_no_data_message">Open runcheck to collect readings</string>
 
     <!-- Notifications -->
     <string name="notification_channel_alerts">Device Alerts</string>
@@ -331,7 +337,7 @@
     <string name="app_usage_title">App Battery Usage</string>
     <string name="app_usage_no_data">No usage data available for the last 24 hours</string>
     <string name="app_usage_permission_title">Allow usage access</string>
-    <string name="app_usage_permission_message">Android requires Usage Access permission before DevicePulse can show per-app foreground time.</string>
+    <string name="app_usage_permission_message">Android requires Usage Access permission before runcheck can show per-app foreground time.</string>
     <string name="app_usage_permission_open_settings">Open usage access</string>
     <string name="app_usage_time_hours_minutes">%1$dh %2$dm</string>
     <string name="app_usage_time_minutes">%1$dm</string>

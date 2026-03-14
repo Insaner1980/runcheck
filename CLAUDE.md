@@ -1,8 +1,8 @@
-# CLAUDE.md — DevicePulse Project Instructions
+# CLAUDE.md — runcheck Project Instructions
 
 ## Project Overview
 
-DevicePulse is a native Android app (Kotlin + Jetpack Compose) that monitors device health across four categories: battery, network, thermal, and storage. It provides real-time diagnostics, a unified health score, and long-term trend tracking.
+runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device health across four categories: battery, network, thermal, and storage. It provides real-time diagnostics, a unified health score, and long-term trend tracking.
 
 ## Tech Stack
 
@@ -21,7 +21,7 @@ DevicePulse is a native Android app (Kotlin + Jetpack Compose) that monitors dev
 ## Project Structure
 
 ```
-app/src/main/java/com/devicepulse/
+app/src/main/java/com/runcheck/
 ├── data/
 │   ├── battery/        # BatteryManager wrappers, sysfs readers
 │   ├── network/        # ConnectivityManager, TelephonyManager
@@ -140,6 +140,7 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 ## Build & Release
 
 - Use a single `app` module (no multi-module until necessary)
+- **Static analysis:** ktlint (formatting) + detekt 2.0.0-alpha.2 (code quality, `ignoreFailures = true` during adoption)
 - ProGuard/R8 minification enabled for release builds
 - Generate signed APK/AAB for Play Store
 - Version code: auto-increment

@@ -16,6 +16,7 @@ activityCompose = "1.10.1"
 billing = "8.3.0"
 glance = "1.1.1"
 ndt7 = "1.0.0"
+okhttp = "4.12.0"
 gson = "2.11.0"
 junit = "4.13.2"
 mockk = "1.13.16"
@@ -23,6 +24,7 @@ googleServices = "4.4.4"
 firebaseCrashlyticsGradle = "3.0.6"
 firebaseBom = "34.7.0"
 ktlintGradle = "12.1.2"
+detekt = "2.0.0-alpha.2"
 
 [libraries]
 # Compose BOM
@@ -78,6 +80,7 @@ glance-material3 = { group = "androidx.glance", name = "glance-material3", versi
 
 # M-Lab NDT7 speed test
 ndt7 = { group = "com.github.m-lab", name = "ndt7-client-android-java", version.ref = "ndt7" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 
 # Gson for JSON serialization
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
@@ -98,3 +101,4 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
 firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlyticsGradle" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }

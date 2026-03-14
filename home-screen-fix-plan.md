@@ -30,7 +30,7 @@ Everything is either green or gray right now. The semantic status colors need to
 - "Healthy" / "Good" status badges should be green with a subtle green-tinted background (not just green text on dark gray).
 - The Network card should show signal quality with appropriate color — green for Good, yellow for Fair, etc.
 - The Thermal card's status dot is correct but the temperature value itself could subtly reflect the status (green tint when normal, shifting toward yellow/orange when warm).
-- The teal accent color (#5EEAD4) should appear somewhere on the home screen — for example in the "DevicePulse" title or as a subtle accent on active/healthy indicators. Right now the only teal is in the Pro card.
+- The teal accent color (#5EEAD4) should appear somewhere on the home screen — for example in the "runcheck" title or as a subtle accent on active/healthy indicators. Right now the only teal is in the Pro card.
 
 ## 5. Network Card — Add Signal Bars
 

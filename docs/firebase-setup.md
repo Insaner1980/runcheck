@@ -1,6 +1,6 @@
 # Firebase Crashlytics Setup
 
-DevicePulse now supports Firebase Crashlytics in a privacy-first configuration:
+runcheck now supports Firebase Crashlytics in a privacy-first configuration:
 
 - Firebase Crashlytics SDK is included
 - Firebase Analytics is not included
@@ -18,7 +18,7 @@ If the user enables crash reporting, Firebase Crashlytics may send:
 - Android version and device model
 - coarse custom metadata if the app adds any in the future
 
-DevicePulse must not send:
+runcheck must not send:
 
 - analytics events
 - advertising IDs
@@ -33,7 +33,7 @@ DevicePulse must not send:
 
 1. Create a Firebase project in [Firebase Console](https://console.firebase.google.com/).
 2. When prompted about Google Analytics, skip it or disable it.
-3. Add the Android app with package name `com.devicepulse`.
+3. Add the Android app with package name `com.runcheck`.
 4. Download the real `google-services.json`.
 5. Replace the placeholder file at `app/google-services.json`.
 6. In Firebase Console, open Crashlytics and finish the setup flow.
