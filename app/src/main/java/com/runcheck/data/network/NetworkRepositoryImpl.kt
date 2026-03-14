@@ -34,7 +34,17 @@ class NetworkRepositoryImpl @Inject constructor(
                     wifiFrequencyMhz = info.wifiFrequencyMhz,
                     carrier = info.carrier,
                     networkSubtype = info.networkSubtype,
-                    latencyMs = null
+                    latencyMs = null,
+                    estimatedDownstreamKbps = info.estimatedDownstreamKbps,
+                    estimatedUpstreamKbps = info.estimatedUpstreamKbps,
+                    isMetered = info.isMetered,
+                    isRoaming = info.isRoaming,
+                    isVpn = info.isVpn,
+                    ipAddresses = info.ipAddresses,
+                    dnsServers = info.dnsServers,
+                    mtuBytes = info.mtuBytes,
+                    wifiBssid = info.wifiBssid,
+                    wifiStandard = info.wifiStandard
                 )
             }
             .conflate()
