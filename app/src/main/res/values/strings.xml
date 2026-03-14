@@ -168,6 +168,33 @@
     <string name="network_latency">Latency</string>
     <string name="network_no_connection">No Connection</string>
 
+    <!-- Network Detail Screen - Redesign -->
+    <string name="network_section_connection_details">Connection Details</string>
+    <string name="network_section_ip_dns">IP Address &amp; DNS</string>
+    <string name="network_section_signal_history">Signal History</string>
+    <string name="network_section_speed_test">Speed Test</string>
+    <string name="network_bssid">BSSID</string>
+    <string name="network_wifi_standard">WiFi Standard</string>
+    <string name="network_est_bandwidth_down">Est. Bandwidth ↓</string>
+    <string name="network_est_bandwidth_up">Est. Bandwidth ↑</string>
+    <string name="network_metered">Metered</string>
+    <string name="network_roaming">Roaming</string>
+    <string name="network_vpn">VPN</string>
+    <string name="network_ipv4">IPv4</string>
+    <string name="network_ipv6">IPv6</string>
+    <string name="network_dns_1">DNS 1</string>
+    <string name="network_dns_2">DNS 2</string>
+    <string name="network_mtu">MTU</string>
+    <string name="network_history_metric_signal">Signal</string>
+    <string name="network_history_metric_latency">Latency</string>
+    <string name="network_history_empty">Not enough data yet</string>
+    <string name="network_speed_test_jitter">Jitter</string>
+    <string name="network_speed_test_server">Server: %1$s</string>
+    <string name="network_speed_test_no_results">No speed test results yet</string>
+    <string name="unit_mhz">MHz</string>
+    <string name="common_yes">Yes</string>
+    <string name="common_no">No</string>
+
     <!-- Signal Quality -->
     <string name="signal_excellent">Excellent</string>
     <string name="signal_good">Good</string>
@@ -376,6 +403,51 @@
     <string name="speed_test_last_result">Latest Result</string>
     <string name="speed_test_history">History</string>
     <string name="speed_test_no_results">No speed test results yet</string>
+
+    <!-- Pro Upgrade Screen -->
+    <string name="pro_upgrade_title">runcheck Pro</string>
+    <string name="pro_upgrade_headline">Unlock runcheck Pro</string>
+    <string name="pro_upgrade_subtitle">One-time purchase. No subscription. Pay once, own it forever.</string>
+    <string name="pro_upgrade_buy_button">Unlock Pro — %1$s</string>
+    <string name="pro_upgrade_buy_button_no_price">Unlock Pro</string>
+    <string name="pro_upgrade_one_time">One-time purchase. No subscription.</string>
+    <string name="pro_feature_extended_history">Extended battery history (week, month, all-time)</string>
+    <string name="pro_feature_charger_comparison">Charger comparison &amp; testing</string>
+    <string name="pro_feature_per_app_battery">Per-app battery usage</string>
+    <string name="pro_feature_widgets">Home screen widgets</string>
+    <string name="pro_feature_csv_export">CSV data export</string>
+    <string name="pro_feature_thermal_logs">Thermal throttling logs</string>
+    <string name="pro_feature_ad_free">Ad-free experience</string>
+    <string name="pro_unlock_button">Unlock with Pro</string>
+
+    <!-- Pro Thank You -->
+    <string name="pro_thank_you_title">Thank you!</string>
+    <string name="pro_thank_you_message">All Pro features are now unlocked. Enjoy the full runcheck experience.</string>
+    <string name="pro_thank_you_continue">Let\'s go</string>
+
+    <!-- Trial -->
+    <string name="trial_welcome_title">Welcome to runcheck Pro Trial</string>
+    <string name="trial_welcome_subtitle">All Pro features are unlocked for 7 days. Explore everything.</string>
+    <string name="trial_welcome_start">Start Exploring</string>
+    <string name="trial_days_remaining">Pro Trial — %1$d days remaining</string>
+    <string name="trial_ends_tomorrow">Pro Trial ends tomorrow</string>
+    <string name="trial_keep_pro">Keep Pro</string>
+    <string name="trial_pro_trial_label">Pro Trial</string>
+    <string name="trial_day5_banner">Your battery history now has 5 days of data. Keep tracking with Pro.</string>
+    <string name="trial_expired_title">Your Pro Trial Has Ended</string>
+    <string name="trial_expired_body">Extended history, charger comparison, and exports are now locked. Ads will appear on detail screens.</string>
+    <string name="trial_continue_free">Continue with Free</string>
+    <string name="trial_expired_upgrade">Your Pro trial ended. Unlock Pro to keep all features.</string>
+    <string name="trial_expired_upgrade_with_price">Your Pro trial ended. Unlock Pro for %1$s.</string>
+    <string name="trial_dismiss">Dismiss</string>
+
+    <!-- Trial Notifications -->
+    <string name="notification_channel_trial">Trial Reminders</string>
+    <string name="notification_channel_trial_description">Reminders about your Pro trial status</string>
+    <string name="notification_trial_day5_title">5 days of battery history</string>
+    <string name="notification_trial_day5_text">Your Pro trial has 2 days left. Keep tracking with Pro.</string>
+    <string name="notification_trial_day7_title">Pro trial ended</string>
+    <string name="notification_trial_day7_text">Your 7-day Pro trial is over. Unlock Pro to keep all features.</string>
 
     <!-- General -->
     <string name="common_loading">Loading…</string>

@@ -6,6 +6,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import com.runcheck.domain.model.SignalQuality
 
 @Immutable
 data class StatusColors(
@@ -73,6 +74,19 @@ fun statusColorForStoragePercent(usedPercent: Int): Color {
         usedPercent >= 85 -> colors.poor
         usedPercent >= 75 -> colors.fair
         else -> colors.healthy
+    }
+}
+
+@Composable
+@ReadOnlyComposable
+fun statusColorForSignalQuality(quality: SignalQuality): Color {
+    val colors = MaterialTheme.statusColors
+    return when (quality) {
+        SignalQuality.EXCELLENT -> colors.healthy
+        SignalQuality.GOOD -> colors.healthy
+        SignalQuality.FAIR -> colors.fair
+        SignalQuality.POOR -> colors.poor
+        SignalQuality.NO_SIGNAL -> colors.critical
     }
 }
 

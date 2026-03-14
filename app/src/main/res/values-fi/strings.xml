@@ -168,6 +168,33 @@
     <string name="network_latency">Viive</string>
     <string name="network_no_connection">Ei yhteyttä</string>
 
+    <!-- Network Detail Screen - Redesign -->
+    <string name="network_section_connection_details">Yhteystiedot</string>
+    <string name="network_section_ip_dns">IP-osoite ja DNS</string>
+    <string name="network_section_signal_history">Signaalihistoria</string>
+    <string name="network_section_speed_test">Nopeustesti</string>
+    <string name="network_bssid">BSSID</string>
+    <string name="network_wifi_standard">WiFi-standardi</string>
+    <string name="network_est_bandwidth_down">Arvioitu kaista ↓</string>
+    <string name="network_est_bandwidth_up">Arvioitu kaista ↑</string>
+    <string name="network_metered">Mittaroitu</string>
+    <string name="network_roaming">Roaming</string>
+    <string name="network_vpn">VPN</string>
+    <string name="network_ipv4">IPv4</string>
+    <string name="network_ipv6">IPv6</string>
+    <string name="network_dns_1">DNS 1</string>
+    <string name="network_dns_2">DNS 2</string>
+    <string name="network_mtu">MTU</string>
+    <string name="network_history_metric_signal">Signaali</string>
+    <string name="network_history_metric_latency">Latenssi</string>
+    <string name="network_history_empty">Ei tarpeeksi dataa vielä</string>
+    <string name="network_speed_test_jitter">Jitter</string>
+    <string name="network_speed_test_server">Palvelin: %1$s</string>
+    <string name="network_speed_test_no_results">Ei nopeustestituloksia vielä</string>
+    <string name="unit_mhz">MHz</string>
+    <string name="common_yes">Kyllä</string>
+    <string name="common_no">Ei</string>
+
     <!-- Signal Quality -->
     <string name="signal_excellent">Erinomainen</string>
     <string name="signal_good">Hyvä</string>
@@ -376,6 +403,51 @@
     <string name="speed_test_cellular_proceed">Jatka</string>
     <string name="speed_test_cellular_cancel">Peruuta</string>
     <string name="speed_test_no_results">Ei nopeustestituloksia vielä</string>
+
+    <!-- Pro Upgrade Screen -->
+    <string name="pro_upgrade_title">runcheck Pro</string>
+    <string name="pro_upgrade_headline">Avaa runcheck Pro</string>
+    <string name="pro_upgrade_subtitle">Kertaostos. Ei tilausta. Maksa kerran, omista ikuisesti.</string>
+    <string name="pro_upgrade_buy_button">Avaa Pro — %1$s</string>
+    <string name="pro_upgrade_buy_button_no_price">Avaa Pro</string>
+    <string name="pro_upgrade_one_time">Kertaostos. Ei tilausta.</string>
+    <string name="pro_feature_extended_history">Laajennettu akkuhistoria (viikko, kuukausi, kaikki)</string>
+    <string name="pro_feature_charger_comparison">Laturivertailu ja testaus</string>
+    <string name="pro_feature_per_app_battery">Sovelluskohtainen akunkäyttö</string>
+    <string name="pro_feature_widgets">Kotinäytön widgetit</string>
+    <string name="pro_feature_csv_export">CSV-datavienti</string>
+    <string name="pro_feature_thermal_logs">Lämpörajoituslokit</string>
+    <string name="pro_feature_ad_free">Mainokseton käyttö</string>
+    <string name="pro_unlock_button">Avaa Prolla</string>
+
+    <!-- Pro Thank You -->
+    <string name="pro_thank_you_title">Kiitos!</string>
+    <string name="pro_thank_you_message">Kaikki Pro-ominaisuudet ovat nyt käytössä. Nauti täydestä runcheck-kokemuksesta.</string>
+    <string name="pro_thank_you_continue">Mennään</string>
+
+    <!-- Trial -->
+    <string name="trial_welcome_title">Tervetuloa runcheck Pro -kokeiluun</string>
+    <string name="trial_welcome_subtitle">Kaikki Pro-ominaisuudet ovat avoinna 7 päivän ajan. Tutustu kaikkeen.</string>
+    <string name="trial_welcome_start">Aloita tutkiminen</string>
+    <string name="trial_days_remaining">Pro-kokeilu — %1$d päivää jäljellä</string>
+    <string name="trial_ends_tomorrow">Pro-kokeilu päättyy huomenna</string>
+    <string name="trial_keep_pro">Pidä Pro</string>
+    <string name="trial_pro_trial_label">Pro-kokeilu</string>
+    <string name="trial_day5_banner">Akkuhistoriassasi on nyt 5 päivää dataa. Jatka seurantaa Prolla.</string>
+    <string name="trial_expired_title">Pro-kokeilusi on päättynyt</string>
+    <string name="trial_expired_body">Laajennettu historia, laturivertailu ja vienti ovat nyt lukittuja. Mainoksia näytetään tietosivuilla.</string>
+    <string name="trial_continue_free">Jatka ilmaisversiolla</string>
+    <string name="trial_expired_upgrade">Pro-kokeilusi päättyi. Avaa Pro säilyttääksesi kaikki ominaisuudet.</string>
+    <string name="trial_expired_upgrade_with_price">Pro-kokeilusi päättyi. Avaa Pro hintaan %1$s.</string>
+    <string name="trial_dismiss">Ohita</string>
+
+    <!-- Trial Notifications -->
+    <string name="notification_channel_trial">Kokeilumuistutukset</string>
+    <string name="notification_channel_trial_description">Muistutukset Pro-kokeilun tilasta</string>
+    <string name="notification_trial_day5_title">5 päivää akkuhistoriaa</string>
+    <string name="notification_trial_day5_text">Pro-kokeilussasi on 2 päivää jäljellä. Jatka seurantaa Prolla.</string>
+    <string name="notification_trial_day7_title">Pro-kokeilu päättynyt</string>
+    <string name="notification_trial_day7_text">7 päivän Pro-kokeilusi on ohi. Avaa Pro säilyttääksesi kaikki ominaisuudet.</string>
 
     <!-- General -->
     <string name="common_loading">Ladataan…</string>
