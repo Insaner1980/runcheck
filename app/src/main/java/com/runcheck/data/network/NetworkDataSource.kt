@@ -133,7 +133,10 @@ class NetworkDataSource @Inject constructor(
             capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
-    private fun buildNetworkInfo(capabilities: NetworkCapabilities): NetworkInfo {
+    private fun buildNetworkInfo(
+        capabilities: NetworkCapabilities,
+        linkProperties: android.net.LinkProperties?
+    ): NetworkInfo {
         val isWifi = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
         val isCellular = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
         val canReadWifiDetails = canReadWifiDetails()
@@ -160,6 +163,44 @@ class NetworkDataSource @Inject constructor(
         val signalQuality = classifySignal(signalDbm, connectionType)
         val cellInfo = if (isCellular) getCellularDetails() else null
 
+        // Bandwidth estimates
+        val estimatedDownstreamKbps = capabilities.linkDownstreamBandwidthKbps.takeIf { it > 0 }
+        val estimatedUpstreamKbps = capabilities.linkUpstreamBandwidthKbps.takeIf { it > 0 }
+
+        // VPN detection
+        val isVpn = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+
+        // Metered status
+        val isMetered = !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+
+        // Roaming (cellular only)
+        val isRoaming = if (isCellular) {
+            try { telephonyManager?.isNetworkRoaming } catch (_: Exception) { null }
+        } else null
+
+        // IP addresses from LinkProperties
+        val ipAddresses = linkProperties?.linkAddresses
+            ?.mapNotNull { it.address?.hostAddress }
+            ?: emptyList()
+
+        // DNS servers
+        val dnsServers = linkProperties?.dnsServers
+            ?.mapNotNull { it.hostAddress }
+            ?: emptyList()
+
+        // MTU (API 29+)
+        val mtuBytes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            linkProperties?.mtu?.takeIf { it > 0 }
+        } else null
+
+        // BSSID (WiFi only, needs location permission)
+        val wifiBssid = if (isWifi && canReadWifiDetails) {
+            getBssid(capabilities)
+        } else null
+
+        // WiFi standard (API 30+)
+        val wifiStandard = if (isWifi) getWifiStandard(capabilities) else null
+
         return NetworkInfo(
             connectionType = connectionType,
             signalDbm = signalDbm,
@@ -168,7 +209,17 @@ class NetworkDataSource @Inject constructor(
             wifiSpeedMbps = wifiInfo?.speedMbps,
             wifiFrequencyMhz = wifiInfo?.frequencyMhz,
             carrier = cellInfo?.carrier,
-            networkSubtype = cellInfo?.networkType
+            networkSubtype = cellInfo?.networkType,
+            estimatedDownstreamKbps = estimatedDownstreamKbps,
+            estimatedUpstreamKbps = estimatedUpstreamKbps,
+            isMetered = isMetered,
+            isRoaming = isRoaming,
+            isVpn = isVpn,
+            ipAddresses = ipAddresses,
+            dnsServers = dnsServers,
+            mtuBytes = mtuBytes,
+            wifiBssid = wifiBssid,
+            wifiStandard = wifiStandard
         )
     }
 
@@ -177,8 +228,11 @@ class NetworkDataSource @Inject constructor(
         val capabilities = activeNetwork?.let {
             connectivityManager.getNetworkCapabilities(it)
         }
+        val linkProperties = activeNetwork?.let {
+            connectivityManager.getLinkProperties(it)
+        }
         trySend(
-            if (capabilities != null) buildNetworkInfo(capabilities)
+            if (capabilities != null) buildNetworkInfo(capabilities, linkProperties)
             else NetworkInfo.disconnected()
         )
     }
@@ -363,6 +417,35 @@ class NetworkDataSource @Inject constructor(
 
     private fun canReadWifiDetails(): Boolean = hasFineLocationPermission() && isLocationEnabled()
 
+    @Suppress("DEPRECATION")
+    private fun getBssid(capabilities: NetworkCapabilities): String? {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val wifiInfo = capabilities.transportInfo as? WifiInfo
+            val bssid = wifiInfo?.bssid
+            if (bssid != null && bssid != "02:00:00:00:00:00") return bssid
+        }
+        val bssid = wifiManager?.connectionInfo?.bssid
+        return if (bssid != null && bssid != "02:00:00:00:00:00") bssid else null
+    }
+
+    @Suppress("DEPRECATION")
+    private fun getWifiStandard(capabilities: NetworkCapabilities): String? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
+        val wifiInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            capabilities.transportInfo as? WifiInfo
+        } else {
+            wifiManager?.connectionInfo
+        } ?: return null
+        return when (wifiInfo.wifiStandard) {
+            4 -> "WiFi 4 (n)"
+            5 -> "WiFi 5 (ac)"
+            6 -> "WiFi 6 (ax)"
+            7 -> "WiFi 6E (ax)"
+            8 -> "WiFi 7 (be)"
+            else -> null
+        }
+    }
+
     private fun normalizeSsid(rawSsid: String?): String? {
         val normalized = rawSsid
             ?.removeSurrounding("\"")
@@ -416,7 +499,17 @@ class NetworkDataSource @Inject constructor(
         val wifiSpeedMbps: Int? = null,
         val wifiFrequencyMhz: Int? = null,
         val carrier: String? = null,
-        val networkSubtype: String? = null
+        val networkSubtype: String? = null,
+        val estimatedDownstreamKbps: Int? = null,
+        val estimatedUpstreamKbps: Int? = null,
+        val isMetered: Boolean? = null,
+        val isRoaming: Boolean? = null,
+        val isVpn: Boolean? = null,
+        val ipAddresses: List<String> = emptyList(),
+        val dnsServers: List<String> = emptyList(),
+        val mtuBytes: Int? = null,
+        val wifiBssid: String? = null,
+        val wifiStandard: String? = null
     ) {
         companion object {
             fun disconnected() = NetworkInfo(
