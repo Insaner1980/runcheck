@@ -1,9 +1,9 @@
-package com.devicepulse.service.monitor
+package com.runcheck.service.monitor
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.devicepulse.domain.repository.MonitoringScheduler
+import com.runcheck.domain.repository.MonitoringScheduler
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

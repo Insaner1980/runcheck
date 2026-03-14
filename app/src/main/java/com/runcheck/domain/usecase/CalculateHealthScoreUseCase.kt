@@ -1,7 +1,7 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.model.HealthScore
-import com.devicepulse.domain.scoring.HealthScoreCalculator
+import com.runcheck.domain.model.HealthScore
+import com.runcheck.domain.scoring.HealthScoreCalculator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import javax.inject.Inject

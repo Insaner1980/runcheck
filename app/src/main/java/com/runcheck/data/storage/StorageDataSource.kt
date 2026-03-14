@@ -1,4 +1,4 @@
-package com.devicepulse.data.storage
+package com.runcheck.data.storage
 
 import android.app.AppOpsManager
 import android.app.usage.StorageStatsManager

@@ -1,9 +1,9 @@
-package com.devicepulse.ui.battery
+package com.runcheck.ui.battery
 
 import androidx.compose.runtime.Immutable
-import com.devicepulse.domain.model.BatteryReading
-import com.devicepulse.domain.model.BatteryState
-import com.devicepulse.domain.model.HistoryPeriod
+import com.runcheck.domain.model.BatteryReading
+import com.runcheck.domain.model.BatteryState
+import com.runcheck.domain.model.HistoryPeriod
 
 sealed interface BatteryUiState {
     data object Loading : BatteryUiState

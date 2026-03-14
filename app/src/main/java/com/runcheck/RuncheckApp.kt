@@ -1,12 +1,12 @@
-package com.devicepulse
+package com.runcheck
 
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
-import com.devicepulse.data.billing.ProStatusRepository
-import com.devicepulse.domain.repository.CrashReportingController
-import com.devicepulse.domain.repository.MonitoringScheduler
-import com.devicepulse.service.monitor.NotificationHelper
+import com.runcheck.data.billing.ProStatusRepository
+import com.runcheck.domain.repository.CrashReportingController
+import com.runcheck.domain.repository.MonitoringScheduler
+import com.runcheck.service.monitor.NotificationHelper
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltAndroidApp
-class DevicePulseApp : Application(), Configuration.Provider {
+class RuncheckApp : Application(), Configuration.Provider {
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 

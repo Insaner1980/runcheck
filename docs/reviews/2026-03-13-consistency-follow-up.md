@@ -1,4 +1,4 @@
-# DevicePulse Consistency Follow-Up
+# runcheck Consistency Follow-Up
 
 Date: 2026-03-13
 

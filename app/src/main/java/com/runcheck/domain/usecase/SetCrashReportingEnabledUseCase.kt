@@ -1,6 +1,6 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.repository.CrashReportingController
+import com.runcheck.domain.repository.CrashReportingController
 import javax.inject.Inject
 
 class SetCrashReportingEnabledUseCase @Inject constructor(

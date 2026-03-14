@@ -1,4 +1,4 @@
-package com.devicepulse.ui.components
+package com.runcheck.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -11,13 +11,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,6 +32,7 @@ fun GridCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     subtitleColor: Color = MaterialTheme.colorScheme.primary,
+    iconBackgroundColor: Color = Color.Unspecified,
     locked: Boolean = false
 ) {
     Card(
@@ -46,17 +44,30 @@ fun GridCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
+        val resolvedIconBg = if (iconBackgroundColor == Color.Unspecified) {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+        } else {
+            iconBackgroundColor
+        }
+
         Box(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 14.dp, vertical = 16.dp)
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(color = resolvedIconBg, shape = CircleShape),
+                    contentAlignment = Alignment.Center
                 ) {
-                    IconCircle(icon = icon)
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 Spacer(modifier = Modifier.height(14.dp))
                 Text(
@@ -78,25 +89,11 @@ fun GridCard(
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.18f))
                 )
-                Surface(
+                ProBadgePill(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(10.dp),
-                    shape = RoundedCornerShape(999.dp),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)
-                ) {
-                    Box(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Lock,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
+                        .padding(10.dp)
+                )
             }
         }
     }

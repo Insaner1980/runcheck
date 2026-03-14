@@ -1,10 +1,10 @@
-package com.devicepulse.data.battery
+package com.runcheck.data.battery
 
-import com.devicepulse.domain.model.BatteryHealth
-import com.devicepulse.domain.model.ChargingStatus
-import com.devicepulse.domain.model.Confidence
-import com.devicepulse.domain.model.MeasuredValue
-import com.devicepulse.domain.model.PlugType
+import com.runcheck.domain.model.BatteryHealth
+import com.runcheck.domain.model.ChargingStatus
+import com.runcheck.domain.model.Confidence
+import com.runcheck.domain.model.MeasuredValue
+import com.runcheck.domain.model.PlugType
 import kotlinx.coroutines.flow.Flow
 
 interface BatteryDataSource {

@@ -1,9 +1,9 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.model.DeviceProfileInfo
-import com.devicepulse.domain.model.UserPreferences
-import com.devicepulse.domain.repository.DeviceProfileRepository
-import com.devicepulse.domain.repository.UserPreferencesRepository
+import com.runcheck.domain.model.DeviceProfileInfo
+import com.runcheck.domain.model.UserPreferences
+import com.runcheck.domain.repository.DeviceProfileRepository
+import com.runcheck.domain.repository.UserPreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import javax.inject.Inject

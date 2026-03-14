@@ -1,4 +1,4 @@
-package com.devicepulse.data.db.entity
+package com.runcheck.data.db.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

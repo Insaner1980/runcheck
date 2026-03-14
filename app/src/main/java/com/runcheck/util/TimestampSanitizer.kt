@@ -1,4 +1,4 @@
-package com.devicepulse.util
+package com.runcheck.util
 
 object TimestampSanitizer {
     fun clampToNow(timestamp: Long, now: Long = System.currentTimeMillis()): Long =

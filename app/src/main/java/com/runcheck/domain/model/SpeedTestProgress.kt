@@ -1,4 +1,4 @@
-package com.devicepulse.domain.model
+package com.runcheck.domain.model
 
 sealed interface SpeedTestProgress {
     data class PingPhase(val pingMs: Int, val jitterMs: Int) : SpeedTestProgress

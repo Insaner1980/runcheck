@@ -1,4 +1,4 @@
-package com.devicepulse.ui.theme
+package com.runcheck.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -10,7 +10,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import com.devicepulse.R
+import com.runcheck.R
 
 private val ManropeFontFamily = FontFamily(
     Font(R.font.manrope)
@@ -25,7 +25,7 @@ val MaterialTheme.numericFontFamily: FontFamily
     @ReadOnlyComposable
     get() = LocalNumericFontFamily.current
 
-val DevicePulseTypography = Typography(
+val RuncheckTypography = Typography(
     displayLarge = TextStyle(
         fontFamily = ManropeFontFamily,
         fontSize = 48.sp,

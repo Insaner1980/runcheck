@@ -1,10 +1,10 @@
-package com.devicepulse.data.db.dao
+package com.runcheck.data.db.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.devicepulse.data.db.entity.DeviceEntity
+import com.runcheck.data.db.entity.DeviceEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao

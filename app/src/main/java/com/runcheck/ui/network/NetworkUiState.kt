@@ -1,8 +1,8 @@
-package com.devicepulse.ui.network
+package com.runcheck.ui.network
 
 import androidx.compose.runtime.Immutable
-import com.devicepulse.domain.model.NetworkState
-import com.devicepulse.domain.model.SpeedTestResult
+import com.runcheck.domain.model.NetworkState
+import com.runcheck.domain.model.SpeedTestResult
 
 sealed interface NetworkUiState {
     data object Loading : NetworkUiState

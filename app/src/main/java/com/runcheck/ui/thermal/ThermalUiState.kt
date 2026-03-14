@@ -1,8 +1,8 @@
-package com.devicepulse.ui.thermal
+package com.runcheck.ui.thermal
 
 import androidx.compose.runtime.Immutable
-import com.devicepulse.domain.model.ThermalState
-import com.devicepulse.domain.model.ThrottlingEvent
+import com.runcheck.domain.model.ThermalState
+import com.runcheck.domain.model.ThrottlingEvent
 
 sealed interface ThermalUiState {
     data object Loading : ThermalUiState

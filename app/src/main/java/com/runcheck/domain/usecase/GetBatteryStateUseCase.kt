@@ -1,7 +1,7 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.model.BatteryState
-import com.devicepulse.domain.repository.BatteryRepository
+import com.runcheck.domain.model.BatteryState
+import com.runcheck.domain.repository.BatteryRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 

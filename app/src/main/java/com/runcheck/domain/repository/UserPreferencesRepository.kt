@@ -1,9 +1,9 @@
-package com.devicepulse.domain.repository
+package com.runcheck.domain.repository
 
-import com.devicepulse.domain.model.DataRetention
-import com.devicepulse.domain.model.MonitoringInterval
-import com.devicepulse.domain.model.ThemeMode
-import com.devicepulse.domain.model.UserPreferences
+import com.runcheck.domain.model.DataRetention
+import com.runcheck.domain.model.MonitoringInterval
+import com.runcheck.domain.model.ThemeMode
+import com.runcheck.domain.model.UserPreferences
 import kotlinx.coroutines.flow.Flow
 
 interface UserPreferencesRepository {

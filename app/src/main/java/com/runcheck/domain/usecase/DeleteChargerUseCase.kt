@@ -1,6 +1,6 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.repository.ChargerRepository
+import com.runcheck.domain.repository.ChargerRepository
 import javax.inject.Inject
 
 class DeleteChargerUseCase @Inject constructor(

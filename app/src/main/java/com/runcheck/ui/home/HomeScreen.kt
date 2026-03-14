@@ -1,6 +1,11 @@
-package com.devicepulse.ui.home
+package com.runcheck.ui.home
 
-import androidx.compose.foundation.border
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,8 +15,8 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -45,7 +50,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -60,36 +73,42 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.devicepulse.R
-import com.devicepulse.domain.model.HealthScore
-import com.devicepulse.domain.model.HealthStatus
-import com.devicepulse.ui.common.batteryHealthLabel
-import com.devicepulse.ui.common.chargingStatusLabel
-import com.devicepulse.ui.common.connectionDisplayLabel
-import com.devicepulse.ui.common.formatPercent
-import com.devicepulse.ui.common.formatStorageSize
-import com.devicepulse.ui.common.formatTemperature
-import com.devicepulse.ui.common.plugTypeLabel
-import com.devicepulse.ui.common.scoreLabel
-import com.devicepulse.ui.common.temperatureBandLabel
-import com.devicepulse.ui.components.GridCard
-import com.devicepulse.ui.components.IconCircle
-import com.devicepulse.ui.components.ListRow
-import com.devicepulse.ui.components.PrimaryTopBar
-import com.devicepulse.ui.components.ProBadgePill
-import com.devicepulse.ui.components.ProgressRing
-import com.devicepulse.ui.components.SectionHeader
-import com.devicepulse.ui.components.StatusIndicator
-import com.devicepulse.ui.components.StatusDot
-import com.devicepulse.ui.theme.AccentBlue
-import com.devicepulse.ui.theme.AccentOrange
-import com.devicepulse.ui.theme.AccentTeal
-import com.devicepulse.ui.theme.BgIconCircle
-import com.devicepulse.ui.theme.BgCardAlt
-import com.devicepulse.ui.theme.TextMuted
-import com.devicepulse.ui.theme.TextSecondary
-import com.devicepulse.ui.theme.numericFontFamily
-import com.devicepulse.ui.theme.statusColors
+import com.runcheck.R
+import com.runcheck.domain.model.HealthScore
+import com.runcheck.domain.model.HealthStatus
+import com.runcheck.ui.common.batteryHealthLabel
+import com.runcheck.ui.common.chargingStatusLabel
+import com.runcheck.ui.common.connectionDisplayLabel
+import com.runcheck.ui.common.formatPercent
+import com.runcheck.ui.common.formatStorageSize
+import com.runcheck.ui.common.formatTemperature
+import com.runcheck.ui.common.plugTypeLabel
+import com.runcheck.ui.common.scoreLabel
+import com.runcheck.ui.common.temperatureBandLabel
+import com.runcheck.ui.components.GridCard
+import com.runcheck.ui.components.IconCircle
+import com.runcheck.ui.components.ListRow
+import com.runcheck.ui.components.PrimaryTopBar
+import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.ProBadgePill
+import com.runcheck.ui.components.ProgressRing
+import com.runcheck.ui.components.SectionHeader
+import com.runcheck.ui.components.StatusDot
+import com.runcheck.ui.theme.AccentBlue
+import com.runcheck.ui.theme.AccentOrange
+import com.runcheck.ui.theme.AccentTeal
+import com.runcheck.ui.theme.statusColors
+import com.runcheck.ui.theme.statusColorForPercent
+import com.runcheck.ui.theme.statusColorForStoragePercent
+import com.runcheck.ui.theme.statusColorForTemperature
+import com.runcheck.ui.theme.BgIconCircle
+import com.runcheck.ui.theme.BgCardAlt
+import com.runcheck.ui.theme.TextMuted
+import com.runcheck.ui.theme.TextSecondary
+import com.runcheck.ui.theme.numericFontFamily
+import com.runcheck.ui.theme.reducedMotion
+import com.runcheck.ui.theme.statusColors
+import kotlin.math.sin
 
 @Composable
 fun HomeScreen(
@@ -205,6 +224,7 @@ private fun HomeContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp)
+            .navigationBarsPadding()
     ) {
         Spacer(modifier = Modifier.height(6.dp))
 
@@ -221,14 +241,14 @@ private fun HomeContent(
             onNavigateToStorage = onNavigateToStorage
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         BatteryHeroCard(
             battery = state.batteryState,
             onClick = onNavigateToBattery
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -242,7 +262,8 @@ private fun HomeContent(
                     wifiSsid = state.networkState.wifiSsid,
                     networkSubtype = state.networkState.networkSubtype
                 ),
-                subtitleColor = AccentTeal,
+                subtitleColor = MaterialTheme.colorScheme.onSurface,
+                iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                 onClick = onNavigateToNetwork,
                 modifier = Modifier.weight(1f)
             )
@@ -254,13 +275,14 @@ private fun HomeContent(
                     formatTemperature(state.thermalState.batteryTempC),
                     temperatureBandLabel(state.thermalState.batteryTempC)
                 ),
-                subtitleColor = AccentOrange,
+                subtitleColor = statusColorForTemperature(state.thermalState.batteryTempC),
+                iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                 onClick = onNavigateToThermal,
                 modifier = Modifier.weight(1f)
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -270,7 +292,8 @@ private fun HomeContent(
                 icon = Icons.Outlined.BatteryChargingFull,
                 title = stringResource(R.string.home_chargers_card),
                 subtitle = stringResource(R.string.home_test_compare),
-                subtitleColor = AccentBlue,
+                subtitleColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                 locked = !state.isPro,
                 onClick = if (state.isPro) onNavigateToCharger else onNavigateToProUpgrade,
                 modifier = Modifier.weight(1f)
@@ -283,7 +306,11 @@ private fun HomeContent(
                     formatStorageSize(context, state.storageState.availableBytes),
                     stringResource(R.string.home_free_suffix)
                 ),
-                subtitleColor = AccentTeal,
+                subtitleColor = statusColorForStoragePercent(
+                    ((state.storageState.totalBytes - state.storageState.availableBytes) * 100 /
+                        state.storageState.totalBytes.coerceAtLeast(1)).toInt()
+                ),
+                iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                 onClick = onNavigateToStorage,
                 modifier = Modifier.weight(1f)
             )
@@ -325,20 +352,6 @@ private fun HomeContent(
                                 .fillMaxSize()
                                 .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.14f))
                         )
-                        Surface(
-                            modifier = Modifier
-                                .align(Alignment.CenterEnd)
-                                .padding(end = 44.dp),
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Lock,
-                                contentDescription = null,
-                                modifier = Modifier.padding(8.dp),
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
                     }
                 }
             }
@@ -353,6 +366,10 @@ private fun HomeContent(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+                ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Row(
@@ -362,11 +379,21 @@ private fun HomeContent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = AccentBlue.copy(alpha = 0.18f)
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
-                        IconCircle(icon = Icons.Outlined.Lock)
+                        Icon(
+                            imageVector = Icons.Outlined.Lock,
+                            contentDescription = null,
+                            modifier = Modifier.size(22.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -505,7 +532,7 @@ private fun HealthScoreCard(
                 progress = score / 100f,
                 modifier = Modifier.size(152.dp),
                 strokeWidth = 10.dp,
-                progressColor = AccentTeal,
+                progressColor = statusColorForPercent(score),
                 contentDescription = stringResource(
                     R.string.a11y_progress_percent,
                     stringResource(R.string.home_health_score),
@@ -576,7 +603,7 @@ private fun HealthScoreCard(
 
 @Composable
 private fun BatteryHeroCard(
-    battery: com.devicepulse.domain.model.BatteryState,
+    battery: com.runcheck.domain.model.BatteryState,
     onClick: () -> Unit
 ) {
     Card(
@@ -590,8 +617,10 @@ private fun BatteryHeroCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp)
+                .padding(horizontal = 24.dp, vertical = 14.dp)
         ) {
+            SectionHeader(stringResource(R.string.home_battery_card))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -600,8 +629,6 @@ private fun BatteryHeroCard(
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
-                    SectionHeader(stringResource(R.string.home_battery_card))
-                    Spacer(modifier = Modifier.height(6.dp))
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             text = battery.level.toString(),
@@ -629,28 +656,32 @@ private fun BatteryHeroCard(
 
                 HomeBatteryChargeIcon(
                     level = battery.level,
-                    isCharging = battery.chargingStatus == com.devicepulse.domain.model.ChargingStatus.CHARGING,
+                    isCharging = battery.chargingStatus == com.runcheck.domain.model.ChargingStatus.CHARGING,
                     progress = battery.level / 100f,
-                    modifier = Modifier.size(84.dp)
+                    modifier = Modifier.size(130.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                HomeMetricPill(
+                MetricPill(
                     label = stringResource(R.string.battery_health),
                     value = batteryHealthLabel(battery.health),
-                    valueColor = AccentTeal,
+                    valueColor = if (battery.health == com.runcheck.domain.model.BatteryHealth.GOOD) {
+                        MaterialTheme.statusColors.healthy
+                    } else {
+                        MaterialTheme.statusColors.fair
+                    },
                     modifier = Modifier.weight(1f)
                 )
-                HomeMetricPill(
+                MetricPill(
                     label = stringResource(R.string.battery_plug_type),
                     value = plugTypeLabel(battery.plugType),
-                    valueColor = AccentBlue,
+                    valueColor = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -674,8 +705,8 @@ private fun HealthBreakdownRow(
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        StatusIndicator(
-            status = status,
+        StatusDot(
+            color = statusColor(status),
             modifier = Modifier.padding(end = 8.dp)
         )
         Text(
@@ -702,81 +733,136 @@ private fun HomeBatteryChargeIcon(
     modifier: Modifier = Modifier
 ) {
     val fillLevel = progress.coerceIn(0f, 1f)
+    val reducedMotion = MaterialTheme.reducedMotion
+
+    val wavePhase = if (isCharging && !reducedMotion && fillLevel in 0.01f..0.99f) {
+        val infiniteTransition = rememberInfiniteTransition(label = "batteryWave")
+        val phase by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 2f * Math.PI.toFloat(),
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 2000, easing = LinearEasing)
+            ),
+            label = "wavePhase"
+        )
+        phase
+    } else {
+        0f
+    }
+
+    val outlineColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val fillColor = statusColorForPercent(level)
+    val textColor = if (fillLevel > 0.55f) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Box(
-            modifier = Modifier
-                .size(width = 48.dp, height = 78.dp)
+        Canvas(
+            modifier = Modifier.size(width = 80.dp, height = 124.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .size(width = 16.dp, height = 5.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        shape = RoundedCornerShape(1.dp)
-                    )
+            val capWidth = 18.dp.toPx()
+            val capHeight = 5.dp.toPx()
+            val capRadius = 2.dp.toPx()
+            val bodyTop = capHeight + 1.dp.toPx()
+            val bodyHeight = size.height - bodyTop
+            val strokeW = 2.dp.toPx()
+            val cornerRadius = 12.dp.toPx()
+            val inset = 4.dp.toPx()
+            val waveAmplitude = 3.dp.toPx()
+
+            // Terminal cap
+            drawRoundRect(
+                color = outlineColor,
+                topLeft = Offset((size.width - capWidth) / 2f, 0f),
+                size = Size(capWidth, capHeight),
+                cornerRadius = CornerRadius(capRadius, capRadius)
             )
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .padding(top = 4.dp)
-                    .border(
-                        width = 2.dp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    .padding(4.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .fillMaxHeight(fillLevel)
-                        .background(
-                            color = AccentBlue,
-                            shape = RoundedCornerShape(8.dp)
+
+            // Battery body outline
+            drawRoundRect(
+                color = outlineColor,
+                topLeft = Offset(0f, bodyTop),
+                size = Size(size.width, bodyHeight),
+                cornerRadius = CornerRadius(cornerRadius, cornerRadius),
+                style = Stroke(width = strokeW)
+            )
+
+            // Fill area
+            if (fillLevel > 0f) {
+                val fillAreaTop = bodyTop + strokeW + inset
+                val fillAreaBottom = bodyTop + bodyHeight - strokeW - inset
+                val fillAreaLeft = strokeW + inset
+                val fillAreaRight = size.width - strokeW - inset
+                val fillAreaHeight = fillAreaBottom - fillAreaTop
+                val fillTop = fillAreaBottom - fillAreaHeight * fillLevel
+                val fillCorner = 8.dp.toPx()
+
+                clipPath(Path().apply {
+                    addRoundRect(
+                        RoundRect(
+                            left = fillAreaLeft,
+                            top = fillAreaTop,
+                            right = fillAreaRight,
+                            bottom = fillAreaBottom,
+                            cornerRadius = CornerRadius(fillCorner, fillCorner)
                         )
-                )
+                    )
+                }) {
+                    val showWave = isCharging && !reducedMotion && fillLevel in 0.01f..0.99f
+
+                    if (showWave) {
+                        val wavePath = Path().apply {
+                            moveTo(fillAreaLeft, fillTop)
+                            val waveWidth = fillAreaRight - fillAreaLeft
+                            val steps = 40
+                            for (i in 0..steps) {
+                                val x = fillAreaLeft + waveWidth * i / steps
+                                val y = fillTop + waveAmplitude * sin(
+                                    wavePhase + 2f * Math.PI.toFloat() * i / steps
+                                )
+                                lineTo(x, y)
+                            }
+                            lineTo(fillAreaRight, fillAreaBottom)
+                            lineTo(fillAreaLeft, fillAreaBottom)
+                            close()
+                        }
+                        drawPath(
+                            path = wavePath,
+                            brush = Brush.verticalGradient(
+                                colors = listOf(fillColor, fillColor.copy(alpha = 0.6f)),
+                                startY = fillTop,
+                                endY = fillAreaBottom
+                            )
+                        )
+                    } else {
+                        drawRect(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(fillColor, fillColor.copy(alpha = 0.6f)),
+                                startY = fillTop,
+                                endY = fillAreaBottom
+                            ),
+                            topLeft = Offset(fillAreaLeft, fillTop),
+                            size = Size(fillAreaRight - fillAreaLeft, fillAreaBottom - fillTop)
+                        )
+                    }
+                }
             }
-            Text(
-                text = level.toString(),
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontFamily = MaterialTheme.numericFontFamily,
-                    fontWeight = FontWeight.Bold
-                ),
-                color = if (fillLevel > 0.55f) {
-                    MaterialTheme.colorScheme.onPrimary
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                },
-                modifier = Modifier.align(Alignment.Center)
-            )
         }
+
+        // Overlaid level text (participates in semantics tree)
+        Text(
+            text = level.toString(),
+            style = MaterialTheme.typography.labelLarge.copy(
+                fontFamily = MaterialTheme.numericFontFamily,
+                fontWeight = FontWeight.Bold
+            ),
+            color = textColor
+        )
     }
 }
 
-@Composable
-private fun HomeMetricPill(
-    label: String,
-    value: String,
-    valueColor: Color,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        Text(
-            text = label.uppercase(),
-            style = MaterialTheme.typography.labelLarge,
-            color = TextMuted
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            color = valueColor
-        )
-    }
-}
 
 @Composable
 private fun statusColor(status: HealthStatus): Color {

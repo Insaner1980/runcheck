@@ -1,13 +1,13 @@
-package com.devicepulse.ui.thermal
+package com.runcheck.ui.thermal
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devicepulse.domain.model.ThermalState
-import com.devicepulse.domain.model.ThrottlingEvent
-import com.devicepulse.domain.repository.ProStatusProvider
-import com.devicepulse.domain.usecase.GetThermalStateUseCase
-import com.devicepulse.domain.usecase.GetThrottlingHistoryUseCase
-import com.devicepulse.ui.common.messageOr
+import com.runcheck.domain.model.ThermalState
+import com.runcheck.domain.model.ThrottlingEvent
+import com.runcheck.domain.repository.ProStatusProvider
+import com.runcheck.domain.usecase.GetThermalStateUseCase
+import com.runcheck.domain.usecase.GetThrottlingHistoryUseCase
+import com.runcheck.ui.common.messageOr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

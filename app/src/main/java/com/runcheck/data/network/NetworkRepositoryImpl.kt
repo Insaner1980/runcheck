@@ -1,10 +1,10 @@
-package com.devicepulse.data.network
+package com.runcheck.data.network
 
-import com.devicepulse.data.db.dao.NetworkReadingDao
-import com.devicepulse.data.db.entity.NetworkReadingEntity
-import com.devicepulse.domain.model.NetworkState
-import com.devicepulse.domain.repository.NetworkReadingData
-import com.devicepulse.domain.repository.NetworkRepository as NetworkRepositoryContract
+import com.runcheck.data.db.dao.NetworkReadingDao
+import com.runcheck.data.db.entity.NetworkReadingEntity
+import com.runcheck.domain.model.NetworkState
+import com.runcheck.domain.repository.NetworkReadingData
+import com.runcheck.domain.repository.NetworkRepository as NetworkRepositoryContract
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate

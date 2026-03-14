@@ -1,8 +1,8 @@
-# DevicePulse App Description
+# runcheck App Description
 
-## What DevicePulse Is
+## What runcheck Is
 
-DevicePulse is a native Android app for monitoring device health in one place. It combines battery, network, thermal, and storage diagnostics into a single product with a clean dashboard, deeper detail screens, and privacy-first local data handling.
+runcheck is a native Android app for monitoring device health in one place. It combines battery, network, thermal, and storage diagnostics into a single product with a clean dashboard, deeper detail screens, and privacy-first local data handling.
 
 The app is designed for people who want a clearer view of how their phone is behaving day to day:
 
@@ -13,7 +13,7 @@ The app is designed for people who want a clearer view of how their phone is beh
 
 ## Product Direction
 
-DevicePulse is not meant to be a generic “all stats everywhere” utility. The product direction is:
+runcheck is not meant to be a generic “all stats everywhere” utility. The product direction is:
 
 - fast overview on `Home`
 - health-focused diagnostics on `Health`
@@ -55,7 +55,7 @@ Network is a dedicated top-level area for:
 - latency
 - speed test entry and results
 
-This area should feel more instrument-like than the rest of the app, but still stay within DevicePulse’s design system.
+This area should feel more instrument-like than the rest of the app, but still stay within runcheck’s design system.
 
 ### More
 
@@ -79,7 +79,7 @@ More contains secondary but important tools:
 
 ## Privacy and Data Handling
 
-DevicePulse stores measurement history locally on the device. The app does not depend on analytics, ad SDKs, or user accounts.
+runcheck stores measurement history locally on the device. The app does not depend on analytics, ad SDKs, or user accounts.
 
 Network access is used only when a feature needs it, for example:
 
@@ -89,7 +89,7 @@ Network access is used only when a feature needs it, for example:
 
 ## Pro Model
 
-DevicePulse uses a one-time Pro unlock model. Pro features are gated behind locked UI states instead of ad-supported free screens.
+runcheck uses a one-time Pro unlock model. Pro features are gated behind locked UI states instead of ad-supported free screens.
 
 Typical Pro areas include:
 
@@ -120,4 +120,4 @@ The visual direction should stay:
 - compact but not cramped
 - scalable to larger phones, foldables, and tablets
 
-The goal is not to look like a generic benchmark tool or a gamer dashboard. DevicePulse should feel premium, practical, and trustworthy.
+The goal is not to look like a generic benchmark tool or a gamer dashboard. runcheck should feel premium, practical, and trustworthy.

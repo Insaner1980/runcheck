@@ -1,4 +1,4 @@
-package com.devicepulse.service.monitor
+package com.runcheck.service.monitor
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -8,7 +8,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import com.devicepulse.R
+import com.runcheck.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton

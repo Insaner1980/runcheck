@@ -1,4 +1,4 @@
-# DevicePulse Release Checklist
+# runcheck Release Checklist
 
 ## Before First Release
 
@@ -11,22 +11,22 @@
 - [ ] Remove placeholder `google-services.json` from version control if repo is public
 
 ### Billing
-- [ ] Create in-app product `devicepulse_pro` in Google Play Console
+- [ ] Create in-app product `runcheck_pro` in Google Play Console
 - [ ] Set price for Pro upgrade
 - [ ] Test purchase flow with license testers
 
 ### Signing
 - [ ] Generate upload keystore:
   ```bash
-  keytool -genkey -v -keystore devicepulse-upload.jks \
+  keytool -genkey -v -keystore runcheck-upload.jks \
     -keyalg RSA -keysize 2048 -validity 10000 \
-    -alias devicepulse
+    -alias runcheck
   ```
 - [ ] Set environment variables:
   ```bash
-  export DEVICEPULSE_KEYSTORE_PATH=/path/to/devicepulse-upload.jks
+  export DEVICEPULSE_KEYSTORE_PATH=/path/to/runcheck-upload.jks
   export DEVICEPULSE_KEYSTORE_PASSWORD=your_password
-  export DEVICEPULSE_KEY_ALIAS=devicepulse
+  export DEVICEPULSE_KEY_ALIAS=runcheck
   export DEVICEPULSE_KEY_PASSWORD=your_password
   ```
 - [ ] Enable Play App Signing in Google Play Console

@@ -1,4 +1,4 @@
-package com.devicepulse.ui.charger
+package com.runcheck.ui.charger
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,12 +39,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.devicepulse.R
-import com.devicepulse.domain.model.ChargerSummary
-import com.devicepulse.ui.common.rememberFormattedDateTime
-import com.devicepulse.ui.components.DetailTopBar
-import com.devicepulse.ui.components.ProFeatureLockedState
-import com.devicepulse.ui.theme.spacing
+import com.runcheck.R
+import com.runcheck.domain.model.ChargerSummary
+import com.runcheck.ui.common.rememberFormattedDateTime
+import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.ProFeatureLockedState
+import com.runcheck.ui.theme.spacing
 
 @Composable
 fun ChargerComparisonScreen(

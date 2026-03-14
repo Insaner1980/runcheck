@@ -1,6 +1,6 @@
-package com.devicepulse.domain.repository
+package com.runcheck.domain.repository
 
-import com.devicepulse.domain.model.MonitoringInterval
+import com.runcheck.domain.model.MonitoringInterval
 
 interface MonitoringScheduler {
     fun schedule(interval: MonitoringInterval)

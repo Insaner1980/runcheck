@@ -1,4 +1,4 @@
-package com.devicepulse.ui.appusage
+package com.runcheck.ui.appusage
 
 import android.app.AppOpsManager
 import android.content.Context
@@ -37,11 +37,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import com.devicepulse.R
-import com.devicepulse.domain.model.AppBatteryUsage
-import com.devicepulse.ui.components.DetailTopBar
-import com.devicepulse.ui.components.ProFeatureLockedState
-import com.devicepulse.ui.theme.spacing
+import com.runcheck.R
+import com.runcheck.domain.model.AppBatteryUsage
+import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.ProFeatureLockedState
+import com.runcheck.ui.theme.spacing
 
 @Composable
 fun AppUsageScreen(

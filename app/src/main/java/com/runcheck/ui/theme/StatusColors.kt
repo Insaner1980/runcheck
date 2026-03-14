@@ -1,4 +1,4 @@
-package com.devicepulse.ui.theme
+package com.runcheck.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -23,22 +23,58 @@ data class StatusColors(
     val confidenceUnavailableText: Color
 )
 
-val DevicePulseStatusColors = StatusColors(
+val RuncheckStatusColors = StatusColors(
     healthy = AccentTeal,
-    fair = AccentOrange,
+    fair = AccentAmber,
     poor = AccentOrange,
     critical = AccentRed,
-    neutral = AccentBlue,
+    neutral = TextSecondary,
     unavailable = TextMuted,
-    confidenceAccurateBg = AccentTeal,
+    confidenceAccurateBg = AccentBlue,
     confidenceAccurateText = BgPage,
-    confidenceEstimatedBg = AccentOrange,
+    confidenceEstimatedBg = AccentAmber,
     confidenceEstimatedText = BgPage,
     confidenceUnavailableBg = TextMuted,
     confidenceUnavailableText = TextPrimary
 )
 
-val LocalStatusColors = staticCompositionLocalOf { DevicePulseStatusColors }
+val LocalStatusColors = staticCompositionLocalOf { RuncheckStatusColors }
+
+@Composable
+@ReadOnlyComposable
+fun statusColorForPercent(percent: Int): Color {
+    val colors = MaterialTheme.statusColors
+    return when {
+        percent >= 75 -> colors.healthy
+        percent >= 50 -> colors.fair
+        percent >= 25 -> colors.poor
+        else -> colors.critical
+    }
+}
+
+@Composable
+@ReadOnlyComposable
+fun statusColorForTemperature(tempC: Float): Color {
+    val colors = MaterialTheme.statusColors
+    return when {
+        tempC >= 45f -> colors.critical
+        tempC >= 40f -> colors.poor
+        tempC >= 35f -> colors.fair
+        else -> colors.healthy
+    }
+}
+
+@Composable
+@ReadOnlyComposable
+fun statusColorForStoragePercent(usedPercent: Int): Color {
+    val colors = MaterialTheme.statusColors
+    return when {
+        usedPercent >= 95 -> colors.critical
+        usedPercent >= 85 -> colors.poor
+        usedPercent >= 75 -> colors.fair
+        else -> colors.healthy
+    }
+}
 
 val MaterialTheme.statusColors: StatusColors
     @Composable

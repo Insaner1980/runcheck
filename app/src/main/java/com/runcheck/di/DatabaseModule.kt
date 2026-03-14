@@ -1,19 +1,19 @@
-package com.devicepulse.di
+package com.runcheck.di
 
 import android.content.Context
 import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.devicepulse.data.db.DevicePulseDatabase
-import com.devicepulse.data.db.dao.AppBatteryUsageDao
-import com.devicepulse.data.db.dao.BatteryReadingDao
-import com.devicepulse.data.db.dao.ChargerDao
-import com.devicepulse.data.db.dao.DeviceDao
-import com.devicepulse.data.db.dao.NetworkReadingDao
-import com.devicepulse.data.db.dao.StorageReadingDao
-import com.devicepulse.data.db.dao.ThermalReadingDao
-import com.devicepulse.data.db.dao.SpeedTestResultDao
-import com.devicepulse.data.db.dao.ThrottlingEventDao
+import com.runcheck.data.db.RuncheckDatabase
+import com.runcheck.data.db.dao.AppBatteryUsageDao
+import com.runcheck.data.db.dao.BatteryReadingDao
+import com.runcheck.data.db.dao.ChargerDao
+import com.runcheck.data.db.dao.DeviceDao
+import com.runcheck.data.db.dao.NetworkReadingDao
+import com.runcheck.data.db.dao.StorageReadingDao
+import com.runcheck.data.db.dao.ThermalReadingDao
+import com.runcheck.data.db.dao.SpeedTestResultDao
+import com.runcheck.data.db.dao.ThrottlingEventDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -151,11 +151,11 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): DevicePulseDatabase {
+    fun provideDatabase(@ApplicationContext context: Context): RuncheckDatabase {
         return Room.databaseBuilder(
             context,
-            DevicePulseDatabase::class.java,
-            "devicepulse.db"
+            RuncheckDatabase::class.java,
+            "runcheck.db"
         )
             .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
             .fallbackToDestructiveMigration(dropAllTables = true)
@@ -163,38 +163,38 @@ object DatabaseModule {
     }
 
     @Provides
-    fun provideBatteryReadingDao(db: DevicePulseDatabase): BatteryReadingDao =
+    fun provideBatteryReadingDao(db: RuncheckDatabase): BatteryReadingDao =
         db.batteryReadingDao()
 
     @Provides
-    fun provideNetworkReadingDao(db: DevicePulseDatabase): NetworkReadingDao =
+    fun provideNetworkReadingDao(db: RuncheckDatabase): NetworkReadingDao =
         db.networkReadingDao()
 
     @Provides
-    fun provideThermalReadingDao(db: DevicePulseDatabase): ThermalReadingDao =
+    fun provideThermalReadingDao(db: RuncheckDatabase): ThermalReadingDao =
         db.thermalReadingDao()
 
     @Provides
-    fun provideStorageReadingDao(db: DevicePulseDatabase): StorageReadingDao =
+    fun provideStorageReadingDao(db: RuncheckDatabase): StorageReadingDao =
         db.storageReadingDao()
 
     @Provides
-    fun provideDeviceDao(db: DevicePulseDatabase): DeviceDao =
+    fun provideDeviceDao(db: RuncheckDatabase): DeviceDao =
         db.deviceDao()
 
     @Provides
-    fun provideThrottlingEventDao(db: DevicePulseDatabase): ThrottlingEventDao =
+    fun provideThrottlingEventDao(db: RuncheckDatabase): ThrottlingEventDao =
         db.throttlingEventDao()
 
     @Provides
-    fun provideChargerDao(db: DevicePulseDatabase): ChargerDao =
+    fun provideChargerDao(db: RuncheckDatabase): ChargerDao =
         db.chargerDao()
 
     @Provides
-    fun provideAppBatteryUsageDao(db: DevicePulseDatabase): AppBatteryUsageDao =
+    fun provideAppBatteryUsageDao(db: RuncheckDatabase): AppBatteryUsageDao =
         db.appBatteryUsageDao()
 
     @Provides
-    fun provideSpeedTestResultDao(db: DevicePulseDatabase): SpeedTestResultDao =
+    fun provideSpeedTestResultDao(db: RuncheckDatabase): SpeedTestResultDao =
         db.speedTestResultDao()
 }

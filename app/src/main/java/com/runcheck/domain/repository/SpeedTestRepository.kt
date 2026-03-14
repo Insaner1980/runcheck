@@ -1,7 +1,7 @@
-package com.devicepulse.domain.repository
+package com.runcheck.domain.repository
 
-import com.devicepulse.domain.model.SpeedTestProgress
-import com.devicepulse.domain.model.SpeedTestResult
+import com.runcheck.domain.model.SpeedTestProgress
+import com.runcheck.domain.model.SpeedTestResult
 import kotlinx.coroutines.flow.Flow
 
 interface SpeedTestRepository {

@@ -1,10 +1,10 @@
-package com.devicepulse.data.device
+package com.runcheck.data.device
 
 import android.content.Context
 import android.os.BatteryManager
 import android.os.Build
-import com.devicepulse.domain.model.CurrentUnit
-import com.devicepulse.domain.model.SignConvention
+import com.runcheck.domain.model.CurrentUnit
+import com.runcheck.domain.model.SignConvention
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import java.io.File

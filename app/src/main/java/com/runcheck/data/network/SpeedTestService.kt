@@ -1,9 +1,9 @@
-package com.devicepulse.data.network
+package com.runcheck.data.network
 
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import com.devicepulse.R
+import com.runcheck.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow

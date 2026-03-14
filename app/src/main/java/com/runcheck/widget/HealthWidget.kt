@@ -1,8 +1,8 @@
-package com.devicepulse.widget
+package com.runcheck.widget
 
 import android.content.Context
-import com.devicepulse.R
-import com.devicepulse.data.billing.ProStatusCache
+import com.runcheck.R
+import com.runcheck.data.billing.ProStatusCache
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme

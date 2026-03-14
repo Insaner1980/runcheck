@@ -1,7 +1,7 @@
-package com.devicepulse.ui.storage
+package com.runcheck.ui.storage
 
 import androidx.compose.runtime.Immutable
-import com.devicepulse.domain.model.StorageState
+import com.runcheck.domain.model.StorageState
 
 sealed interface StorageUiState {
     data object Loading : StorageUiState

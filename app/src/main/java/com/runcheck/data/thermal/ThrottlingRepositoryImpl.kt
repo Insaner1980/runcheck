@@ -1,9 +1,9 @@
-package com.devicepulse.data.thermal
+package com.runcheck.data.thermal
 
-import com.devicepulse.data.db.dao.ThrottlingEventDao
-import com.devicepulse.data.db.entity.ThrottlingEventEntity
-import com.devicepulse.domain.model.ThrottlingEvent
-import com.devicepulse.domain.repository.ThrottlingRepository
+import com.runcheck.data.db.dao.ThrottlingEventDao
+import com.runcheck.data.db.entity.ThrottlingEventEntity
+import com.runcheck.domain.model.ThrottlingEvent
+import com.runcheck.domain.repository.ThrottlingRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject

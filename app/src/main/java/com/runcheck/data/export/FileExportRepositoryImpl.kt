@@ -1,9 +1,9 @@
-package com.devicepulse.data.export
+package com.runcheck.data.export
 
 import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
-import com.devicepulse.domain.repository.FileExportRepository
+import com.runcheck.domain.repository.FileExportRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

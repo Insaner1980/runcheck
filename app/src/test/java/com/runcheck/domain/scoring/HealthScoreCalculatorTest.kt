@@ -1,18 +1,18 @@
-package com.devicepulse.domain.scoring
+package com.runcheck.domain.scoring
 
-import com.devicepulse.domain.model.BatteryHealth
-import com.devicepulse.domain.model.BatteryState
-import com.devicepulse.domain.model.ChargingStatus
-import com.devicepulse.domain.model.Confidence
-import com.devicepulse.domain.model.ConnectionType
-import com.devicepulse.domain.model.HealthStatus
-import com.devicepulse.domain.model.MeasuredValue
-import com.devicepulse.domain.model.NetworkState
-import com.devicepulse.domain.model.PlugType
-import com.devicepulse.domain.model.SignalQuality
-import com.devicepulse.domain.model.StorageState
-import com.devicepulse.domain.model.ThermalState
-import com.devicepulse.domain.model.ThermalStatus
+import com.runcheck.domain.model.BatteryHealth
+import com.runcheck.domain.model.BatteryState
+import com.runcheck.domain.model.ChargingStatus
+import com.runcheck.domain.model.Confidence
+import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.HealthStatus
+import com.runcheck.domain.model.MeasuredValue
+import com.runcheck.domain.model.NetworkState
+import com.runcheck.domain.model.PlugType
+import com.runcheck.domain.model.SignalQuality
+import com.runcheck.domain.model.StorageState
+import com.runcheck.domain.model.ThermalState
+import com.runcheck.domain.model.ThermalStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -220,13 +220,13 @@ class HealthScoreCalculatorTest {
 
     @Test
     fun `status thresholds are correct`() {
-        assertEquals(HealthStatus.HEALTHY, com.devicepulse.domain.model.HealthScore.statusFromScore(100))
-        assertEquals(HealthStatus.HEALTHY, com.devicepulse.domain.model.HealthScore.statusFromScore(75))
-        assertEquals(HealthStatus.FAIR, com.devicepulse.domain.model.HealthScore.statusFromScore(74))
-        assertEquals(HealthStatus.FAIR, com.devicepulse.domain.model.HealthScore.statusFromScore(50))
-        assertEquals(HealthStatus.POOR, com.devicepulse.domain.model.HealthScore.statusFromScore(49))
-        assertEquals(HealthStatus.POOR, com.devicepulse.domain.model.HealthScore.statusFromScore(25))
-        assertEquals(HealthStatus.CRITICAL, com.devicepulse.domain.model.HealthScore.statusFromScore(24))
-        assertEquals(HealthStatus.CRITICAL, com.devicepulse.domain.model.HealthScore.statusFromScore(0))
+        assertEquals(HealthStatus.HEALTHY, com.runcheck.domain.model.HealthScore.statusFromScore(100))
+        assertEquals(HealthStatus.HEALTHY, com.runcheck.domain.model.HealthScore.statusFromScore(75))
+        assertEquals(HealthStatus.FAIR, com.runcheck.domain.model.HealthScore.statusFromScore(74))
+        assertEquals(HealthStatus.FAIR, com.runcheck.domain.model.HealthScore.statusFromScore(50))
+        assertEquals(HealthStatus.POOR, com.runcheck.domain.model.HealthScore.statusFromScore(49))
+        assertEquals(HealthStatus.POOR, com.runcheck.domain.model.HealthScore.statusFromScore(25))
+        assertEquals(HealthStatus.CRITICAL, com.runcheck.domain.model.HealthScore.statusFromScore(24))
+        assertEquals(HealthStatus.CRITICAL, com.runcheck.domain.model.HealthScore.statusFromScore(0))
     }
 }

@@ -1,7 +1,7 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.model.ThermalState
-import com.devicepulse.domain.repository.ThermalRepository
+import com.runcheck.domain.model.ThermalState
+import com.runcheck.domain.repository.ThermalRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 

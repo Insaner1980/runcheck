@@ -1,9 +1,9 @@
-package com.devicepulse.ui.settings
+package com.runcheck.ui.settings
 
 import android.net.Uri
 import androidx.compose.runtime.Immutable
-import com.devicepulse.domain.model.DeviceProfileInfo
-import com.devicepulse.domain.model.UserPreferences
+import com.runcheck.domain.model.DeviceProfileInfo
+import com.runcheck.domain.model.UserPreferences
 
 @Immutable
 data class SettingsUiState(

@@ -1,10 +1,10 @@
-package com.devicepulse.data.storage
+package com.runcheck.data.storage
 
-import com.devicepulse.data.db.dao.StorageReadingDao
-import com.devicepulse.data.db.entity.StorageReadingEntity
-import com.devicepulse.domain.model.StorageState
-import com.devicepulse.domain.repository.StorageReadingData
-import com.devicepulse.domain.repository.StorageRepository as StorageRepositoryContract
+import com.runcheck.data.db.dao.StorageReadingDao
+import com.runcheck.data.db.entity.StorageReadingEntity
+import com.runcheck.domain.model.StorageState
+import com.runcheck.domain.repository.StorageReadingData
+import com.runcheck.domain.repository.StorageRepository as StorageRepositoryContract
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow

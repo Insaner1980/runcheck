@@ -1,11 +1,11 @@
-package com.devicepulse.ui.home
+package com.runcheck.ui.home
 
 import androidx.compose.runtime.Immutable
-import com.devicepulse.domain.model.BatteryState
-import com.devicepulse.domain.model.HealthScore
-import com.devicepulse.domain.model.NetworkState
-import com.devicepulse.domain.model.StorageState
-import com.devicepulse.domain.model.ThermalState
+import com.runcheck.domain.model.BatteryState
+import com.runcheck.domain.model.HealthScore
+import com.runcheck.domain.model.NetworkState
+import com.runcheck.domain.model.StorageState
+import com.runcheck.domain.model.ThermalState
 
 sealed interface HomeUiState {
     data object Loading : HomeUiState

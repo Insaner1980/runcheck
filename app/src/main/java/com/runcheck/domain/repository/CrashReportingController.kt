@@ -1,4 +1,4 @@
-package com.devicepulse.domain.repository
+package com.runcheck.domain.repository
 
 interface CrashReportingController {
     suspend fun initialize()

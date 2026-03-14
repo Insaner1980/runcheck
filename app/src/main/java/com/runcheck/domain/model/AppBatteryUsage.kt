@@ -1,4 +1,4 @@
-package com.devicepulse.domain.model
+package com.runcheck.domain.model
 
 data class AppBatteryUsage(
     val id: Long = 0,

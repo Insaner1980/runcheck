@@ -1,4 +1,4 @@
-package com.devicepulse.ui.theme
+package com.runcheck.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
@@ -11,6 +11,7 @@ val BgIconCircle = Color(0xFF1A3A48)
 // Accent colors
 val AccentTeal = Color(0xFF5DE4C7)
 val AccentBlue = Color(0xFF4A9EDE)
+val AccentAmber = Color(0xFFE8C44A)
 val AccentOrange = Color(0xFFF5963A)
 val AccentRed = Color(0xFFF06040)
 val AccentLime = Color(0xFFC8E636)

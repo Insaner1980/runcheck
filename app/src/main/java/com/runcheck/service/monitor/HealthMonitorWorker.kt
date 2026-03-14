@@ -1,17 +1,17 @@
-package com.devicepulse.service.monitor
+package com.runcheck.service.monitor
 
 import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.devicepulse.domain.repository.AppBatteryUsageRepository
-import com.devicepulse.domain.repository.BatteryRepository
-import com.devicepulse.domain.repository.NetworkRepository
-import com.devicepulse.domain.repository.StorageRepository
-import com.devicepulse.domain.repository.ThermalRepository
-import com.devicepulse.domain.usecase.CleanupOldReadingsUseCase
-import com.devicepulse.util.ReleaseSafeLog
-import com.devicepulse.widget.DevicePulseWidgets
+import com.runcheck.domain.repository.AppBatteryUsageRepository
+import com.runcheck.domain.repository.BatteryRepository
+import com.runcheck.domain.repository.NetworkRepository
+import com.runcheck.domain.repository.StorageRepository
+import com.runcheck.domain.repository.ThermalRepository
+import com.runcheck.domain.usecase.CleanupOldReadingsUseCase
+import com.runcheck.util.ReleaseSafeLog
+import com.runcheck.widget.RuncheckWidgets
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
@@ -61,7 +61,7 @@ class HealthMonitorWorker @AssistedInject constructor(
         } || hadFailure
 
         hadFailure = collectStep("widgets") {
-            DevicePulseWidgets.updateAll(applicationContext)
+            RuncheckWidgets.updateAll(applicationContext)
         } || hadFailure
 
         return if (hadFailure) Result.retry() else Result.success()

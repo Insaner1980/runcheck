@@ -1,9 +1,9 @@
-package com.devicepulse.data.crash
+package com.runcheck.data.crash
 
-import com.devicepulse.BuildConfig
-import com.devicepulse.domain.repository.CrashReportingController
-import com.devicepulse.domain.repository.UserPreferencesRepository
-import com.devicepulse.util.ReleaseSafeLog
+import com.runcheck.BuildConfig
+import com.runcheck.domain.repository.CrashReportingController
+import com.runcheck.domain.repository.UserPreferencesRepository
+import com.runcheck.util.ReleaseSafeLog
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject

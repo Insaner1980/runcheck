@@ -1,8 +1,8 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.model.ThrottlingEvent
-import com.devicepulse.domain.model.ThermalStatus
-import com.devicepulse.domain.repository.ThrottlingRepository
+import com.runcheck.domain.model.ThrottlingEvent
+import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.domain.repository.ThrottlingRepository
 import javax.inject.Inject
 
 class RecordThrottlingEventUseCase @Inject constructor(

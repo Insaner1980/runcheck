@@ -1,4 +1,4 @@
-package com.devicepulse.ui.components
+package com.runcheck.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -21,7 +21,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.devicepulse.ui.theme.reducedMotion
+import com.runcheck.ui.theme.reducedMotion
 
 @Composable
 fun AreaChart(

@@ -1,4 +1,4 @@
-package com.devicepulse.data.billing
+package com.runcheck.data.billing
 
 import android.content.Context
 import androidx.datastore.core.DataStore

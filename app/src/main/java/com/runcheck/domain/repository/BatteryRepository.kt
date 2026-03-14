@@ -1,7 +1,7 @@
-package com.devicepulse.domain.repository
+package com.runcheck.domain.repository
 
-import com.devicepulse.domain.model.BatteryReading
-import com.devicepulse.domain.model.BatteryState
+import com.runcheck.domain.model.BatteryReading
+import com.runcheck.domain.model.BatteryState
 import kotlinx.coroutines.flow.Flow
 
 interface BatteryRepository {

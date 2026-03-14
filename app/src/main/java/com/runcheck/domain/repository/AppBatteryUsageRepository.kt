@@ -1,6 +1,6 @@
-package com.devicepulse.domain.repository
+package com.runcheck.domain.repository
 
-import com.devicepulse.domain.model.AppBatteryUsage
+import com.runcheck.domain.model.AppBatteryUsage
 import kotlinx.coroutines.flow.Flow
 
 interface AppBatteryUsageRepository {

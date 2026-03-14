@@ -1,11 +1,11 @@
-package com.devicepulse.data.battery
+package com.runcheck.data.battery
 
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.devicepulse.data.device.DeviceProfile
+import com.runcheck.data.device.DeviceProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow

@@ -1,8 +1,8 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.model.SpeedTestResult
-import com.devicepulse.domain.repository.ProStatusProvider
-import com.devicepulse.domain.repository.SpeedTestRepository
+import com.runcheck.domain.model.SpeedTestResult
+import com.runcheck.domain.repository.ProStatusProvider
+import com.runcheck.domain.repository.SpeedTestRepository
 import javax.inject.Inject
 
 class FinalizeSpeedTestUseCase @Inject constructor(

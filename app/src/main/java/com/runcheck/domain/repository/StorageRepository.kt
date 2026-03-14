@@ -1,6 +1,6 @@
-package com.devicepulse.domain.repository
+package com.runcheck.domain.repository
 
-import com.devicepulse.domain.model.StorageState
+import com.runcheck.domain.model.StorageState
 import kotlinx.coroutines.flow.Flow
 
 interface StorageRepository {

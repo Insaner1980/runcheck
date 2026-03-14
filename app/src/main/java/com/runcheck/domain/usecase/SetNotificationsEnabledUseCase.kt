@@ -1,6 +1,6 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.repository.UserPreferencesRepository
+import com.runcheck.domain.repository.UserPreferencesRepository
 import javax.inject.Inject
 
 class SetNotificationsEnabledUseCase @Inject constructor(

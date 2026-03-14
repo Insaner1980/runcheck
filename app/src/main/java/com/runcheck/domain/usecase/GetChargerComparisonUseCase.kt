@@ -1,8 +1,8 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.model.ChargerSummary
-import com.devicepulse.domain.repository.ChargerRepository
-import com.devicepulse.domain.repository.ProStatusProvider
+import com.runcheck.domain.model.ChargerSummary
+import com.runcheck.domain.repository.ChargerRepository
+import com.runcheck.domain.repository.ProStatusProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf

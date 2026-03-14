@@ -1,7 +1,7 @@
-package com.devicepulse.util
+package com.runcheck.util
 
 import android.util.Log
-import com.devicepulse.BuildConfig
+import com.runcheck.BuildConfig
 
 object ReleaseSafeLog {
     fun error(tag: String, message: String, throwable: Throwable? = null) {

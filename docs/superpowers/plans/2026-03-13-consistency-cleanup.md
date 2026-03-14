@@ -15,7 +15,7 @@
 ### Task 1: Convert NetworkUiState to sealed interface
 
 **Files:**
-- Modify: `app/src/main/java/com/devicepulse/ui/network/NetworkUiState.kt`
+- Modify: `app/src/main/java/com/runcheck/ui/network/NetworkUiState.kt`
 
 - [ ] **Step 1: Replace the flat data class with sealed interface**
 
@@ -36,12 +36,12 @@ sealed interface NetworkUiState {
 
 Keep `SpeedTestPhase` and `SpeedTestUiState` exactly as they are — they remain unchanged.
 
-Remove the `import com.devicepulse.domain.model.SpeedTestResult` if it was only used by the old `NetworkUiState` (it's used by `SpeedTestUiState`, so it stays).
+Remove the `import com.runcheck.domain.model.SpeedTestResult` if it was only used by the old `NetworkUiState` (it's used by `SpeedTestUiState`, so it stays).
 
 ### Task 2: Update NetworkViewModel to use two state flows
 
 **Files:**
-- Modify: `app/src/main/java/com/devicepulse/ui/network/NetworkViewModel.kt`
+- Modify: `app/src/main/java/com/runcheck/ui/network/NetworkViewModel.kt`
 
 - [ ] **Step 1: Replace single state flow with two flows**
 
@@ -113,15 +113,15 @@ Remove `import kotlinx.coroutines.flow.update` only if no longer used (it's stil
 - [ ] **Step 6: Commit**
 
 ```bash
-git add app/src/main/java/com/devicepulse/ui/network/NetworkUiState.kt \
-      app/src/main/java/com/devicepulse/ui/network/NetworkViewModel.kt
+git add app/src/main/java/com/runcheck/ui/network/NetworkUiState.kt \
+      app/src/main/java/com/runcheck/ui/network/NetworkViewModel.kt
 git commit -m "Muunna NetworkUiState sealed-rajapinnaksi ja erota speed test -tila"
 ```
 
 ### Task 3: Update NetworkDetailScreen to use sealed state
 
 **Files:**
-- Modify: `app/src/main/java/com/devicepulse/ui/network/NetworkDetailScreen.kt`
+- Modify: `app/src/main/java/com/runcheck/ui/network/NetworkDetailScreen.kt`
 
 - [ ] **Step 1: Update state collection**
 
@@ -173,14 +173,14 @@ when (val state = networkUiState) {
 - [ ] **Step 3: Commit**
 
 ```bash
-git add app/src/main/java/com/devicepulse/ui/network/NetworkDetailScreen.kt
+git add app/src/main/java/com/runcheck/ui/network/NetworkDetailScreen.kt
 git commit -m "Päivitä NetworkDetailScreen käyttämään sealed-tilaa"
 ```
 
 ### Task 4: Update SpeedTestScreen to use new flows
 
 **Files:**
-- Modify: `app/src/main/java/com/devicepulse/ui/network/SpeedTestScreen.kt`
+- Modify: `app/src/main/java/com/runcheck/ui/network/SpeedTestScreen.kt`
 
 - [ ] **Step 1: Update state collection**
 
@@ -230,13 +230,13 @@ If any content composables access `uiState.networkState`, they should now receiv
 - [ ] **Step 5: Compile and verify**
 
 ```bash
-cd /home/emma/dev/DevicePulse && ./gradlew :app:compileDebugKotlin
+cd /home/emma/dev/runcheck && ./gradlew :app:compileDebugKotlin
 ```
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add app/src/main/java/com/devicepulse/ui/network/SpeedTestScreen.kt
+git add app/src/main/java/com/runcheck/ui/network/SpeedTestScreen.kt
 git commit -m "Päivitä SpeedTestScreen käyttämään erillisiä tilafloita"
 ```
 
@@ -271,7 +271,7 @@ Lines 375-380 in values-fi contain 5 misplaced strings. They need to be inserted
 - [ ] **Step 2: Verify string count matches base**
 
 ```bash
-cd /home/emma/dev/DevicePulse
+cd /home/emma/dev/runcheck
 grep -c '<string name=' app/src/main/res/values/strings.xml
 grep -c '<string name=' app/src/main/res/values-fi/strings.xml
 ```
@@ -386,13 +386,13 @@ exceptions:
 - [ ] **Step 5: Update Gradle dependency locks if active**
 
 ```bash
-cd /home/emma/dev/DevicePulse && ./gradlew dependencies --write-locks 2>/dev/null || true
+cd /home/emma/dev/runcheck && ./gradlew dependencies --write-locks 2>/dev/null || true
 ```
 
 - [ ] **Step 6: Run detekt and verify it works**
 
 ```bash
-cd /home/emma/dev/DevicePulse && ./gradlew detekt
+cd /home/emma/dev/runcheck && ./gradlew detekt
 ```
 
 Fix any configuration issues. It's OK if detekt reports some findings — the goal is to get it running. Review findings and fix only clear issues (unused imports, etc.). Do NOT fix stylistic findings in this pass.
@@ -409,19 +409,19 @@ git commit -m "Lisää detekt 2.0.0-alpha.2 staattiseen koodianalyysiin"
 - [ ] **Step 1: Compile**
 
 ```bash
-cd /home/emma/dev/DevicePulse && ./gradlew :app:compileDebugKotlin
+cd /home/emma/dev/runcheck && ./gradlew :app:compileDebugKotlin
 ```
 
 - [ ] **Step 2: Run ktlint**
 
 ```bash
-cd /home/emma/dev/DevicePulse && ./gradlew :app:ktlintCheck
+cd /home/emma/dev/runcheck && ./gradlew :app:ktlintCheck
 ```
 
 - [ ] **Step 3: Run unit tests**
 
 ```bash
-cd /home/emma/dev/DevicePulse && ./gradlew :app:testDebugUnitTest
+cd /home/emma/dev/runcheck && ./gradlew :app:testDebugUnitTest
 ```
 
 ### Task 8: Update follow-up document

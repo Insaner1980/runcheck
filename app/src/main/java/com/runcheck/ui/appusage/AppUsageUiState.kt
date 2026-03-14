@@ -1,7 +1,7 @@
-package com.devicepulse.ui.appusage
+package com.runcheck.ui.appusage
 
 import androidx.compose.runtime.Immutable
-import com.devicepulse.domain.model.AppBatteryUsage
+import com.runcheck.domain.model.AppBatteryUsage
 
 sealed interface AppUsageUiState {
     data object Loading : AppUsageUiState

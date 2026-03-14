@@ -1,6 +1,6 @@
-package com.devicepulse.domain.repository
+package com.runcheck.domain.repository
 
-import com.devicepulse.domain.model.ThrottlingEvent
+import com.runcheck.domain.model.ThrottlingEvent
 import kotlinx.coroutines.flow.Flow
 
 interface ThrottlingRepository {

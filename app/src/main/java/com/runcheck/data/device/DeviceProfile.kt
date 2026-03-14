@@ -1,7 +1,7 @@
-package com.devicepulse.data.device
+package com.runcheck.data.device
 
-import com.devicepulse.domain.model.CurrentUnit
-import com.devicepulse.domain.model.SignConvention
+import com.runcheck.domain.model.CurrentUnit
+import com.runcheck.domain.model.SignConvention
 
 data class DeviceProfile(
     val manufacturer: String,

@@ -1,8 +1,8 @@
-package com.devicepulse.data.battery
+package com.runcheck.data.battery
 
-import com.devicepulse.data.device.DeviceProfile
-import com.devicepulse.domain.model.CurrentUnit
-import com.devicepulse.domain.model.SignConvention
+import com.runcheck.data.device.DeviceProfile
+import com.runcheck.domain.model.CurrentUnit
+import com.runcheck.domain.model.SignConvention
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

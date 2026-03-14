@@ -1,4 +1,4 @@
-package com.devicepulse.ui.components
+package com.runcheck.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -10,8 +10,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.devicepulse.ui.theme.AccentLime
-import com.devicepulse.ui.theme.TextOnLime
+import com.runcheck.ui.theme.AccentLime
+import com.runcheck.ui.theme.TextOnLime
 
 @Composable
 fun PrimaryButton(

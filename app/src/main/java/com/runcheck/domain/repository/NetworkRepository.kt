@@ -1,6 +1,6 @@
-package com.devicepulse.domain.repository
+package com.runcheck.domain.repository
 
-import com.devicepulse.domain.model.NetworkState
+import com.runcheck.domain.model.NetworkState
 import kotlinx.coroutines.flow.Flow
 
 interface NetworkRepository {

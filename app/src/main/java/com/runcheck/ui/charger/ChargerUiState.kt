@@ -1,8 +1,8 @@
-package com.devicepulse.ui.charger
+package com.runcheck.ui.charger
 
 import androidx.compose.runtime.Immutable
-import com.devicepulse.domain.model.ChargerSummary
-import com.devicepulse.domain.model.ChargingSession
+import com.runcheck.domain.model.ChargerSummary
+import com.runcheck.domain.model.ChargingSession
 
 sealed interface ChargerUiState {
     data object Loading : ChargerUiState

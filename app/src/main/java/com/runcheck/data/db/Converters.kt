@@ -1,4 +1,4 @@
-package com.devicepulse.data.db
+package com.runcheck.data.db
 
 import androidx.room.TypeConverter
 

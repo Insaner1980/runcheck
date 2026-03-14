@@ -1,4 +1,4 @@
-package com.devicepulse.service.monitor
+package com.runcheck.service.monitor
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -10,7 +10,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import androidx.core.app.NotificationCompat
-import com.devicepulse.R
+import com.runcheck.R
 
 class RealTimeMonitorService : Service() {
     private val binder = Binder()
@@ -107,7 +107,7 @@ class RealTimeMonitorService : Service() {
     companion object {
         const val CHANNEL_ID = "real_time_monitor"
         const val NOTIFICATION_ID = 1001
-        const val ACTION_STOP = "com.devicepulse.STOP_MONITORING"
+        const val ACTION_STOP = "com.runcheck.STOP_MONITORING"
         private const val IDLE_STOP_DELAY_MS = 30_000L
     }
 }

@@ -1,4 +1,4 @@
-package com.devicepulse.ui.components
+package com.runcheck.ui.components
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -20,11 +20,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.devicepulse.R
-import com.devicepulse.ui.common.formatTemperature
-import com.devicepulse.ui.common.temperatureBandLabel
-import com.devicepulse.ui.theme.reducedMotion
-import com.devicepulse.ui.theme.statusColors
+import com.runcheck.R
+import com.runcheck.ui.common.formatTemperature
+import com.runcheck.ui.common.temperatureBandLabel
+import com.runcheck.ui.theme.reducedMotion
+import com.runcheck.ui.theme.statusColors
 
 @Composable
 fun HeatStrip(

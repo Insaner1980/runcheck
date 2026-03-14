@@ -1,8 +1,8 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.model.DataRetention
-import com.devicepulse.domain.repository.ProStatusProvider
-import com.devicepulse.domain.repository.UserPreferencesRepository
+import com.runcheck.domain.model.DataRetention
+import com.runcheck.domain.repository.ProStatusProvider
+import com.runcheck.domain.repository.UserPreferencesRepository
 import javax.inject.Inject
 
 class SetDataRetentionUseCase @Inject constructor(

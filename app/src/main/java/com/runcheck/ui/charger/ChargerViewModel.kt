@@ -1,13 +1,13 @@
-package com.devicepulse.ui.charger
+package com.runcheck.ui.charger
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devicepulse.domain.repository.ProStatusProvider
-import com.devicepulse.domain.usecase.AddChargerUseCase
-import com.devicepulse.domain.usecase.DeleteChargerUseCase
-import com.devicepulse.domain.usecase.GetChargerComparisonUseCase
-import com.devicepulse.domain.usecase.GetChargerSessionsUseCase
-import com.devicepulse.ui.common.messageOr
+import com.runcheck.domain.repository.ProStatusProvider
+import com.runcheck.domain.usecase.AddChargerUseCase
+import com.runcheck.domain.usecase.DeleteChargerUseCase
+import com.runcheck.domain.usecase.GetChargerComparisonUseCase
+import com.runcheck.domain.usecase.GetChargerSessionsUseCase
+import com.runcheck.ui.common.messageOr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow

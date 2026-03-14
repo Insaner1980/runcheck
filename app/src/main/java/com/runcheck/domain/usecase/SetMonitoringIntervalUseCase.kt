@@ -1,8 +1,8 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.model.MonitoringInterval
-import com.devicepulse.domain.repository.MonitoringScheduler
-import com.devicepulse.domain.repository.UserPreferencesRepository
+import com.runcheck.domain.model.MonitoringInterval
+import com.runcheck.domain.repository.MonitoringScheduler
+import com.runcheck.domain.repository.UserPreferencesRepository
 import javax.inject.Inject
 
 class SetMonitoringIntervalUseCase @Inject constructor(

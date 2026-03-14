@@ -1,10 +1,10 @@
-package com.devicepulse.data.appusage
+package com.runcheck.data.appusage
 
-import com.devicepulse.data.db.dao.AppBatteryUsageDao
-import com.devicepulse.data.db.entity.AppBatteryUsageEntity
-import com.devicepulse.domain.model.AppBatteryUsage
-import com.devicepulse.domain.repository.AppBatteryUsageRepository
-import com.devicepulse.domain.repository.UserPreferencesRepository
+import com.runcheck.data.db.dao.AppBatteryUsageDao
+import com.runcheck.data.db.entity.AppBatteryUsageEntity
+import com.runcheck.domain.model.AppBatteryUsage
+import com.runcheck.domain.repository.AppBatteryUsageRepository
+import com.runcheck.domain.repository.UserPreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject

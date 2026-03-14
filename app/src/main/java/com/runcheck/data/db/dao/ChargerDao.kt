@@ -1,12 +1,12 @@
-package com.devicepulse.data.db.dao
+package com.runcheck.data.db.dao
 
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
-import com.devicepulse.data.db.entity.ChargerProfileEntity
-import com.devicepulse.data.db.entity.ChargingSessionEntity
+import com.runcheck.data.db.entity.ChargerProfileEntity
+import com.runcheck.data.db.entity.ChargingSessionEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao

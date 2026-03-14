@@ -1,9 +1,9 @@
-package com.devicepulse.data.device
+package com.runcheck.data.device
 
-import com.devicepulse.data.db.dao.DeviceDao
-import com.devicepulse.data.db.entity.DeviceEntity
-import com.devicepulse.domain.model.DeviceProfileInfo
-import com.devicepulse.domain.repository.DeviceProfileRepository as DeviceProfileRepositoryContract
+import com.runcheck.data.db.dao.DeviceDao
+import com.runcheck.data.db.entity.DeviceEntity
+import com.runcheck.domain.model.DeviceProfileInfo
+import com.runcheck.domain.repository.DeviceProfileRepository as DeviceProfileRepositoryContract
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

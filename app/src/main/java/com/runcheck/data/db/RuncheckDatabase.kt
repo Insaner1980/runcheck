@@ -1,27 +1,27 @@
-package com.devicepulse.data.db
+package com.runcheck.data.db
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.devicepulse.data.db.dao.AppBatteryUsageDao
-import com.devicepulse.data.db.dao.BatteryReadingDao
-import com.devicepulse.data.db.dao.ChargerDao
-import com.devicepulse.data.db.dao.DeviceDao
-import com.devicepulse.data.db.dao.NetworkReadingDao
-import com.devicepulse.data.db.dao.SpeedTestResultDao
-import com.devicepulse.data.db.dao.StorageReadingDao
-import com.devicepulse.data.db.dao.ThermalReadingDao
-import com.devicepulse.data.db.dao.ThrottlingEventDao
-import com.devicepulse.data.db.entity.AppBatteryUsageEntity
-import com.devicepulse.data.db.entity.BatteryReadingEntity
-import com.devicepulse.data.db.entity.ChargerProfileEntity
-import com.devicepulse.data.db.entity.ChargingSessionEntity
-import com.devicepulse.data.db.entity.DeviceEntity
-import com.devicepulse.data.db.entity.NetworkReadingEntity
-import com.devicepulse.data.db.entity.SpeedTestResultEntity
-import com.devicepulse.data.db.entity.StorageReadingEntity
-import com.devicepulse.data.db.entity.ThermalReadingEntity
-import com.devicepulse.data.db.entity.ThrottlingEventEntity
+import com.runcheck.data.db.dao.AppBatteryUsageDao
+import com.runcheck.data.db.dao.BatteryReadingDao
+import com.runcheck.data.db.dao.ChargerDao
+import com.runcheck.data.db.dao.DeviceDao
+import com.runcheck.data.db.dao.NetworkReadingDao
+import com.runcheck.data.db.dao.SpeedTestResultDao
+import com.runcheck.data.db.dao.StorageReadingDao
+import com.runcheck.data.db.dao.ThermalReadingDao
+import com.runcheck.data.db.dao.ThrottlingEventDao
+import com.runcheck.data.db.entity.AppBatteryUsageEntity
+import com.runcheck.data.db.entity.BatteryReadingEntity
+import com.runcheck.data.db.entity.ChargerProfileEntity
+import com.runcheck.data.db.entity.ChargingSessionEntity
+import com.runcheck.data.db.entity.DeviceEntity
+import com.runcheck.data.db.entity.NetworkReadingEntity
+import com.runcheck.data.db.entity.SpeedTestResultEntity
+import com.runcheck.data.db.entity.StorageReadingEntity
+import com.runcheck.data.db.entity.ThermalReadingEntity
+import com.runcheck.data.db.entity.ThrottlingEventEntity
 
 @Database(
     entities = [
@@ -40,7 +40,7 @@ import com.devicepulse.data.db.entity.ThrottlingEventEntity
     exportSchema = true
 )
 @TypeConverters(Converters::class)
-abstract class DevicePulseDatabase : RoomDatabase() {
+abstract class RuncheckDatabase : RoomDatabase() {
     abstract fun batteryReadingDao(): BatteryReadingDao
     abstract fun networkReadingDao(): NetworkReadingDao
     abstract fun thermalReadingDao(): ThermalReadingDao

@@ -134,7 +134,7 @@ function Dot({ color }) {
 // ════════════════════════════════════════
 // MAIN APP
 // ════════════════════════════════════════
-export default function DevicePulseHome() {
+export default function runcheckHome() {
   const [time, setTime] = useState(new Date());
   useEffect(() => { const i = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(i); }, []);
 
@@ -160,7 +160,7 @@ export default function DevicePulseHome() {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={T.textSecondary} strokeWidth="2" strokeLinecap="round">
             <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
           </svg>
-          <span style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em" }}>DevicePulse</span>
+          <span style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em" }}>runcheck</span>
         </div>
         <button style={{
           width: 36, height: 36, borderRadius: 18,
@@ -343,7 +343,7 @@ export default function DevicePulseHome() {
           </svg>
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 15, fontWeight: 600 }}>Unlock DevicePulse Pro</div>
+          <div style={{ fontSize: 15, fontWeight: 600 }}>Unlock runcheck Pro</div>
           <div style={{ fontSize: 13, color: T.textSecondary, marginTop: 2 }}>History, charger testing, widgets & more</div>
         </div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="2" strokeLinecap="round">

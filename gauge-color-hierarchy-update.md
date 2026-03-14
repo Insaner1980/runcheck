@@ -1,4 +1,4 @@
-# DevicePulse — Gauge & Color Hierarchy Update
+# runcheck — Gauge & Color Hierarchy Update
 
 KAIKKI SININEN KOROSTUSVÄRI SOVELLUKSESSA PITÄÄ VAIHTAA TRANSFORMATIVE TEAL (#2F6364)! Älä siis välitä kohdista jossa puhutaan sinisestä.
 
@@ -41,7 +41,7 @@ These are small, contained elements. They provide the at-a-glance status signal 
 
 These are the elements that should use the accent blue:
 
-- **"DevicePulse" title** in the top bar
+- **"runcheck" title** in the top bar
 - **Pro card** background/border (the full-width card at the bottom)
 - **Chart/graph lines** in all trend charts and sparklines
 - **Chart gradient fill** (accent blue at ~15% opacity fading to transparent)

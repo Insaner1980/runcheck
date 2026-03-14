@@ -1,6 +1,6 @@
 # Firebase Crashlytics käyttöönotto myöhemmin
 
-Tämä ohje on DevicePulsea varten. Sitä ei tarvitse tehdä vielä kehitysvaiheessa.
+Tämä ohje on runchecka varten. Sitä ei tarvitse tehdä vielä kehitysvaiheessa.
 
 Nykyinen koodi on jo valmisteltu näin:
 
@@ -15,7 +15,7 @@ Kun haluat ottaa Crashlyticsin oikeasti käyttöön, tee vain nämä vaiheet.
 ## 1. Luo Firebase-projekti
 
 1. Mene osoitteeseen `https://console.firebase.google.com/`
-2. Luo uusi projekti, esimerkiksi `DevicePulse`
+2. Luo uusi projekti, esimerkiksi `runcheck`
 3. Kun Firebase kysyy Google Analyticsista:
    - ohita se
    - tai poista se käytöstä
@@ -29,7 +29,7 @@ Analyticsia ei tarvita Crashlyticsiä varten tässä sovelluksessa.
 3. Anna package name:
 
 ```text
-com.devicepulse
+com.runcheck
 ```
 
 4. App nickname on vapaaehtoinen
@@ -45,7 +45,7 @@ google-services.json
 
 Korvaa tällä tiedostolla repoossa oleva placeholder:
 
-[`app/google-services.json`](/home/emma/dev/DevicePulse/app/google-services.json)
+[`app/google-services.json`](/home/emma/dev/runcheck/app/google-services.json)
 
 ## 4. Ota Crashlytics käyttöön Firebase Consolessa
 

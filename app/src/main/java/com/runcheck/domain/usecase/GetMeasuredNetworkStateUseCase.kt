@@ -1,8 +1,8 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.model.ConnectionType
-import com.devicepulse.domain.model.NetworkState
-import com.devicepulse.domain.repository.NetworkRepository
+import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.NetworkState
+import com.runcheck.domain.repository.NetworkRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow

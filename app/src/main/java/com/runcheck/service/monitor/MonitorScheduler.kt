@@ -1,12 +1,12 @@
-package com.devicepulse.service.monitor
+package com.runcheck.service.monitor
 
 import android.content.Context
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import com.devicepulse.domain.model.MonitoringInterval
-import com.devicepulse.domain.repository.MonitoringScheduler
-import com.devicepulse.domain.repository.UserPreferencesRepository
+import com.runcheck.domain.model.MonitoringInterval
+import com.runcheck.domain.repository.MonitoringScheduler
+import com.runcheck.domain.repository.UserPreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit

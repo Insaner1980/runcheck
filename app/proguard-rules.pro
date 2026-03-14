@@ -1,4 +1,4 @@
-# DevicePulse ProGuard Rules
+# Runcheck ProGuard Rules
 
 # Strip Android logcat calls from release builds.
 -assumenosideeffects class android.util.Log {
@@ -18,7 +18,7 @@
 # Gson
 -keepattributes Signature
 -keepattributes *Annotation*
--keep class com.devicepulse.data.device.DeviceProfile { *; }
+-keep class com.runcheck.data.device.DeviceProfile { *; }
 
 # Hilt
 -keep class dagger.hilt.** { *; }
@@ -35,6 +35,15 @@
 # Coroutines
 -dontwarn kotlinx.coroutines.**
 
+# OkHttp (used by NDT7 speed test library)
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-keep class okhttp3.** { *; }
+-keep interface okhttp3.** { *; }
+
+# NDT7 speed test
+-keep class net.measurementlab.** { *; }
+
 # Domain model classes (used by Room/Gson)
--keep class com.devicepulse.data.db.entity.** { *; }
--keep class com.devicepulse.domain.model.** { *; }
+-keep class com.runcheck.data.db.entity.** { *; }
+-keep class com.runcheck.domain.model.** { *; }

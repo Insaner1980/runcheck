@@ -1,9 +1,9 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.model.BatteryReading
-import com.devicepulse.domain.model.HistoryPeriod
-import com.devicepulse.domain.repository.BatteryRepository
-import com.devicepulse.domain.repository.ProStatusProvider
+import com.runcheck.domain.model.BatteryReading
+import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.repository.BatteryRepository
+import com.runcheck.domain.repository.ProStatusProvider
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 

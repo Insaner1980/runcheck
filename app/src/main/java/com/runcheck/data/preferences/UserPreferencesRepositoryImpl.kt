@@ -1,4 +1,4 @@
-package com.devicepulse.data.preferences
+package com.runcheck.data.preferences
 
 import android.content.Context
 import androidx.datastore.core.IOException
@@ -10,10 +10,10 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.devicepulse.domain.model.DataRetention
-import com.devicepulse.domain.model.MonitoringInterval
-import com.devicepulse.domain.model.ThemeMode
-import com.devicepulse.domain.model.UserPreferences
+import com.runcheck.domain.model.DataRetention
+import com.runcheck.domain.model.MonitoringInterval
+import com.runcheck.domain.model.ThemeMode
+import com.runcheck.domain.model.UserPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.Flow
@@ -27,7 +27,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 @Singleton
 class UserPreferencesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context
-) : com.devicepulse.domain.repository.UserPreferencesRepository {
+) : com.runcheck.domain.repository.UserPreferencesRepository {
 
     private val preferencesFlow: Flow<Preferences> = context.dataStore.data.catch { error ->
         if (error is IOException) {

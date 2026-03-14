@@ -1,18 +1,18 @@
-package com.devicepulse.data.battery
+package com.runcheck.data.battery
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
-import com.devicepulse.data.device.DeviceProfile
-import com.devicepulse.domain.model.BatteryHealth
-import com.devicepulse.domain.model.ChargingStatus
-import com.devicepulse.domain.model.Confidence
-import com.devicepulse.domain.model.CurrentUnit
-import com.devicepulse.domain.model.MeasuredValue
-import com.devicepulse.domain.model.PlugType
-import com.devicepulse.domain.model.SignConvention
+import com.runcheck.data.device.DeviceProfile
+import com.runcheck.domain.model.BatteryHealth
+import com.runcheck.domain.model.ChargingStatus
+import com.runcheck.domain.model.Confidence
+import com.runcheck.domain.model.CurrentUnit
+import com.runcheck.domain.model.MeasuredValue
+import com.runcheck.domain.model.PlugType
+import com.runcheck.domain.model.SignConvention
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob

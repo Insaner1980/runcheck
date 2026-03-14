@@ -1,4 +1,4 @@
-package com.devicepulse.ui.components
+package com.runcheck.ui.components
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -16,8 +16,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.devicepulse.ui.theme.BgIconCircle
-import com.devicepulse.ui.theme.reducedMotion
+import com.runcheck.ui.theme.BgIconCircle
+import com.runcheck.ui.theme.reducedMotion
 
 @Composable
 fun MiniBar(

@@ -1,4 +1,4 @@
-package com.devicepulse.ui.network
+package com.runcheck.ui.network
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -67,19 +67,19 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.devicepulse.R
-import com.devicepulse.domain.model.ConnectionType
-import com.devicepulse.domain.model.NetworkState
-import com.devicepulse.domain.model.SpeedTestResult
-import com.devicepulse.ui.components.AnimatedFloatText
-import com.devicepulse.ui.components.DetailTopBar
-import com.devicepulse.ui.common.connectionDisplayLabel
-import com.devicepulse.ui.common.formatDecimal
-import com.devicepulse.ui.common.isUnknownValue
-import com.devicepulse.ui.common.rememberFormattedDateTime
-import com.devicepulse.ui.theme.DevicePulseTheme
-import com.devicepulse.ui.theme.reducedMotion
-import com.devicepulse.ui.theme.spacing
+import com.runcheck.R
+import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.NetworkState
+import com.runcheck.domain.model.SpeedTestResult
+import com.runcheck.ui.components.AnimatedFloatText
+import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.common.connectionDisplayLabel
+import com.runcheck.ui.common.formatDecimal
+import com.runcheck.ui.common.isUnknownValue
+import com.runcheck.ui.common.rememberFormattedDateTime
+import com.runcheck.ui.theme.RuncheckTheme
+import com.runcheck.ui.theme.reducedMotion
+import com.runcheck.ui.theme.spacing
 import kotlin.math.roundToInt
 
 @Composable
@@ -943,12 +943,12 @@ private fun heroInstructionText(
 @Preview(showBackground = true, widthDp = 412, heightDp = 915)
 @Composable
 private fun SpeedTestContentPreview() {
-    DevicePulseTheme {
+    RuncheckTheme {
         SpeedTestContent(
             networkState = NetworkState(
                 connectionType = ConnectionType.WIFI,
                 signalDbm = -54,
-                signalQuality = com.devicepulse.domain.model.SignalQuality.EXCELLENT,
+                signalQuality = com.runcheck.domain.model.SignalQuality.EXCELLENT,
                 wifiSsid = "Lab 6E",
                 latencyMs = 16
             ),

@@ -1,4 +1,4 @@
-package com.devicepulse.data.network
+package com.runcheck.data.network
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -20,8 +20,8 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.PermissionChecker
 import androidx.core.content.ContextCompat
 import androidx.core.location.LocationManagerCompat
-import com.devicepulse.domain.model.ConnectionType
-import com.devicepulse.domain.model.SignalQuality
+import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.SignalQuality
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

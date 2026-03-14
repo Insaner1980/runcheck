@@ -1,7 +1,7 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.model.NetworkState
-import com.devicepulse.domain.repository.NetworkRepository
+import com.runcheck.domain.model.NetworkState
+import com.runcheck.domain.repository.NetworkRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 

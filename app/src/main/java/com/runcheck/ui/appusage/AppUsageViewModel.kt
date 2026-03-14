@@ -1,10 +1,10 @@
-package com.devicepulse.ui.appusage
+package com.runcheck.ui.appusage
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devicepulse.domain.repository.ProStatusProvider
-import com.devicepulse.domain.usecase.GetAppBatteryUsageUseCase
-import com.devicepulse.ui.common.messageOr
+import com.runcheck.domain.repository.ProStatusProvider
+import com.runcheck.domain.usecase.GetAppBatteryUsageUseCase
+import com.runcheck.ui.common.messageOr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow

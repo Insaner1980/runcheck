@@ -1,4 +1,4 @@
-package com.devicepulse.ui.common
+package com.runcheck.ui.common
 
 import android.app.Activity
 import android.content.Context

@@ -1,4 +1,4 @@
-package com.devicepulse.ui.storage
+package com.runcheck.ui.storage
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,13 +28,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.devicepulse.R
-import com.devicepulse.ui.common.formatPercent
-import com.devicepulse.ui.common.formatStorageSize
-import com.devicepulse.ui.components.DetailTopBar
-import com.devicepulse.ui.components.MetricTile
-import com.devicepulse.ui.components.PullToRefreshWrapper
-import com.devicepulse.ui.theme.spacing
+import com.runcheck.R
+import com.runcheck.ui.common.formatPercent
+import com.runcheck.ui.common.formatStorageSize
+import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.MetricTile
+import com.runcheck.ui.components.PullToRefreshWrapper
+import com.runcheck.ui.theme.spacing
 
 @Composable
 fun StorageDetailScreen(

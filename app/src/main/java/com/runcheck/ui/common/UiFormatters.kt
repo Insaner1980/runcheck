@@ -1,4 +1,4 @@
-package com.devicepulse.ui.common
+package com.runcheck.ui.common
 
 import android.content.Context
 import android.text.format.DateFormat
@@ -6,11 +6,11 @@ import android.text.format.Formatter
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
-import com.devicepulse.R
-import com.devicepulse.domain.model.BatteryHealth
-import com.devicepulse.domain.model.ChargingStatus
-import com.devicepulse.domain.model.ConnectionType
-import com.devicepulse.domain.model.PlugType
+import com.runcheck.R
+import com.runcheck.domain.model.BatteryHealth
+import com.runcheck.domain.model.ChargingStatus
+import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.PlugType
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

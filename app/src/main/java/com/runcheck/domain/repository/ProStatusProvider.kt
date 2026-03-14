@@ -1,4 +1,4 @@
-package com.devicepulse.domain.repository
+package com.runcheck.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 

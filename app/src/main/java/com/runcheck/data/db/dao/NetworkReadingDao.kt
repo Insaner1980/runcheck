@@ -1,9 +1,9 @@
-package com.devicepulse.data.db.dao
+package com.runcheck.data.db.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
-import com.devicepulse.data.db.entity.NetworkReadingEntity
+import com.runcheck.data.db.entity.NetworkReadingEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao

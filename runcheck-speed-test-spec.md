@@ -1,4 +1,4 @@
-# DevicePulse — Speed Test Feature Spec
+# runcheck — Speed Test Feature Spec
 
 ## Overview
 

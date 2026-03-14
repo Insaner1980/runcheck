@@ -1,14 +1,14 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.repository.BatteryRepository
-import com.devicepulse.domain.repository.FileExportRepository
-import com.devicepulse.domain.repository.NetworkRepository
-import com.devicepulse.domain.repository.ProStatusProvider
-import com.devicepulse.domain.repository.StorageRepository
-import com.devicepulse.domain.repository.ThermalRepository
-import com.devicepulse.domain.repository.UserPreferencesRepository
-import com.devicepulse.domain.model.DataRetention
-import com.devicepulse.domain.model.ThermalStatus
+import com.runcheck.domain.repository.BatteryRepository
+import com.runcheck.domain.repository.FileExportRepository
+import com.runcheck.domain.repository.NetworkRepository
+import com.runcheck.domain.repository.ProStatusProvider
+import com.runcheck.domain.repository.StorageRepository
+import com.runcheck.domain.repository.ThermalRepository
+import com.runcheck.domain.repository.UserPreferencesRepository
+import com.runcheck.domain.model.DataRetention
+import com.runcheck.domain.model.ThermalStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -48,7 +48,7 @@ class ExportDataUseCase @Inject constructor(
     }
 
     private fun requirePro() {
-        check(proStatusProvider.isPro()) { "CSV export requires DevicePulse Pro" }
+        check(proStatusProvider.isPro()) { "CSV export requires Runcheck Pro" }
     }
 
     private suspend fun exportCutoff(): Long? {
@@ -140,10 +140,10 @@ class ExportDataUseCase @Inject constructor(
     }
 
     suspend fun exportAllCsv(): Map<String, String> = mapOf(
-        "devicepulse_battery.csv" to exportBatteryCsv(),
-        "devicepulse_network.csv" to exportNetworkCsv(),
-        "devicepulse_thermal.csv" to exportThermalCsv(),
-        "devicepulse_storage.csv" to exportStorageCsv()
+        "runcheck_battery.csv" to exportBatteryCsv(),
+        "runcheck_network.csv" to exportNetworkCsv(),
+        "runcheck_thermal.csv" to exportThermalCsv(),
+        "runcheck_storage.csv" to exportStorageCsv()
     )
 
     suspend fun prepareExportShare() =

@@ -1,4 +1,4 @@
-package com.devicepulse.ui.components
+package com.runcheck.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -8,8 +8,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
-import com.devicepulse.ui.common.formatDecimal
-import com.devicepulse.ui.theme.reducedMotion
+import com.runcheck.ui.common.formatDecimal
+import com.runcheck.ui.theme.reducedMotion
 import kotlin.math.roundToInt
 
 @Composable

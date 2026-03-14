@@ -1,4 +1,4 @@
-package com.devicepulse.ui.theme
+package com.runcheck.ui.theme
 
 import android.view.accessibility.AccessibilityManager
 import androidx.compose.material3.MaterialTheme
@@ -17,13 +17,13 @@ val MaterialTheme.reducedMotion: Boolean
     @ReadOnlyComposable
     get() = LocalReducedMotion.current
 
-private val DevicePulseColorScheme = darkColorScheme(
+private val RuncheckColorScheme = darkColorScheme(
     background = BgPage,
     surface = BgPage,
     surfaceContainer = BgCard,
     surfaceContainerHigh = BgCardAlt,
-    primary = AccentTeal,
-    secondary = AccentBlue,
+    primary = AccentBlue,
+    secondary = AccentTeal,
     tertiary = AccentOrange,
     error = AccentRed,
     onSurface = TextPrimary,
@@ -37,7 +37,7 @@ private val DevicePulseColorScheme = darkColorScheme(
 )
 
 @Composable
-fun DevicePulseTheme(
+fun RuncheckTheme(
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
@@ -59,13 +59,13 @@ fun DevicePulseTheme(
 
     CompositionLocalProvider(
         LocalSpacing provides Spacing(),
-        LocalStatusColors provides DevicePulseStatusColors,
+        LocalStatusColors provides RuncheckStatusColors,
         LocalReducedMotion provides reducedMotion,
         LocalNumericFontFamily provides JetBrainsMonoFontFamily
     ) {
         MaterialTheme(
-            colorScheme = DevicePulseColorScheme,
-            typography = DevicePulseTypography,
+            colorScheme = RuncheckColorScheme,
+            typography = RuncheckTypography,
             content = content
         )
     }

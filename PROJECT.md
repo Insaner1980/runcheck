@@ -1,8 +1,8 @@
-# DevicePulse — Projektin kuvaus
+# runcheck — Projektin kuvaus
 
 ## Yleiskatsaus
 
-DevicePulse on natiivi Android-sovellus, joka seuraa laitteen terveyttä neljällä osa-alueella: akku, verkko, lämpötila ja tallennustila. Sovellus tarjoaa reaaliaikaisen diagnostiikan, yhdistetyn terveyspistemäärän ja pitkäaikaisen trendihistorian — kaikki yksityisyys edellä, täysin paikallisesti laitteella.
+runcheck on natiivi Android-sovellus, joka seuraa laitteen terveyttä neljällä osa-alueella: akku, verkko, lämpötila ja tallennustila. Sovellus tarjoaa reaaliaikaisen diagnostiikan, yhdistetyn terveyspistemäärän ja pitkäaikaisen trendihistorian — kaikki yksityisyys edellä, täysin paikallisesti laitteella.
 
 Sovellus on suunniteltu käyttäjille, jotka haluavat selkeän näkymän puhelimensa päivittäiseen toimintaan: akun kuntoon ja latauksen käyttäytymiseen, verkon laatuun, lämpötilaan ja ylikuumenemisriskiin sekä tallennustilan käyttöön.
 
@@ -10,14 +10,14 @@ Sovellus on suunniteltu käyttäjille, jotka haluavat selkeän näkymän puhelim
 
 ## Tuotteen visio
 
-DevicePulse ei ole yleinen "kaikki tilastot kaikkialla" -työkalu. Tuotesuunta on:
+runcheck ei ole yleinen "kaikki tilastot kaikkialla" -työkalu. Tuotesuunta on:
 
 - Nopea yleiskatsaus kotinäkymässä
 - Terveyspainotteinen diagnostiikka detaljinäkymissä
 - Yhteyspainotteiset työkalut verkkonäkymässä (nopeustesti, signaalinlaatu)
 - Toissijaiset mutta tärkeät työkalut (laturivertailu, sovelluskohtainen akunkäyttö, vienti)
 
-Sovelluksen tulee tuntua modernilta, luettavalta ja teknisesti uskottavalta olematta sekava tai meluisa. Tavoite ei ole näyttää geneeriseltä benchmarktyökalilta tai pelipaneelilta — DevicePulsen tulee tuntua premium-tuotteelta: käytännölliseltä ja luotettavalta.
+Sovelluksen tulee tuntua modernilta, luettavalta ja teknisesti uskottavalta olematta sekava tai meluisa. Tavoite ei ole näyttää geneeriseltä benchmarktyökalilta tai pelipaneelilta — runcheckn tulee tuntua premium-tuotteelta: käytännölliseltä ja luotettavalta.
 
 ---
 
@@ -379,7 +379,7 @@ Sovellus ei koskaan näytä epätarkkaa dataa ilman varoitusta. Jos mittaus ei o
 
 ### Pro-malli
 
-DevicePulse käyttää kertaostoa (arvioitu hinta ~€3.49) Google Play Billing -kirjaston kautta.
+runcheck käyttää kertaostoa (arvioitu hinta ~€3.49) Google Play Billing -kirjaston kautta.
 
 ### Vapaan version ominaisuudet
 
@@ -471,4 +471,4 @@ Merkkijonoresursseja on ~260–296 kappaletta kieliversiota kohden.
 
 ---
 
-*Tämä dokumentti kuvaa DevicePulse-projektin tilaa maaliskuussa 2026.*
+*Tämä dokumentti kuvaa runcheck-projektin tilaa maaliskuussa 2026.*

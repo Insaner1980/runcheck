@@ -1,4 +1,4 @@
-package com.devicepulse.ui.thermal
+package com.runcheck.ui.thermal
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,18 +34,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.devicepulse.R
-import com.devicepulse.domain.model.ThrottlingEvent
-import com.devicepulse.domain.model.ThermalStatus
-import com.devicepulse.ui.common.formatDecimal
-import com.devicepulse.ui.common.formatTemperature
-import com.devicepulse.ui.common.rememberFormattedDateTime
-import com.devicepulse.ui.components.ProFeatureCalloutCard
-import com.devicepulse.ui.components.DetailTopBar
-import com.devicepulse.ui.components.HeatStrip
-import com.devicepulse.ui.components.MetricTile
-import com.devicepulse.ui.components.PullToRefreshWrapper
-import com.devicepulse.ui.theme.spacing
+import com.runcheck.R
+import com.runcheck.domain.model.ThrottlingEvent
+import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.ui.common.formatDecimal
+import com.runcheck.ui.common.formatTemperature
+import com.runcheck.ui.common.rememberFormattedDateTime
+import com.runcheck.ui.components.ProFeatureCalloutCard
+import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.HeatStrip
+import com.runcheck.ui.components.MetricTile
+import com.runcheck.ui.components.PullToRefreshWrapper
+import com.runcheck.ui.theme.spacing
 
 @Composable
 fun ThermalDetailScreen(

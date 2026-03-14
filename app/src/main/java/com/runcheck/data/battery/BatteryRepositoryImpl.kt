@@ -1,14 +1,14 @@
-package com.devicepulse.data.battery
+package com.runcheck.data.battery
 
-import com.devicepulse.data.db.dao.BatteryReadingDao
-import com.devicepulse.data.db.entity.BatteryReadingEntity
-import com.devicepulse.data.device.DeviceProfileRepositoryImpl
-import com.devicepulse.domain.model.BatteryReading
-import com.devicepulse.domain.model.BatteryState
-import com.devicepulse.domain.model.Confidence
-import com.devicepulse.domain.model.MeasuredValue
-import com.devicepulse.domain.repository.BatteryRepository as BatteryRepositoryContract
-import com.devicepulse.util.TimestampSanitizer
+import com.runcheck.data.db.dao.BatteryReadingDao
+import com.runcheck.data.db.entity.BatteryReadingEntity
+import com.runcheck.data.device.DeviceProfileRepositoryImpl
+import com.runcheck.domain.model.BatteryReading
+import com.runcheck.domain.model.BatteryState
+import com.runcheck.domain.model.Confidence
+import com.runcheck.domain.model.MeasuredValue
+import com.runcheck.domain.repository.BatteryRepository as BatteryRepositoryContract
+import com.runcheck.util.TimestampSanitizer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -112,12 +112,12 @@ class BatteryRepositoryImpl @Inject constructor(
         val voltage: Int,
         val temp: Float,
         val current: MeasuredValue<Int>,
-        val status: com.devicepulse.domain.model.ChargingStatus
+        val status: com.runcheck.domain.model.ChargingStatus
     )
 
     private data class BatteryStateExtra(
-        val plug: com.devicepulse.domain.model.PlugType,
-        val health: com.devicepulse.domain.model.BatteryHealth,
+        val plug: com.runcheck.domain.model.PlugType,
+        val health: com.runcheck.domain.model.BatteryHealth,
         val tech: String,
         val cycle: Int?,
         val healthPct: Int?

@@ -1,4 +1,4 @@
-package com.devicepulse.domain.model
+package com.runcheck.domain.model
 
 enum class HistoryPeriod(val durationMs: Long) {
     DAY(24 * 60 * 60 * 1000L),

@@ -1,4 +1,4 @@
-package com.devicepulse.ui.components
+package com.runcheck.ui.components
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -21,10 +21,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.devicepulse.R
-import com.devicepulse.domain.model.Confidence
-import com.devicepulse.ui.theme.reducedMotion
-import com.devicepulse.ui.theme.statusColors
+import com.runcheck.R
+import com.runcheck.domain.model.Confidence
+import com.runcheck.ui.theme.reducedMotion
+import com.runcheck.ui.theme.statusColors
 
 @Composable
 fun ConfidenceBadge(
@@ -70,10 +70,9 @@ fun ConfidenceBadge(
 
     Box(
         modifier = modifier
-            .height(24.dp)
-            .padding(horizontal = 8.dp)
+            .scale(animatedScale)
             .background(backgroundColor, RoundedCornerShape(50))
-            .scale(animatedScale),
+            .padding(horizontal = 12.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(

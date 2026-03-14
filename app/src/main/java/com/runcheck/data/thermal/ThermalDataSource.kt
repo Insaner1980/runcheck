@@ -1,4 +1,4 @@
-package com.devicepulse.data.thermal
+package com.runcheck.data.thermal
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -8,7 +8,7 @@ import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager
 import androidx.core.content.ContextCompat
-import com.devicepulse.domain.model.ThermalStatus
+import com.runcheck.domain.model.ThermalStatus
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose

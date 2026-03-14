@@ -1,10 +1,10 @@
-# DevicePulse Navigation Plan
+# runcheck Navigation Plan
 
 ## Goal
 
-Move DevicePulse from a home-hub-only navigation model to a stable bottom-navigation structure that can support a growing amount of functionality without making screens hard to reach or hard to leave.
+Move runcheck from a home-hub-only navigation model to a stable bottom-navigation structure that can support a growing amount of functionality without making screens hard to reach or hard to leave.
 
-This plan assumes DevicePulse will continue expanding beyond a small set of detail screens and should therefore treat navigation as a product structure decision, not a temporary UI fix.
+This plan assumes runcheck will continue expanding beyond a small set of detail screens and should therefore treat navigation as a product structure decision, not a temporary UI fix.
 
 ## Progress
 
@@ -28,7 +28,7 @@ This plan assumes DevicePulse will continue expanding beyond a small set of deta
 
 ## Target Navigation Model
 
-DevicePulse should use a bottom navigation bar with four persistent top-level destinations:
+runcheck should use a bottom navigation bar with four persistent top-level destinations:
 
 1. `Home`
 2. `Health`

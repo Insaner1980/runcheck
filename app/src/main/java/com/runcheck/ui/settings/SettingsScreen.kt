@@ -1,4 +1,4 @@
-package com.devicepulse.ui.settings
+package com.runcheck.ui.settings
 
 import android.Manifest
 import android.app.Activity
@@ -52,20 +52,22 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.devicepulse.BuildConfig
-import com.devicepulse.R
-import com.devicepulse.domain.model.CurrentUnit
-import com.devicepulse.domain.model.DataRetention
-import com.devicepulse.domain.model.DeviceProfileInfo
-import com.devicepulse.domain.model.MonitoringInterval
-import com.devicepulse.domain.model.SignConvention
-import com.devicepulse.ui.common.findActivity
-import com.devicepulse.ui.components.DetailTopBar
-import com.devicepulse.ui.components.ProFeatureCalloutCard
-import com.devicepulse.ui.components.SectionHeader
-import com.devicepulse.ui.theme.BgIconCircle
-import com.devicepulse.ui.theme.DevicePulseTheme
-import com.devicepulse.ui.theme.spacing
+import com.runcheck.BuildConfig
+import com.runcheck.R
+import com.runcheck.domain.model.CurrentUnit
+import com.runcheck.domain.model.DataRetention
+import com.runcheck.domain.model.DeviceProfileInfo
+import com.runcheck.domain.model.MonitoringInterval
+import com.runcheck.domain.model.SignConvention
+import com.runcheck.ui.common.findActivity
+import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.ProFeatureCalloutCard
+import com.runcheck.ui.components.SectionHeader
+import androidx.compose.material3.ButtonDefaults
+import com.runcheck.ui.theme.BgIconCircle
+import com.runcheck.ui.theme.BgPage
+import com.runcheck.ui.theme.RuncheckTheme
+import com.runcheck.ui.theme.spacing
 
 @Composable
 fun SettingsScreen(
@@ -266,7 +268,11 @@ private fun SettingsScreenContent(
                                 onPurchasePro(activity)
                             }
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = BgPage
+                        )
                     ) {
                         Text(
                             text = uiState.proPrice?.let { price ->
@@ -611,7 +617,7 @@ private fun PermissionHelpCard(
 @Preview(showBackground = true)
 @Composable
 private fun SettingsScreenContentPreview() {
-    DevicePulseTheme {
+    RuncheckTheme {
         SettingsScreenContent(
             uiState = SettingsUiState(
                 deviceProfile = DeviceProfileInfo(

@@ -1,28 +1,28 @@
-package com.devicepulse.widget
+package com.runcheck.widget
 
 import android.content.Context
 import androidx.glance.appwidget.updateAll
-import com.devicepulse.data.db.dao.BatteryReadingDao
-import com.devicepulse.data.db.dao.NetworkReadingDao
-import com.devicepulse.data.db.dao.StorageReadingDao
-import com.devicepulse.data.db.dao.ThermalReadingDao
-import com.devicepulse.data.db.entity.BatteryReadingEntity
-import com.devicepulse.data.db.entity.NetworkReadingEntity
-import com.devicepulse.data.db.entity.StorageReadingEntity
-import com.devicepulse.data.db.entity.ThermalReadingEntity
-import com.devicepulse.domain.model.BatteryHealth
-import com.devicepulse.domain.model.BatteryState
-import com.devicepulse.domain.model.ChargingStatus
-import com.devicepulse.domain.model.Confidence
-import com.devicepulse.domain.model.ConnectionType
-import com.devicepulse.domain.model.MeasuredValue
-import com.devicepulse.domain.model.NetworkState
-import com.devicepulse.domain.model.PlugType
-import com.devicepulse.domain.model.SignalQuality
-import com.devicepulse.domain.model.StorageState
-import com.devicepulse.domain.model.ThermalState
-import com.devicepulse.domain.model.ThermalStatus
-import com.devicepulse.domain.scoring.HealthScoreCalculator
+import com.runcheck.data.db.dao.BatteryReadingDao
+import com.runcheck.data.db.dao.NetworkReadingDao
+import com.runcheck.data.db.dao.StorageReadingDao
+import com.runcheck.data.db.dao.ThermalReadingDao
+import com.runcheck.data.db.entity.BatteryReadingEntity
+import com.runcheck.data.db.entity.NetworkReadingEntity
+import com.runcheck.data.db.entity.StorageReadingEntity
+import com.runcheck.data.db.entity.ThermalReadingEntity
+import com.runcheck.domain.model.BatteryHealth
+import com.runcheck.domain.model.BatteryState
+import com.runcheck.domain.model.ChargingStatus
+import com.runcheck.domain.model.Confidence
+import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.MeasuredValue
+import com.runcheck.domain.model.NetworkState
+import com.runcheck.domain.model.PlugType
+import com.runcheck.domain.model.SignalQuality
+import com.runcheck.domain.model.StorageState
+import com.runcheck.domain.model.ThermalState
+import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.domain.scoring.HealthScoreCalculator
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -84,7 +84,7 @@ internal object WidgetDataProvider {
         )
 }
 
-internal object DevicePulseWidgets {
+internal object RuncheckWidgets {
     suspend fun updateAll(context: Context) {
         BatteryWidget().updateAll(context)
         HealthWidget().updateAll(context)

@@ -1,4 +1,4 @@
-package com.devicepulse.data.appusage
+package com.runcheck.data.appusage
 
 import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager

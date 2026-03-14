@@ -1,10 +1,10 @@
-package com.devicepulse.data.battery
+package com.runcheck.data.battery
 
 import android.content.Context
 import android.os.BatteryManager
-import com.devicepulse.data.device.DeviceProfile
-import com.devicepulse.domain.model.Confidence
-import com.devicepulse.domain.model.MeasuredValue
+import com.runcheck.data.device.DeviceProfile
+import com.runcheck.domain.model.Confidence
+import com.runcheck.domain.model.MeasuredValue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow

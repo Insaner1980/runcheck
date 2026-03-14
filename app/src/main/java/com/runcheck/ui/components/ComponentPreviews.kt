@@ -1,4 +1,4 @@
-package com.devicepulse.ui.components
+package com.runcheck.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,14 +10,14 @@ import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.devicepulse.ui.theme.AccentTeal
-import com.devicepulse.ui.theme.DevicePulseTheme
-import com.devicepulse.ui.theme.spacing
+import com.runcheck.ui.theme.AccentTeal
+import com.runcheck.ui.theme.RuncheckTheme
+import com.runcheck.ui.theme.spacing
 
 @Preview(showBackground = true, widthDp = 412)
 @Composable
 private fun ComponentStackPreview() {
-    DevicePulseTheme {
+    RuncheckTheme {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -26,7 +26,7 @@ private fun ComponentStackPreview() {
                 androidx.compose.material3.MaterialTheme.spacing.base
             )
         ) {
-            PrimaryTopBar(title = "DevicePulse")
+            PrimaryTopBar(title = "Runcheck")
             DetailTopBar(title = "Battery", onBack = {})
             GridCard(
                 icon = Icons.Outlined.BatteryChargingFull,

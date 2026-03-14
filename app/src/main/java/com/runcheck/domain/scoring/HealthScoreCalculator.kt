@@ -1,15 +1,15 @@
-package com.devicepulse.domain.scoring
+package com.runcheck.domain.scoring
 
-import com.devicepulse.domain.model.BatteryHealth
-import com.devicepulse.domain.model.BatteryState
-import com.devicepulse.domain.model.ConnectionType
-import com.devicepulse.domain.model.HealthScore
-import com.devicepulse.domain.model.NetworkState
-import com.devicepulse.domain.model.SignalQuality
-import com.devicepulse.domain.model.SpeedTestResult
-import com.devicepulse.domain.model.StorageState
-import com.devicepulse.domain.model.ThermalState
-import com.devicepulse.domain.model.ThermalStatus
+import com.runcheck.domain.model.BatteryHealth
+import com.runcheck.domain.model.BatteryState
+import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.HealthScore
+import com.runcheck.domain.model.NetworkState
+import com.runcheck.domain.model.SignalQuality
+import com.runcheck.domain.model.SpeedTestResult
+import com.runcheck.domain.model.StorageState
+import com.runcheck.domain.model.ThermalState
+import com.runcheck.domain.model.ThermalStatus
 import javax.inject.Inject
 import javax.inject.Singleton
 

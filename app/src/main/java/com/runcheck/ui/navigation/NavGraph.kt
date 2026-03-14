@@ -1,4 +1,4 @@
-package com.devicepulse.ui.navigation
+package com.runcheck.ui.navigation
 
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
@@ -12,19 +12,19 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.devicepulse.ui.appusage.AppUsageScreen
-import com.devicepulse.ui.battery.BatteryDetailScreen
-import com.devicepulse.ui.charger.ChargerComparisonScreen
-import com.devicepulse.ui.home.HomeScreen
-import com.devicepulse.ui.network.NetworkDetailScreen
-import com.devicepulse.ui.network.SpeedTestScreen
-import com.devicepulse.ui.settings.SettingsScreen
-import com.devicepulse.ui.storage.StorageDetailScreen
-import com.devicepulse.ui.thermal.ThermalDetailScreen
-import com.devicepulse.ui.theme.LocalReducedMotion
+import com.runcheck.ui.appusage.AppUsageScreen
+import com.runcheck.ui.battery.BatteryDetailScreen
+import com.runcheck.ui.charger.ChargerComparisonScreen
+import com.runcheck.ui.home.HomeScreen
+import com.runcheck.ui.network.NetworkDetailScreen
+import com.runcheck.ui.network.SpeedTestScreen
+import com.runcheck.ui.settings.SettingsScreen
+import com.runcheck.ui.storage.StorageDetailScreen
+import com.runcheck.ui.thermal.ThermalDetailScreen
+import com.runcheck.ui.theme.LocalReducedMotion
 
 @Composable
-fun DevicePulseNavHost(
+fun RuncheckNavHost(
     modifier: Modifier = Modifier
 ) {
     val navController = rememberNavController()

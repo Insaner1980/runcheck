@@ -1,4 +1,4 @@
-package com.devicepulse.ui.network
+package com.runcheck.ui.network
 
 import android.Manifest
 import android.content.Context
@@ -56,19 +56,19 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.devicepulse.R
-import com.devicepulse.domain.model.ConnectionType
-import com.devicepulse.domain.model.NetworkState
-import com.devicepulse.domain.model.SignalQuality
-import com.devicepulse.domain.model.SpeedTestResult
-import com.devicepulse.ui.common.formatDecimal
-import com.devicepulse.ui.common.findActivity
-import com.devicepulse.ui.common.isUnknownValue
-import com.devicepulse.ui.common.rememberFormattedDateTime
-import com.devicepulse.ui.components.DetailTopBar
-import com.devicepulse.ui.components.MetricTile
-import com.devicepulse.ui.components.PullToRefreshWrapper
-import com.devicepulse.ui.theme.spacing
+import com.runcheck.R
+import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.NetworkState
+import com.runcheck.domain.model.SignalQuality
+import com.runcheck.domain.model.SpeedTestResult
+import com.runcheck.ui.common.formatDecimal
+import com.runcheck.ui.common.findActivity
+import com.runcheck.ui.common.isUnknownValue
+import com.runcheck.ui.common.rememberFormattedDateTime
+import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.MetricTile
+import com.runcheck.ui.components.PullToRefreshWrapper
+import com.runcheck.ui.theme.spacing
 
 @Composable
 fun NetworkDetailScreen(

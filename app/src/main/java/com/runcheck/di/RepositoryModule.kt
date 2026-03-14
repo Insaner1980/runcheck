@@ -1,36 +1,36 @@
-package com.devicepulse.di
+package com.runcheck.di
 
-import com.devicepulse.billing.ProPurchaseManager
-import com.devicepulse.data.appusage.AppBatteryUsageRepositoryImpl
-import com.devicepulse.data.battery.BatteryRepositoryImpl
-import com.devicepulse.data.billing.ProStatusRepository
-import com.devicepulse.data.charger.ChargerRepositoryImpl
-import com.devicepulse.data.crash.CrashReportingManager
-import com.devicepulse.data.db.RoomTransactionRunner
-import com.devicepulse.data.device.DeviceProfileRepositoryImpl
-import com.devicepulse.data.export.FileExportRepositoryImpl
-import com.devicepulse.data.network.NetworkRepositoryImpl
-import com.devicepulse.data.network.SpeedTestRepositoryImpl
-import com.devicepulse.data.preferences.UserPreferencesRepositoryImpl
-import com.devicepulse.data.storage.StorageRepositoryImpl
-import com.devicepulse.data.thermal.ThermalRepositoryImpl
-import com.devicepulse.data.thermal.ThrottlingRepositoryImpl
-import com.devicepulse.domain.repository.AppBatteryUsageRepository
-import com.devicepulse.domain.repository.BatteryRepository as BatteryRepositoryContract
-import com.devicepulse.domain.repository.ChargerRepository
-import com.devicepulse.domain.repository.CrashReportingController
-import com.devicepulse.domain.repository.DatabaseTransactionRunner
-import com.devicepulse.domain.repository.DeviceProfileRepository as DeviceProfileRepositoryContract
-import com.devicepulse.domain.repository.FileExportRepository
-import com.devicepulse.domain.repository.MonitoringScheduler
-import com.devicepulse.domain.repository.NetworkRepository as NetworkRepositoryContract
-import com.devicepulse.domain.repository.ProStatusProvider
-import com.devicepulse.domain.repository.SpeedTestRepository as SpeedTestRepositoryContract
-import com.devicepulse.domain.repository.StorageRepository as StorageRepositoryContract
-import com.devicepulse.domain.repository.ThermalRepository as ThermalRepositoryContract
-import com.devicepulse.domain.repository.ThrottlingRepository
-import com.devicepulse.domain.repository.UserPreferencesRepository as UserPreferencesRepositoryContract
-import com.devicepulse.service.monitor.MonitorScheduler
+import com.runcheck.billing.ProPurchaseManager
+import com.runcheck.data.appusage.AppBatteryUsageRepositoryImpl
+import com.runcheck.data.battery.BatteryRepositoryImpl
+import com.runcheck.data.billing.ProStatusRepository
+import com.runcheck.data.charger.ChargerRepositoryImpl
+import com.runcheck.data.crash.CrashReportingManager
+import com.runcheck.data.db.RoomTransactionRunner
+import com.runcheck.data.device.DeviceProfileRepositoryImpl
+import com.runcheck.data.export.FileExportRepositoryImpl
+import com.runcheck.data.network.NetworkRepositoryImpl
+import com.runcheck.data.network.SpeedTestRepositoryImpl
+import com.runcheck.data.preferences.UserPreferencesRepositoryImpl
+import com.runcheck.data.storage.StorageRepositoryImpl
+import com.runcheck.data.thermal.ThermalRepositoryImpl
+import com.runcheck.data.thermal.ThrottlingRepositoryImpl
+import com.runcheck.domain.repository.AppBatteryUsageRepository
+import com.runcheck.domain.repository.BatteryRepository as BatteryRepositoryContract
+import com.runcheck.domain.repository.ChargerRepository
+import com.runcheck.domain.repository.CrashReportingController
+import com.runcheck.domain.repository.DatabaseTransactionRunner
+import com.runcheck.domain.repository.DeviceProfileRepository as DeviceProfileRepositoryContract
+import com.runcheck.domain.repository.FileExportRepository
+import com.runcheck.domain.repository.MonitoringScheduler
+import com.runcheck.domain.repository.NetworkRepository as NetworkRepositoryContract
+import com.runcheck.domain.repository.ProStatusProvider
+import com.runcheck.domain.repository.SpeedTestRepository as SpeedTestRepositoryContract
+import com.runcheck.domain.repository.StorageRepository as StorageRepositoryContract
+import com.runcheck.domain.repository.ThermalRepository as ThermalRepositoryContract
+import com.runcheck.domain.repository.ThrottlingRepository
+import com.runcheck.domain.repository.UserPreferencesRepository as UserPreferencesRepositoryContract
+import com.runcheck.service.monitor.MonitorScheduler
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

@@ -1,4 +1,4 @@
-package com.devicepulse.billing
+package com.runcheck.billing
 
 import android.app.Activity
 import kotlinx.coroutines.flow.Flow

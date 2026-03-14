@@ -1,4 +1,4 @@
-package com.devicepulse.ui.components
+package com.runcheck.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -15,9 +15,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.unit.dp
-import com.devicepulse.R
-import com.devicepulse.domain.model.HealthStatus
-import com.devicepulse.ui.theme.statusColors
+import com.runcheck.R
+import com.runcheck.domain.model.HealthStatus
+import com.runcheck.ui.theme.statusColors
 
 @Composable
 fun StatusIndicator(

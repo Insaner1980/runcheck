@@ -1,11 +1,11 @@
-package com.devicepulse.data.charger
+package com.runcheck.data.charger
 
-import com.devicepulse.data.db.dao.ChargerDao
-import com.devicepulse.data.db.entity.ChargerProfileEntity
-import com.devicepulse.data.db.entity.ChargingSessionEntity
-import com.devicepulse.domain.model.ChargerProfile
-import com.devicepulse.domain.model.ChargingSession
-import com.devicepulse.domain.repository.ChargerRepository
+import com.runcheck.data.db.dao.ChargerDao
+import com.runcheck.data.db.entity.ChargerProfileEntity
+import com.runcheck.data.db.entity.ChargingSessionEntity
+import com.runcheck.domain.model.ChargerProfile
+import com.runcheck.domain.model.ChargingSession
+import com.runcheck.domain.repository.ChargerRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject

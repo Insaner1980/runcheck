@@ -1,6 +1,6 @@
-package com.devicepulse.data.network
+package com.runcheck.data.network
 
-import com.devicepulse.BuildConfig
+import com.runcheck.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.InetSocketAddress

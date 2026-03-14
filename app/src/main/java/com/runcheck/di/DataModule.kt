@@ -1,8 +1,8 @@
-package com.devicepulse.di
+package com.runcheck.di
 
 import android.content.Context
-import com.devicepulse.data.battery.BatteryDataSourceFactory
-import com.devicepulse.data.thermal.ThermalDataSource
+import com.runcheck.data.battery.BatteryDataSourceFactory
+import com.runcheck.data.thermal.ThermalDataSource
 import com.google.gson.Gson
 import dagger.Module
 import dagger.Provides

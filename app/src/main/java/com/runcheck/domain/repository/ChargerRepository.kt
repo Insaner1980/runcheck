@@ -1,8 +1,8 @@
-package com.devicepulse.domain.repository
+package com.runcheck.domain.repository
 
-import com.devicepulse.domain.model.ChargerProfile
-import com.devicepulse.domain.model.ChargerSummary
-import com.devicepulse.domain.model.ChargingSession
+import com.runcheck.domain.model.ChargerProfile
+import com.runcheck.domain.model.ChargerSummary
+import com.runcheck.domain.model.ChargingSession
 import kotlinx.coroutines.flow.Flow
 
 interface ChargerRepository {

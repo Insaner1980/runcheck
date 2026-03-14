@@ -2,7 +2,7 @@
 
 ## Overview
 
-Four targeted improvements to the DevicePulse home screen to enhance visual quality and polish.
+Four targeted improvements to the runcheck home screen to enhance visual quality and polish.
 
 ## Changes
 

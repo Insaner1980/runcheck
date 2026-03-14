@@ -1,7 +1,7 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.model.StorageState
-import com.devicepulse.domain.repository.StorageRepository
+import com.runcheck.domain.model.StorageState
+import com.runcheck.domain.repository.StorageRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 

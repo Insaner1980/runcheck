@@ -1,8 +1,8 @@
-package com.devicepulse.data.battery
+package com.runcheck.data.battery
 
 import android.content.Context
 import android.os.Build
-import com.devicepulse.data.device.DeviceProfile
+import com.runcheck.data.device.DeviceProfile
 
 class BatteryDataSourceFactory(
     private val context: Context

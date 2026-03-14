@@ -1,6 +1,6 @@
-package com.devicepulse.domain.repository
+package com.runcheck.domain.repository
 
-import com.devicepulse.domain.model.DeviceProfileInfo
+import com.runcheck.domain.model.DeviceProfileInfo
 import kotlinx.coroutines.flow.Flow
 
 interface DeviceProfileRepository {

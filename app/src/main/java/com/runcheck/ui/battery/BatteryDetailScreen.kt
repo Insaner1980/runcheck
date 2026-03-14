@@ -1,4 +1,4 @@
-package com.devicepulse.ui.battery
+package com.runcheck.ui.battery
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -16,11 +16,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -39,7 +40,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -49,27 +54,34 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.devicepulse.R
-import com.devicepulse.domain.model.BatteryHealth
-import com.devicepulse.domain.model.BatteryReading
-import com.devicepulse.domain.model.BatteryState
-import com.devicepulse.domain.model.ChargingStatus
-import com.devicepulse.domain.model.Confidence
-import com.devicepulse.domain.model.HistoryPeriod
-import com.devicepulse.domain.model.PlugType
-import com.devicepulse.ui.common.batteryHealthLabel
-import com.devicepulse.ui.common.chargingStatusLabel
-import com.devicepulse.ui.common.formatDecimal
-import com.devicepulse.ui.common.plugTypeLabel
-import com.devicepulse.ui.common.temperatureBandLabel
-import com.devicepulse.ui.components.ConfidenceBadge
-import com.devicepulse.ui.components.DetailTopBar
-import com.devicepulse.ui.components.ProgressRing
-import com.devicepulse.ui.components.PullToRefreshWrapper
-import com.devicepulse.ui.components.TrendChart
-import com.devicepulse.ui.theme.numericFontFamily
-import com.devicepulse.ui.theme.spacing
-import com.devicepulse.ui.theme.statusColors
+import com.runcheck.R
+import com.runcheck.domain.model.BatteryHealth
+import com.runcheck.domain.model.BatteryReading
+import com.runcheck.domain.model.BatteryState
+import com.runcheck.domain.model.ChargingStatus
+import com.runcheck.domain.model.Confidence
+import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.model.PlugType
+import com.runcheck.ui.common.batteryHealthLabel
+import com.runcheck.ui.common.chargingStatusLabel
+import com.runcheck.ui.common.formatDecimal
+import com.runcheck.ui.common.plugTypeLabel
+import com.runcheck.ui.common.temperatureBandLabel
+import com.runcheck.ui.components.AreaChart
+import com.runcheck.ui.components.CardSectionTitle
+import com.runcheck.ui.components.ConfidenceBadge
+import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.MetricRow
+import com.runcheck.ui.theme.statusColorForPercent
+import com.runcheck.ui.components.ProBadgePill
+import com.runcheck.ui.components.SectionHeader
+import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.ProgressRing
+import com.runcheck.ui.components.PullToRefreshWrapper
+import com.runcheck.ui.components.TrendChart
+import com.runcheck.ui.theme.numericFontFamily
+import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.statusColors
 import kotlin.math.roundToInt
 
 @Composable
@@ -181,55 +193,55 @@ private fun BatteryContent(
         ) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-            BatteryHeroSection(battery = battery)
+            BatteryHeroSection(battery = battery, history = state.history)
 
             BatteryPanel {
-                BatterySectionEyebrow(text = stringResource(R.string.battery_section_details))
+                CardSectionTitle(text = stringResource(R.string.battery_section_details))
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                BatterySpecRow(
+                MetricRow(
                     label = stringResource(R.string.battery_voltage),
                     value = stringResource(
                         R.string.value_voltage_volts,
                         (battery.voltageMv / 1000f).toDouble()
                     )
                 )
-                BatterySpecRow(
+                MetricRow(
                     label = stringResource(R.string.battery_temperature),
                     value = buildTemperatureValue(battery.temperatureC),
-                    emphasis = BatterySpecEmphasis.High,
+
                     valueColor = temperatureColor(battery.temperatureC)
                 )
-                BatterySpecRow(
+                MetricRow(
                     label = stringResource(R.string.battery_health),
                     value = batteryHealthLabel(battery.health),
-                    emphasis = BatterySpecEmphasis.High,
+
                     valueColor = healthColor(battery.health)
                 )
-                BatterySpecRow(
+                MetricRow(
                     label = stringResource(R.string.battery_technology),
                     value = battery.technology.takeUnless { it.equals("Unknown", ignoreCase = true) }
                         ?.takeUnless(String::isBlank)
                         ?: stringResource(R.string.not_available)
                 )
                 battery.cycleCount?.let { count ->
-                    BatterySpecRow(
+                    MetricRow(
                         label = stringResource(R.string.battery_cycle_count),
                         value = count.toString(),
                         showDivider = battery.healthPercent != null
                     )
                 }
                 battery.healthPercent?.let { pct ->
-                    BatterySpecRow(
+                    MetricRow(
                         label = stringResource(R.string.battery_health_percent),
                         value = stringResource(R.string.value_percent, pct),
-                        emphasis = BatterySpecEmphasis.High,
+    
                         showDivider = false
                     )
                 }
             }
 
             BatteryPanel {
-                BatterySectionEyebrow(text = stringResource(R.string.battery_current))
+                CardSectionTitle(text = stringResource(R.string.battery_charging_section))
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -241,7 +253,7 @@ private fun BatteryContent(
                     ) {
                         Text(
                             text = stringResource(R.string.battery_current),
-                            style = MaterialTheme.typography.labelLarge,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Row(
@@ -275,7 +287,7 @@ private fun BatteryContent(
 
                 chargingSessionSummary?.let { summary ->
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
-                    BatterySectionEyebrow(text = stringResource(R.string.battery_session_title))
+                    CardSectionTitle(text = stringResource(R.string.battery_session_title))
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
                     BatterySessionSummary(summary = summary)
                 }
@@ -290,12 +302,12 @@ private fun BatteryContent(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
                 ) {
-                    BatteryMetaStat(
+                    MetricPill(
                         label = stringResource(R.string.battery_status),
                         value = chargingStatusLabel(battery.chargingStatus),
                         modifier = Modifier.weight(1f)
                     )
-                    BatteryMetaStat(
+                    MetricPill(
                         label = stringResource(R.string.battery_plug_type),
                         value = plugTypeLabel(battery.plugType),
                         modifier = Modifier.weight(1f)
@@ -322,7 +334,7 @@ private fun BatteryContent(
             }
 
             BatteryPanel {
-                BatterySectionEyebrow(text = stringResource(R.string.home_test_compare))
+                CardSectionTitle(text = stringResource(R.string.home_test_compare))
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
                 Text(
                     text = stringResource(R.string.charger_title),
@@ -358,36 +370,54 @@ private fun BatteryContent(
 }
 
 @Composable
-private fun BatteryHeroSection(battery: BatteryState) {
+private fun BatteryHeroSection(
+    battery: BatteryState,
+    history: List<BatteryReading>
+) {
+    val healthLabel = batteryHealthLabel(battery.health)
+    val statusLabel = chargingStatusLabel(battery.chargingStatus)
+    val statusText = stringResource(R.string.battery_hero_status, healthLabel, statusLabel)
+
+    val drainRatePctPerHour = remember(history) {
+        calculateDrainRate(history)
+    }
+
+    val powerW = remember(battery.currentMa.value, battery.voltageMv) {
+        if (battery.currentMa.confidence != Confidence.UNAVAILABLE) {
+            val currentA = battery.currentMa.value / 1000f
+            val voltageV = battery.voltageMv / 1000f
+            kotlin.math.abs(currentA * voltageV)
+        } else null
+    }
+
+    val remainingHours = remember(battery.level, drainRatePctPerHour) {
+        if (drainRatePctPerHour != null && drainRatePctPerHour > 0.1f &&
+            battery.chargingStatus != ChargingStatus.CHARGING
+        ) {
+            battery.level / drainRatePctPerHour
+        } else null
+    }
+
     BatteryPanel(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = MaterialTheme.spacing.xs,
-                    top = MaterialTheme.spacing.xs,
-                    end = MaterialTheme.spacing.xs,
-                    bottom = MaterialTheme.spacing.sm
-                )
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = stringResource(R.string.battery_title).uppercase(),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start
+            ) {
+                SectionHeader(text = stringResource(R.string.battery_title))
+            }
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
             ProgressRing(
                 progress = battery.level / 100f,
-                modifier = Modifier
-                    .size(220.dp)
-                    .align(Alignment.CenterHorizontally),
-                strokeWidth = 16.dp,
+                modifier = Modifier.size(152.dp),
+                strokeWidth = 10.dp,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                progressColor = MaterialTheme.colorScheme.primary,
+                progressColor = statusColorForPercent(battery.level),
                 contentDescription = stringResource(
                     R.string.a11y_progress_percent,
                     stringResource(R.string.battery_level),
@@ -401,27 +431,80 @@ private fun BatteryHeroSection(battery: BatteryState) {
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             text = battery.level.toString(),
-                            fontSize = 84.sp,
-                            lineHeight = 84.sp,
+                            fontSize = 48.sp,
+                            lineHeight = 48.sp,
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = (-3).sp,
+                            letterSpacing = (-2).sp,
                             fontFamily = MaterialTheme.numericFontFamily,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = stringResource(R.string.unit_percent),
-                            fontSize = 30.sp,
-                            lineHeight = 30.sp,
+                            fontSize = 20.sp,
+                            lineHeight = 20.sp,
                             fontWeight = FontWeight.SemiBold,
                             fontFamily = MaterialTheme.numericFontFamily,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(start = 6.dp, bottom = 14.dp)
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(start = 3.dp, bottom = 6.dp)
                         )
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+
+            Text(
+                text = statusText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+            ) {
+                MetricPill(
+                    label = stringResource(R.string.battery_drain_rate),
+                    value = drainRatePctPerHour?.let {
+                        stringResource(R.string.value_percent_per_hour, it)
+                    } ?: stringResource(R.string.battery_estimating),
+                    modifier = Modifier.weight(1f)
+                )
+                MetricPill(
+                    label = stringResource(R.string.battery_power),
+                    value = powerW?.let {
+                        stringResource(R.string.value_watts, it)
+                    } ?: stringResource(R.string.battery_estimating),
+                    modifier = Modifier.weight(1f)
+                )
+                MetricPill(
+                    label = stringResource(R.string.battery_remaining),
+                    value = remainingHours?.let { hours ->
+                        val h = hours.toInt()
+                        val m = ((hours - h) * 60).toInt()
+                        if (h > 0) stringResource(R.string.value_duration_hours_minutes, h, m)
+                        else stringResource(R.string.value_duration_minutes, m)
+                    } ?: stringResource(R.string.battery_estimating),
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
+}
+
+private fun calculateDrainRate(history: List<BatteryReading>): Float? {
+    if (history.size < 2) return null
+    val recent = history.sortedByDescending { it.timestamp }
+    val newest = recent.first()
+    val oldest = recent.last()
+    val timeDiffMs = newest.timestamp - oldest.timestamp
+    if (timeDiffMs < 10 * 60 * 1000) return null // need at least 10 min
+    val levelDiff = oldest.level - newest.level
+    if (levelDiff <= 0) return null // only for discharge
+    val hours = timeDiffMs / (1000f * 60f * 60f)
+    return levelDiff / hours
 }
 
 @Composable
@@ -433,7 +516,7 @@ private fun BatteryHistoryPanel(
     onUpgradeToPro: () -> Unit
 ) {
     BatteryPanel {
-        BatterySectionEyebrow(text = stringResource(R.string.battery_history_title))
+        CardSectionTitle(text = stringResource(R.string.battery_history_title))
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
         if (state.isPro) {
             Row(
@@ -515,9 +598,11 @@ private fun BatteryHistoryLockedState(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Button(
+        OutlinedButton(
             onClick = onUpgradeToPro,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
         ) {
             Text(stringResource(R.string.pro_feature_upgrade_action))
         }
@@ -541,85 +626,51 @@ private fun BatteryHistoryEmptyState() {
 
 @Composable
 private fun BatteryHistoryPreviewPlaceholder() {
-    val barHeights = listOf(12.dp, 24.dp, 18.dp, 34.dp, 30.dp, 44.dp, 22.dp)
+    val fakeData = remember {
+        listOf(72f, 70f, 65f, 68f, 60f, 55f, 58f, 52f, 48f, 53f, 50f, 45f, 42f, 47f, 44f, 40f, 38f, 43f, 46f, 50f)
+    }
+    val chartColor = MaterialTheme.colorScheme.primary
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 132.dp)
+            .height(148.dp)
+            .graphicsLayer {
+                clip = true
+                shape = RoundedCornerShape(18.dp)
+            }
             .background(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.16f),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
                 shape = RoundedCornerShape(18.dp)
             )
-            .padding(horizontal = MaterialTheme.spacing.base, vertical = MaterialTheme.spacing.base)
     ) {
+        // Blurred fake area chart
         Box(
             modifier = Modifier
-                .align(Alignment.Center)
-                .fillMaxWidth()
-                .height(96.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.16f),
-                    shape = RoundedCornerShape(16.dp)
-                )
-        ) {
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.Bottom
-            ) {
-                barHeights.forEach { barHeight ->
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(barHeight)
-                            .background(
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
-                                shape = RoundedCornerShape(topStart = 7.dp, topEnd = 7.dp)
-                            )
-                    )
+                .fillMaxSize()
+                .padding(top = 16.dp, bottom = 8.dp, start = 8.dp, end = 8.dp)
+                .graphicsLayer {
+                    renderEffect = android.graphics.RenderEffect
+                        .createBlurEffect(18f, 18f, android.graphics.Shader.TileMode.DECAL)
+                        .asComposeRenderEffect()
                 }
-            }
+        ) {
+            AreaChart(
+                data = fakeData,
+                modifier = Modifier.fillMaxSize(),
+                lineColor = chartColor
+            )
         }
 
-        Surface(
-            shape = RoundedCornerShape(999.dp),
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+        ProBadgePill(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Lock,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(12.dp)
-                )
-                Text(
-                    text = stringResource(R.string.pro_feature_badge).uppercase(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
+                .padding(8.dp)
+        )
     }
 }
 
-@Composable
-private fun BatterySectionEyebrow(text: String) {
-    Text(
-        text = text.uppercase(),
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-}
+
 
 @Composable
 private fun BatterySessionSummary(summary: ChargingSessionSummary) {
@@ -717,7 +768,7 @@ private fun BatteryRemainingTimePanel(
     currentLevel: Int
 ) {
     BatteryPanel {
-        BatterySectionEyebrow(text = stringResource(R.string.battery_remaining_time_title))
+        CardSectionTitle(text = stringResource(R.string.battery_remaining_time_title))
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -764,7 +815,7 @@ private fun BatterySessionGraphPanel(
     if (!hasAnyGraphData) return
 
     BatteryPanel {
-        BatterySectionEyebrow(text = stringResource(R.string.battery_session_graph_title))
+        CardSectionTitle(text = stringResource(R.string.battery_session_graph_title))
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
 
         Row(
@@ -837,29 +888,6 @@ private fun BatterySummaryStat(
     }
 }
 
-@Composable
-private fun BatteryMetaStat(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
-}
 
 private fun List<Float>.downsampleForChart(maxPoints: Int): List<Float> {
     if (size <= maxPoints || maxPoints <= 1) return this
@@ -906,54 +934,6 @@ private fun BatteryPanel(
     }
 }
 
-@Composable
-private fun BatterySpecRow(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-    emphasis: BatterySpecEmphasis = BatterySpecEmphasis.Normal,
-    valueColor: Color = MaterialTheme.colorScheme.onSurface,
-    showDivider: Boolean = true
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = label,
-                style = if (emphasis == BatterySpecEmphasis.High) {
-                    MaterialTheme.typography.bodyMedium
-                } else {
-                    MaterialTheme.typography.bodyLarge
-                },
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = value,
-                style = if (emphasis == BatterySpecEmphasis.High) {
-                    MaterialTheme.typography.headlineMedium.copy(
-                        fontFamily = MaterialTheme.numericFontFamily
-                    )
-                } else {
-                    MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = MaterialTheme.numericFontFamily
-                    )
-                },
-                color = valueColor,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-
-        if (showDivider) {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
-            )
-        }
-    }
-}
 
 @Composable
 private fun temperatureColor(temperatureC: Float): Color = when {
@@ -1012,11 +992,6 @@ private enum class BatteryHistoryMetric {
     TEMPERATURE,
     CURRENT,
     VOLTAGE
-}
-
-private enum class BatterySpecEmphasis {
-    Normal,
-    High
 }
 
 private enum class SessionGraphMetric {

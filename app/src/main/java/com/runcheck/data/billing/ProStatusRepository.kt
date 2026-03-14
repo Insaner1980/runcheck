@@ -1,4 +1,4 @@
-package com.devicepulse.data.billing
+package com.runcheck.data.billing
 
 import android.app.Activity
 import android.content.Context
@@ -15,11 +15,11 @@ import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.queryProductDetails
 import com.android.billingclient.api.queryPurchasesAsync
-import com.devicepulse.BuildConfig
-import com.devicepulse.billing.ProPurchaseRefreshResult
-import com.devicepulse.billing.ProPurchaseManager
-import com.devicepulse.util.ReleaseSafeLog
-import com.devicepulse.widget.DevicePulseWidgets
+import com.runcheck.BuildConfig
+import com.runcheck.billing.ProPurchaseRefreshResult
+import com.runcheck.billing.ProPurchaseManager
+import com.runcheck.util.ReleaseSafeLog
+import com.runcheck.widget.RuncheckWidgets
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,7 +35,7 @@ import javax.inject.Singleton
 class ProStatusRepository @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) : PurchasesUpdatedListener,
-    com.devicepulse.domain.repository.ProStatusProvider,
+    com.runcheck.domain.repository.ProStatusProvider,
     ProPurchaseManager {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -203,7 +203,7 @@ class ProStatusRepository @Inject constructor(
         scope.launch(Dispatchers.IO) {
             runCatching {
                 ProStatusCache.setPro(context, isPro)
-                DevicePulseWidgets.updateAll(context)
+                RuncheckWidgets.updateAll(context)
             }.onFailure { error ->
                 ReleaseSafeLog.error(TAG, "Failed to persist pro state", error)
             }

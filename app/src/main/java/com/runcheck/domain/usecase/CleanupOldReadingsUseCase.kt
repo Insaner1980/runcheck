@@ -1,16 +1,16 @@
-package com.devicepulse.domain.usecase
+package com.runcheck.domain.usecase
 
-import com.devicepulse.domain.model.DataRetention
-import com.devicepulse.domain.repository.BatteryRepository
-import com.devicepulse.domain.repository.DatabaseTransactionRunner
-import com.devicepulse.domain.repository.NetworkRepository
-import com.devicepulse.domain.repository.ProStatusProvider
-import com.devicepulse.domain.repository.AppBatteryUsageRepository
-import com.devicepulse.domain.repository.SpeedTestRepository
-import com.devicepulse.domain.repository.StorageRepository
-import com.devicepulse.domain.repository.ThermalRepository
-import com.devicepulse.domain.repository.ThrottlingRepository
-import com.devicepulse.domain.repository.UserPreferencesRepository
+import com.runcheck.domain.model.DataRetention
+import com.runcheck.domain.repository.BatteryRepository
+import com.runcheck.domain.repository.DatabaseTransactionRunner
+import com.runcheck.domain.repository.NetworkRepository
+import com.runcheck.domain.repository.ProStatusProvider
+import com.runcheck.domain.repository.AppBatteryUsageRepository
+import com.runcheck.domain.repository.SpeedTestRepository
+import com.runcheck.domain.repository.StorageRepository
+import com.runcheck.domain.repository.ThermalRepository
+import com.runcheck.domain.repository.ThrottlingRepository
+import com.runcheck.domain.repository.UserPreferencesRepository
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 

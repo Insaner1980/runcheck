@@ -1,8 +1,8 @@
-# DevicePulse Visual Redesign — Implementation Guide for Claude Code
+# runcheck Visual Redesign — Implementation Guide for Claude Code
 
 ## Overview
 
-This document describes a complete visual redesign of DevicePulse. The goal is to move from the current dashboard-with-bottom-nav layout to a single scrollable home screen with drill-down detail screens. The visual style is inspired by Avast Cleanup: flat, dark, confident, with strong typographic hierarchy and strategic use of color.
+This document describes a complete visual redesign of runcheck. The goal is to move from the current dashboard-with-bottom-nav layout to a single scrollable home screen with drill-down detail screens. The visual style is inspired by Avast Cleanup: flat, dark, confident, with strong typographic hierarchy and strategic use of color.
 
 **This is a visual and structural change only.** All existing data collection, APIs, Pro gating logic, and feature implementations stay the same. We are changing how things look and where they live in the navigation, not what they do.
 
@@ -222,7 +222,7 @@ The home screen scrolls vertically. Content order from top to bottom:
 
 ### 6.1 Header
 ```
-[Hamburger ≡]  [DevicePulse title]  ............  [★ Pro icon]
+[Hamburger ≡]  [runcheck title]  ............  [★ Pro icon]
 ```
 - Hamburger opens Settings (or minimal side sheet)
 - Pro icon: circle outline in `accentYellow`, star icon inside
@@ -299,7 +299,7 @@ Card containing list rows:
 Below quick tools, 24dp gap.
 
 ```
-[★ icon in circle]  Unlock DevicePulse Pro     [>]
+[★ icon in circle]  Unlock runcheck Pro     [>]
                     History, charger testing...
 ```
 - Standard card, not visually louder than other cards

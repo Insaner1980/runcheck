@@ -1,9 +1,9 @@
-package com.devicepulse.ui.storage
+package com.runcheck.ui.storage
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devicepulse.domain.usecase.GetStorageStateUseCase
-import com.devicepulse.ui.common.messageOr
+import com.runcheck.domain.usecase.GetStorageStateUseCase
+import com.runcheck.ui.common.messageOr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

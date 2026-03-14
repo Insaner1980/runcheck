@@ -1,12 +1,12 @@
-package com.devicepulse.data.network
+package com.runcheck.data.network
 
-import com.devicepulse.data.db.dao.SpeedTestResultDao
-import com.devicepulse.data.db.entity.SpeedTestResultEntity
-import com.devicepulse.domain.model.ConnectionType
-import com.devicepulse.domain.model.SpeedTestProgress
-import com.devicepulse.domain.model.SpeedTestResult
-import com.devicepulse.domain.repository.SpeedTestRepository as SpeedTestRepositoryContract
-import com.devicepulse.util.TimestampSanitizer
+import com.runcheck.data.db.dao.SpeedTestResultDao
+import com.runcheck.data.db.entity.SpeedTestResultEntity
+import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.SpeedTestProgress
+import com.runcheck.domain.model.SpeedTestResult
+import com.runcheck.domain.repository.SpeedTestRepository as SpeedTestRepositoryContract
+import com.runcheck.util.TimestampSanitizer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject

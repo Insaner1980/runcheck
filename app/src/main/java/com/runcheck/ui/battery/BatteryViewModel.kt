@@ -1,13 +1,13 @@
-package com.devicepulse.ui.battery
+package com.runcheck.ui.battery
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devicepulse.domain.model.HistoryPeriod
-import com.devicepulse.domain.repository.ProStatusProvider
-import com.devicepulse.domain.usecase.GetBatteryHistoryUseCase
-import com.devicepulse.domain.usecase.GetBatteryStateUseCase
-import com.devicepulse.ui.common.messageOr
-import com.devicepulse.util.ReleaseSafeLog
+import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.repository.ProStatusProvider
+import com.runcheck.domain.usecase.GetBatteryHistoryUseCase
+import com.runcheck.domain.usecase.GetBatteryStateUseCase
+import com.runcheck.ui.common.messageOr
+import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

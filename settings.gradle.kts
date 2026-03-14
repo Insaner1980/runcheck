@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "DevicePulse"
+rootProject.name = "Runcheck"
 include(":app")

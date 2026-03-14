@@ -1,15 +1,15 @@
-package com.devicepulse.data.thermal
+package com.runcheck.data.thermal
 
-import com.devicepulse.data.appusage.AppUsageDataSource
-import com.devicepulse.data.db.dao.ThermalReadingDao
-import com.devicepulse.data.db.entity.ThermalReadingEntity
-import com.devicepulse.data.device.DeviceProfileRepositoryImpl
-import com.devicepulse.domain.model.ThermalState
-import com.devicepulse.domain.model.ThrottlingEvent
-import com.devicepulse.domain.model.ThermalStatus
-import com.devicepulse.domain.repository.ThrottlingRepository
-import com.devicepulse.domain.repository.ThermalReadingData
-import com.devicepulse.domain.repository.ThermalRepository as ThermalRepositoryContract
+import com.runcheck.data.appusage.AppUsageDataSource
+import com.runcheck.data.db.dao.ThermalReadingDao
+import com.runcheck.data.db.entity.ThermalReadingEntity
+import com.runcheck.data.device.DeviceProfileRepositoryImpl
+import com.runcheck.domain.model.ThermalState
+import com.runcheck.domain.model.ThrottlingEvent
+import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.domain.repository.ThrottlingRepository
+import com.runcheck.domain.repository.ThermalReadingData
+import com.runcheck.domain.repository.ThermalRepository as ThermalRepositoryContract
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
