@@ -1,5 +1,6 @@
 package com.runcheck.ui.network
 
+import com.runcheck.ui.ads.DetailScreenAdBanner
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -12,13 +13,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -30,6 +31,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,11 +43,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
@@ -58,17 +62,25 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.runcheck.R
 import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SignalQuality
 import com.runcheck.domain.model.SpeedTestResult
-import com.runcheck.ui.common.formatDecimal
+import com.runcheck.domain.repository.NetworkReadingData
 import com.runcheck.ui.common.findActivity
+import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.isUnknownValue
 import com.runcheck.ui.common.rememberFormattedDateTime
+import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailTopBar
-import com.runcheck.ui.components.MetricTile
+import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.components.PullToRefreshWrapper
+import com.runcheck.ui.components.SectionHeader
+import com.runcheck.ui.components.SignalBars
+import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.statusColorForSignalQuality
 
 @Composable
 fun NetworkDetailScreen(
@@ -79,6 +91,7 @@ fun NetworkDetailScreen(
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val networkUiState by viewModel.networkUiState.collectAsStateWithLifecycle()
+    val speedTestState by viewModel.speedTestState.collectAsStateWithLifecycle()
 
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer = LifecycleEventObserver { _, event ->
@@ -126,24 +139,437 @@ fun NetworkDetailScreen(
 
             is NetworkUiState.Success -> {
                 NetworkContent(
-                    networkState = state.networkState,
+                    state = state,
+                    speedTestState = speedTestState,
                     onRefresh = { viewModel.refresh() },
-                    onNavigateToSpeedTest = onNavigateToSpeedTest
+                    onNavigateToSpeedTest = onNavigateToSpeedTest,
+                    onPeriodChange = { viewModel.setHistoryPeriod(it) }
                 )
             }
         }
     }
 }
 
+// ── Card wrapper ────────────────────────────────────────────────────────────────
+
+@Composable
+private fun NetworkPanel(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MaterialTheme.spacing.base),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+            content = content
+        )
+    }
+}
+
+// ── Hero section ────────────────────────────────────────────────────────────────
+
+@Composable
+private fun NetworkHeroSection(networkState: NetworkState) {
+    val qualityLabel = signalQualityLabel(networkState.signalQuality)
+
+    NetworkPanel {
+        SectionHeader(text = stringResource(R.string.network_title))
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            SignalBars(
+                signalQuality = networkState.signalQuality,
+                qualityLabel = qualityLabel,
+                modifier = Modifier.height(48.dp)
+            )
+
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+
+            Text(
+                text = qualityLabel,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = statusColorForSignalQuality(networkState.signalQuality)
+            )
+
+            networkState.signalDbm?.let { dbm ->
+                Text(
+                    text = "$dbm ${stringResource(R.string.unit_dbm)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+        ) {
+            MetricPill(
+                label = stringResource(R.string.network_latency),
+                value = networkState.latencyMs?.let { "$it ${stringResource(R.string.unit_ms)}" } ?: "\u2014",
+                modifier = Modifier.weight(1f)
+            )
+            MetricPill(
+                label = bandwidthPillLabel(networkState),
+                value = bandwidthPillValue(networkState),
+                modifier = Modifier.weight(1f)
+            )
+            MetricPill(
+                label = bandPillLabel(networkState),
+                value = bandPillValue(networkState),
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+// ── Hero helper functions ───────────────────────────────────────────────────────
+
+@Composable
+private fun signalQualityLabel(quality: SignalQuality): String = when (quality) {
+    SignalQuality.EXCELLENT -> stringResource(R.string.signal_excellent)
+    SignalQuality.GOOD -> stringResource(R.string.signal_good)
+    SignalQuality.FAIR -> stringResource(R.string.signal_fair)
+    SignalQuality.POOR -> stringResource(R.string.signal_poor)
+    SignalQuality.NO_SIGNAL -> stringResource(R.string.network_no_connection)
+}
+
+@Composable
+private fun bandwidthPillLabel(state: NetworkState): String = when (state.connectionType) {
+    ConnectionType.WIFI -> stringResource(R.string.network_wifi_speed)
+    else -> stringResource(R.string.network_est_bandwidth_down)
+}
+
+@Composable
+private fun bandwidthPillValue(state: NetworkState): String = when (state.connectionType) {
+    ConnectionType.WIFI -> state.wifiSpeedMbps?.let { "$it ${stringResource(R.string.unit_mbps)}" } ?: "\u2014"
+    ConnectionType.CELLULAR -> state.estimatedDownstreamKbps?.let { "${it / 1000} ${stringResource(R.string.unit_mbps)}" } ?: "\u2014"
+    ConnectionType.NONE -> "\u2014"
+}
+
+@Composable
+private fun bandPillLabel(state: NetworkState): String = when (state.connectionType) {
+    ConnectionType.WIFI -> stringResource(R.string.network_wifi_frequency)
+    else -> stringResource(R.string.network_subtype)
+}
+
+@Composable
+private fun bandPillValue(state: NetworkState): String = when (state.connectionType) {
+    ConnectionType.WIFI -> state.wifiFrequencyMhz?.let { freq ->
+        "${formatDecimal(freq / 1000f, 1)} ${stringResource(R.string.unit_ghz)}"
+    } ?: "\u2014"
+    ConnectionType.CELLULAR -> state.networkSubtype ?: "\u2014"
+    ConnectionType.NONE -> "\u2014"
+}
+
+// ── Connection Details card ─────────────────────────────────────────────────────
+
+@Composable
+private fun ConnectionDetailsCard(networkState: NetworkState) {
+    NetworkPanel {
+        CardSectionTitle(text = stringResource(R.string.network_section_connection_details))
+
+        MetricRow(
+            label = stringResource(R.string.network_connection_type),
+            value = when (networkState.connectionType) {
+                ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
+                ConnectionType.CELLULAR -> stringResource(R.string.connection_cellular)
+                ConnectionType.NONE -> stringResource(R.string.connection_none)
+            }
+        )
+
+        if (networkState.connectionType == ConnectionType.WIFI) {
+            networkState.wifiSsid?.let {
+                MetricRow(label = stringResource(R.string.network_wifi_ssid), value = it)
+            }
+            networkState.wifiBssid?.let {
+                MetricRow(label = stringResource(R.string.network_bssid), value = it)
+            }
+            networkState.wifiStandard?.let {
+                MetricRow(label = stringResource(R.string.network_wifi_standard), value = it)
+            }
+            networkState.wifiFrequencyMhz?.let { freq ->
+                MetricRow(
+                    label = stringResource(R.string.network_wifi_frequency),
+                    value = "$freq ${stringResource(R.string.unit_mhz)}"
+                )
+            }
+            networkState.wifiSpeedMbps?.let {
+                MetricRow(
+                    label = stringResource(R.string.network_wifi_speed),
+                    value = "$it ${stringResource(R.string.unit_mbps)}"
+                )
+            }
+        }
+
+        if (networkState.connectionType == ConnectionType.CELLULAR) {
+            networkState.carrier?.takeUnless { isUnknownValue(it) }?.let {
+                MetricRow(label = stringResource(R.string.network_carrier), value = it)
+            }
+            networkState.networkSubtype?.let {
+                MetricRow(label = stringResource(R.string.network_subtype), value = it)
+            }
+            networkState.isRoaming?.let {
+                MetricRow(
+                    label = stringResource(R.string.network_roaming),
+                    value = if (it) stringResource(R.string.common_yes) else stringResource(R.string.common_no)
+                )
+            }
+        }
+
+        networkState.estimatedDownstreamKbps?.let {
+            MetricRow(
+                label = stringResource(R.string.network_est_bandwidth_down),
+                value = "${it / 1000} ${stringResource(R.string.unit_mbps)}"
+            )
+        }
+        networkState.estimatedUpstreamKbps?.let {
+            MetricRow(
+                label = stringResource(R.string.network_est_bandwidth_up),
+                value = "${it / 1000} ${stringResource(R.string.unit_mbps)}"
+            )
+        }
+        networkState.isMetered?.let {
+            MetricRow(
+                label = stringResource(R.string.network_metered),
+                value = if (it) stringResource(R.string.common_yes) else stringResource(R.string.common_no)
+            )
+        }
+        networkState.isVpn?.takeIf { it }?.let {
+            MetricRow(
+                label = stringResource(R.string.network_vpn),
+                value = stringResource(R.string.common_yes)
+            )
+        }
+
+        if (networkState.ipAddresses.isNotEmpty() || networkState.dnsServers.isNotEmpty() || networkState.mtuBytes != null) {
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+            )
+            CardSectionTitle(text = stringResource(R.string.network_section_ip_dns))
+
+            networkState.ipAddresses.firstOrNull { it.contains('.') }?.let {
+                MetricRow(label = stringResource(R.string.network_ipv4), value = it)
+            }
+            networkState.ipAddresses.firstOrNull { it.contains(':') }?.let {
+                MetricRow(label = stringResource(R.string.network_ipv6), value = it)
+            }
+            networkState.dnsServers.getOrNull(0)?.let {
+                MetricRow(label = stringResource(R.string.network_dns_1), value = it)
+            }
+            networkState.dnsServers.getOrNull(1)?.let {
+                MetricRow(label = stringResource(R.string.network_dns_2), value = it)
+            }
+            networkState.mtuBytes?.let {
+                MetricRow(label = stringResource(R.string.network_mtu), value = it.toString())
+            }
+        }
+    }
+}
+
+// ── Signal History card ─────────────────────────────────────────────────────────
+
+private enum class NetworkHistoryMetric {
+    SIGNAL,
+    LATENCY
+}
+
+@Composable
+private fun SignalHistoryCard(
+    history: List<NetworkReadingData>,
+    selectedPeriod: HistoryPeriod,
+    onPeriodChange: (HistoryPeriod) -> Unit
+) {
+    var selectedMetric by rememberSaveable { mutableStateOf(NetworkHistoryMetric.SIGNAL.name) }
+    val metric = NetworkHistoryMetric.valueOf(selectedMetric)
+
+    val chartData = remember(history, metric) {
+        when (metric) {
+            NetworkHistoryMetric.SIGNAL -> history.mapNotNull { it.signalDbm?.toFloat() }
+            NetworkHistoryMetric.LATENCY -> history.mapNotNull { it.latencyMs?.toFloat() }
+        }.downsampleForChart(MAX_NETWORK_HISTORY_POINTS)
+    }
+
+    NetworkPanel {
+        CardSectionTitle(text = stringResource(R.string.network_section_signal_history))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+        ) {
+            NetworkHistoryMetric.entries.forEach { m ->
+                FilterChip(
+                    selected = metric == m,
+                    onClick = { selectedMetric = m.name },
+                    label = { Text(networkHistoryMetricLabel(m)) }
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+        ) {
+            HistoryPeriod.entries.forEach { period ->
+                FilterChip(
+                    selected = selectedPeriod == period,
+                    onClick = { onPeriodChange(period) },
+                    label = { Text(historyPeriodLabel(period)) }
+                )
+            }
+        }
+
+        if (chartData.size >= 2) {
+            Text(
+                text = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${networkHistoryMetricLabel(metric)}",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+            TrendChart(
+                data = chartData,
+                modifier = Modifier.fillMaxWidth(),
+                contentDescription = stringResource(
+                    R.string.a11y_chart_trend,
+                    networkHistoryMetricLabel(metric)
+                )
+            )
+        } else {
+            Text(
+                text = stringResource(R.string.network_history_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun networkHistoryMetricLabel(metric: NetworkHistoryMetric): String = when (metric) {
+    NetworkHistoryMetric.SIGNAL -> stringResource(R.string.network_history_metric_signal)
+    NetworkHistoryMetric.LATENCY -> stringResource(R.string.network_history_metric_latency)
+}
+
+@Composable
+private fun historyPeriodLabel(period: HistoryPeriod): String = when (period) {
+    HistoryPeriod.DAY -> stringResource(R.string.history_period_day)
+    HistoryPeriod.WEEK -> stringResource(R.string.history_period_week)
+    HistoryPeriod.MONTH -> stringResource(R.string.history_period_month)
+    HistoryPeriod.ALL -> stringResource(R.string.history_period_all)
+}
+
+private const val MAX_NETWORK_HISTORY_POINTS = 300
+
+private fun List<Float>.downsampleForChart(maxPoints: Int): List<Float> {
+    if (size <= maxPoints || maxPoints <= 1) return this
+    val lastIndex = lastIndex
+    return buildList(maxPoints) {
+        for (index in 0 until maxPoints) {
+            val sourceIndex = ((index.toLong() * lastIndex) / (maxPoints - 1)).toInt()
+            add(this@downsampleForChart[sourceIndex])
+        }
+    }
+}
+
+// ── Speed Test Summary card ─────────────────────────────────────────────────────
+
+@Composable
+private fun SpeedTestSummaryCard(
+    lastResult: SpeedTestResult?,
+    onNavigateToSpeedTest: () -> Unit
+) {
+    NetworkPanel {
+        CardSectionTitle(text = stringResource(R.string.network_section_speed_test))
+
+        if (lastResult != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+            ) {
+                MetricPill(
+                    label = stringResource(R.string.speed_test_download),
+                    value = "${formatDecimal(lastResult.downloadMbps, 1)} ${stringResource(R.string.unit_mbps)}",
+                    modifier = Modifier.weight(1f)
+                )
+                MetricPill(
+                    label = stringResource(R.string.speed_test_upload),
+                    value = "${formatDecimal(lastResult.uploadMbps, 1)} ${stringResource(R.string.unit_mbps)}",
+                    modifier = Modifier.weight(1f)
+                )
+                MetricPill(
+                    label = stringResource(R.string.speed_test_ping),
+                    value = "${lastResult.pingMs} ${stringResource(R.string.unit_ms)}",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            lastResult.jitterMs?.let { jitter ->
+                MetricPill(
+                    label = stringResource(R.string.network_speed_test_jitter),
+                    value = "$jitter ${stringResource(R.string.unit_ms)}"
+                )
+            }
+
+            val serverText = listOfNotNull(lastResult.serverName, lastResult.serverLocation)
+                .joinToString(" \u00B7 ")
+            if (serverText.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.network_speed_test_server, serverText),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            val formattedTime = rememberFormattedDateTime(lastResult.timestamp, "MMMdhm")
+            Text(
+                text = formattedTime,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            Text(
+                text = stringResource(R.string.network_speed_test_no_results),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Button(
+            onClick = onNavigateToSpeedTest,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(stringResource(R.string.speed_test_open))
+        }
+    }
+}
+
+// ── Main content ────────────────────────────────────────────────────────────────
+
 @Composable
 private fun NetworkContent(
-    networkState: NetworkState,
+    state: NetworkUiState.Success,
+    speedTestState: SpeedTestUiState,
     onRefresh: () -> Unit,
-    onNavigateToSpeedTest: () -> Unit
+    onNavigateToSpeedTest: () -> Unit,
+    onPeriodChange: (HistoryPeriod) -> Unit
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val activity = context.findActivity()
+    val networkState = state.networkState
     val hasLocationPermission = context.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     val locationEnabled = context.isLocationEnabled()
     var locationRequestAttempted by remember { mutableStateOf(false) }
@@ -151,12 +577,10 @@ private fun NetworkContent(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         locationRequestAttempted = true
-        if (granted) {
-            onRefresh()
-        }
+        if (granted) onRefresh()
     }
 
-    LaunchedEffect(networkState) {
+    LaunchedEffect(state) {
         isRefreshing = false
     }
 
@@ -176,125 +600,57 @@ private fun NetworkContent(
         ) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-            MetricTile(
-                label = stringResource(R.string.network_connection_type),
-                value = when (networkState.connectionType) {
-                    ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
-                    ConnectionType.CELLULAR -> networkState.networkSubtype ?: stringResource(R.string.connection_cellular)
-                    ConnectionType.NONE -> stringResource(R.string.connection_none)
-                }
-            )
+            NetworkHeroSection(networkState = networkState)
 
-            MetricTile(
-                label = stringResource(R.string.network_signal_strength),
-                value = networkState.signalDbm?.toString() ?: stringResource(R.string.not_available),
-                unit = if (networkState.signalDbm != null) stringResource(R.string.unit_dbm) else ""
-            )
-
-            MetricTile(
-                label = stringResource(R.string.network_signal_quality),
-                value = when (networkState.signalQuality) {
-                    SignalQuality.EXCELLENT -> stringResource(R.string.signal_excellent)
-                    SignalQuality.GOOD -> stringResource(R.string.signal_good)
-                    SignalQuality.FAIR -> stringResource(R.string.signal_fair)
-                    SignalQuality.POOR -> stringResource(R.string.signal_poor)
-                    SignalQuality.NO_SIGNAL -> stringResource(R.string.signal_none)
-                }
-            )
-
-            if (networkState.connectionType == ConnectionType.WIFI) {
-                if (networkState.wifiSsid == null) {
-                    WifiNameHelpCard(
-                        hasLocationPermission = hasLocationPermission,
-                        locationEnabled = locationEnabled,
-                        showOpenSettings = !hasLocationPermission &&
-                            locationRequestAttempted &&
-                            activity?.let {
-                                !ActivityCompat.shouldShowRequestPermissionRationale(
-                                    it,
-                                    Manifest.permission.ACCESS_FINE_LOCATION
-                                )
-                            } == true,
-                        onRequestPermission = {
-                            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                        },
-                        onOpenSettings = {
-                            if (!hasLocationPermission) {
-                                context.startActivity(
-                                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                        data = Uri.fromParts("package", context.packageName, null)
-                                    }
-                                )
-                            } else if (!locationEnabled) {
-                                context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                            }
+            if (networkState.connectionType == ConnectionType.WIFI && networkState.wifiSsid == null) {
+                WifiNameHelpCard(
+                    hasLocationPermission = hasLocationPermission,
+                    locationEnabled = locationEnabled,
+                    showOpenSettings = !hasLocationPermission &&
+                        locationRequestAttempted &&
+                        activity?.let {
+                            !ActivityCompat.shouldShowRequestPermissionRationale(
+                                it, Manifest.permission.ACCESS_FINE_LOCATION
+                            )
+                        } == true,
+                    onRequestPermission = {
+                        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                    },
+                    onOpenSettings = {
+                        if (!hasLocationPermission) {
+                            context.startActivity(
+                                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = Uri.fromParts("package", context.packageName, null)
+                                }
+                            )
+                        } else if (!locationEnabled) {
+                            context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
                         }
-                    )
-                }
-                networkState.wifiSsid?.let { ssid ->
-                    MetricTile(
-                        label = stringResource(R.string.network_wifi_ssid),
-                        value = ssid
-                    )
-                }
-                networkState.wifiSpeedMbps?.let { speed ->
-                    MetricTile(
-                        label = stringResource(R.string.network_wifi_speed),
-                        value = speed.toString(),
-                        unit = stringResource(R.string.unit_mbps)
-                    )
-                }
-                networkState.wifiFrequencyMhz?.let { freq ->
-                    MetricTile(
-                        label = stringResource(R.string.network_wifi_frequency),
-                        value = formatDecimal(freq / 1000f, 1),
-                        unit = stringResource(R.string.unit_ghz)
-                    )
-                }
-            }
-
-            if (networkState.connectionType == ConnectionType.CELLULAR) {
-                networkState.carrier?.let { carrier ->
-                    MetricTile(
-                        label = stringResource(R.string.network_carrier),
-                        value = if (isUnknownValue(carrier)) {
-                            stringResource(R.string.not_available)
-                        } else {
-                            carrier
-                        }
-                    )
-                }
-                networkState.networkSubtype?.let { subtype ->
-                    MetricTile(
-                        label = stringResource(R.string.network_subtype),
-                        value = if (isUnknownValue(subtype)) {
-                            stringResource(R.string.connection_cellular)
-                        } else {
-                            subtype
-                        }
-                    )
-                }
-            }
-
-            networkState.latencyMs?.let { latency ->
-                MetricTile(
-                    label = stringResource(R.string.network_latency),
-                    value = latency.toString(),
-                    unit = stringResource(R.string.unit_ms)
+                    }
                 )
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = MaterialTheme.spacing.sm))
+            ConnectionDetailsCard(networkState = networkState)
 
-            SpeedTestEntryCard(
-                connectionType = networkState.connectionType,
-                onOpen = onNavigateToSpeedTest
+            SignalHistoryCard(
+                history = state.signalHistory,
+                selectedPeriod = state.selectedHistoryPeriod,
+                onPeriodChange = onPeriodChange
             )
+
+            SpeedTestSummaryCard(
+                lastResult = speedTestState.lastResult,
+                onNavigateToSpeedTest = onNavigateToSpeedTest
+            )
+
+            DetailScreenAdBanner()
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }
     }
 }
+
+// ── WiFi name help card ─────────────────────────────────────────────────────────
 
 @Composable
 private fun WifiNameHelpCard(
@@ -367,6 +723,8 @@ private fun WifiNameHelpCard(
     }
 }
 
+// ── Utility extensions ──────────────────────────────────────────────────────────
+
 private fun Context.hasPermission(permission: String): Boolean {
     return ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 }
@@ -377,58 +735,7 @@ private fun Context.isLocationEnabled(): Boolean {
     return LocationManagerCompat.isLocationEnabled(locationManager)
 }
 
-@Composable
-private fun SpeedTestEntryCard(
-    connectionType: ConnectionType,
-    onOpen: () -> Unit
-) {
-    val isAvailable = connectionType != ConnectionType.NONE
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onOpen,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(MaterialTheme.spacing.base),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.speed_test_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = if (isAvailable) {
-                        stringResource(R.string.speed_test_entry_subtitle)
-                    } else {
-                        stringResource(R.string.speed_test_no_connection_hint)
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Button(
-                onClick = onOpen,
-                enabled = isAvailable
-            ) {
-                Text(text = stringResource(R.string.speed_test_open))
-            }
-        }
-    }
-}
-
+// ── Composables used by SpeedTestScreen ─────────────────────────────────────────
 
 @Composable
 private fun LastResultCard(result: SpeedTestResult) {
