@@ -74,6 +74,13 @@ class NetworkRepositoryImpl @Inject constructor(
         return networkReadingDao.getAll().map { it.toDomain() }
     }
 
+    override fun getReadingsSince(since: Long, limit: Int?): Flow<List<NetworkReadingData>> {
+        return networkReadingDao.getReadingsSince(since).map { entities ->
+            val mapped = entities.map { it.toDomain() }
+            if (limit != null) mapped.takeLast(limit) else mapped
+        }
+    }
+
     override suspend fun deleteOlderThan(cutoff: Long) {
         networkReadingDao.deleteOlderThan(cutoff)
     }

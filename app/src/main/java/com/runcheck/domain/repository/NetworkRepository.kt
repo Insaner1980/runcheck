@@ -8,6 +8,7 @@ interface NetworkRepository {
     suspend fun measureLatency(): Int?
     suspend fun saveReading(state: NetworkState)
     suspend fun getAllReadings(): List<NetworkReadingData>
+    fun getReadingsSince(since: Long, limit: Int? = null): Flow<List<NetworkReadingData>>
     suspend fun deleteOlderThan(cutoff: Long)
 }
 
