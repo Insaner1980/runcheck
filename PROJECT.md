@@ -1,474 +1,484 @@
-# runcheck — Projektin kuvaus
+# runcheck — Project Overview
 
-## Yleiskatsaus
-
-runcheck on natiivi Android-sovellus, joka seuraa laitteen terveyttä neljällä osa-alueella: akku, verkko, lämpötila ja tallennustila. Sovellus tarjoaa reaaliaikaisen diagnostiikan, yhdistetyn terveyspistemäärän ja pitkäaikaisen trendihistorian — kaikki yksityisyys edellä, täysin paikallisesti laitteella.
-
-Sovellus on suunniteltu käyttäjille, jotka haluavat selkeän näkymän puhelimensa päivittäiseen toimintaan: akun kuntoon ja latauksen käyttäytymiseen, verkon laatuun, lämpötilaan ja ylikuumenemisriskiin sekä tallennustilan käyttöön.
+Native Android device health monitor. Kotlin + Jetpack Compose. Single dark theme.
 
 ---
 
-## Tuotteen visio
+## Screens & Navigation
 
-runcheck ei ole yleinen "kaikki tilastot kaikkialla" -työkalu. Tuotesuunta on:
-
-- Nopea yleiskatsaus kotinäkymässä
-- Terveyspainotteinen diagnostiikka detaljinäkymissä
-- Yhteyspainotteiset työkalut verkkonäkymässä (nopeustesti, signaalinlaatu)
-- Toissijaiset mutta tärkeät työkalut (laturivertailu, sovelluskohtainen akunkäyttö, vienti)
-
-Sovelluksen tulee tuntua modernilta, luettavalta ja teknisesti uskottavalta olematta sekava tai meluisa. Tavoite ei ole näyttää geneeriseltä benchmarktyökalilta tai pelipaneelilta — runcheckn tulee tuntua premium-tuotteelta: käytännölliseltä ja luotettavalta.
-
----
-
-## Tekninen pino
-
-| Komponentti | Teknologia | Versio |
-|-------------|-----------|--------|
-| Kieli | Kotlin | 2.3.0 |
-| UI-kehys | Jetpack Compose + Material 3 | BOM 2026.02.01 |
-| Arkkitehtuuri | MVVM + Clean Architecture (data → domain → ui) | — |
-| Tietokanta | Room | 2.8.4 |
-| Asynkronisuus | Kotlin Coroutines + Flow | 1.10.2 |
-| Riippuvuusinjektio | Hilt (Dagger) | 2.59.2 |
-| Kaaviot | Vico (Compose-natiivi) | 3.0.3 |
-| Navigaatio | Navigation Compose | 2.9.0 |
-| Taustatehtävät | WorkManager | 2.11.1 |
-| Asetukset | DataStore Preferences | 1.2.0 |
-| Laskutus | Google Play Billing | 8.3.0 |
-| Nopeustesti | M-Lab NDT7 + OkHttp | 1.0.0 / 4.12.0 |
-| Widgetit | Glance AppWidget + Material 3 | 1.1.1 |
-| Sarjallistaminen | Gson | 2.11.0 |
-| Build-järjestelmä | Gradle (Kotlin DSL) + AGP + KSP | 9.4.0 / 9.1.0 / 2.3.1 |
-| Testaus | JUnit 4 + MockK + Coroutines Test + Compose UI Test | — |
-
-### Android-versiovaatimukset
-
-- **Min SDK:** 26 (Android 8.0 Oreo)
-- **Target SDK:** 35 (Android 15)
-- **Compile SDK:** 36 (vaaditaan Vico 3.x:lle)
-
----
-
-## Sovelluksen rakenne
-
-### Arkkitehtuurikerrokset
-
-Sovellus noudattaa Clean Architecture -periaatetta kolmella kerroksella:
-
-**Data-kerros** — Laiterajapinnat, tietokannat ja repositoriot:
-- `battery/` — BatteryManager-käärimet, sysfs-lukijat, valmistajakohtaiset tietolähteet
-- `network/` — ConnectivityManager, TelephonyManager, nopeustestirepositoriot
-- `thermal/` — ThermalManager, CPU-lämpötilan sysfs-lukijat
-- `storage/` — StorageStatsManager, tallennustilatiedot
-- `device/` — Laitetunnistus, DeviceProfile, kapasiteettien kartoitus
-- `appusage/` — Sovelluskohtainen akunkäyttödata
-- `billing/` — Pro-tilan hallinta ja välimuisti
-- `preferences/` — Käyttäjäasetusten DataStore-toteutus
-- `export/` — CSV-vientitoiminnallisuus
-- `db/` — Room-tietokanta, DAO:t, entiteetit, migraatiot
-
-**Domain-kerros** — Liiketoimintalogiikka ja mallit:
-- `model/` — Puhtaat data-luokat (BatteryState, NetworkState, HealthScore jne.)
-- `usecase/` — Liiketoimintasäännöt (terveyspisteytys, historiahaku, vienti jne.)
-- `scoring/` — Terveyspistelaskenta-algoritmi
-- `repository/` — Rajapinnat data-kerrokseen (abstraktiot)
-
-**UI-kerros** — Näkymät, ViewModelit ja navigaatio:
-- `home/` — Kotinäkymä (sovelluksen keskiö)
-- `battery/` — Akkudetaljinäkymä + ViewModel
-- `network/` — Verkkodetaljinäkymä + ViewModel
-- `thermal/` — Lämpötiladetaljinäkymä + ViewModel
-- `storage/` — Tallennustiladetaljinäkymä + ViewModel
-- `charger/` — Laturivertailunäkymä + ViewModel
-- `appusage/` — Sovelluskohtainen akunkäyttönäkymä + ViewModel
-- `settings/` — Asetukset + ViewModel
-- `theme/` — Väriteema, typografia, välistykset
-- `components/` — Jaetut komponentit (25 kpl)
-- `common/` — Muotoiluapufunktiot
-- `navigation/` — Navigaatiograafi + reittiluokka
-
-**Palvelut:**
-- `service/monitor/` — WorkManager-taustatyöt, reaaliaikaseuranta, ilmoitukset
-
----
-
-## Näkymät ja navigaatio
-
-### Navigaatiorakenne
-
-Sovellus käyttää push-pohjaista navigaatiota yhdestä kotinäkymästä. Pohjanavigointi (bottom nav) on poistettu. Kaikki detaljinäkymät avataan kotinäkymästä painamalla korttia tai listarivejä, ja paluunavigaatio tapahtuu takaisin-nuolella.
-
-### Näkymähierarkia
+Push-based navigation from single Home screen. No bottom nav bar, no tabs.
 
 ```
-Kotinäkymä (Home)
-├── Akku (Battery Detail)
-│   └── Laturivertailu (Charger Comparison)
-├── Verkko (Network Detail)
-│   └── Nopeustesti (Speed Test)
-├── Lämpötila (Thermal Detail)
-├── Tallennustila (Storage Detail)
-├── Sovellusten akunkäyttö (App Usage) — PRO
-├── Asetukset (Settings)
-└── Pro-päivitys (Pro Upgrade)
+Home
+├── Battery Detail
+│   └── Charger Comparison [PRO]
+├── Network Detail
+│   └── Speed Test
+├── Thermal Detail
+├── Storage Detail
+│   └── Cleanup (Large Files / Old Downloads / APK Files)
+├── App Usage [PRO]
+├── Settings
+└── Pro Upgrade
 ```
 
-### Näkymien kuvaukset
+---
 
-| Näkymä | Reitti | Kuvaus |
-|--------|--------|--------|
-| **Home** | `home` | Scrollattava päänäkymä: Health Score -hero, Battery-hero, 2×2 ominaisuusruudukko, pikatyökalut, Pro-banneri |
-| **Battery** | `battery` | Hero-rengas, ryhmitellyt akkudetaljit, latausvirta ja istuntokooste, latausajan arvio, istuntograafi, historiapaneeli |
-| **Network** | `network` | Yhteystyyppi, signaalinvoimakkuus, WiFi/mobiili-detaljit, latenssi, nopeustestipainike |
-| **Speed Test** | `speed_test` | NDT7-nopeustesti: latenssi, lataus, lähetys — reaaliaikainen mittarianimaatio |
-| **Thermal** | `thermal` | Akun ja CPU:n lämpötilat, lämpötilaheadroom, throttling-tapahtumat, HeatStrip-visualisointi |
-| **Storage** | `storage` | Kokonaistila/käytetty/vapaa, sovellusten ja median jaottelu, käyttöaste |
-| **Charger** | `charger` | Laturiprofiilien hallinta, latausistuntojen vertailu, keskimääräinen latausnopeus — PRO |
-| **App Usage** | `app_usage` | Sovelluskohtainen akkukulutus, etuala-aika, arvioitu kulutus mAh — PRO |
-| **Settings** | `settings` | Seurantaväli, ilmoitukset, Pro-osto, CSV-vienti, tietoja |
+## Home Screen
+
+### Health Score Card
+- Overall score 0–100 displayed in animated ProgressRing (AccentTeal)
+- Status label: Healthy / Fair / Poor / Critical
+- Description: "Your device is in [status] shape"
+- Temperature warning if ≥ 38°C
+- Breakdown rows with StatusDot per category:
+  - Battery (40% weight)
+  - Thermal (25% weight)
+  - Network (25% weight)
+  - Storage (10% weight)
+
+### Battery Hero Card
+- Large battery level (54sp, JetBrains Mono)
+- Charging status text
+- Animated battery icon with wave animation during charge (2000ms tween, respects reducedMotion)
+- MetricPills: Health status (color-coded), Plug Type
+
+### Quick Info Grid (2×2)
+| Card | Content |
+|------|---------|
+| Network | Signal quality label + SignalBars + color indicator |
+| Thermal | Battery temp °C + band label (Cool/Normal/Warm/Hot/Critical) |
+| Charger | "Test & Compare" — Pro-locked in free tier |
+| Storage | Free space + usage % with color |
+
+### Quick Tools
+- Speed Test — always available, SpeedGauge icon
+- App Usage — Pro-locked, battery usage icon
+
+### Pro Status Cards
+- Active trial: days remaining + upgrade prompt
+- Trial expired: upgrade card with border
+- Pro purchased: "Insights" card with star icon
 
 ---
 
-## Domain-mallit
+## Battery Detail Screen
 
-### Päämallit
+### Hero Section
+- ProgressRing (152dp) with battery level %
+- Status text: "Good · Discharging" (health + charging status)
+- mAh remaining (from CHARGE_COUNTER, if available): "Good · Discharging · ~2700 mAh remaining"
+- MetricPills row: Drain rate (%/h), Power (W), Remaining time
 
-| Malli | Kuvaus | Keskeiset kentät |
-|-------|--------|-----------------|
-| **BatteryState** | Akun nykyinen tila | level, voltageMv, temperatureC, currentMa (MeasuredValue), chargingStatus, plugType, health, technology, cycleCount?, healthPercent? |
-| **NetworkState** | Verkon nykyinen tila | connectionType, signalDbm?, signalQuality, wifiSsid?, wifiSpeedMbps?, carrier?, networkSubtype?, latencyMs? |
-| **ThermalState** | Lämpötilojen tila | batteryTempC, cpuTempC?, thermalHeadroom?, thermalStatus, isThrottling |
-| **StorageState** | Tallennustilan tila | totalBytes, availableBytes, usedBytes, usagePercent, appsBytes?, mediaBytes?, sdCardAvailable |
-| **HealthScore** | Yhdistetty terveyspistemäärä | overallScore, batteryScore, networkScore, thermalScore, storageScore, status |
-| **MeasuredValue\<T\>** | Arvo luotettavuustiedolla | value, confidence (HIGH / LOW / UNAVAILABLE) |
-| **UserPreferences** | Käyttäjän asetukset | themeMode, amoledBlack, dynamicColors, monitoringInterval, notificationsEnabled |
-
-### Historiayksellä
-
-| Malli | Kuvaus |
-|-------|--------|
-| **BatteryReading** | Yksittäinen akkulukema aikaleimattu tietokantaan |
-| **SpeedTestResult** | Nopeustestin tulos: download/upload Mbps, ping, jitter, palvelin, yhteystyyppi |
-| **ChargerProfile** | Nimetty laturiprofiili |
-| **ChargingSession** | Latausistunto: aloitus/lopetus, tasot, virta, jännite, teho |
-| **ChargerSummary** | Laturin yhteenvetostatistiikka (istuntojen lukumäärä, keskimääräinen nopeus jne.) |
-| **AppBatteryUsage** | Sovelluskohtainen akunkäyttö: paketti, etuala-aika, arvioitu kulutus |
-| **ThrottlingEvent** | Lämpötilan throttling-tapahtuma: status, lämpötilat, etuala-sovellus, kesto |
-| **DeviceProfileInfo** | Laitteen kapasiteettitiedot: valmistaja, malli, API-taso, mittauskyky |
-
-### Enumeraatiot
-
-| Enum | Arvot |
-|------|-------|
-| ChargingStatus | CHARGING, DISCHARGING, FULL, NOT_CHARGING |
-| PlugType | AC, USB, WIRELESS, NONE |
-| BatteryHealth | GOOD, OVERHEAT, DEAD, OVER_VOLTAGE, COLD, UNKNOWN |
-| ConnectionType | WIFI, CELLULAR, NONE |
-| SignalQuality | EXCELLENT, GOOD, FAIR, POOR, NO_SIGNAL |
-| ThermalStatus | NONE, LIGHT, MODERATE, SEVERE, CRITICAL, EMERGENCY, SHUTDOWN |
-| HealthStatus | HEALTHY, FAIR, POOR, CRITICAL |
-| Confidence | HIGH, LOW, UNAVAILABLE |
-| ThemeMode | LIGHT, DARK, SYSTEM |
-| MonitoringInterval | FIFTEEN (15min), THIRTY (30min), SIXTY (60min) |
-| HistoryPeriod | DAY, WEEK, MONTH, ALL |
-
----
-
-## Käyttötapaukset (Use Cases)
-
-Sovellus sisältää 15 käyttötapausta, jotka toteuttavat liiketoimintalogiikan:
-
-| Käyttötapaus | Kuvaus |
-|-------------|--------|
-| **GetBatteryStateUseCase** | Hakee akun nykyisen tilan (Flow) |
-| **GetNetworkStateUseCase** | Hakee verkon nykyisen tilan (Flow) |
-| **GetThermalStateUseCase** | Hakee lämpötilan nykyisen tilan (Flow) |
-| **GetStorageStateUseCase** | Hakee tallennustilan nykyisen tilan (Flow) |
-| **CalculateHealthScoreUseCase** | Yhdistää neljän osa-alueen tilat kokonaisterveyspisteeksi |
-| **GetBatteryHistoryUseCase** | Hakee akkulukemat aikaleiman jälkeen; kunnioittaa Pro-rajoitusta (vapaa = 24h) |
-| **GetChargerComparisonUseCase** | Kokoaa laturiprofiilit ja istunnot, laskee keskimääräiset nopeudet |
-| **GetAppBatteryUsageUseCase** | Hakee sovelluskohtaisen akunkäytön |
-| **RunSpeedTestUseCase** | Suorittaa nopeustestin (Flow\<SpeedTestProgress\>) |
-| **ExportDataUseCase** | Vie akku-, verkko-, lämpötila- ja tallennustiladatan CSV:ksi |
-| **GetThrottlingHistoryUseCase** | Hakee lämpötilan throttling-tapahtumat |
-| **GetSpeedTestHistoryUseCase** | Hakee aikaisemmat nopeustestin tulokset |
-| **ManageChargingSessionUseCase** | Käynnistää ja päättää latausistuntoja mittaustiedoilla |
-| **RecordThrottlingEventUseCase** | Kirjaa lämpötilan throttling-tapahtumat |
-| **CleanupOldReadingsUseCase** | Poistaa yli 24h vanhat lukemat (Pro-käyttäjillä pidempi säilytys) |
-
----
-
-## Tietokanta
-
-### Room-entiteetit
-
-| Taulu | Tarkoitus | Indeksointi |
-|-------|----------|-------------|
-| `battery_readings` | Historialliset akkulukemat | timestamp |
-| `network_readings` | Historialliset verkkomittaukset | timestamp |
-| `thermal_readings` | Historialliset lämpötilamittaukset | timestamp |
-| `storage_readings` | Historialliset tallennustilaluvut | timestamp |
-| `charger_profiles` | Nimetyt laturiprofiilit | — |
-| `charging_sessions` | Latausistunnot (viittaus charger_profiles) | — |
-| `app_battery_usage` | Sovelluskohtaiset akunkäyttötiedot | timestamp, package_name |
-| `throttling_events` | Lämpötilan throttling-tapahtumat | timestamp |
-| `speed_test_results` | Nopeustestien tulokset | timestamp |
-| `devices` | Laiteprofiilitiedot (valmistaja, malli, kyvyt) | — |
-
-### Tiedon säilytys
-
-- **Vapaa taso:** Säilyttää vain 24 tunnin lukemat (poistetaan automaattisesti jokaisella kirjoituksella)
-- **Pro-taso:** Konfiguroitava säilytys (3kk / 6kk / 1v / ikuisesti)
-- Auto-migraatiot käytössä
-
----
-
-## Taustapalvelut
-
-| Palvelu | Tyyppi | Kuvaus |
-|---------|--------|--------|
-| **HealthMonitorWorker** | WorkManager (HiltWorker) | Kerää lukemat kaikista repositorioista ajoitetusti (oletus 30min, käyttäjän valittavissa 15/30/60min). Suorittaa vanhojen tietojen siivouksen. |
-| **RealTimeMonitorService** | Foreground Service | Käynnissä vain kun käyttäjä aktiivisesti katsoo reaaliaikaista dataa. specialUse-tyyppinen etualanpalvelu. |
-| **BootReceiver** | BroadcastReceiver | Varmistaa WorkManager-tehtävien jatkumisen laitteen uudelleenkäynnistyksen jälkeen. |
-| **MonitorScheduler** | Apuluokka | Hallitsee WorkManager-tehtävien ajoitusta ja peruutusta. |
-| **NotificationHelper** | Apuluokka | Luo ja hallitsee ilmoituskanavat ja hälytykset. |
-
----
-
-## Widgetit
-
-Sovellus sisältää kaksi Glance-pohjaista kotinäyttöwidgettiä, molemmat vaativat Pro-tilauksen:
-
-| Widget | Kuvaus |
+### Details Panel
+| Metric | Source |
 |--------|--------|
-| **BatteryWidget** | Näyttää akun tason (%), lämpötilan (°C) ja virrankulutuksen (mA) |
-| **HealthWidget** | Näyttää kokonaisterveyspisteemäärän ja akun tason mini-indikaattorina |
+| Voltage | V (converted from mV) |
+| Temperature | °C with color (green < 35, yellow 35-40, red > 40) |
+| Health | Good / Overheat / Dead / Over Voltage / Cold / Unknown |
+| Technology | Li-ion etc. or "Not available" |
+| Cycle Count | API 34+ or null |
+| Health % | API 34+ or null |
+| Capacity | Estimated / Design mAh (PowerProfile reflection + healthPct) |
 
-Molemmat näyttävät lukitun tilan ei-Pro-käyttäjille.
+### Current / Charging Panel
+- Current reading (mA) with ConfidenceBadge (Accurate / Estimated / Unavailable)
+- W + mV line under current: "0.9 W · 4125 mV"
+- Charging session summary (during charge): start level, gain %, duration, peak temp, speeds, delivered mAh, avg power
+- Status/Type MetricPills
+- Current stats (in-memory, resets on status change): Average / Minimum / Maximum mA
 
----
+### Screen On/Off Panel (discharge only)
+- Two columns: Screen On vs Screen Off
+- Drain rate %/h per state
+- Duration per state
+- Data from ScreenStateTracker (BroadcastReceiver: ACTION_SCREEN_ON/OFF)
 
-## Suunnittelujärjestelmä (Design System)
+### Sleep Analysis Panel (discharge only)
+- Deep Sleep duration (PowerManager.isDeviceIdleMode = true)
+- Held Awake duration (isDeviceIdleMode = false while screen off)
+- Color: green for deep sleep, yellow for held awake if > deep sleep
 
-### Teema
+### Charger Comparison CTA
+- Button navigating to ChargerComparisonScreen
 
-Sovellus käyttää tällä hetkellä yhtä tummaa premium-teemaa. Muotokieli nojaa tummiin paneeleihin, kirkkaaseen teal/siniseen aksenttiin ja vahvaan korttihierarkiaan.
+### Session Graph (during charge)
+- Metrics: Current (mA) / Power (W)
+- Windows: 15m / 30m / All
+- TrendChart with downsampling (max 240 points)
 
-Typografia on päivitetty:
-- **Manrope** käyttöliittymän pääfonttina
-- **JetBrains Mono** valituissa numeerisissa mittareissa (esim. prosentit, virta, scoret)
+### Remaining Charge Time (during charge, Pro)
+- To 80% and To 100% estimates based on charge rate
 
-### Väripaletti
+### History Panel (Pro)
+- Periods: Since Unplug / 24h / Week / Month / All
+- Metrics: Level / Temperature / Current / Voltage
+- TrendChart with downsampling (max 300 points)
+- "Since Unplug" queries last CHARGING timestamp from Room
 
-| Rooli | Väri | Käyttö |
-
-### Nykyinen UI-suunta
-
-- Koti- ja Battery-näkymät on viimeistelty dashboard-henkisiksi, ei asetussivumaisiksi listoiksi
-- Pohjanavigaatio on poistettu; liikkuminen tapahtuu kotinäkymästä korttien ja toimintorivien kautta
-- Headerit käyttävät safe area -paddingia, jotta otsikot eivät jää statusbarin alle
-- Battery-näkymässä free- ja pro-history-tilat käyttävät samaa paneelikieltä kuin muut kortit
-|-------|------|--------|
-| BgPage | #0B1E24 | Sivun tausta |
-| BgCard | #133040 | Korttien tausta |
-| BgCardAlt | #0F2A35 | Vaihtoehtoinen kortti / track-väri |
-| BgIconCircle | #1A3A48 | Ikonien kehykset, erottimet, track-täytöt |
-| AccentTeal | #5DE4C7 | Terve/aktiivinen/hyvä tila, ensisijainen aksentti |
-| AccentBlue | #4A9EDE | Akku/lataus, informatiivinen |
-| AccentOrange | #F5963A | Varoitus: lämmin lämpötila, välimuisti |
-| AccentRed | #F06040 | Virhe: kuuma, kriittinen |
-| AccentLime | #C8E636 | CTA-painikkeet AINOASTAAN — ei muuhun |
-| AccentYellow | #F5D03A | PRO-merkit, toissijaiset korostukset |
-| TextPrimary | #E8E8ED | Pääasiallinen teksti, otsikot, hero-numerot |
-| TextSecondary | #90A8B0 | Alaotsikot, kuvaukset, toissijaiset arvot |
-| TextMuted | #506068 | Pois käytöstä, paikkamerkit, osion otsikot |
-| TextOnLime | #1A2E0A | Tumma teksti lime CTA-painikkeilla |
-
-### Typografia
-
-Järjestelmä Roboto (ei mukautettuja fontteja). Typografiaskaala:
-
-| Rooli | Koko | Paino | Lisämääritys |
-|-------|------|-------|-------------|
-| Hero-numero | 48sp | Bold | letterSpacing -0.04em |
-| Hero-yksikkö | 20sp | Regular | textSecondary-väri |
-| Sivun otsikko | 20sp | SemiBold | — |
-| Osion otsikko | 12sp | SemiBold | UPPERCASE, letterSpacing 0.08em, textMuted |
-| Kortin otsikko | 16sp | SemiBold | — |
-| Kortin alaotsikko | 13sp | Regular | textSecondary tai aksenttiväri |
-| Leipäteksti | 14–15sp | Regular | — |
-| Merkki (badge) | 10sp | SemiBold | — |
-
-### Korttityylit
-
-- Muoto: `RoundedCornerShape(16.dp)`
-- Taustaväri: `BgCard` (#133040)
-- Ei reunoja, ei varjoja, ei korkotasoa (elevation)
-- Ei glassmorfismia, sumennusta tai läpinäkyvyyttä
-- Hero-kortit: padding 24dp vaakasuunnassa, 28dp pystysuunnassa
-- Normaalikortit: padding 20dp
-
-### Komponenttikirjasto
-
-Sovellus sisältää 25 jaettua komponenttia:
-
-| Komponentti | Kuvaus |
-|------------|--------|
-| **ProgressRing** | Animoitu rengasmittari (Canvas). 1200ms ease-out. Konfiguroitava koko/viiva/väri. |
-| **MiniBar** | Vaakasuuntainen edistymispalkki. 800ms ease-out. Pyöristetyt päät. |
-| **GridCard** | Keskitetty kortti: ikonikehys → otsikko → aksenttialaotsikko. 2×2 ruudukkoon. |
-| **ListRow** | Rivi: [ikoni] — [teksti] — [arvo] — [chevron]. Kortin sisälle. |
-| **SectionHeader** | UPPERCASE muted-teksti osion otsikoille. |
-| **IconCircle** | 44dp harmaa kehys keskitetyllä harmaalla ikonilla. |
-| **StatusDot** | 8dp väripiste tilaindkaattoreille. |
-| **ProBadgePill** | Keltainen PRO-merkki 12% läpinäkyvyydellä. |
-| **PrimaryButton** | Lime CTA-painike, 56dp, 28dp pyöristys. |
-| **SecondaryButton** | Outline-painike, 48dp, TextMuted-reuna. |
-| **PrimaryTopBar** | Hamburger + otsikko + toimintopainikkeet. |
-| **DetailTopBar** | Takaisin-nuoli + keskitetty otsikko. |
-| **MetricTile** | Label-arvo-yksikkö-kortti metriikoille. |
-| **ConfidenceBadge** | Luotettavuusmerkki: Tarkka / Arvioitu / Ei saatavilla. |
-| **SpeedGauge** | Puolikaarimittari nopeustestille. |
-| **HeatStrip** | Lämpötilavisualisointi värigradientilla. |
-| **TrendChart** | Animoitu viivakaavio (Vico). |
-| **AreaChart** | Täytetty aluekaaviov (Vico). |
-| **SparklineChart** | Kompakti sparkline-kaavio kortteihin. |
-| **AnimatedNumber** | Animoitu lukuarvo sujuvilla siirtymillä. |
-| **StatusIndicator** | Väripiste + tekstiselite statukselle. |
-| **PullToRefreshWrapper** | Material 3 pull-to-refresh PullToRefreshBox. |
-| **ProFeatureCalloutCard** | Pro-ominaisuuden mainoskortti. |
-| **ProFeatureLockedState** | Lukittu tila Pro-ominaisuuksille. |
-
-### Animaatiot
-
-- ProgressRing: 1200ms ease-out (`FastOutSlowInEasing`) nollasta tavoitteeseen
-- MiniBar: 800ms ease-out nollasta tavoitteeseen
-- Näkymäsiirtymät: slide + fade 300ms (Material 3 shared axis)
-- Ei korttien sisääntulo-animaatioita
-- Molemmat kunnioittavat `reducedMotion`-asetusta (välitön animaatio kun true)
+### Statistics Panel (Pro)
+- Period: last 10 days (from Room)
+- Charged / Discharged total %
+- Charge sessions count
+- Average drain rate %/h
+- Full charge estimate (hours)
 
 ---
 
-## Laitetunnistus
+## Network Detail Screen
 
-`DeviceCapabilityManager` määrittää käynnistyksen yhteydessä, mitä dataa laite pystyy luotettavasti tuottamaan. Tulokset tallennetaan `DeviceProfile`-olioon ja Room-tietokantaan.
+### Hero Section
+- SignalBars (5-bar visual, color by quality)
+- Quality label: Excellent / Good / Fair / Poor / No Signal
+- dBm value (if available)
+- MetricPills: Latency (ms), Speed/Bandwidth (Mbps), Frequency (GHz) or Subtype
 
-### Valmistajakohtainen käsittely
+### WiFi Name Help Card
+- Shown when SSID unknown due to missing location permission
+- "Grant Permission" / "Enable Location" / "Open Settings"
 
-| Valmistaja | Erityiskäsittely |
-|-----------|-----------------|
-| **Google Pixel** | Luotettavin baseline, käytetään referenssinä |
-| **Samsung** | Maksimiteoreettisen virran lukemien käsittely |
-| **OnePlus** | SUPERVOOC-etumerkkikonventioiden käsittely |
-| **API 34+** | Uudet `BATTERY_PROPERTY_CHARGING_CYCLE_COUNT` ja `STATE_OF_HEALTH` |
-| **Muut** | `GenericBatterySource` luotettavuusvaroituksilla |
+### Connection Details Card
+**WiFi:** SSID, BSSID (copyable), WiFi Standard, Frequency, Link Speed
+**Cellular:** Carrier, Subtype (4G/5G/LTE), Roaming
+**Both:** Downstream/Upstream bandwidth, Metered, VPN
 
-### Luotettavuusjärjestelmä
+### IP & DNS Section
+- IPv4 (copyable)
+- IPv6 (copyable, truncated with ellipsis)
+- DNS 1 & 2 (copyable)
+- MTU
 
-Jokainen mittausarvo voi saada luotettavuustason:
-- **HIGH** (Tarkka) — Vihreä merkki, luotettava lukema
-- **LOW** (Arvioitu) — Keltainen merkki, arvioitu arvo
-- **UNAVAILABLE** (Ei saatavilla) — Harmaa merkki, ei dataa saatavilla
+### Signal History (Pro)
+- Metrics: Signal Strength (dBm) / Latency (ms)
+- Periods: 24h / Week / Month / All
+- TrendChart
 
-Sovellus ei koskaan näytä epätarkkaa dataa ilman varoitusta. Jos mittaus ei ole saatavilla, se piilotetaan tai näytetään "Ei tuettu tällä laitteella" -viesti.
-
----
-
-## Monetisaatio
-
-### Pro-malli
-
-runcheck käyttää kertaostoa (arvioitu hinta ~€3.49) Google Play Billing -kirjaston kautta.
-
-### Vapaan version ominaisuudet
-
-- Kotinäkymän kokonaisyleiskatsaus
-- Akkudetaljit (vain nykyinen tila, ei historiaa)
-- Verkkodetaljit ja nopeustesti
-- Lämpötilanseuranta (vain nykyinen, ei tapahtumahistoriaa)
-- Tallennustilan käyttö
-- Asetukset (ei vientiä)
-- Taustamonitorointi
-
-### Pro-ominaisuudet
-
-| Ominaisuus | Kuvaus |
-|-----------|--------|
-| **Pidennetty historia** | Vapaan 24h → Pro 3kk/6kk/1v/ikuisesti |
-| **Akkuhistoriakaaviot** | Trendi- ja aluekaaviolliset |
-| **Lämpötilan throttling-loki** | Yksityiskohtainen tapahtumahistoria |
-| **Laturivertailu** | Vertaile latureiden nopeutta ja tehokkuutta |
-| **Sovellusten akunkäyttö** | Sovelluskohtainen akkukulutusanalyysi |
-| **Kotinäyttöwidgetit** | Akku- ja terveyswidgetit |
-| **CSV-vienti** | Kaiken datan vienti CSV-muodossa |
-
-### Osto-ohjaus
-
-- `ProPurchaseManager` — Käynnistää ostoprosessin ja päivittää ostotilan
-- `ProStatusRepository` — Hallitsee ostotilan Flow:na
-- `ProStatusCache` — Paikallinen välimuisti nopeaan Pro-tilan tarkistukseen
+### Speed Test Summary
+- Last result: Download / Upload / Ping / Jitter / Server / Time
+- "Run Speed Test" button
 
 ---
 
-## Android-käyttöoikeudet
+## Speed Test Screen
 
-| Oikeus | Tarkoitus | Pakollinen |
-|--------|----------|-----------|
-| `ACCESS_NETWORK_STATE` | Verkon tilan seuranta | Kyllä |
-| `ACCESS_WIFI_STATE` | WiFi-yhteyden tiedot | Kyllä |
-| `FOREGROUND_SERVICE` | Reaaliaikaseuranta | Kyllä |
-| `FOREGROUND_SERVICE_SPECIAL_USE` | specialUse-palvelutyyppi | Kyllä |
-| `POST_NOTIFICATIONS` | Ilmoitukset (Android 13+) | Kyllä |
-| `RECEIVE_BOOT_COMPLETED` | Taustatyöt uudelleenkäynnistyksen jälkeen | Kyllä |
-| `INTERNET` | Latenssin mittaus ja nopeustesti | Valinnainen |
-| `ACCESS_FINE_LOCATION` | WiFi SSID:n lukeminen (Android 8+) | Valinnainen |
-| `PACKAGE_USAGE_STATS` | Sovelluskohtainen tallennustilajaottelu | Valinnainen |
+### States
+1. **Ready:** Animated radar icon, "Start Test" button
+2. **Cellular warning dialog:** "Speed test on cellular may use data" → Proceed / Cancel
+3. **Testing:** Phase indicator (Download/Upload/Ping), progress %, real-time speed
+4. **Results:** Download / Upload / Ping / Jitter / Server / "Run Again"
+5. **History:** Past results list
 
 ---
 
-## Lokalisointi
+## Thermal Detail Screen
 
-Sovellus tukee kahta kieltä:
-- **Englanti** (en) — oletuskieli
-- **Suomi** (fi) — täysi käännös
+### Hero Card
+- Canvas thermometer (40×120dp) with animated fill (1200ms FastOutSlowIn)
+- Large temperature (48sp, JetBrains Mono)
+- Band label with color: Cool / Normal / Warm / Hot / Critical
+- Session min/max range (annotated string): "↓ 27.3°C · ↑ 35.3°C" (color-coded per temp)
 
-Merkkijonoresursseja on ~260–296 kappaletta kieliversiota kohden.
+### Heat Strip
+- Color gradient visualization (cool → hot) with position indicator
 
----
+### Metrics Grid
+| Metric | Detail |
+|--------|--------|
+| CPU Temperature | °C or "Unavailable" |
+| Thermal Headroom | % (inverted) |
+| Thermal Status | Normal / Light / Moderate / Severe / Critical / Emergency / Shutdown |
+| Throttling | Active / None |
 
-## Yksityisyys ja tietoturva
-
-- **Ei analytiikkaa** — ei Firebase Analyticsia, ei kolmannen osapuolen seurantaa
-- **Ei käyttäjätilejä** — ei rekisteröitymistä, ei kirjautumista
-- **Ei pilvisynkronointia** — kaikki data pysyy laitteella
-- **Ei mainoksia** — liiketoimintamalli perustuu kertaostoon
-- **Verkkoliikenne** — vain latenssin mittaus, nopeustesti ja Google Play Billing
-
----
-
-## Build ja julkaisu
-
-- Yksittäinen `app`-moduuli (ei multi-moduulijakoa)
-- ProGuard/R8 minifiointi ja resurssien kutistus release-buildissa
-- Signing-konfiguraatio ympäristömuuttujista: `DEVICEPULSE_KEYSTORE_PATH`, `DEVICEPULSE_KEYSTORE_PASSWORD`, `DEVICEPULSE_KEY_ALIAS`, `DEVICEPULSE_KEY_PASSWORD`
-- Versionumerointi: semver (1.0.0), automaattinen version code
-
-### Build-huomiot
-
-- AGP 9.1.0 sisäänrakennettu Kotlin on pois käytöstä (`android.builtInKotlin=false`) koska KSP 2.3.1 vaatii erillisen Kotlin-pluginin
-- `android.disallowKotlinSourceSets=false` tarvitaan KSP:n generoimille lähteille AGP 9:llä
-- `kotlin.compose`-plugin lisätään erikseen Compose-kääntäjälle
-- Vico 3.x poisti `core`-moduulin (yhdistetty `views`-moduuliin); tarvitaan vain `compose` ja `compose-m3`
-- `BatteryManager.BATTERY_PROPERTY_CHARGING_CYCLE_COUNT` ja `STATE_OF_HEALTH` eivät ole julkisessa SDK:ssa — käytetään raaka-integer-vakioita (8 ja 12)
+### Throttling Log (Pro)
+- Event list: timestamp, status level, battery temp, CPU temp, foreground app, duration
+- Empty state: "No thermal throttling events" with healthy indicator
 
 ---
 
-## CI/CD
+## Storage Detail Screen
 
-- GitHub Actions -työnkulku: `dependency-vulnerability-scan.yml` riippuvuuksien haavoittuvuustarkistukselle
-- Riippuvuuslukitus (`dependencyLocking`) käytössä kaikille konfiguraatioille
+### Hero Card
+- ProgressRing (152dp) with usage %
+- Used / Total (JetBrains Mono, center)
+- Free space + fill rate estimate text
+- MetricPills: Cache total, Fill Rate, Available
+
+### Media Breakdown Card
+- SegmentedBar (Canvas, 12dp, 800ms ease-out, 2dp gaps)
+- 6 categories with accent colors:
+  - Images (Teal), Videos (Blue), Audio (Orange)
+  - Documents (Lime), Downloads (Yellow), Other (Muted)
+- SegmentedBarLegend with StatusDot + label + size per row
+
+### Cleanup Tools Section
+ActionCards with colored IconCircles:
+| Tool | Icon Color | Action |
+|------|-----------|--------|
+| Large Files | Orange | → CleanupScreen(LARGE_FILES) |
+| Old Downloads | Blue | → CleanupScreen(OLD_DOWNLOADS) |
+| APK Files | Lime | → CleanupScreen(APK_FILES) |
+| Trash (API 30+) | Red | Empty trash (createDeleteRequest) |
+
+### Details Card
+- Total / Used (%) / Available / Apps / Cache (across N apps)
+
+### SD Card Card (if present)
+- Total / Available
+
+### Quick Actions Card
+- Storage Settings (ACTION_INTERNAL_STORAGE_SETTINGS)
+- Free Up Space (ACTION_MANAGE_STORAGE)
+- Usage Access (ACTION_USAGE_ACCESS_SETTINGS)
 
 ---
 
-*Tämä dokumentti kuvaa runcheck-projektin tilaa maaliskuussa 2026.*
+## Cleanup Screen (Shared)
+
+Single reusable screen for all cleanup types. Navigated via `cleanup/{type}` route.
+
+### Filter Chips
+| Type | Options | Default |
+|------|---------|---------|
+| LARGE_FILES | 10 MB / 50 MB / 100 MB / 500 MB | 50 MB |
+| OLD_DOWNLOADS | 30d / 60d / 90d / 1y | 30d |
+| APK_FILES | (none) | — |
+
+### States
+1. **Scanning:** CircularProgressIndicator
+2. **Empty:** "No files found · Your storage is looking clean!"
+3. **Results:** Grouped file list (see below)
+4. **Deleting:** Progress indicator
+5. **Success:** Overlay with CheckCircle (AccentTeal, 64dp) + "X GB freed" (titleLarge, fade in/out)
+
+### Results View
+- Summary: "Found N files · X GB"
+- File groups (collapsible, sorted by total size descending):
+  - Group header: StatusDot + category label + count + total size + "All" checkbox
+  - Largest group expanded by default
+  - AnimatedVisibility for expand/collapse
+- Per file:
+  - Checkbox (primary color)
+  - Thumbnail (48dp, RoundedCornerShape 8dp) — real thumbnail for images/videos via ThumbnailLoader (LRU cache 50), IconCircle fallback for others
+  - File name (titleSmall, ellipsis)
+  - Category + relative date (bodySmall)
+  - MiniBar showing relative size (3dp, category color)
+  - Size (bodyMedium, numericFontFamily)
+- APK_FILES: all pre-selected by default
+
+### Sticky Bottom Bar (AnimatedVisibility slide-up)
+- Before/after usage projection: "67% → 59%" with MiniBar
+- Delete button (error color): "Free X GB · N items"
+
+### Delete Flow
+- API 30+: `MediaStore.createDeleteRequest()` → system confirmation dialog via ActivityResultLauncher
+- API 29: `ContentResolver.delete()` per URI (no batch dialog)
+- On success: Success overlay 1.8s → re-scan
+
+---
+
+## Charger Comparison (Pro)
+
+- FAB to add charger (name input dialog)
+- Charger list with test summaries (charge rate mAh/hr or W, date)
+- Delete charger (trash icon)
+- Historical charge rate comparison
+
+---
+
+## App Usage (Pro)
+
+- Requires PACKAGE_USAGE_STATS permission
+- Permission grant card when not available
+- App list sorted by foreground time
+- Per app: icon, name, foreground time, relative progress bar, percentage
+
+---
+
+## Settings Screen
+
+Grouped card layout. Each section is a card with `CardSectionTitle`.
+
+### Monitoring
+- Interval: 15 / 30 / 60 min (radio buttons)
+
+### Notifications
+- Master toggle (on/off, dims sub-toggles when off)
+- Low Battery (toggle + description)
+- High Temperature (toggle + description)
+- Low Storage (toggle + description)
+- Charge Complete (toggle + description, default off)
+
+### Alert Thresholds
+- Low Battery Warning: Slider 5–50%, default 20%, steps of 5%
+- High Temperature Warning: Slider 35–50°C, default 42°C, steps of 1°C
+- Low Storage Warning: Slider 70–99%, default 90%, steps of 5%
+- Value displayed right-aligned in numericFontFamily with primary color
+
+### Display
+- Temperature Unit: Celsius (°C) / Fahrenheit (°F) radio
+
+### Data
+- Retention: 3mo / 6mo / 1yr / Forever (Pro, radio)
+- Export as CSV (Pro, OutlinedButton)
+- Clear All Monitoring Data (error color → AlertDialog confirmation)
+
+### Pro
+- Status: Active ✓ / Purchase button + price / Restore purchase
+
+### Privacy
+- Crash Reporting toggle (Firebase Crashlytics)
+
+### Device
+- Model name (titleMedium)
+- MetricPill grid: API Level, Current Reading (Reliable/Unreliable with status color), Cycle Count, Thermal Zones
+
+### About
+- Version (build)
+- Rate on Play Store (→ market:// intent)
+- Privacy Policy (→ URL)
+- Send Feedback (→ mailto: intent)
+
+---
+
+## Pro Upgrade Screen
+
+### Features Listed
+| Feature | Icon |
+|---------|------|
+| Extended History | Calendar |
+| Charger Comparison | Charging |
+| Per-App Battery Usage | Data Usage |
+| Widgets | Widgets |
+| CSV Export | Download |
+| Thermal Logs | Thermometer |
+| Ad-Free | No Accounts |
+
+- "Purchase €3.49" button (Google Play Billing)
+- "One-time purchase, no subscription" footnote
+- Success state: "Thank You!" with confetti animation
+- Trial system: 7-day free trial, reminders on day 5 and 7
+
+---
+
+## Health Score Algorithm
+
+```
+overallScore = battery × 0.4 + thermal × 0.25 + network × 0.25 + storage × 0.1
+```
+
+### Battery Score (0–100)
+Base 100, penalties for:
+- Health status (overheat -40, dead -80, cold -20)
+- Temperature outside 20–35°C range (up to -40)
+- Voltage outside 3500–4250 mV range (up to -20)
+- Health % degradation (up to -60)
+
+### Thermal Score (0–100)
+Based on battery/CPU temperature and throttling status.
+
+### Network Score (0–100)
+Based on signal quality and speed test data.
+
+### Storage Score (0–100)
+Based on usage % (0 penalty at 25–50%, up to -80 at 95%+).
+
+---
+
+## Notifications
+
+| Alert | Trigger | Channel | Priority |
+|-------|---------|---------|----------|
+| Low Battery | Level below threshold | Alerts | High |
+| High Temperature | Temp > 42°C | Alerts | High |
+| Low Storage | Usage > 90% | Alerts | High |
+| Charge Complete | Charging → Full | Status | Low |
+| Trial Day 5 | 5th day of trial | Trial | Default |
+| Trial Day 7 | 7th day of trial | Trial | Default |
+
+---
+
+## Visual Design
+
+### Theme
+- Single dark theme — no light mode, no AMOLED toggle
+- BgPage `#0B1E24`, BgCard `#133040`, BgIconCircle `#1A3A4D`
+- Typography: Manrope (body) + JetBrains Mono (numbers)
+
+### Accent Colors
+| Color | Hex | Usage |
+|-------|-----|-------|
+| Teal | `#5DE4C7` | Primary accent, healthy status, images |
+| Blue | `#4A9EDE` | Data/info, videos |
+| Orange | `#F5963A` | Warning, audio |
+| Red | `#F06040` | Critical, error, delete |
+| Lime | `#C8E636` | Success, documents, APKs |
+| Yellow | `#F5D03A` | Attention, downloads |
+
+### Status Colors
+| Level | Score | Color |
+|-------|-------|-------|
+| Healthy | 75–100 | Teal |
+| Fair | 50–74 | Blue |
+| Poor | 25–49 | Orange |
+| Critical | 0–24 | Red |
+
+### Card Style
+- Background: `surfaceContainer`, no border, no shadow, no elevation
+- Corner radius: 16dp (cards), 8dp (small elements)
+- ActionCards: same + 1dp `outlineVariant` border at 35% alpha
+- Dividers: `outlineVariant.copy(alpha = 0.35f)`
+
+### Animations
+| Element | Duration | Easing |
+|---------|----------|--------|
+| ProgressRing | 1200ms | FastOutSlowInEasing |
+| MiniBar | 800ms | FastOutSlowInEasing |
+| SegmentedBar | 800ms | FastOutSlowInEasing |
+| Thermometer fill | 1200ms | FastOutSlowInEasing |
+| Battery wave | 2000ms | LinearEasing (loop) |
+| Cleanup bottom bar | 200ms | slide vertical |
+| Success overlay | 200ms in / 300ms out | fade |
+| Screen transitions | 300ms | slide + fade |
+
+All animations respect `MaterialTheme.reducedMotion`.
+
+### Accessibility
+- WCAG AA contrast: 4.5:1 body text, 3:1 large text
+- Minimum touch target: 48dp
+- Status colors always paired with text labels or icons
+- Content descriptions on visual elements (charts, rings, bars)
+- Reduced motion support
+
+---
+
+## Components (32+)
+
+### Layout
+`GridCard` · `ListRow` · `MetricPill` · `MetricRow` · `MetricTile` · `ActionCard`
+
+### Indicators
+`ProgressRing` · `MiniBar` · `StatusDot` · `StatusIndicator` · `ConfidenceBadge` · `SignalBars`
+
+### Charts & Visuals
+`TrendChart` · `AreaChart` · `SparklineChart` · `SpeedGauge` · `HeatStrip` · `SegmentedBar` · `SegmentedBarLegend`
+
+### Navigation
+`PrimaryTopBar` · `DetailTopBar`
+
+### Typography
+`AnimatedNumber` · `SectionHeader` · `CardSectionTitle` · `IconCircle`
+
+### Pro
+`ProBadgePill` · `ProFeatureCalloutCard` · `ProFeatureLockedState`
+
+### Interactive
+`PullToRefreshWrapper` · `PrimaryButton` · `SecondaryButton` · `ActionCard`
+
+---
+
+## Localization
+
+| Language | File |
+|----------|------|
+| English (default) | `res/values/strings.xml` |
+| Finnish | `res/values-fi/strings.xml` |

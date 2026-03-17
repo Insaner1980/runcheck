@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device health across four categories: battery, network, thermal, and storage. It provides real-time diagnostics, a unified health score, and long-term trend tracking.
+runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device health across four categories: battery, network, thermal, and storage. It provides real-time diagnostics, a unified health score, long-term trend tracking, and storage cleanup tools.
 
 ## Tech Stack
 
@@ -17,40 +17,59 @@ runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device
 - **DI:** Hilt 2.59.2
 - **Charts:** Vico 3.0.3 (Compose-native charting library)
 - **Build:** Gradle 9.4.0 with Kotlin DSL, AGP 9.1.0, KSP 2.3.1
+- **Localization:** English (default) + Finnish (fi)
 
 ## Project Structure
 
 ```
 app/src/main/java/com/runcheck/
 ├── data/
-│   ├── battery/        # BatteryManager wrappers, sysfs readers
-│   ├── network/        # ConnectivityManager, TelephonyManager
-│   ├── thermal/        # ThermalManager, CPU temp sysfs readers
-│   ├── storage/        # StorageStatsManager
-│   ├── device/         # Device detection, DeviceProfile, capability mapping
-│   └── db/             # Room database, DAOs, entities, migrations
+│   ├── appusage/      # App battery usage data source
+│   ├── battery/       # BatteryManager wrappers, BatteryDataSourceFactory,
+│   │                  #   GenericBatterySource + manufacturer-specific sources
+│   │                  #   (Android14, Samsung, OnePlus), BatteryCapacityReader
+│   ├── billing/       # Google Play Billing integration
+│   ├── charger/       # Charger comparison data
+│   ├── crash/         # Firebase Crashlytics integration
+│   ├── device/        # Device detection, DeviceProfile, capability mapping
+│   ├── db/            # Room database, DAOs, entities, migrations
+│   ├── export/        # Data export functionality
+│   ├── network/       # ConnectivityManager, TelephonyManager, speed test
+│   ├── preferences/   # DataStore preferences
+│   ├── storage/       # StorageStatsManager, MediaStoreScanner, ThumbnailLoader,
+│   │                  #   StorageCleanupHelper (createDeleteRequest)
+│   └── thermal/       # ThermalManager, CPU temp sysfs readers
 ├── domain/
-│   ├── model/          # Domain models (BatteryState, NetworkState, etc.)
-│   ├── usecase/        # Business logic (CalculateHealthScore, GetBatteryTrend, etc.)
-│   └── scoring/        # Health score algorithm
+│   ├── model/         # Domain models (BatteryState, NetworkState, StorageState, etc.)
+│   ├── usecase/       # Business logic (27+ use cases)
+│   ├── repository/    # Repository interfaces
+│   └── scoring/       # Health score algorithm
 ├── ui/
-│   ├── home/           # Single home screen (hub) + ViewModel
-│   ├── battery/        # Battery detail screen + ViewModel
-│   ├── network/        # Network detail screen + ViewModel
-│   ├── thermal/        # Thermal detail screen + ViewModel
-│   ├── storage/        # Storage detail screen + ViewModel
-│   ├── charger/        # Charger comparison screen + ViewModel
-│   ├── appusage/       # App battery usage screen + ViewModel
-│   ├── settings/       # Settings screen + ViewModel
-│   ├── theme/          # Dark theme, color tokens, typography, spacing
-│   ├── common/         # Shared formatting helpers (formatPercent, formatTemp, etc.)
-│   ├── components/     # Shared composables: ProgressRing, MiniBar, GridCard, ListRow,
-│   │                   #   SectionHeader, IconCircle, StatusDot, ProBadgePill,
-│   │                   #   PrimaryTopBar, DetailTopBar, MetricTile, ConfidenceBadge,
-│   │                   #   ProFeatureCalloutCard, ProFeatureLockedState, charts, etc.
-│   └── navigation/     # NavGraph + Screen sealed class (push-based from Home)
-└── service/
-    └── monitor/        # Background WorkManager jobs for periodic readings
+│   ├── home/          # Single home screen (hub) + ViewModel
+│   ├── battery/       # Battery detail screen + ViewModel + session stats
+│   ├── network/       # Network detail screen + ViewModel + speed test
+│   ├── thermal/       # Thermal detail screen + ViewModel + session min/max
+│   ├── storage/       # Storage detail screen + ViewModel + cleanup/
+│   │                  #   (CleanupScreen, CleanupViewModel, FileListItem, CategoryGroup)
+│   ├── charger/       # Charger comparison screen + ViewModel
+│   ├── appusage/      # App battery usage screen + ViewModel
+│   ├── settings/      # Settings screen + ViewModel
+│   ├── ads/           # Ad banner components
+│   ├── pro/           # Pro upgrade screen, trial UI, purchase flow
+│   ├── theme/         # Dark theme, color tokens, typography, spacing
+│   ├── common/        # Shared formatting helpers (formatPercent, formatTemp, etc.)
+│   ├── components/    # 29 shared composables (see Components below)
+│   └── navigation/    # NavGraph + Screen sealed class (push-based from Home)
+├── pro/               # Pro/trial state management
+├── billing/           # Billing state helpers
+├── widget/            # Home screen widget data provider
+├── worker/            # WorkManager workers (trial notifications)
+├── service/
+│   └── monitor/       # HealthMonitorWorker, RealTimeMonitorService,
+│                      #   ScreenStateTracker, NotificationHelper,
+│                      #   MonitorScheduler, BootReceiver
+├── di/                # Hilt modules
+└── util/              # Logging, timestamp sanitization
 ```
 
 ## Code Style & Conventions
@@ -63,7 +82,7 @@ app/src/main/java/com/runcheck/
 - Name UseCases as verb phrases (e.g., `CalculateHealthScoreUseCase`)
 - Name composables as nouns (e.g., `ProgressRing`, `GridCard`)
 - Keep composables small and focused — extract when > ~50 lines
-- All hardcoded strings must go into `strings.xml` for localization
+- All hardcoded strings must go into `strings.xml` for localization (EN + FI)
 - Comments in English
 - No `!!` operator — use safe calls, `requireNotNull`, or sealed error types
 
@@ -75,10 +94,23 @@ app/src/main/java/com/runcheck/
   - Accent Teal `#4DD0B8`, Accent Blue `#5BA8F5`, Accent Orange `#F5A05B`, Accent Red `#F55B5B`
   - Accent Lime `#A8F55B`, Accent Yellow `#F5D45B`
   - TextPrimary `#E0E0E0`, TextSecondary `#ABABAB`, TextMuted `#707070`
-- **Typography:** System Roboto (no custom fonts) — M3 defaults via `MaterialTheme.typography`
+- **Typography:** Manrope (custom, body/headers) + JetBrains Mono (numeric displays) via `MaterialTheme.typography` and `MaterialTheme.numericFontFamily`
 - **Navigation:** Push-based from single Home screen (no bottom nav bar)
 - **Cards:** Flat `BgCard` background, no borders, no shadows, no elevation, 16dp rounded corners
-- **Core components:** ProgressRing, MiniBar, GridCard, ListRow, SectionHeader, IconCircle, StatusDot, ProBadgePill, PrimaryTopBar, DetailTopBar, MetricTile
+- **Core components** (32+ in `ui/components/`):
+  - Layout: GridCard, ListRow, MetricPill, MetricRow, MetricTile, ActionCard
+  - Indicators: ProgressRing, MiniBar, StatusDot, StatusIndicator, ConfidenceBadge, SignalBars
+  - Charts: TrendChart, AreaChart, SparklineChart, SpeedGauge, HeatStrip, SegmentedBar, SegmentedBarLegend
+  - Navigation: PrimaryTopBar, DetailTopBar
+  - Typography: AnimatedNumber, SectionHeader, CardSectionTitle, IconCircle
+  - Pro: ProBadgePill, ProFeatureCalloutCard, ProFeatureLockedState
+  - Interactive: PullToRefreshWrapper, PrimaryButton, SecondaryButton
+- **Section titles:**
+  - `SectionHeader` (outline / TextMuted) — page-level sections, above cards
+  - `CardSectionTitle` (onSurfaceVariant / TextSecondary) — subsection titles inside cards
+- **Corner radii:** Cards = 16dp, small elements (badges, chips) = 8dp
+- **Dividers:** `outlineVariant.copy(alpha = 0.35f)` everywhere — no hardcoded colors
+- **Value colors:** Data values default to `onSurface`, status labels use `statusColors`. In GridCard, use `statusLabel`/`statusColor` params to separate data from status.
 - **Status colors** via `MaterialTheme.statusColors` extension (healthy/fair/poor/critical) — always paired with icons or text labels for accessibility
 - **Animations:**
   - ProgressRing: 1200ms ease-out (`FastOutSlowInEasing`) from 0 to target
@@ -88,6 +120,53 @@ app/src/main/java/com/runcheck/
 - Contrast ratio minimum: **4.5:1** body text, **3:1** large text (WCAG AA)
 - Minimum touch target: 48dp
 - Spacing based on 4dp grid: 4/8/12/16/24/32dp tokens via `MaterialTheme.spacing`
+
+## Battery Features
+
+The battery detail screen has extensive monitoring capabilities:
+
+- **Hero card:** ProgressRing with level %, status text, optional mAh remaining (`BATTERY_PROPERTY_CHARGE_COUNTER`)
+- **W + mV display:** Power in watts and voltage in millivolts shown under the mA current reading
+- **Current stats:** In-memory avg/min/max tracking that resets when charging status changes
+- **Battery capacity:** Design capacity via PowerProfile reflection, estimated capacity from `designCapacity × healthPercent / 100`
+- **Screen On/Off tracking:** `ScreenStateTracker` with BroadcastReceiver for `ACTION_SCREEN_ON/OFF/POWER_DISCONNECTED`, tracks drain rate per screen state
+- **Deep Sleep / Held Awake:** Tracks `PowerManager.isDeviceIdleMode` during screen-off periods
+- **Long-term statistics:** `GetBatteryStatisticsUseCase` queries Room for charged/discharged totals, session counts, average drain rates over configurable period
+- **History:** TrendChart with `SINCE_UNPLUG`, Day, Week, Month, All periods. SINCE_UNPLUG queries last charging timestamp from Room.
+- **Session graph:** Current and power charts with 15m/30m/All windows during charging
+
+## Storage Features
+
+The storage detail screen provides monitoring and cleanup tools:
+
+- **Hero card:** ProgressRing with usage %, used/total, fill rate, cache total, free space MetricPills
+- **Media breakdown:** `SegmentedBar` (Canvas, 12dp, animated) with 6 categories: Images (Teal), Videos (Blue), Audio (Orange), Documents (Lime), Downloads (Yellow), Other (Muted). `SegmentedBarLegend` with StatusDots.
+- **Cleanup tools:** `ActionCard` components (outlined border) linking to reusable `CleanupScreen`:
+  - Large Files (threshold: 10/50/100/500 MB)
+  - Old Downloads (age: 30/60/90/365 days)
+  - APK Files (no filter, pre-selected)
+  - Trash (API 30+, inline empty via `MediaStore.createDeleteRequest`)
+- **Cleanup screen:** Shared `cleanup/{type}` route, category-grouped file list with thumbnails (`ThumbnailLoader` LRU-50), `MiniBar` per file, `CleanupBottomBar` with before/after projection, `CleanupSuccessOverlay` fade animation
+- **Delete mechanism:** API 30+ `createDeleteRequest` → system dialog via `ActivityResultLauncher`; API 29 `ContentResolver.delete` fallback
+- **Fill rate:** Linear regression on Room history (7-day lookback)
+- **Quick actions:** System intent links (Storage Settings, Free Up Space, Usage Access)
+- **SD card:** Shown if detected via `getExternalFilesDirs`
+
+## Settings Features
+
+Settings screen uses grouped card layout with these sections:
+
+- **Monitoring:** Interval selection (15/30/60 min)
+- **Notifications:** Master toggle + per-alert toggles (Low Battery, High Temp, Low Storage, Charge Complete). Master off dims and disables sub-toggles.
+- **Alert thresholds:** Sliders for battery (5–50%, default 20), temperature (35–50°C, default 42), storage (70–99%, default 90). Value displayed in numericFontFamily with primary color.
+- **Display:** Temperature unit (°C/°F) — stored in DataStore, affects all temperature displays
+- **Data:** Retention (Pro), export (CSV), clear speed tests, clear all data (error-color button + AlertDialog confirmation)
+- **Pro:** Status display, purchase button, restore purchase
+- **Privacy:** Crash reporting toggle (Firebase Crashlytics)
+- **Device:** Read-only MetricPill grid (model, API level, current reliability, cycle count, thermal zones)
+- **About:** Version, Rate on Play Store, Privacy Policy, Send Feedback
+
+All preferences stored in `DataStore<Preferences>` via `UserPreferencesRepository`.
 
 ## Device Detection System
 
@@ -113,12 +192,14 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 - Use WorkManager for periodic background readings (not foreground service for periodic work)
 - Default interval: 30 minutes (user-configurable: 15 / 30 / 60 min)
 - Foreground service only when user is actively viewing real-time data
+- `ScreenStateTracker` runs as `@Singleton`, started/stopped by BatteryViewModel lifecycle
 - Respect battery optimization — don't fight the OS
 - Detect and handle data gaps gracefully in trend charts
 
 ## Database
 
 - Room with auto-migrations
+- Tables: `battery_readings`, `storage_readings`, `network_readings`, `thermal_readings`, `throttling_events`, `charger_sessions`, `speed_test_results`
 - Free tier: retain only 24 hours of readings (delete older on each write)
 - Pro tier: configurable retention (3mo / 6mo / 1yr / forever)
 - Indices on timestamp columns for efficient range queries
@@ -133,9 +214,11 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 ## Monetization
 
 - Free version: core monitoring with locked Pro feature entry points where applicable
-- Pro version: one-time in-app purchase (€3.49), unlocks extended history, widgets, charger comparison, export, and advanced insights
+- Pro version: one-time in-app purchase (€3.49), unlocks extended history, widgets, charger comparison, export, advanced insights, and storage cleanup tools
+- Trial system with expiration modal and notification worker
 - Use Google Play Billing Library
 - Gate pro features with a simple `ProStatusRepository` that checks purchase state
+- Ad banners on detail screens (free tier only)
 
 ## Build & Release
 
@@ -162,3 +245,13 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 - Measurement and history data stay on device unless the user explicitly enables crash reporting, which sends crash diagnostics to Firebase Crashlytics
 - The spec file `device-health-monitor-spec.md` in the repo root contains the full feature specification — refer to it for detailed feature requirements and UI design guidelines
 - The roadmap and next steps are documented in `docs/plans/2026-03-10-phase1-completion-and-roadmap.md`
+
+## Feature Specs
+
+- `docs/battery-enhancements-spec.md` — Battery & thermal enhancements (mAh remaining, W+mV, current stats, temp min/max, screen on/off, sleep analysis, statistics, since-unplug history)
+- `docs/storage-enhancements-spec.md` — Storage feature expansion (media breakdown, top apps, cleanup tools, trash management, large file scanner, history chart)
+- `docs/storage-ui-design.md` — Storage UI design spec (SegmentedBar, ActionCard, FileListItem, visual patterns)
+- `docs/storage-cleanup-spec.md` — Storage cleanup implementation (CleanupScreen, delete flow, thumbnails, category groups, success overlay)
+- `docs/settings-enhancements-spec.md` — Settings enhancements (per-alert notifications, alert thresholds, temperature unit, data management, grouped layout)
+- `docs/info-tooltips-spec.md` — Info tooltip system
+- `docs/ui-consistency-audit.md` — UI consistency findings and fixes

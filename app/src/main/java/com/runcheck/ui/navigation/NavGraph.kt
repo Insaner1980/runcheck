@@ -18,8 +18,12 @@ import com.runcheck.ui.charger.ChargerComparisonScreen
 import com.runcheck.ui.home.HomeScreen
 import com.runcheck.ui.network.NetworkDetailScreen
 import com.runcheck.ui.network.SpeedTestScreen
+import com.runcheck.ui.pro.ProUpgradeScreen
 import com.runcheck.ui.settings.SettingsScreen
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.runcheck.ui.storage.StorageDetailScreen
+import com.runcheck.ui.storage.cleanup.CleanupScreen
 import com.runcheck.ui.thermal.ThermalDetailScreen
 import com.runcheck.ui.theme.LocalReducedMotion
 
@@ -95,14 +99,14 @@ fun RuncheckNavHost(
                 },
                 onNavigateToAppUsage = { navController.navigateSingleTop(Screen.AppUsage.route) },
                 onNavigateToSettings = { navController.navigateSingleTop(Screen.Settings.route) },
-                onNavigateToProUpgrade = { navController.navigateSingleTop(Screen.Settings.route) }
+                onNavigateToProUpgrade = { navController.navigateSingleTop(Screen.ProUpgrade.route) }
             )
         }
         composable(Screen.Battery.route) {
             BatteryDetailScreen(
                 onBack = { navController.popBackStack() },
                 onNavigateToCharger = { navController.navigateSingleTop(Screen.Charger.route) },
-                onUpgradeToPro = { navController.navigateSingleTop(Screen.Settings.route) }
+                onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) }
             )
         }
         composable(Screen.Network.route) {
@@ -114,22 +118,33 @@ fun RuncheckNavHost(
         composable(Screen.Thermal.route) {
             ThermalDetailScreen(
                 onBack = { navController.popBackStack() },
-                onUpgradeToPro = { navController.navigateSingleTop(Screen.Settings.route) }
+                onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) }
             )
         }
         composable(Screen.Storage.route) {
-            StorageDetailScreen(onBack = { navController.popBackStack() })
+            StorageDetailScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToCleanup = { type ->
+                    navController.navigateSingleTop("cleanup/${type.name}")
+                }
+            )
+        }
+        composable(
+            route = Screen.Cleanup.ROUTE,
+            arguments = listOf(navArgument("type") { type = NavType.StringType })
+        ) {
+            CleanupScreen(onBack = { navController.popBackStack() })
         }
         composable(Screen.Charger.route) {
             ChargerComparisonScreen(
                 onBack = { navController.popBackStack() },
-                onUpgradeToPro = { navController.navigateSingleTop(Screen.Settings.route) }
+                onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) }
             )
         }
         composable(Screen.AppUsage.route) {
             AppUsageScreen(
                 onBack = { navController.popBackStack() },
-                onUpgradeToPro = { navController.navigateSingleTop(Screen.Settings.route) }
+                onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) }
             )
         }
         composable(Screen.Settings.route) {
@@ -137,6 +152,9 @@ fun RuncheckNavHost(
         }
         composable(Screen.SpeedTest.route) {
             SpeedTestScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Screen.ProUpgrade.route) {
+            ProUpgradeScreen(onBack = { navController.popBackStack() })
         }
     }
 }

@@ -18,4 +18,5 @@ interface BatteryDataSource {
     fun getPlugType(): Flow<PlugType>
     fun getLevel(): Flow<Int>
     fun getTechnology(): Flow<String>
+    fun getChargeCounter(): Flow<Int?>
 }

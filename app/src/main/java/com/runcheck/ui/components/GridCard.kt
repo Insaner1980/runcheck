@@ -22,7 +22,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import com.runcheck.ui.theme.spacing
 
 @Composable
 fun GridCard(
@@ -31,7 +35,10 @@ fun GridCard(
     subtitle: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    subtitleColor: Color = MaterialTheme.colorScheme.primary,
+    subtitleColor: Color = MaterialTheme.colorScheme.onSurface,
+    statusLabel: String? = null,
+    statusColor: Color = Color.Unspecified,
+    iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     iconBackgroundColor: Color = Color.Unspecified,
     locked: Boolean = false
 ) {
@@ -54,7 +61,10 @@ fun GridCard(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 16.dp)
+                    .padding(
+                        horizontal = MaterialTheme.spacing.md,
+                        vertical = MaterialTheme.spacing.base
+                    )
             ) {
                 Box(
                     modifier = Modifier
@@ -66,21 +76,44 @@ fun GridCard(
                         imageVector = icon,
                         contentDescription = null,
                         modifier = Modifier.size(22.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = iconTint
                     )
                 }
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = subtitleColor
-                )
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                if (statusLabel != null) {
+                    Text(
+                        text = buildAnnotatedString {
+                            withStyle(SpanStyle(color = subtitleColor)) {
+                                append(subtitle)
+                            }
+                            append(" \u00B7 ")
+                            withStyle(
+                                SpanStyle(
+                                    color = if (statusColor == Color.Unspecified) {
+                                        subtitleColor
+                                    } else {
+                                        statusColor
+                                    }
+                                )
+                            ) {
+                                append(statusLabel)
+                            }
+                        },
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                } else {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = subtitleColor
+                    )
+                }
             }
 
             if (locked) {
@@ -92,7 +125,7 @@ fun GridCard(
                 ProBadgePill(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(10.dp)
+                        .padding(MaterialTheme.spacing.md)
                 )
             }
         }

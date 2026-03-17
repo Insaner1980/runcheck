@@ -7,11 +7,13 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
+import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.model.ThemeMode
 import com.runcheck.domain.model.UserPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -51,7 +53,17 @@ class UserPreferencesRepositoryImpl @Inject constructor(
             dataRetention = prefs[KEY_DATA_RETENTION]
                 ?.let { stored -> enumValueOrNull<DataRetention>(stored) }
                 ?: DataRetention.THREE_MONTHS,
-            crashReportingEnabled = prefs[KEY_CRASH_REPORTING] ?: false
+            crashReportingEnabled = prefs[KEY_CRASH_REPORTING] ?: false,
+            notifLowBattery = prefs[KEY_NOTIF_LOW_BATTERY] ?: true,
+            notifHighTemp = prefs[KEY_NOTIF_HIGH_TEMP] ?: true,
+            notifLowStorage = prefs[KEY_NOTIF_LOW_STORAGE] ?: true,
+            notifChargeComplete = prefs[KEY_NOTIF_CHARGE_COMPLETE] ?: false,
+            alertBatteryThreshold = prefs[KEY_ALERT_BATTERY] ?: 20,
+            alertTempThreshold = prefs[KEY_ALERT_TEMP] ?: 42,
+            alertStorageThreshold = prefs[KEY_ALERT_STORAGE] ?: 90,
+            temperatureUnit = prefs[KEY_TEMP_UNIT]
+                ?.let { stored -> enumValueOrNull<TemperatureUnit>(stored) }
+                ?: TemperatureUnit.CELSIUS
         )
     }
 
@@ -98,6 +110,38 @@ class UserPreferencesRepositoryImpl @Inject constructor(
         context.dataStore.edit { it[KEY_APP_USAGE_LAST_COLLECTED_AT] = timestamp }
     }
 
+    override suspend fun setNotifLowBattery(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_NOTIF_LOW_BATTERY] = enabled }
+    }
+
+    override suspend fun setNotifHighTemp(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_NOTIF_HIGH_TEMP] = enabled }
+    }
+
+    override suspend fun setNotifLowStorage(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_NOTIF_LOW_STORAGE] = enabled }
+    }
+
+    override suspend fun setNotifChargeComplete(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_NOTIF_CHARGE_COMPLETE] = enabled }
+    }
+
+    override suspend fun setAlertBatteryThreshold(value: Int) {
+        context.dataStore.edit { it[KEY_ALERT_BATTERY] = value }
+    }
+
+    override suspend fun setAlertTempThreshold(value: Int) {
+        context.dataStore.edit { it[KEY_ALERT_TEMP] = value }
+    }
+
+    override suspend fun setAlertStorageThreshold(value: Int) {
+        context.dataStore.edit { it[KEY_ALERT_STORAGE] = value }
+    }
+
+    override suspend fun setTemperatureUnit(unit: TemperatureUnit) {
+        context.dataStore.edit { it[KEY_TEMP_UNIT] = unit.name }
+    }
+
     companion object {
         private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
         private val KEY_AMOLED_BLACK = booleanPreferencesKey("amoled_black")
@@ -108,6 +152,14 @@ class UserPreferencesRepositoryImpl @Inject constructor(
         private val KEY_CRASH_REPORTING = booleanPreferencesKey("crash_reporting_enabled")
         private val KEY_PERMISSION_EDUCATION_SEEN = booleanPreferencesKey("permission_education_seen")
         private val KEY_APP_USAGE_LAST_COLLECTED_AT = longPreferencesKey("app_usage_last_collected_at")
+        private val KEY_NOTIF_LOW_BATTERY = booleanPreferencesKey("notif_low_battery")
+        private val KEY_NOTIF_HIGH_TEMP = booleanPreferencesKey("notif_high_temp")
+        private val KEY_NOTIF_LOW_STORAGE = booleanPreferencesKey("notif_low_storage")
+        private val KEY_NOTIF_CHARGE_COMPLETE = booleanPreferencesKey("notif_charge_complete")
+        private val KEY_ALERT_BATTERY = intPreferencesKey("alert_battery_threshold")
+        private val KEY_ALERT_TEMP = intPreferencesKey("alert_temp_threshold")
+        private val KEY_ALERT_STORAGE = intPreferencesKey("alert_storage_threshold")
+        private val KEY_TEMP_UNIT = stringPreferencesKey("temp_unit")
     }
 }
 

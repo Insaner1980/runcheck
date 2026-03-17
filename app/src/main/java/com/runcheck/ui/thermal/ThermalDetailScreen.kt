@@ -1,5 +1,10 @@
 package com.runcheck.ui.thermal
 
+import com.runcheck.ui.ads.DetailScreenAdBanner
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,12 +14,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -27,25 +35,49 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
-import com.runcheck.domain.model.ThrottlingEvent
+import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.domain.model.ThrottlingEvent
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.common.rememberFormattedDateTime
-import com.runcheck.ui.components.ProFeatureCalloutCard
+import com.runcheck.ui.common.temperatureBandLabel
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.HeatStrip
-import com.runcheck.ui.components.MetricTile
+import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.PullToRefreshWrapper
+import com.runcheck.ui.components.SectionHeader
+import com.runcheck.ui.components.StatusDot
+import com.runcheck.ui.theme.BgIconCircle
+import com.runcheck.ui.theme.TextSecondary
+import com.runcheck.ui.theme.numericFontFamily
+import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.statusColorForTemperature
+import com.runcheck.ui.theme.statusColors
 
 @Composable
 fun ThermalDetailScreen(
@@ -134,87 +166,33 @@ private fun ThermalContent(
                 .padding(horizontal = MaterialTheme.spacing.base),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
         ) {
+            item { Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm)) }
+
+            // Hero card: thermometer + big temperature + status
+            item {
+                ThermalHeroCard(
+                    thermal = thermal,
+                    sessionMinTemp = state.sessionMinTemp,
+                    sessionMaxTemp = state.sessionMaxTemp
+                )
+            }
+
+            // HeatStrip
+            item { HeatStrip(temperatureC = thermal.batteryTempC) }
+
+            // Metrics grid
+            item { ThermalMetricsCard(thermal = thermal) }
+
+            // Throttling section
             item {
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            }
-
-            item {
-                HeatStrip(temperatureC = thermal.batteryTempC)
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            }
-
-            item {
-                MetricTile(
-                    label = stringResource(R.string.thermal_battery_temp),
-                    value = formatDecimal(thermal.batteryTempC, 1),
-                    unit = stringResource(R.string.unit_celsius)
-                )
-            }
-
-            thermal.cpuTempC?.let { cpuTemp ->
-                item {
-                    MetricTile(
-                        label = stringResource(R.string.thermal_cpu_temp),
-                        value = formatDecimal(cpuTemp, 1),
-                        unit = stringResource(R.string.unit_celsius)
-                    )
-                }
-            }
-
-            thermal.thermalHeadroom?.let { headroom ->
-                item {
-                    MetricTile(
-                        label = stringResource(R.string.thermal_headroom),
-                        value = formatDecimal((1f - headroom.coerceIn(0f, 1f)) * 100, 0),
-                        unit = stringResource(R.string.unit_percent)
-                    )
-                }
-            }
-
-            item {
-                MetricTile(
-                    label = stringResource(R.string.thermal_status),
-                    value = when (thermal.thermalStatus) {
-                        ThermalStatus.NONE -> stringResource(R.string.thermal_status_none)
-                        ThermalStatus.LIGHT -> stringResource(R.string.thermal_status_light)
-                        ThermalStatus.MODERATE -> stringResource(R.string.thermal_status_moderate)
-                        ThermalStatus.SEVERE -> stringResource(R.string.thermal_status_severe)
-                        ThermalStatus.CRITICAL -> stringResource(R.string.thermal_status_critical)
-                        ThermalStatus.EMERGENCY -> stringResource(R.string.thermal_status_emergency)
-                        ThermalStatus.SHUTDOWN -> stringResource(R.string.thermal_status_shutdown)
-                    }
-                )
-            }
-
-            item {
-                MetricTile(
-                    label = stringResource(R.string.thermal_throttling),
-                    value = if (thermal.isThrottling) {
-                        stringResource(R.string.thermal_throttling_active)
-                    } else {
-                        stringResource(R.string.thermal_throttling_none)
-                    }
-                )
+                SectionHeader(stringResource(R.string.thermal_throttling_log))
             }
 
             if (state.isPro) {
-                item {
-                    Text(
-                        text = stringResource(R.string.thermal_throttling_log),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
                 if (state.throttlingEvents.isEmpty()) {
                     item {
-                        Text(
-                            text = stringResource(R.string.thermal_no_events),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        ThrottlingEmptyState()
                     }
                 } else {
                     items(
@@ -234,9 +212,324 @@ private fun ThermalContent(
                 }
             }
 
-            item {
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
+            item { DetailScreenAdBanner() }
+            item { Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl)) }
+        }
+    }
+}
+
+// ── Hero card ────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun ThermalHeroCard(
+    thermal: ThermalState,
+    sessionMinTemp: Float? = null,
+    sessionMaxTemp: Float? = null
+) {
+    val tempColor = statusColorForTemperature(thermal.batteryTempC)
+    val bandLabel = temperatureBandLabel(thermal.batteryTempC)
+
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = MaterialTheme.spacing.lg, vertical = 22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start
+            ) {
+                SectionHeader(stringResource(R.string.thermal_battery_temp))
             }
+
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                // Thermometer visual
+                ThermometerIcon(
+                    temperatureC = thermal.batteryTempC,
+                    color = tempColor,
+                    modifier = Modifier.size(width = 40.dp, height = 120.dp)
+                )
+
+                Spacer(modifier = Modifier.width(MaterialTheme.spacing.lg))
+
+                // Temperature number + status
+                Column(horizontalAlignment = Alignment.Start) {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = formatDecimal(thermal.batteryTempC, 1),
+                            style = MaterialTheme.typography.displayLarge.copy(
+                                fontFamily = MaterialTheme.numericFontFamily,
+                                fontSize = 48.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = stringResource(R.string.unit_celsius),
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                fontFamily = MaterialTheme.numericFontFamily
+                            ),
+                            color = TextSecondary,
+                            modifier = Modifier.padding(start = 2.dp, bottom = 10.dp)
+                        )
+                    }
+                    Text(
+                        text = bandLabel,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = tempColor
+                    )
+                    if (sessionMinTemp != null && sessionMaxTemp != null &&
+                        sessionMinTemp != sessionMaxTemp
+                    ) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = buildAnnotatedString {
+                                withStyle(SpanStyle(color = statusColorForTemperature(sessionMinTemp))) {
+                                    append("↓ ${formatTemperature(sessionMinTemp)}")
+                                }
+                                append(" · ")
+                                withStyle(SpanStyle(color = statusColorForTemperature(sessionMaxTemp))) {
+                                    append("↑ ${formatTemperature(sessionMaxTemp)}")
+                                }
+                            },
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        }
+    }
+}
+
+// ── Thermometer icon (Canvas) ────────────────────────────────────────────────────
+
+@Composable
+private fun ThermometerIcon(
+    temperatureC: Float,
+    color: Color,
+    modifier: Modifier = Modifier,
+    minTemp: Float = 15f,
+    maxTemp: Float = 50f
+) {
+    val normalizedTemp = ((temperatureC - minTemp) / (maxTemp - minTemp)).coerceIn(0f, 1f)
+    val reducedMotion = MaterialTheme.reducedMotion
+
+    val animatedFill by animateFloatAsState(
+        targetValue = normalizedTemp,
+        animationSpec = if (reducedMotion) tween(0) else tween(
+            durationMillis = 1200,
+            easing = FastOutSlowInEasing
+        ),
+        label = "thermFill"
+    )
+
+    val trackColor = BgIconCircle
+    val a11yDesc = stringResource(
+        R.string.a11y_heat_strip,
+        formatTemperature(temperatureC),
+        temperatureBandLabel(temperatureC)
+    )
+
+    Canvas(
+        modifier = modifier.semantics { contentDescription = a11yDesc }
+    ) {
+        val w = size.width
+        val h = size.height
+
+        // Bulb at the bottom
+        val bulbRadius = w * 0.42f
+        val bulbCenterY = h - bulbRadius - 2.dp.toPx()
+
+        // Stem dimensions
+        val stemWidth = w * 0.30f
+        val stemLeft = (w - stemWidth) / 2f
+        val stemTop = 4.dp.toPx()
+        val stemBottom = bulbCenterY - bulbRadius * 0.5f
+        val stemHeight = stemBottom - stemTop
+        val stemCorner = stemWidth / 2f
+
+        // Track (background) — stem
+        drawRoundRect(
+            color = trackColor,
+            topLeft = Offset(stemLeft, stemTop),
+            size = Size(stemWidth, stemHeight),
+            cornerRadius = CornerRadius(stemCorner, stemCorner)
+        )
+
+        // Track (background) — bulb
+        drawCircle(
+            color = trackColor,
+            radius = bulbRadius,
+            center = Offset(w / 2f, bulbCenterY)
+        )
+
+        // Fill — bulb (always filled with status color)
+        drawCircle(
+            color = color,
+            radius = bulbRadius * 0.75f,
+            center = Offset(w / 2f, bulbCenterY)
+        )
+
+        // Fill — stem (from bottom up based on temperature)
+        val fillHeight = stemHeight * animatedFill
+        val fillTop = stemTop + stemHeight - fillHeight
+        if (fillHeight > 0f) {
+            drawRoundRect(
+                color = color,
+                topLeft = Offset(stemLeft + stemWidth * 0.15f, fillTop),
+                size = Size(stemWidth * 0.70f, stemBottom - fillTop),
+                cornerRadius = CornerRadius(stemWidth * 0.35f, stemWidth * 0.35f)
+            )
+        }
+
+        // Stem outline
+        drawRoundRect(
+            color = color.copy(alpha = 0.4f),
+            topLeft = Offset(stemLeft, stemTop),
+            size = Size(stemWidth, stemHeight),
+            cornerRadius = CornerRadius(stemCorner, stemCorner),
+            style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round)
+        )
+
+        // Bulb outline
+        drawCircle(
+            color = color.copy(alpha = 0.4f),
+            radius = bulbRadius,
+            center = Offset(w / 2f, bulbCenterY),
+            style = Stroke(width = 1.5.dp.toPx())
+        )
+
+        // Tick marks on the stem
+        val tickCount = 4
+        val tickStartX = stemLeft + stemWidth + 3.dp.toPx()
+        val tickEndX = tickStartX + 6.dp.toPx()
+        for (i in 1 until tickCount) {
+            val tickY = stemTop + stemHeight * (1f - i.toFloat() / tickCount)
+            drawLine(
+                color = color.copy(alpha = 0.3f),
+                start = Offset(tickStartX, tickY),
+                end = Offset(tickEndX, tickY),
+                strokeWidth = 1.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+        }
+    }
+}
+
+// ── Metrics grid card ────────────────────────────────────────────────────────────
+
+@Composable
+private fun ThermalMetricsCard(thermal: ThermalState) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MaterialTheme.spacing.base),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+        ) {
+            // Row 1: CPU Temperature + Thermal Headroom
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+            ) {
+                MetricPill(
+                    label = stringResource(R.string.thermal_cpu_temp),
+                    value = thermal.cpuTempC?.let {
+                        "${formatDecimal(it, 1)}${stringResource(R.string.unit_celsius)}"
+                    } ?: stringResource(R.string.thermal_cpu_unavailable),
+                    valueColor = thermal.cpuTempC?.let {
+                        statusColorForTemperature(it)
+                    } ?: MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                MetricPill(
+                    label = stringResource(R.string.thermal_headroom),
+                    value = thermal.thermalHeadroom?.let {
+                        "${formatDecimal((1f - it.coerceIn(0f, 1f)) * 100, 0)}%"
+                    } ?: stringResource(R.string.thermal_cpu_unavailable),
+                    valueColor = thermal.thermalHeadroom?.let { headroom ->
+                        headroomColor(headroom)
+                    } ?: MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+
+            // Row 2: Thermal Status + Throttling
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+            ) {
+                MetricPill(
+                    label = stringResource(R.string.thermal_status),
+                    value = thermalStatusLabel(thermal.thermalStatus),
+                    valueColor = thermalStatusColor(thermal.thermalStatus),
+                    modifier = Modifier.weight(1f)
+                )
+                MetricPill(
+                    label = stringResource(R.string.thermal_throttling),
+                    value = if (thermal.isThrottling) {
+                        stringResource(R.string.thermal_throttling_active)
+                    } else {
+                        stringResource(R.string.thermal_throttling_none)
+                    },
+                    valueColor = if (thermal.isThrottling) {
+                        MaterialTheme.statusColors.critical
+                    } else {
+                        MaterialTheme.statusColors.healthy
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+// ── Throttling event list ────────────────────────────────────────────────────────
+
+@Composable
+private fun ThrottlingEmptyState() {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MaterialTheme.spacing.base),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+        ) {
+            StatusDot(color = MaterialTheme.statusColors.healthy)
+            Text(
+                text = stringResource(R.string.thermal_no_events),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -244,6 +537,11 @@ private fun ThermalContent(
 @Composable
 private fun ThrottlingEventItem(event: ThrottlingEvent) {
     val formattedTime = rememberFormattedDateTime(event.timestamp, "yMMMdHm")
+    val statusColor = when (event.thermalStatus.lowercase()) {
+        "severe" -> MaterialTheme.statusColors.poor
+        "critical", "emergency", "shutdown" -> MaterialTheme.statusColors.critical
+        else -> MaterialTheme.statusColors.fair
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -258,34 +556,105 @@ private fun ThrottlingEventItem(event: ThrottlingEvent) {
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)
         ) {
             Text(
-                text = stringResource(R.string.thermal_event_at, formattedTime),
+                text = formattedTime,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = event.thermalStatus,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    StatusDot(color = statusColor)
+                    Text(
+                        text = event.thermalStatus,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
                 Text(
                     text = formatTemperature(event.batteryTempC),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontFamily = MaterialTheme.numericFontFamily
+                    ),
+                    color = statusColorForTemperature(event.batteryTempC)
                 )
             }
 
-            if (event.foregroundApp != null) {
+            event.cpuTempC?.let { cpuTemp ->
                 Text(
-                    text = event.foregroundApp,
+                    text = "${stringResource(R.string.thermal_cpu_temp)}: ${formatTemperature(cpuTemp)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            event.foregroundApp?.let { app ->
+                Text(
+                    text = app,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            event.durationMs?.let { duration ->
+                val minutes = duration / 60_000
+                val seconds = (duration % 60_000) / 1000
+                val durationText = if (minutes > 0) {
+                    "${minutes}m ${seconds}s"
+                } else {
+                    "${seconds}s"
+                }
+                Text(
+                    text = stringResource(R.string.thermal_event_duration, durationText),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
+    }
+}
+
+// ── Helper functions ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun thermalStatusLabel(status: ThermalStatus): String = when (status) {
+    ThermalStatus.NONE -> stringResource(R.string.thermal_status_none)
+    ThermalStatus.LIGHT -> stringResource(R.string.thermal_status_light)
+    ThermalStatus.MODERATE -> stringResource(R.string.thermal_status_moderate)
+    ThermalStatus.SEVERE -> stringResource(R.string.thermal_status_severe)
+    ThermalStatus.CRITICAL -> stringResource(R.string.thermal_status_critical)
+    ThermalStatus.EMERGENCY -> stringResource(R.string.thermal_status_emergency)
+    ThermalStatus.SHUTDOWN -> stringResource(R.string.thermal_status_shutdown)
+}
+
+@Composable
+private fun thermalStatusColor(status: ThermalStatus): Color {
+    val colors = MaterialTheme.statusColors
+    return when (status) {
+        ThermalStatus.NONE -> colors.healthy
+        ThermalStatus.LIGHT -> colors.healthy
+        ThermalStatus.MODERATE -> colors.fair
+        ThermalStatus.SEVERE -> colors.poor
+        ThermalStatus.CRITICAL -> colors.critical
+        ThermalStatus.EMERGENCY -> colors.critical
+        ThermalStatus.SHUTDOWN -> colors.critical
+    }
+}
+
+@Composable
+private fun headroomColor(headroom: Float): Color {
+    val usedPercent = ((1f - headroom.coerceIn(0f, 1f)) * 100).toInt()
+    val colors = MaterialTheme.statusColors
+    return when {
+        usedPercent >= 90 -> colors.critical
+        usedPercent >= 70 -> colors.poor
+        usedPercent >= 50 -> colors.fair
+        else -> colors.healthy
     }
 }

@@ -8,7 +8,9 @@ import com.runcheck.R
 import com.runcheck.billing.ProPurchaseRefreshResult
 import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.domain.model.DataRetention
+import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.repository.ProStatusProvider
+import com.runcheck.domain.repository.UserPreferencesRepository
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.usecase.ExportDataUseCase
 import com.runcheck.domain.usecase.ObserveSettingsUseCase
@@ -38,7 +40,8 @@ class SettingsViewModel @Inject constructor(
     private val setDataRetentionUseCase: SetDataRetentionUseCase,
     private val setMonitoringIntervalUseCase: SetMonitoringIntervalUseCase,
     private val setNotificationsEnabledUseCase: SetNotificationsEnabledUseCase,
-    private val setCrashReportingEnabledUseCase: SetCrashReportingEnabledUseCase
+    private val setCrashReportingEnabledUseCase: SetCrashReportingEnabledUseCase,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -212,5 +215,39 @@ class SettingsViewModel @Inject constructor(
 
     fun clearErrorMessage() {
         _uiState.update { it.copy(errorMessage = null) }
+    }
+
+    // ── New settings handlers ──────────────────────────────────────────
+
+    fun setNotifLowBattery(enabled: Boolean) {
+        viewModelScope.launch { userPreferencesRepository.setNotifLowBattery(enabled) }
+    }
+
+    fun setNotifHighTemp(enabled: Boolean) {
+        viewModelScope.launch { userPreferencesRepository.setNotifHighTemp(enabled) }
+    }
+
+    fun setNotifLowStorage(enabled: Boolean) {
+        viewModelScope.launch { userPreferencesRepository.setNotifLowStorage(enabled) }
+    }
+
+    fun setNotifChargeComplete(enabled: Boolean) {
+        viewModelScope.launch { userPreferencesRepository.setNotifChargeComplete(enabled) }
+    }
+
+    fun setAlertBatteryThreshold(value: Int) {
+        viewModelScope.launch { userPreferencesRepository.setAlertBatteryThreshold(value) }
+    }
+
+    fun setAlertTempThreshold(value: Int) {
+        viewModelScope.launch { userPreferencesRepository.setAlertTempThreshold(value) }
+    }
+
+    fun setAlertStorageThreshold(value: Int) {
+        viewModelScope.launch { userPreferencesRepository.setAlertStorageThreshold(value) }
+    }
+
+    fun setTemperatureUnit(unit: TemperatureUnit) {
+        viewModelScope.launch { userPreferencesRepository.setTemperatureUnit(unit) }
     }
 }

@@ -32,6 +32,7 @@
     <string name="home_insights_desc">Extended history, widgets, exports, and throttling insights are active.</string>
     <string name="home_free_suffix">free</string>
     <string name="home_status_summary">%1$s · %2$s · %3$s</string>
+    <string name="home_network_summary">%1$s · %2$s</string>
     <string name="home_thermal_summary">%1$s · %2$s</string>
     <string name="home_storage_free">%1$s %2$s</string>
 
@@ -63,6 +64,7 @@
     <string name="battery_voltage">Voltage</string>
     <string name="battery_temperature">Temperature</string>
     <string name="battery_charging_section">Charging</string>
+    <string name="battery_current_section">Battery Current</string>
     <string name="battery_current">Current</string>
     <string name="battery_status">Status</string>
     <string name="battery_plug_type">Type</string>
@@ -72,6 +74,7 @@
     <string name="battery_cycle_count">Cycle Count</string>
     <string name="battery_health_percent">Health Percentage</string>
     <string name="battery_history_24h">Last 24 Hours</string>
+    <string name="history_period_since_unplug">Since unplug</string>
     <string name="history_period_day">24h</string>
     <string name="history_period_week">Week</string>
     <string name="history_period_month">Month</string>
@@ -108,6 +111,34 @@
     <string name="battery_remaining">Remaining</string>
     <string name="battery_estimating">…</string>
     <string name="battery_section_details">Details</string>
+    <string name="battery_power_voltage">%1$s W · %2$d mV</string>
+    <string name="battery_current_average">Average</string>
+    <string name="battery_current_minimum">Minimum</string>
+    <string name="battery_current_maximum">Maximum</string>
+    <string name="value_milliamps_int">%1$d mA</string>
+    <string name="battery_remaining_mah">%1$s · ~%2$d mAh remaining</string>
+    <string name="battery_capacity_mah">%1$d / %2$d mAh</string>
+
+    <!-- Battery Usage (#5) -->
+    <string name="battery_screen_on">Screen On</string>
+    <string name="battery_screen_off">Screen Off</string>
+    <string name="battery_usage_section">Battery Usage</string>
+    <string name="battery_usage_avg_current">~%1$d mA · %2$s</string>
+
+    <!-- Sleep Analysis (#8) -->
+    <string name="battery_deep_sleep">Deep Sleep</string>
+    <string name="battery_held_awake">Held Awake</string>
+    <string name="battery_sleep_analysis">Sleep Analysis</string>
+
+    <!-- Long-term Statistics (#9) -->
+    <string name="battery_stats_section">Statistics</string>
+    <string name="battery_stats_charged">Charged</string>
+    <string name="battery_stats_discharged">Discharged</string>
+    <string name="battery_stats_sessions">Sessions</string>
+    <string name="battery_stats_avg_usage">Average Usage</string>
+    <string name="battery_stats_full_charge_est">Full Charge Estimate</string>
+    <string name="battery_stats_last_n_days">Last %1$d days</string>
+    <string name="battery_stats_pct_total">%1$.0f%%</string>
 
     <!-- Charging Status -->
     <string name="charging_status_charging">Charging</string>
@@ -192,8 +223,11 @@
     <string name="network_speed_test_server">Server: %1$s</string>
     <string name="network_speed_test_no_results">No speed test results yet</string>
     <string name="unit_mhz">MHz</string>
+    <string name="common_cancel">Cancel</string>
     <string name="common_yes">Yes</string>
     <string name="common_no">No</string>
+    <string name="common_on">On</string>
+    <string name="common_off">Off</string>
 
     <!-- Signal Quality -->
     <string name="signal_excellent">Excellent</string>
@@ -233,6 +267,7 @@
     <string name="thermal_throttling_log">Throttling Log</string>
     <string name="thermal_event_at">%s</string>
     <string name="thermal_no_events">No throttling events recorded</string>
+    <string name="thermal_event_duration">Duration: %s</string>
 
     <!-- Thermal Status Levels -->
     <string name="thermal_status_none">Normal</string>
@@ -242,6 +277,7 @@
     <string name="thermal_status_critical">Critical</string>
     <string name="thermal_status_emergency">Emergency</string>
     <string name="thermal_status_shutdown">Shutdown</string>
+    <string name="thermal_session_range">↓ %1$s · ↑ %2$s</string>
 
     <!-- Storage Detail -->
     <string name="storage_title">Storage</string>
@@ -253,6 +289,56 @@
     <string name="storage_fill_rate">Fill Rate Estimate</string>
     <string name="storage_fill_rate_value">At current rate, full in ~%1$s</string>
     <string name="storage_sd_card">SD Card</string>
+
+    <!-- Storage Media Breakdown -->
+    <string name="storage_media_breakdown">Media Breakdown</string>
+    <string name="storage_images">Images</string>
+    <string name="storage_videos">Videos</string>
+    <string name="storage_audio">Audio</string>
+    <string name="storage_documents">Documents</string>
+    <string name="storage_downloads">Downloads</string>
+    <string name="storage_other">Other</string>
+
+    <!-- Storage Cache -->
+    <string name="storage_cache_total">Cache</string>
+    <string name="storage_cache_summary">%1$s across %2$d apps</string>
+
+    <!-- Storage Actions -->
+    <string name="storage_cleanup_tools">Cleanup Tools</string>
+    <string name="storage_large_files">Large Files</string>
+    <string name="storage_large_files_desc">Files larger than 50 MB</string>
+    <string name="storage_old_downloads">Old Downloads</string>
+    <string name="storage_old_downloads_desc">Downloaded files older than 30 days</string>
+    <string name="storage_apk_files">APK Files</string>
+    <string name="storage_apk_files_desc">Leftover installation packages</string>
+    <string name="storage_trash">Trash</string>
+    <string name="storage_trash_summary">%1$s (%2$d items)</string>
+    <string name="storage_empty_trash">Empty trash</string>
+    <string name="storage_scan">Scan</string>
+
+    <!-- Storage Quick Actions -->
+    <string name="storage_quick_actions">Quick Actions</string>
+    <string name="storage_open_settings">Storage Settings</string>
+    <string name="storage_free_up_space">Free Up Space</string>
+    <string name="storage_usage_access">Usage Access</string>
+
+    <!-- Cleanup Screen -->
+    <string name="cleanup_large_files_title">Large Files</string>
+    <string name="cleanup_old_downloads_title">Old Downloads</string>
+    <string name="cleanup_apk_files_title">APK Files</string>
+    <string name="cleanup_found_files">Found %1$d files · %2$s</string>
+    <string name="cleanup_no_files">No files found</string>
+    <string name="cleanup_no_files_desc">Your storage is looking clean!</string>
+    <string name="cleanup_free_action">Free %1$s · %2$d items</string>
+    <string name="cleanup_freed">%1$s freed</string>
+    <string name="cleanup_filter_10mb">10 MB</string>
+    <string name="cleanup_filter_50mb">50 MB</string>
+    <string name="cleanup_filter_100mb">100 MB</string>
+    <string name="cleanup_filter_500mb">500 MB</string>
+    <string name="cleanup_filter_30d">30 days</string>
+    <string name="cleanup_filter_60d">60 days</string>
+    <string name="cleanup_filter_90d">90 days</string>
+    <string name="cleanup_filter_1y">1 year</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
@@ -272,6 +358,10 @@
     <string name="settings_current_reading">Current reading: %1$s</string>
     <string name="settings_cycle_count">Cycle count: %1$s</string>
     <string name="settings_thermal_zones_found">Thermal zones: %1$d found</string>
+    <string name="settings_api_level_label">API Level</string>
+    <string name="settings_current_reading_label">Current Reading</string>
+    <string name="settings_cycle_count_label">Cycle Count</string>
+    <string name="settings_thermal_zones_label">Thermal Zones</string>
     <string name="settings_measurement_reliable">Reliable</string>
     <string name="settings_measurement_unreliable">Unreliable</string>
     <string name="settings_measurement_available">Available</string>
@@ -299,6 +389,44 @@
     <string name="settings_pro_desc">Extended history, widgets, and CSV export</string>
     <string name="settings_pro_thank_you">Thank you for supporting runcheck!</string>
     <string name="settings_version">Version %1$s</string>
+
+    <!-- Settings: Notifications (per-alert) -->
+    <string name="settings_notif_low_battery">Low Battery</string>
+    <string name="settings_notif_low_battery_desc">Alert when battery is low</string>
+    <string name="settings_notif_high_temp">High Temperature</string>
+    <string name="settings_notif_high_temp_desc">Alert when device overheats</string>
+    <string name="settings_notif_low_storage">Low Storage</string>
+    <string name="settings_notif_low_storage_desc">Alert when storage is almost full</string>
+    <string name="settings_notif_charge_complete">Charge Complete</string>
+    <string name="settings_notif_charge_complete_desc">Notify when charging finishes</string>
+
+    <!-- Settings: Alert Thresholds -->
+    <string name="settings_alert_thresholds">Alert Thresholds</string>
+    <string name="settings_threshold_battery">Low Battery Warning</string>
+    <string name="settings_threshold_temp">High Temperature Warning</string>
+    <string name="settings_threshold_storage">Low Storage Warning</string>
+
+    <!-- Settings: Display -->
+    <string name="settings_display">Display</string>
+    <string name="settings_temp_unit">Temperature Unit</string>
+    <string name="settings_temp_celsius">Celsius (°C)</string>
+    <string name="settings_temp_fahrenheit">Fahrenheit (°F)</string>
+
+    <!-- Settings: Data Management -->
+    <string name="settings_data_section">Data</string>
+    <string name="settings_clear_speed_tests">Clear Speed Tests</string>
+    <string name="settings_clear_all_data">Clear All Monitoring Data</string>
+    <string name="settings_clear_confirm_title">Clear all data?</string>
+    <string name="settings_clear_confirm_message">This will permanently delete all monitoring history. This cannot be undone.</string>
+    <string name="settings_clear_action">Clear</string>
+    <string name="settings_data_cleared">Data cleared</string>
+
+    <!-- Settings: About (extended) -->
+    <string name="settings_whats_new">What\'s New</string>
+    <string name="settings_licenses">Open Source Licenses</string>
+    <string name="settings_feedback">Send Feedback</string>
+    <string name="settings_rate">Rate on Play Store</string>
+    <string name="settings_privacy_policy">Privacy Policy</string>
     <string name="pro_feature_badge">PRO</string>
     <string name="pro_feature_locked_message">Upgrade to runcheck pro to use %1$s.</string>
     <string name="pro_feature_upgrade_action">Upgrade in Settings</string>
@@ -454,4 +582,5 @@
     <string name="common_error_generic">Something went wrong</string>
     <string name="common_retry">Retry</string>
     <string name="not_supported">Not supported on this device</string>
+    <string name="copied_to_clipboard">Copied to clipboard</string>
 </resources>

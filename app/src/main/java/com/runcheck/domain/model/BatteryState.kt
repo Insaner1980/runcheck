@@ -10,5 +10,8 @@ data class BatteryState(
     val health: BatteryHealth,
     val technology: String,
     val cycleCount: Int? = null,
-    val healthPercent: Int? = null
+    val healthPercent: Int? = null,
+    val remainingMah: Int? = null,
+    val designCapacityMah: Int? = null,
+    val estimatedCapacityMah: Int? = null
 )

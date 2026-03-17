@@ -71,6 +71,7 @@ import com.runcheck.ui.common.findActivity
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.isUnknownValue
 import com.runcheck.ui.common.rememberFormattedDateTime
+import com.runcheck.ui.common.signalQualityLabel
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPill
@@ -239,14 +240,6 @@ private fun NetworkHeroSection(networkState: NetworkState) {
 
 // ── Hero helper functions ───────────────────────────────────────────────────────
 
-@Composable
-private fun signalQualityLabel(quality: SignalQuality): String = when (quality) {
-    SignalQuality.EXCELLENT -> stringResource(R.string.signal_excellent)
-    SignalQuality.GOOD -> stringResource(R.string.signal_good)
-    SignalQuality.FAIR -> stringResource(R.string.signal_fair)
-    SignalQuality.POOR -> stringResource(R.string.signal_poor)
-    SignalQuality.NO_SIGNAL -> stringResource(R.string.network_no_connection)
-}
 
 @Composable
 private fun bandwidthPillLabel(state: NetworkState): String = when (state.connectionType) {
@@ -297,7 +290,7 @@ private fun ConnectionDetailsCard(networkState: NetworkState) {
                 MetricRow(label = stringResource(R.string.network_wifi_ssid), value = it)
             }
             networkState.wifiBssid?.let {
-                MetricRow(label = stringResource(R.string.network_bssid), value = it)
+                MetricRow(label = stringResource(R.string.network_bssid), value = it, copyable = true)
             }
             networkState.wifiStandard?.let {
                 MetricRow(label = stringResource(R.string.network_wifi_standard), value = it)
@@ -349,12 +342,14 @@ private fun ConnectionDetailsCard(networkState: NetworkState) {
                 value = if (it) stringResource(R.string.common_yes) else stringResource(R.string.common_no)
             )
         }
-        networkState.isVpn?.takeIf { it }?.let {
-            MetricRow(
-                label = stringResource(R.string.network_vpn),
-                value = stringResource(R.string.common_yes)
-            )
-        }
+        MetricRow(
+            label = stringResource(R.string.network_vpn),
+            value = if (networkState.isVpn == true) {
+                stringResource(R.string.common_on)
+            } else {
+                stringResource(R.string.common_off)
+            }
+        )
 
         if (networkState.ipAddresses.isNotEmpty() || networkState.dnsServers.isNotEmpty() || networkState.mtuBytes != null) {
             HorizontalDivider(
@@ -363,16 +358,16 @@ private fun ConnectionDetailsCard(networkState: NetworkState) {
             CardSectionTitle(text = stringResource(R.string.network_section_ip_dns))
 
             networkState.ipAddresses.firstOrNull { it.contains('.') }?.let {
-                MetricRow(label = stringResource(R.string.network_ipv4), value = it)
+                MetricRow(label = stringResource(R.string.network_ipv4), value = it, copyable = true)
             }
             networkState.ipAddresses.firstOrNull { it.contains(':') }?.let {
-                MetricRow(label = stringResource(R.string.network_ipv6), value = it)
+                MetricRow(label = stringResource(R.string.network_ipv6), value = it, maxLines = 1, copyable = true)
             }
             networkState.dnsServers.getOrNull(0)?.let {
-                MetricRow(label = stringResource(R.string.network_dns_1), value = it)
+                MetricRow(label = stringResource(R.string.network_dns_1), value = it, copyable = true)
             }
             networkState.dnsServers.getOrNull(1)?.let {
-                MetricRow(label = stringResource(R.string.network_dns_2), value = it)
+                MetricRow(label = stringResource(R.string.network_dns_2), value = it, copyable = true)
             }
             networkState.mtuBytes?.let {
                 MetricRow(label = stringResource(R.string.network_mtu), value = it.toString())
@@ -424,13 +419,15 @@ private fun SignalHistoryCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
         ) {
-            HistoryPeriod.entries.forEach { period ->
-                FilterChip(
-                    selected = selectedPeriod == period,
-                    onClick = { onPeriodChange(period) },
-                    label = { Text(historyPeriodLabel(period)) }
-                )
-            }
+            HistoryPeriod.entries
+                .filter { it != HistoryPeriod.SINCE_UNPLUG }
+                .forEach { period ->
+                    FilterChip(
+                        selected = selectedPeriod == period,
+                        onClick = { onPeriodChange(period) },
+                        label = { Text(historyPeriodLabel(period)) }
+                    )
+                }
         }
 
         if (chartData.size >= 2) {
@@ -465,6 +462,7 @@ private fun networkHistoryMetricLabel(metric: NetworkHistoryMetric): String = wh
 
 @Composable
 private fun historyPeriodLabel(period: HistoryPeriod): String = when (period) {
+    HistoryPeriod.SINCE_UNPLUG -> stringResource(R.string.history_period_since_unplug)
     HistoryPeriod.DAY -> stringResource(R.string.history_period_day)
     HistoryPeriod.WEEK -> stringResource(R.string.history_period_week)
     HistoryPeriod.MONTH -> stringResource(R.string.history_period_month)

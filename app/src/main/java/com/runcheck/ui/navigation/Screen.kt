@@ -10,4 +10,10 @@ sealed class Screen(val route: String) {
     data object Settings : Screen("settings")
     data object Charger : Screen("charger")
     data object AppUsage : Screen("app_usage")
+    data object ProUpgrade : Screen("pro_upgrade")
+    data class Cleanup(val type: String) : Screen("cleanup/$type") {
+        companion object {
+            const val ROUTE = "cleanup/{type}"
+        }
+    }
 }

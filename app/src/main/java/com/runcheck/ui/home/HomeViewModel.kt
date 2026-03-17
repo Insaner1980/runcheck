@@ -2,7 +2,6 @@ package com.runcheck.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.HealthScore
 import com.runcheck.domain.model.NetworkState
@@ -13,9 +12,13 @@ import com.runcheck.domain.usecase.GetBatteryStateUseCase
 import com.runcheck.domain.usecase.GetNetworkStateUseCase
 import com.runcheck.domain.usecase.GetStorageStateUseCase
 import com.runcheck.domain.usecase.GetThermalStateUseCase
+import com.runcheck.pro.ProManager
+import com.runcheck.pro.ProStatus
+import com.runcheck.pro.TrialManager
 import com.runcheck.ui.common.messageOr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,8 +26,8 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.sample
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @HiltViewModel
@@ -33,13 +36,17 @@ class HomeViewModel @Inject constructor(
     private val getNetworkState: GetNetworkStateUseCase,
     private val getThermalState: GetThermalStateUseCase,
     private val getStorageState: GetStorageStateUseCase,
-    private val proStatusProvider: ProStatusProvider,
+    private val proManager: ProManager,
+    private val trialManager: TrialManager,
     private val healthScoreCalculator: HealthScoreCalculator
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
     private var loadJob: Job? = null
+
+    // In-memory flag: show expiration modal only once per session
+    private var expirationModalShownThisSession = false
 
     fun startObserving() {
         if (loadJob?.isActive == true) return
@@ -53,6 +60,36 @@ class HomeViewModel @Inject constructor(
 
     fun refresh() {
         loadHome()
+    }
+
+    fun dismissWelcomeSheet() {
+        viewModelScope.launch {
+            trialManager.setWelcomeShown()
+            _uiState.value = (_uiState.value as? HomeUiState.Success)
+                ?.copy(showWelcomeSheet = false) ?: _uiState.value
+        }
+    }
+
+    fun dismissDay5Banner() {
+        viewModelScope.launch {
+            trialManager.setDay5PromptShown()
+            _uiState.value = (_uiState.value as? HomeUiState.Success)
+                ?.copy(showDay5Banner = false) ?: _uiState.value
+        }
+    }
+
+    fun dismissExpirationModal() {
+        expirationModalShownThisSession = true
+        _uiState.value = (_uiState.value as? HomeUiState.Success)
+            ?.copy(showExpirationModal = false) ?: _uiState.value
+    }
+
+    fun dismissUpgradeCard() {
+        viewModelScope.launch {
+            trialManager.incrementUpgradeCardDismiss()
+            _uiState.value = (_uiState.value as? HomeUiState.Success)
+                ?.copy(showUpgradeCard = false) ?: _uiState.value
+        }
     }
 
     @OptIn(FlowPreview::class)
@@ -79,14 +116,49 @@ class HomeViewModel @Inject constructor(
                 )
             }
 
-            combine(dataFlow, proStatusProvider.isProUser) { data, isPro ->
+            combine(dataFlow, proManager.proState) { data, proState ->
+                val showWelcomeSheet = proState.status == ProStatus.TRIAL_ACTIVE &&
+                    !trialManager.isWelcomeShown()
+
+                val daysRemaining = proState.trialDaysRemaining
+                val trialDaysElapsed = TrialManager.TRIAL_DURATION_DAYS - daysRemaining
+
+                val showDay5Banner = proState.status == ProStatus.TRIAL_ACTIVE &&
+                    trialDaysElapsed >= 5 &&
+                    !trialManager.isDay5PromptShown()
+
+                val showExpirationModal = proState.status == ProStatus.TRIAL_EXPIRED &&
+                    proState.trialStartTimestamp > 0L &&
+                    !expirationModalShownThisSession
+
+                val showUpgradeCard = if (proState.status == ProStatus.TRIAL_EXPIRED &&
+                    proState.trialStartTimestamp > 0L
+                ) {
+                    val dismissCount = trialManager.getUpgradeCardDismissCount()
+                    val lastDismiss = trialManager.getUpgradeCardLastDismissTimestamp()
+                    val daysSinceDismiss = if (lastDismiss > 0L) {
+                        TimeUnit.MILLISECONDS.toDays(
+                            System.currentTimeMillis() - lastDismiss
+                        ).toInt()
+                    } else {
+                        Int.MAX_VALUE
+                    }
+                    dismissCount < 3 && (dismissCount == 0 || daysSinceDismiss >= 7)
+                } else {
+                    false
+                }
+
                 HomeUiState.Success(
                     healthScore = data.health,
                     batteryState = data.battery,
                     networkState = data.network,
                     thermalState = data.thermal,
                     storageState = data.storage,
-                    isPro = isPro
+                    proState = proState,
+                    showWelcomeSheet = showWelcomeSheet,
+                    showDay5Banner = showDay5Banner,
+                    showExpirationModal = showExpirationModal,
+                    showUpgradeCard = showUpgradeCard
                 )
             }.sample(DISPLAY_UPDATE_INTERVAL_MS)
                 .conflate()

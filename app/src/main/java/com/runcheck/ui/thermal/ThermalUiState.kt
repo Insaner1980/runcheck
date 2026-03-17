@@ -10,7 +10,9 @@ sealed interface ThermalUiState {
     data class Success(
         val thermalState: ThermalState,
         val throttlingEvents: List<ThrottlingEvent> = emptyList(),
-        val isPro: Boolean = false
+        val isPro: Boolean = false,
+        val sessionMinTemp: Float? = null,
+        val sessionMaxTemp: Float? = null
     ) : ThermalUiState
     data class Error(val message: String) : ThermalUiState
 }

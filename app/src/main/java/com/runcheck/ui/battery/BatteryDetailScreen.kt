@@ -1,5 +1,6 @@
 package com.runcheck.ui.battery
 
+import com.runcheck.ui.ads.DetailScreenAdBanner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -79,6 +80,9 @@ import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.ProgressRing
 import com.runcheck.ui.components.PullToRefreshWrapper
 import com.runcheck.ui.components.TrendChart
+import com.runcheck.domain.usecase.BatteryStatistics
+import com.runcheck.service.monitor.ScreenUsageStats
+import com.runcheck.service.monitor.SleepAnalysis
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
@@ -234,14 +238,30 @@ private fun BatteryContent(
                     MetricRow(
                         label = stringResource(R.string.battery_health_percent),
                         value = stringResource(R.string.value_percent, pct),
-    
+                        showDivider = battery.estimatedCapacityMah != null
+                    )
+                }
+                if (battery.estimatedCapacityMah != null && battery.designCapacityMah != null) {
+                    MetricRow(
+                        label = stringResource(R.string.unit_milliamp_hours),
+                        value = stringResource(
+                            R.string.battery_capacity_mah,
+                            battery.estimatedCapacityMah,
+                            battery.designCapacityMah
+                        ),
                         showDivider = false
                     )
                 }
             }
 
             BatteryPanel {
-                CardSectionTitle(text = stringResource(R.string.battery_charging_section))
+                CardSectionTitle(
+                    text = if (battery.chargingStatus == ChargingStatus.CHARGING) {
+                        stringResource(R.string.battery_charging_section)
+                    } else {
+                        stringResource(R.string.battery_current_section)
+                    }
+                )
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -281,6 +301,22 @@ private fun BatteryContent(
                                 )
                             }
                         }
+                        if (battery.currentMa.confidence != Confidence.UNAVAILABLE) {
+                            val powerW = remember(battery.currentMa.value, battery.voltageMv) {
+                                val currentA = battery.currentMa.value / 1000f
+                                val voltageV = battery.voltageMv / 1000f
+                                kotlin.math.abs(currentA * voltageV)
+                            }
+                            Text(
+                                text = stringResource(
+                                    R.string.battery_power_voltage,
+                                    formatDecimal(powerW, 1),
+                                    battery.voltageMv
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                     ConfidenceBadge(confidence = battery.currentMa.confidence)
                 }
@@ -313,6 +349,30 @@ private fun BatteryContent(
                         modifier = Modifier.weight(1f)
                     )
                 }
+
+                state.currentStats?.let { stats ->
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+                    ) {
+                        MetricPill(
+                            label = stringResource(R.string.battery_current_average),
+                            value = stringResource(R.string.value_milliamps_int, stats.avg),
+                            modifier = Modifier.weight(1f)
+                        )
+                        MetricPill(
+                            label = stringResource(R.string.battery_current_minimum),
+                            value = stringResource(R.string.value_milliamps_int, stats.min),
+                            modifier = Modifier.weight(1f)
+                        )
+                        MetricPill(
+                            label = stringResource(R.string.battery_current_maximum),
+                            value = stringResource(R.string.value_milliamps_int, stats.max),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
             }
 
             chargingSessionSummary?.let { summary ->
@@ -331,6 +391,16 @@ private fun BatteryContent(
                         onWindowChange = { selectedSessionWindow = it.name }
                     )
                 }
+            }
+
+            // Screen On/Off usage (#5) — only during discharge
+            state.screenUsage?.let { usage ->
+                BatteryScreenUsagePanel(usage = usage)
+            }
+
+            // Sleep analysis (#8) — only during discharge
+            state.sleepAnalysis?.let { sleep ->
+                BatterySleepAnalysisPanel(sleep = sleep)
             }
 
             BatteryPanel {
@@ -363,6 +433,13 @@ private fun BatteryContent(
                 onPeriodChange = onPeriodChange,
                 onUpgradeToPro = onUpgradeToPro
             )
+
+            // Long-term statistics (#9) — Pro feature
+            if (state.isPro && state.statistics != null) {
+                BatteryStatisticsPanel(statistics = state.statistics)
+            }
+
+            DetailScreenAdBanner()
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }
@@ -454,7 +531,11 @@ private fun BatteryHeroSection(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
             Text(
-                text = statusText,
+                text = if (battery.remainingMah != null) {
+                    stringResource(R.string.battery_remaining_mah, statusText, battery.remainingMah)
+                } else {
+                    statusText
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -525,6 +606,7 @@ private fun BatteryHistoryPanel(
             ) {
                 HistoryPeriod.entries.forEach { period ->
                     val label = when (period) {
+                        HistoryPeriod.SINCE_UNPLUG -> stringResource(R.string.history_period_since_unplug)
                         HistoryPeriod.DAY -> stringResource(R.string.history_period_day)
                         HistoryPeriod.WEEK -> stringResource(R.string.history_period_week)
                         HistoryPeriod.MONTH -> stringResource(R.string.history_period_month)
@@ -951,6 +1033,7 @@ private fun healthColor(health: BatteryHealth): Color = when (health) {
 
 @Composable
 private fun historyPeriodLabel(period: HistoryPeriod): String = when (period) {
+    HistoryPeriod.SINCE_UNPLUG -> stringResource(R.string.history_period_since_unplug)
     HistoryPeriod.DAY -> stringResource(R.string.history_period_day)
     HistoryPeriod.WEEK -> stringResource(R.string.history_period_week)
     HistoryPeriod.MONTH -> stringResource(R.string.history_period_month)
@@ -1201,5 +1284,158 @@ private fun formatDuration(durationMs: Long): String {
         stringResource(R.string.value_duration_hours_minutes, hours, minutes)
     } else {
         stringResource(R.string.value_duration_minutes, minutes)
+    }
+}
+
+@Composable
+private fun formatDurationCompact(durationMs: Long): String {
+    val totalSeconds = durationMs / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    return when {
+        hours > 0 -> stringResource(R.string.value_duration_hours_minutes, hours, minutes)
+        minutes > 0 -> "${minutes}m ${seconds}s"
+        else -> "${seconds}s"
+    }
+}
+
+// ── Screen On/Off panel (#5) ────────────────────────────────────────────────
+
+@Composable
+private fun BatteryScreenUsagePanel(usage: ScreenUsageStats) {
+    BatteryPanel {
+        CardSectionTitle(text = stringResource(R.string.battery_usage_section))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                MetricPill(
+                    label = stringResource(R.string.battery_screen_on),
+                    value = usage.screenOnDrainRate?.let {
+                        stringResource(R.string.value_percent_per_hour, it.toDouble())
+                    } ?: stringResource(R.string.battery_estimating)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = formatDurationCompact(usage.screenOnDurationMs),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                MetricPill(
+                    label = stringResource(R.string.battery_screen_off),
+                    value = usage.screenOffDrainRate?.let {
+                        stringResource(R.string.value_percent_per_hour, it.toDouble())
+                    } ?: stringResource(R.string.battery_estimating)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = formatDurationCompact(usage.screenOffDurationMs),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+// ── Sleep Analysis panel (#8) ───────────────────────────────────────────────
+
+@Composable
+private fun BatterySleepAnalysisPanel(sleep: SleepAnalysis) {
+    BatteryPanel {
+        CardSectionTitle(text = stringResource(R.string.battery_sleep_analysis))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+        ) {
+            MetricPill(
+                label = stringResource(R.string.battery_deep_sleep),
+                value = formatDurationCompact(sleep.deepSleepDurationMs),
+                modifier = Modifier.weight(1f),
+                valueColor = MaterialTheme.statusColors.healthy
+            )
+            MetricPill(
+                label = stringResource(R.string.battery_held_awake),
+                value = formatDurationCompact(sleep.heldAwakeDurationMs),
+                modifier = Modifier.weight(1f),
+                valueColor = if (sleep.heldAwakeDurationMs > sleep.deepSleepDurationMs) {
+                    MaterialTheme.statusColors.fair
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
+            )
+        }
+    }
+}
+
+// ── Long-term Statistics panel (#9) ─────────────────────────────────────────
+
+@Composable
+private fun BatteryStatisticsPanel(statistics: BatteryStatistics) {
+    BatteryPanel {
+        CardSectionTitle(
+            text = stringResource(R.string.battery_stats_section) + " · " +
+                stringResource(R.string.battery_stats_last_n_days, statistics.periodDays)
+        )
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+        ) {
+            MetricPill(
+                label = stringResource(R.string.battery_stats_charged),
+                value = stringResource(R.string.battery_stats_pct_total, statistics.totalChargedPct),
+                modifier = Modifier.weight(1f)
+            )
+            MetricPill(
+                label = stringResource(R.string.battery_stats_discharged),
+                value = stringResource(R.string.battery_stats_pct_total, statistics.totalDischargedPct),
+                modifier = Modifier.weight(1f)
+            )
+            MetricPill(
+                label = stringResource(R.string.battery_stats_sessions),
+                value = statistics.chargeSessions.toString(),
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        statistics.avgDrainRatePctPerHour?.let { rate ->
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+            )
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+            ) {
+                MetricPill(
+                    label = stringResource(R.string.battery_stats_avg_usage),
+                    value = stringResource(R.string.value_percent_per_hour, rate.toDouble()),
+                    modifier = Modifier.weight(1f)
+                )
+                statistics.fullChargeEstimateHours?.let { hours ->
+                    val h = hours.toInt()
+                    val m = ((hours - h) * 60).toInt()
+                    MetricPill(
+                        label = stringResource(R.string.battery_stats_full_charge_est),
+                        value = if (h > 0) {
+                            stringResource(R.string.value_duration_hours_minutes, h.toLong(), m.toLong())
+                        } else {
+                            stringResource(R.string.value_duration_minutes, m.toLong())
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
     }
 }

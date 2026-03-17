@@ -22,7 +22,8 @@ import javax.inject.Singleton
 class BatteryRepositoryImpl @Inject constructor(
     private val batteryDataSourceFactory: BatteryDataSourceFactory,
     private val deviceProfileRepository: DeviceProfileRepositoryImpl,
-    private val batteryReadingDao: BatteryReadingDao
+    private val batteryReadingDao: BatteryReadingDao,
+    private val batteryCapacityReader: BatteryCapacityReader
 ) : BatteryRepositoryContract {
 
     override fun getBatteryState(): Flow<BatteryState> = flow {
@@ -51,7 +52,14 @@ class BatteryRepositoryImpl @Inject constructor(
             BatteryStateExtra(plug, health, tech, cycle, healthPct)
         }
 
-        combine(stateFlow, extraFlow) { partial, extra ->
+        val chargeCounterFlow = source.getChargeCounter()
+        val designCapacityMah = batteryCapacityReader.getDesignCapacityMah()
+
+        combine(stateFlow, extraFlow, chargeCounterFlow) { partial, extra, chargeCounterMah ->
+            val estimatedCapacityMah = if (designCapacityMah != null && extra.healthPct != null) {
+                (designCapacityMah * extra.healthPct / 100)
+            } else null
+
             BatteryState(
                 level = partial.level,
                 voltageMv = partial.voltage,
@@ -62,7 +70,10 @@ class BatteryRepositoryImpl @Inject constructor(
                 health = extra.health,
                 technology = extra.tech,
                 cycleCount = extra.cycle,
-                healthPercent = extra.healthPct
+                healthPercent = extra.healthPct,
+                remainingMah = chargeCounterMah,
+                designCapacityMah = designCapacityMah,
+                estimatedCapacityMah = estimatedCapacityMah
             )
         }.collect { emit(it) }
     }
@@ -105,6 +116,10 @@ class BatteryRepositoryImpl @Inject constructor(
 
     override suspend fun deleteOlderThan(cutoff: Long) {
         batteryReadingDao.deleteOlderThan(cutoff)
+    }
+
+    override suspend fun getLastChargingTimestamp(): Long? {
+        return batteryReadingDao.getLastChargingTimestamp()
     }
 
     private data class BatteryStatePartial(

@@ -10,8 +10,10 @@ class GetNetworkHistoryUseCase @Inject constructor(
     private val networkRepository: NetworkRepository
 ) {
     operator fun invoke(period: HistoryPeriod = HistoryPeriod.DAY): Flow<List<NetworkReadingData>> {
-        val since = if (period == HistoryPeriod.ALL) 0L
-            else System.currentTimeMillis() - period.durationMs
+        val since = when (period) {
+            HistoryPeriod.ALL, HistoryPeriod.SINCE_UNPLUG -> 0L
+            else -> System.currentTimeMillis() - period.durationMs
+        }
         val limit = if (period == HistoryPeriod.ALL) MAX_HISTORY_POINTS else null
         return networkRepository.getReadingsSince(since, limit)
     }

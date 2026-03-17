@@ -28,6 +28,10 @@
 # Google Play Billing
 -keep class com.android.vending.billing.** { *; }
 
+# Google AdMob
+-keep class com.google.android.gms.ads.** { *; }
+-dontwarn com.google.android.gms.ads.**
+
 # Glance widgets
 -keep class * extends androidx.glance.appwidget.GlanceAppWidget
 -keep class * extends androidx.glance.appwidget.GlanceAppWidgetReceiver

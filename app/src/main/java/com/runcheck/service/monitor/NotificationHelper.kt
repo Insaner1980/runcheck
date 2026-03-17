@@ -26,10 +26,13 @@ class NotificationHelper @Inject constructor(
     companion object {
         const val CHANNEL_ALERTS = "device_pulse_alerts"
         const val CHANNEL_STATUS = "device_pulse_status"
+        const val CHANNEL_TRIAL = "runcheck_trial"
         const val NOTIFICATION_LOW_BATTERY = 1001
         const val NOTIFICATION_HIGH_TEMP = 1002
         const val NOTIFICATION_LOW_STORAGE = 1003
         const val NOTIFICATION_CHARGE_COMPLETE = 1004
+        const val NOTIFICATION_TRIAL_DAY5 = 1005
+        const val NOTIFICATION_TRIAL_DAY7 = 1006
     }
 
     private val notificationManager: NotificationManager
@@ -59,7 +62,17 @@ class NotificationHelper @Inject constructor(
                 setShowBadge(false)
             }
 
-            notificationManager.createNotificationChannels(listOf(alertChannel, statusChannel))
+            val trialChannel = NotificationChannel(
+                CHANNEL_TRIAL,
+                context.getString(R.string.notification_channel_trial),
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = context.getString(R.string.notification_channel_trial_description)
+            }
+
+            notificationManager.createNotificationChannels(
+                listOf(alertChannel, statusChannel, trialChannel)
+            )
         }
     }
 
@@ -117,6 +130,30 @@ class NotificationHelper @Inject constructor(
             .build()
 
         notificationManager.notify(NOTIFICATION_CHARGE_COMPLETE, notification)
+    }
+
+    fun showTrialDay5Notification() {
+        if (!canPostNotifications()) return
+        val notification = NotificationCompat.Builder(context, CHANNEL_TRIAL)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(context.getString(R.string.notification_trial_day5_title))
+            .setContentText(context.getString(R.string.notification_trial_day5_text))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .build()
+        notificationManager.notify(NOTIFICATION_TRIAL_DAY5, notification)
+    }
+
+    fun showTrialDay7Notification() {
+        if (!canPostNotifications()) return
+        val notification = NotificationCompat.Builder(context, CHANNEL_TRIAL)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(context.getString(R.string.notification_trial_day7_title))
+            .setContentText(context.getString(R.string.notification_trial_day7_text))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .build()
+        notificationManager.notify(NOTIFICATION_TRIAL_DAY7, notification)
     }
 
     /** Cancels a notification by its ID. */

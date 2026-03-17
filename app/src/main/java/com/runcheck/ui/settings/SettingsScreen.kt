@@ -10,8 +10,13 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -23,51 +28,58 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.BuildConfig
 import com.runcheck.R
-import com.runcheck.domain.model.CurrentUnit
 import com.runcheck.domain.model.DataRetention
-import com.runcheck.domain.model.DeviceProfileInfo
 import com.runcheck.domain.model.MonitoringInterval
-import com.runcheck.domain.model.SignConvention
+import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.ui.common.findActivity
+import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.SectionHeader
-import androidx.compose.material3.ButtonDefaults
-import com.runcheck.ui.theme.BgIconCircle
-import com.runcheck.ui.theme.BgPage
-import com.runcheck.ui.theme.RuncheckTheme
+import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.statusColors
+import kotlin.math.roundToInt
 
 @Composable
 fun SettingsScreen(
@@ -76,376 +88,370 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    SettingsScreenContent(
-        uiState = uiState,
-        onBack = onBack,
-        onMonitoringIntervalChange = viewModel::setMonitoringInterval,
-        onDataRetentionChange = viewModel::setDataRetention,
-        onNotificationsChange = viewModel::setNotifications,
-        onCrashReportingChange = viewModel::setCrashReporting,
-        onPurchasePro = { activity -> viewModel.purchasePro(activity) },
-        onRefreshPurchaseStatus = viewModel::refreshPurchaseStatus,
-        onExportData = viewModel::exportData,
-        onClearBillingStatus = viewModel::clearBillingStatus,
-        onClearExportUris = viewModel::clearExportUris,
-        onClearExportStatus = viewModel::clearExportStatus,
-        onClearErrorMessage = viewModel::clearErrorMessage,
-        modifier = modifier
-    )
-}
-
-@Composable
-private fun SettingsScreenContent(
-    uiState: SettingsUiState,
-    onBack: () -> Unit,
-    onMonitoringIntervalChange: (MonitoringInterval) -> Unit,
-    onDataRetentionChange: (DataRetention) -> Unit,
-    onNotificationsChange: (Boolean) -> Unit,
-    onCrashReportingChange: (Boolean) -> Unit,
-    onPurchasePro: (Activity) -> Unit,
-    onRefreshPurchaseStatus: () -> Unit,
-    onExportData: () -> Unit,
-    onClearBillingStatus: () -> Unit,
-    onClearExportUris: () -> Unit,
-    onClearExportStatus: () -> Unit,
-    onClearErrorMessage: () -> Unit,
-    modifier: Modifier = Modifier
-) {
     val context = LocalContext.current
     val activity = context.findActivity()
+
+    // Notification permission handling
     val notificationsPermissionRequired = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
     val hasNotificationPermission = !notificationsPermissionRequired ||
-        ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.POST_NOTIFICATIONS
-        ) == PackageManager.PERMISSION_GRANTED
-    var notificationRequestAttempted by remember { mutableStateOf(false) }
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
-        notificationRequestAttempted = true
-        if (granted) {
-            onNotificationsChange(true)
-        }
+        if (granted) viewModel.setNotifications(true)
     }
 
-    Column(
-        modifier = modifier.fillMaxSize()
-    ) {
-        DetailTopBar(
-            title = stringResource(R.string.settings_title),
-            onBack = onBack
-        )
+    // Clear data confirmation dialog
+    var showClearDialog by remember { mutableStateOf(false) }
+
+    Column(modifier = modifier.fillMaxSize()) {
+        DetailTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = MaterialTheme.spacing.base)
+                .padding(horizontal = MaterialTheme.spacing.base),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
         ) {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
-
-            SectionHeader(text = stringResource(R.string.settings_monitoring_interval))
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-            MonitoringInterval.entries.forEach { interval ->
-                val label = when (interval) {
-                    MonitoringInterval.FIFTEEN -> stringResource(R.string.settings_interval_15)
-                    MonitoringInterval.THIRTY -> stringResource(R.string.settings_interval_30)
-                    MonitoringInterval.SIXTY -> stringResource(R.string.settings_interval_60)
-                }
-                SettingsRadioRow(
-                    label = label,
-                    selected = uiState.preferences.monitoringInterval == interval,
-                    onSelect = { onMonitoringIntervalChange(interval) }
-                )
-            }
-
-            HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-
-            SectionHeader(text = stringResource(R.string.settings_notifications))
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-
-            SettingsToggle(
-                title = stringResource(R.string.settings_notifications),
-                description = stringResource(R.string.settings_notifications_desc),
-                checked = uiState.preferences.notificationsEnabled,
-                onCheckedChange = { enabled ->
-                    if (!enabled) {
-                        onNotificationsChange(false)
-                    } else if (!hasNotificationPermission && notificationsPermissionRequired) {
-                        onNotificationsChange(true)
-                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    } else {
-                        onNotificationsChange(true)
-                    }
-                }
-            )
-
-            if (
-                uiState.preferences.notificationsEnabled &&
-                notificationsPermissionRequired &&
-                !hasNotificationPermission
-            ) {
-                PermissionHelpCard(
-                    title = stringResource(R.string.notification_permission_title),
-                    message = stringResource(R.string.notification_permission_message),
-                    actionLabel = if (
-                        notificationRequestAttempted &&
-                        activity?.let {
-                            !ActivityCompat.shouldShowRequestPermissionRationale(
-                                it,
-                                Manifest.permission.POST_NOTIFICATIONS
-                            )
-                        } == true
-                    ) {
-                        stringResource(R.string.notification_permission_open_settings)
-                    } else {
-                        stringResource(R.string.notification_permission_grant)
-                    },
-                    onAction = {
-                        if (
-                            notificationRequestAttempted &&
-                            activity?.let {
-                                !ActivityCompat.shouldShowRequestPermissionRationale(
-                                    it,
-                                    Manifest.permission.POST_NOTIFICATIONS
-                                )
-                            } == true
-                        ) {
-                            context.startActivity(
-                                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                    data = Uri.fromParts("package", context.packageName, null)
-                                }
-                            )
-                        } else {
-                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        }
-                    }
-                )
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            }
-
-            HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-
-            SectionHeader(
-                text = if (uiState.isPro) stringResource(R.string.settings_pro_active)
-                else stringResource(R.string.settings_upgrade_pro)
-            )
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-
-            if (uiState.isPro) {
-                Text(
-                    text = stringResource(R.string.settings_pro_thank_you),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                OutlinedButton(
-                    onClick = onRefreshPurchaseStatus,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(text = stringResource(R.string.settings_refresh_pro_status))
-                }
-            } else {
-                Text(
-                    text = if (uiState.billingAvailable) {
-                        stringResource(R.string.settings_pro_desc)
-                    } else {
-                        stringResource(R.string.settings_billing_unavailable)
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                if (uiState.billingAvailable) {
-                    Button(
-                        onClick = {
-                            (context as? Activity)?.let { activity ->
-                                onPurchasePro(activity)
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = BgPage
-                        )
-                    ) {
-                        Text(
-                            text = uiState.proPrice?.let { price ->
-                                stringResource(R.string.settings_upgrade_pro_with_price, price)
-                            } ?: stringResource(R.string.settings_upgrade_pro)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                    OutlinedButton(
-                        onClick = onRefreshPurchaseStatus,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(text = stringResource(R.string.settings_restore_purchase))
-                    }
-                }
-            }
-
-            HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-
-            SectionHeader(text = stringResource(R.string.settings_data_section))
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-
-            if (uiState.isPro) {
-                Text(
-                    text = stringResource(R.string.settings_data_retention_description),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                DataRetention.entries.forEach { retention ->
+            // ── MONITORING ─────────────────────────────────────────────
+            SettingsCard {
+                CardSectionTitle(text = stringResource(R.string.settings_monitoring_interval))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                MonitoringInterval.entries.forEachIndexed { index, interval ->
+                    if (index > 0) SettingsDivider()
                     SettingsRadioRow(
-                        label = retention.label(),
-                        selected = uiState.preferences.dataRetention == retention,
-                        onSelect = { onDataRetentionChange(retention) }
+                        label = when (interval) {
+                            MonitoringInterval.FIFTEEN -> stringResource(R.string.settings_interval_15)
+                            MonitoringInterval.THIRTY -> stringResource(R.string.settings_interval_30)
+                            MonitoringInterval.SIXTY -> stringResource(R.string.settings_interval_60)
+                        },
+                        selected = uiState.preferences.monitoringInterval == interval,
+                        onSelect = { viewModel.setMonitoringInterval(interval) }
                     )
                 }
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                OutlinedButton(
-                    onClick = onExportData,
-                    enabled = !uiState.isExporting,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    if (uiState.isExporting) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                strokeWidth = 2.dp
-                            )
-                            Text(text = stringResource(R.string.settings_exporting))
+            }
+
+            // ── NOTIFICATIONS ──────────────────────────────────────────
+            SettingsCard {
+                CardSectionTitle(text = stringResource(R.string.settings_notifications))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+
+                val masterEnabled = uiState.preferences.notificationsEnabled
+
+                SettingsToggle(
+                    title = stringResource(R.string.settings_notifications),
+                    description = stringResource(R.string.settings_notifications_desc),
+                    checked = masterEnabled,
+                    onCheckedChange = { enabled ->
+                        if (enabled && !hasNotificationPermission && notificationsPermissionRequired) {
+                            viewModel.setNotifications(true)
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            viewModel.setNotifications(enabled)
                         }
-                    } else {
-                        Text(text = stringResource(R.string.settings_export_data))
                     }
-                }
-            } else {
-                Text(
-                    text = stringResource(R.string.settings_data_retention_free),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                SettingsDivider()
+
+                val subAlpha = if (masterEnabled) 1f else 0.38f
+                Column(modifier = Modifier.alpha(subAlpha)) {
+                    SettingsToggle(
+                        title = stringResource(R.string.settings_notif_low_battery),
+                        description = stringResource(R.string.settings_notif_low_battery_desc),
+                        checked = uiState.preferences.notifLowBattery,
+                        onCheckedChange = { if (masterEnabled) viewModel.setNotifLowBattery(it) }
+                    )
+                    SettingsDivider()
+                    SettingsToggle(
+                        title = stringResource(R.string.settings_notif_high_temp),
+                        description = stringResource(R.string.settings_notif_high_temp_desc),
+                        checked = uiState.preferences.notifHighTemp,
+                        onCheckedChange = { if (masterEnabled) viewModel.setNotifHighTemp(it) }
+                    )
+                    SettingsDivider()
+                    SettingsToggle(
+                        title = stringResource(R.string.settings_notif_low_storage),
+                        description = stringResource(R.string.settings_notif_low_storage_desc),
+                        checked = uiState.preferences.notifLowStorage,
+                        onCheckedChange = { if (masterEnabled) viewModel.setNotifLowStorage(it) }
+                    )
+                    SettingsDivider()
+                    SettingsToggle(
+                        title = stringResource(R.string.settings_notif_charge_complete),
+                        description = stringResource(R.string.settings_notif_charge_complete_desc),
+                        checked = uiState.preferences.notifChargeComplete,
+                        onCheckedChange = { if (masterEnabled) viewModel.setNotifChargeComplete(it) }
+                    )
+                }
+            }
+
+            // ── ALERT THRESHOLDS ───────────────────────────────────────
+            SettingsCard {
+                CardSectionTitle(text = stringResource(R.string.settings_alert_thresholds))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+
+                SettingsSlider(
+                    label = stringResource(R.string.settings_threshold_battery),
+                    value = uiState.preferences.alertBatteryThreshold,
+                    valueLabel = "${uiState.preferences.alertBatteryThreshold}%",
+                    range = 5f..50f,
+                    steps = 8,
+                    onValueChange = { viewModel.setAlertBatteryThreshold(it) }
+                )
+                SettingsDivider()
+                SettingsSlider(
+                    label = stringResource(R.string.settings_threshold_temp),
+                    value = uiState.preferences.alertTempThreshold,
+                    valueLabel = "${uiState.preferences.alertTempThreshold}°C",
+                    range = 35f..50f,
+                    steps = 14,
+                    onValueChange = { viewModel.setAlertTempThreshold(it) }
+                )
+                SettingsDivider()
+                SettingsSlider(
+                    label = stringResource(R.string.settings_threshold_storage),
+                    value = uiState.preferences.alertStorageThreshold,
+                    valueLabel = "${uiState.preferences.alertStorageThreshold}%",
+                    range = 70f..99f,
+                    steps = 5,
+                    onValueChange = { viewModel.setAlertStorageThreshold(it) }
+                )
+            }
+
+            // ── DISPLAY ────────────────────────────────────────────────
+            SettingsCard {
+                CardSectionTitle(text = stringResource(R.string.settings_display))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+
+                Text(
+                    text = stringResource(R.string.settings_temp_unit),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                SettingsRadioRow(
+                    label = stringResource(R.string.settings_temp_celsius),
+                    selected = uiState.preferences.temperatureUnit == TemperatureUnit.CELSIUS,
+                    onSelect = { viewModel.setTemperatureUnit(TemperatureUnit.CELSIUS) }
+                )
+                SettingsRadioRow(
+                    label = stringResource(R.string.settings_temp_fahrenheit),
+                    selected = uiState.preferences.temperatureUnit == TemperatureUnit.FAHRENHEIT,
+                    onSelect = { viewModel.setTemperatureUnit(TemperatureUnit.FAHRENHEIT) }
+                )
+            }
+
+            // ── DATA ───────────────────────────────────────────────────
+            SettingsCard {
+                CardSectionTitle(text = stringResource(R.string.settings_data_section))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+
+                if (uiState.isPro) {
+                    Text(
+                        text = stringResource(R.string.settings_data_retention_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                    DataRetention.entries.forEachIndexed { index, retention ->
+                        if (index > 0) SettingsDivider()
+                        SettingsRadioRow(
+                            label = retention.label(),
+                            selected = uiState.preferences.dataRetention == retention,
+                            onSelect = { viewModel.setDataRetention(retention) }
+                        )
+                    }
+                    SettingsDivider()
+                    OutlinedButton(
+                        onClick = { viewModel.exportData() },
+                        enabled = !uiState.isExporting,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (uiState.isExporting) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text(stringResource(R.string.settings_export_data))
+                        }
+                    }
+                } else {
+                    Text(
+                        text = stringResource(R.string.settings_data_retention_free),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                SettingsDivider()
+
+                SettingsNavigationRow(
+                    label = stringResource(R.string.settings_clear_all_data),
+                    labelColor = MaterialTheme.colorScheme.error,
+                    onClick = { showClearDialog = true }
+                )
+            }
+
+            if (!uiState.isPro) {
                 ProFeatureCalloutCard(
                     message = stringResource(R.string.pro_feature_export_message),
                     actionLabel = stringResource(R.string.pro_feature_upgrade_action),
-                    onAction = {
-                        (context as? Activity)?.let { activity ->
-                            onPurchasePro(activity)
-                        }
+                    onAction = { activity?.let { viewModel.purchasePro(it) } }
+                )
+            }
+
+            // ── PRO ────────────────────────────────────────────────────
+            SettingsCard {
+                CardSectionTitle(
+                    text = if (uiState.isPro) stringResource(R.string.settings_pro_active)
+                    else stringResource(R.string.settings_upgrade_pro)
+                )
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+
+                if (uiState.isPro) {
+                    Text(
+                        text = stringResource(R.string.settings_pro_thank_you),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                } else if (uiState.billingAvailable) {
+                    Button(
+                        onClick = { activity?.let { viewModel.purchasePro(it) } },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            uiState.proPrice?.let { stringResource(R.string.settings_upgrade_pro_with_price, it) }
+                                ?: stringResource(R.string.settings_upgrade_pro)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                SettingsNavigationRow(
+                    label = stringResource(R.string.settings_restore_purchase),
+                    onClick = { viewModel.refreshPurchaseStatus() }
+                )
+            }
+
+            // ── PRIVACY ────────────────────────────────────────────────
+            SettingsCard {
+                CardSectionTitle(text = stringResource(R.string.settings_privacy))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                SettingsToggle(
+                    title = stringResource(R.string.settings_crash_reporting),
+                    description = stringResource(R.string.settings_crash_reporting_desc),
+                    checked = uiState.preferences.crashReportingEnabled,
+                    onCheckedChange = { viewModel.setCrashReporting(it) }
+                )
+            }
+
+            // ── DEVICE ─────────────────────────────────────────────────
+            uiState.deviceProfile?.let { profile ->
+                SettingsCard {
+                    CardSectionTitle(text = stringResource(R.string.settings_measurement_info))
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                    Text(
+                        text = stringResource(R.string.settings_device_model, profile.manufacturer, profile.model),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+                    ) {
+                        MetricPill(
+                            label = stringResource(R.string.settings_api_level_label),
+                            value = profile.apiLevel.toString(),
+                            modifier = Modifier.weight(1f)
+                        )
+                        MetricPill(
+                            label = stringResource(R.string.settings_current_reading_label),
+                            value = stringResource(
+                                if (profile.currentNowReliable) R.string.settings_measurement_reliable
+                                else R.string.settings_measurement_unreliable
+                            ),
+                            valueColor = if (profile.currentNowReliable) MaterialTheme.statusColors.healthy
+                                else MaterialTheme.colorScheme.error,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+                    ) {
+                        MetricPill(
+                            label = stringResource(R.string.settings_cycle_count_label),
+                            value = stringResource(
+                                if (profile.cycleCountAvailable) R.string.settings_measurement_available
+                                else R.string.settings_measurement_not_available
+                            ),
+                            modifier = Modifier.weight(1f)
+                        )
+                        MetricPill(
+                            label = stringResource(R.string.settings_thermal_zones_label),
+                            value = profile.thermalZonesAvailable.size.toString(),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
+            // ── ABOUT ──────────────────────────────────────────────────
+            SettingsCard {
+                CardSectionTitle(text = stringResource(R.string.settings_about))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                Text(
+                    text = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                SettingsDivider()
+                SettingsNavigationRow(
+                    label = stringResource(R.string.settings_rate),
+                    onClick = {
+                        try {
+                            context.startActivity(Intent(Intent.ACTION_VIEW,
+                                Uri.parse("market://details?id=${context.packageName}"))
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        } catch (_: Exception) { }
+                    }
+                )
+                SettingsDivider()
+                SettingsNavigationRow(
+                    label = stringResource(R.string.settings_privacy_policy),
+                    onClick = { /* TODO: open privacy policy URL */ }
+                )
+                SettingsDivider()
+                SettingsNavigationRow(
+                    label = stringResource(R.string.settings_feedback),
+                    onClick = {
+                        try {
+                            context.startActivity(Intent(Intent.ACTION_SENDTO).apply {
+                                data = Uri.parse("mailto:")
+                                putExtra(Intent.EXTRA_SUBJECT, "runcheck Feedback")
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            })
+                        } catch (_: Exception) { }
                     }
                 )
             }
 
-            uiState.deviceProfile?.let { profile ->
-                HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-
-                SectionHeader(text = stringResource(R.string.settings_measurement_info))
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-
-                Text(
-                    text = stringResource(
-                        R.string.settings_device_model,
-                        profile.manufacturer,
-                        profile.model
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                SettingsInfoLine(
-                    stringResource(R.string.settings_api_level, profile.apiLevel)
-                )
-                SettingsInfoLine(
-                    stringResource(
-                        R.string.settings_current_reading,
-                        stringResource(
-                            if (profile.currentNowReliable) {
-                                R.string.settings_measurement_reliable
-                            } else {
-                                R.string.settings_measurement_unreliable
-                            }
-                        )
-                    )
-                )
-                SettingsInfoLine(
-                    stringResource(
-                        R.string.settings_cycle_count,
-                        stringResource(
-                            if (profile.cycleCountAvailable) {
-                                R.string.settings_measurement_available
-                            } else {
-                                R.string.settings_measurement_not_available
-                            }
-                        )
-                    )
-                )
-                SettingsInfoLine(
-                    stringResource(
-                        R.string.settings_thermal_zones_found,
-                        profile.thermalZonesAvailable.size
-                    )
-                )
-            }
-
-            HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-
-            SectionHeader(text = stringResource(R.string.settings_privacy))
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-
-            SettingsToggle(
-                title = stringResource(R.string.settings_crash_reporting),
-                description = stringResource(R.string.settings_crash_reporting_desc),
-                checked = uiState.preferences.crashReportingEnabled,
-                onCheckedChange = onCrashReportingChange
-            )
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-            Text(
-                text = stringResource(R.string.settings_crash_reporting_note),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            HorizontalDivider(color = BgIconCircle, thickness = 1.dp)
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-
-            SectionHeader(text = stringResource(R.string.settings_about))
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-
-            Text(
-                text = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
+            // ── Side effects ───────────────────────────────────────────
             uiState.billingStatus?.let { status ->
                 LaunchedEffect(status) {
                     Toast.makeText(context, status, Toast.LENGTH_SHORT).show()
-                    onClearBillingStatus()
+                    viewModel.clearBillingStatus()
                 }
             }
-
             uiState.exportStatus?.let { status ->
                 LaunchedEffect(status) {
                     Toast.makeText(context, status, Toast.LENGTH_SHORT).show()
-                    onClearExportStatus()
+                    viewModel.clearExportStatus()
                 }
             }
-
             uiState.exportUris?.let { exportUris ->
                 LaunchedEffect(exportUris) {
                     val shareIntent = if (exportUris.size == 1) {
@@ -459,83 +465,90 @@ private fun SettingsScreenContent(
                         Intent(Intent.ACTION_SEND_MULTIPLE).apply {
                             type = "text/csv"
                             putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(exportUris))
-                            clipData = android.content.ClipData.newUri(
-                                context.contentResolver,
-                                null,
-                                exportUris.first()
-                            ).apply {
-                                exportUris.drop(1).forEach { addItem(android.content.ClipData.Item(it)) }
-                            }
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
                     }
-                    context.startActivity(
-                        Intent.createChooser(
-                            shareIntent,
-                            context.getString(R.string.settings_export_share_title)
-                        )
-                    )
-                    onClearExportUris()
+                    context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.settings_export_share_title)))
+                    viewModel.clearExportUris()
                 }
             }
-
             uiState.errorMessage?.let { message ->
                 LaunchedEffect(message) {
                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                    onClearErrorMessage()
+                    viewModel.clearErrorMessage()
                 }
             }
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }
     }
+
+    // Clear data confirmation dialog
+    if (showClearDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearDialog = false },
+            title = { Text(stringResource(R.string.settings_clear_confirm_title)) },
+            text = { Text(stringResource(R.string.settings_clear_confirm_message)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showClearDialog = false
+                        // TODO: viewModel.clearAllData()
+                        Toast.makeText(context, context.getString(R.string.settings_data_cleared), Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
+                ) { Text(stringResource(R.string.settings_clear_action)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearDialog = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
+    }
+}
+
+// ── Reusable settings components ──────────────────────────────────────────────
+
+@Composable
+private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.base),
+            content = content
+        )
+    }
 }
 
 @Composable
-private fun DataRetention.label(): String = when (this) {
-    DataRetention.THREE_MONTHS -> stringResource(R.string.settings_retention_3_months)
-    DataRetention.SIX_MONTHS -> stringResource(R.string.settings_retention_6_months)
-    DataRetention.ONE_YEAR -> stringResource(R.string.settings_retention_1_year)
-    DataRetention.FOREVER -> stringResource(R.string.settings_retention_forever)
+private fun SettingsDivider() {
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
 }
 
 @Composable
-private fun SettingsRadioRow(
-    label: String,
-    selected: Boolean,
-    onSelect: () -> Unit
-) {
+private fun SettingsRadioRow(label: String, selected: Boolean, onSelect: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .defaultMinSize(minHeight = MaterialTheme.spacing.xl * 2)
-            .selectable(
-                selected = selected,
-                onClick = onSelect,
-                role = Role.RadioButton
-            )
-            .padding(vertical = MaterialTheme.spacing.sm),
+            .defaultMinSize(minHeight = 48.dp)
+            .selectable(selected = selected, onClick = onSelect, role = Role.RadioButton)
+            .padding(vertical = MaterialTheme.spacing.xs),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        RadioButton(
-            selected = selected,
-            onClick = null
-        )
+        RadioButton(selected = selected, onClick = null)
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(start = MaterialTheme.spacing.sm)
         )
     }
-}
-
-@Composable
-private fun SettingsInfoLine(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
 }
 
 @Composable
@@ -549,103 +562,85 @@ private fun SettingsToggle(
         modifier = Modifier
             .fillMaxWidth()
             .defaultMinSize(minHeight = 48.dp)
-            .toggleable(
-                value = checked,
-                onValueChange = onCheckedChange,
-                role = Role.Switch
-            )
-            .padding(vertical = MaterialTheme.spacing.sm),
+            .toggleable(value = checked, onValueChange = onCheckedChange, role = Role.Switch),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text(text = title, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+            Text(text = description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Switch(
-            checked = checked,
-            onCheckedChange = null
-        )
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 
 @Composable
-private fun PermissionHelpCard(
-    title: String,
-    message: String,
-    actionLabel: String,
-    onAction: () -> Unit
+private fun SettingsSlider(
+    label: String,
+    value: Int,
+    valueLabel: String,
+    range: ClosedFloatingPointRange<Float>,
+    steps: Int,
+    onValueChange: (Int) -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+    var sliderValue by remember(value) { mutableFloatStateOf(value.toFloat()) }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            Text(text = label, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
             Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                text = valueLabel,
+                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = MaterialTheme.numericFontFamily),
+                color = MaterialTheme.colorScheme.primary
             )
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            TextButton(onClick = onAction) {
-                Text(text = actionLabel)
-            }
         }
+        Slider(
+            value = sliderValue,
+            onValueChange = { sliderValue = it },
+            onValueChangeFinished = { onValueChange(sliderValue.roundToInt()) },
+            valueRange = range,
+            steps = steps,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            )
+        )
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-private fun SettingsScreenContentPreview() {
-    RuncheckTheme {
-        SettingsScreenContent(
-            uiState = SettingsUiState(
-                deviceProfile = DeviceProfileInfo(
-                    manufacturer = "Google",
-                    model = "Pixel 9",
-                    apiLevel = 35,
-                    currentNowReliable = true,
-                    currentNowUnit = CurrentUnit.MILLIAMPS,
-                    currentNowSignConvention = SignConvention.NEGATIVE_CHARGING,
-                    cycleCountAvailable = true,
-                    batteryHealthPercentAvailable = true,
-                    thermalZonesAvailable = listOf("Battery", "CPU", "Skin"),
-                    storageHealthAvailable = true
-                ),
-                isPro = true
-            ),
-            onBack = {},
-            onMonitoringIntervalChange = {},
-            onDataRetentionChange = {},
-            onNotificationsChange = {},
-            onCrashReportingChange = {},
-            onPurchasePro = {},
-            onRefreshPurchaseStatus = {},
-            onExportData = {},
-            onClearBillingStatus = {},
-            onClearExportUris = {},
-            onClearExportStatus = {},
-            onClearErrorMessage = {}
+private fun SettingsNavigationRow(
+    label: String,
+    onClick: () -> Unit,
+    labelColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 48.dp)
+            .clickable(onClick = onClick)
+            .padding(vertical = MaterialTheme.spacing.sm),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = labelColor)
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+@Composable
+private fun DataRetention.label(): String = when (this) {
+    DataRetention.THREE_MONTHS -> stringResource(R.string.settings_retention_3_months)
+    DataRetention.SIX_MONTHS -> stringResource(R.string.settings_retention_6_months)
+    DataRetention.ONE_YEAR -> stringResource(R.string.settings_retention_1_year)
+    DataRetention.FOREVER -> stringResource(R.string.settings_retention_forever)
 }

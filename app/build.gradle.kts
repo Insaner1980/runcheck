@@ -26,9 +26,13 @@ android {
         val proProductId = System.getenv("RUNCHECK_PRO_PRODUCT_ID") ?: "runcheck_pro"
         val latencyHost = System.getenv("RUNCHECK_LATENCY_HOST") ?: "locate.measurementlab.net"
         val latencyPort = (System.getenv("RUNCHECK_LATENCY_PORT") ?: "443").toIntOrNull() ?: 443
+        val admobBannerId = System.getenv("RUNCHECK_ADMOB_BANNER_ID") ?: ""
+        val admobAppId = System.getenv("RUNCHECK_ADMOB_APP_ID") ?: "ca-app-pub-3940256099942544~3347511713"
         buildConfigField("String", "PRO_PRODUCT_ID", "\"$proProductId\"")
         buildConfigField("String", "LATENCY_HOST", "\"$latencyHost\"")
         buildConfigField("int", "LATENCY_PORT", latencyPort.toString())
+        buildConfigField("String", "ADMOB_BANNER_ID", "\"$admobBannerId\"")
+        manifestPlaceholders["admobAppId"] = admobAppId
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -171,6 +175,9 @@ dependencies {
 
     // Google Play Billing
     implementation(libs.billing)
+
+    // AdMob
+    implementation(libs.play.services.ads)
 
     // Glance (home screen widgets)
     implementation(libs.glance.appwidget)

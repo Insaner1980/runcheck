@@ -32,6 +32,7 @@
     <string name="home_insights_desc">Laajennettu historia, widgetit, viennit ja lämpörajoitustiedot ovat käytössä.</string>
     <string name="home_free_suffix">vapaana</string>
     <string name="home_status_summary">%1$s · %2$s · %3$s</string>
+    <string name="home_network_summary">%1$s · %2$s</string>
     <string name="home_thermal_summary">%1$s · %2$s</string>
     <string name="home_storage_free">%1$s %2$s</string>
 
@@ -63,6 +64,7 @@
     <string name="battery_voltage">Jännite</string>
     <string name="battery_temperature">Lämpötila</string>
     <string name="battery_charging_section">Lataus</string>
+    <string name="battery_current_section">Akun virta</string>
     <string name="battery_current">Virta</string>
     <string name="battery_status">Tila</string>
     <string name="battery_plug_type">Tyyppi</string>
@@ -72,6 +74,7 @@
     <string name="battery_cycle_count">Lataussyklit</string>
     <string name="battery_health_percent">Kuntoprosentti</string>
     <string name="battery_history_24h">Viimeiset 24 tuntia</string>
+    <string name="history_period_since_unplug">Irrotuksesta</string>
     <string name="history_period_day">24h</string>
     <string name="history_period_week">Viikko</string>
     <string name="history_period_month">Kuukausi</string>
@@ -108,6 +111,34 @@
     <string name="battery_remaining">Jäljellä</string>
     <string name="battery_estimating">…</string>
     <string name="battery_section_details">Tiedot</string>
+    <string name="battery_power_voltage">%1$s W · %2$d mV</string>
+    <string name="battery_current_average">Keskiarvo</string>
+    <string name="battery_current_minimum">Minimi</string>
+    <string name="battery_current_maximum">Maksimi</string>
+    <string name="value_milliamps_int">%1$d mA</string>
+    <string name="battery_remaining_mah">%1$s · ~%2$d mAh jäljellä</string>
+    <string name="battery_capacity_mah">%1$d / %2$d mAh</string>
+
+    <!-- Battery Usage (#5) -->
+    <string name="battery_screen_on">Näyttö päällä</string>
+    <string name="battery_screen_off">Näyttö pois</string>
+    <string name="battery_usage_section">Akun käyttö</string>
+    <string name="battery_usage_avg_current">~%1$d mA · %2$s</string>
+
+    <!-- Sleep Analysis (#8) -->
+    <string name="battery_deep_sleep">Syvä uni</string>
+    <string name="battery_held_awake">Hereillä</string>
+    <string name="battery_sleep_analysis">Unitilat</string>
+
+    <!-- Long-term Statistics (#9) -->
+    <string name="battery_stats_section">Tilastot</string>
+    <string name="battery_stats_charged">Ladattu</string>
+    <string name="battery_stats_discharged">Purettu</string>
+    <string name="battery_stats_sessions">Sessiot</string>
+    <string name="battery_stats_avg_usage">Keskimääräinen käyttö</string>
+    <string name="battery_stats_full_charge_est">Täyden latauksen arvio</string>
+    <string name="battery_stats_last_n_days">Viimeiset %1$d päivää</string>
+    <string name="battery_stats_pct_total">%1$.0f%%</string>
 
     <!-- Charging Status -->
     <string name="charging_status_charging">Lataa</string>
@@ -192,8 +223,11 @@
     <string name="network_speed_test_server">Palvelin: %1$s</string>
     <string name="network_speed_test_no_results">Ei nopeustestituloksia vielä</string>
     <string name="unit_mhz">MHz</string>
+    <string name="common_cancel">Peruuta</string>
     <string name="common_yes">Kyllä</string>
     <string name="common_no">Ei</string>
+    <string name="common_on">Päällä</string>
+    <string name="common_off">Pois</string>
 
     <!-- Signal Quality -->
     <string name="signal_excellent">Erinomainen</string>
@@ -233,6 +267,7 @@
     <string name="thermal_throttling_log">Rajoitusloki</string>
     <string name="thermal_event_at">%s</string>
     <string name="thermal_no_events">Ei tallennettuja rajoitustapahtumia</string>
+    <string name="thermal_event_duration">Kesto: %s</string>
 
     <!-- Thermal Status Levels -->
     <string name="thermal_status_none">Normaali</string>
@@ -242,6 +277,7 @@
     <string name="thermal_status_critical">Kriittinen</string>
     <string name="thermal_status_emergency">Hätätila</string>
     <string name="thermal_status_shutdown">Sammutus</string>
+    <string name="thermal_session_range">↓ %1$s · ↑ %2$s</string>
 
     <!-- Storage Detail -->
     <string name="storage_title">Tallennustila</string>
@@ -253,6 +289,56 @@
     <string name="storage_fill_rate">Täyttymisennuste</string>
     <string name="storage_fill_rate_value">Nykyisellä vauhdilla täynnä ~%1$s</string>
     <string name="storage_sd_card">SD-kortti</string>
+
+    <!-- Storage Media Breakdown -->
+    <string name="storage_media_breakdown">Median erittely</string>
+    <string name="storage_images">Kuvat</string>
+    <string name="storage_videos">Videot</string>
+    <string name="storage_audio">Musiikki</string>
+    <string name="storage_documents">Dokumentit</string>
+    <string name="storage_downloads">Lataukset</string>
+    <string name="storage_other">Muut</string>
+
+    <!-- Storage Cache -->
+    <string name="storage_cache_total">Välimuisti</string>
+    <string name="storage_cache_summary">%1$s %2$d sovelluksessa</string>
+
+    <!-- Storage Actions -->
+    <string name="storage_cleanup_tools">Siivoustyökalut</string>
+    <string name="storage_large_files">Isot tiedostot</string>
+    <string name="storage_large_files_desc">Yli 50 MB:n tiedostot</string>
+    <string name="storage_old_downloads">Vanhat lataukset</string>
+    <string name="storage_old_downloads_desc">Yli 30 päivää vanhat lataukset</string>
+    <string name="storage_apk_files">APK-tiedostot</string>
+    <string name="storage_apk_files_desc">Jääneet asennuspaketit</string>
+    <string name="storage_trash">Roskakori</string>
+    <string name="storage_trash_summary">%1$s (%2$d kohdetta)</string>
+    <string name="storage_empty_trash">Tyhjennä roskakori</string>
+    <string name="storage_scan">Skannaa</string>
+
+    <!-- Storage Quick Actions -->
+    <string name="storage_quick_actions">Pikatoiminnot</string>
+    <string name="storage_open_settings">Tallennustila-asetukset</string>
+    <string name="storage_free_up_space">Vapauta tilaa</string>
+    <string name="storage_usage_access">Käyttötilastolupa</string>
+
+    <!-- Cleanup Screen -->
+    <string name="cleanup_large_files_title">Isot tiedostot</string>
+    <string name="cleanup_old_downloads_title">Vanhat lataukset</string>
+    <string name="cleanup_apk_files_title">APK-tiedostot</string>
+    <string name="cleanup_found_files">Löytyi %1$d tiedostoa · %2$s</string>
+    <string name="cleanup_no_files">Tiedostoja ei löytynyt</string>
+    <string name="cleanup_no_files_desc">Tallennustilasi näyttää siistiltä!</string>
+    <string name="cleanup_free_action">Vapauta %1$s · %2$d kohdetta</string>
+    <string name="cleanup_freed">%1$s vapautettu</string>
+    <string name="cleanup_filter_10mb">10 MB</string>
+    <string name="cleanup_filter_50mb">50 MB</string>
+    <string name="cleanup_filter_100mb">100 MB</string>
+    <string name="cleanup_filter_500mb">500 MB</string>
+    <string name="cleanup_filter_30d">30 päivää</string>
+    <string name="cleanup_filter_60d">60 päivää</string>
+    <string name="cleanup_filter_90d">90 päivää</string>
+    <string name="cleanup_filter_1y">1 vuosi</string>
 
     <!-- Settings -->
     <string name="settings_title">Asetukset</string>
@@ -272,6 +358,10 @@
     <string name="settings_current_reading">Virran mittaus: %1$s</string>
     <string name="settings_cycle_count">Syklimäärä: %1$s</string>
     <string name="settings_thermal_zones_found">Lämpöalueita löytyi: %1$d</string>
+    <string name="settings_api_level_label">API-taso</string>
+    <string name="settings_current_reading_label">Virran mittaus</string>
+    <string name="settings_cycle_count_label">Syklimäärä</string>
+    <string name="settings_thermal_zones_label">Lämpöalueet</string>
     <string name="settings_measurement_reliable">Luotettava</string>
     <string name="settings_measurement_unreliable">Epäluotettava</string>
     <string name="settings_measurement_available">Saatavilla</string>
@@ -299,6 +389,44 @@
     <string name="settings_pro_desc">Laajennettu historia, widgetit ja CSV-vienti</string>
     <string name="settings_pro_thank_you">Kiitos runcheckin tukemisesta!</string>
     <string name="settings_version">Versio %1$s</string>
+
+    <!-- Settings: Notifications (per-alert) -->
+    <string name="settings_notif_low_battery">Akku vähissä</string>
+    <string name="settings_notif_low_battery_desc">Hälytys kun akku on vähissä</string>
+    <string name="settings_notif_high_temp">Korkea lämpötila</string>
+    <string name="settings_notif_high_temp_desc">Hälytys kun laite ylikuumenee</string>
+    <string name="settings_notif_low_storage">Tallennustila vähissä</string>
+    <string name="settings_notif_low_storage_desc">Hälytys kun tallennustila on loppumassa</string>
+    <string name="settings_notif_charge_complete">Lataus valmis</string>
+    <string name="settings_notif_charge_complete_desc">Ilmoitus kun lataus on valmis</string>
+
+    <!-- Settings: Alert Thresholds -->
+    <string name="settings_alert_thresholds">Hälytysrajat</string>
+    <string name="settings_threshold_battery">Akun varoitusraja</string>
+    <string name="settings_threshold_temp">Lämpötilaraja</string>
+    <string name="settings_threshold_storage">Tallennustilaraja</string>
+
+    <!-- Settings: Display -->
+    <string name="settings_display">Näyttö</string>
+    <string name="settings_temp_unit">Lämpötilayksikkö</string>
+    <string name="settings_temp_celsius">Celsius (°C)</string>
+    <string name="settings_temp_fahrenheit">Fahrenheit (°F)</string>
+
+    <!-- Settings: Data Management -->
+    <string name="settings_data_section">Data</string>
+    <string name="settings_clear_speed_tests">Tyhjennä nopeustestit</string>
+    <string name="settings_clear_all_data">Tyhjennä kaikki seurantadata</string>
+    <string name="settings_clear_confirm_title">Tyhjennetäänkö kaikki data?</string>
+    <string name="settings_clear_confirm_message">Tämä poistaa pysyvästi kaiken seurantahistorian. Tätä ei voi kumota.</string>
+    <string name="settings_clear_action">Tyhjennä</string>
+    <string name="settings_data_cleared">Data tyhjennetty</string>
+
+    <!-- Settings: About (extended) -->
+    <string name="settings_whats_new">Uutta</string>
+    <string name="settings_licenses">Avoimen lähdekoodin lisenssit</string>
+    <string name="settings_feedback">Lähetä palautetta</string>
+    <string name="settings_rate">Arvostele Play Storessa</string>
+    <string name="settings_privacy_policy">Tietosuojakäytäntö</string>
     <string name="pro_feature_badge">PRO</string>
     <string name="pro_feature_locked_message">Päivitä runcheck prohon käyttääksesi ominaisuutta %1$s.</string>
     <string name="pro_feature_upgrade_action">Päivitä asetuksissa</string>
@@ -454,4 +582,5 @@
     <string name="common_error_generic">Jokin meni pieleen</string>
     <string name="common_retry">Yritä uudelleen</string>
     <string name="not_supported">Ei tuettu tällä laitteella</string>
+    <string name="copied_to_clipboard">Kopioitu leikepöydälle</string>
 </resources>

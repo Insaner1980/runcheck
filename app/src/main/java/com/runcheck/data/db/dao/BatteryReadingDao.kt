@@ -40,4 +40,7 @@ interface BatteryReadingDao {
 
     @Query("SELECT * FROM battery_readings ORDER BY timestamp ASC")
     suspend fun getAll(): List<BatteryReadingEntity>
+
+    @Query("SELECT timestamp FROM battery_readings WHERE status = 'CHARGING' ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getLastChargingTimestamp(): Long?
 }

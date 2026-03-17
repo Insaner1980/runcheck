@@ -28,6 +28,8 @@ class ThermalViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<ThermalUiState>(ThermalUiState.Loading)
     val uiState: StateFlow<ThermalUiState> = _uiState.asStateFlow()
     private var loadJob: Job? = null
+    private var sessionMinTemp: Float? = null
+    private var sessionMaxTemp: Float? = null
 
     fun refresh() {
         loadThermalData()
@@ -51,10 +53,16 @@ class ThermalViewModel @Inject constructor(
                 getThrottlingHistory(),
                 proStatusProvider.isProUser
             ) { thermalState: ThermalState, events: List<ThrottlingEvent>, isPro: Boolean ->
+                val currentTemp = thermalState.batteryTempC
+                sessionMinTemp = sessionMinTemp?.coerceAtMost(currentTemp) ?: currentTemp
+                sessionMaxTemp = sessionMaxTemp?.coerceAtLeast(currentTemp) ?: currentTemp
+
                 ThermalUiState.Success(
                     thermalState = thermalState,
                     throttlingEvents = events,
-                    isPro = isPro
+                    isPro = isPro,
+                    sessionMinTemp = sessionMinTemp,
+                    sessionMaxTemp = sessionMaxTemp
                 )
             }
                 .catch { e ->

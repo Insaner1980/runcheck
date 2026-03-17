@@ -167,8 +167,12 @@ class NetworkDataSource @Inject constructor(
         val estimatedDownstreamKbps = capabilities.linkDownstreamBandwidthKbps.takeIf { it > 0 }
         val estimatedUpstreamKbps = capabilities.linkUpstreamBandwidthKbps.takeIf { it > 0 }
 
-        // VPN detection
-        val isVpn = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+        // Some devices expose VPN transport alongside a normal network; require the
+        // network to also lose NOT_VPN before surfacing VPN as active.
+        val isVpn = resolveVpnState(
+            hasVpnTransport = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN),
+            hasNotVpnCapability = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+        )
 
         // Metered status
         val isMetered = !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
@@ -536,3 +540,8 @@ class NetworkDataSource @Inject constructor(
         private const val STOP_TIMEOUT_MS = 0L
     }
 }
+
+internal fun resolveVpnState(
+    hasVpnTransport: Boolean,
+    hasNotVpnCapability: Boolean
+): Boolean = hasVpnTransport && !hasNotVpnCapability

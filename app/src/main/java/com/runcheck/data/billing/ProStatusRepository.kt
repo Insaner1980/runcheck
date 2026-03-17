@@ -27,6 +27,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -42,6 +43,11 @@ class ProStatusRepository @Inject constructor(
 
     private val _isProState = MutableStateFlow(false)
     override val isProUser: Flow<Boolean> = _isProState.asStateFlow()
+    override val proState: Flow<com.runcheck.pro.ProState>
+        get() = _isProState.asStateFlow().map { isPro ->
+            if (isPro) com.runcheck.pro.ProState(status = com.runcheck.pro.ProStatus.PRO_PURCHASED)
+            else com.runcheck.pro.ProState()
+        }
     private val _billingAvailable = MutableStateFlow(false)
     override val billingAvailable: Flow<Boolean> = _billingAvailable.asStateFlow()
 

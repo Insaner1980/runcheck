@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,8 +29,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -52,32 +51,36 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SpeedTestResult
-import com.runcheck.ui.components.AnimatedFloatText
-import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.common.connectionDisplayLabel
 import com.runcheck.ui.common.formatDecimal
-import com.runcheck.ui.common.isUnknownValue
 import com.runcheck.ui.common.rememberFormattedDateTime
+import com.runcheck.ui.components.AnimatedFloatText
+import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.SectionHeader
+import com.runcheck.ui.theme.AccentBlue
+
 import com.runcheck.ui.theme.RuncheckTheme
+import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
 import kotlin.math.roundToInt
@@ -114,7 +117,7 @@ fun SpeedTestScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(
-            title = androidx.compose.ui.res.stringResource(R.string.speed_test_title),
+            title = stringResource(R.string.speed_test_title),
             onBack = onBack
         )
 
@@ -191,14 +194,11 @@ private fun SpeedTestContent(
             textAlign = TextAlign.Center
         )
 
-        SpeedMetricsStrip(state = speedTestState)
-
-        ConnectionStatsRow(state = speedTestState)
+        // Combined metrics card (Download, Upload, Ping, Jitter)
+        SpeedMetricsCard(state = speedTestState)
 
         if (speedTestState.phase is SpeedTestPhase.Failed) {
-            SpeedTestFailureCard(
-                error = speedTestState.phase.error
-            )
+            SpeedTestFailureCard(error = speedTestState.phase.error)
         }
 
         speedTestState.historyLoadError?.let { error ->
@@ -216,7 +216,7 @@ private fun SpeedTestContent(
         }
 
         Text(
-            text = androidx.compose.ui.res.stringResource(R.string.speed_test_mlab_notice),
+            text = stringResource(R.string.speed_test_mlab_notice),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = MaterialTheme.spacing.xl)
@@ -234,10 +234,12 @@ private fun SpeedTestContent(
     }
 }
 
+// ── Network context panel ────────────────────────────────────────────────────────
+
 @Composable
 private fun NetworkContextPanel(networkState: NetworkState) {
     val connectionLabel = when (networkState.connectionType) {
-        ConnectionType.NONE -> androidx.compose.ui.res.stringResource(R.string.network_no_connection)
+        ConnectionType.NONE -> stringResource(R.string.network_no_connection)
         ConnectionType.WIFI,
         ConnectionType.CELLULAR -> connectionDisplayLabel(
             connectionType = networkState.connectionType,
@@ -261,40 +263,21 @@ private fun NetworkContextPanel(networkState: NetworkState) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(
-                    text = androidx.compose.ui.res.stringResource(R.string.speed_test_connection),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = connectionLabel,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
+            MetricPill(
+                label = stringResource(R.string.speed_test_connection),
+                value = connectionLabel
+            )
             networkState.latencyMs?.let { latency ->
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = androidx.compose.ui.res.stringResource(R.string.speed_test_ping),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = androidx.compose.ui.res.stringResource(
-                            R.string.speed_test_ping_line,
-                            androidx.compose.ui.res.stringResource(R.string.speed_test_ping),
-                            latency,
-                            androidx.compose.ui.res.stringResource(R.string.unit_ms)
-                        ),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+                MetricPill(
+                    label = stringResource(R.string.speed_test_ping),
+                    value = "$latency ${stringResource(R.string.unit_ms)}"
+                )
             }
         }
     }
 }
+
+// ── Speed test hero ring ─────────────────────────────────────────────────────────
 
 @Composable
 private fun SpeedTestHero(
@@ -316,10 +299,7 @@ private fun SpeedTestHero(
             initialValue = 0.96f,
             targetValue = 1.04f,
             animationSpec = infiniteRepeatable(
-                animation = tween(
-                    durationMillis = 1700,
-                    easing = FastOutSlowInEasing
-                ),
+                animation = tween(durationMillis = 1700, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse
             ),
             label = "speed_test_pulse_scale"
@@ -328,10 +308,7 @@ private fun SpeedTestHero(
             initialValue = 0.12f,
             targetValue = 0.26f,
             animationSpec = infiniteRepeatable(
-                animation = tween(
-                    durationMillis = 1700,
-                    easing = FastOutSlowInEasing
-                ),
+                animation = tween(durationMillis = 1700, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse
             ),
             label = "speed_test_pulse_alpha"
@@ -340,10 +317,7 @@ private fun SpeedTestHero(
             initialValue = 0f,
             targetValue = 360f,
             animationSpec = infiniteRepeatable(
-                animation = tween(
-                    durationMillis = 1800,
-                    easing = LinearEasing
-                )
+                animation = tween(durationMillis = 1800, easing = LinearEasing)
             ),
             label = "speed_test_rotation"
         ).value
@@ -369,7 +343,10 @@ private fun SpeedTestHero(
 
     val progress by animateFloatAsState(
         targetValue = targetProgress,
-        animationSpec = tween(durationMillis = if (reducedMotion) 0 else 700, easing = FastOutSlowInEasing),
+        animationSpec = tween(
+            durationMillis = if (reducedMotion) 0 else 700,
+            easing = FastOutSlowInEasing
+        ),
         label = "speed_test_ring_progress"
     )
 
@@ -385,9 +362,9 @@ private fun SpeedTestHero(
     val centerLabel = when (state.phase) {
         SpeedTestPhase.Idle -> ""
         SpeedTestPhase.Ping -> ""
-        SpeedTestPhase.Download -> androidx.compose.ui.res.stringResource(R.string.speed_test_download)
-        SpeedTestPhase.Upload -> androidx.compose.ui.res.stringResource(R.string.speed_test_upload)
-        SpeedTestPhase.Completed -> androidx.compose.ui.res.stringResource(R.string.speed_test_download)
+        SpeedTestPhase.Download -> stringResource(R.string.speed_test_download)
+        SpeedTestPhase.Upload -> stringResource(R.string.speed_test_upload)
+        SpeedTestPhase.Completed -> stringResource(R.string.speed_test_download)
         is SpeedTestPhase.Failed -> ""
     }
     val ringActionLabel = heroInstructionText(
@@ -421,7 +398,7 @@ private fun SpeedTestHero(
         ) {
             val stroke = 16.dp.toPx()
             val outerStroke = 2.dp.toPx()
-            val size = Size(this.size.width - stroke, this.size.height - stroke)
+            val arcSize = Size(this.size.width - stroke, this.size.height - stroke)
             val topLeft = Offset(stroke / 2, stroke / 2)
 
             drawCircle(
@@ -441,7 +418,7 @@ private fun SpeedTestHero(
                 sweepAngle = 270f,
                 useCenter = false,
                 topLeft = topLeft,
-                size = size,
+                size = arcSize,
                 style = Stroke(width = stroke, cap = StrokeCap.Round)
             )
 
@@ -460,7 +437,7 @@ private fun SpeedTestHero(
                         sweepAngle = 220f,
                         useCenter = false,
                         topLeft = topLeft,
-                        size = size,
+                        size = arcSize,
                         style = Stroke(width = stroke, cap = StrokeCap.Round)
                     )
                 }
@@ -480,7 +457,7 @@ private fun SpeedTestHero(
                             sweepAngle = 112f,
                             useCenter = false,
                             topLeft = topLeft,
-                            size = size,
+                            size = arcSize,
                             style = Stroke(width = stroke, cap = StrokeCap.Round)
                         )
                     }
@@ -493,7 +470,7 @@ private fun SpeedTestHero(
                         sweepAngle = 72f,
                         useCenter = false,
                         topLeft = topLeft,
-                        size = size,
+                        size = arcSize,
                         style = Stroke(width = stroke, cap = StrokeCap.Round)
                     )
                 }
@@ -514,7 +491,7 @@ private fun SpeedTestHero(
                         sweepAngle = 270f * progress,
                         useCenter = false,
                         topLeft = topLeft,
-                        size = size,
+                        size = arcSize,
                         style = Stroke(width = stroke, cap = StrokeCap.Round)
                     )
                 }
@@ -526,7 +503,7 @@ private fun SpeedTestHero(
                 sweepAngle = 270f,
                 useCenter = false,
                 topLeft = Offset(topLeft.x + 14.dp.toPx(), topLeft.y + 14.dp.toPx()),
-                size = Size(size.width - 28.dp.toPx(), size.height - 28.dp.toPx()),
+                size = Size(arcSize.width - 28.dp.toPx(), arcSize.height - 28.dp.toPx()),
                 style = Stroke(width = outerStroke, cap = StrokeCap.Round)
             )
         }
@@ -536,14 +513,14 @@ private fun SpeedTestHero(
                 AnimatedFloatText(
                     value = centerValue,
                     style = MaterialTheme.typography.displaySmall.copy(
-                        fontFamily = FontFamily.Default,
+                        fontFamily = MaterialTheme.numericFontFamily,
                         fontSize = 40.sp,
                         lineHeight = 44.sp
                     ),
                     decimalPlaces = 1
                 )
                 Text(
-                    text = androidx.compose.ui.res.stringResource(R.string.unit_mbps),
+                    text = stringResource(R.string.unit_mbps),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -558,68 +535,14 @@ private fun SpeedTestHero(
     }
 }
 
-@Composable
-private fun CellularDataWarningDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(text = androidx.compose.ui.res.stringResource(R.string.speed_test_title))
-        },
-        text = {
-            Text(text = androidx.compose.ui.res.stringResource(R.string.speed_test_cellular_warning))
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(text = androidx.compose.ui.res.stringResource(R.string.speed_test_cellular_proceed))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = androidx.compose.ui.res.stringResource(R.string.speed_test_cellular_cancel))
-            }
-        }
-    )
-}
+// ── Combined metrics card (2x2 grid) ─────────────────────────────────────────────
 
 @Composable
-private fun SpeedMetricsStrip(state: SpeedTestUiState) {
+private fun SpeedMetricsCard(state: SpeedTestUiState) {
     val accent = MaterialTheme.colorScheme.primary
-    val softAccent = lerp(accent, MaterialTheme.colorScheme.onSurface, 0.16f)
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
-    ) {
-        MetricGlowCard(
-            title = androidx.compose.ui.res.stringResource(R.string.speed_test_download),
-            value = state.downloadMbps.toFloat(),
-            unit = androidx.compose.ui.res.stringResource(R.string.unit_mbps),
-            accent = accent,
-            modifier = Modifier.weight(1f)
-        )
-        MetricGlowCard(
-            title = androidx.compose.ui.res.stringResource(R.string.speed_test_upload),
-            value = state.uploadMbps.toFloat(),
-            unit = androidx.compose.ui.res.stringResource(R.string.unit_mbps),
-            accent = softAccent,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-private fun MetricGlowCard(
-    title: String,
-    value: Float,
-    unit: String,
-    accent: Color,
-    modifier: Modifier = Modifier
-) {
     Card(
-        modifier = modifier,
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -629,96 +552,83 @@ private fun MetricGlowCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 20.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelMedium,
-                color = accent
-            )
+            // Row 1: Download + Upload
             Row(
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                AnimatedFloatText(
-                    value = value,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = FontFamily.Default,
-                        fontWeight = FontWeight.Normal
-                    ),
-                    decimalPlaces = 1
+                MetricPill(
+                    label = stringResource(R.string.speed_test_download),
+                    value = "${formatDecimal(state.downloadMbps, 1)} ${stringResource(R.string.unit_mbps)}",
+                    valueColor = accent,
+                    modifier = Modifier.weight(1f)
                 )
-                Text(
-                    text = unit,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                MetricPill(
+                    label = stringResource(R.string.speed_test_upload),
+                    value = "${formatDecimal(state.uploadMbps, 1)} ${stringResource(R.string.unit_mbps)}",
+                    valueColor = AccentBlue,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+
+            // Row 2: Ping + Jitter
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                MetricPill(
+                    label = stringResource(R.string.speed_test_ping),
+                    value = if (state.pingMs > 0) {
+                        "${state.pingMs} ${stringResource(R.string.unit_ms)}"
+                    } else {
+                        stringResource(R.string.placeholder_dash)
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+                MetricPill(
+                    label = stringResource(R.string.speed_test_jitter),
+                    value = if (state.jitterMs > 0) {
+                        "${state.jitterMs} ${stringResource(R.string.unit_ms)}"
+                    } else {
+                        stringResource(R.string.placeholder_dash)
+                    },
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
     }
 }
 
-@Composable
-private fun ConnectionStatsRow(state: SpeedTestUiState) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
-    ) {
-        StatPill(
-            label = androidx.compose.ui.res.stringResource(R.string.speed_test_ping),
-            value = if (state.pingMs > 0) state.pingMs.toString() else androidx.compose.ui.res.stringResource(R.string.placeholder_dash),
-            unit = androidx.compose.ui.res.stringResource(R.string.unit_ms),
-            modifier = Modifier.weight(1f)
-        )
-        StatPill(
-            label = androidx.compose.ui.res.stringResource(R.string.speed_test_jitter),
-            value = if (state.jitterMs > 0) state.jitterMs.toString() else androidx.compose.ui.res.stringResource(R.string.placeholder_dash),
-            unit = androidx.compose.ui.res.stringResource(R.string.unit_ms),
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
+// ── Dialogs ──────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun StatPill(
-    label: String,
-    value: String,
-    unit: String,
-    modifier: Modifier = Modifier
+private fun CellularDataWarningDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
 ) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Row(
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Default),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = unit,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.speed_test_title)) },
+        text = { Text(text = stringResource(R.string.speed_test_cellular_warning)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(text = stringResource(R.string.speed_test_cellular_proceed))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.speed_test_cellular_cancel))
             }
         }
-    }
+    )
 }
+
+// ── Error & empty states ─────────────────────────────────────────────────────────
 
 @Composable
 private fun SpeedTestFailureCard(error: String) {
@@ -750,7 +660,7 @@ private fun EmptyHistoryCard() {
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Text(
-            text = androidx.compose.ui.res.stringResource(R.string.speed_test_no_history),
+            text = stringResource(R.string.speed_test_no_history),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(MaterialTheme.spacing.base)
@@ -758,9 +668,12 @@ private fun EmptyHistoryCard() {
     }
 }
 
+// ── Latest result card ───────────────────────────────────────────────────────────
+
 @Composable
 private fun LatestResultCard(result: SpeedTestResult) {
     val dateLabel = rememberTimestampLabel(result.timestamp)
+    val accent = MaterialTheme.colorScheme.primary
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -773,19 +686,15 @@ private fun LatestResultCard(result: SpeedTestResult) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+                .padding(horizontal = 20.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = androidx.compose.ui.res.stringResource(R.string.speed_test_last_result),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                SectionHeader(stringResource(R.string.speed_test_last_result))
                 Text(
                     text = dateLabel,
                     style = MaterialTheme.typography.labelSmall,
@@ -795,24 +704,23 @@ private fun LatestResultCard(result: SpeedTestResult) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                ResultColumn(
-                    label = androidx.compose.ui.res.stringResource(R.string.speed_test_download),
-                    value = result.downloadMbps,
-                    unit = androidx.compose.ui.res.stringResource(R.string.unit_mbps),
+                MetricPill(
+                    label = stringResource(R.string.speed_test_download),
+                    value = "${formatDecimal(result.downloadMbps, 1)} ${stringResource(R.string.unit_mbps)}",
+                    valueColor = accent,
                     modifier = Modifier.weight(1f)
                 )
-                ResultColumn(
-                    label = androidx.compose.ui.res.stringResource(R.string.speed_test_upload),
-                    value = result.uploadMbps,
-                    unit = androidx.compose.ui.res.stringResource(R.string.unit_mbps),
+                MetricPill(
+                    label = stringResource(R.string.speed_test_upload),
+                    value = "${formatDecimal(result.uploadMbps, 1)} ${stringResource(R.string.unit_mbps)}",
+                    valueColor = AccentBlue,
                     modifier = Modifier.weight(1f)
                 )
-                ResultColumn(
-                    label = androidx.compose.ui.res.stringResource(R.string.speed_test_ping),
-                    value = result.pingMs.toDouble(),
-                    unit = androidx.compose.ui.res.stringResource(R.string.unit_ms),
+                MetricPill(
+                    label = stringResource(R.string.speed_test_ping),
+                    value = "${result.pingMs} ${stringResource(R.string.unit_ms)}",
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -820,43 +728,7 @@ private fun LatestResultCard(result: SpeedTestResult) {
     }
 }
 
-@Composable
-private fun ResultColumn(
-    label: String,
-    value: Double,
-    unit: String,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Row(
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            Text(
-                text = if (unit == androidx.compose.ui.res.stringResource(R.string.unit_ms)) {
-                    value.roundToInt().toString()
-                } else {
-                    formatDecimal(value, 1)
-                },
-                style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Default),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = unit,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
+// ── History section ──────────────────────────────────────────────────────────────
 
 @Composable
 private fun HistorySection(results: List<SpeedTestResult>) {
@@ -864,60 +736,86 @@ private fun HistorySection(results: List<SpeedTestResult>) {
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
     ) {
-        Text(
-            text = androidx.compose.ui.res.stringResource(R.string.speed_test_history),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+        SectionHeader(stringResource(R.string.speed_test_history))
 
         results.forEach { result ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = MaterialTheme.spacing.base, vertical = 14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            HistoryResultItem(result = result)
+        }
+    }
+}
+
+@Composable
+private fun HistoryResultItem(result: SpeedTestResult) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = rememberTimestampLabel(result.timestamp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = rememberTimestampLabel(
-                            timestamp = result.timestamp
+                        text = formatDecimal(result.downloadMbps, 0),
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontFamily = MaterialTheme.numericFontFamily
                         ),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = stringResource(R.string.speed_test_download),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                        TinyHistoryMetric(result.downloadMbps, androidx.compose.ui.res.stringResource(R.string.speed_test_download))
-                        TinyHistoryMetric(result.uploadMbps, androidx.compose.ui.res.stringResource(R.string.speed_test_upload))
-                    }
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = formatDecimal(result.uploadMbps, 0),
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontFamily = MaterialTheme.numericFontFamily
+                        ),
+                        color = AccentBlue
+                    )
+                    Text(
+                        text = stringResource(R.string.speed_test_upload),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = result.pingMs.toString(),
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontFamily = MaterialTheme.numericFontFamily
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = stringResource(R.string.speed_test_ping),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
     }
 }
 
-@Composable
-private fun TinyHistoryMetric(value: Double, label: String) {
-    Column(horizontalAlignment = Alignment.End) {
-        Text(
-            text = formatDecimal(value, 0),
-            style = MaterialTheme.typography.titleSmall.copy(fontFamily = FontFamily.Default),
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
+// ── Helpers ──────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun rememberTimestampLabel(timestamp: Long): String =
@@ -927,18 +825,18 @@ private fun rememberTimestampLabel(timestamp: Long): String =
 private fun heroInstructionText(
     hasConnection: Boolean,
     phase: SpeedTestPhase
-): String {
-    return when {
-        !hasConnection -> androidx.compose.ui.res.stringResource(R.string.speed_test_no_connection_hint)
-        phase == SpeedTestPhase.Idle -> androidx.compose.ui.res.stringResource(R.string.speed_test_tap_ring_start)
-        phase == SpeedTestPhase.Ping -> androidx.compose.ui.res.stringResource(R.string.speed_test_phase_ping)
-        phase == SpeedTestPhase.Download -> androidx.compose.ui.res.stringResource(R.string.speed_test_phase_download)
-        phase == SpeedTestPhase.Upload -> androidx.compose.ui.res.stringResource(R.string.speed_test_phase_upload)
-        phase == SpeedTestPhase.Completed -> androidx.compose.ui.res.stringResource(R.string.speed_test_tap_ring_restart)
-        phase is SpeedTestPhase.Failed -> androidx.compose.ui.res.stringResource(R.string.speed_test_tap_ring_retry)
-        else -> ""
-    }
+): String = when {
+    !hasConnection -> stringResource(R.string.speed_test_no_connection_hint)
+    phase == SpeedTestPhase.Idle -> stringResource(R.string.speed_test_tap_ring_start)
+    phase == SpeedTestPhase.Ping -> stringResource(R.string.speed_test_phase_ping)
+    phase == SpeedTestPhase.Download -> stringResource(R.string.speed_test_phase_download)
+    phase == SpeedTestPhase.Upload -> stringResource(R.string.speed_test_phase_upload)
+    phase == SpeedTestPhase.Completed -> stringResource(R.string.speed_test_tap_ring_restart)
+    phase is SpeedTestPhase.Failed -> stringResource(R.string.speed_test_tap_ring_retry)
+    else -> ""
 }
+
+// ── Preview ──────────────────────────────────────────────────────────────────────
 
 @Preview(showBackground = true, widthDp = 412, heightDp = 915)
 @Composable

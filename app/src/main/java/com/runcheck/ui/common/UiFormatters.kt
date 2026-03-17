@@ -11,6 +11,7 @@ import com.runcheck.domain.model.BatteryHealth
 import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.PlugType
+import com.runcheck.domain.model.SignalQuality
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -102,4 +103,13 @@ fun temperatureBandLabel(temperatureC: Float): String = when {
     temperatureC >= 40f -> stringResource(R.string.thermal_hot)
     temperatureC >= 35f -> stringResource(R.string.thermal_warm)
     else -> stringResource(R.string.thermal_cool)
+}
+
+@Composable
+fun signalQualityLabel(quality: SignalQuality): String = when (quality) {
+    SignalQuality.EXCELLENT -> stringResource(R.string.signal_excellent)
+    SignalQuality.GOOD -> stringResource(R.string.signal_good)
+    SignalQuality.FAIR -> stringResource(R.string.signal_fair)
+    SignalQuality.POOR -> stringResource(R.string.signal_poor)
+    SignalQuality.NO_SIGNAL -> stringResource(R.string.connection_none)
 }

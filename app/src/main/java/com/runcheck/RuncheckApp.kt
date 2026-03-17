@@ -3,9 +3,11 @@ package com.runcheck
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import com.google.android.gms.ads.MobileAds
 import com.runcheck.data.billing.ProStatusRepository
 import com.runcheck.domain.repository.CrashReportingController
 import com.runcheck.domain.repository.MonitoringScheduler
+import com.runcheck.pro.ProManager
 import com.runcheck.service.monitor.NotificationHelper
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -26,6 +28,9 @@ class RuncheckApp : Application(), Configuration.Provider {
     lateinit var proStatusRepository: ProStatusRepository
 
     @Inject
+    lateinit var proManager: ProManager
+
+    @Inject
     lateinit var notificationHelper: NotificationHelper
 
     @Inject
@@ -38,7 +43,9 @@ class RuncheckApp : Application(), Configuration.Provider {
         super.onCreate()
 
         proStatusRepository.initialize()
+        proManager.initialize()
         notificationHelper.createChannels()
+        MobileAds.initialize(this) {}
         applicationScope.launch {
             crashReportingController.initialize()
             monitorScheduler.ensureScheduled()

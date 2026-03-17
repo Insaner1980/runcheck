@@ -60,7 +60,14 @@ open class GenericBatterySource(
                 delay(POLLING_INTERVAL_MS)
                 continue
             }
-            val currentMa = normalizeCurrent(rawCurrent)
+            val normalized = normalizeCurrent(rawCurrent)
+            val isCharging = batteryManager.isCharging
+            // Sanity check: ensure sign matches actual charging state
+            val currentMa = when {
+                isCharging && normalized < 0 -> kotlin.math.abs(normalized)
+                !isCharging && normalized > 0 -> -kotlin.math.abs(normalized)
+                else -> normalized
+            }
             val confidence = if (rawCurrent == 0 || !profile.currentNowReliable) {
                 Confidence.UNAVAILABLE
             } else {
@@ -69,8 +76,8 @@ open class GenericBatterySource(
 
             emit(MeasuredValue(currentMa, confidence))
             delay(POLLING_INTERVAL_MS)
-            }
-        }.flowOn(Dispatchers.IO)
+        }
+    }.flowOn(Dispatchers.IO)
 
     protected fun unavailableCurrent(): MeasuredValue<Int> = MeasuredValue(
         value = 0,
@@ -142,6 +149,19 @@ open class GenericBatterySource(
         batteryChangedSharedFlow.map { intent ->
             intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY).orEmpty()
         }
+
+    override fun getChargeCounter(): Flow<Int?> = flow {
+        while (true) {
+            val raw = try {
+                batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
+                    .takeUnless { it == Int.MIN_VALUE || it == 0 }
+            } catch (_: Exception) {
+                null
+            }
+            emit(raw?.let { it / 1000 }) // µAh → mAh
+            delay(POLLING_INTERVAL_MS)
+        }
+    }.flowOn(Dispatchers.IO)
 
     protected fun mapHealth(health: Int): BatteryHealth = when (health) {
         BatteryManager.BATTERY_HEALTH_GOOD -> BatteryHealth.GOOD
