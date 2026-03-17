@@ -434,6 +434,7 @@
     <string name="pro_feature_battery_history_message">Viikon, kuukauden ja koko historian akkudata vaatii runcheck pron.</string>
     <string name="pro_feature_thermal_log_message">Lämpörajoitusten historia vaatii runcheck pron.</string>
     <string name="pro_feature_export_message">CSV-vienti vaatii runcheck pron.</string>
+    <string name="pro_feature_cleanup_message">Tallennustilan puhdistustyökalut vaativat runcheck pron.</string>
 
     <!-- Widgets -->
     <string name="widget_battery_name">Akun tila</string>

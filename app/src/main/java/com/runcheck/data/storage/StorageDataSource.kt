@@ -7,6 +7,8 @@ import android.content.pm.ApplicationInfo
 import android.os.Environment
 import android.os.StatFs
 import android.os.storage.StorageManager
+import com.runcheck.domain.model.MediaBreakdown
+import com.runcheck.domain.model.TrashInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

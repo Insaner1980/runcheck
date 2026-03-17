@@ -50,14 +50,15 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
-import com.runcheck.data.storage.MediaBreakdown
-import com.runcheck.data.storage.TrashInfo
+import com.runcheck.domain.model.MediaBreakdown
+import com.runcheck.domain.model.TrashInfo
 import com.runcheck.domain.model.StorageState
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.components.ActionCard
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.components.ProgressRing
 import com.runcheck.ui.components.PullToRefreshWrapper
@@ -80,6 +81,7 @@ import com.runcheck.ui.theme.statusColors
 fun StorageDetailScreen(
     onBack: () -> Unit,
     onNavigateToCleanup: (com.runcheck.ui.storage.cleanup.CleanupType) -> Unit = {},
+    onUpgradeToPro: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: StorageViewModel = hiltViewModel()
 ) {
@@ -110,7 +112,8 @@ fun StorageDetailScreen(
                 StorageContent(
                     state = state,
                     onRefresh = { viewModel.refresh() },
-                    onNavigateToCleanup = onNavigateToCleanup
+                    onNavigateToCleanup = onNavigateToCleanup,
+                    onUpgradeToPro = onUpgradeToPro
                 )
             }
         }
@@ -121,7 +124,8 @@ fun StorageDetailScreen(
 private fun StorageContent(
     state: StorageUiState.Success,
     onRefresh: () -> Unit,
-    onNavigateToCleanup: (com.runcheck.ui.storage.cleanup.CleanupType) -> Unit = {}
+    onNavigateToCleanup: (com.runcheck.ui.storage.cleanup.CleanupType) -> Unit = {},
+    onUpgradeToPro: () -> Unit = {}
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     val storage = state.storageState
@@ -156,10 +160,19 @@ private fun StorageContent(
             }
 
             // ── Cleanup Tools ──────────────────────────────────────────
-            StorageCleanupToolsSection(
-                storage = storage,
-                onNavigateToCleanup = onNavigateToCleanup
-            )
+            if (state.isPro) {
+                StorageCleanupToolsSection(
+                    storage = storage,
+                    onNavigateToCleanup = onNavigateToCleanup
+                )
+            } else {
+                SectionHeader(text = stringResource(R.string.storage_cleanup_tools))
+                ProFeatureCalloutCard(
+                    message = stringResource(R.string.pro_feature_cleanup_message),
+                    actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+                    onAction = onUpgradeToPro
+                )
+            }
 
             // ── Details ────────────────────────────────────────────────
             StorageDetailsCard(storage = storage)

@@ -6,6 +6,10 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
+import com.runcheck.domain.model.MediaBreakdown
+import com.runcheck.domain.model.MediaCategory
+import com.runcheck.domain.model.ScannedFile
+import com.runcheck.domain.model.TrashInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -278,28 +282,3 @@ class MediaStoreScanner @Inject constructor(
     }
 }
 
-data class MediaBreakdown(
-    val imagesBytes: Long,
-    val videosBytes: Long,
-    val audioBytes: Long,
-    val documentsBytes: Long,
-    val downloadsBytes: Long
-)
-
-data class TrashInfo(
-    val totalBytes: Long,
-    val itemCount: Int
-)
-
-data class ScannedFile(
-    val uri: Uri,
-    val displayName: String,
-    val sizeBytes: Long,
-    val mimeType: String,
-    val dateModified: Long,
-    val category: MediaCategory
-)
-
-enum class MediaCategory {
-    IMAGE, VIDEO, AUDIO, DOCUMENT, DOWNLOAD, APK, OTHER
-}

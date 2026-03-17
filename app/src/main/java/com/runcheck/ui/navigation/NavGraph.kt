@@ -126,7 +126,8 @@ fun RuncheckNavHost(
                 onBack = { navController.popBackStack() },
                 onNavigateToCleanup = { type ->
                     navController.navigateSingleTop("cleanup/${type.name}")
-                }
+                },
+                onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) }
             )
         }
         composable(
