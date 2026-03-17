@@ -434,6 +434,7 @@
     <string name="pro_feature_battery_history_message">Week, month, and all-time battery history require runcheck pro.</string>
     <string name="pro_feature_thermal_log_message">Thermal throttling history requires runcheck pro.</string>
     <string name="pro_feature_export_message">CSV export requires runcheck pro.</string>
+    <string name="pro_feature_cleanup_message">Storage cleanup tools require runcheck pro.</string>
 
     <!-- Widgets -->
     <string name="widget_battery_name">Battery Status</string>

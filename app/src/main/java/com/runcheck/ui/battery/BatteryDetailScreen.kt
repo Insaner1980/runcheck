@@ -719,11 +719,11 @@ private fun BatteryHistoryPreviewPlaceholder() {
             .height(148.dp)
             .graphicsLayer {
                 clip = true
-                shape = RoundedCornerShape(18.dp)
+                shape = RoundedCornerShape(16.dp)
             }
             .background(
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
-                shape = RoundedCornerShape(18.dp)
+                shape = RoundedCornerShape(16.dp)
             )
     ) {
         // Blurred fake area chart

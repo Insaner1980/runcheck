@@ -2,8 +2,8 @@ package com.runcheck.ui.storage.cleanup
 
 import android.net.Uri
 import androidx.compose.runtime.Immutable
-import com.runcheck.data.storage.MediaCategory
-import com.runcheck.data.storage.ScannedFile
+import com.runcheck.domain.model.MediaCategory
+import com.runcheck.domain.model.ScannedFile
 
 sealed interface CleanupUiState {
     data object Idle : CleanupUiState

@@ -6,12 +6,12 @@ import android.os.Build
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.runcheck.data.storage.MediaCategory
 import com.runcheck.data.storage.MediaStoreScanner
-import com.runcheck.data.storage.ScannedFile
 import com.runcheck.data.storage.StorageCleanupHelper
 import com.runcheck.data.storage.StorageDataSource
 import com.runcheck.data.storage.ThumbnailLoader
+import com.runcheck.domain.model.MediaCategory
+import com.runcheck.domain.model.ScannedFile
 import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay

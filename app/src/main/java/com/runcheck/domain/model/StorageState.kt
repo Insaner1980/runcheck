@@ -1,7 +1,5 @@
 package com.runcheck.domain.model
 
-import com.runcheck.data.storage.MediaBreakdown
-import com.runcheck.data.storage.TrashInfo
 
 data class StorageState(
     val totalBytes: Long,

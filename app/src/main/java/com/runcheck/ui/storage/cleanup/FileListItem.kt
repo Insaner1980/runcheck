@@ -40,9 +40,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.runcheck.data.storage.MediaCategory
-import com.runcheck.data.storage.ScannedFile
 import com.runcheck.data.storage.ThumbnailLoader
+import com.runcheck.domain.model.MediaCategory
+import com.runcheck.domain.model.ScannedFile
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.components.IconCircle
 import com.runcheck.ui.components.MiniBar
