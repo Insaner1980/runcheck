@@ -31,4 +31,8 @@ class ThumbnailLoader @Inject constructor(
                 imageBitmap
             } catch (_: Exception) { null }
         }
+
+    fun clearCache() {
+        cache.evictAll()
+    }
 }

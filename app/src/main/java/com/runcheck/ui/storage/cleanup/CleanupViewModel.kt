@@ -225,6 +225,11 @@ class CleanupViewModel @Inject constructor(
         )
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        thumbnailLoader.clearCache()
+    }
+
     // Helper to avoid smart-cast issues
     private fun groups(): List<FileGroup> {
         return (_uiState.value as? CleanupUiState.Results)?.groups ?: emptyList()

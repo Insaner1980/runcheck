@@ -7,6 +7,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,8 +23,11 @@ class ProManager @Inject constructor(
     private val _proState = MutableStateFlow(ProState())
     val proState: StateFlow<ProState> = _proState.asStateFlow()
 
+    private var initJob: Job? = null
+
     fun initialize() {
-        scope.launch {
+        if (initJob != null) return
+        initJob = scope.launch {
             val isFirstLaunch = trialManager.initialize()
 
             combine(
