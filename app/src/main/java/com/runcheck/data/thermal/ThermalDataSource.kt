@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.runcheck.domain.model.ThermalStatus
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -141,6 +142,7 @@ class ThermalDataSource @Inject constructor(
         private const val HEADROOM_FORECAST_SECONDS = 10
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     private suspend fun kotlinx.coroutines.flow.FlowCollector<ThermalStatus>.emitAllThermalStatus() {
         callbackFlow {
             trySend(mapThermalStatus(powerManager.currentThermalStatus))
