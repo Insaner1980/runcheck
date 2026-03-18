@@ -1,6 +1,5 @@
 package com.runcheck.domain.usecase
 
-import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.repository.BatteryRepository
 import javax.inject.Inject
 
@@ -9,7 +8,7 @@ class GetBatteryStatisticsUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(periodDays: Int = DEFAULT_PERIOD_DAYS): BatteryStatistics? {
         val since = System.currentTimeMillis() - periodDays * DAY_MS
-        val readings = batteryRepository.getReadingsSince(since)
+        val readings = batteryRepository.getReadingsSinceSync(since)
         if (readings.size < 2) return null
 
         val sorted = readings.sortedBy { it.timestamp }
@@ -76,15 +75,6 @@ class GetBatteryStatisticsUseCase @Inject constructor(
         const val DEFAULT_PERIOD_DAYS = 10
         private const val DAY_MS = 24 * 60 * 60 * 1000L
     }
-}
-
-/**
- * Suspend version of getReadingsSince that returns a list directly (not Flow).
- */
-private suspend fun com.runcheck.domain.repository.BatteryRepository.getReadingsSince(since: Long): List<BatteryReading> {
-    val readings = mutableListOf<BatteryReading>()
-    // Use getAllReadings and filter, since the Flow-based version doesn't suit one-shot queries
-    return getAllReadings().filter { it.timestamp >= since }
 }
 
 data class BatteryStatistics(
