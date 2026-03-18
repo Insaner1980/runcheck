@@ -108,23 +108,30 @@ class DeviceCapabilityManager @Inject constructor(
         val thermalDir = File("/sys/class/thermal/")
         if (!thermalDir.exists()) return emptyList()
 
-        return thermalDir.listFiles()
-            ?.filter { it.name.startsWith("thermal_zone") }
-            ?.mapNotNull { zone ->
-                val tempFile = File(zone, "temp")
-                val typeFile = File(zone, "type")
-                if (tempFile.exists() && tempFile.canRead()) {
-                    val type = if (typeFile.exists() && typeFile.canRead()) {
-                        typeFile.readText().trim()
+        return try {
+            thermalDir.listFiles()
+                ?.filter { it.name.startsWith("thermal_zone") }
+                ?.mapNotNull { zone ->
+                    val tempFile = File(zone, "temp")
+                    val typeFile = File(zone, "type")
+                    if (tempFile.exists() && tempFile.canRead()) {
+                        try {
+                            if (typeFile.exists() && typeFile.canRead()) {
+                                typeFile.readText().trim()
+                            } else {
+                                zone.name
+                            }
+                        } catch (_: Exception) {
+                            zone.name
+                        }
                     } else {
-                        zone.name
+                        null
                     }
-                    type
-                } else {
-                    null
                 }
-            }
-            ?: emptyList()
+                ?: emptyList()
+        } catch (_: SecurityException) {
+            emptyList()
+        }
     }
 
     private data class CurrentValidation(

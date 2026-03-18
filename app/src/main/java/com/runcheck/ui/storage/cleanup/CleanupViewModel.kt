@@ -141,22 +141,27 @@ class CleanupViewModel @Inject constructor(
         val selectedSize = state.selectedSize
 
         viewModelScope.launch {
-            _uiState.value = CleanupUiState.Deleting(uris.size)
+            try {
+                _uiState.value = CleanupUiState.Deleting(uris.size)
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                val intent = cleanupHelper.createDeleteRequest(uris)
-                if (intent != null) {
-                    _deleteIntent.emit(intent)
-                    return@launch
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    val intent = cleanupHelper.createDeleteRequest(uris)
+                    if (intent != null) {
+                        _deleteIntent.emit(intent)
+                        return@launch
+                    }
                 }
-            }
 
-            // Legacy fallback
-            val deleted = cleanupHelper.deleteLegacy(uris)
-            if (deleted > 0) {
-                onDeleteSuccess(selectedSize)
-            } else {
-                scan() // re-scan on failure
+                // Legacy fallback
+                val deleted = cleanupHelper.deleteLegacy(uris)
+                if (deleted > 0) {
+                    onDeleteSuccess(selectedSize)
+                } else {
+                    scan() // re-scan on failure
+                }
+            } catch (e: Exception) {
+                ReleaseSafeLog.error("CleanupVM", "Delete failed", e)
+                scan()
             }
         }
     }
