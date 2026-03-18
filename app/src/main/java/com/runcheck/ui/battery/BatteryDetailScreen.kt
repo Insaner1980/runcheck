@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.ui.graphics.Color
+import android.os.Build
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
@@ -731,11 +732,17 @@ private fun BatteryHistoryPreviewPlaceholder() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = 16.dp, bottom = 8.dp, start = 8.dp, end = 8.dp)
-                .graphicsLayer {
-                    renderEffect = android.graphics.RenderEffect
-                        .createBlurEffect(18f, 18f, android.graphics.Shader.TileMode.DECAL)
-                        .asComposeRenderEffect()
-                }
+                .then(
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        Modifier.graphicsLayer {
+                            renderEffect = android.graphics.RenderEffect
+                                .createBlurEffect(18f, 18f, android.graphics.Shader.TileMode.DECAL)
+                                .asComposeRenderEffect()
+                        }
+                    } else {
+                        Modifier.graphicsLayer { alpha = 0.3f }
+                    }
+                )
         ) {
             AreaChart(
                 data = fakeData,

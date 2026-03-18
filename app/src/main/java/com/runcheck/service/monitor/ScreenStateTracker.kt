@@ -144,8 +144,9 @@ class ScreenStateTracker @Inject constructor(
         val now = System.currentTimeMillis()
         val elapsed = now - lastTransitionTime
         val currentLevel = getCurrentBatteryLevel()
-        val drain = if (lastTransitionLevel != null && currentLevel != null) {
-            (lastTransitionLevel!! - currentLevel).coerceAtLeast(0).toFloat()
+        val prevLevel = lastTransitionLevel
+        val drain = if (prevLevel != null && currentLevel != null) {
+            (prevLevel - currentLevel).coerceAtLeast(0).toFloat()
         } else 0f
 
         if (screenOn) {
