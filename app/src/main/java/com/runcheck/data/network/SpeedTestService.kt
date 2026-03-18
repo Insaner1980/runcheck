@@ -43,6 +43,7 @@ class SpeedTestService @Inject constructor(
         data class Failed(val error: String) : SpeedTestProgress
     }
 
+    @Volatile
     private var activeTest: NdtTest? = null
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
