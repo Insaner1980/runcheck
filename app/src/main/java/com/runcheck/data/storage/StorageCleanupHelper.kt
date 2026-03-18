@@ -38,38 +38,4 @@ class StorageCleanupHelper @Inject constructor(
         deleted
     }
 
-    /**
-     * Collects all trashed media URIs for emptying the trash.
-     */
-    suspend fun getTrashedUris(): List<Uri> = withContext(Dispatchers.IO) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return@withContext emptyList()
-
-        val uris = mutableListOf<Uri>()
-        val collections = listOf(
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-            MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
-        )
-
-        for (collection in collections) {
-            val bundle = android.os.Bundle().apply {
-                putInt(MediaStore.QUERY_ARG_MATCH_TRASHED, MediaStore.MATCH_ONLY)
-            }
-            try {
-                context.contentResolver.query(
-                    collection,
-                    arrayOf(MediaStore.MediaColumns._ID),
-                    bundle,
-                    null
-                )?.use { cursor ->
-                    val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
-                    while (cursor.moveToNext()) {
-                        val id = cursor.getLong(idCol)
-                        uris.add(android.content.ContentUris.withAppendedId(collection, id))
-                    }
-                }
-            } catch (_: Exception) { }
-        }
-        uris
-    }
 }
