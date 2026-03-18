@@ -28,10 +28,12 @@ app/src/main/java/com/runcheck/
 │   ├── battery/       # BatteryManager wrappers, BatteryDataSourceFactory,
 │   │                  #   GenericBatterySource + manufacturer-specific sources
 │   │                  #   (Android14, Samsung, OnePlus), BatteryCapacityReader
-│   ├── billing/       # Google Play Billing integration
+│   ├── billing/       # BillingManager (lifecycle-aware billing service),
+│   │                  #   ProStatusCache
 │   ├── charger/       # Charger comparison data
 │   ├── crash/         # Firebase Crashlytics integration
-│   ├── device/        # Device detection, DeviceProfile, capability mapping
+│   ├── device/        # Device detection, DeviceProfile, DeviceProfileProvider,
+│   │                  #   DeviceCapabilityManager
 │   ├── db/            # Room database, DAOs, entities, migrations
 │   ├── export/        # Data export functionality
 │   ├── network/       # ConnectivityManager, TelephonyManager, speed test
@@ -57,7 +59,7 @@ app/src/main/java/com/runcheck/
 │   ├── ads/           # Ad banner components
 │   ├── pro/           # Pro upgrade screen, trial UI, purchase flow
 │   ├── theme/         # Dark theme, color tokens, typography, spacing
-│   ├── common/        # Shared formatting helpers (formatPercent, formatTemp, etc.)
+│   ├── common/        # UiText, UiFormatters (formatPercent, formatTemp, etc.)
 │   ├── components/    # 29 shared composables (see Components below)
 │   └── navigation/    # NavGraph + Screen sealed class (push-based from Home)
 ├── pro/               # Pro/trial state management
@@ -71,6 +73,16 @@ app/src/main/java/com/runcheck/
 ├── di/                # Hilt modules
 └── util/              # Logging, timestamp sanitization
 ```
+
+## Architecture Conventions
+
+- **Domain layer must be pure Kotlin** — no `android.*` or `androidx.*` imports in `domain/`. Use `String` instead of `android.net.Uri`, map at data/UI boundaries.
+- **UI layer must not import data layer** — ViewModels inject use cases or domain repository interfaces, never data sources or data-layer classes directly.
+- **Data layer must not import UI framework** — no Compose types (`ImageBitmap`, etc.) in `data/`. Return platform primitives (`Bitmap`), convert in UI layer.
+- **Inject interfaces, not concrete classes** — repositories and data-layer services use interfaces (`DeviceProfileProvider`, `ForegroundAppProvider`). Bind via `@Binds` in Hilt modules.
+- **ViewModels must not hold Context** — use `UiText` sealed interface (`UiText.Resource(@StringRes)` / `UiText.Dynamic(value)`) for error messages and status text. Composables resolve with `.resolve()`.
+- **Business logic belongs in use cases** — repositories handle data access only. Calculations (e.g., `CalculateFillRateUseCase`), state machines (e.g., `TrackThrottlingEventsUseCase`), and formatting logic go in `domain/usecase/`.
+- **`BillingManager` is a lifecycle-aware service, not a repository** — initialized/destroyed by `RuncheckApp`. Widget updates triggered from Application via Flow collection, not from the billing layer.
 
 ## Code Style & Conventions
 
@@ -99,8 +111,8 @@ app/src/main/java/com/runcheck/
 - **Cards:** Flat `BgCard` background, no borders, no shadows, no elevation, 16dp rounded corners
 - **Core components** (32+ in `ui/components/`):
   - Layout: GridCard, ListRow, MetricPill, MetricRow, MetricTile, ActionCard
-  - Indicators: ProgressRing, MiniBar, StatusDot, StatusIndicator, ConfidenceBadge, SignalBars
-  - Charts: TrendChart, AreaChart, SparklineChart, SpeedGauge, HeatStrip, SegmentedBar, SegmentedBarLegend
+  - Indicators: ProgressRing, MiniBar, StatusDot, ConfidenceBadge, SignalBars
+  - Charts: TrendChart, AreaChart, HeatStrip, SegmentedBar, SegmentedBarLegend
   - Navigation: PrimaryTopBar, DetailTopBar
   - Typography: AnimatedNumber, SectionHeader, CardSectionTitle, IconCircle
   - Pro: ProBadgePill, ProFeatureCalloutCard, ProFeatureLockedState
@@ -148,7 +160,7 @@ The storage detail screen provides monitoring and cleanup tools:
   - Trash (API 30+, inline empty via `MediaStore.createDeleteRequest`)
 - **Cleanup screen:** Shared `cleanup/{type}` route, category-grouped file list with thumbnails (`ThumbnailLoader` LRU-50), `MiniBar` per file, `CleanupBottomBar` with before/after projection, `CleanupSuccessOverlay` fade animation
 - **Delete mechanism:** API 30+ `createDeleteRequest` → system dialog via `ActivityResultLauncher`; API 29 `ContentResolver.delete` fallback
-- **Fill rate:** Linear regression on Room history (7-day lookback)
+- **Fill rate:** `CalculateFillRateUseCase` — linear regression on Room history (7-day lookback)
 - **Quick actions:** System intent links (Storage Settings, Free Up Space, Usage Access)
 - **SD card:** Shown if detected via `getExternalFilesDirs`
 
@@ -217,7 +229,7 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 - Pro version: one-time in-app purchase (€3.49), unlocks extended history, widgets, charger comparison, export, advanced insights, and storage cleanup tools
 - Trial system with expiration modal and notification worker
 - Use Google Play Billing Library
-- Gate pro features with a simple `ProStatusRepository` that checks purchase state
+- Gate pro features with `BillingManager` (implements `ProStatusProvider` + `ProPurchaseManager`)
 - Ad banners on detail screens (free tier only)
 
 ## Build & Release
@@ -243,7 +255,6 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 - This is an Android-only app — no iOS, no cross-platform
 - Privacy-first: no analytics, no tracking, no account system, no network calls except optional latency ping
 - Measurement and history data stay on device unless the user explicitly enables crash reporting, which sends crash diagnostics to Firebase Crashlytics
-- The spec file `device-health-monitor-spec.md` in the repo root contains the full feature specification — refer to it for detailed feature requirements and UI design guidelines
 - The roadmap and next steps are documented in `docs/plans/2026-03-10-phase1-completion-and-roadmap.md`
 
 ## Feature Specs
