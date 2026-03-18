@@ -138,7 +138,7 @@ private fun ProUpgradeContent(
         ) {
             Text(
                 text = if (uiState.formattedPrice != null) {
-                    stringResource(R.string.pro_upgrade_buy_button, uiState.formattedPrice!!)
+                    stringResource(R.string.pro_upgrade_buy_button, uiState.formattedPrice)
                 } else {
                     stringResource(R.string.pro_upgrade_buy_button_no_price)
                 },

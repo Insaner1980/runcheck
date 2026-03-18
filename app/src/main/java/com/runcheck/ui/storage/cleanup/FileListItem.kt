@@ -101,7 +101,7 @@ fun FileListItem(
         ) {
             if (thumbnail != null) {
                 Image(
-                    bitmap = thumbnail!!,
+                    bitmap = thumbnail,
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
                     contentScale = ContentScale.Crop
