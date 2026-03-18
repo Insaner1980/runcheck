@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -217,6 +218,7 @@ class ProStatusRepository @Inject constructor(
     }
 
     fun destroy() {
+        scope.cancel()
         billingClient?.endConnection()
         billingClient = null
         cachedProductDetails = null

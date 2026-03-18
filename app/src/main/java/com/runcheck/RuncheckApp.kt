@@ -13,6 +13,7 @@ import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -50,6 +51,12 @@ class RuncheckApp : Application(), Configuration.Provider {
             crashReportingController.initialize()
             monitorScheduler.ensureScheduled()
         }
+    }
+
+    override fun onTerminate() {
+        super.onTerminate()
+        applicationScope.cancel()
+        proStatusRepository.destroy()
     }
 
     override val workManagerConfiguration: Configuration

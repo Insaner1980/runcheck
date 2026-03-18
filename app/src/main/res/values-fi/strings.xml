@@ -20,7 +20,6 @@
     <string name="home_app_usage_card">Sovellusten käyttö</string>
     <string name="home_pro_title">Avaa runcheck pro</string>
     <string name="home_chargers_desc">Testaa ja vertaile latureitasi</string>
-    <string name="home_app_usage_desc">Katso mitkä sovellukset kuluttavat akkua</string>
     <string name="home_health_score">KUNTOPISTEET</string>
     <string name="home_device_good_shape">Laitteesi on %1$s kunnossa.</string>
     <string name="home_temp_elevated">Lämpötila on hieman koholla.</string>
@@ -32,7 +31,6 @@
     <string name="home_insights_desc">Laajennettu historia, widgetit, viennit ja lämpörajoitustiedot ovat käytössä.</string>
     <string name="home_free_suffix">vapaana</string>
     <string name="home_status_summary">%1$s · %2$s · %3$s</string>
-    <string name="home_network_summary">%1$s · %2$s</string>
     <string name="home_thermal_summary">%1$s · %2$s</string>
     <string name="home_storage_free">%1$s %2$s</string>
 
@@ -69,11 +67,9 @@
     <string name="battery_status">Tila</string>
     <string name="battery_plug_type">Tyyppi</string>
     <string name="battery_health">Akun kunto</string>
-    <string name="battery_health_unavailable_short">Kuntotieto ei saatavilla</string>
     <string name="battery_technology">Teknologia</string>
     <string name="battery_cycle_count">Lataussyklit</string>
     <string name="battery_health_percent">Kuntoprosentti</string>
-    <string name="battery_history_24h">Viimeiset 24 tuntia</string>
     <string name="history_period_since_unplug">Irrotuksesta</string>
     <string name="history_period_day">24h</string>
     <string name="history_period_week">Viikko</string>
@@ -99,7 +95,6 @@
     <string name="battery_session_graph_metric_power">Teho</string>
     <string name="battery_session_graph_window_15m">15 min</string>
     <string name="battery_session_graph_window_30m">30 min</string>
-    <string name="battery_session_graph_unavailable">Graafin piirtämiseen ei ole vielä riittävästi latausdataa</string>
     <string name="battery_history_metric_level">Varaus</string>
     <string name="battery_history_metric_temperature">Lämpö</string>
     <string name="battery_history_metric_current">Virta</string>
@@ -123,7 +118,6 @@
     <string name="battery_screen_on">Näyttö päällä</string>
     <string name="battery_screen_off">Näyttö pois</string>
     <string name="battery_usage_section">Akun käyttö</string>
-    <string name="battery_usage_avg_current">~%1$d mA · %2$s</string>
 
     <!-- Sleep Analysis (#8) -->
     <string name="battery_deep_sleep">Syvä uni</string>
@@ -162,7 +156,6 @@
 
     <!-- Units -->
     <string name="unit_percent">%</string>
-    <string name="unit_millivolts">mV</string>
     <string name="unit_milliamps">mA</string>
     <string name="unit_milliamp_hours">mAh</string>
     <string name="unit_celsius">°C</string>
@@ -182,15 +175,11 @@
     <string name="value_duration_hours_minutes">%1$dh %2$dmin</string>
     <string name="value_duration_minutes">%1$dmin</string>
     <string name="value_with_unit_int">%1$d %2$s</string>
-    <string name="speed_test_ping_line">%1$s: %2$d %3$s</string>
-    <string name="speed_test_metric_with_unit">%1$s (%2$s)</string>
     <string name="placeholder_dash">—</string>
 
     <!-- Network Detail -->
     <string name="network_title">Verkko</string>
     <string name="network_connection_type">Yhteystyyppi</string>
-    <string name="network_signal_strength">Signaalivahvuus</string>
-    <string name="network_signal_quality">Signaalin laatu</string>
     <string name="network_wifi_ssid">WiFi-verkko</string>
     <string name="network_wifi_speed">Linkkinopeus</string>
     <string name="network_wifi_frequency">Taajuus</string>
@@ -234,18 +223,11 @@
     <string name="signal_good">Hyvä</string>
     <string name="signal_fair">Kohtalainen</string>
     <string name="signal_poor">Heikko</string>
-    <string name="signal_none">Ei signaalia</string>
 
     <!-- Connection Type -->
     <string name="connection_wifi">WiFi</string>
     <string name="connection_cellular">Mobiiliverkko</string>
     <string name="connection_none">Ei yhteyttä</string>
-    <string name="permissions_intro_title">Salli käyttö täydellisiä laitetietoja varten</string>
-    <string name="permissions_intro_message">runcheck käyttää Androidin järjestelmälupia näyttääkseen WiFi-verkon nimen, mobiiliverkon tiedot ja valinnaiset ilmoitukset. Android näyttää seuraavaksi natiivit lupadialogit.</string>
-    <string name="permissions_intro_continue">Jatka</string>
-    <string name="permissions_intro_not_now">Ei nyt</string>
-    <string name="location_services_title">Ota sijainti käyttöön</string>
-    <string name="location_services_message">Android piilottaa WiFi-verkon nimen, ellei laitteen sijainti ole päällä. runcheck käyttää tätä vain nykyisen WiFi-nimen ja verkkotietojen lukemiseen.</string>
     <string name="location_services_open_settings">Avaa asetukset</string>
     <string name="network_wifi_name_help_title">WiFi-nimi ei ole saatavilla</string>
     <string name="network_wifi_name_permission_needed">Salli sijaintilupa, jotta nykyinen WiFi-verkon nimi voidaan näyttää.</string>
@@ -265,7 +247,6 @@
     <string name="thermal_cpu_unavailable">Ei saatavilla</string>
     <string name="thermal_headroom">Lämpövara</string>
     <string name="thermal_throttling_log">Rajoitusloki</string>
-    <string name="thermal_event_at">%s</string>
     <string name="thermal_no_events">Ei tallennettuja rajoitustapahtumia</string>
     <string name="thermal_event_duration">Kesto: %s</string>
 
@@ -277,7 +258,6 @@
     <string name="thermal_status_critical">Kriittinen</string>
     <string name="thermal_status_emergency">Hätätila</string>
     <string name="thermal_status_shutdown">Sammutus</string>
-    <string name="thermal_session_range">↓ %1$s · ↑ %2$s</string>
 
     <!-- Storage Detail -->
     <string name="storage_title">Tallennustila</string>
@@ -287,7 +267,6 @@
     <string name="storage_apps">Sovellukset</string>
     <string name="storage_media">Media</string>
     <string name="storage_fill_rate">Täyttymisennuste</string>
-    <string name="storage_fill_rate_value">Nykyisellä vauhdilla täynnä ~%1$s</string>
     <string name="storage_sd_card">SD-kortti</string>
 
     <!-- Storage Media Breakdown -->
@@ -348,16 +327,11 @@
     <string name="settings_interval_60">60 minuuttia</string>
     <string name="settings_notifications">Ilmoitukset</string>
     <string name="settings_notifications_desc">Hälytykset: matala akku, korkea lämpötila, vähän tilaa</string>
-    <string name="notification_permission_title">Salli ilmoitukset</string>
-    <string name="notification_permission_message">runcheck voi seurata laitetta ilman ilmoituslupaa, mutta hälytykset pysyvät hiljaisina, kunnes sallit ne.</string>
-    <string name="notification_permission_grant">Myönnä lupa</string>
-    <string name="notification_permission_open_settings">Avaa sovelluksen asetukset</string>
     <string name="settings_measurement_info">Mittaustiedot</string>
     <string name="settings_device_model">%1$s %2$s</string>
     <string name="settings_api_level">API-taso: %1$d</string>
     <string name="settings_current_reading">Virran mittaus: %1$s</string>
     <string name="settings_cycle_count">Syklimäärä: %1$s</string>
-    <string name="settings_thermal_zones_found">Lämpöalueita löytyi: %1$d</string>
     <string name="settings_api_level_label">API-taso</string>
     <string name="settings_current_reading_label">Virran mittaus</string>
     <string name="settings_cycle_count_label">Syklimäärä</string>
@@ -369,12 +343,10 @@
     <string name="settings_privacy">Tietosuoja</string>
     <string name="settings_crash_reporting">Jaa kaatumisraportit</string>
     <string name="settings_crash_reporting_desc">Lähetä anonyymejä kaatumisdiagnostiikkatietoja Firebase Crashlyticsiin virheiden korjaamista varten.</string>
-    <string name="settings_crash_reporting_note">Pois oletuksena. Debug-versiot eivät koskaan lähetä raportteja. Kun asetus poistetaan käytöstä, odottavat lähettämättömät raportit poistetaan paikallisesti.</string>
     <string name="settings_about">Tietoja</string>
     <string name="settings_upgrade_pro">Päivitä pro-versioon</string>
     <string name="settings_upgrade_pro_with_price">Päivitä pro-versioon - %1$s</string>
     <string name="settings_restore_purchase">Palauta ostos</string>
-    <string name="settings_refresh_pro_status">Päivitä pro-tila</string>
     <string name="settings_data_retention_description">Valitse, kuinka pitkään runcheck säilyttää historian tällä laitteella.</string>
     <string name="settings_data_retention_free">Ilmaisversio säilyttää historian viimeiseltä 24 tunnilta. Päivitä prohon, niin voit säilyttää 3 kuukautta, 6 kuukautta, 1 vuoden tai kaiken.</string>
     <string name="settings_retention_3_months">3 kuukautta</string>
@@ -386,7 +358,6 @@
     <string name="settings_restore_unavailable">Play Billing ei ole vielä valmis. Yritä hetken kuluttua uudelleen.</string>
     <string name="settings_billing_unavailable">Play Billing ei ole käytettävissä tällä laitteella. pro-oston vaihtoehdot piilotetaan, kunnes laskutus on saatavilla.</string>
     <string name="settings_pro_active">pro aktiivinen</string>
-    <string name="settings_pro_desc">Laajennettu historia, widgetit ja CSV-vienti</string>
     <string name="settings_pro_thank_you">Kiitos runcheckin tukemisesta!</string>
     <string name="settings_version">Versio %1$s</string>
 
@@ -414,7 +385,6 @@
 
     <!-- Settings: Data Management -->
     <string name="settings_data_section">Data</string>
-    <string name="settings_clear_speed_tests">Tyhjennä nopeustestit</string>
     <string name="settings_clear_all_data">Tyhjennä kaikki seurantadata</string>
     <string name="settings_clear_confirm_title">Tyhjennetäänkö kaikki data?</string>
     <string name="settings_clear_confirm_message">Tämä poistaa pysyvästi kaiken seurantahistorian. Tätä ei voi kumota.</string>
@@ -422,8 +392,6 @@
     <string name="settings_data_cleared">Data tyhjennetty</string>
 
     <!-- Settings: About (extended) -->
-    <string name="settings_whats_new">Uutta</string>
-    <string name="settings_licenses">Avoimen lähdekoodin lisenssit</string>
     <string name="settings_feedback">Lähetä palautetta</string>
     <string name="settings_rate">Arvostele Play Storessa</string>
     <string name="settings_privacy_policy">Tietosuojakäytäntö</string>
@@ -446,7 +414,6 @@
     <string name="widget_percent_value">%1$d%%</string>
     <string name="widget_temperature_value">%1$.1f°C</string>
     <string name="widget_current_value">%1$d mA</string>
-    <string name="widget_pro_required">Vaatii pro-version</string>
     <string name="widget_no_data_title">Ei vielä dataa</string>
     <string name="widget_no_data_message">Avaa runcheck ja kerää mittauksia</string>
 
@@ -470,10 +437,8 @@
     <!-- Export -->
     <string name="settings_data_section">Data</string>
     <string name="settings_export_data">Vie data (CSV)</string>
-    <string name="settings_export_success">Data viety Lataukset-kansioon</string>
     <string name="settings_export_error">Vienti epäonnistui</string>
     <string name="settings_export_ready">Vienti valmis jaettavaksi</string>
-    <string name="settings_exporting">Viedään…</string>
     <string name="settings_export_share_title">Jaa CSV-vienti</string>
 
     <!-- Charger Comparison -->
@@ -501,8 +466,6 @@
 
     <!-- Speed Test -->
     <string name="speed_test_title">Nopeustesti</string>
-    <string name="speed_test_start">Aloita testi</string>
-    <string name="speed_test_running">Testataan…</string>
     <string name="speed_test_open">Avaa</string>
     <string name="speed_test_download">Lataus</string>
     <string name="speed_test_upload">Lähetys</string>
@@ -513,7 +476,6 @@
     <string name="speed_test_history">Historia</string>
     <string name="speed_test_last_result">Viimeisin tulos</string>
     <string name="speed_test_mlab_notice">Nopeustesti toimii M-Labin avulla. Testidata tukee avointa internet-tutkimusta.</string>
-    <string name="speed_test_entry_subtitle">Aja koko näytön nopeustesti, jossa on live-tulokset ja historia.</string>
     <string name="speed_test_tap_ring_start">Napauta rengasta aloittaaksesi nopeustestin</string>
     <string name="speed_test_tap_ring_restart">Napauta rengasta ajaaksesi uuden testin</string>
     <string name="speed_test_tap_ring_retry">Napauta rengasta yrittääksesi uudelleen</string>
@@ -521,7 +483,6 @@
     <string name="speed_test_phase_ping">Mitataan viivettä…</string>
     <string name="speed_test_phase_download">Mitataan latausnopeutta…</string>
     <string name="speed_test_phase_upload">Mitataan lähetysnopeutta…</string>
-    <string name="speed_test_completed">Testi valmis</string>
     <string name="speed_test_failed">Nopeustesti epäonnistui</string>
     <string name="speed_test_error_no_internet">Internet-yhteyttä ei ole saatavilla.</string>
     <string name="speed_test_error_server_unreachable">Nopeustestipalvelimeen ei saatu yhteyttä.</string>
@@ -579,9 +540,7 @@
     <string name="notification_trial_day7_text">7 päivän Pro-kokeilusi on ohi. Avaa Pro säilyttääksesi kaikki ominaisuudet.</string>
 
     <!-- General -->
-    <string name="common_loading">Ladataan…</string>
     <string name="common_error_generic">Jokin meni pieleen</string>
     <string name="common_retry">Yritä uudelleen</string>
-    <string name="not_supported">Ei tuettu tällä laitteella</string>
     <string name="copied_to_clipboard">Kopioitu leikepöydälle</string>
 </resources>

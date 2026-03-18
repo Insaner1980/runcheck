@@ -62,9 +62,7 @@ class StorageRepositoryImpl @Inject constructor(
      */
     private suspend fun calculateFillRate(currentInfo: StorageDataSource.StorageInfo): Long? {
         val since = System.currentTimeMillis() - FILL_RATE_LOOKBACK_MS
-        val readings = storageReadingDao.getAll()
-            .filter { it.timestamp >= since }
-            .sortedBy { it.timestamp }
+        val readings = storageReadingDao.getReadingsSinceSync(since)
 
         if (readings.size < FILL_RATE_MIN_READINGS) return null
 

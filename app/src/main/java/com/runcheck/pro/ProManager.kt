@@ -4,7 +4,6 @@ import com.runcheck.domain.repository.ProStatusProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,8 +21,6 @@ class ProManager @Inject constructor(
 
     private val _proState = MutableStateFlow(ProState())
     val proState: StateFlow<ProState> = _proState.asStateFlow()
-
-    val proStateFlow: Flow<ProState> = _proState.asStateFlow()
 
     fun initialize() {
         scope.launch {

@@ -18,12 +18,6 @@ interface SpeedTestResultDao {
     @Query("SELECT * FROM speed_test_results WHERE timestamp <= :now ORDER BY timestamp DESC LIMIT :limit")
     fun getRecentResults(limit: Int, now: Long): Flow<List<SpeedTestResultEntity>>
 
-    @Query("SELECT * FROM speed_test_results ORDER BY timestamp DESC")
-    fun getAllResults(): Flow<List<SpeedTestResultEntity>>
-
-    @Query("SELECT * FROM speed_test_results WHERE timestamp BETWEEN :since AND :now ORDER BY timestamp DESC")
-    fun getResultsSince(since: Long, now: Long): Flow<List<SpeedTestResultEntity>>
-
     @Query("DELETE FROM speed_test_results WHERE id NOT IN (SELECT id FROM speed_test_results ORDER BY timestamp DESC LIMIT :keepCount)")
     suspend fun deleteOldResults(keepCount: Int)
 

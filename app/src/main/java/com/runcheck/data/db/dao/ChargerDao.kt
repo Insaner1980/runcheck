@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
-import androidx.room.Update
 import com.runcheck.data.db.entity.ChargerProfileEntity
 import com.runcheck.data.db.entity.ChargingSessionEntity
 import kotlinx.coroutines.flow.Flow
@@ -14,9 +13,6 @@ interface ChargerDao {
 
     @Insert
     suspend fun insertCharger(charger: ChargerProfileEntity): Long
-
-    @Update
-    suspend fun updateCharger(charger: ChargerProfileEntity)
 
     @Delete
     suspend fun deleteCharger(charger: ChargerProfileEntity)
@@ -29,9 +25,6 @@ interface ChargerDao {
 
     @Query("SELECT * FROM charger_profiles ORDER BY created DESC")
     fun getChargerProfiles(): Flow<List<ChargerProfileEntity>>
-
-    @Query("SELECT * FROM charging_sessions WHERE charger_id = :chargerId ORDER BY start_time DESC")
-    fun getSessionsForCharger(chargerId: Long): Flow<List<ChargingSessionEntity>>
 
     @Query("SELECT * FROM charging_sessions ORDER BY start_time DESC")
     fun getAllSessions(): Flow<List<ChargingSessionEntity>>
