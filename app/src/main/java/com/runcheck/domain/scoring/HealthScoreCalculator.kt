@@ -261,10 +261,10 @@ class HealthScoreCalculator @Inject constructor() {
     }
 
     companion object {
-        private const val BATTERY_WEIGHT = 0.35f
-        private const val NETWORK_WEIGHT = 0.20f
+        private const val BATTERY_WEIGHT = 0.40f
+        private const val NETWORK_WEIGHT = 0.25f
         private const val THERMAL_WEIGHT = 0.25f
-        private const val STORAGE_WEIGHT = 0.20f
+        private const val STORAGE_WEIGHT = 0.10f
         private const val SPEED_TEST_MAX_AGE_MS = 3_600_000L // 1 hour
     }
 }

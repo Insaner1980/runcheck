@@ -7,14 +7,21 @@ import com.runcheck.data.device.DeviceProfile
 class BatteryDataSourceFactory(
     private val context: Context
 ) {
-    fun create(profile: DeviceProfile): BatteryDataSource = when {
-        profile.apiLevel >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE ->
-            Android14BatterySource(context, profile)
-        profile.manufacturer == "samsung" ->
-            SamsungBatterySource(context, profile)
-        profile.manufacturer == "oneplus" ->
-            OnePlusBatterySource(context, profile)
-        else ->
-            GenericBatterySource(context, profile)
+    fun create(profile: DeviceProfile): BatteryDataSource {
+        val isApi34Plus = profile.apiLevel >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+        return when {
+            // Manufacturer-specific sources take priority for getCurrentNow() quirks.
+            // On API 34+ use combined variants that also provide cycle count / health %.
+            profile.manufacturer == "samsung" ->
+                if (isApi34Plus) SamsungAndroid14BatterySource(context, profile)
+                else SamsungBatterySource(context, profile)
+            profile.manufacturer == "oneplus" ->
+                if (isApi34Plus) OnePlusAndroid14BatterySource(context, profile)
+                else OnePlusBatterySource(context, profile)
+            isApi34Plus ->
+                Android14BatterySource(context, profile)
+            else ->
+                GenericBatterySource(context, profile)
+        }
     }
 }
