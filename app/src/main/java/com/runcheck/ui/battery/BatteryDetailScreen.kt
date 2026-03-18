@@ -1,5 +1,6 @@
 package com.runcheck.ui.battery
 
+import android.os.Build
 import com.runcheck.ui.ads.DetailScreenAdBanner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -726,16 +727,21 @@ private fun BatteryHistoryPreviewPlaceholder() {
                 shape = RoundedCornerShape(16.dp)
             )
     ) {
-        // Blurred fake area chart
+        // Blurred fake area chart (blur requires API 31+)
+        val blurModifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            Modifier.graphicsLayer {
+                renderEffect = android.graphics.RenderEffect
+                    .createBlurEffect(18f, 18f, android.graphics.Shader.TileMode.DECAL)
+                    .asComposeRenderEffect()
+            }
+        } else {
+            Modifier.graphicsLayer { alpha = 0.3f }
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = 16.dp, bottom = 8.dp, start = 8.dp, end = 8.dp)
-                .graphicsLayer {
-                    renderEffect = android.graphics.RenderEffect
-                        .createBlurEffect(18f, 18f, android.graphics.Shader.TileMode.DECAL)
-                        .asComposeRenderEffect()
-                }
+                .then(blurModifier)
         ) {
             AreaChart(
                 data = fakeData,

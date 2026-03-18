@@ -9,6 +9,7 @@ interface BatteryRepository {
     fun getReadingsSince(since: Long, limit: Int? = null): Flow<List<BatteryReading>>
     suspend fun saveReading(state: BatteryState)
     suspend fun getAllReadings(): List<BatteryReading>
+    suspend fun getReadingsSinceSync(since: Long): List<BatteryReading>
     suspend fun deleteOlderThan(cutoff: Long)
     suspend fun getLastChargingTimestamp(): Long?
 }

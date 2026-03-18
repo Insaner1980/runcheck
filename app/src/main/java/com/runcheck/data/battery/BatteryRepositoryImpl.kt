@@ -114,6 +114,10 @@ class BatteryRepositoryImpl @Inject constructor(
         return batteryReadingDao.getAll().map { it.toDomain() }
     }
 
+    override suspend fun getReadingsSinceSync(since: Long): List<BatteryReading> {
+        return batteryReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
+    }
+
     override suspend fun deleteOlderThan(cutoff: Long) {
         batteryReadingDao.deleteOlderThan(cutoff)
     }
