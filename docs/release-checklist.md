@@ -24,10 +24,10 @@
   ```
 - [ ] Set environment variables:
   ```bash
-  export DEVICEPULSE_KEYSTORE_PATH=/path/to/runcheck-upload.jks
-  export DEVICEPULSE_KEYSTORE_PASSWORD=your_password
-  export DEVICEPULSE_KEY_ALIAS=runcheck
-  export DEVICEPULSE_KEY_PASSWORD=your_password
+  export RUNCHECK_KEYSTORE_PATH=/path/to/runcheck-upload.jks
+  export RUNCHECK_KEYSTORE_PASSWORD=your_password
+  export RUNCHECK_KEY_ALIAS=runcheck
+  export RUNCHECK_KEY_PASSWORD=your_password
   ```
 - [ ] Enable Play App Signing in Google Play Console
 - [ ] **NEVER** commit your keystore or passwords to version control

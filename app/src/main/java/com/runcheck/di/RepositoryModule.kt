@@ -2,11 +2,13 @@ package com.runcheck.di
 
 import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.data.appusage.AppBatteryUsageRepositoryImpl
+import com.runcheck.data.appusage.AppUsageDataSource
 import com.runcheck.data.battery.BatteryRepositoryImpl
-import com.runcheck.data.billing.ProStatusRepository
+import com.runcheck.data.billing.BillingManager
 import com.runcheck.data.charger.ChargerRepositoryImpl
 import com.runcheck.data.crash.CrashReportingManager
 import com.runcheck.data.db.RoomTransactionRunner
+import com.runcheck.data.device.DeviceProfileProvider
 import com.runcheck.data.device.DeviceProfileRepositoryImpl
 import com.runcheck.data.export.FileExportRepositoryImpl
 import com.runcheck.data.network.NetworkRepositoryImpl
@@ -20,6 +22,7 @@ import com.runcheck.domain.repository.BatteryRepository as BatteryRepositoryCont
 import com.runcheck.domain.repository.ChargerRepository
 import com.runcheck.domain.repository.CrashReportingController
 import com.runcheck.domain.repository.DatabaseTransactionRunner
+import com.runcheck.domain.usecase.TrackThrottlingEventsUseCase
 import com.runcheck.domain.repository.DeviceProfileRepository as DeviceProfileRepositoryContract
 import com.runcheck.domain.repository.FileExportRepository
 import com.runcheck.domain.repository.MonitoringScheduler
@@ -63,11 +66,11 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindProStatusProvider(impl: ProStatusRepository): ProStatusProvider
+    abstract fun bindProStatusProvider(impl: BillingManager): ProStatusProvider
 
     @Binds
     @Singleton
-    abstract fun bindProPurchaseManager(impl: ProStatusRepository): ProPurchaseManager
+    abstract fun bindProPurchaseManager(impl: BillingManager): ProPurchaseManager
 
     @Binds
     @Singleton
@@ -87,6 +90,10 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindDeviceProfileProvider(impl: DeviceProfileRepositoryImpl): DeviceProfileProvider
+
+    @Binds
+    @Singleton
     abstract fun bindUserPreferencesRepository(impl: UserPreferencesRepositoryImpl): UserPreferencesRepositoryContract
 
     @Binds
@@ -100,6 +107,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindMonitoringScheduler(impl: MonitorScheduler): MonitoringScheduler
+
+    @Binds
+    @Singleton
+    abstract fun bindForegroundAppProvider(impl: AppUsageDataSource): TrackThrottlingEventsUseCase.ForegroundAppProvider
 
     @Binds
     @Singleton

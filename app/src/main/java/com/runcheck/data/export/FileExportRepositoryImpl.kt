@@ -1,7 +1,6 @@
 package com.runcheck.data.export
 
 import android.content.Context
-import android.net.Uri
 import androidx.core.content.FileProvider
 import com.runcheck.domain.repository.FileExportRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -16,7 +15,7 @@ class FileExportRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) : FileExportRepository {
 
-    override suspend fun prepareExportShare(files: Map<String, String>): List<Uri> =
+    override suspend fun prepareExportShare(files: Map<String, String>): List<String> =
         withContext(Dispatchers.IO) {
             val exportRoot = File(context.cacheDir, EXPORT_DIR_NAME).apply {
                 mkdirs()
@@ -34,7 +33,7 @@ class FileExportRepositoryImpl @Inject constructor(
                     context,
                     "${context.packageName}.fileprovider",
                     file
-                )
+                ).toString()
             }
         }
 

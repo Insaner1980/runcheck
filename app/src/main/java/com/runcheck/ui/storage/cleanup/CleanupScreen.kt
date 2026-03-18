@@ -229,7 +229,7 @@ private fun CleanupResultsList(
                             group = group,
                             selectedUris = state.selectedUris,
                             maxFileSize = maxFileSize,
-                            thumbnailLoader = viewModel.thumbnailLoader,
+                            onLoadThumbnail = { uri -> viewModel.loadThumbnail(uri) },
                             onToggleExpanded = { viewModel.toggleGroupExpanded(group.category) },
                             onToggleGroupSelection = { viewModel.toggleGroupSelection(group.category) },
                             onToggleFileSelection = { uri -> viewModel.toggleSelection(uri) }

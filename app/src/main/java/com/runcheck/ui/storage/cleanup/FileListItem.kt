@@ -1,5 +1,6 @@
 package com.runcheck.ui.storage.cleanup
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,12 +36,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.runcheck.data.storage.ThumbnailLoader
 import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.ScannedFile
 import com.runcheck.ui.common.formatStorageSize
@@ -59,7 +60,7 @@ fun FileListItem(
     file: ScannedFile,
     isSelected: Boolean,
     maxFileSize: Long,
-    thumbnailLoader: ThumbnailLoader,
+    onLoadThumbnail: suspend (String) -> Bitmap?,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -72,7 +73,7 @@ fun FileListItem(
 
     if (showThumbnail) {
         LaunchedEffect(file.uri) {
-            thumbnail = thumbnailLoader.loadThumbnail(file.uri)
+            thumbnail = onLoadThumbnail(file.uri)?.asImageBitmap()
         }
     }
 

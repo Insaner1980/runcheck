@@ -125,7 +125,7 @@ fun RuncheckNavHost(
             StorageDetailScreen(
                 onBack = { navController.popBackStack() },
                 onNavigateToCleanup = { type ->
-                    navController.navigateSingleTop("cleanup/${type.name}")
+                    navController.navigateSingleTop(Screen.Cleanup(type.name).route)
                 },
                 onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) }
             )

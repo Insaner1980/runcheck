@@ -2,7 +2,7 @@ package com.runcheck.data.battery
 
 import com.runcheck.data.db.dao.BatteryReadingDao
 import com.runcheck.data.db.entity.BatteryReadingEntity
-import com.runcheck.data.device.DeviceProfileRepositoryImpl
+import com.runcheck.data.device.DeviceProfileProvider
 import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.Confidence
@@ -21,14 +21,14 @@ import javax.inject.Singleton
 @Singleton
 class BatteryRepositoryImpl @Inject constructor(
     private val batteryDataSourceFactory: BatteryDataSourceFactory,
-    private val deviceProfileRepository: DeviceProfileRepositoryImpl,
+    private val deviceProfileProvider: DeviceProfileProvider,
     private val batteryReadingDao: BatteryReadingDao,
     private val batteryCapacityReader: BatteryCapacityReader
 ) : BatteryRepositoryContract {
 
     override fun getBatteryState(): Flow<BatteryState> = flow {
         val profile = withContext(Dispatchers.IO) {
-            deviceProfileRepository.ensureProfileInternal()
+            deviceProfileProvider.getDeviceProfile()
         }
         val source = batteryDataSourceFactory.create(profile)
 

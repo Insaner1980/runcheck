@@ -15,7 +15,7 @@ class DeviceProfileRepositoryImpl @Inject constructor(
     private val deviceDao: DeviceDao,
     private val capabilityManager: DeviceCapabilityManager,
     private val gson: Gson
-) : DeviceProfileRepositoryContract {
+) : DeviceProfileRepositoryContract, DeviceProfileProvider {
 
     override fun getProfile(): Flow<DeviceProfileInfo?> {
         return deviceDao.getDevice().map { entity ->
@@ -46,11 +46,7 @@ class DeviceProfileRepositoryImpl @Inject constructor(
         return getProfileSync() ?: refreshProfile()
     }
 
-    /**
-     * Internal method for data-layer callers that need the raw DeviceProfile
-     * (e.g., BatteryDataSourceFactory which depends on data-layer specific fields).
-     */
-    internal suspend fun ensureProfileInternal(): DeviceProfile {
+    override suspend fun getDeviceProfile(): DeviceProfile {
         val entity = deviceDao.getDeviceSync()
         val profile = entity?.let { gson.fromJson(it.profileJson, DeviceProfile::class.java) }
         return profile ?: capabilityManager.detectCapabilities().also { detected ->

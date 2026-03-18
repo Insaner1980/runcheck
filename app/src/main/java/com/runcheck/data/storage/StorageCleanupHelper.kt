@@ -19,8 +19,9 @@ class StorageCleanupHelper @Inject constructor(
      * API 30+: Creates a PendingIntent that shows the system confirmation dialog
      * for batch deletion. Returns null on older API levels.
      */
-    fun createDeleteRequest(uris: List<Uri>): PendingIntent? {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || uris.isEmpty()) return null
+    fun createDeleteRequest(uriStrings: List<String>): PendingIntent? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || uriStrings.isEmpty()) return null
+        val uris = uriStrings.map { Uri.parse(it) }
         return MediaStore.createDeleteRequest(context.contentResolver, uris)
     }
 
@@ -28,10 +29,11 @@ class StorageCleanupHelper @Inject constructor(
      * API 29 and below: Deletes files one by one without system dialog.
      * Returns count of successfully deleted files.
      */
-    suspend fun deleteLegacy(uris: List<Uri>): Int = withContext(Dispatchers.IO) {
+    suspend fun deleteLegacy(uriStrings: List<String>): Int = withContext(Dispatchers.IO) {
         var deleted = 0
-        uris.forEach { uri ->
+        uriStrings.forEach { uriString ->
             try {
+                val uri = Uri.parse(uriString)
                 if (context.contentResolver.delete(uri, null, null) > 0) deleted++
             } catch (_: SecurityException) { }
         }

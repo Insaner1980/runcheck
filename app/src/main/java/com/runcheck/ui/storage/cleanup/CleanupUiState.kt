@@ -1,6 +1,5 @@
 package com.runcheck.ui.storage.cleanup
 
-import android.net.Uri
 import androidx.compose.runtime.Immutable
 import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.ScannedFile
@@ -12,7 +11,7 @@ sealed interface CleanupUiState {
     @Immutable
     data class Results(
         val groups: List<FileGroup>,
-        val selectedUris: Set<Uri>,
+        val selectedUris: Set<String>,
         val selectedSize: Long,
         val totalSize: Long,
         val totalCount: Int,

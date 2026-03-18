@@ -66,6 +66,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.BuildConfig
 import com.runcheck.R
+import com.runcheck.ui.common.UiText
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.model.TemperatureUnit
@@ -441,29 +442,30 @@ fun SettingsScreen(
             // ── Side effects ───────────────────────────────────────────
             uiState.billingStatus?.let { status ->
                 LaunchedEffect(status) {
-                    Toast.makeText(context, status, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
                     viewModel.clearBillingStatus()
                 }
             }
             uiState.exportStatus?.let { status ->
                 LaunchedEffect(status) {
-                    Toast.makeText(context, status, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
                     viewModel.clearExportStatus()
                 }
             }
-            uiState.exportUris?.let { exportUris ->
-                LaunchedEffect(exportUris) {
-                    val shareIntent = if (exportUris.size == 1) {
+            uiState.exportUris?.let { exportUriStrings ->
+                LaunchedEffect(exportUriStrings) {
+                    val parsedUris = exportUriStrings.map { Uri.parse(it) }
+                    val shareIntent = if (parsedUris.size == 1) {
                         Intent(Intent.ACTION_SEND).apply {
                             type = "text/csv"
-                            putExtra(Intent.EXTRA_STREAM, exportUris.first())
-                            clipData = android.content.ClipData.newRawUri(null, exportUris.first())
+                            putExtra(Intent.EXTRA_STREAM, parsedUris.first())
+                            clipData = android.content.ClipData.newRawUri(null, parsedUris.first())
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
                     } else {
                         Intent(Intent.ACTION_SEND_MULTIPLE).apply {
                             type = "text/csv"
-                            putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(exportUris))
+                            putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(parsedUris))
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
                     }
@@ -473,7 +475,7 @@ fun SettingsScreen(
             }
             uiState.errorMessage?.let { message ->
                 LaunchedEffect(message) {
-                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, message.resolve(context), Toast.LENGTH_SHORT).show()
                     viewModel.clearErrorMessage()
                 }
             }

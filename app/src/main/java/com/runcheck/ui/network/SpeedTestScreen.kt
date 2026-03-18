@@ -67,6 +67,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
+import com.runcheck.ui.common.resolve
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SpeedTestResult
@@ -131,7 +132,7 @@ fun SpeedTestScreen(
             is NetworkUiState.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        text = netState.message,
+                        text = netState.message.resolve(),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -198,11 +199,11 @@ private fun SpeedTestContent(
         SpeedMetricsCard(state = speedTestState)
 
         if (speedTestState.phase is SpeedTestPhase.Failed) {
-            SpeedTestFailureCard(error = speedTestState.phase.error)
+            SpeedTestFailureCard(error = speedTestState.phase.error.resolve())
         }
 
         speedTestState.historyLoadError?.let { error ->
-            SpeedTestFailureCard(error = error)
+            SpeedTestFailureCard(error = error.resolve())
         }
 
         speedTestState.lastResult?.let { result ->

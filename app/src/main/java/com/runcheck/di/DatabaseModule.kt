@@ -163,38 +163,47 @@ object DatabaseModule {
     }
 
     @Provides
+    @Singleton
     fun provideBatteryReadingDao(db: RuncheckDatabase): BatteryReadingDao =
         db.batteryReadingDao()
 
     @Provides
+    @Singleton
     fun provideNetworkReadingDao(db: RuncheckDatabase): NetworkReadingDao =
         db.networkReadingDao()
 
     @Provides
+    @Singleton
     fun provideThermalReadingDao(db: RuncheckDatabase): ThermalReadingDao =
         db.thermalReadingDao()
 
     @Provides
+    @Singleton
     fun provideStorageReadingDao(db: RuncheckDatabase): StorageReadingDao =
         db.storageReadingDao()
 
     @Provides
+    @Singleton
     fun provideDeviceDao(db: RuncheckDatabase): DeviceDao =
         db.deviceDao()
 
     @Provides
+    @Singleton
     fun provideThrottlingEventDao(db: RuncheckDatabase): ThrottlingEventDao =
         db.throttlingEventDao()
 
     @Provides
+    @Singleton
     fun provideChargerDao(db: RuncheckDatabase): ChargerDao =
         db.chargerDao()
 
     @Provides
+    @Singleton
     fun provideAppBatteryUsageDao(db: RuncheckDatabase): AppBatteryUsageDao =
         db.appBatteryUsageDao()
 
     @Provides
+    @Singleton
     fun provideSpeedTestResultDao(db: RuncheckDatabase): SpeedTestResultDao =
         db.speedTestResultDao()
 }

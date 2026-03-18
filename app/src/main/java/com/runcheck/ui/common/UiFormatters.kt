@@ -19,6 +19,10 @@ import java.util.Locale
 fun Throwable.messageOr(defaultMessage: String): String =
     message?.takeUnless(String::isBlank) ?: defaultMessage
 
+fun Throwable.messageOrRes(@androidx.annotation.StringRes defaultRes: Int): UiText =
+    message?.takeUnless(String::isBlank)?.let { UiText.Dynamic(it) }
+        ?: UiText.Resource(defaultRes)
+
 fun formatStorageSize(context: Context, bytes: Long): String =
     Formatter.formatShortFileSize(context, bytes)
 

@@ -19,7 +19,6 @@ import com.runcheck.BuildConfig
 import com.runcheck.billing.ProPurchaseRefreshResult
 import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.util.ReleaseSafeLog
-import com.runcheck.widget.RuncheckWidgets
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,8 +32,13 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Manages the Google Play Billing lifecycle: connection, purchase flow,
+ * acknowledgement, and pro status state. This is a lifecycle-aware service,
+ * not a data repository — it must be explicitly initialized and destroyed.
+ */
 @Singleton
-class ProStatusRepository @Inject constructor(
+class BillingManager @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) : PurchasesUpdatedListener,
     com.runcheck.domain.repository.ProStatusProvider,
@@ -210,7 +214,6 @@ class ProStatusRepository @Inject constructor(
         scope.launch(Dispatchers.IO) {
             runCatching {
                 ProStatusCache.setPro(context, isPro)
-                RuncheckWidgets.updateAll(context)
             }.onFailure { error ->
                 ReleaseSafeLog.error(TAG, "Failed to persist pro state", error)
             }
@@ -226,7 +229,7 @@ class ProStatusRepository @Inject constructor(
     }
 
     companion object {
-        private const val TAG = "ProStatusRepository"
+        private const val TAG = "BillingManager"
         const val PRODUCT_ID_PRO = BuildConfig.PRO_PRODUCT_ID
     }
 }

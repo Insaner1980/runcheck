@@ -128,7 +128,7 @@ class MediaStoreScanner @Inject constructor(
                         ScannedFile(
                             uri = android.content.ContentUris.withAppendedId(
                                 MediaStore.Downloads.EXTERNAL_CONTENT_URI, id
-                            ),
+                            ).toString(),
                             displayName = cursor.getString(nameCol) ?: "Unknown",
                             sizeBytes = cursor.getLong(sizeCol),
                             mimeType = cursor.getString(mimeCol) ?: "",
@@ -174,7 +174,7 @@ class MediaStoreScanner @Inject constructor(
                         val id = cursor.getLong(idCol)
                         results.add(
                             ScannedFile(
-                                uri = android.content.ContentUris.withAppendedId(uri, id),
+                                uri = android.content.ContentUris.withAppendedId(uri, id).toString(),
                                 displayName = cursor.getString(nameCol) ?: "Unknown",
                                 sizeBytes = cursor.getLong(sizeCol),
                                 mimeType = "application/vnd.android.package-archive",
@@ -268,7 +268,7 @@ class MediaStoreScanner @Inject constructor(
                         val id = cursor.getLong(idCol)
                         results.add(
                             ScannedFile(
-                                uri = android.content.ContentUris.withAppendedId(uri, id),
+                                uri = android.content.ContentUris.withAppendedId(uri, id).toString(),
                                 displayName = cursor.getString(nameCol) ?: "Unknown",
                                 sizeBytes = cursor.getLong(sizeCol),
                                 mimeType = cursor.getString(mimeCol) ?: "",

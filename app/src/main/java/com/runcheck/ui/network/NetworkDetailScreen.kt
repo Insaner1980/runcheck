@@ -61,6 +61,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.runcheck.R
+import com.runcheck.ui.common.resolve
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.NetworkState
@@ -130,7 +131,7 @@ fun NetworkDetailScreen(
             is NetworkUiState.Error -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(state.message)
+                        Text(state.message.resolve())
                         TextButton(onClick = { viewModel.refresh() }) {
                             Text(stringResource(R.string.common_retry))
                         }

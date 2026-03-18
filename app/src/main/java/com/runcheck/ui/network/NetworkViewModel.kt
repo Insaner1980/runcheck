@@ -1,6 +1,5 @@
 package com.runcheck.ui.network
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.runcheck.R
@@ -14,8 +13,8 @@ import com.runcheck.domain.usecase.GetMeasuredNetworkStateUseCase
 import com.runcheck.domain.usecase.GetNetworkHistoryUseCase
 import com.runcheck.domain.usecase.GetSpeedTestHistoryUseCase
 import com.runcheck.domain.usecase.RunSpeedTestUseCase
-import com.runcheck.ui.common.messageOr
-import dagger.hilt.android.qualifiers.ApplicationContext
+import com.runcheck.ui.common.UiText
+import com.runcheck.ui.common.messageOrRes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.StateFlow
@@ -32,7 +31,6 @@ private const val PRO_HISTORY_LIMIT = 100
 
 @HiltViewModel
 class NetworkViewModel @Inject constructor(
-    @param:ApplicationContext private val context: Context,
     private val getMeasuredNetworkState: GetMeasuredNetworkStateUseCase,
     private val runSpeedTest: RunSpeedTestUseCase,
     private val getSpeedTestHistory: GetSpeedTestHistoryUseCase,
@@ -103,7 +101,7 @@ class NetworkViewModel @Inject constructor(
                     updateSpeedTestState {
                         copy(
                             phase = SpeedTestPhase.Failed(
-                                e.messageOr(context.getString(R.string.speed_test_failed))
+                                e.messageOrRes(R.string.speed_test_failed)
                             ),
                             isRunning = false
                         )
@@ -160,9 +158,7 @@ class NetworkViewModel @Inject constructor(
                                 updateSpeedTestState {
                                     copy(
                                         phase = SpeedTestPhase.Failed(
-                                            error.messageOr(
-                                                context.getString(R.string.speed_test_error_generic)
-                                            )
+                                            error.messageOrRes(R.string.speed_test_error_generic)
                                         ),
                                         isRunning = false
                                     )
@@ -186,7 +182,7 @@ class NetworkViewModel @Inject constructor(
                         is SpeedTestProgress.Failed -> {
                             updateSpeedTestState {
                                 copy(
-                                    phase = SpeedTestPhase.Failed(progress.error),
+                                    phase = SpeedTestPhase.Failed(UiText.Dynamic(progress.error)),
                                     isRunning = false
                                 )
                             }
@@ -207,7 +203,7 @@ class NetworkViewModel @Inject constructor(
                 .catch { e ->
                     if (_networkUiState.value !is NetworkUiState.Success) {
                         _networkUiState.value = NetworkUiState.Error(
-                            e.messageOr(context.getString(R.string.common_error_generic))
+                            e.messageOrRes(R.string.common_error_generic)
                         )
                     }
                 }
@@ -244,9 +240,7 @@ class NetworkViewModel @Inject constructor(
                 .catch { e ->
                     updateSpeedTestState {
                         copy(
-                            historyLoadError = e.messageOr(
-                                context.getString(R.string.common_error_generic)
-                            )
+                            historyLoadError = e.messageOrRes(R.string.common_error_generic)
                         )
                     }
                 }

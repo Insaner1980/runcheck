@@ -1,11 +1,11 @@
 package com.runcheck.ui.storage.cleanup
 
 import android.app.PendingIntent
-import android.net.Uri
 import android.os.Build
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.graphics.Bitmap
 import com.runcheck.data.storage.MediaStoreScanner
 import com.runcheck.data.storage.StorageCleanupHelper
 import com.runcheck.data.storage.StorageDataSource
@@ -30,7 +30,7 @@ class CleanupViewModel @Inject constructor(
     private val mediaStoreScanner: MediaStoreScanner,
     private val cleanupHelper: StorageCleanupHelper,
     private val storageDataSource: StorageDataSource,
-    val thumbnailLoader: ThumbnailLoader
+    private val thumbnailLoader: ThumbnailLoader
 ) : ViewModel() {
 
     val cleanupType: CleanupType = try {
@@ -99,7 +99,7 @@ class CleanupViewModel @Inject constructor(
         }
     }
 
-    fun toggleSelection(uri: Uri) {
+    fun toggleSelection(uri: String) {
         val state = _uiState.value as? CleanupUiState.Results ?: return
         val newSelected = if (uri in state.selectedUris) {
             state.selectedUris - uri
@@ -187,7 +187,7 @@ class CleanupViewModel @Inject constructor(
         }
     }
 
-    private fun emitResults(selectedUris: Set<Uri>) {
+    private fun emitResults(selectedUris: Set<String>) {
         val groups = allFiles
             .groupBy { it.category }
             .map { (category, files) ->
@@ -224,6 +224,8 @@ class CleanupViewModel @Inject constructor(
             projectedUsagePercent = projectedPct
         )
     }
+
+    suspend fun loadThumbnail(uri: String): Bitmap? = thumbnailLoader.loadThumbnail(uri)
 
     // Helper to avoid smart-cast issues
     private fun groups(): List<FileGroup> {

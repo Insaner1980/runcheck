@@ -13,7 +13,9 @@ import android.os.IBinder
 import android.os.Looper
 import androidx.core.app.NotificationCompat
 import com.runcheck.R
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class RealTimeMonitorService : Service() {
     private val binder = Binder()
     private val mainHandler = Handler(Looper.getMainLooper())

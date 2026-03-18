@@ -1,9 +1,9 @@
 package com.runcheck.ui.settings
 
-import android.net.Uri
 import androidx.compose.runtime.Immutable
 import com.runcheck.domain.model.DeviceProfileInfo
 import com.runcheck.domain.model.UserPreferences
+import com.runcheck.ui.common.UiText
 
 @Immutable
 data class SettingsUiState(
@@ -12,9 +12,9 @@ data class SettingsUiState(
     val isPro: Boolean = false,
     val billingAvailable: Boolean = false,
     val proPrice: String? = null,
-    val billingStatus: String? = null,
+    val billingStatus: UiText? = null,
     val isExporting: Boolean = false,
-    val exportUris: List<Uri>? = null,
-    val exportStatus: String? = null,
-    val errorMessage: String? = null
+    val exportUris: List<String>? = null,
+    val exportStatus: UiText? = null,
+    val errorMessage: UiText? = null
 )

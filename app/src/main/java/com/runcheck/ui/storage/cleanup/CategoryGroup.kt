@@ -1,5 +1,6 @@
 package com.runcheck.ui.storage.cleanup
 
+import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -25,10 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.runcheck.R
-import com.runcheck.data.storage.ThumbnailLoader
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.components.StatusDot
 import com.runcheck.ui.theme.numericFontFamily
@@ -37,12 +35,12 @@ import com.runcheck.ui.theme.spacing
 @Composable
 fun CategoryGroup(
     group: FileGroup,
-    selectedUris: Set<android.net.Uri>,
+    selectedUris: Set<String>,
     maxFileSize: Long,
-    thumbnailLoader: ThumbnailLoader,
+    onLoadThumbnail: suspend (String) -> Bitmap?,
     onToggleExpanded: () -> Unit,
     onToggleGroupSelection: () -> Unit,
-    onToggleFileSelection: (android.net.Uri) -> Unit,
+    onToggleFileSelection: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -114,7 +112,7 @@ fun CategoryGroup(
                         file = file,
                         isSelected = file.uri in selectedUris,
                         maxFileSize = maxFileSize,
-                        thumbnailLoader = thumbnailLoader,
+                        onLoadThumbnail = onLoadThumbnail,
                         onToggle = { onToggleFileSelection(file.uri) }
                     )
                 }
