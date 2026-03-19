@@ -33,6 +33,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,6 +45,7 @@ import com.runcheck.domain.model.AppBatteryUsage
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.ProFeatureLockedState
 import com.runcheck.ui.theme.spacing
+import kotlin.math.roundToInt
 
 @Composable
 fun AppUsageScreen(
@@ -161,7 +165,8 @@ private fun AppUsageContent(state: AppUsageUiState.Success) {
         } else {
             items(
                 items = state.apps,
-                key = { it.packageName }
+                key = { it.packageName },
+                contentType = { "app_usage" }
             ) { app ->
                 AppUsageItem(app = app, maxTime = maxTime)
             }
@@ -176,9 +181,15 @@ private fun AppUsageContent(state: AppUsageUiState.Success) {
 
 @Composable
 private fun AppUsageItem(app: AppBatteryUsage, maxTime: Long) {
+    val context = LocalContext.current
     val hours = app.foregroundTimeMs / 3_600_000
     val minutes = (app.foregroundTimeMs % 3_600_000) / 60_000
     val progress = (app.foregroundTimeMs.toFloat() / maxTime).coerceIn(0f, 1f)
+    val progressDescription = stringResource(
+        R.string.a11y_progress_percent,
+        app.appLabel,
+        (progress * 100).roundToInt()
+    )
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -220,7 +231,12 @@ private fun AppUsageItem(app: AppBatteryUsage, maxTime: Long) {
                 progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(4.dp),
+                    .height(4.dp)
+                    .semantics {
+                        contentDescription = progressDescription
+                        progressBarRangeInfo =
+                            androidx.compose.ui.semantics.ProgressBarRangeInfo(progress, 0f..1f)
+                    },
                 trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
 

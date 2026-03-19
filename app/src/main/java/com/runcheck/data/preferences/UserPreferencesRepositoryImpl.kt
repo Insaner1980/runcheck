@@ -14,7 +14,6 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.model.TemperatureUnit
-import com.runcheck.domain.model.ThemeMode
 import com.runcheck.domain.model.UserPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.catch
@@ -41,11 +40,6 @@ class UserPreferencesRepositoryImpl @Inject constructor(
 
     override fun getPreferences(): Flow<UserPreferences> = preferencesFlow.map { prefs ->
         UserPreferences(
-            themeMode = prefs[KEY_THEME_MODE]
-                ?.let { stored -> enumValueOrNull<ThemeMode>(stored) }
-                ?: ThemeMode.SYSTEM,
-            amoledBlack = prefs[KEY_AMOLED_BLACK] ?: false,
-            dynamicColors = prefs[KEY_DYNAMIC_COLORS] ?: true,
             monitoringInterval = prefs[KEY_MONITORING_INTERVAL]
                 ?.let { stored -> enumValueOrNull<MonitoringInterval>(stored) }
                 ?: MonitoringInterval.THIRTY,
@@ -65,18 +59,6 @@ class UserPreferencesRepositoryImpl @Inject constructor(
                 ?.let { stored -> enumValueOrNull<TemperatureUnit>(stored) }
                 ?: TemperatureUnit.CELSIUS
         )
-    }
-
-    override suspend fun setThemeMode(mode: ThemeMode) {
-        context.dataStore.edit { it[KEY_THEME_MODE] = mode.name }
-    }
-
-    override suspend fun setAmoledBlack(enabled: Boolean) {
-        context.dataStore.edit { it[KEY_AMOLED_BLACK] = enabled }
-    }
-
-    override suspend fun setDynamicColors(enabled: Boolean) {
-        context.dataStore.edit { it[KEY_DYNAMIC_COLORS] = enabled }
     }
 
     override suspend fun setMonitoringInterval(interval: MonitoringInterval) {
@@ -143,9 +125,6 @@ class UserPreferencesRepositoryImpl @Inject constructor(
     }
 
     companion object {
-        private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
-        private val KEY_AMOLED_BLACK = booleanPreferencesKey("amoled_black")
-        private val KEY_DYNAMIC_COLORS = booleanPreferencesKey("dynamic_colors")
         private val KEY_MONITORING_INTERVAL = stringPreferencesKey("monitoring_interval")
         private val KEY_NOTIFICATIONS = booleanPreferencesKey("notifications")
         private val KEY_DATA_RETENTION = stringPreferencesKey("data_retention")

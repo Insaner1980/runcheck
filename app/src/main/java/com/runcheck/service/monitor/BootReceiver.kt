@@ -4,7 +4,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.runcheck.domain.repository.MonitoringScheduler
+import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -23,9 +25,17 @@ class BootReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 monitorScheduler.ensureScheduled()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (t: Throwable) {
+                ReleaseSafeLog.error(TAG, "Failed to reschedule monitoring after boot", t)
             } finally {
                 pendingResult.finish()
             }
         }
+    }
+
+    private companion object {
+        private const val TAG = "BootReceiver"
     }
 }

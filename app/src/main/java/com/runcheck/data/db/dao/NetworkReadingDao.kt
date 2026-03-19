@@ -15,6 +15,20 @@ interface NetworkReadingDao {
     @Query("SELECT * FROM network_readings WHERE timestamp >= :since ORDER BY timestamp ASC")
     fun getReadingsSince(since: Long): Flow<List<NetworkReadingEntity>>
 
+    @Query(
+        """
+            SELECT * FROM network_readings
+            WHERE id IN (
+                SELECT id FROM network_readings
+                WHERE timestamp >= :since
+                ORDER BY timestamp DESC
+                LIMIT :limit
+            )
+            ORDER BY timestamp ASC
+        """
+    )
+    fun getReadingsSinceLimited(since: Long, limit: Int): Flow<List<NetworkReadingEntity>>
+
     @Query("SELECT * FROM network_readings ORDER BY timestamp DESC LIMIT 1")
     fun getLatestReading(): Flow<NetworkReadingEntity?>
 

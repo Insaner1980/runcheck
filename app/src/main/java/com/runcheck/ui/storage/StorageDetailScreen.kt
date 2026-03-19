@@ -35,6 +35,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,12 +43,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.domain.model.MediaBreakdown
@@ -86,6 +95,28 @@ fun StorageDetailScreen(
     viewModel: StorageViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> viewModel.startObserving()
+                Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
+                else -> Unit
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            viewModel.startObserving()
+        }
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            viewModel.stopObserving()
+        }
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(
@@ -94,7 +125,12 @@ fun StorageDetailScreen(
         )
         when (val state = uiState) {
             is StorageUiState.Loading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .semantics { contentDescription = context.getString(R.string.a11y_loading); liveRegion = LiveRegionMode.Polite },
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator()
                 }
             }
@@ -251,8 +287,8 @@ private fun StorageHeroCard(storage: StorageState) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
             val statusParts = buildList {
-                add("$freeFormatted ${stringResource(R.string.storage_available).lowercase()}")
-                storage.fillRateEstimate?.let { add("+${storage.fillRateBytesPerDay?.let { r -> formatStorageSize(context, kotlin.math.abs(r)) } ?: ""}/w") }
+                add(stringResource(R.string.storage_free_available, freeFormatted))
+                storage.fillRateBytesPerDay?.let { r -> add(stringResource(R.string.storage_fill_rate_value, formatStorageSize(context, kotlin.math.abs(r)))) }
             }
             Text(
                 text = statusParts.joinToString(" · "),
@@ -298,44 +334,46 @@ private fun StorageMediaBreakdownCard(breakdown: MediaBreakdown, usedBytes: Long
         breakdown.documentsBytes + breakdown.downloadsBytes
     val otherBytes = (usedBytes - knownTotal).coerceAtLeast(0L)
 
-    val segments = listOf(
-        SegmentData(
-            label = stringResource(R.string.storage_images),
-            value = breakdown.imagesBytes,
-            formattedValue = formatStorageSize(context, breakdown.imagesBytes),
-            color = AccentTeal
-        ),
-        SegmentData(
-            label = stringResource(R.string.storage_videos),
-            value = breakdown.videosBytes,
-            formattedValue = formatStorageSize(context, breakdown.videosBytes),
-            color = AccentBlue
-        ),
-        SegmentData(
-            label = stringResource(R.string.storage_audio),
-            value = breakdown.audioBytes,
-            formattedValue = formatStorageSize(context, breakdown.audioBytes),
-            color = AccentOrange
-        ),
-        SegmentData(
-            label = stringResource(R.string.storage_documents),
-            value = breakdown.documentsBytes,
-            formattedValue = formatStorageSize(context, breakdown.documentsBytes),
-            color = AccentLime
-        ),
-        SegmentData(
-            label = stringResource(R.string.storage_downloads),
-            value = breakdown.downloadsBytes,
-            formattedValue = formatStorageSize(context, breakdown.downloadsBytes),
-            color = AccentYellow
-        ),
-        SegmentData(
-            label = stringResource(R.string.storage_other),
-            value = otherBytes,
-            formattedValue = formatStorageSize(context, otherBytes),
-            color = TextMuted
+    val segments = remember(breakdown, otherBytes, context) {
+        listOf(
+            SegmentData(
+                label = context.getString(R.string.storage_images),
+                value = breakdown.imagesBytes,
+                formattedValue = formatStorageSize(context, breakdown.imagesBytes),
+                color = AccentTeal
+            ),
+            SegmentData(
+                label = context.getString(R.string.storage_videos),
+                value = breakdown.videosBytes,
+                formattedValue = formatStorageSize(context, breakdown.videosBytes),
+                color = AccentBlue
+            ),
+            SegmentData(
+                label = context.getString(R.string.storage_audio),
+                value = breakdown.audioBytes,
+                formattedValue = formatStorageSize(context, breakdown.audioBytes),
+                color = AccentOrange
+            ),
+            SegmentData(
+                label = context.getString(R.string.storage_documents),
+                value = breakdown.documentsBytes,
+                formattedValue = formatStorageSize(context, breakdown.documentsBytes),
+                color = AccentLime
+            ),
+            SegmentData(
+                label = context.getString(R.string.storage_downloads),
+                value = breakdown.downloadsBytes,
+                formattedValue = formatStorageSize(context, breakdown.downloadsBytes),
+                color = AccentYellow
+            ),
+            SegmentData(
+                label = context.getString(R.string.storage_other),
+                value = otherBytes,
+                formattedValue = formatStorageSize(context, otherBytes),
+                color = TextMuted
+            )
         )
-    )
+    }
 
     StoragePanel {
         CardSectionTitle(text = stringResource(R.string.storage_media_breakdown))
@@ -400,11 +438,7 @@ private fun StorageCleanupToolsSection(
                     icon = Icons.Outlined.Delete,
                     iconTint = AccentRed,
                     title = stringResource(R.string.storage_trash),
-                    subtitle = stringResource(
-                        R.string.storage_trash_summary,
-                        formatStorageSize(context, trash.totalBytes),
-                        trash.itemCount
-                    ),
+                    subtitle = pluralStringResource(R.plurals.storage_trash_summary, trash.itemCount, formatStorageSize(context, trash.totalBytes), trash.itemCount),
                     actionLabel = stringResource(R.string.storage_empty_trash),
                     onAction = {
                         // TODO: Empty trash via MediaStore.createDeleteRequest
@@ -430,7 +464,7 @@ private fun StorageDetailsCard(storage: StorageState) {
         )
         MetricRow(
             label = stringResource(R.string.storage_used),
-            value = "${formatStorageSize(context, storage.usedBytes)} (${storage.usagePercent.toInt()}%)"
+            value = stringResource(R.string.storage_used_with_percent, formatStorageSize(context, storage.usedBytes), storage.usagePercent.toInt())
         )
         MetricRow(
             label = stringResource(R.string.storage_available),
@@ -444,8 +478,9 @@ private fun StorageDetailsCard(storage: StorageState) {
         }
         storage.totalCacheBytes?.let { cache ->
             val cacheText = if (storage.appCount != null) {
-                stringResource(
-                    R.string.storage_cache_summary,
+                pluralStringResource(
+                    R.plurals.storage_cache_summary,
+                    storage.appCount,
                     formatStorageSize(context, cache),
                     storage.appCount
                 )
@@ -533,8 +568,7 @@ private fun StorageQuickActionsCard() {
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     )
                 } catch (_: Exception) { }
-            },
-            showDivider = false
+            }
         )
     }
 }
@@ -542,8 +576,7 @@ private fun StorageQuickActionsCard() {
 @Composable
 private fun QuickActionRow(
     label: String,
-    onClick: () -> Unit,
-    showDivider: Boolean = true
+    onClick: () -> Unit
 ) {
     TextButton(
         onClick = onClick,

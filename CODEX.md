@@ -1,176 +1,181 @@
-runcheck Project Instructions
+runcheck Codex Instructions
 
-## Project Overview
+## Scope
 
-runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device health across four categories: battery, network, thermal, and storage. It provides real-time diagnostics, a unified health score, and long-term trend tracking.
+These instructions are for agents working in this repository. Keep this file aligned with `AGENTS.md`. If they ever conflict, resolve the mismatch instead of following two different rule sets.
 
-## Tech Stack
+runcheck is an Android device health diagnostics app built with Kotlin and Jetpack Compose. Product direction is fixed:
 
-- Language: Kotlin (via AGP 9.1.0 built-in Kotlin, `android.builtInKotlin` disabled for KSP compatibility)
-- UI: Jetpack Compose with Material 3 / Material You (BOM 2026.02.01)
-- Min SDK: 26 (Android 8.0)
-- Target SDK: 35 (Android 15)
-- Compile SDK: 36 (required by Vico 3.x)
-- Architecture: MVVM with Clean Architecture layers (`data -> domain -> ui`)
-- Database: Room 2.8.4 for local historical data
-- Async: Kotlin Coroutines 1.10.2 + Flow
-- DI: Hilt 2.59.2
-- Charts: Vico 3.0.3
-- Build: Gradle 9.4.0 with Kotlin DSL, AGP 9.1.0, KSP 2.3.1
+- App name is `runcheck` in lowercase
+- Single dark theme only
+- One-time Pro purchase only
+- No subscriptions
+- No ads as a product direction
+- NDT7 is the speed test backend
+- Minimum SDK stays 26
 
-## Project Structure
+Legacy billing or ad-related code may still exist in the repo. Do not expand that surface unless the task is explicitly about cleanup or migration.
+
+## Current Project Snapshot
+
+- Package root: `com.runcheck`
+- Main module: single `app` module
+- Architecture: Clean Architecture with `data/`, `domain/`, and `ui/`
+- Dependency injection: Hilt
+- Database: Room
+- UI: Jetpack Compose + Material 3
+- Background work: WorkManager
+- Widgets: Glance
+- Speed test: M-Lab NDT7 (`ndt7-client-android`)
+- Build: Gradle Kotlin DSL
+- Compile SDK: 36
+- Target SDK: 35
+- Min SDK: 26
+
+High-level package layout:
 
 ```text
 app/src/main/java/com/runcheck/
-├── runcheckApp.kt     # Application entry point
-├── MainActivity.kt       # Compose activity host
-├── billing/              # Billing contracts and purchase coordination
 ├── data/
-│   ├── battery/        # BatteryManager wrappers, sysfs readers
-│   ├── network/        # ConnectivityManager, TelephonyManager
-│   ├── thermal/        # ThermalManager, CPU temp sysfs readers
-│   ├── storage/        # StorageStatsManager
-│   ├── device/         # Device detection, DeviceProfile, capability mapping
-│   └── db/             # Room database, DAOs, entities, migrations
-├── di/                 # Hilt modules
 ├── domain/
-│   ├── model/          # Domain models (BatteryState, NetworkState, etc.)
-│   ├── usecase/        # Business logic
-│   └── scoring/        # Health score algorithm
 ├── ui/
-│   ├── home/           # Main home screen + ViewModel
-│   ├── battery/        # Battery detail screen + ViewModel
-│   ├── network/        # Network detail screen + ViewModel
-│   ├── thermal/        # Thermal detail screen + ViewModel
-│   ├── storage/        # Storage detail screen + ViewModel
-│   ├── charger/        # Charger comparison screen + ViewModel
-│   ├── appusage/       # App usage screen + ViewModel
-│   ├── settings/       # Settings screen + ViewModel
-│   ├── theme/          # Dark premium theme, typography, spacing, semantic colors
-│   ├── components/     # Shared composables
-│   └── navigation/     # Navigation graph
-├── util/               # Cross-cutting utility helpers
+├── billing/
+├── pro/
+├── di/
 ├── service/
-│   └── monitor/        # Background WorkManager jobs for periodic readings
-└── widget/             # Glance widgets and widget data mappers
+├── worker/
+├── widget/
+└── util/
 ```
 
-## Code Style & Conventions
+## Architecture Rules
 
-- Write idiomatic Kotlin: use data classes, sealed classes/interfaces, and extension functions where appropriate
-- All UI is Jetpack Compose: no XML layouts, no Fragments
-- Use `StateFlow` for ViewModel -> UI state
-- Prefer a single immutable `XxxUiState` data class per screen when a feature has multiple moving parts or partial-loading regions
-- Existing sealed `Loading / Success / Error` state models are acceptable for simple screens; do not mix multiple top-level `StateFlow`s when one screen state can represent the whole surface
-- Name ViewModels as `[Screen]ViewModel`
-- Name UseCases as verb phrases (for example `CalculateHealthScoreUseCase`)
-- Name composables as nouns (for example `HealthGauge`, `BatteryCard`)
-- Keep composables small and focused; extract when they get too large
-- All hardcoded strings go into `strings.xml`
-- Prefer string resource prefixes by scope: `common_*`, feature prefixes like `home_*` / `battery_*`, plus `widget_*`, `notification_*`, `settings_*`
-- Prefer explicit imports; do not use wildcard imports
-- Default `Modifier` ordering: semantics/testing -> layout -> drawing -> interaction -> graphics
-- Comments in English
-- No `!!`; use safe calls, `requireNotNull`, or explicit error handling
+- `data/` owns Android framework access, persistence, device APIs, and external SDK integration
+- `domain/` contains business logic, use cases, repository contracts, and domain models
+- `domain/` must not import `android.*` or concrete `data/` implementations
+- `ui/` contains Compose screens, components, navigation, and ViewModels
+- `ui/` must not bypass use cases or repository contracts to talk directly to data sources
+- ViewModels are the bridge between `ui/` and `domain/`
 
-## Design Rules
+Prefer targeted changes that preserve the existing structure instead of cross-layer rewrites.
 
-- Use `MaterialTheme.colorScheme` everywhere; never hardcode colors in feature code unless extending the design tokens
-- The app currently ships a single dark premium theme; do not reintroduce light/AMOLED/dynamic theme branching without a product reason
-- Never use pure white (`#FFFFFF`) text on dark backgrounds; prefer softer text colors
-- Use semantic status colors through theme extensions:
-  - Green for healthy/good
-  - Yellow/amber for fair/attention
-  - Red for poor/critical
-- Accent teal and blue are the primary emphasis colors for battery/home surfaces
-- Status colors must always be paired with icons or text labels
-- Contrast ratio minimum: 4.5:1 body text, 3:1 large text
-- All shapes use the Material 3 shape system
-- Minimum touch target: 48dp
-- Use monospaced numeric typography for real-time values that would otherwise jitter
-- Main UI font is Manrope; JetBrains Mono is reserved for selected numeric metrics
-- Respect reduced motion accessibility settings
-- Spacing follows a 4dp grid: 4 / 8 / 12 / 16 / 24 / 32dp
+## Review Priorities
 
-## Device Detection System
+When reviewing or modifying code, check these first and in this order.
 
-The `DeviceCapabilityManager` determines what data is reliably available on the current device. The app must never show inaccurate data without warning.
+### 1. Layer boundaries
+
+- Flag any `domain/` dependency on Android or `data/`
+- Flag any `ui/` dependency that bypasses the ViewModel/use-case path
+- Keep business logic out of composables
+
+### 2. Measurement reliability
+
+- Every sensor-facing value must use `MeasuredValue<T>`
+- Confidence must be `ACCURATE`, `ESTIMATED`, or `UNAVAILABLE`
+- Raw values must not be shown without a confidence indicator such as `ConfidenceBadge`
+- Validate `BATTERY_PROPERTY_CURRENT_NOW` with repeated reads, non-zero checks, plausible range `-10000..+10000 mA`, and charge-state sign sanity
+- Thermal data must use `PowerManager.getCurrentThermalStatus()` on API 29+ and `getThermalHeadroom()` on API 30+
+- Do not add sysfs-based thermal reads
+
+### 3. API level guards
+
+- Guard API 29+ calls with `Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q`
+- Guard API 30+ calls with `Build.VERSION.SDK_INT >= Build.VERSION_CODES.R`
+- Guard API 34+ calls with `Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE`
+- Min SDK is 26, so anything above that needs an explicit guard or safe fallback
+
+### 4. Pro gating
+
+Pro features are:
+
+- Charger Comparison
+- App Usage
+- Extended History
+- Thermal Logs
+- CSV Export
+- Widgets
+- Remaining Charge Time
 
 Rules:
-- Validate `BATTERY_PROPERTY_CURRENT_NOW` at startup for non-zero, changing, plausible values
-- Store results in `DeviceProfile` and use them throughout the app
-- Show confidence badges: Accurate / Estimated / Unavailable
-- If a metric is unavailable, hide it or show a clear unsupported/unavailable state
-- Never show unsupported metrics as zero
 
-## Manufacturer-Specific Handling
+- Check `ProManager.isPro()` or the injected `ProStatusProvider` equivalent before exposing the feature
+- Use `ProFeatureLockedState` for locked UI, not a custom replacement
+- Preserve the one-time purchase model
 
-Use `BatteryDataSourceFactory` to select the best battery data source:
-- API 34+ devices: use `BATTERY_PROPERTY_CHARGING_CYCLE_COUNT` and `STATE_OF_HEALTH`
-- Samsung: handle theoretical-current-only readings
-- OnePlus: handle SUPERVOOC sign conventions
-- Google Pixel: treat as baseline for reliable behavior
-- Fallback: `GenericBatterySource` with confidence warnings
+### 5. Speed test
 
-## Background Monitoring
+- Use M-Lab NDT7 only
+- Do not hardcode a server; NDT7 chooses the nearest server
+- Show the cellular warning before the test starts when the active network is not Wi-Fi
 
-- Use WorkManager for periodic background readings
-- Default interval: 30 minutes (user-configurable: 15 / 30 / 60 minutes)
-- Foreground service only while the user is actively viewing real-time data
-- Respect battery optimization
-- Handle missing background samples gracefully in charts and trends
+### 6. Motion and animation
 
-## Database
+- All animations must respect `LocalReducedMotion.current` or `MaterialTheme.reducedMotion`
+- Skip or shorten motion when reduced motion is enabled
+- Standard durations:
+  - `ProgressRing`: 1200ms
+  - `MiniBar`: 800ms
+  - `SegmentedBar`: 800ms
+  - `Thermometer`: 1200ms
+  - Battery wave: 2000ms loop
 
-- Use Room with auto-migrations where appropriate
-- Free tier retains only 24 hours of readings
-- Pro tier supports configurable retention
-- Timestamp columns need indices for range queries
+### 7. UI consistency
 
-## Testing
+- Background colors:
+  - `BgPage` `#0B1E24`
+  - `BgCard` `#133040`
+  - `BgIconCircle` `#1A3A4D`
+- Primary accent: teal `#5DE4C7`
+- Gauge arcs stay neutral white/gray; accent color is only for the indicator
+- Status colors are for small badges and dots, not large fills
+- Typography:
+  - Manrope for body text
+  - JetBrains Mono for hero numbers and gauge values
+- Card radius: 16dp
+- Small-element radius: 8dp
+- No shadows, no elevation, no borders, except `ActionCards` with `1dp outlineVariant` at `35%` alpha
 
-- Write unit tests for use cases and scoring logic
-- Write unit tests for device capability/profile validation logic
-- Use Compose UI tests for critical flows
-- Fake or mock Android system APIs in tests
+### 8. Accessibility
 
-## Monetization
+- Minimum touch target: 48dp
+- Charts, rings, bars, and similar visuals need content descriptions
+- Status must never rely on color alone; pair it with text or icon
 
-- Free version: core monitoring with locked Pro feature entry points where applicable
-- Pro version: one-time in-app purchase unlocking extended history, widgets, charger comparison, export, and advanced insights
-- Use Google Play Billing
-- Gate pro features through `ProStatusRepository`
+## What To Flag
 
-## Build & Release
+Raise a review comment or fix request for any of these:
 
-- Single `app` module unless there is a clear need for more
-- ProGuard / R8 enabled for release builds
-- Generate signed APK / AAB for Play Store
-- Version code auto-increments
-- Version name follows semver
+- Layer boundary violations
+- Missing API guards
+- Sensor data shown without `MeasuredValue` or `ConfidenceBadge`
+- Pro content exposed without `isPro()` gating
+- Animation ignoring reduced motion
+- Hardcoded colors that do not match the palette
+- Touch targets smaller than 48dp
+- Sysfs-based thermal reads
+- NDT7 speed tests pinned to a fixed server
 
-## Build Notes
+## Working Conventions
 
-- `android.builtInKotlin=false` is required because KSP 2.3.1 needs the separate Kotlin plugin
-- `android.disallowKotlinSourceSets=false` is required for KSP generated sources with AGP 9
-- `kotlin.compose` plugin is applied separately for Compose compiler support
-- `BatteryManager.BATTERY_PROPERTY_CHARGING_CYCLE_COUNT` and `STATE_OF_HEALTH` are not public SDK constants; use raw constants 8 and 12
-- Pull-to-refresh uses `PullToRefreshBox`
-- Vico 3.x no longer needs the old `core` module
+- Prefer explicit imports
+- Avoid wildcard imports
+- Keep comments in English
+- Avoid `!!`
+- Put user-facing strings in resources
+- Keep composables small and focused
+- Keep ViewModel state explicit and testable
+- Prefer minimal, targeted edits over broad rewrites
 
-## Important Notes
+## Practical Build Notes
 
-- Android-only app; no iOS or cross-platform targets
-- Privacy-first: no analytics, no tracking, no accounts
-- No external network calls except optional latency / speed-test related checks
-- Measurement and history data stay on device unless the user explicitly enables crash reporting, which sends crash diagnostics to Firebase Crashlytics
-- `device-health-monitor-spec.md` contains the full feature spec
-- `docs/plans/2026-03-10-phase1-completion-and-roadmap.md` contains roadmap and next steps
-- `docs/plans/2026-03-12-battery-detail-redesign-plan.md` documents the Battery-detail redesign direction
+- Kotlin version comes from `gradle/libs.versions.toml`
+- Compose uses the BOM defined in the version catalog
+- Hilt, Room, KSP, ktlint, and detekt are already wired into the build
+- Crash reporting code may exist, but do not add analytics or tracking behavior
 
-## Modification Rules For Codex
+Useful local commands:
 
-- Prefer minimal, targeted changes
-- Do not rewrite working modules unless requested
-- Follow existing architecture and naming conventions
-- Keep UI and business logic separated by layer boundaries
+- `./gradlew test`
+- `./gradlew ktlintCheck detekt`
+- `./gradlew assembleDebug`

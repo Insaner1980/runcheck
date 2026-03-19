@@ -13,9 +13,12 @@ import javax.inject.Singleton
 
 @Singleton
 class ThumbnailLoader @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
-    private val cache = LruCache<String, Bitmap>(50)
+    private val maxCacheBytes = (Runtime.getRuntime().maxMemory() / 16).toInt()
+    private val cache = object : LruCache<String, Bitmap>(maxCacheBytes) {
+        override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
+    }
 
     suspend fun loadThumbnail(uriString: String, sizePx: Int = 96): Bitmap? =
         withContext(Dispatchers.IO) {

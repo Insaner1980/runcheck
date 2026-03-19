@@ -13,7 +13,7 @@ import androidx.compose.ui.platform.LocalContext
  */
 @Stable
 sealed interface UiText {
-    data class Resource(@StringRes val id: Int) : UiText
+    data class Resource(@param:StringRes val id: Int) : UiText
     data class Dynamic(val value: String) : UiText
 
     fun resolve(context: Context): String = when (this) {

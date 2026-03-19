@@ -6,7 +6,6 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,7 +19,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.ui.common.formatStorageSize
@@ -42,6 +47,11 @@ fun CleanupBottomBar(
 ) {
     val context = LocalContext.current
     val noMotion = MaterialTheme.reducedMotion
+    val projectionDesc = stringResource(
+        R.string.a11y_storage_projection,
+        currentUsagePercent.toInt(),
+        projectedUsagePercent.toInt()
+    )
 
     AnimatedVisibility(
         visible = visible,
@@ -61,29 +71,23 @@ fun CleanupBottomBar(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(MaterialTheme.spacing.base)
+                        .semantics { liveRegion = LiveRegionMode.Polite }
                 ) {
                     // Before → after projection
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = "${currentUsagePercent.toInt()}%",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontFamily = MaterialTheme.numericFontFamily
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = " → ",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "${projectedUsagePercent.toInt()}%",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontFamily = MaterialTheme.numericFontFamily
-                            ),
-                            color = AccentTeal
-                        )
-                    }
+                    Text(
+                        text = stringResource(
+                            R.string.storage_projection_visual,
+                            currentUsagePercent.toInt(),
+                            projectedUsagePercent.toInt()
+                        ),
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontFamily = MaterialTheme.numericFontFamily
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.clearAndSetSemantics {
+                            contentDescription = projectionDesc
+                        }
+                    )
 
                     Spacer(modifier = Modifier.height(4.dp))
 
@@ -92,7 +96,8 @@ fun CleanupBottomBar(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(4.dp),
-                        progressColor = AccentTeal
+                        fillColor = AccentTeal,
+                        contentDescription = projectionDesc
                     )
 
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
@@ -106,11 +111,7 @@ fun CleanupBottomBar(
                         )
                     ) {
                         Text(
-                            stringResource(
-                                R.string.cleanup_free_action,
-                                formatStorageSize(context, selectedSize),
-                                selectedCount
-                            )
+                            pluralStringResource(R.plurals.cleanup_free_action, selectedCount, formatStorageSize(context, selectedSize), selectedCount)
                         )
                     }
                 }

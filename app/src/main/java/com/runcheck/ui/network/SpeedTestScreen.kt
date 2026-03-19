@@ -51,9 +51,12 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -93,6 +96,7 @@ fun SpeedTestScreen(
     viewModel: NetworkViewModel = hiltViewModel()
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
+    val context = LocalContext.current
     val networkUiState by viewModel.networkUiState.collectAsStateWithLifecycle()
     val speedTestState by viewModel.speedTestState.collectAsStateWithLifecycle()
 
@@ -124,7 +128,15 @@ fun SpeedTestScreen(
 
         when (val netState = networkUiState) {
             is NetworkUiState.Loading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .semantics {
+                            contentDescription = context.getString(R.string.a11y_loading)
+                            liveRegion = LiveRegionMode.Polite
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator()
                 }
             }
@@ -192,7 +204,8 @@ private fun SpeedTestContent(
             ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
         )
 
         // Combined metrics card (Download, Upload, Ping, Jitter)
@@ -553,7 +566,8 @@ private fun SpeedMetricsCard(state: SpeedTestUiState) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 18.dp),
+                .padding(horizontal = 20.dp, vertical = 18.dp)
+                .semantics { liveRegion = LiveRegionMode.Polite },
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Row 1: Download + Upload

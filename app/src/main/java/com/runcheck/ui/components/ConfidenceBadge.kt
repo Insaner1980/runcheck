@@ -5,12 +5,12 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.animation.core.snap
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -23,6 +23,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.domain.model.Confidence
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.statusColors
 
@@ -52,18 +56,14 @@ fun ConfidenceBadge(
         Confidence.UNAVAILABLE -> stringResource(R.string.confidence_unavailable)
     }
 
-    var scale by remember(reducedMotion) { mutableFloatStateOf(if (reducedMotion) 1f else 0f) }
-    LaunchedEffect(reducedMotion) {
-        if (!reducedMotion) {
-            scale = 1f
-        }
-    }
+    var targetScale by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(Unit) { targetScale = 1f }
 
     val animatedScale by animateFloatAsState(
-        targetValue = scale,
-        animationSpec = spring(
-            dampingRatio = if (reducedMotion) 1f else 0.6f,
-            stiffness = if (reducedMotion) Spring.StiffnessHigh else Spring.StiffnessMedium
+        targetValue = targetScale,
+        animationSpec = if (reducedMotion) snap() else spring(
+            dampingRatio = 0.6f,
+            stiffness = Spring.StiffnessMedium
         ),
         label = "badge_scale"
     )
@@ -71,6 +71,10 @@ fun ConfidenceBadge(
     Box(
         modifier = modifier
             .scale(animatedScale)
+            .semantics {
+                contentDescription = label
+                role = Role.Image
+            }
             .background(backgroundColor, RoundedCornerShape(50))
             .padding(horizontal = 12.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center

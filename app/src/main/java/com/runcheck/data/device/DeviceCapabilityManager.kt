@@ -3,11 +3,11 @@ package com.runcheck.data.device
 import android.content.Context
 import android.os.BatteryManager
 import android.os.Build
+import androidx.annotation.VisibleForTesting
 import com.runcheck.domain.model.CurrentUnit
 import com.runcheck.domain.model.SignConvention
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
-import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.abs
@@ -25,7 +25,6 @@ class DeviceCapabilityManager @Inject constructor(
         val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
 
         val currentValidation = validateCurrentNow(batteryManager)
-        val thermalZones = discoverThermalZones()
 
         return DeviceProfile(
             manufacturer = manufacturer,
@@ -36,7 +35,7 @@ class DeviceCapabilityManager @Inject constructor(
             currentNowSignConvention = currentValidation.signConvention,
             cycleCountAvailable = apiLevel >= 34,
             batteryHealthPercentAvailable = apiLevel >= 34,
-            thermalZonesAvailable = thermalZones,
+            thermalZonesAvailable = emptyList(),
             storageHealthAvailable = true
         )
     }
@@ -76,7 +75,7 @@ class DeviceCapabilityManager @Inject constructor(
         }
 
         val isReliable = nonZero && changing && plausible
-        val signConvention = inferSignConvention(batteryManager, readings)
+        val signConvention = inferSignConvention(batteryManager.isCharging, readings)
 
         return CurrentValidation(
             isReliable = isReliable,
@@ -85,47 +84,13 @@ class DeviceCapabilityManager @Inject constructor(
         )
     }
 
-    private fun inferUnit(readings: List<Int>): CurrentUnit {
-        val maxAbs = readings.maxOfOrNull { abs(it) } ?: 0
-        return if (maxAbs > MICROAMP_THRESHOLD) CurrentUnit.MICROAMPS else CurrentUnit.MILLIAMPS
-    }
+    private fun inferUnit(readings: List<Int>): CurrentUnit =
+        Companion.inferUnit(readings)
 
     private fun inferSignConvention(
-        batteryManager: BatteryManager,
+        isCharging: Boolean,
         readings: List<Int>
-    ): SignConvention {
-        val isCharging = batteryManager.isCharging
-        val avgReading = readings.average()
-
-        return if (isCharging && avgReading > 0 || !isCharging && avgReading < 0) {
-            SignConvention.POSITIVE_CHARGING
-        } else {
-            SignConvention.NEGATIVE_CHARGING
-        }
-    }
-
-    private fun discoverThermalZones(): List<String> {
-        val thermalDir = File("/sys/class/thermal/")
-        if (!thermalDir.exists()) return emptyList()
-
-        return thermalDir.listFiles()
-            ?.filter { it.name.startsWith("thermal_zone") }
-            ?.mapNotNull { zone ->
-                val tempFile = File(zone, "temp")
-                val typeFile = File(zone, "type")
-                if (tempFile.exists() && tempFile.canRead()) {
-                    val type = if (typeFile.exists() && typeFile.canRead()) {
-                        typeFile.readText().trim()
-                    } else {
-                        zone.name
-                    }
-                    type
-                } else {
-                    null
-                }
-            }
-            ?: emptyList()
-    }
+    ): SignConvention = Companion.inferSignConvention(isCharging, readings)
 
     private data class CurrentValidation(
         val isReliable: Boolean,
@@ -134,9 +99,28 @@ class DeviceCapabilityManager @Inject constructor(
     )
 
     companion object {
-        private const val VALIDATION_SAMPLE_COUNT = 5
-        private const val VALIDATION_SAMPLE_DELAY_MS = 500L
-        private const val MICROAMP_THRESHOLD = 10000
+        private const val VALIDATION_SAMPLE_COUNT = 3
+        private const val VALIDATION_SAMPLE_DELAY_MS = 300L
+        internal const val MICROAMP_THRESHOLD = 10000
         private const val MAX_PLAUSIBLE_CURRENT_MA = 10000
+
+        @VisibleForTesting
+        internal fun inferUnit(readings: List<Int>): CurrentUnit {
+            val maxAbs = readings.maxOfOrNull { abs(it) } ?: 0
+            return if (maxAbs > MICROAMP_THRESHOLD) CurrentUnit.MICROAMPS else CurrentUnit.MILLIAMPS
+        }
+
+        @VisibleForTesting
+        internal fun inferSignConvention(
+            isCharging: Boolean,
+            readings: List<Int>
+        ): SignConvention {
+            val avgReading = readings.average()
+            return if (isCharging && avgReading > 0 || !isCharging && avgReading < 0) {
+                SignConvention.POSITIVE_CHARGING
+            } else {
+                SignConvention.NEGATIVE_CHARGING
+            }
+        }
     }
 }

@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -17,7 +18,7 @@ fun MetricPill(
     modifier: Modifier = Modifier,
     valueColor: Color = MaterialTheme.colorScheme.onSurface
 ) {
-    Column(modifier = modifier) {
+    Column(modifier = modifier.semantics(mergeDescendants = true) {}) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,

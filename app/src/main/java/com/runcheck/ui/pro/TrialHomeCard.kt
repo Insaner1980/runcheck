@@ -22,6 +22,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
@@ -42,6 +45,11 @@ fun TrialHomeCard(
     val isUrgent = proState.trialDaysRemaining <= 1
     val borderColor = if (isUrgent) AccentOrange else MaterialTheme.colorScheme.primary
     val progress = 1f - (proState.trialDaysRemaining.toFloat() / TrialManager.TRIAL_DURATION_DAYS)
+    val progressDescription = stringResource(
+        R.string.a11y_progress_percent,
+        stringResource(R.string.trial_pro_trial_label),
+        (progress * 100).toInt()
+    )
 
     Card(
         onClick = onNavigateToProUpgrade,
@@ -92,7 +100,12 @@ fun TrialHomeCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp)),
+                    .clip(RoundedCornerShape(2.dp))
+                    .semantics {
+                        contentDescription = progressDescription
+                        progressBarRangeInfo =
+                            androidx.compose.ui.semantics.ProgressBarRangeInfo(progress, 0f..1f)
+                    },
                 color = borderColor,
                 trackColor = borderColor.copy(alpha = 0.2f)
             )

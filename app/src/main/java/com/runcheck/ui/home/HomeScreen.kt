@@ -64,7 +64,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -134,6 +139,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     DisposableEffect(lifecycleOwner, viewModel) {
@@ -173,7 +179,12 @@ fun HomeScreen(
         when (val state = uiState) {
             is HomeUiState.Loading -> {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .semantics {
+                            contentDescription = context.getString(R.string.a11y_loading)
+                            liveRegion = LiveRegionMode.Polite
+                        },
                     contentAlignment = Alignment.Center
                 ) { CircularProgressIndicator() }
             }
@@ -183,7 +194,10 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    ) {
                         Text(
                             text = stringResource(R.string.common_error_generic),
                             style = MaterialTheme.typography.bodyMedium
@@ -217,14 +231,13 @@ fun HomeScreen(
                         onNavigateToBattery = onNavigateToBattery,
                         onNavigateToNetwork = onNavigateToNetwork,
                         onNavigateToThermal = onNavigateToThermal,
-                        onNavigateToStorage = onNavigateToStorage,
-                        onNavigateToCharger = onNavigateToCharger,
-                        onNavigateToSpeedTest = onNavigateToSpeedTest,
-                        onNavigateToAppUsage = onNavigateToAppUsage,
-                        onNavigateToSettings = onNavigateToSettings,
-                        onNavigateToProUpgrade = onNavigateToProUpgrade,
-                        onDismissUpgradeCard = { viewModel.dismissUpgradeCard() }
-                    )
+                    onNavigateToStorage = onNavigateToStorage,
+                    onNavigateToCharger = onNavigateToCharger,
+                    onNavigateToSpeedTest = onNavigateToSpeedTest,
+                    onNavigateToAppUsage = onNavigateToAppUsage,
+                    onNavigateToProUpgrade = onNavigateToProUpgrade,
+                    onDismissUpgradeCard = { viewModel.dismissUpgradeCard() }
+                )
 
                     SnackbarHost(
                         hostState = snackbarHostState,
@@ -254,7 +267,6 @@ private fun HomeContent(
     onNavigateToCharger: () -> Unit,
     onNavigateToSpeedTest: () -> Unit,
     onNavigateToAppUsage: () -> Unit,
-    onNavigateToSettings: () -> Unit,
     onNavigateToProUpgrade: () -> Unit,
     onDismissUpgradeCard: () -> Unit = {}
 ) {
@@ -756,13 +768,17 @@ private fun HealthBreakdownRow(
     status: HealthStatus,
     onClick: () -> Unit
 ) {
+    val statusText = healthStatusLabel(status)
+    val clickLabel = label
     Row(
         modifier = Modifier
-            .semantics(mergeDescendants = true) {}
             .fillMaxWidth()
             .defaultMinSize(minHeight = 48.dp)
-            .padding(vertical = 10.dp)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick, onClickLabel = clickLabel)
+            .semantics(mergeDescendants = true) {
+                stateDescription = statusText
+            }
+            .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         StatusDot(
@@ -783,6 +799,14 @@ private fun HealthBreakdownRow(
             color = TextSecondary
         )
     }
+}
+
+@Composable
+private fun healthStatusLabel(status: HealthStatus): String = when (status) {
+    HealthStatus.HEALTHY -> stringResource(R.string.status_healthy)
+    HealthStatus.FAIR -> stringResource(R.string.status_fair)
+    HealthStatus.POOR -> stringResource(R.string.status_poor)
+    HealthStatus.CRITICAL -> stringResource(R.string.status_critical)
 }
 
 @Composable
@@ -818,7 +842,13 @@ private fun HomeBatteryChargeIcon(
         MaterialTheme.colorScheme.onSurface
     }
 
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+    val clipPath = remember { Path() }
+    val wavePath = remember { Path() }
+
+    Box(
+        modifier = modifier.clearAndSetSemantics {},
+        contentAlignment = Alignment.Center
+    ) {
         Canvas(
             modifier = Modifier.size(width = 80.dp, height = 124.dp)
         ) {
@@ -859,35 +889,34 @@ private fun HomeBatteryChargeIcon(
                 val fillTop = fillAreaBottom - fillAreaHeight * fillLevel
                 val fillCorner = 8.dp.toPx()
 
-                clipPath(Path().apply {
-                    addRoundRect(
-                        RoundRect(
-                            left = fillAreaLeft,
-                            top = fillAreaTop,
-                            right = fillAreaRight,
-                            bottom = fillAreaBottom,
-                            cornerRadius = CornerRadius(fillCorner, fillCorner)
-                        )
+                clipPath.reset()
+                clipPath.addRoundRect(
+                    RoundRect(
+                        left = fillAreaLeft,
+                        top = fillAreaTop,
+                        right = fillAreaRight,
+                        bottom = fillAreaBottom,
+                        cornerRadius = CornerRadius(fillCorner, fillCorner)
                     )
-                }) {
+                )
+                clipPath(clipPath) {
                     val showWave = isCharging && !reducedMotion && fillLevel in 0.01f..0.99f
 
                     if (showWave) {
-                        val wavePath = Path().apply {
-                            moveTo(fillAreaLeft, fillTop)
-                            val waveWidth = fillAreaRight - fillAreaLeft
-                            val steps = 40
-                            for (i in 0..steps) {
-                                val x = fillAreaLeft + waveWidth * i / steps
-                                val y = fillTop + waveAmplitude * sin(
-                                    wavePhase + 2f * Math.PI.toFloat() * i / steps
-                                )
-                                lineTo(x, y)
-                            }
-                            lineTo(fillAreaRight, fillAreaBottom)
-                            lineTo(fillAreaLeft, fillAreaBottom)
-                            close()
+                        wavePath.reset()
+                        wavePath.moveTo(fillAreaLeft, fillTop)
+                        val waveWidth = fillAreaRight - fillAreaLeft
+                        val steps = 40
+                        for (i in 0..steps) {
+                            val x = fillAreaLeft + waveWidth * i / steps
+                            val y = fillTop + waveAmplitude * sin(
+                                wavePhase + 2f * Math.PI.toFloat() * i / steps
+                            )
+                            wavePath.lineTo(x, y)
                         }
+                        wavePath.lineTo(fillAreaRight, fillAreaBottom)
+                        wavePath.lineTo(fillAreaLeft, fillAreaBottom)
+                        wavePath.close()
                         drawPath(
                             path = wavePath,
                             brush = Brush.verticalGradient(

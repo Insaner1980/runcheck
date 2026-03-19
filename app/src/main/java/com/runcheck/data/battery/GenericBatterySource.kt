@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
+import androidx.core.content.ContextCompat
 import com.runcheck.data.device.DeviceProfile
 import com.runcheck.domain.model.BatteryHealth
 import com.runcheck.domain.model.ChargingStatus
@@ -13,8 +14,10 @@ import com.runcheck.domain.model.CurrentUnit
 import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.SignConvention
+import com.runcheck.util.ReleaseSafeLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
@@ -33,7 +36,16 @@ open class GenericBatterySource(
 
     protected val batteryManager: BatteryManager =
         context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-    private val sourceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val sourceJob = SupervisorJob()
+    private val sourceScope = CoroutineScope(
+        sourceJob + Dispatchers.Default + CoroutineExceptionHandler { _, throwable ->
+            ReleaseSafeLog.error(TAG, "Battery source flow failed", throwable)
+        }
+    )
+
+    fun close() {
+        sourceJob.cancel()
+    }
     private val batteryChangedSharedFlow: Flow<Intent> by lazy {
         batteryChangedFlow().shareIn(
             scope = sourceScope,
@@ -48,7 +60,7 @@ open class GenericBatterySource(
                 trySend(intent)
             }
         }
-        context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        ContextCompat.registerReceiver(context, receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED), ContextCompat.RECEIVER_NOT_EXPORTED)
         awaitClose { context.unregisterReceiver(receiver) }
     }
 
@@ -188,6 +200,7 @@ open class GenericBatterySource(
     }
 
     companion object {
+        private const val TAG = "GenericBatterySource"
         protected const val POLLING_INTERVAL_MS = 2000L
     }
 }

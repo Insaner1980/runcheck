@@ -20,10 +20,13 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.PermissionChecker
 import androidx.core.content.ContextCompat
 import androidx.core.location.LocationManagerCompat
+import com.runcheck.R
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.SignalQuality
+import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.awaitClose
@@ -46,7 +49,11 @@ class NetworkDataSource @Inject constructor(
         context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
     private val telephonyManager =
         context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
-    private val dataSourceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val dataSourceScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, throwable ->
+            ReleaseSafeLog.error(TAG, "Network callback flow failed", throwable)
+        }
+    )
 
     // Cached WiFi details from dedicated WiFi callback (survives VPN overlay)
     @Volatile
@@ -381,7 +388,7 @@ class NetworkDataSource @Inject constructor(
         TelephonyManager.NETWORK_TYPE_UMTS -> "3G UMTS"
         TelephonyManager.NETWORK_TYPE_EDGE -> "2G EDGE"
         TelephonyManager.NETWORK_TYPE_GPRS -> "2G GPRS"
-        else -> "Cellular"
+        else -> context.getString(R.string.network_type_cellular)
     }
 
     private fun getCellularDetails(): CellularDetails {
@@ -390,14 +397,14 @@ class NetworkDataSource @Inject constructor(
                 @Suppress("DEPRECATION")
                 mapNetworkType(manager.dataNetworkType)
             } catch (_: SecurityException) {
-                "Cellular"
+                context.getString(R.string.network_type_cellular)
             }
-        } ?: "Cellular"
+        } ?: context.getString(R.string.network_type_cellular)
 
         val carrierName = try {
-            telephonyManager?.networkOperatorName?.takeIf { it.isNotBlank() } ?: "Unknown"
+            telephonyManager?.networkOperatorName?.takeIf { it.isNotBlank() } ?: context.getString(R.string.fallback_unknown)
         } catch (_: SecurityException) {
-            "Unknown"
+            context.getString(R.string.fallback_unknown)
         }
 
         return CellularDetails(
@@ -538,6 +545,7 @@ class NetworkDataSource @Inject constructor(
 
     companion object {
         private const val STOP_TIMEOUT_MS = 0L
+        private const val TAG = "NetworkDataSource"
     }
 }
 

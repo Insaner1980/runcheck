@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.runcheck.R
 import com.runcheck.billing.ProPurchaseRefreshResult
 import com.runcheck.billing.ProPurchaseManager
+import com.runcheck.billing.PurchaseEvent
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.repository.ProStatusProvider
@@ -80,6 +81,25 @@ class SettingsViewModel @Inject constructor(
             } catch (_: Exception) {
                 _uiState.update { current ->
                     current.copy(errorMessage = UiText.Resource(R.string.common_error_generic))
+                }
+            }
+        }
+        viewModelScope.launch {
+            proPurchaseManager.purchaseEvents.collect { event ->
+                when (event) {
+                    is PurchaseEvent.Pending -> _uiState.update {
+                        it.copy(billingStatus = UiText.Resource(R.string.billing_purchase_pending))
+                    }
+                    is PurchaseEvent.Error -> _uiState.update {
+                        it.copy(billingStatus = UiText.Resource(R.string.billing_purchase_error))
+                    }
+                    is PurchaseEvent.AlreadyOwned -> _uiState.update {
+                        it.copy(billingStatus = UiText.Resource(R.string.billing_already_owned))
+                    }
+                    is PurchaseEvent.Canceled,
+                    is PurchaseEvent.Success -> {
+                        // No action needed
+                    }
                 }
             }
         }
@@ -216,34 +236,62 @@ class SettingsViewModel @Inject constructor(
     // ── New settings handlers ──────────────────────────────────────────
 
     fun setNotifLowBattery(enabled: Boolean) {
-        viewModelScope.launch { userPreferencesRepository.setNotifLowBattery(enabled) }
+        executePreferenceUpdate {
+            userPreferencesRepository.setNotifLowBattery(enabled)
+        }
     }
 
     fun setNotifHighTemp(enabled: Boolean) {
-        viewModelScope.launch { userPreferencesRepository.setNotifHighTemp(enabled) }
+        executePreferenceUpdate {
+            userPreferencesRepository.setNotifHighTemp(enabled)
+        }
     }
 
     fun setNotifLowStorage(enabled: Boolean) {
-        viewModelScope.launch { userPreferencesRepository.setNotifLowStorage(enabled) }
+        executePreferenceUpdate {
+            userPreferencesRepository.setNotifLowStorage(enabled)
+        }
     }
 
     fun setNotifChargeComplete(enabled: Boolean) {
-        viewModelScope.launch { userPreferencesRepository.setNotifChargeComplete(enabled) }
+        executePreferenceUpdate {
+            userPreferencesRepository.setNotifChargeComplete(enabled)
+        }
     }
 
     fun setAlertBatteryThreshold(value: Int) {
-        viewModelScope.launch { userPreferencesRepository.setAlertBatteryThreshold(value) }
+        executePreferenceUpdate {
+            userPreferencesRepository.setAlertBatteryThreshold(value)
+        }
     }
 
     fun setAlertTempThreshold(value: Int) {
-        viewModelScope.launch { userPreferencesRepository.setAlertTempThreshold(value) }
+        executePreferenceUpdate {
+            userPreferencesRepository.setAlertTempThreshold(value)
+        }
     }
 
     fun setAlertStorageThreshold(value: Int) {
-        viewModelScope.launch { userPreferencesRepository.setAlertStorageThreshold(value) }
+        executePreferenceUpdate {
+            userPreferencesRepository.setAlertStorageThreshold(value)
+        }
     }
 
     fun setTemperatureUnit(unit: TemperatureUnit) {
-        viewModelScope.launch { userPreferencesRepository.setTemperatureUnit(unit) }
+        executePreferenceUpdate {
+            userPreferencesRepository.setTemperatureUnit(unit)
+        }
+    }
+
+    private fun executePreferenceUpdate(block: suspend () -> Unit) {
+        viewModelScope.launch {
+            try {
+                block()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _uiState.update { it.copy(errorMessage = UiText.Resource(R.string.common_error_generic)) }
+            }
+        }
     }
 }

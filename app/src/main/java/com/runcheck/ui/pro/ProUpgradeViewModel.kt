@@ -3,10 +3,13 @@ package com.runcheck.ui.pro
 import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.runcheck.R
 import com.runcheck.billing.ProPurchaseManager
+import com.runcheck.billing.PurchaseEvent
 import com.runcheck.pro.ProFeature
 import com.runcheck.pro.ProManager
 import com.runcheck.pro.ProState
+import com.runcheck.ui.common.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +24,8 @@ data class ProUpgradeUiState(
     val formattedPrice: String? = null,
     val billingAvailable: Boolean = false,
     val purchaseCompleted: Boolean = false,
+    val purchasePending: Boolean = false,
+    val purchaseError: UiText? = null,
     val features: List<ProFeature> = ProFeature.entries
 )
 
@@ -33,17 +38,20 @@ class ProUpgradeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ProUpgradeUiState())
     val uiState: StateFlow<ProUpgradeUiState> = _uiState.asStateFlow()
 
+    private var initialLoadDone = false
+
     init {
         viewModelScope.launch {
             proManager.proState.collect { proState ->
-                val wasPurchased = !_uiState.value.proState.isPro
+                val wasNotPro = !_uiState.value.proState.isPro
                 _uiState.update {
                     it.copy(
                         proState = proState,
-                        purchaseCompleted = wasPurchased && proState.isPro &&
-                            it.proState != ProState()
+                        purchaseCompleted = initialLoadDone && wasNotPro && proState.isPro,
+                        purchasePending = false
                     )
                 }
+                initialLoadDone = true
             }
         }
         viewModelScope.launch {
@@ -62,14 +70,41 @@ class ProUpgradeViewModel @Inject constructor(
                 // Price unavailable — button will show without price
             }
         }
+        viewModelScope.launch {
+            proPurchaseManager.purchaseEvents.collect { event ->
+                when (event) {
+                    is PurchaseEvent.Pending -> _uiState.update {
+                        it.copy(purchasePending = true, purchaseError = null)
+                    }
+                    is PurchaseEvent.Error -> _uiState.update {
+                        it.copy(
+                            purchaseError = UiText.Resource(R.string.billing_purchase_error),
+                            purchasePending = false
+                        )
+                    }
+                    is PurchaseEvent.AlreadyOwned -> _uiState.update {
+                        it.copy(purchaseError = null, purchasePending = false)
+                    }
+                    is PurchaseEvent.Canceled,
+                    is PurchaseEvent.Success -> {
+                        // No action needed
+                    }
+                }
+            }
+        }
     }
 
     fun purchasePro(activity: Activity) {
         if (!_uiState.value.billingAvailable) return
+        _uiState.update { it.copy(purchaseError = null) }
         proPurchaseManager.launchPurchaseFlow(activity)
     }
 
     fun dismissThankYou() {
         _uiState.update { it.copy(purchaseCompleted = false) }
+    }
+
+    fun clearPurchaseError() {
+        _uiState.update { it.copy(purchaseError = null) }
     }
 }

@@ -18,19 +18,29 @@ import com.android.billingclient.api.queryPurchasesAsync
 import com.runcheck.BuildConfig
 import com.runcheck.billing.ProPurchaseRefreshResult
 import com.runcheck.billing.ProPurchaseManager
+import com.runcheck.billing.PurchaseEvent
 import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.resume
 
 /**
  * Manages the Google Play Billing lifecycle: connection, purchase flow,
@@ -44,7 +54,11 @@ class BillingManager @Inject constructor(
     com.runcheck.domain.repository.ProStatusProvider,
     ProPurchaseManager {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val scopeExceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        ReleaseSafeLog.error(TAG, "Billing coroutine failed", throwable)
+    }
+    private val scopeJob = SupervisorJob()
+    private val scope = CoroutineScope(scopeJob + Dispatchers.Main + scopeExceptionHandler)
 
     private val _isProState = MutableStateFlow(false)
     override val isProUser: Flow<Boolean> = _isProState.asStateFlow()
@@ -56,25 +70,27 @@ class BillingManager @Inject constructor(
     private val _billingAvailable = MutableStateFlow(false)
     override val billingAvailable: Flow<Boolean> = _billingAvailable.asStateFlow()
 
+    private val _purchaseEvents = MutableSharedFlow<PurchaseEvent>(extraBufferCapacity = 1)
+    override val purchaseEvents: SharedFlow<PurchaseEvent> = _purchaseEvents.asSharedFlow()
+
+    private val _hasPendingPurchase = MutableStateFlow(false)
+    override val hasPendingPurchase: Flow<Boolean> = _hasPendingPurchase.asStateFlow()
+
     private var billingClient: BillingClient? = null
     private var cachedProductDetails: com.android.billingclient.api.ProductDetails? = null
-
-    init {
-        scope.launch(Dispatchers.IO) {
-            runCatching {
-                ProStatusCache.isPro(context)
-            }.onSuccess { isPro ->
-                _isProState.value = isPro
-            }.onFailure { error ->
-                ReleaseSafeLog.error(TAG, "Failed to load persisted pro state", error)
-            }
-        }
-    }
+    private var cachedFormattedPrice: String? = null
+    private var reconnectAttempts = 0
+    private val _initComplete = CompletableDeferred<Unit>()
 
     override fun isPro(): Boolean = _isProState.value
 
+    suspend fun awaitInitialized() = _initComplete.await()
+
     fun initialize() {
-        if (billingClient?.isReady == true) return
+        if (billingClient?.isReady == true) {
+            _initComplete.complete(Unit)
+            return
+        }
 
         _billingAvailable.value = false
         billingClient = BillingClient.newBuilder(context)
@@ -89,24 +105,36 @@ class BillingManager @Inject constructor(
         billingClient?.startConnection(object : BillingClientStateListener {
             override fun onBillingSetupFinished(billingResult: BillingResult) {
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    reconnectAttempts = 0
                     _billingAvailable.value = true
                     scope.launch {
                         queryExistingPurchases()
                         queryProductDetails()
+                        _initComplete.complete(Unit)
                     }
                 } else {
                     _billingAvailable.value = false
+                    _initComplete.complete(Unit)
                 }
             }
 
             override fun onBillingServiceDisconnected() {
                 _billingAvailable.value = false
-                scope.launch { reconnect() }
+                if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                    val delayMs = RECONNECT_BASE_DELAY_MS * (1L shl reconnectAttempts)
+                    reconnectAttempts++
+                    scope.launch {
+                        delay(delayMs)
+                        reconnect()
+                    }
+                } else {
+                    _initComplete.complete(Unit)
+                }
             }
         })
     }
 
-    private suspend fun reconnect() {
+    private fun reconnect() {
         billingClient?.endConnection()
         billingClient = null
         initialize()
@@ -120,16 +148,12 @@ class BillingManager @Inject constructor(
             .build()
         val result = client.queryPurchasesAsync(params)
         if (result.billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-            return if (syncPurchases(result.purchasesList)) {
-                ProPurchaseRefreshResult.ACTIVE
-            } else {
-                ProPurchaseRefreshResult.NOT_ACTIVE
-            }
+            return syncPurchases(result.purchasesList, emitEvents = false)
         }
         return ProPurchaseRefreshResult.UNAVAILABLE
     }
 
-    suspend fun queryProductDetails(): com.android.billingclient.api.ProductDetails? {
+    private suspend fun queryProductDetails(): com.android.billingclient.api.ProductDetails? {
         val client = billingClient ?: return null
         val product = QueryProductDetailsParams.Product.newBuilder()
             .setProductId(PRODUCT_ID_PRO)
@@ -141,6 +165,7 @@ class BillingManager @Inject constructor(
         val result: ProductDetailsResult = client.queryProductDetails(params)
         if (result.billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
             cachedProductDetails = result.productDetailsList?.firstOrNull()
+            cachedFormattedPrice = cachedProductDetails?.oneTimePurchaseOfferDetails?.formattedPrice
             _billingAvailable.value = cachedProductDetails != null
         } else {
             cachedProductDetails = null
@@ -150,6 +175,7 @@ class BillingManager @Inject constructor(
     }
 
     override suspend fun getFormattedPrice(): String? {
+        cachedFormattedPrice?.let { return it }
         return queryProductDetails()?.oneTimePurchaseOfferDetails?.formattedPrice
     }
 
@@ -158,8 +184,12 @@ class BillingManager @Inject constructor(
     }
 
     override fun launchPurchaseFlow(activity: Activity) {
-        val productDetails = cachedProductDetails ?: return
-        val client = billingClient ?: return
+        val productDetails = cachedProductDetails
+        val client = billingClient
+        if (productDetails == null || client == null || !client.isReady) {
+            _purchaseEvents.tryEmit(PurchaseEvent.Error("Billing not ready"))
+            return
+        }
 
         val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
             .setProductDetails(productDetails)
@@ -168,56 +198,100 @@ class BillingManager @Inject constructor(
             .setProductDetailsParamsList(listOf(productDetailsParams))
             .build()
 
-        client.launchBillingFlow(activity, billingFlowParams)
+        val result = client.launchBillingFlow(activity, billingFlowParams)
+        if (result.responseCode != BillingClient.BillingResponseCode.OK) {
+            _purchaseEvents.tryEmit(PurchaseEvent.Error("Could not start purchase"))
+        }
     }
 
     override fun onPurchasesUpdated(
         billingResult: BillingResult,
         purchases: List<Purchase>?
     ) {
-        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
-            syncPurchases(purchases)
+        when (billingResult.responseCode) {
+            BillingClient.BillingResponseCode.OK -> {
+                if (purchases != null) {
+                    scope.launch { syncPurchases(purchases, emitEvents = true) }
+                }
+            }
+            BillingClient.BillingResponseCode.USER_CANCELED -> {
+                _purchaseEvents.tryEmit(PurchaseEvent.Canceled)
+            }
+            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
+                _purchaseEvents.tryEmit(PurchaseEvent.AlreadyOwned)
+                scope.launch { queryExistingPurchases() }
+            }
+            else -> {
+                _purchaseEvents.tryEmit(
+                    PurchaseEvent.Error(billingResult.debugMessage)
+                )
+            }
         }
     }
 
-    private fun syncPurchases(purchases: List<Purchase>): Boolean {
-        val proPurchases = purchases
-            .filter(::isEligibleProPurchase)
+    private suspend fun syncPurchases(
+        purchases: List<Purchase>,
+        emitEvents: Boolean
+    ): ProPurchaseRefreshResult {
+        val proPurchases = purchases.filter { it.products.contains(PRODUCT_ID_PRO) }
+        val purchased = proPurchases.filter {
+            it.purchaseState == Purchase.PurchaseState.PURCHASED
+        }
+        val pending = proPurchases.filter {
+            it.purchaseState == Purchase.PurchaseState.PENDING
+        }
 
-        updateProState(proPurchases.isNotEmpty())
+        _hasPendingPurchase.value = pending.isNotEmpty()
 
-        proPurchases
-            .filter { !it.isAcknowledged }
-            .forEach { acknowledgePurchase(it) }
-        return proPurchases.isNotEmpty()
+        return when {
+            purchased.isNotEmpty() -> {
+                updateProState(true)
+                purchased
+                    .filter { !it.isAcknowledged }
+                    .forEach { acknowledgePurchaseWithRetry(it) }
+                ProPurchaseRefreshResult.ACTIVE
+            }
+            pending.isNotEmpty() -> {
+                if (emitEvents) _purchaseEvents.tryEmit(PurchaseEvent.Pending)
+                ProPurchaseRefreshResult.NOT_ACTIVE
+            }
+            else -> {
+                updateProState(false)
+                ProPurchaseRefreshResult.NOT_ACTIVE
+            }
+        }
     }
 
-    private fun isEligibleProPurchase(purchase: Purchase): Boolean {
-        return purchase.products.contains(PRODUCT_ID_PRO) &&
-            purchase.purchaseState == Purchase.PurchaseState.PURCHASED
-    }
-
-    private fun acknowledgePurchase(purchase: Purchase) {
-        val client = billingClient ?: return
+    private suspend fun acknowledgePurchaseWithRetry(purchase: Purchase) {
         val params = AcknowledgePurchaseParams.newBuilder()
             .setPurchaseToken(purchase.purchaseToken)
             .build()
-        client.acknowledgePurchase(params) { billingResult ->
-            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                updateProState(true)
+
+        repeat(MAX_ACK_RETRIES) { attempt ->
+            val client = billingClient ?: return
+            try {
+                val result = suspendCancellableCoroutine { cont ->
+                    client.acknowledgePurchase(params) { billingResult ->
+                        cont.resume(billingResult)
+                    }
+                }
+                if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                    return
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Fall through to retry
+            }
+            if (attempt < MAX_ACK_RETRIES - 1) {
+                delay(ACK_RETRY_BASE_DELAY_MS * (1L shl attempt))
             }
         }
+        ReleaseSafeLog.error(TAG, "Failed to acknowledge purchase after $MAX_ACK_RETRIES attempts")
     }
 
     private fun updateProState(isPro: Boolean) {
         _isProState.value = isPro
-        scope.launch(Dispatchers.IO) {
-            runCatching {
-                ProStatusCache.setPro(context, isPro)
-            }.onFailure { error ->
-                ReleaseSafeLog.error(TAG, "Failed to persist pro state", error)
-            }
-        }
     }
 
     fun destroy() {
@@ -225,11 +299,16 @@ class BillingManager @Inject constructor(
         billingClient?.endConnection()
         billingClient = null
         cachedProductDetails = null
+        cachedFormattedPrice = null
         _billingAvailable.value = false
     }
 
     companion object {
         private const val TAG = "BillingManager"
         const val PRODUCT_ID_PRO = BuildConfig.PRO_PRODUCT_ID
+        private const val MAX_RECONNECT_ATTEMPTS = 3
+        private const val RECONNECT_BASE_DELAY_MS = 2_000L
+        private const val MAX_ACK_RETRIES = 3
+        private const val ACK_RETRY_BASE_DELAY_MS = 2_000L
     }
 }

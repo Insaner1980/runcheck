@@ -75,9 +75,13 @@ class NetworkRepositoryImpl @Inject constructor(
     }
 
     override fun getReadingsSince(since: Long, limit: Int?): Flow<List<NetworkReadingData>> {
-        return networkReadingDao.getReadingsSince(since).map { entities ->
-            val mapped = entities.map { it.toDomain() }
-            if (limit != null) mapped.takeLast(limit) else mapped
+        val readingsFlow = if (limit != null) {
+            networkReadingDao.getReadingsSinceLimited(since, limit)
+        } else {
+            networkReadingDao.getReadingsSince(since)
+        }
+        return readingsFlow.map { entities ->
+            entities.map { it.toDomain() }
         }
     }
 

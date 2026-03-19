@@ -22,6 +22,7 @@ import com.runcheck.domain.model.SignalQuality
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.scoring.HealthScoreCalculator
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -41,6 +42,8 @@ internal data class HealthWidgetSnapshot(
 )
 
 internal object WidgetDataProvider {
+
+    fun isProUnlocked(context: Context): Boolean = entryPoint(context).proStatusProvider().isPro()
 
     suspend fun loadBatterySnapshot(context: Context): BatteryWidgetSnapshot? {
         val latestReading = entryPoint(context).batteryReadingDao().getLatestReading().first()
@@ -99,6 +102,7 @@ internal interface WidgetDataEntryPoint {
     fun thermalReadingDao(): ThermalReadingDao
     fun storageReadingDao(): StorageReadingDao
     fun healthScoreCalculator(): HealthScoreCalculator
+    fun proStatusProvider(): ProStatusProvider
 }
 
 private fun BatteryReadingEntity.toBatteryState(): BatteryState {
@@ -154,8 +158,7 @@ private fun StorageReadingEntity.toStorageState(): StorageState {
         availableBytes = availableBytes,
         usedBytes = usedBytes,
         usagePercent = usagePercent,
-        appsBytes = appsBytes,
-        mediaBytes = mediaBytes
+        appsBytes = appsBytes
     )
 }
 

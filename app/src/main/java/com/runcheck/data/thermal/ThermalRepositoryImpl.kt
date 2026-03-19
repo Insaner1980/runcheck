@@ -8,7 +8,9 @@ import com.runcheck.domain.model.ThermalStatus
 import com.runcheck.domain.repository.ThermalReadingData
 import com.runcheck.domain.repository.ThermalRepository as ThermalRepositoryContract
 import com.runcheck.domain.usecase.TrackThrottlingEventsUseCase
+import com.runcheck.util.ReleaseSafeLog
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
@@ -29,7 +31,11 @@ class ThermalRepositoryImpl @Inject constructor(
     private val trackThrottlingEvents: TrackThrottlingEventsUseCase
 ) : ThermalRepositoryContract {
 
-    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val repositoryScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, throwable ->
+            ReleaseSafeLog.error(TAG, "Thermal sharing coroutine failed", throwable)
+        }
+    )
 
     private val thermalStateFlow: Flow<ThermalState> by lazy {
         flow {
@@ -82,6 +88,7 @@ class ThermalRepositoryImpl @Inject constructor(
 
     private companion object {
         const val STOP_TIMEOUT_MS = 0L
+        const val TAG = "ThermalRepository"
     }
 }
 

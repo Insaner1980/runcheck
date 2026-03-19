@@ -9,6 +9,14 @@ plugins {
     alias(libs.plugins.firebase.crashlytics)
 }
 
+val releaseSigningRequested = gradle.startParameter.taskNames.any {
+    it.contains("release", ignoreCase = true)
+}
+
+fun requiredReleaseEnv(name: String): String =
+    providers.environmentVariable(name).orNull?.takeIf { it.isNotBlank() }
+        ?: error("Release signing requires the $name environment variable.")
+
 android {
     namespace = "com.runcheck"
     compileSdk = 36
@@ -23,16 +31,14 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
-        val proProductId = System.getenv("RUNCHECK_PRO_PRODUCT_ID") ?: "runcheck_pro"
-        val latencyHost = System.getenv("RUNCHECK_LATENCY_HOST") ?: "locate.measurementlab.net"
-        val latencyPort = (System.getenv("RUNCHECK_LATENCY_PORT") ?: "443").toIntOrNull() ?: 443
-        val admobBannerId = System.getenv("RUNCHECK_ADMOB_BANNER_ID") ?: ""
-        val admobAppId = System.getenv("RUNCHECK_ADMOB_APP_ID") ?: "ca-app-pub-3940256099942544~3347511713"
+        val proProductId = providers.environmentVariable("RUNCHECK_PRO_PRODUCT_ID").getOrElse("runcheck_pro")
+        val latencyHost = providers.environmentVariable("RUNCHECK_LATENCY_HOST").getOrElse("locate.measurementlab.net")
+        val latencyPort = providers.environmentVariable("RUNCHECK_LATENCY_PORT")
+            .map { it.toIntOrNull() ?: 443 }
+            .getOrElse(443)
         buildConfigField("String", "PRO_PRODUCT_ID", "\"$proProductId\"")
         buildConfigField("String", "LATENCY_HOST", "\"$latencyHost\"")
         buildConfigField("int", "LATENCY_PORT", latencyPort.toString())
-        buildConfigField("String", "ADMOB_BANNER_ID", "\"$admobBannerId\"")
-        manifestPlaceholders["admobAppId"] = admobAppId
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -42,12 +48,11 @@ android {
             // Set these via environment variables before release:
             // RUNCHECK_KEYSTORE_PATH, RUNCHECK_KEYSTORE_PASSWORD,
             // RUNCHECK_KEY_ALIAS, RUNCHECK_KEY_PASSWORD
-            val keystorePath = System.getenv("RUNCHECK_KEYSTORE_PATH")
-            if (keystorePath != null) {
-                storeFile = file(keystorePath)
-                storePassword = System.getenv("RUNCHECK_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("RUNCHECK_KEY_ALIAS")
-                keyPassword = System.getenv("RUNCHECK_KEY_PASSWORD")
+            if (releaseSigningRequested) {
+                storeFile = file(requiredReleaseEnv("RUNCHECK_KEYSTORE_PATH"))
+                storePassword = requiredReleaseEnv("RUNCHECK_KEYSTORE_PASSWORD")
+                keyAlias = requiredReleaseEnv("RUNCHECK_KEY_ALIAS")
+                keyPassword = requiredReleaseEnv("RUNCHECK_KEY_PASSWORD")
             }
         }
     }
@@ -61,8 +66,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            val keystorePath = System.getenv("RUNCHECK_KEYSTORE_PATH")
-            if (keystorePath != null) {
+            if (releaseSigningRequested) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
@@ -108,10 +112,6 @@ tasks.configureEach {
     if (name.startsWith("hiltJavaCompile") && name.endsWith("UnitTest")) {
         enabled = false
     }
-}
-
-configurations.configureEach {
-    resolutionStrategy.activateDependencyLocking()
 }
 
 dependencies {
@@ -162,6 +162,9 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
 
+    // Baseline Profile
+    implementation(libs.profileinstaller)
+
     // Gson
     implementation(libs.gson)
 
@@ -175,9 +178,6 @@ dependencies {
 
     // Google Play Billing
     implementation(libs.billing)
-
-    // AdMob
-    implementation(libs.play.services.ads)
 
     // Glance (home screen widgets)
     implementation(libs.glance.appwidget)

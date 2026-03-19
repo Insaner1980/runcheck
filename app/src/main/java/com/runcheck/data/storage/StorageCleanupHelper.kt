@@ -8,12 +8,13 @@ import android.provider.MediaStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.runcheck.util.ReleaseSafeLog
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class StorageCleanupHelper @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     /**
      * API 30+: Creates a PendingIntent that shows the system confirmation dialog
@@ -35,9 +36,14 @@ class StorageCleanupHelper @Inject constructor(
             try {
                 val uri = Uri.parse(uriString)
                 if (context.contentResolver.delete(uri, null, null) > 0) deleted++
-            } catch (_: SecurityException) { }
+            } catch (error: SecurityException) {
+                ReleaseSafeLog.error(TAG, "Failed to delete legacy media item", error)
+            }
         }
         deleted
     }
 
+    private companion object {
+        private const val TAG = "StorageCleanupHelper"
+    }
 }

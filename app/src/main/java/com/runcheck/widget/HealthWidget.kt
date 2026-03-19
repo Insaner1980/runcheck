@@ -1,8 +1,6 @@
 package com.runcheck.widget
 
 import android.content.Context
-import com.runcheck.R
-import com.runcheck.data.billing.ProStatusCache
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
@@ -24,11 +22,12 @@ import androidx.glance.appwidget.cornerRadius
 import androidx.glance.background
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.runcheck.R
 
 class HealthWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        if (!ProStatusCache.isPro(context)) {
+        if (!WidgetDataProvider.isProUnlocked(context)) {
             provideLockedContent(context)
             return
         }

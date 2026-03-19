@@ -20,10 +20,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.runcheck.R
+import androidx.compose.runtime.remember
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
 
@@ -39,21 +41,25 @@ fun MetricRow(
 ) {
     val truncate = maxLines < Int.MAX_VALUE
 
+    val clickModifier = if (copyable) {
+        val context = LocalContext.current
+        val copiedMessage = stringResource(R.string.copied_to_clipboard)
+        val clickLabel = stringResource(R.string.a11y_copy_to_clipboard)
+        remember(label, value) {
+            Modifier.clickable(onClickLabel = clickLabel) {
+                copyToClipboard(context, label, value)
+                Toast.makeText(context, copiedMessage, Toast.LENGTH_SHORT).show()
+            }
+        }
+    } else {
+        Modifier
+    }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .then(
-                if (copyable) {
-                    val context = LocalContext.current
-                    val copiedMessage = stringResource(R.string.copied_to_clipboard)
-                    Modifier.clickable {
-                        copyToClipboard(context, label, value)
-                        Toast.makeText(context, copiedMessage, Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    Modifier
-                }
-            )
+            .then(clickModifier)
+            .semantics(mergeDescendants = true) {}
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

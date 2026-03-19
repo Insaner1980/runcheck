@@ -3,103 +3,120 @@ package com.runcheck.data.device
 import com.runcheck.domain.model.CurrentUnit
 import com.runcheck.domain.model.SignConvention
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DeviceCapabilityManagerTest {
 
+    // -- inferUnit tests --
+
     @Test
-    fun `DeviceProfile deviceId is lowercase combination`() {
-        val profile = createProfile(manufacturer = "Samsung", model = "Galaxy S24")
-        assertEquals("samsung_galaxy s24_34", profile.deviceId)
+    fun `inferUnit returns MICROAMPS when max reading exceeds threshold`() {
+        val readings = listOf(500_000, -300_000, 100_000)
+        assertEquals(CurrentUnit.MICROAMPS, DeviceCapabilityManager.inferUnit(readings))
     }
 
     @Test
-    fun `microamps unit for high readings`() {
-        // Readings above 10000 should be interpreted as microamps
-        val profile = createProfile(currentNowUnit = CurrentUnit.MICROAMPS)
-        assertEquals(CurrentUnit.MICROAMPS, profile.currentNowUnit)
+    fun `inferUnit returns MILLIAMPS when all readings are below threshold`() {
+        val readings = listOf(500, -300, 1000)
+        assertEquals(CurrentUnit.MILLIAMPS, DeviceCapabilityManager.inferUnit(readings))
     }
 
     @Test
-    fun `milliamps unit for low readings`() {
-        // Readings below 10000 should be interpreted as milliamps
-        val profile = createProfile(currentNowUnit = CurrentUnit.MILLIAMPS)
-        assertEquals(CurrentUnit.MILLIAMPS, profile.currentNowUnit)
+    fun `inferUnit returns MILLIAMPS for readings exactly at threshold`() {
+        // Threshold is 10000; values at exactly 10000 are not above it
+        val readings = listOf(10000, -5000)
+        assertEquals(CurrentUnit.MILLIAMPS, DeviceCapabilityManager.inferUnit(readings))
     }
 
     @Test
-    fun `positive charging convention when positive during charge`() {
-        val profile = createProfile(signConvention = SignConvention.POSITIVE_CHARGING)
-        assertEquals(SignConvention.POSITIVE_CHARGING, profile.currentNowSignConvention)
+    fun `inferUnit returns MICROAMPS when one reading just exceeds threshold`() {
+        val readings = listOf(10001, -5000)
+        assertEquals(CurrentUnit.MICROAMPS, DeviceCapabilityManager.inferUnit(readings))
     }
 
     @Test
-    fun `negative charging convention when negative during charge`() {
-        val profile = createProfile(signConvention = SignConvention.NEGATIVE_CHARGING)
-        assertEquals(SignConvention.NEGATIVE_CHARGING, profile.currentNowSignConvention)
+    fun `inferUnit returns MILLIAMPS for empty readings`() {
+        assertEquals(CurrentUnit.MILLIAMPS, DeviceCapabilityManager.inferUnit(emptyList()))
     }
 
     @Test
-    fun `cycle count available on API 34+`() {
-        val profile34 = createProfile(apiLevel = 34)
-        assertTrue(profile34.cycleCountAvailable)
-
-        val profile33 = createProfile(apiLevel = 33)
-        assertFalse(profile33.cycleCountAvailable)
+    fun `inferUnit uses absolute values for negative readings`() {
+        // -50000 has abs value 50000, which exceeds threshold
+        val readings = listOf(-50_000)
+        assertEquals(CurrentUnit.MICROAMPS, DeviceCapabilityManager.inferUnit(readings))
     }
 
     @Test
-    fun `battery health percent available on API 34+`() {
-        val profile35 = createProfile(apiLevel = 35)
-        assertTrue(profile35.batteryHealthPercentAvailable)
+    fun `inferUnit returns MILLIAMPS for all-zero readings`() {
+        val readings = listOf(0, 0, 0)
+        assertEquals(CurrentUnit.MILLIAMPS, DeviceCapabilityManager.inferUnit(readings))
+    }
 
-        val profile26 = createProfile(apiLevel = 26)
-        assertFalse(profile26.batteryHealthPercentAvailable)
+    // -- inferSignConvention tests --
+
+    @Test
+    fun `inferSignConvention returns POSITIVE_CHARGING when charging with positive average`() {
+        val readings = listOf(500, 600, 700)
+        assertEquals(
+            SignConvention.POSITIVE_CHARGING,
+            DeviceCapabilityManager.inferSignConvention(isCharging = true, readings = readings)
+        )
     }
 
     @Test
-    fun `thermal zones list stored correctly`() {
-        val zones = listOf("cpu-0-0", "cpu-0-1", "battery")
-        val profile = createProfile(thermalZones = zones)
-        assertEquals(3, profile.thermalZonesAvailable.size)
-        assertTrue(profile.thermalZonesAvailable.contains("battery"))
+    fun `inferSignConvention returns NEGATIVE_CHARGING when charging with negative average`() {
+        val readings = listOf(-500, -600, -700)
+        assertEquals(
+            SignConvention.NEGATIVE_CHARGING,
+            DeviceCapabilityManager.inferSignConvention(isCharging = true, readings = readings)
+        )
     }
 
     @Test
-    fun `unreliable current marked as such`() {
-        val reliable = createProfile(currentNowReliable = true)
-        assertTrue(reliable.currentNowReliable)
-
-        val unreliable = createProfile(currentNowReliable = false)
-        assertFalse(unreliable.currentNowReliable)
+    fun `inferSignConvention returns POSITIVE_CHARGING when discharging with negative average`() {
+        val readings = listOf(-500, -600, -700)
+        assertEquals(
+            SignConvention.POSITIVE_CHARGING,
+            DeviceCapabilityManager.inferSignConvention(isCharging = false, readings = readings)
+        )
     }
 
     @Test
-    fun `empty thermal zones returns empty list`() {
-        val profile = createProfile(thermalZones = emptyList())
-        assertTrue(profile.thermalZonesAvailable.isEmpty())
+    fun `inferSignConvention returns NEGATIVE_CHARGING when discharging with positive average`() {
+        val readings = listOf(500, 600, 700)
+        assertEquals(
+            SignConvention.NEGATIVE_CHARGING,
+            DeviceCapabilityManager.inferSignConvention(isCharging = false, readings = readings)
+        )
     }
 
-    private fun createProfile(
-        manufacturer: String = "google",
-        model: String = "Pixel 8",
-        apiLevel: Int = 34,
-        currentNowReliable: Boolean = true,
-        currentNowUnit: CurrentUnit = CurrentUnit.MICROAMPS,
-        signConvention: SignConvention = SignConvention.POSITIVE_CHARGING,
-        thermalZones: List<String> = listOf("cpu-0-0", "battery")
-    ) = DeviceProfile(
-        manufacturer = manufacturer,
-        model = model,
-        apiLevel = apiLevel,
-        currentNowReliable = currentNowReliable,
-        currentNowUnit = currentNowUnit,
-        currentNowSignConvention = signConvention,
-        cycleCountAvailable = apiLevel >= 34,
-        batteryHealthPercentAvailable = apiLevel >= 34,
-        thermalZonesAvailable = thermalZones,
-        storageHealthAvailable = true
-    )
+    @Test
+    fun `inferSignConvention handles mixed readings where average is positive`() {
+        // Average of (-100, 500, 600) = 333.3, positive while charging -> POSITIVE_CHARGING
+        val readings = listOf(-100, 500, 600)
+        assertEquals(
+            SignConvention.POSITIVE_CHARGING,
+            DeviceCapabilityManager.inferSignConvention(isCharging = true, readings = readings)
+        )
+    }
+
+    @Test
+    fun `inferSignConvention handles zero average as NEGATIVE_CHARGING when charging`() {
+        // Average of (-500, 500) = 0.0; condition (isCharging && avgReading > 0) is false
+        val readings = listOf(-500, 500)
+        assertEquals(
+            SignConvention.NEGATIVE_CHARGING,
+            DeviceCapabilityManager.inferSignConvention(isCharging = true, readings = readings)
+        )
+    }
+
+    @Test
+    fun `inferSignConvention handles zero average as NEGATIVE_CHARGING when discharging`() {
+        // Average of (-500, 500) = 0.0; condition (!isCharging && avgReading < 0) is false
+        val readings = listOf(-500, 500)
+        assertEquals(
+            SignConvention.NEGATIVE_CHARGING,
+            DeviceCapabilityManager.inferSignConvention(isCharging = false, readings = readings)
+        )
+    }
 }

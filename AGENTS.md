@@ -1,5 +1,7 @@
 # AGENTS.md — runcheck
 
+This file and `CODEX.md` should stay aligned. If one is updated, update the other in the same change.
+
 Android device health diagnostics app. Kotlin + Jetpack Compose. Single dark theme.
 
 ---

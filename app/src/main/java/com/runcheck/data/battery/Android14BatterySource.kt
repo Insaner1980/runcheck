@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.flowOn
 import java.io.File
 
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-class Android14BatterySource(
+open class Android14BatterySource(
     context: Context,
     profile: DeviceProfile
 ) : GenericBatterySource(context, profile) {

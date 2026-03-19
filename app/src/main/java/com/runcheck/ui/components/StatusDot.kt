@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -19,6 +20,7 @@ fun StatusDot(
     Box(
         modifier = modifier
             .size(size)
+            .clearAndSetSemantics {}
             .background(color = color, shape = CircleShape)
     )
 }

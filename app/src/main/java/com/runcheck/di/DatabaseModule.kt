@@ -122,6 +122,17 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_battery_readings_status_timestamp` ON `battery_readings` (`status`, `timestamp`)"
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_charging_sessions_end_time` ON `charging_sessions` (`end_time`)"
+            )
+        }
+    }
+
     private val MIGRATION_4_5 = object : Migration(4, 5) {
         override fun migrate(db: SupportSQLiteDatabase) {
             // Recreate network_readings with nullable signal_dbm (was NOT NULL)
@@ -157,8 +168,10 @@ object DatabaseModule {
             RuncheckDatabase::class.java,
             "runcheck.db"
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
-            .fallbackToDestructiveMigration(dropAllTables = true)
+            .addMigrations(
+                MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
+                MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7
+            )
             .build()
     }
 

@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,30 +36,18 @@ class ThermalDataSource @Inject constructor(
                 trySend(temp)
             }
         }
-        val stickyIntent = context.registerReceiver(
-            receiver,
-            IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        val stickyIntent = ContextCompat.registerReceiver(
+            context, receiver,
+            IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+            ContextCompat.RECEIVER_NOT_EXPORTED
         )
         stickyIntent?.let { receiver.onReceive(context, it) }
         awaitClose { context.unregisterReceiver(receiver) }
     }
 
-    fun getCpuTemperature(thermalZones: List<String>): Flow<Float?> = flow {
-        if (thermalZones.isEmpty()) {
-            emit(null)
-            return@flow
-        }
-
-        // Try once — if it fails, emit null and stop (avoids SELinux log spam)
-        val temp = readCpuTemperature(thermalZones)
-        emit(temp)
-        if (temp != null) {
-            while (true) {
-                delay(POLLING_INTERVAL_MS)
-                emit(readCpuTemperature(thermalZones))
-            }
-        }
-    }.flowOn(Dispatchers.IO)
+    fun getCpuTemperature(_unusedThermalZones: List<String>): Flow<Float?> = flow {
+        emit(null)
+    }
 
     fun getThermalHeadroom(): Flow<Float?> = flow {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -77,7 +64,7 @@ class ThermalDataSource @Inject constructor(
         } else {
             emit(null)
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
     fun getThermalStatus(): Flow<ThermalStatus> = flow {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
@@ -86,41 +73,6 @@ class ThermalDataSource @Inject constructor(
         }
 
         emitAllThermalStatus()
-    }
-
-    private fun readCpuTemperature(zones: List<String>): Float? {
-        if (zones.isEmpty()) return null
-
-        val thermalDir = File("/sys/class/thermal/")
-        if (!thermalDir.exists() || !thermalDir.canRead()) return null
-
-        return try {
-            val zoneFiles = thermalDir.listFiles()
-                ?.filter { it.name.startsWith("thermal_zone") }
-                ?: return null
-
-            for (zone in zoneFiles) {
-                val typeFile = File(zone, "type")
-                val tempFile = File(zone, "temp")
-
-                if (!tempFile.exists() || !tempFile.canRead()) continue
-
-                val type = if (typeFile.exists() && typeFile.canRead()) {
-                    typeFile.readText().trim()
-                } else {
-                    zone.name
-                }
-
-                if (zones.contains(type)) {
-                    val tempStr = tempFile.readText().trim()
-                    val tempValue = tempStr.toIntOrNull() ?: continue
-                    return if (tempValue > 1000) tempValue / 1000f else tempValue.toFloat()
-                }
-            }
-            null
-        } catch (_: SecurityException) {
-            null
-        }
     }
 
     private fun mapThermalStatus(status: Int): ThermalStatus {

@@ -14,6 +14,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.runcheck.ui.theme.BgIconCircle
@@ -26,7 +28,8 @@ fun MiniBar(
     height: Dp = 6.dp,
     trackColor: Color = BgIconCircle,
     fillColor: Color = MaterialTheme.colorScheme.primary,
-    animationDuration: Int = 800
+    animationDuration: Int = 800,
+    contentDescription: String? = null
 ) {
     val isReducedMotion = MaterialTheme.reducedMotion
     val pillShape = RoundedCornerShape(50)
@@ -41,10 +44,19 @@ fun MiniBar(
         label = "miniBar"
     )
 
+    val semanticsModifier = if (contentDescription != null) {
+        Modifier.clearAndSetSemantics {
+            this.contentDescription = contentDescription
+        }
+    } else {
+        Modifier.clearAndSetSemantics {}
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(height)
+            .then(semanticsModifier)
             .clip(pillShape)
             .background(trackColor)
     ) {

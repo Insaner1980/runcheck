@@ -24,7 +24,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
@@ -161,7 +160,6 @@ class HomeViewModel @Inject constructor(
                     showUpgradeCard = showUpgradeCard
                 )
             }.sample(DISPLAY_UPDATE_INTERVAL_MS)
-                .conflate()
                 .catch { e ->
                     _uiState.value = HomeUiState.Error(e.messageOr("Unknown error"))
                 }.collect { state ->

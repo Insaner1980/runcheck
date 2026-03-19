@@ -16,3 +16,6 @@
 *.hprof
 *.log
 .claude/
+
+# Prevent CLAUDE.md files from breaking Android resource merger
+**/src/main/res/**/CLAUDE.md

@@ -42,8 +42,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -86,6 +89,7 @@ fun ThermalDetailScreen(
     modifier: Modifier = Modifier,
     viewModel: ThermalViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -115,13 +119,21 @@ fun ThermalDetailScreen(
         )
         when (val state = uiState) {
             is ThermalUiState.Loading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .semantics { contentDescription = context.getString(R.string.a11y_loading); liveRegion = LiveRegionMode.Polite },
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator()
                 }
             }
             is ThermalUiState.Error -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    ) {
                         Text(stringResource(R.string.common_error_generic))
                         TextButton(onClick = { viewModel.refresh() }) {
                             Text(stringResource(R.string.common_retry))
@@ -465,7 +477,7 @@ private fun ThermalMetricsCard(thermal: ThermalState) {
                 MetricPill(
                     label = stringResource(R.string.thermal_headroom),
                     value = thermal.thermalHeadroom?.let {
-                        "${formatDecimal((1f - it.coerceIn(0f, 1f)) * 100, 0)}%"
+                        stringResource(R.string.value_headroom_percent, formatDecimal((1f - it.coerceIn(0f, 1f)) * 100, 0))
                     } ?: stringResource(R.string.thermal_cpu_unavailable),
                     valueColor = thermal.thermalHeadroom?.let { headroom ->
                         headroomColor(headroom)
@@ -588,7 +600,7 @@ private fun ThrottlingEventItem(event: ThrottlingEvent) {
 
             event.cpuTempC?.let { cpuTemp ->
                 Text(
-                    text = "${stringResource(R.string.thermal_cpu_temp)}: ${formatTemperature(cpuTemp)}",
+                    text = stringResource(R.string.value_label_colon, stringResource(R.string.thermal_cpu_temp), formatTemperature(cpuTemp)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -606,9 +618,9 @@ private fun ThrottlingEventItem(event: ThrottlingEvent) {
                 val minutes = duration / 60_000
                 val seconds = (duration % 60_000) / 1000
                 val durationText = if (minutes > 0) {
-                    "${minutes}m ${seconds}s"
+                    stringResource(R.string.value_duration_minutes_seconds, minutes, seconds)
                 } else {
-                    "${seconds}s"
+                    stringResource(R.string.value_duration_seconds, seconds)
                 }
                 Text(
                     text = stringResource(R.string.thermal_event_duration, durationText),

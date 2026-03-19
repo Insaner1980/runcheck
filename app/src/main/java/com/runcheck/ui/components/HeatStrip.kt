@@ -41,12 +41,11 @@ fun HeatStrip(
         formatTemperature(temperatureC),
         temperatureBandLabel(temperatureC)
     )
-    val pulseAlpha = if (reducedMotion) {
-        1f
-    } else {
+
+    val pulseAlpha = if (isCritical && !reducedMotion) {
         val infiniteTransition = rememberInfiniteTransition(label = "heat_pulse")
         infiniteTransition.animateFloat(
-            initialValue = if (isCritical) 0.7f else 1f,
+            initialValue = 0.7f,
             targetValue = 1f,
             animationSpec = infiniteRepeatable(
                 animation = tween(durationMillis = 2000, easing = LinearEasing),
@@ -54,6 +53,8 @@ fun HeatStrip(
             ),
             label = "heat_alpha"
         ).value
+    } else {
+        1f
     }
 
     val coolColor = MaterialTheme.statusColors.healthy
@@ -70,7 +71,6 @@ fun HeatStrip(
                 contentDescription = stripContentDescription
             }
     ) {
-        // Background gradient
         drawRect(
             brush = Brush.horizontalGradient(
                 colors = listOf(coolColor, warmColor, hotColor)
@@ -78,7 +78,6 @@ fun HeatStrip(
             alpha = if (isCritical) pulseAlpha else 1f
         )
 
-        // Indicator position
         val indicatorX = normalizedTemp * size.width
         drawCircle(
             color = indicatorColor,

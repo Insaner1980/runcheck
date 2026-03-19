@@ -53,7 +53,9 @@ class BatteryRepositoryImpl @Inject constructor(
         }
 
         val chargeCounterFlow = source.getChargeCounter()
-        val designCapacityMah = batteryCapacityReader.getDesignCapacityMah()
+        val designCapacityMah = withContext(Dispatchers.IO) {
+            batteryCapacityReader.getDesignCapacityMah()
+        }
 
         combine(stateFlow, extraFlow, chargeCounterFlow) { partial, extra, chargeCounterMah ->
             val estimatedCapacityMah = if (designCapacityMah != null && extra.healthPct != null) {
@@ -79,11 +81,10 @@ class BatteryRepositoryImpl @Inject constructor(
     }
 
     override fun getReadingsSince(since: Long, limit: Int?): Flow<List<BatteryReading>> {
-        val now = System.currentTimeMillis()
         val readingsFlow = if (limit != null) {
-            batteryReadingDao.getReadingsSinceLimited(since, now, limit)
+            batteryReadingDao.getReadingsSinceLimited(since, limit)
         } else {
-            batteryReadingDao.getReadingsSince(since, now)
+            batteryReadingDao.getReadingsSince(since)
         }
         return readingsFlow.map { entities ->
             entities.map { it.toDomain() }

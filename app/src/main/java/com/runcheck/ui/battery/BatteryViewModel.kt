@@ -13,11 +13,13 @@ import com.runcheck.service.monitor.ScreenStateTracker
 import com.runcheck.ui.common.messageOr
 import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -77,6 +79,7 @@ class BatteryViewModel @Inject constructor(
         currentMax = Int.MIN_VALUE
     }
 
+    @OptIn(FlowPreview::class)
     private fun loadBatteryData() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
@@ -134,7 +137,7 @@ class BatteryViewModel @Inject constructor(
                     sleepAnalysis = if (isDischarging) screenStateTracker.getSleepAnalysis() else null,
                     statistics = cachedStatistics
                 )
-            }.catch { e ->
+            }.sample(333L).catch { e ->
                 ReleaseSafeLog.error("BatteryVM", "Battery data failed", e)
                 _uiState.value = BatteryUiState.Error(e.messageOr("Unknown error"))
             }.collect { state ->

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,6 +48,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +66,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.runcheck.R
+import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.resolve
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.HistoryPeriod
@@ -91,6 +97,7 @@ fun NetworkDetailScreen(
     modifier: Modifier = Modifier,
     viewModel: NetworkViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val networkUiState by viewModel.networkUiState.collectAsStateWithLifecycle()
     val speedTestState by viewModel.speedTestState.collectAsStateWithLifecycle()
@@ -123,14 +130,22 @@ fun NetworkDetailScreen(
 
         when (val state = networkUiState) {
             is NetworkUiState.Loading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .semantics { contentDescription = context.getString(R.string.a11y_loading); liveRegion = LiveRegionMode.Polite },
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator()
                 }
             }
 
             is NetworkUiState.Error -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    ) {
                         Text(state.message.resolve())
                         TextButton(onClick = { viewModel.refresh() }) {
                             Text(stringResource(R.string.common_retry))
@@ -388,6 +403,7 @@ private enum class NetworkHistoryMetric {
 private fun SignalHistoryCard(
     history: List<NetworkReadingData>,
     selectedPeriod: HistoryPeriod,
+    historyLoadError: UiText?,
     onPeriodChange: (HistoryPeriod) -> Unit
 ) {
     var selectedMetric by rememberSaveable { mutableStateOf(NetworkHistoryMetric.SIGNAL.name) }
@@ -404,7 +420,9 @@ private fun SignalHistoryCard(
         CardSectionTitle(text = stringResource(R.string.network_section_signal_history))
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
         ) {
             NetworkHistoryMetric.entries.forEach { m ->
@@ -417,7 +435,9 @@ private fun SignalHistoryCard(
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
         ) {
             HistoryPeriod.entries
@@ -429,6 +449,14 @@ private fun SignalHistoryCard(
                         label = { Text(historyPeriodLabel(period)) }
                     )
                 }
+        }
+
+        historyLoadError?.let { error ->
+            Text(
+                text = error.resolve(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
         }
 
         if (chartData.size >= 2) {
@@ -634,6 +662,7 @@ private fun NetworkContent(
             SignalHistoryCard(
                 history = state.signalHistory,
                 selectedPeriod = state.selectedHistoryPeriod,
+                historyLoadError = state.historyLoadError,
                 onPeriodChange = onPeriodChange
             )
 

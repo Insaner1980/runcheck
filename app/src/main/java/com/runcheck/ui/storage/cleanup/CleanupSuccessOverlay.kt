@@ -23,6 +23,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.ui.common.formatStorageSize
@@ -39,6 +42,10 @@ fun CleanupSuccessOverlay(
 ) {
     val context = LocalContext.current
     val noMotion = MaterialTheme.reducedMotion
+    val successMessage = stringResource(
+        R.string.a11y_cleanup_success,
+        formatStorageSize(context, freedBytes)
+    )
 
     AnimatedVisibility(
         visible = visible,
@@ -49,7 +56,8 @@ fun CleanupSuccessOverlay(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.95f)),
+                .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.95f))
+                .semantics { liveRegion = LiveRegionMode.Assertive },
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -58,7 +66,7 @@ fun CleanupSuccessOverlay(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.CheckCircle,
-                    contentDescription = null,
+                    contentDescription = successMessage,
                     modifier = Modifier.size(64.dp),
                     tint = AccentTeal
                 )

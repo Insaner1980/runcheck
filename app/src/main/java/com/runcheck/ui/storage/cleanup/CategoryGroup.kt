@@ -1,11 +1,6 @@
 package com.runcheck.ui.storage.cleanup
 
-import android.graphics.Bitmap
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,7 +13,6 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,7 +20,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.collapse
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.expand
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
+import com.runcheck.R
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.components.StatusDot
 import com.runcheck.ui.theme.numericFontFamily
@@ -36,23 +41,36 @@ import com.runcheck.ui.theme.spacing
 fun CategoryGroup(
     group: FileGroup,
     selectedUris: Set<String>,
-    maxFileSize: Long,
-    onLoadThumbnail: suspend (String) -> Bitmap?,
     onToggleExpanded: () -> Unit,
     onToggleGroupSelection: () -> Unit,
-    onToggleFileSelection: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val color = categoryColor(group.category)
+    val label = categoryLabel(context, group.category)
     val allSelected = group.files.all { it.uri in selectedUris }
+    val expandedLabel = if (group.expanded) {
+        stringResource(R.string.a11y_collapse)
+    } else {
+        stringResource(R.string.a11y_expand)
+    }
+    val checkboxLabel = stringResource(R.string.a11y_select_all, label)
 
     Column(modifier = modifier.fillMaxWidth()) {
         // Group header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onToggleExpanded)
+                .clickable(onClick = onToggleExpanded, role = Role.Button)
+                .semantics(mergeDescendants = true) {
+                    heading()
+                    stateDescription = expandedLabel
+                    if (group.expanded) {
+                        collapse { onToggleExpanded(); true }
+                    } else {
+                        expand { onToggleExpanded(); true }
+                    }
+                }
                 .padding(vertical = MaterialTheme.spacing.sm),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -67,12 +85,12 @@ fun CategoryGroup(
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = categoryLabel(group.category),
+                text = label,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = " (${group.files.size})",
+                text = " " + stringResource(R.string.value_count_parenthetical, group.files.size),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -88,35 +106,13 @@ fun CategoryGroup(
             Checkbox(
                 checked = allSelected,
                 onCheckedChange = { onToggleGroupSelection() },
+                modifier = Modifier.semantics {
+                    contentDescription = checkboxLabel
+                },
                 colors = CheckboxDefaults.colors(
                     checkedColor = MaterialTheme.colorScheme.primary
                 )
             )
-        }
-
-        // Files list (collapsible)
-        AnimatedVisibility(
-            visible = group.expanded,
-            enter = expandVertically(),
-            exit = shrinkVertically()
-        ) {
-            Column {
-                group.files.forEachIndexed { index, file ->
-                    if (index > 0) {
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                            modifier = Modifier.padding(start = 56.dp)
-                        )
-                    }
-                    FileListItem(
-                        file = file,
-                        isSelected = file.uri in selectedUris,
-                        maxFileSize = maxFileSize,
-                        onLoadThumbnail = onLoadThumbnail,
-                        onToggle = { onToggleFileSelection(file.uri) }
-                    )
-                }
-            }
         }
     }
 }

@@ -131,7 +131,10 @@
     <string name="battery_stats_sessions">Sessions</string>
     <string name="battery_stats_avg_usage">Average Usage</string>
     <string name="battery_stats_full_charge_est">Full Charge Estimate</string>
-    <string name="battery_stats_last_n_days">Last %1$d days</string>
+    <plurals name="battery_stats_last_n_days">
+        <item quantity="one">Last %1$d day</item>
+        <item quantity="other">Last %1$d days</item>
+    </plurals>
     <string name="battery_stats_pct_total">%1$.0f%%</string>
 
     <!-- Charging Status -->
@@ -174,6 +177,20 @@
     <string name="value_watts">%1$.1f W</string>
     <string name="value_duration_hours_minutes">%1$dh %2$dm</string>
     <string name="value_duration_minutes">%1$dm</string>
+    <string name="value_duration_minutes_seconds">%1$dm %2$ds</string>
+    <string name="value_duration_seconds">%1$ds</string>
+    <string name="unit_fahrenheit">°F</string>
+    <string name="value_temperature_fahrenheit">%1$.1f°F</string>
+    <string name="value_headroom_percent">%1$s%%</string>
+    <string name="value_label_colon">%1$s: %2$s</string>
+    <string name="value_count_parenthetical">(%1$d)</string>
+    <string name="network_type_cellular">Cellular</string>
+    <string name="fallback_unknown">Unknown</string>
+    <string name="a11y_scanning_files">Scanning files</string>
+    <string name="a11y_deleting_files">Deleting files</string>
+    <string name="storage_fill_rate_value">+%1$s/w</string>
+    <string name="storage_free_available">%1$s available</string>
+    <string name="feedback_email_subject">runcheck Feedback</string>
     <string name="value_with_unit_int">%1$d %2$s</string>
     <string name="placeholder_dash">—</string>
 
@@ -280,7 +297,10 @@
 
     <!-- Storage Cache -->
     <string name="storage_cache_total">Cache</string>
-    <string name="storage_cache_summary">%1$s across %2$d apps</string>
+    <plurals name="storage_cache_summary">
+        <item quantity="one">%1$s across %2$d app</item>
+        <item quantity="other">%1$s across %2$d apps</item>
+    </plurals>
 
     <!-- Storage Actions -->
     <string name="storage_cleanup_tools">Cleanup Tools</string>
@@ -291,7 +311,10 @@
     <string name="storage_apk_files">APK Files</string>
     <string name="storage_apk_files_desc">Leftover installation packages</string>
     <string name="storage_trash">Trash</string>
-    <string name="storage_trash_summary">%1$s (%2$d items)</string>
+    <plurals name="storage_trash_summary">
+        <item quantity="one">%1$s (%2$d item)</item>
+        <item quantity="other">%1$s (%2$d items)</item>
+    </plurals>
     <string name="storage_empty_trash">Empty trash</string>
     <string name="storage_scan">Scan</string>
 
@@ -305,10 +328,16 @@
     <string name="cleanup_large_files_title">Large Files</string>
     <string name="cleanup_old_downloads_title">Old Downloads</string>
     <string name="cleanup_apk_files_title">APK Files</string>
-    <string name="cleanup_found_files">Found %1$d files · %2$s</string>
+    <plurals name="cleanup_found_files">
+        <item quantity="one">Found %1$d file \u00B7 %2$s</item>
+        <item quantity="other">Found %1$d files \u00B7 %2$s</item>
+    </plurals>
     <string name="cleanup_no_files">No files found</string>
     <string name="cleanup_no_files_desc">Your storage is looking clean!</string>
-    <string name="cleanup_free_action">Free %1$s · %2$d items</string>
+    <plurals name="cleanup_free_action">
+        <item quantity="one">Free %1$s \u00B7 %2$d item</item>
+        <item quantity="other">Free %1$s \u00B7 %2$d items</item>
+    </plurals>
     <string name="cleanup_freed">%1$s freed</string>
     <string name="cleanup_filter_10mb">10 MB</string>
     <string name="cleanup_filter_50mb">50 MB</string>
@@ -359,6 +388,9 @@
     <string name="settings_billing_unavailable">Play Billing is unavailable on this device. Upgrade options are hidden until billing becomes available.</string>
     <string name="settings_pro_active">pro active</string>
     <string name="settings_pro_thank_you">Thank you for supporting runcheck!</string>
+    <string name="billing_purchase_pending">Payment is being processed. Pro will unlock when complete.</string>
+    <string name="billing_purchase_error">Purchase could not be completed. Please try again.</string>
+    <string name="billing_already_owned">You already own runcheck Pro. Restoring now.</string>
     <string name="settings_version">Version %1$s</string>
 
     <!-- Settings: Notifications (per-alert) -->
@@ -435,7 +467,6 @@
     <string name="monitor_realtime_notification_text">Monitoring device health…</string>
 
     <!-- Export -->
-    <string name="settings_data_section">Data</string>
     <string name="settings_export_data">Export Data (CSV)</string>
     <string name="settings_export_error">Export failed</string>
     <string name="settings_export_ready">Export ready to share</string>
@@ -543,4 +574,41 @@
     <string name="common_error_generic">Something went wrong</string>
     <string name="common_retry">Retry</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
+
+    <!-- Accessibility -->
+    <string name="a11y_signal_bars">%1$s, %2$d of 5 bars</string>
+    <string name="a11y_copy_to_clipboard">Copy to clipboard</string>
+    <string name="a11y_locked_pro_feature">Locked, Pro feature</string>
+    <string name="a11y_loading">Loading</string>
+    <string name="a11y_expand">Expand</string>
+    <string name="a11y_collapse">Collapse</string>
+    <string name="a11y_toggle_selection">Toggle selection for %1$s</string>
+    <string name="a11y_select_all">Select all %1$s</string>
+    <string name="a11y_cleanup_success">Cleanup complete, %1$s freed</string>
+    <string name="a11y_storage_projection">Storage will decrease from %1$d%% to %2$d%%</string>
+    <string name="storage_projection_visual">%1$d%% \u2192 %2$d%%</string>
+    <string name="storage_used_with_percent">%1$s (%2$d%%)</string>
+    <string name="a11y_category_video">Video</string>
+    <string name="a11y_category_image">Image</string>
+    <string name="a11y_category_audio">Audio</string>
+    <string name="a11y_category_document">Document</string>
+    <string name="a11y_category_download">Download</string>
+    <string name="a11y_category_apk">APK</string>
+    <string name="a11y_category_other">Other</string>
+    <string name="a11y_date_today">Today</string>
+    <string name="a11y_date_yesterday">Yesterday</string>
+    <plurals name="a11y_date_days_ago">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
+    <plurals name="a11y_date_months_ago">
+        <item quantity="one">%1$d month ago</item>
+        <item quantity="other">%1$d months ago</item>
+    </plurals>
+    <plurals name="a11y_date_years_ago">
+        <item quantity="one">%1$d year ago</item>
+        <item quantity="other">%1$d years ago</item>
+    </plurals>
+    <string name="a11y_exporting_data">Exporting data</string>
+    <string name="a11y_trial_dialog">Trial expired dialog</string>
 </resources>

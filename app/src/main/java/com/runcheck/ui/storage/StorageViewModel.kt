@@ -25,8 +25,14 @@ class StorageViewModel @Inject constructor(
     val uiState: StateFlow<StorageUiState> = _uiState.asStateFlow()
     private var loadJob: Job? = null
 
-    init {
+    fun startObserving() {
+        if (loadJob?.isActive == true) return
         loadStorageData()
+    }
+
+    fun stopObserving() {
+        loadJob?.cancel()
+        loadJob = null
     }
 
     fun refresh() {

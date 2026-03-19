@@ -12,12 +12,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -27,9 +26,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -99,7 +104,9 @@ fun CleanupScreen(
                 if (cleanupType.filterOptions.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
                     ) {
                         cleanupType.filterOptions.forEachIndexed { index, option ->
@@ -117,7 +124,9 @@ fun CleanupScreen(
                     is CleanupUiState.Idle,
                     is CleanupUiState.Scanning -> {
                         Box(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .semantics { contentDescription = context.getString(R.string.a11y_scanning_files); liveRegion = LiveRegionMode.Polite },
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator()
@@ -153,7 +162,9 @@ fun CleanupScreen(
 
                     is CleanupUiState.Deleting -> {
                         Box(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .semantics { contentDescription = context.getString(R.string.a11y_deleting_files); liveRegion = LiveRegionMode.Polite },
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator()
@@ -182,57 +193,59 @@ private fun CleanupResultsList(
     viewModel: CleanupViewModel
 ) {
     val context = LocalContext.current
-    val maxFileSize = state.groups
-        .flatMap { it.files }
-        .maxOfOrNull { it.sizeBytes } ?: 1L
+    val maxFileSize = remember(state.groups) {
+        state.groups.flatMap { it.files }.maxOfOrNull { it.sizeBytes } ?: 1L
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         // Summary header
-        item {
+        item(key = "header") {
             Text(
-                text = stringResource(
-                    R.string.cleanup_found_files,
-                    state.totalCount,
-                    formatStorageSize(context, state.totalSize)
-                ),
+                text = pluralStringResource(R.plurals.cleanup_found_files, state.totalCount, state.totalCount, formatStorageSize(context, state.totalSize)),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = MaterialTheme.spacing.sm)
             )
         }
 
-        // File groups card
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(MaterialTheme.spacing.base)
-                ) {
-                    state.groups.forEachIndexed { index, group ->
+        // Flattened file groups with category headers
+        state.groups.forEachIndexed { groupIndex, group ->
+            item(key = "group_${group.category}") {
+                if (groupIndex > 0) {
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                    )
+                }
+                CategoryGroup(
+                    group = group,
+                    selectedUris = state.selectedUris,
+                    onToggleExpanded = { viewModel.toggleGroupExpanded(group.category) },
+                    onToggleGroupSelection = { viewModel.toggleGroupSelection(group.category) }
+                )
+            }
+
+            if (group.expanded) {
+                itemsIndexed(
+                    items = group.files,
+                    key = { _, file -> file.uri },
+                    contentType = { _, _ -> "cleanup_file" }
+                ) { index, file ->
+                    Column {
                         if (index > 0) {
                             HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                                modifier = Modifier.padding(start = 56.dp)
                             )
                         }
-                        CategoryGroup(
-                            group = group,
-                            selectedUris = state.selectedUris,
+                        FileListItem(
+                            file = file,
+                            isSelected = file.uri in state.selectedUris,
                             maxFileSize = maxFileSize,
                             onLoadThumbnail = { uri -> viewModel.loadThumbnail(uri) },
-                            onToggleExpanded = { viewModel.toggleGroupExpanded(group.category) },
-                            onToggleGroupSelection = { viewModel.toggleGroupSelection(group.category) },
-                            onToggleFileSelection = { uri -> viewModel.toggleSelection(uri) }
+                            onToggle = { viewModel.toggleSelection(file.uri) }
                         )
                     }
                 }
@@ -240,9 +253,8 @@ private fun CleanupResultsList(
         }
 
         // Bottom spacing for the action bar
-        item {
+        item(key = "spacer") {
             Spacer(modifier = Modifier.height(80.dp))
         }
     }
 }
-

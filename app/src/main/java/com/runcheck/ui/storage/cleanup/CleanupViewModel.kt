@@ -15,6 +15,8 @@ import com.runcheck.domain.model.ScannedFile
 import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -47,6 +49,8 @@ class CleanupViewModel @Inject constructor(
     private var allFiles: List<ScannedFile> = emptyList()
     private var currentStorageTotal: Long = 1L
     private var currentStorageUsed: Long = 0L
+    private var pendingDeleteSize: Long = 0L
+    private var scanJob: Job? = null
 
     init {
         scan()
@@ -60,7 +64,8 @@ class CleanupViewModel @Inject constructor(
     fun getSelectedFilterIndex(): Int = selectedFilter
 
     fun scan() {
-        viewModelScope.launch {
+        scanJob?.cancel()
+        scanJob = viewModelScope.launch {
             _uiState.value = CleanupUiState.Scanning()
             try {
                 // Get current storage info for projections
@@ -92,6 +97,8 @@ class CleanupViewModel @Inject constructor(
                 }
 
                 emitResults(initialSelected)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 ReleaseSafeLog.error("CleanupVM", "Scan failed", e)
                 _uiState.value = CleanupUiState.Empty
@@ -138,7 +145,7 @@ class CleanupViewModel @Inject constructor(
         if (state.selectedUris.isEmpty()) return
 
         val uris = state.selectedUris.toList()
-        val selectedSize = state.selectedSize
+        pendingDeleteSize = state.selectedSize
 
         viewModelScope.launch {
             _uiState.value = CleanupUiState.Deleting(uris.size)
@@ -154,7 +161,7 @@ class CleanupViewModel @Inject constructor(
             // Legacy fallback
             val deleted = cleanupHelper.deleteLegacy(uris)
             if (deleted > 0) {
-                onDeleteSuccess(selectedSize)
+                onDeleteSuccess(pendingDeleteSize)
             } else {
                 scan() // re-scan on failure
             }
@@ -162,16 +169,7 @@ class CleanupViewModel @Inject constructor(
     }
 
     fun onDeleteConfirmed() {
-        val state = _uiState.value
-        val size = when (state) {
-            is CleanupUiState.Results -> state.selectedSize
-            is CleanupUiState.Deleting -> {
-                allFiles.filter { it.uri in ((_uiState.value as? CleanupUiState.Results)?.selectedUris ?: emptySet()) }
-                    .sumOf { it.sizeBytes }
-            }
-            else -> 0L
-        }
-        onDeleteSuccess(size)
+        onDeleteSuccess(pendingDeleteSize)
     }
 
     fun onDeleteCancelled() {

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -42,11 +43,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -97,6 +104,7 @@ fun BatteryDetailScreen(
     modifier: Modifier = Modifier,
     viewModel: BatteryViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -127,13 +135,21 @@ fun BatteryDetailScreen(
         )
         when (val state = uiState) {
             is BatteryUiState.Loading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .semantics { contentDescription = context.getString(R.string.a11y_loading); liveRegion = LiveRegionMode.Polite },
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator()
                 }
             }
             is BatteryUiState.Error -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                    ) {
                         Text(stringResource(R.string.common_error_generic))
                         TextButton(onClick = { viewModel.refresh() }) {
                             Text(stringResource(R.string.common_retry))
@@ -602,7 +618,9 @@ private fun BatteryHistoryPanel(
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
         if (state.isPro) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
             ) {
                 HistoryPeriod.entries.forEach { period ->
@@ -624,7 +642,9 @@ private fun BatteryHistoryPanel(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
             ) {
                 BatteryHistoryMetric.entries.forEach { metric ->
@@ -907,7 +927,9 @@ private fun BatterySessionGraphPanel(
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
         ) {
             SessionGraphMetric.entries.forEach { metric ->
@@ -920,7 +942,9 @@ private fun BatterySessionGraphPanel(
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
         ) {
             SessionGraphWindow.entries.forEach { window ->
@@ -957,7 +981,7 @@ private fun BatterySummaryStat(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.semantics(mergeDescendants = true) {},
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Text(
@@ -1301,8 +1325,8 @@ private fun formatDurationCompact(durationMs: Long): String {
     val seconds = totalSeconds % 60
     return when {
         hours > 0 -> stringResource(R.string.value_duration_hours_minutes, hours, minutes)
-        minutes > 0 -> "${minutes}m ${seconds}s"
-        else -> "${seconds}s"
+        minutes > 0 -> stringResource(R.string.value_duration_minutes_seconds, minutes, seconds)
+        else -> stringResource(R.string.value_duration_seconds, seconds)
     }
 }
 
@@ -1387,7 +1411,7 @@ private fun BatteryStatisticsPanel(statistics: BatteryStatistics) {
     BatteryPanel {
         CardSectionTitle(
             text = stringResource(R.string.battery_stats_section) + " · " +
-                stringResource(R.string.battery_stats_last_n_days, statistics.periodDays)
+                pluralStringResource(R.plurals.battery_stats_last_n_days, statistics.periodDays, statistics.periodDays)
         )
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
 

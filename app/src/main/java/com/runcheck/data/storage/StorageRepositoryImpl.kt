@@ -6,9 +6,11 @@ import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.repository.StorageReadingData
 import com.runcheck.domain.repository.StorageRepository as StorageRepositoryContract
 import com.runcheck.domain.usecase.CalculateFillRateUseCase
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -56,7 +58,7 @@ class StorageRepositoryImpl @Inject constructor(
             )
             delay(STORAGE_REFRESH_INTERVAL_MS)
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
     override suspend fun saveReading(state: StorageState) {
         val entity = StorageReadingEntity(

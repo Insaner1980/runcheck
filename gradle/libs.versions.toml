@@ -12,9 +12,9 @@ coroutines = "1.10.2"
 workmanager = "2.11.1"
 datastore = "1.2.0"
 coreKtx = "1.15.0"
+profileInstaller = "1.4.1"
 activityCompose = "1.10.1"
 billing = "8.3.0"
-playServicesAds = "24.3.0"
 glance = "1.1.1"
 ndt7 = "1.0.0"
 okhttp = "4.12.0"
@@ -71,12 +71,10 @@ datastore-preferences = { group = "androidx.datastore", name = "datastore-prefer
 # Core
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileInstaller" }
 
 # Google Play Billing
 billing = { group = "com.android.billingclient", name = "billing-ktx", version.ref = "billing" }
-
-# AdMob
-play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "playServicesAds" }
 
 # Glance (Compose widgets)
 glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
@@ -98,7 +96,6 @@ mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

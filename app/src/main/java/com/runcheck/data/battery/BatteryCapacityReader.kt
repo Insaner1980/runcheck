@@ -7,7 +7,7 @@ import javax.inject.Singleton
 
 @Singleton
 class BatteryCapacityReader @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     /**
      * Returns the device's design battery capacity in mAh using Android's

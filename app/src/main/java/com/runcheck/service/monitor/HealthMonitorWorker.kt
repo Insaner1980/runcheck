@@ -30,41 +30,40 @@ class HealthMonitorWorker @AssistedInject constructor(
     ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
-        var hadFailure = false
+        var coreFailure = false
 
-        hadFailure = collectStep("battery") {
+        coreFailure = collectStep("battery") {
             val batteryState = batteryRepository.getBatteryState().first()
             batteryRepository.saveReading(batteryState)
         }
 
-        hadFailure = collectStep("network") {
+        coreFailure = collectStep("network") {
             val networkState = networkRepository.getNetworkState().first()
             networkRepository.saveReading(networkState)
-        } || hadFailure
+        } || coreFailure
 
-        hadFailure = collectStep("thermal") {
+        coreFailure = collectStep("thermal") {
             val thermalState = thermalRepository.getThermalState().first()
             thermalRepository.saveReading(thermalState)
-        } || hadFailure
+        } || coreFailure
 
-        hadFailure = collectStep("storage") {
+        coreFailure = collectStep("storage") {
             val storageState = storageRepository.getStorageState().first()
             storageRepository.saveReading(storageState)
-        } || hadFailure
+        } || coreFailure
 
-        hadFailure = collectStep("app_usage") {
+        coreFailure = collectStep("app_usage") {
             appBatteryUsageRepository.collectUsageSnapshot()
-        } || hadFailure
+        } || coreFailure
 
-        hadFailure = collectStep("cleanup") {
-            cleanupOldReadings()
-        } || hadFailure
+        collectStep("cleanup") { cleanupOldReadings() }
 
-        hadFailure = collectStep("widgets") {
+        // Widget/cleanup failures should not trigger a full retry
+        collectStep("widgets") {
             RuncheckWidgets.updateAll(applicationContext)
-        } || hadFailure
+        }
 
-        return if (hadFailure) Result.retry() else Result.success()
+        return if (coreFailure) Result.retry() else Result.success()
     }
 
     private suspend fun collectStep(stepName: String, block: suspend () -> Unit): Boolean {

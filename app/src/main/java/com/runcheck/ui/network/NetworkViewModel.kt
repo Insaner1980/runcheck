@@ -66,6 +66,8 @@ class NetworkViewModel @Inject constructor(
         historyJob = null
         historyNetworkJob?.cancel()
         historyNetworkJob = null
+        speedTestJob?.cancel()
+        speedTestJob = null
     }
 
     fun refresh() {
@@ -213,19 +215,27 @@ class NetworkViewModel @Inject constructor(
                         NetworkUiState.Success(
                             networkState = state,
                             signalHistory = existing?.signalHistory ?: emptyList(),
-                            selectedHistoryPeriod = selectedHistoryPeriod
+                            selectedHistoryPeriod = selectedHistoryPeriod,
+                            historyLoadError = existing?.historyLoadError
                         )
                     }
                 }
         }
         historyNetworkJob = viewModelScope.launch {
             getNetworkHistory(selectedHistoryPeriod)
-                .catch { /* silently ignore history errors */ }
+                .catch { e ->
+                    _networkUiState.update { current ->
+                        (current as? NetworkUiState.Success)?.copy(
+                            historyLoadError = e.messageOrRes(R.string.common_error_generic)
+                        ) ?: current
+                    }
+                }
                 .collect { readings ->
                     _networkUiState.update { current ->
                         (current as? NetworkUiState.Success)?.copy(
                             signalHistory = readings,
-                            selectedHistoryPeriod = selectedHistoryPeriod
+                            selectedHistoryPeriod = selectedHistoryPeriod,
+                            historyLoadError = null
                         ) ?: current
                     }
                 }
@@ -258,5 +268,10 @@ class NetworkViewModel @Inject constructor(
 
     private fun updateSpeedTestState(transform: SpeedTestUiState.() -> SpeedTestUiState) {
         _speedTestState.update { it.transform() }
+    }
+
+    override fun onCleared() {
+        stopObserving()
+        super.onCleared()
     }
 }

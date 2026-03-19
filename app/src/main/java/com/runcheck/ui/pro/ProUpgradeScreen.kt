@@ -44,6 +44,9 @@ import com.runcheck.R
 import com.runcheck.pro.ProFeature
 import com.runcheck.pro.ProStatus
 import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.common.resolve
+import com.runcheck.ui.theme.AccentOrange
+import com.runcheck.ui.theme.AccentRed
 import com.runcheck.ui.theme.TextSecondary
 
 @Composable
@@ -138,7 +141,7 @@ private fun ProUpgradeContent(
         ) {
             Text(
                 text = if (uiState.formattedPrice != null) {
-                    stringResource(R.string.pro_upgrade_buy_button, uiState.formattedPrice!!)
+                    stringResource(R.string.pro_upgrade_buy_button, uiState.formattedPrice)
                 } else {
                     stringResource(R.string.pro_upgrade_buy_button_no_price)
                 },
@@ -148,6 +151,26 @@ private fun ProUpgradeContent(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+
+        if (uiState.purchasePending) {
+            Text(
+                text = stringResource(R.string.billing_purchase_pending),
+                style = MaterialTheme.typography.bodySmall,
+                color = AccentOrange,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+
+        uiState.purchaseError?.let { error ->
+            Text(
+                text = error.resolve(),
+                style = MaterialTheme.typography.bodySmall,
+                color = AccentRed,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+        }
 
         Text(
             text = stringResource(R.string.pro_upgrade_one_time),

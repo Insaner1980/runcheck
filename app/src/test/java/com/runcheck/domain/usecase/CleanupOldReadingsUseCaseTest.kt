@@ -2,11 +2,11 @@ package com.runcheck.domain.usecase
 
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.UserPreferences
-import com.runcheck.domain.repository.DatabaseTransactionRunner
+import com.runcheck.domain.repository.AppBatteryUsageRepository
 import com.runcheck.domain.repository.BatteryRepository
+import com.runcheck.domain.repository.DatabaseTransactionRunner
 import com.runcheck.domain.repository.NetworkRepository
 import com.runcheck.domain.repository.ProStatusProvider
-import com.runcheck.domain.repository.AppBatteryUsageRepository
 import com.runcheck.domain.repository.SpeedTestRepository
 import com.runcheck.domain.repository.StorageRepository
 import com.runcheck.domain.repository.ThermalRepository
@@ -18,6 +18,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -68,18 +69,52 @@ class CleanupOldReadingsUseCaseTest {
     }
 
     @Test
-    fun `free user triggers cleanup of all tables`() = runTest {
+    fun `free user triggers cleanup with 24-hour cutoff`() = runTest {
         every { proStatusProvider.isPro() } returns false
+        val beforeInvoke = System.currentTimeMillis()
 
         useCase()
 
-        coVerify { batteryRepository.deleteOlderThan(any()) }
-        coVerify { networkRepository.deleteOlderThan(any()) }
-        coVerify { thermalRepository.deleteOlderThan(any()) }
-        coVerify { storageRepository.deleteOlderThan(any()) }
-        coVerify { throttlingRepository.deleteOlderThan(any()) }
-        coVerify { appBatteryUsageRepository.deleteOlderThan(any()) }
-        coVerify { speedTestRepository.deleteOlderThan(any()) }
+        val afterInvoke = System.currentTimeMillis()
+        val twentyFourHoursMs = 24 * 60 * 60 * 1000L
+        val toleranceMs = 5_000L
+
+        // Verify all repositories receive a cutoff approximately 24 hours ago
+        coVerify {
+            batteryRepository.deleteOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - twentyFourHoursMs, afterInvoke - twentyFourHoursMs, toleranceMs)
+            })
+        }
+        coVerify {
+            networkRepository.deleteOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - twentyFourHoursMs, afterInvoke - twentyFourHoursMs, toleranceMs)
+            })
+        }
+        coVerify {
+            thermalRepository.deleteOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - twentyFourHoursMs, afterInvoke - twentyFourHoursMs, toleranceMs)
+            })
+        }
+        coVerify {
+            storageRepository.deleteOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - twentyFourHoursMs, afterInvoke - twentyFourHoursMs, toleranceMs)
+            })
+        }
+        coVerify {
+            throttlingRepository.deleteOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - twentyFourHoursMs, afterInvoke - twentyFourHoursMs, toleranceMs)
+            })
+        }
+        coVerify {
+            appBatteryUsageRepository.deleteOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - twentyFourHoursMs, afterInvoke - twentyFourHoursMs, toleranceMs)
+            })
+        }
+        coVerify {
+            speedTestRepository.deleteOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - twentyFourHoursMs, afterInvoke - twentyFourHoursMs, toleranceMs)
+            })
+        }
         coVerify(exactly = 1) { transactionRunner.runInTransaction(any()) }
     }
 
@@ -103,21 +138,116 @@ class CleanupOldReadingsUseCaseTest {
     }
 
     @Test
-    fun `pro user with bounded retention triggers cleanup`() = runTest {
+    fun `pro user with six months retention triggers cleanup with correct cutoff`() = runTest {
         every { proStatusProvider.isPro() } returns true
         every { userPreferencesRepository.getPreferences() } returns flowOf(
             UserPreferences(dataRetention = DataRetention.SIX_MONTHS)
         )
+        val beforeInvoke = System.currentTimeMillis()
 
         useCase()
 
+        val afterInvoke = System.currentTimeMillis()
+        val sixMonthsMs = 180L * 24 * 60 * 60 * 1000
+        val toleranceMs = 5_000L
+
         coVerify(exactly = 1) { transactionRunner.runInTransaction(any()) }
-        coVerify { batteryRepository.deleteOlderThan(any()) }
-        coVerify { networkRepository.deleteOlderThan(any()) }
-        coVerify { thermalRepository.deleteOlderThan(any()) }
-        coVerify { storageRepository.deleteOlderThan(any()) }
-        coVerify { throttlingRepository.deleteOlderThan(any()) }
-        coVerify { appBatteryUsageRepository.deleteOlderThan(any()) }
-        coVerify { speedTestRepository.deleteOlderThan(any()) }
+        coVerify {
+            batteryRepository.deleteOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - sixMonthsMs, afterInvoke - sixMonthsMs, toleranceMs)
+            })
+        }
+        coVerify {
+            networkRepository.deleteOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - sixMonthsMs, afterInvoke - sixMonthsMs, toleranceMs)
+            })
+        }
+    }
+
+    @Test
+    fun `pro user with three months retention triggers cleanup with correct cutoff`() = runTest {
+        every { proStatusProvider.isPro() } returns true
+        every { userPreferencesRepository.getPreferences() } returns flowOf(
+            UserPreferences(dataRetention = DataRetention.THREE_MONTHS)
+        )
+        val beforeInvoke = System.currentTimeMillis()
+
+        useCase()
+
+        val afterInvoke = System.currentTimeMillis()
+        val threeMonthsMs = 90L * 24 * 60 * 60 * 1000
+        val toleranceMs = 5_000L
+
+        coVerify(exactly = 1) { transactionRunner.runInTransaction(any()) }
+        coVerify {
+            batteryRepository.deleteOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - threeMonthsMs, afterInvoke - threeMonthsMs, toleranceMs)
+            })
+        }
+        coVerify {
+            thermalRepository.deleteOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - threeMonthsMs, afterInvoke - threeMonthsMs, toleranceMs)
+            })
+        }
+        coVerify {
+            storageRepository.deleteOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - threeMonthsMs, afterInvoke - threeMonthsMs, toleranceMs)
+            })
+        }
+    }
+
+    @Test
+    fun `pro user with one year retention triggers cleanup with correct cutoff`() = runTest {
+        every { proStatusProvider.isPro() } returns true
+        every { userPreferencesRepository.getPreferences() } returns flowOf(
+            UserPreferences(dataRetention = DataRetention.ONE_YEAR)
+        )
+        val beforeInvoke = System.currentTimeMillis()
+
+        useCase()
+
+        val afterInvoke = System.currentTimeMillis()
+        val oneYearMs = 365L * 24 * 60 * 60 * 1000
+        val toleranceMs = 5_000L
+
+        coVerify(exactly = 1) { transactionRunner.runInTransaction(any()) }
+        coVerify {
+            batteryRepository.deleteOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - oneYearMs, afterInvoke - oneYearMs, toleranceMs)
+            })
+        }
+        coVerify {
+            networkRepository.deleteOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - oneYearMs, afterInvoke - oneYearMs, toleranceMs)
+            })
+        }
+        coVerify {
+            storageRepository.deleteOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - oneYearMs, afterInvoke - oneYearMs, toleranceMs)
+            })
+        }
+    }
+
+    /**
+     * Assert that the cutoff timestamp falls within the expected range, accounting
+     * for wall-clock time elapsed between capturing beforeInvoke and afterInvoke,
+     * plus a tolerance for execution overhead.
+     */
+    private fun assertCutoffInRange(
+        actual: Long,
+        expectedMin: Long,
+        expectedMax: Long,
+        toleranceMs: Long
+    ) {
+        assertTrue(
+            "Cutoff $actual should be >= ${expectedMin - toleranceMs} " +
+                "(expected min $expectedMin - tolerance $toleranceMs)",
+            actual >= expectedMin - toleranceMs
+        )
+        assertTrue(
+            "Cutoff $actual should be <= ${expectedMax + toleranceMs} " +
+                "(expected max $expectedMax + tolerance $toleranceMs)",
+            actual <= expectedMax + toleranceMs
+        )
     }
 }

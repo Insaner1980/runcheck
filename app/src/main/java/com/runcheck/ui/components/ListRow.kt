@@ -32,14 +32,13 @@ fun ListRow(
 ) {
     Row(
         modifier = modifier
-            .semantics(mergeDescendants = true) {}
             .defaultMinSize(minHeight = 48.dp)
-            .padding(vertical = 14.dp)
             .then(
                 if (onClick != null) Modifier.clickable(onClick = onClick)
                 else Modifier
             )
-            ,
+            .semantics(mergeDescendants = true) {}
+            .padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (icon != null) {

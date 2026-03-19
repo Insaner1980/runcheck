@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.PowerManager
+import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -16,7 +17,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class ScreenStateTracker @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     private val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
 
@@ -39,6 +40,7 @@ class ScreenStateTracker @Inject constructor(
     private var lastIdleCheckTime: Long = 0L
     private var lastIdleState: Boolean = false
 
+    @Volatile
     private var registered = false
 
     private val receiver = object : BroadcastReceiver() {
@@ -58,7 +60,7 @@ class ScreenStateTracker @Inject constructor(
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_POWER_DISCONNECTED)
         }
-        context.registerReceiver(receiver, filter)
+        ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         registered = true
         screenOn = powerManager.isInteractive
         lastTransitionTime = System.currentTimeMillis()

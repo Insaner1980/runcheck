@@ -35,10 +35,6 @@
             android:name="firebase_crashlytics_collection_enabled"
             android:value="false" />
 
-        <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="${admobAppId}" />
-
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -60,7 +56,7 @@
 
         <receiver
             android:name=".service.monitor.BootReceiver"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>

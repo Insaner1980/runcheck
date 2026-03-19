@@ -6,10 +6,12 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
+import com.runcheck.R
 import com.runcheck.domain.model.MediaBreakdown
 import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.ScannedFile
 import com.runcheck.domain.model.TrashInfo
+import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -18,7 +20,7 @@ import javax.inject.Singleton
 
 @Singleton
 class MediaStoreScanner @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     private val resolver: ContentResolver = context.contentResolver
 
@@ -61,7 +63,9 @@ class MediaStoreScanner @Inject constructor(
                             itemCount++
                         }
                     }
-            } catch (_: Exception) { }
+            } catch (error: Exception) {
+                ReleaseSafeLog.error(TAG, "Failed to query trashed media for $collection", error)
+            }
         }
 
         if (itemCount == 0) return@withContext null
@@ -109,7 +113,7 @@ class MediaStoreScanner @Inject constructor(
 
         val selection = "${MediaStore.MediaColumns.DATE_MODIFIED} < ?"
         val selectionArgs = arrayOf(cutoff.toString())
-        val sortOrder = "${MediaStore.MediaColumns.SIZE} DESC"
+        val sortOrder = "${MediaStore.MediaColumns.SIZE} DESC LIMIT 500"
 
         try {
             resolver.query(
@@ -129,7 +133,7 @@ class MediaStoreScanner @Inject constructor(
                             uri = android.content.ContentUris.withAppendedId(
                                 MediaStore.Downloads.EXTERNAL_CONTENT_URI, id
                             ).toString(),
-                            displayName = cursor.getString(nameCol) ?: "Unknown",
+                            displayName = cursor.getString(nameCol) ?: context.getString(R.string.fallback_unknown),
                             sizeBytes = cursor.getLong(sizeCol),
                             mimeType = cursor.getString(mimeCol) ?: "",
                             dateModified = cursor.getLong(dateCol) * 1000,
@@ -138,7 +142,9 @@ class MediaStoreScanner @Inject constructor(
                     )
                 }
             }
-        } catch (_: Exception) { }
+        } catch (error: Exception) {
+            ReleaseSafeLog.error(TAG, "Failed to scan old downloads", error)
+        }
 
         results
     }
@@ -160,7 +166,7 @@ class MediaStoreScanner @Inject constructor(
 
         val selection = "${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ?"
         val selectionArgs = arrayOf("%.apk")
-        val sortOrder = "${MediaStore.MediaColumns.SIZE} DESC"
+        val sortOrder = "${MediaStore.MediaColumns.SIZE} DESC LIMIT 500"
 
         try {
             resolver.query(uri, projection, selection, selectionArgs, sortOrder)
@@ -175,7 +181,7 @@ class MediaStoreScanner @Inject constructor(
                         results.add(
                             ScannedFile(
                                 uri = android.content.ContentUris.withAppendedId(uri, id).toString(),
-                                displayName = cursor.getString(nameCol) ?: "Unknown",
+                                displayName = cursor.getString(nameCol) ?: context.getString(R.string.fallback_unknown),
                                 sizeBytes = cursor.getLong(sizeCol),
                                 mimeType = "application/vnd.android.package-archive",
                                 dateModified = cursor.getLong(dateCol) * 1000,
@@ -184,7 +190,9 @@ class MediaStoreScanner @Inject constructor(
                         )
                     }
                 }
-        } catch (_: Exception) { }
+        } catch (error: Exception) {
+            ReleaseSafeLog.error(TAG, "Failed to scan APK files", error)
+        }
 
         results
     }
@@ -198,7 +206,8 @@ class MediaStoreScanner @Inject constructor(
             )?.use { cursor ->
                 if (cursor.moveToFirst()) cursor.getLong(0) else 0L
             } ?: 0L
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            ReleaseSafeLog.error(TAG, "Failed to query total size for $contentUri", error)
             0L
         }
     }
@@ -226,7 +235,9 @@ class MediaStoreScanner @Inject constructor(
                 )?.use { cursor ->
                     if (cursor.moveToFirst()) total += cursor.getLong(0)
                 }
-            } catch (_: Exception) { }
+            } catch (error: Exception) {
+                ReleaseSafeLog.error(TAG, "Failed to query documents size for $mimePattern", error)
+            }
         }
 
         return total
@@ -269,7 +280,7 @@ class MediaStoreScanner @Inject constructor(
                         results.add(
                             ScannedFile(
                                 uri = android.content.ContentUris.withAppendedId(uri, id).toString(),
-                                displayName = cursor.getString(nameCol) ?: "Unknown",
+                                displayName = cursor.getString(nameCol) ?: context.getString(R.string.fallback_unknown),
                                 sizeBytes = cursor.getLong(sizeCol),
                                 mimeType = cursor.getString(mimeCol) ?: "",
                                 dateModified = cursor.getLong(dateCol) * 1000,
@@ -278,7 +289,12 @@ class MediaStoreScanner @Inject constructor(
                         )
                     }
                 }
-        } catch (_: Exception) { }
+        } catch (error: Exception) {
+            ReleaseSafeLog.error(TAG, "Failed to scan $category collection", error)
+        }
+    }
+
+    private companion object {
+        private const val TAG = "MediaStoreScanner"
     }
 }
-

@@ -1,6 +1,6 @@
 package com.runcheck.ui.theme
 
-import android.view.accessibility.AccessibilityManager
+import android.provider.Settings
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
@@ -42,19 +42,14 @@ fun RuncheckTheme(
 ) {
     val context = LocalContext.current
 
-    val accessibilityManager = context.getSystemService(
-        AccessibilityManager::class.java
-    )
-    val reducedMotion = if (accessibilityManager == null) {
+    val reducedMotion = try {
+        Settings.Global.getFloat(
+            context.contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            1f
+        ) == 0f
+    } catch (_: Exception) {
         false
-    } else {
-        try {
-            val field = AccessibilityManager::class.java
-                .getDeclaredMethod("isReducedMotionEnabled")
-            field.invoke(accessibilityManager) as? Boolean ?: false
-        } catch (e: Exception) {
-            false
-        }
     }
 
     CompositionLocalProvider(

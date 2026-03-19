@@ -13,14 +13,15 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.runcheck.ui.theme.reducedMotion
@@ -36,7 +37,7 @@ fun TrendChart(
     if (data.size < 2) return
 
     val reducedMotion = MaterialTheme.reducedMotion
-    var progress by remember { mutableFloatStateOf(0f) }
+    var progress by remember(data) { mutableFloatStateOf(0f) }
     LaunchedEffect(data) { progress = 1f }
 
     val animatedProgress by animateFloatAsState(
@@ -49,13 +50,19 @@ fun TrendChart(
     val maxVal = data.max()
     val range = (maxVal - minVal).coerceAtLeast(1f)
 
+    val linePath = remember { Path() }
+    val fillPath = remember { Path() }
+
     Canvas(
         modifier = modifier
             .fillMaxWidth()
             .height(200.dp)
             .then(
                 if (contentDescription == null) Modifier
-                else Modifier.semantics { this.contentDescription = contentDescription }
+                else Modifier.semantics {
+                    this.contentDescription = contentDescription
+                    this.role = Role.Image
+                }
             )
     ) {
         val padding = 8.dp.toPx()
@@ -64,24 +71,20 @@ fun TrendChart(
         val stepX = chartWidth / (data.size - 1)
         val visibleCount = (data.size * animatedProgress).toInt().coerceAtLeast(2)
 
-        // Line path
-        val linePath = Path()
+        linePath.reset()
         for (i in 0 until visibleCount) {
             val x = padding + i * stepX
             val y = padding + chartHeight - ((data[i] - minVal) / range * chartHeight)
             if (i == 0) linePath.moveTo(x, y) else linePath.lineTo(x, y)
         }
 
-        // Fill path
-        val fillPath = Path().apply {
-            addPath(linePath)
-            val lastX = padding + (visibleCount - 1) * stepX
-            lineTo(lastX, padding + chartHeight)
-            lineTo(padding, padding + chartHeight)
-            close()
-        }
+        fillPath.reset()
+        fillPath.addPath(linePath)
+        val lastX = padding + (visibleCount - 1) * stepX
+        fillPath.lineTo(lastX, padding + chartHeight)
+        fillPath.lineTo(padding, padding + chartHeight)
+        fillPath.close()
 
-        // Draw gradient fill
         drawPath(
             path = fillPath,
             brush = Brush.verticalGradient(
@@ -93,7 +96,6 @@ fun TrendChart(
             alpha = animatedProgress
         )
 
-        // Draw line
         drawPath(
             path = linePath,
             color = lineColor,

@@ -131,7 +131,10 @@
     <string name="battery_stats_sessions">Sessiot</string>
     <string name="battery_stats_avg_usage">Keskimääräinen käyttö</string>
     <string name="battery_stats_full_charge_est">Täyden latauksen arvio</string>
-    <string name="battery_stats_last_n_days">Viimeiset %1$d päivää</string>
+    <plurals name="battery_stats_last_n_days">
+        <item quantity="one">Viimeinen %1$d päivä</item>
+        <item quantity="other">Viimeiset %1$d päivää</item>
+    </plurals>
     <string name="battery_stats_pct_total">%1$.0f%%</string>
 
     <!-- Charging Status -->
@@ -174,6 +177,20 @@
     <string name="value_watts">%1$.1f W</string>
     <string name="value_duration_hours_minutes">%1$dh %2$dmin</string>
     <string name="value_duration_minutes">%1$dmin</string>
+    <string name="value_duration_minutes_seconds">%1$dmin %2$ds</string>
+    <string name="value_duration_seconds">%1$ds</string>
+    <string name="unit_fahrenheit">°F</string>
+    <string name="value_temperature_fahrenheit">%1$.1f°F</string>
+    <string name="value_headroom_percent">%1$s%%</string>
+    <string name="value_label_colon">%1$s: %2$s</string>
+    <string name="value_count_parenthetical">(%1$d)</string>
+    <string name="network_type_cellular">Matkapuhelin</string>
+    <string name="fallback_unknown">Tuntematon</string>
+    <string name="a11y_scanning_files">Skannataan tiedostoja</string>
+    <string name="a11y_deleting_files">Poistetaan tiedostoja</string>
+    <string name="storage_fill_rate_value">+%1$s/vk</string>
+    <string name="storage_free_available">%1$s vapaana</string>
+    <string name="feedback_email_subject">runcheck-palaute</string>
     <string name="value_with_unit_int">%1$d %2$s</string>
     <string name="placeholder_dash">—</string>
 
@@ -280,7 +297,10 @@
 
     <!-- Storage Cache -->
     <string name="storage_cache_total">Välimuisti</string>
-    <string name="storage_cache_summary">%1$s %2$d sovelluksessa</string>
+    <plurals name="storage_cache_summary">
+        <item quantity="one">%1$s %2$d sovelluksessa</item>
+        <item quantity="other">%1$s %2$d sovelluksessa</item>
+    </plurals>
 
     <!-- Storage Actions -->
     <string name="storage_cleanup_tools">Siivoustyökalut</string>
@@ -291,7 +311,10 @@
     <string name="storage_apk_files">APK-tiedostot</string>
     <string name="storage_apk_files_desc">Jääneet asennuspaketit</string>
     <string name="storage_trash">Roskakori</string>
-    <string name="storage_trash_summary">%1$s (%2$d kohdetta)</string>
+    <plurals name="storage_trash_summary">
+        <item quantity="one">%1$s (%2$d kohde)</item>
+        <item quantity="other">%1$s (%2$d kohdetta)</item>
+    </plurals>
     <string name="storage_empty_trash">Tyhjennä roskakori</string>
     <string name="storage_scan">Skannaa</string>
 
@@ -305,10 +328,16 @@
     <string name="cleanup_large_files_title">Isot tiedostot</string>
     <string name="cleanup_old_downloads_title">Vanhat lataukset</string>
     <string name="cleanup_apk_files_title">APK-tiedostot</string>
-    <string name="cleanup_found_files">Löytyi %1$d tiedostoa · %2$s</string>
+    <plurals name="cleanup_found_files">
+        <item quantity="one">Löytyi %1$d tiedosto \u00B7 %2$s</item>
+        <item quantity="other">Löytyi %1$d tiedostoa \u00B7 %2$s</item>
+    </plurals>
     <string name="cleanup_no_files">Tiedostoja ei löytynyt</string>
     <string name="cleanup_no_files_desc">Tallennustilasi näyttää siistiltä!</string>
-    <string name="cleanup_free_action">Vapauta %1$s · %2$d kohdetta</string>
+    <plurals name="cleanup_free_action">
+        <item quantity="one">Vapauta %1$s \u00B7 %2$d kohde</item>
+        <item quantity="other">Vapauta %1$s \u00B7 %2$d kohdetta</item>
+    </plurals>
     <string name="cleanup_freed">%1$s vapautettu</string>
     <string name="cleanup_filter_10mb">10 MB</string>
     <string name="cleanup_filter_50mb">50 MB</string>
@@ -359,6 +388,9 @@
     <string name="settings_billing_unavailable">Play Billing ei ole käytettävissä tällä laitteella. pro-oston vaihtoehdot piilotetaan, kunnes laskutus on saatavilla.</string>
     <string name="settings_pro_active">pro aktiivinen</string>
     <string name="settings_pro_thank_you">Kiitos runcheckin tukemisesta!</string>
+    <string name="billing_purchase_pending">Maksua käsitellään. Pro avautuu, kun maksu on valmis.</string>
+    <string name="billing_purchase_error">Ostoa ei voitu suorittaa. Yritä uudelleen.</string>
+    <string name="billing_already_owned">Omistat jo runcheck Pron. Palautetaan nyt.</string>
     <string name="settings_version">Versio %1$s</string>
 
     <!-- Settings: Notifications (per-alert) -->
@@ -435,7 +467,6 @@
     <string name="monitor_realtime_notification_text">Seurataan laitteen kuntoa…</string>
 
     <!-- Export -->
-    <string name="settings_data_section">Data</string>
     <string name="settings_export_data">Vie data (CSV)</string>
     <string name="settings_export_error">Vienti epäonnistui</string>
     <string name="settings_export_ready">Vienti valmis jaettavaksi</string>
@@ -543,4 +574,41 @@
     <string name="common_error_generic">Jokin meni pieleen</string>
     <string name="common_retry">Yritä uudelleen</string>
     <string name="copied_to_clipboard">Kopioitu leikepöydälle</string>
+
+    <!-- Accessibility -->
+    <string name="a11y_signal_bars">%1$s, %2$d / 5 palkkia</string>
+    <string name="a11y_copy_to_clipboard">Kopioi leikepöydälle</string>
+    <string name="a11y_locked_pro_feature">Lukittu, Pro-ominaisuus</string>
+    <string name="a11y_loading">Ladataan</string>
+    <string name="a11y_expand">Laajenna</string>
+    <string name="a11y_collapse">Supista</string>
+    <string name="a11y_toggle_selection">Vaihda valinta: %1$s</string>
+    <string name="a11y_select_all">Valitse kaikki %1$s</string>
+    <string name="a11y_cleanup_success">Siivous valmis, %1$s vapautettu</string>
+    <string name="a11y_storage_projection">Tallennustila pienenee %1$d%%:sta %2$d%%:iin</string>
+    <string name="storage_projection_visual">%1$d%% \u2192 %2$d%%</string>
+    <string name="storage_used_with_percent">%1$s (%2$d%%)</string>
+    <string name="a11y_category_video">Video</string>
+    <string name="a11y_category_image">Kuva</string>
+    <string name="a11y_category_audio">Ääni</string>
+    <string name="a11y_category_document">Dokumentti</string>
+    <string name="a11y_category_download">Lataus</string>
+    <string name="a11y_category_apk">APK</string>
+    <string name="a11y_category_other">Muu</string>
+    <string name="a11y_date_today">Tänään</string>
+    <string name="a11y_date_yesterday">Eilen</string>
+    <plurals name="a11y_date_days_ago">
+        <item quantity="one">%1$d päivä sitten</item>
+        <item quantity="other">%1$d päivää sitten</item>
+    </plurals>
+    <plurals name="a11y_date_months_ago">
+        <item quantity="one">%1$d kuukausi sitten</item>
+        <item quantity="other">%1$d kuukautta sitten</item>
+    </plurals>
+    <plurals name="a11y_date_years_ago">
+        <item quantity="one">%1$d vuosi sitten</item>
+        <item quantity="other">%1$d vuotta sitten</item>
+    </plurals>
+    <string name="a11y_exporting_data">Vienti käynnissä</string>
+    <string name="a11y_trial_dialog">Kokeilujakso päättynyt -ikkuna</string>
 </resources>

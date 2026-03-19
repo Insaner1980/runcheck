@@ -9,9 +9,6 @@ import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -59,7 +56,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -99,7 +101,7 @@ fun SettingsScreen(
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
-        if (granted) viewModel.setNotifications(true)
+        viewModel.setNotifications(granted)
     }
 
     // Clear data confirmation dialog
@@ -148,7 +150,6 @@ fun SettingsScreen(
                     checked = masterEnabled,
                     onCheckedChange = { enabled ->
                         if (enabled && !hasNotificationPermission && notificationsPermissionRequired) {
-                            viewModel.setNotifications(true)
                             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         } else {
                             viewModel.setNotifications(enabled)
@@ -158,7 +159,10 @@ fun SettingsScreen(
                 SettingsDivider()
 
                 val subAlpha = if (masterEnabled) 1f else 0.38f
-                Column(modifier = Modifier.alpha(subAlpha)) {
+                Column(modifier = Modifier
+                    .alpha(subAlpha)
+                    .then(if (!masterEnabled) Modifier.semantics { disabled() } else Modifier)
+                ) {
                     SettingsToggle(
                         title = stringResource(R.string.settings_notif_low_battery),
                         description = stringResource(R.string.settings_notif_low_battery_desc),
@@ -197,7 +201,9 @@ fun SettingsScreen(
                 SettingsSlider(
                     label = stringResource(R.string.settings_threshold_battery),
                     value = uiState.preferences.alertBatteryThreshold,
-                    valueLabel = "${uiState.preferences.alertBatteryThreshold}%",
+                    valueLabelFor = { current ->
+                        context.getString(R.string.value_percent, current)
+                    },
                     range = 5f..50f,
                     steps = 8,
                     onValueChange = { viewModel.setAlertBatteryThreshold(it) }
@@ -206,7 +212,9 @@ fun SettingsScreen(
                 SettingsSlider(
                     label = stringResource(R.string.settings_threshold_temp),
                     value = uiState.preferences.alertTempThreshold,
-                    valueLabel = "${uiState.preferences.alertTempThreshold}°C",
+                    valueLabelFor = { current ->
+                        "$current${context.getString(R.string.unit_celsius)}"
+                    },
                     range = 35f..50f,
                     steps = 14,
                     onValueChange = { viewModel.setAlertTempThreshold(it) }
@@ -215,7 +223,9 @@ fun SettingsScreen(
                 SettingsSlider(
                     label = stringResource(R.string.settings_threshold_storage),
                     value = uiState.preferences.alertStorageThreshold,
-                    valueLabel = "${uiState.preferences.alertStorageThreshold}%",
+                    valueLabelFor = { current ->
+                        context.getString(R.string.value_percent, current)
+                    },
                     range = 70f..99f,
                     steps = 5,
                     onValueChange = { viewModel.setAlertStorageThreshold(it) }
@@ -272,7 +282,14 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         if (uiState.isExporting) {
-                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(18.dp)
+                                    .semantics {
+                                        contentDescription = context.getString(R.string.a11y_exporting_data)
+                                    },
+                                strokeWidth = 2.dp
+                            )
                         } else {
                             Text(stringResource(R.string.settings_export_data))
                         }
@@ -431,7 +448,7 @@ fun SettingsScreen(
                         try {
                             context.startActivity(Intent(Intent.ACTION_SENDTO).apply {
                                 data = Uri.parse("mailto:")
-                                putExtra(Intent.EXTRA_SUBJECT, "runcheck Feedback")
+                                putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.feedback_email_subject))
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             })
                         } catch (_: Exception) { }
@@ -579,12 +596,15 @@ private fun SettingsToggle(
 private fun SettingsSlider(
     label: String,
     value: Int,
-    valueLabel: String,
+    valueLabelFor: (Int) -> String,
     range: ClosedFloatingPointRange<Float>,
     steps: Int,
     onValueChange: (Int) -> Unit
 ) {
+    val context = LocalContext.current
     var sliderValue by remember(value) { mutableFloatStateOf(value.toFloat()) }
+    val currentValue = sliderValue.roundToInt()
+    val valueLabel = valueLabelFor(currentValue)
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -604,6 +624,9 @@ private fun SettingsSlider(
             onValueChangeFinished = { onValueChange(sliderValue.roundToInt()) },
             valueRange = range,
             steps = steps,
+            modifier = Modifier.semantics {
+                contentDescription = context.getString(R.string.value_label_colon, label, valueLabel)
+            },
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
                 activeTrackColor = MaterialTheme.colorScheme.primary,
@@ -623,7 +646,8 @@ private fun SettingsNavigationRow(
         modifier = Modifier
             .fillMaxWidth()
             .defaultMinSize(minHeight = 48.dp)
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick, role = Role.Button)
+            .semantics(mergeDescendants = true) {}
             .padding(vertical = MaterialTheme.spacing.sm),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

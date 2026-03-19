@@ -20,5 +20,5 @@ val AccentYellow = Color(0xFFF5D03A)
 // Text colors
 val TextPrimary = Color(0xFFE8E8ED)
 val TextSecondary = Color(0xFF90A8B0)
-val TextMuted = Color(0xFF506068)
+val TextMuted = Color(0xFF7A949E)
 val TextOnLime = Color(0xFF1A2E0A)

@@ -6,16 +6,16 @@ runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device
 
 ## Tech Stack
 
-- **Language:** Kotlin (via AGP 9.1.0 built-in Kotlin, `android.builtInKotlin` disabled for KSP compatibility)
+- **Language:** Kotlin (via AGP 9.1.0 built-in Kotlin)
 - **UI:** Jetpack Compose with Material 3 / Material You (BOM 2026.02.01)
 - **Min SDK:** 26 (Android 8.0)
 - **Target SDK:** 35 (Android 15)
-- **Compile SDK:** 36 (required by Vico 3.x)
+- **Compile SDK:** 36
 - **Architecture:** MVVM with Clean Architecture layers (data → domain → ui)
 - **Database:** Room 2.8.4 for local historical data
 - **Async:** Kotlin Coroutines 1.10.2 + Flow
 - **DI:** Hilt 2.59.2
-- **Charts:** Vico 3.0.3 (Compose-native charting library)
+- **Charts:** Custom Compose components (TrendChart, AreaChart, HeatStrip, SegmentedBar)
 - **Build:** Gradle 9.4.0 with Kotlin DSL, AGP 9.1.0, KSP 2.3.1
 - **Localization:** English (default) + Finnish (fi)
 
@@ -243,12 +243,10 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 
 ## Build Notes
 
-- AGP 9.1.0 built-in Kotlin is disabled (`android.builtInKotlin=false`) because KSP 2.3.1 requires the separate Kotlin plugin
+- AGP 9.1.0 built-in Kotlin handles Kotlin compilation; `kotlin.compose` plugin applied separately for Compose compiler support
 - `android.disallowKotlinSourceSets=false` is needed for KSP generated sources with AGP 9
-- `kotlin.compose` plugin is applied separately for Compose compiler support
 - `BatteryManager.BATTERY_PROPERTY_CHARGING_CYCLE_COUNT` and `STATE_OF_HEALTH` are not in the public SDK — use raw integer constants (8 and 12)
 - Pull-to-refresh uses `PullToRefreshBox` (not the deprecated `PullToRefreshContainer`)
-- Vico 3.x removed the `core` module (merged into `views`); only `compose` and `compose-m3` are needed
 
 ## Important Notes
 

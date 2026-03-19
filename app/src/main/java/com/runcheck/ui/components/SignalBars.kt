@@ -11,9 +11,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.runcheck.R
 import com.runcheck.domain.model.SignalQuality
 import com.runcheck.ui.theme.statusColorForSignalQuality
 
@@ -39,10 +41,11 @@ fun SignalBars(
     val activeBars = activeBarsFor(signalQuality)
     val activeColor = statusColorForSignalQuality(signalQuality)
     val inactiveColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+    val a11yDesc = stringResource(R.string.a11y_signal_bars, qualityLabel, activeBars)
 
     Row(
-        modifier = modifier.semantics {
-            contentDescription = "$qualityLabel, $activeBars of 5 bars"
+        modifier = modifier.semantics(mergeDescendants = true) {
+            contentDescription = a11yDesc
         },
         horizontalArrangement = Arrangement.spacedBy(BAR_GAP),
         verticalAlignment = Alignment.Bottom

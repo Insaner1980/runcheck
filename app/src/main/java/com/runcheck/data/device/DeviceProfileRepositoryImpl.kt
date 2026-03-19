@@ -30,15 +30,18 @@ class DeviceProfileRepositoryImpl @Inject constructor(
 
     override suspend fun refreshProfile(): DeviceProfileInfo {
         val profile = capabilityManager.detectCapabilities()
+        val existing = deviceDao.getDeviceSync()
+        val now = System.currentTimeMillis()
         val entity = DeviceEntity(
             id = profile.deviceId,
             manufacturer = profile.manufacturer,
             model = profile.model,
             apiLevel = profile.apiLevel,
-            firstSeen = System.currentTimeMillis(),
+            firstSeen = existing?.firstSeen ?: now,
             profileJson = gson.toJson(profile)
         )
         deviceDao.insertOrUpdate(entity)
+        deviceDao.deleteAllExcept(entity.id)
         return profile.toDomain()
     }
 
@@ -50,15 +53,18 @@ class DeviceProfileRepositoryImpl @Inject constructor(
         val entity = deviceDao.getDeviceSync()
         val profile = entity?.let { gson.fromJson(it.profileJson, DeviceProfile::class.java) }
         return profile ?: capabilityManager.detectCapabilities().also { detected ->
+            val existing = deviceDao.getDeviceSync()
+            val now = System.currentTimeMillis()
             val deviceEntity = DeviceEntity(
                 id = detected.deviceId,
                 manufacturer = detected.manufacturer,
                 model = detected.model,
                 apiLevel = detected.apiLevel,
-                firstSeen = System.currentTimeMillis(),
+                firstSeen = existing?.firstSeen ?: now,
                 profileJson = gson.toJson(detected)
             )
             deviceDao.insertOrUpdate(deviceEntity)
+            deviceDao.deleteAllExcept(deviceEntity.id)
         }
     }
 }

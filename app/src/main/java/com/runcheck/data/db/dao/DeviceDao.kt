@@ -13,9 +13,12 @@ interface DeviceDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdate(device: DeviceEntity)
 
-    @Query("SELECT * FROM devices LIMIT 1")
+    @Query("DELETE FROM devices WHERE id != :currentId")
+    suspend fun deleteAllExcept(currentId: String)
+
+    @Query("SELECT * FROM devices ORDER BY first_seen DESC, id DESC LIMIT 1")
     fun getDevice(): Flow<DeviceEntity?>
 
-    @Query("SELECT * FROM devices LIMIT 1")
+    @Query("SELECT * FROM devices ORDER BY first_seen DESC, id DESC LIMIT 1")
     suspend fun getDeviceSync(): DeviceEntity?
 }

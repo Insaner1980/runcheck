@@ -23,7 +23,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.runcheck.ui.theme.reducedMotion
@@ -62,7 +64,10 @@ fun SegmentedBar(
         modifier = modifier
             .fillMaxWidth()
             .height(12.dp)
-            .semantics { contentDescription = a11yDesc }
+            .semantics {
+                contentDescription = a11yDesc
+                this.role = Role.Image
+            }
     ) {
         val totalWidth = size.width
         val barHeight = size.height
@@ -168,7 +173,9 @@ fun SegmentedBarLegend(
     ) {
         segments.filter { it.value > 0 }.forEach { segment ->
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics(mergeDescendants = true) {},
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 StatusDot(color = segment.color)

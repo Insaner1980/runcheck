@@ -18,7 +18,9 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.runcheck.ui.theme.reducedMotion
@@ -33,7 +35,7 @@ fun AreaChart(
     if (data.size < 2) return
 
     val reducedMotion = MaterialTheme.reducedMotion
-    var progress by remember { mutableFloatStateOf(0f) }
+    var progress by remember(data) { mutableFloatStateOf(0f) }
     LaunchedEffect(data) { progress = 1f }
 
     val animatedProgress by animateFloatAsState(
@@ -46,12 +48,18 @@ fun AreaChart(
     val maxVal = data.max()
     val range = (maxVal - minVal).coerceAtLeast(1f)
 
+    val linePath = remember { Path() }
+    val fillPath = remember { Path() }
+
     Canvas(
         modifier = modifier
             .fillMaxSize()
             .then(
                 if (contentDescription == null) Modifier
-                else Modifier.semantics { this.contentDescription = contentDescription }
+                else Modifier.semantics {
+                    this.contentDescription = contentDescription
+                    this.role = Role.Image
+                }
             )
     ) {
         val verticalPadding = size.height * 0.1f
@@ -59,23 +67,20 @@ fun AreaChart(
         val stepX = size.width / (data.size - 1)
         val visibleCount = (data.size * animatedProgress).toInt().coerceAtLeast(2)
 
-        // Build line path
-        val linePath = Path()
+        linePath.reset()
         for (i in 0 until visibleCount) {
             val x = i * stepX
             val y = verticalPadding + chartHeight - ((data[i] - minVal) / range * chartHeight)
             if (i == 0) linePath.moveTo(x, y) else linePath.lineTo(x, y)
         }
 
-        // Build fill path (close to bottom)
-        val fillPath = Path()
+        fillPath.reset()
         fillPath.addPath(linePath)
         val lastX = (visibleCount - 1) * stepX
         fillPath.lineTo(lastX, size.height)
         fillPath.lineTo(0f, size.height)
         fillPath.close()
 
-        // Gradient fill
         drawPath(
             path = fillPath,
             brush = Brush.verticalGradient(
@@ -89,7 +94,6 @@ fun AreaChart(
             style = Fill
         )
 
-        // Line stroke
         drawPath(
             path = linePath,
             color = lineColor.copy(alpha = 0.7f),

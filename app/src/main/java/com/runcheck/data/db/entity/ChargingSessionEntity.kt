@@ -14,7 +14,11 @@ import androidx.room.PrimaryKey
         childColumns = ["charger_id"],
         onDelete = ForeignKey.CASCADE
     )],
-    indices = [Index(value = ["charger_id"]), Index(value = ["start_time"])]
+    indices = [
+        Index(value = ["charger_id"]),
+        Index(value = ["start_time"]),
+        Index(value = ["end_time"])
+    ]
 )
 data class ChargingSessionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

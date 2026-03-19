@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.runcheck.ui.theme.BgIconCircle
@@ -26,6 +27,7 @@ fun IconCircle(
     Box(
         modifier = modifier
             .size(size)
+            .clearAndSetSemantics {}
             .background(color = BgIconCircle, shape = CircleShape),
         contentAlignment = Alignment.Center
     ) {

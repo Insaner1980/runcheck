@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BatteryChargingFull
-import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,22 +34,9 @@ private fun ComponentStackPreview() {
                 onClick = {},
                 subtitleColor = AccentTeal
             )
-            MetricTile(
-                label = "Temperature",
-                value = "31.4",
-                unit = "°C"
-            )
             ListRow(
                 label = "Speed Test",
-                icon = Icons.Outlined.Speed,
-                onClick = {}
-            )
-            PrimaryButton(
-                text = "Upgrade to Pro",
-                onClick = {}
-            )
-            SecondaryButton(
-                text = "Restore Purchase",
+                icon = Icons.Outlined.BatteryChargingFull,
                 onClick = {}
             )
         }
