@@ -210,13 +210,15 @@ class NetworkViewModel @Inject constructor(
                     }
                 }
                 .collect { state ->
+                    val isPro = proStatusProvider.isPro()
                     _networkUiState.update { current ->
                         val existing = current as? NetworkUiState.Success
                         NetworkUiState.Success(
                             networkState = state,
                             signalHistory = existing?.signalHistory ?: emptyList(),
                             selectedHistoryPeriod = selectedHistoryPeriod,
-                            historyLoadError = existing?.historyLoadError
+                            historyLoadError = existing?.historyLoadError,
+                            isPro = isPro
                         )
                     }
                 }

@@ -15,7 +15,8 @@ sealed interface NetworkUiState {
         val networkState: NetworkState,
         val signalHistory: List<NetworkReadingData> = emptyList(),
         val selectedHistoryPeriod: HistoryPeriod = HistoryPeriod.DAY,
-        val historyLoadError: UiText? = null
+        val historyLoadError: UiText? = null,
+        val isPro: Boolean = false
     ) : NetworkUiState
 
     data class Error(val message: UiText) : NetworkUiState

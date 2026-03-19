@@ -112,7 +112,8 @@ fun RuncheckNavHost(
         composable(Screen.Network.route) {
             NetworkDetailScreen(
                 onBack = { navController.popBackStack() },
-                onNavigateToSpeedTest = { navController.navigateSingleTop(Screen.SpeedTest.route) }
+                onNavigateToSpeedTest = { navController.navigateSingleTop(Screen.SpeedTest.route) },
+                onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) }
             )
         }
         composable(Screen.Thermal.route) {
