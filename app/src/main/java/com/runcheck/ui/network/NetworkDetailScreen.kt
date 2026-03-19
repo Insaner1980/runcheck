@@ -33,7 +33,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -83,6 +82,7 @@ import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.MetricRow
+import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.PullToRefreshWrapper
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SignalBars
@@ -99,6 +99,7 @@ import com.runcheck.ui.theme.statusColorForSignalQuality
 fun NetworkDetailScreen(
     onNavigateToSpeedTest: () -> Unit,
     onBack: () -> Unit = {},
+    onUpgradeToPro: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: NetworkViewModel = hiltViewModel()
 ) {
@@ -165,7 +166,8 @@ fun NetworkDetailScreen(
                     speedTestState = speedTestState,
                     onRefresh = { viewModel.refresh() },
                     onNavigateToSpeedTest = onNavigateToSpeedTest,
-                    onPeriodChange = { viewModel.setHistoryPeriod(it) }
+                    onPeriodChange = { viewModel.setHistoryPeriod(it) },
+                    onUpgradeToPro = onUpgradeToPro
                 )
             }
         }
@@ -371,28 +373,32 @@ private fun ConnectionDetailsCard(networkState: NetworkState) {
                 stringResource(R.string.common_off)
             }
         )
+    }
+}
 
-        if (networkState.ipAddresses.isNotEmpty() || networkState.dnsServers.isNotEmpty() || networkState.mtuBytes != null) {
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-            )
-            CardSectionTitle(text = stringResource(R.string.network_section_ip_dns))
+// ── IP & DNS card ────────────────────────────────────────────────────────────────
 
-            networkState.ipAddresses.firstOrNull { it.contains('.') }?.let {
-                MetricRow(label = stringResource(R.string.network_ipv4), value = it, copyable = true)
-            }
-            networkState.ipAddresses.firstOrNull { it.contains(':') }?.let {
-                MetricRow(label = stringResource(R.string.network_ipv6), value = it, maxLines = 1, copyable = true)
-            }
-            networkState.dnsServers.getOrNull(0)?.let {
-                MetricRow(label = stringResource(R.string.network_dns_1), value = it, copyable = true)
-            }
-            networkState.dnsServers.getOrNull(1)?.let {
-                MetricRow(label = stringResource(R.string.network_dns_2), value = it, copyable = true)
-            }
-            networkState.mtuBytes?.let {
-                MetricRow(label = stringResource(R.string.network_mtu), value = it.toString())
-            }
+@Composable
+private fun IpDnsCard(networkState: NetworkState) {
+    if (networkState.ipAddresses.isEmpty() && networkState.dnsServers.isEmpty() && networkState.mtuBytes == null) return
+
+    NetworkPanel {
+        CardSectionTitle(text = stringResource(R.string.network_section_ip_dns))
+
+        networkState.ipAddresses.firstOrNull { it.contains('.') }?.let {
+            MetricRow(label = stringResource(R.string.network_ipv4), value = it, copyable = true)
+        }
+        networkState.ipAddresses.firstOrNull { it.contains(':') }?.let {
+            MetricRow(label = stringResource(R.string.network_ipv6), value = it, maxLines = 1, copyable = true)
+        }
+        networkState.dnsServers.getOrNull(0)?.let {
+            MetricRow(label = stringResource(R.string.network_dns_1), value = it, copyable = true)
+        }
+        networkState.dnsServers.getOrNull(1)?.let {
+            MetricRow(label = stringResource(R.string.network_dns_2), value = it, copyable = true)
+        }
+        networkState.mtuBytes?.let {
+            MetricRow(label = stringResource(R.string.network_mtu), value = it.toString())
         }
     }
 }
@@ -728,7 +734,8 @@ private fun NetworkContent(
     speedTestState: SpeedTestUiState,
     onRefresh: () -> Unit,
     onNavigateToSpeedTest: () -> Unit,
-    onPeriodChange: (HistoryPeriod) -> Unit
+    onPeriodChange: (HistoryPeriod) -> Unit,
+    onUpgradeToPro: () -> Unit
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -796,12 +803,22 @@ private fun NetworkContent(
 
             ConnectionDetailsCard(networkState = networkState)
 
-            SignalHistoryCard(
-                history = state.signalHistory,
-                selectedPeriod = state.selectedHistoryPeriod,
-                historyLoadError = state.historyLoadError,
-                onPeriodChange = onPeriodChange
-            )
+            IpDnsCard(networkState = networkState)
+
+            if (state.isPro) {
+                SignalHistoryCard(
+                    history = state.signalHistory,
+                    selectedPeriod = state.selectedHistoryPeriod,
+                    historyLoadError = state.historyLoadError,
+                    onPeriodChange = onPeriodChange
+                )
+            } else {
+                ProFeatureCalloutCard(
+                    message = stringResource(R.string.pro_feature_network_history_message),
+                    actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+                    onAction = onUpgradeToPro
+                )
+            }
 
             SpeedTestSummaryCard(
                 lastResult = speedTestState.lastResult,
