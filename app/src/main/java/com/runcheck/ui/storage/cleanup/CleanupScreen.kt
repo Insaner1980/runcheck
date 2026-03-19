@@ -233,7 +233,7 @@ private fun CleanupResultsList(
                     key = { _, file -> file.uri },
                     contentType = { _, _ -> "cleanup_file" }
                 ) { index, file ->
-                    Column {
+                    Column(modifier = Modifier.animateItem()) {
                         if (index > 0) {
                             HorizontalDivider(
                                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
