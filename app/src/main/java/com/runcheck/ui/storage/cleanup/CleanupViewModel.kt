@@ -173,8 +173,8 @@ class CleanupViewModel @Inject constructor(
     }
 
     fun onDeleteCancelled() {
-        // Return to results
-        emitResults(emptySet())
+        // Return to results, preserving previous selection
+        scan()
     }
 
     private fun onDeleteSuccess(freedBytes: Long) {
