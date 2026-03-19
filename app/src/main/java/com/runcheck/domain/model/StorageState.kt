@@ -15,5 +15,8 @@ data class StorageState(
     val sdCardTotalBytes: Long? = null,
     val sdCardAvailableBytes: Long? = null,
     val fillRateBytesPerDay: Long? = null,
-    val fillRateEstimate: String? = null
+    val fillRateEstimate: String? = null,
+    val fileSystemType: String? = null,
+    val encryptionStatus: String? = null,
+    val storageVolumes: Int = 0
 )

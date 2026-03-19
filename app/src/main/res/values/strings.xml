@@ -225,6 +225,9 @@
     <string name="network_history_metric_signal">Signal</string>
     <string name="network_history_metric_latency">Latency</string>
     <string name="network_history_empty">Not enough data yet</string>
+    <string name="chart_stat_min">Min</string>
+    <string name="chart_stat_avg">Avg</string>
+    <string name="chart_stat_max">Max</string>
     <string name="network_speed_test_jitter">Jitter</string>
     <string name="network_speed_test_server">Server: %1$s</string>
     <string name="network_speed_test_no_results">No speed test results yet</string>
@@ -285,6 +288,9 @@
     <string name="storage_media">Media</string>
     <string name="storage_fill_rate">Fill Rate Estimate</string>
     <string name="storage_sd_card">SD Card</string>
+    <string name="storage_filesystem">File System</string>
+    <string name="storage_encryption">Encryption</string>
+    <string name="storage_volumes">Storage Volumes</string>
 
     <!-- Storage Media Breakdown -->
     <string name="storage_media_breakdown">Media Breakdown</string>
@@ -339,14 +345,14 @@
         <item quantity="other">Free %1$s \u00B7 %2$d items</item>
     </plurals>
     <string name="cleanup_freed">%1$s freed</string>
-    <string name="cleanup_filter_10mb">10 MB</string>
-    <string name="cleanup_filter_50mb">50 MB</string>
-    <string name="cleanup_filter_100mb">100 MB</string>
-    <string name="cleanup_filter_500mb">500 MB</string>
-    <string name="cleanup_filter_30d">30 days</string>
-    <string name="cleanup_filter_60d">60 days</string>
-    <string name="cleanup_filter_90d">90 days</string>
-    <string name="cleanup_filter_1y">1 year</string>
+    <string name="cleanup_filter_10mb">&gt; 10 MB</string>
+    <string name="cleanup_filter_50mb">&gt; 50 MB</string>
+    <string name="cleanup_filter_100mb">&gt; 100 MB</string>
+    <string name="cleanup_filter_500mb">&gt; 500 MB</string>
+    <string name="cleanup_filter_30d">&gt; 30 days</string>
+    <string name="cleanup_filter_60d">&gt; 60 days</string>
+    <string name="cleanup_filter_90d">&gt; 90 days</string>
+    <string name="cleanup_filter_1y">&gt; 1 year</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>

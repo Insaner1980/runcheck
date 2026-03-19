@@ -50,6 +50,9 @@ class StorageRepositoryImpl @Inject constructor(
                     sdCardAvailable = info.sdCardAvailable,
                     sdCardTotalBytes = info.sdCardTotalBytes,
                     sdCardAvailableBytes = info.sdCardAvailableBytes,
+                    fileSystemType = info.fileSystemType,
+                    encryptionStatus = info.encryptionStatus,
+                    storageVolumes = info.storageVolumes,
                     fillRateBytesPerDay = fillRate,
                     fillRateEstimate = fillRate?.let { rate ->
                         calculateFillRate.formatEstimate(info.availableBytes, rate)

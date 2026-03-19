@@ -87,6 +87,14 @@ class BillingManager @Inject constructor(
     suspend fun awaitInitialized() = _initComplete.await()
 
     fun initialize() {
+        // Debug builds always have Pro enabled for development
+        if (BuildConfig.DEBUG) {
+            updateProState(true)
+            _billingAvailable.value = true
+            _initComplete.complete(Unit)
+            return
+        }
+
         if (billingClient?.isReady == true) {
             _initComplete.complete(Unit)
             return

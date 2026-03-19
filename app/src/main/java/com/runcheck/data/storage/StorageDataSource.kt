@@ -9,9 +9,11 @@ import android.os.StatFs
 import android.os.storage.StorageManager
 import com.runcheck.domain.model.MediaBreakdown
 import com.runcheck.domain.model.TrashInfo
+import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -44,6 +46,7 @@ class StorageDataSource @Inject constructor(
         val mediaBreakdown = try { mediaStoreScanner.getMediaBreakdown() } catch (_: Exception) { null }
         val trashInfo = try { mediaStoreScanner.getTrashInfo() } catch (_: Exception) { null }
         val sdCard = getExternalSdCard()
+        val deviceInfo = getDeviceStorageInfo()
 
         StorageInfo(
             totalBytes = totalBytes,
@@ -56,7 +59,10 @@ class StorageDataSource @Inject constructor(
             trashInfo = trashInfo,
             sdCardAvailable = sdCard != null,
             sdCardTotalBytes = sdCard?.totalBytes,
-            sdCardAvailableBytes = sdCard?.availableBytes
+            sdCardAvailableBytes = sdCard?.availableBytes,
+            fileSystemType = deviceInfo.fileSystemType,
+            encryptionStatus = deviceInfo.encryptionStatus,
+            storageVolumes = deviceInfo.storageVolumes
         )
     }
 
@@ -112,7 +118,10 @@ class StorageDataSource @Inject constructor(
         val trashInfo: TrashInfo?,
         val sdCardAvailable: Boolean,
         val sdCardTotalBytes: Long?,
-        val sdCardAvailableBytes: Long?
+        val sdCardAvailableBytes: Long?,
+        val fileSystemType: String?,
+        val encryptionStatus: String?,
+        val storageVolumes: Int
     )
 
     private data class AppStats(
@@ -125,4 +134,76 @@ class StorageDataSource @Inject constructor(
         val totalBytes: Long,
         val availableBytes: Long
     )
+
+    private fun getDeviceStorageInfo(): DeviceStorageInfo {
+        val dataPath = Environment.getDataDirectory().path
+        var fsType: String? = null
+        var encrypted: String? = null
+        var volumes = 1
+
+        // File system type from /proc/mounts
+        try {
+            File("/proc/mounts").useLines { lines ->
+                for (line in lines) {
+                    val parts = line.split(" ")
+                    if (parts.size >= 3 && parts[1] == "/data") {
+                        fsType = parts[2]
+                        break
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            ReleaseSafeLog.error(TAG, "Failed to read /proc/mounts", e)
+        }
+
+        // Encryption status from system property
+        try {
+            val cryptoType = getSystemProperty("ro.crypto.type")
+            val cryptoState = getSystemProperty("ro.crypto.state")
+            encrypted = when {
+                cryptoType == "file" || cryptoType == "FBE" -> "FBE"
+                cryptoType == "block" || cryptoType == "FDE" -> "FDE"
+                cryptoState == "encrypted" -> "Encrypted"
+                cryptoState == "unencrypted" -> "None"
+                else -> null
+            }
+        } catch (e: Exception) {
+            ReleaseSafeLog.error(TAG, "Failed to read encryption status", e)
+        }
+
+        // Storage volumes via StorageManager
+        try {
+            val sm = context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
+            volumes = sm.storageVolumes.size
+        } catch (e: Exception) {
+            ReleaseSafeLog.error(TAG, "Failed to count storage volumes", e)
+        }
+
+        return DeviceStorageInfo(
+            fileSystemType = fsType,
+            encryptionStatus = encrypted,
+            storageVolumes = volumes
+        )
+    }
+
+    private fun getSystemProperty(key: String): String? {
+        return try {
+            val clazz = Class.forName("android.os.SystemProperties")
+            val method = clazz.getMethod("get", String::class.java, String::class.java)
+            val value = method.invoke(null, key, "") as String
+            value.takeIf { it.isNotBlank() }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private data class DeviceStorageInfo(
+        val fileSystemType: String?,
+        val encryptionStatus: String?,
+        val storageVolumes: Int
+    )
+
+    private companion object {
+        private const val TAG = "StorageDataSource"
+    }
 }

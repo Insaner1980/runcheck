@@ -87,7 +87,11 @@ import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.ProgressRing
 import com.runcheck.ui.components.PullToRefreshWrapper
+import com.runcheck.ui.components.ChartQualityZone
+import com.runcheck.ui.components.ChartXLabel
+import com.runcheck.ui.components.ChartYLabel
 import com.runcheck.ui.components.TrendChart
+import com.runcheck.ui.common.formatLocalizedDateTime
 import com.runcheck.domain.usecase.BatteryStatistics
 import com.runcheck.service.monitor.ScreenUsageStats
 import com.runcheck.service.monitor.SleepAnalysis
@@ -658,11 +662,28 @@ private fun BatteryHistoryPanel(
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-            val chartData = remember(state.history, selectedMetric) {
+            val chartPoints = remember(state.history, selectedMetric) {
                 state.history
-                    .chartDataFor(selectedMetric)
-                    .downsampleForChart(MAX_HISTORY_CHART_POINTS)
+                    .chartPointsFor(selectedMetric)
+                    .downsamplePairs(MAX_HISTORY_CHART_POINTS)
             }
+            val chartData = remember(chartPoints) { chartPoints.map { it.second } }
+            val chartTimestamps = remember(chartPoints) { chartPoints.map { it.first } }
+
+            val minVal = remember(chartData) { chartData.minOrNull() }
+            val maxVal = remember(chartData) { chartData.maxOrNull() }
+            val avgVal = remember(chartData) { if (chartData.isNotEmpty()) chartData.average().toFloat() else null }
+
+            val yLabels = remember(minVal, maxVal) {
+                if (minVal == null || maxVal == null) null
+                else buildBatteryYLabels(minVal, maxVal)
+            }
+            val xLabels = remember(chartTimestamps, state.selectedPeriod) {
+                if (chartTimestamps.size < 2) null
+                else buildBatteryXLabels(chartTimestamps, state.selectedPeriod)
+            }
+            val qualityZones = batteryQualityZones(selectedMetric)
+            val unit = batteryMetricUnit(selectedMetric)
 
             if (chartData.size >= 2) {
                 Text(
@@ -676,8 +697,44 @@ private fun BatteryHistoryPanel(
                     contentDescription = stringResource(
                         R.string.a11y_chart_trend,
                         historyMetricLabel(selectedMetric)
-                    )
+                    ),
+                    yLabels = yLabels,
+                    xLabels = xLabels,
+                    showGrid = true,
+                    qualityZones = qualityZones,
+                    tooltipFormatter = { index ->
+                        val v = formatDecimal(chartData[index], if (selectedMetric == BatteryHistoryMetric.VOLTAGE) 2 else 0)
+                        val time = formatLocalizedDateTime(chartTimestamps[index], "HmMMMd")
+                        "$v$unit · $time"
+                    }
                 )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+                ) {
+                    val decimals = if (selectedMetric == BatteryHistoryMetric.VOLTAGE) 2 else 0
+                    minVal?.let {
+                        MetricPill(
+                            label = stringResource(R.string.chart_stat_min),
+                            value = "${formatDecimal(it, decimals)}$unit",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    avgVal?.let {
+                        MetricPill(
+                            label = stringResource(R.string.chart_stat_avg),
+                            value = "${formatDecimal(it, decimals)}$unit",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    maxVal?.let {
+                        MetricPill(
+                            label = stringResource(R.string.chart_stat_max),
+                            value = "${formatDecimal(it, decimals)}$unit",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
             } else {
                 BatteryHistoryEmptyState()
             }
@@ -913,14 +970,33 @@ private fun BatterySessionGraphPanel(
     onWindowChange: (SessionGraphWindow) -> Unit
 ) {
     val hasAnyGraphData = remember(summary.readings) { summary.hasGraphData() }
-    val chartData = remember(summary.readings, selectedMetric, selectedWindow) {
-        summary.readings.graphDataFor(
+    val chartPoints = remember(summary.readings, selectedMetric, selectedWindow) {
+        summary.readings.graphPointsFor(
             metric = selectedMetric,
             window = selectedWindow
-        ).downsampleForChart(MAX_SESSION_CHART_POINTS)
+        ).downsamplePairs(MAX_SESSION_CHART_POINTS)
     }
+    val chartData = remember(chartPoints) { chartPoints.map { it.second } }
+    val chartTimestamps = remember(chartPoints) { chartPoints.map { it.first } }
 
     if (!hasAnyGraphData) return
+
+    val minVal = remember(chartData) { chartData.minOrNull() }
+    val maxVal = remember(chartData) { chartData.maxOrNull() }
+    val avgVal = remember(chartData) { if (chartData.isNotEmpty()) chartData.average().toFloat() else null }
+
+    val yLabels = remember(minVal, maxVal) {
+        if (minVal == null || maxVal == null) null
+        else buildBatteryYLabels(minVal, maxVal)
+    }
+    val xLabels = remember(chartTimestamps) {
+        if (chartTimestamps.size < 2) null
+        else buildSessionXLabels(chartTimestamps)
+    }
+    val sessionUnit = when (selectedMetric) {
+        SessionGraphMetric.CURRENT -> " mA"
+        SessionGraphMetric.POWER -> " W"
+    }
 
     BatteryPanel {
         CardSectionTitle(text = stringResource(R.string.battery_session_graph_title))
@@ -968,8 +1044,44 @@ private fun BatterySessionGraphPanel(
                 contentDescription = stringResource(
                     R.string.a11y_chart_trend,
                     sessionGraphMetricLabel(selectedMetric)
-                )
+                ),
+                yLabels = yLabels,
+                xLabels = xLabels,
+                showGrid = true,
+                tooltipFormatter = { index ->
+                    val decimals = if (selectedMetric == SessionGraphMetric.POWER) 1 else 0
+                    val v = formatDecimal(chartData[index], decimals)
+                    val time = formatLocalizedDateTime(chartTimestamps[index], "Hm")
+                    "$v$sessionUnit · $time"
+                }
             )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+            ) {
+                val decimals = if (selectedMetric == SessionGraphMetric.POWER) 1 else 0
+                minVal?.let {
+                    MetricPill(
+                        label = stringResource(R.string.chart_stat_min),
+                        value = "${formatDecimal(it, decimals)}$sessionUnit",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                avgVal?.let {
+                    MetricPill(
+                        label = stringResource(R.string.chart_stat_avg),
+                        value = "${formatDecimal(it, decimals)}$sessionUnit",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                maxVal?.let {
+                    MetricPill(
+                        label = stringResource(R.string.chart_stat_max),
+                        value = "${formatDecimal(it, decimals)}$sessionUnit",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
         }
     }
 }
@@ -1001,14 +1113,13 @@ private fun BatterySummaryStat(
 }
 
 
-private fun List<Float>.downsampleForChart(maxPoints: Int): List<Float> {
+private fun <T> List<T>.downsamplePairs(maxPoints: Int): List<T> {
     if (size <= maxPoints || maxPoints <= 1) return this
-
-    val lastIndex = lastIndex
+    val lastIdx = lastIndex
     return buildList(maxPoints) {
         for (index in 0 until maxPoints) {
-            val sourceIndex = ((index.toLong() * lastIndex) / (maxPoints - 1)).toInt()
-            add(this@downsampleForChart[sourceIndex])
+            val sourceIndex = ((index.toLong() * lastIdx) / (maxPoints - 1)).toInt()
+            add(this@downsamplePairs[sourceIndex])
         }
     }
 }
@@ -1138,11 +1249,11 @@ private data class BatteryStatItem(
     val value: String
 )
 
-private fun List<BatteryReading>.chartDataFor(metric: BatteryHistoryMetric): List<Float> = when (metric) {
-    BatteryHistoryMetric.LEVEL -> map { it.level.toFloat() }
-    BatteryHistoryMetric.TEMPERATURE -> map { it.temperatureC }
-    BatteryHistoryMetric.CURRENT -> mapNotNull { it.currentMa?.toFloat() }
-    BatteryHistoryMetric.VOLTAGE -> map { it.voltageMv / 1000f }
+private fun List<BatteryReading>.chartPointsFor(metric: BatteryHistoryMetric): List<Pair<Long, Float>> = when (metric) {
+    BatteryHistoryMetric.LEVEL -> map { it.timestamp to it.level.toFloat() }
+    BatteryHistoryMetric.TEMPERATURE -> map { it.timestamp to it.temperatureC }
+    BatteryHistoryMetric.CURRENT -> mapNotNull { r -> r.currentMa?.let { r.timestamp to it.toFloat() } }
+    BatteryHistoryMetric.VOLTAGE -> map { it.timestamp to it.voltageMv / 1000f }
 }
 
 private fun calculateChargingSessionSummary(
@@ -1200,10 +1311,10 @@ private fun calculateChargingSessionSummary(
     )
 }
 
-private fun List<BatteryReading>.graphDataFor(
+private fun List<BatteryReading>.graphPointsFor(
     metric: SessionGraphMetric,
     window: SessionGraphWindow
-): List<Float> {
+): List<Pair<Long, Float>> {
     if (isEmpty()) return emptyList()
 
     val filtered = window.durationMs?.let { duration ->
@@ -1212,10 +1323,10 @@ private fun List<BatteryReading>.graphDataFor(
     } ?: this
 
     return when (metric) {
-        SessionGraphMetric.CURRENT -> filtered.mapNotNull { it.currentMa?.toFloat() }
-        SessionGraphMetric.POWER -> filtered.mapNotNull { reading ->
-            reading.currentMa?.let { currentMa ->
-                (currentMa * (reading.voltageMv / 1000f)) / 1000f
+        SessionGraphMetric.CURRENT -> filtered.mapNotNull { r -> r.currentMa?.let { r.timestamp to it.toFloat() } }
+        SessionGraphMetric.POWER -> filtered.mapNotNull { r ->
+            r.currentMa?.let { currentMa ->
+                r.timestamp to (currentMa * (r.voltageMv / 1000f)) / 1000f
             }
         }
     }
@@ -1283,8 +1394,8 @@ private fun ChargingSessionSummary.hasMeaningfulRemainingEstimate(currentLevel: 
 }
 
 private fun ChargingSessionSummary.hasGraphData(): Boolean =
-    readings.graphDataFor(SessionGraphMetric.CURRENT, SessionGraphWindow.ALL).size >= 2 ||
-        readings.graphDataFor(SessionGraphMetric.POWER, SessionGraphWindow.ALL).size >= 2
+    readings.graphPointsFor(SessionGraphMetric.CURRENT, SessionGraphWindow.ALL).size >= 2 ||
+        readings.graphPointsFor(SessionGraphMetric.POWER, SessionGraphWindow.ALL).size >= 2
 
 @Composable
 private fun remainingChargeText(
@@ -1304,6 +1415,95 @@ private fun formatPercentPerHour(value: Float): String =
 @Composable
 private fun formatWatts(value: Float): String =
     stringResource(R.string.value_watts, value.toDouble())
+
+// ── Chart helper functions ──────────────────────────────────────────────────────
+
+private fun buildBatteryYLabels(minVal: Float, maxVal: Float): List<ChartYLabel> {
+    val range = maxVal - minVal
+    if (range < 1f) return emptyList()
+    val rawStep = range / 4f
+    val step = when {
+        rawStep >= 20f -> (rawStep / 10f).toInt() * 10f
+        rawStep >= 5f -> (rawStep / 5f).toInt() * 5f
+        rawStep >= 1f -> rawStep.toInt().toFloat().coerceAtLeast(1f)
+        else -> if (rawStep >= 0.1f) {
+            val s = (rawStep * 10).toInt() / 10f
+            s.coerceAtLeast(0.1f)
+        } else 0.1f
+    }
+    val start = (kotlin.math.ceil(minVal / step.toDouble()) * step).toFloat()
+    return buildList {
+        var v = start
+        while (v <= maxVal) {
+            val label = if (step < 1f) formatDecimal(v, 1) else "${v.toInt()}"
+            add(ChartYLabel(v, label))
+            v += step
+        }
+    }
+}
+
+private fun buildBatteryXLabels(timestamps: List<Long>, period: HistoryPeriod): List<ChartXLabel> {
+    if (timestamps.size < 2) return emptyList()
+    val first = timestamps.first()
+    val last = timestamps.last()
+    val span = last - first
+    if (span <= 0) return emptyList()
+    val (skeleton, count) = when (period) {
+        HistoryPeriod.SINCE_UNPLUG, HistoryPeriod.DAY -> "Hm" to 4
+        HistoryPeriod.WEEK -> "EEEHm" to 4
+        HistoryPeriod.MONTH -> "MMMd" to 4
+        HistoryPeriod.ALL -> "MMMd" to 4
+    }
+    return buildList {
+        for (i in 0..count) {
+            val position = i.toFloat() / count
+            val time = first + (span * position).toLong()
+            add(ChartXLabel(position, formatLocalizedDateTime(time, skeleton)))
+        }
+    }
+}
+
+private fun buildSessionXLabels(timestamps: List<Long>): List<ChartXLabel> {
+    if (timestamps.size < 2) return emptyList()
+    val first = timestamps.first()
+    val last = timestamps.last()
+    val span = last - first
+    if (span <= 0) return emptyList()
+    val count = 4
+    return buildList {
+        for (i in 0..count) {
+            val position = i.toFloat() / count
+            val time = first + (span * position).toLong()
+            add(ChartXLabel(position, formatLocalizedDateTime(time, "Hm")))
+        }
+    }
+}
+
+@Composable
+private fun batteryQualityZones(metric: BatteryHistoryMetric): List<ChartQualityZone>? {
+    val colors = MaterialTheme.statusColors
+    return when (metric) {
+        BatteryHistoryMetric.LEVEL -> listOf(
+            ChartQualityZone(minValue = 50f, maxValue = 100f, color = colors.healthy.copy(alpha = 0.06f)),
+            ChartQualityZone(minValue = 20f, maxValue = 50f, color = colors.fair.copy(alpha = 0.06f)),
+            ChartQualityZone(minValue = 0f, maxValue = 20f, color = colors.critical.copy(alpha = 0.06f))
+        )
+        BatteryHistoryMetric.TEMPERATURE -> listOf(
+            ChartQualityZone(minValue = 0f, maxValue = 35f, color = colors.healthy.copy(alpha = 0.06f)),
+            ChartQualityZone(minValue = 35f, maxValue = 40f, color = colors.fair.copy(alpha = 0.06f)),
+            ChartQualityZone(minValue = 40f, maxValue = 45f, color = colors.poor.copy(alpha = 0.06f)),
+            ChartQualityZone(minValue = 45f, maxValue = 60f, color = colors.critical.copy(alpha = 0.06f))
+        )
+        else -> null
+    }
+}
+
+private fun batteryMetricUnit(metric: BatteryHistoryMetric): String = when (metric) {
+    BatteryHistoryMetric.LEVEL -> "%"
+    BatteryHistoryMetric.TEMPERATURE -> "°C"
+    BatteryHistoryMetric.CURRENT -> " mA"
+    BatteryHistoryMetric.VOLTAGE -> " V"
+}
 
 @Composable
 private fun formatDuration(durationMs: Long): String {

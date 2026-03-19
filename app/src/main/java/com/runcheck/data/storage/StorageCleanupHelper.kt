@@ -26,6 +26,11 @@ class StorageCleanupHelper @Inject constructor(
         return MediaStore.createDeleteRequest(context.contentResolver, uris)
     }
 
+    fun createDeleteRequestFromUris(uris: List<Uri>): PendingIntent? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || uris.isEmpty()) return null
+        return MediaStore.createDeleteRequest(context.contentResolver, uris)
+    }
+
     /**
      * API 29 and below: Deletes files one by one without system dialog.
      * Returns count of successfully deleted files.

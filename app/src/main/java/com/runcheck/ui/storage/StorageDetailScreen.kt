@@ -1,9 +1,16 @@
 package com.runcheck.ui.storage
 
+import android.Manifest
+import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import com.runcheck.ui.ads.DetailScreenAdBanner
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -98,6 +105,52 @@ fun StorageDetailScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    // Trash delete launcher
+    val trashDeleteLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            viewModel.onTrashEmptied()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.trashDeleteIntent.collect { pendingIntent ->
+            trashDeleteLauncher.launch(
+                IntentSenderRequest.Builder(pendingIntent.intentSender).build()
+            )
+        }
+    }
+
+    // Request media permissions for accurate media breakdown on Android 13+
+    val mediaPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        if (results.values.any { it }) {
+            viewModel.refresh()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val needed = listOf(
+                Manifest.permission.READ_MEDIA_IMAGES,
+                Manifest.permission.READ_MEDIA_VIDEO,
+                Manifest.permission.READ_MEDIA_AUDIO
+            ).filter {
+                ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+            }
+            if (needed.isNotEmpty()) {
+                mediaPermissionLauncher.launch(needed.toTypedArray())
+            }
+        } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            val needed = Manifest.permission.READ_EXTERNAL_STORAGE
+            if (ContextCompat.checkSelfPermission(context, needed) != PackageManager.PERMISSION_GRANTED) {
+                mediaPermissionLauncher.launch(arrayOf(needed))
+            }
+        }
+    }
+
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -149,7 +202,8 @@ fun StorageDetailScreen(
                     state = state,
                     onRefresh = { viewModel.refresh() },
                     onNavigateToCleanup = onNavigateToCleanup,
-                    onUpgradeToPro = onUpgradeToPro
+                    onUpgradeToPro = onUpgradeToPro,
+                    onEmptyTrash = { viewModel.emptyTrash() }
                 )
             }
         }
@@ -161,7 +215,8 @@ private fun StorageContent(
     state: StorageUiState.Success,
     onRefresh: () -> Unit,
     onNavigateToCleanup: (com.runcheck.ui.storage.cleanup.CleanupType) -> Unit = {},
-    onUpgradeToPro: () -> Unit = {}
+    onUpgradeToPro: () -> Unit = {},
+    onEmptyTrash: () -> Unit = {}
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     val storage = state.storageState
@@ -199,7 +254,8 @@ private fun StorageContent(
             if (state.isPro) {
                 StorageCleanupToolsSection(
                     storage = storage,
-                    onNavigateToCleanup = onNavigateToCleanup
+                    onNavigateToCleanup = onNavigateToCleanup,
+                    onEmptyTrash = onEmptyTrash
                 )
             } else {
                 SectionHeader(text = stringResource(R.string.storage_cleanup_tools))
@@ -217,9 +273,6 @@ private fun StorageContent(
             if (storage.sdCardAvailable) {
                 StorageSdCardCard(storage = storage)
             }
-
-            // ── Quick Actions ──────────────────────────────────────────
-            StorageQuickActionsCard()
 
             DetailScreenAdBanner()
 
@@ -389,7 +442,8 @@ private fun StorageMediaBreakdownCard(breakdown: MediaBreakdown, usedBytes: Long
 @Composable
 private fun StorageCleanupToolsSection(
     storage: StorageState,
-    onNavigateToCleanup: (com.runcheck.ui.storage.cleanup.CleanupType) -> Unit = {}
+    onNavigateToCleanup: (com.runcheck.ui.storage.cleanup.CleanupType) -> Unit = {},
+    onEmptyTrash: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -440,9 +494,7 @@ private fun StorageCleanupToolsSection(
                     title = stringResource(R.string.storage_trash),
                     subtitle = pluralStringResource(R.plurals.storage_trash_summary, trash.itemCount, formatStorageSize(context, trash.totalBytes), trash.itemCount),
                     actionLabel = stringResource(R.string.storage_empty_trash),
-                    onAction = {
-                        // TODO: Empty trash via MediaStore.createDeleteRequest
-                    }
+                    onAction = onEmptyTrash
                 )
             }
         }
@@ -489,9 +541,37 @@ private fun StorageDetailsCard(storage: StorageState) {
             }
             MetricRow(
                 label = stringResource(R.string.storage_cache_total),
-                value = cacheText,
-                showDivider = false
+                value = cacheText
             )
+        }
+
+        // Technical details
+        val hasTechDetails = storage.fileSystemType != null ||
+            storage.encryptionStatus != null ||
+            storage.storageVolumes > 0
+        if (hasTechDetails) {
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+            )
+            storage.fileSystemType?.let { fs ->
+                MetricRow(
+                    label = stringResource(R.string.storage_filesystem),
+                    value = fs.uppercase()
+                )
+            }
+            storage.encryptionStatus?.let { enc ->
+                MetricRow(
+                    label = stringResource(R.string.storage_encryption),
+                    value = enc
+                )
+            }
+            if (storage.storageVolumes > 0) {
+                MetricRow(
+                    label = stringResource(R.string.storage_volumes),
+                    value = storage.storageVolumes.toString(),
+                    showDivider = false
+                )
+            }
         }
     }
 }
@@ -522,79 +602,6 @@ private fun StorageSdCardCard(storage: StorageState) {
 }
 
 // ── Quick Actions card ─────────────────────────────────────────────────────────
-
-@Composable
-private fun StorageQuickActionsCard() {
-    val context = LocalContext.current
-
-    StoragePanel {
-        CardSectionTitle(text = stringResource(R.string.storage_quick_actions))
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-
-        QuickActionRow(
-            label = stringResource(R.string.storage_open_settings),
-            onClick = {
-                try {
-                    context.startActivity(
-                        Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    )
-                } catch (_: Exception) { }
-            }
-        )
-        HorizontalDivider(
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-        )
-        QuickActionRow(
-            label = stringResource(R.string.storage_free_up_space),
-            onClick = {
-                try {
-                    context.startActivity(
-                        Intent(android.os.storage.StorageManager.ACTION_MANAGE_STORAGE)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    )
-                } catch (_: Exception) { }
-            }
-        )
-        HorizontalDivider(
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-        )
-        QuickActionRow(
-            label = stringResource(R.string.storage_usage_access),
-            onClick = {
-                try {
-                    context.startActivity(
-                        Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    )
-                } catch (_: Exception) { }
-            }
-        )
-    }
-}
-
-@Composable
-private fun QuickActionRow(
-    label: String,
-    onClick: () -> Unit
-) {
-    TextButton(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = label,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Text(
-            text = "›",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
-    }
-}
 
 // ── Shared panel ───────────────────────────────────────────────────────────────
 

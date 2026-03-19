@@ -57,10 +57,18 @@ fun HeatStrip(
         1f
     }
 
-    val coolColor = MaterialTheme.statusColors.healthy
-    val warmColor = MaterialTheme.statusColors.fair
-    val hotColor = MaterialTheme.statusColors.critical
+    val healthyColor = MaterialTheme.statusColors.healthy
+    val fairColor = MaterialTheme.statusColors.fair
+    val poorColor = MaterialTheme.statusColors.poor
+    val criticalColor = MaterialTheme.statusColors.critical
     val indicatorColor = MaterialTheme.colorScheme.onSurface
+
+    // Color stops aligned with statusColorForTemperature thresholds (35/40/45°C)
+    // with ±1°C soft transition zones for smooth blending
+    val range = maxTemp - minTemp
+    fun tempToStop(tempC: Float) = ((tempC - minTemp) / range).coerceIn(0f, 1f)
+
+    val transitionHalf = 1f / range  // ~1°C in normalized units
 
     Canvas(
         modifier = modifier
@@ -73,7 +81,16 @@ fun HeatStrip(
     ) {
         drawRect(
             brush = Brush.horizontalGradient(
-                colors = listOf(coolColor, warmColor, hotColor)
+                colorStops = arrayOf(
+                    0f to healthyColor,
+                    (tempToStop(35f) - transitionHalf) to healthyColor,
+                    (tempToStop(35f) + transitionHalf) to fairColor,
+                    (tempToStop(40f) - transitionHalf) to fairColor,
+                    (tempToStop(40f) + transitionHalf) to poorColor,
+                    (tempToStop(45f) - transitionHalf) to poorColor,
+                    (tempToStop(45f) + transitionHalf) to criticalColor,
+                    1f to criticalColor
+                )
             ),
             alpha = if (isCritical) pulseAlpha else 1f
         )

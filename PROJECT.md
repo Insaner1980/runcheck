@@ -27,7 +27,7 @@ Home
 ## Home Screen
 
 ### Health Score Card
-- Overall score 0–100 displayed in animated ProgressRing (AccentTeal)
+- Overall score 0–100 displayed in animated ProgressRing (color from statusColorForPercent)
 - Status label: Healthy / Fair / Poor / Critical
 - Description: "Your device is in [status] shape"
 - Temperature warning if ≥ 38°C
@@ -105,7 +105,8 @@ Home
 ### Session Graph (during charge)
 - Metrics: Current (mA) / Power (W)
 - Windows: 15m / 30m / All
-- TrendChart with downsampling (max 240 points)
+- TrendChart with Y-axis, X-axis time labels, grid, tooltip, Min/Avg/Max stats
+- Downsampling preserves timestamps (max 240 points)
 
 ### Remaining Charge Time (during charge, Pro)
 - To 80% and To 100% estimates based on charge rate
@@ -113,7 +114,9 @@ Home
 ### History Panel (Pro)
 - Periods: Since Unplug / 24h / Week / Month / All
 - Metrics: Level / Temperature / Current / Voltage
-- TrendChart with downsampling (max 300 points)
+- TrendChart with Y-axis labels, X-axis time labels, grid lines, quality zones (Level: green >50%, yellow 20-50%, red <20%; Temperature: green <35°, yellow 35-40°, orange 40-45°, red >45°), tap/drag tooltip (value + timestamp)
+- Min / Avg / Max MetricPill summary row below chart
+- Downsampling preserves timestamps (max 300 points)
 - "Since Unplug" queries last CHARGING timestamp from Room
 
 ### Statistics Panel (Pro)
@@ -151,7 +154,9 @@ Home
 ### Signal History (Pro)
 - Metrics: Signal Strength (dBm) / Latency (ms)
 - Periods: 24h / Week / Month / All
-- TrendChart
+- TrendChart with Y-axis (dBm/ms), X-axis time labels, grid lines, signal quality zone bands (Excellent/Good/Fair/Poor/NoSignal colored backgrounds), tap/drag tooltip (value + timestamp)
+- Min / Avg / Max MetricPill summary row
+- Downsampling preserves timestamps (max 300 points)
 
 ### Speed Test Summary
 - Last result: Download / Upload / Ping / Jitter / Server / Time
@@ -179,7 +184,8 @@ Home
 - Session min/max range (annotated string): "↓ 27.3°C · ↑ 35.3°C" (color-coded per temp)
 
 ### Heat Strip
-- Color gradient visualization (cool → hot) with position indicator
+- Color zones aligned with statusColorForTemperature thresholds (35/40/45°C) with ±1°C soft transitions
+- Position indicator (white dot) on gradient strip
 
 ### Metrics Grid
 | Metric | Detail |
@@ -221,14 +227,10 @@ ActionCards with colored IconCircles:
 
 ### Details Card
 - Total / Used (%) / Available / Apps / Cache (across N apps)
+- Technical details (separated by divider): File System (f2fs/ext4), Encryption (FBE/FDE/None), Storage Volumes count
 
 ### SD Card Card (if present)
 - Total / Available
-
-### Quick Actions Card
-- Storage Settings (ACTION_INTERNAL_STORAGE_SETTINGS)
-- Free Up Space (ACTION_MANAGE_STORAGE)
-- Usage Access (ACTION_USAGE_ACCESS_SETTINGS)
 
 ---
 
@@ -239,8 +241,8 @@ Single reusable screen for all cleanup types. Navigated via `cleanup/{type}` rou
 ### Filter Chips
 | Type | Options | Default |
 |------|---------|---------|
-| LARGE_FILES | 10 MB / 50 MB / 100 MB / 500 MB | 50 MB |
-| OLD_DOWNLOADS | 30d / 60d / 90d / 1y | 30d |
+| LARGE_FILES | > 10 MB / > 50 MB / > 100 MB / > 500 MB | > 50 MB |
+| OLD_DOWNLOADS | > 30 days / > 60 days / > 90 days / > 1 year | > 30 days |
 | APK_FILES | (none) | — |
 
 ### States
@@ -401,24 +403,25 @@ Based on usage % (0 penalty at 25–50%, up to -80 at 95%+).
 
 ### Theme
 - Single dark theme — no light mode, no AMOLED toggle
-- BgPage `#0B1E24`, BgCard `#133040`, BgIconCircle `#1A3A4D`
+- BgPage `#0B1E24`, BgCard `#133040`, BgCardAlt `#0F2A35`, BgIconCircle `#1A3A48`
 - Typography: Manrope (body) + JetBrains Mono (numbers)
 
 ### Accent Colors
-| Color | Hex | Usage |
-|-------|-----|-------|
-| Teal | `#5DE4C7` | Primary accent, healthy status, images |
-| Blue | `#4A9EDE` | Data/info, videos |
-| Orange | `#F5963A` | Warning, audio |
-| Red | `#F06040` | Critical, error, delete |
-| Lime | `#C8E636` | Success, documents, APKs |
-| Yellow | `#F5D03A` | Attention, downloads |
+| Color | Hex | Role | Usage |
+|-------|-----|------|-------|
+| Blue | `#4A9EDE` | Primary | Main accent, interactive elements, videos |
+| Teal | `#5DE4C7` | Secondary | Healthy status, success, images |
+| Amber | `#E8C44A` | — | Fair status, estimated confidence |
+| Orange | `#F5963A` | Tertiary | Poor status, warning, audio |
+| Red | `#F06040` | Error | Critical status, error, delete |
+| Lime | `#C8E636` | — | Documents, APKs |
+| Yellow | `#F5D03A` | — | Attention, downloads |
 
 ### Status Colors
 | Level | Score | Color |
 |-------|-------|-------|
 | Healthy | 75–100 | Teal |
-| Fair | 50–74 | Blue |
+| Fair | 50–74 | Amber |
 | Poor | 25–49 | Orange |
 | Critical | 0–24 | Red |
 
@@ -451,28 +454,28 @@ All animations respect `MaterialTheme.reducedMotion`.
 
 ---
 
-## Components (32+)
+## Components (25)
 
 ### Layout
-`GridCard` · `ListRow` · `MetricPill` · `MetricRow` · `MetricTile` · `ActionCard`
+`GridCard` · `ListRow` · `MetricPill` · `MetricRow` · `ActionCard`
 
 ### Indicators
-`ProgressRing` · `MiniBar` · `StatusDot` · `StatusIndicator` · `ConfidenceBadge` · `SignalBars`
+`ProgressRing` · `MiniBar` · `StatusDot` · `ConfidenceBadge` · `SignalBars`
 
 ### Charts & Visuals
-`TrendChart` · `AreaChart` · `SparklineChart` · `SpeedGauge` · `HeatStrip` · `SegmentedBar` · `SegmentedBarLegend`
+`TrendChart` (Y/X axes, grid, quality zones, tap/drag tooltip — all optional) · `AreaChart` · `HeatStrip` · `SegmentedBar` · `SegmentedBarLegend`
 
 ### Navigation
 `PrimaryTopBar` · `DetailTopBar`
 
 ### Typography
-`AnimatedNumber` · `SectionHeader` · `CardSectionTitle` · `IconCircle`
+`AnimatedNumber` (`AnimatedIntText`, `AnimatedFloatText`) · `SectionHeader` · `CardSectionTitle` · `IconCircle`
 
 ### Pro
 `ProBadgePill` · `ProFeatureCalloutCard` · `ProFeatureLockedState`
 
 ### Interactive
-`PullToRefreshWrapper` · `PrimaryButton` · `SecondaryButton` · `ActionCard`
+`PullToRefreshWrapper`
 
 ---
 

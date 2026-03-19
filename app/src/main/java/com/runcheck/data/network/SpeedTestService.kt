@@ -132,10 +132,12 @@ class SpeedTestService @Inject constructor(
                 }
 
                 if (testType == TestType.DOWNLOAD) {
+                    clientResponse?.let { downloadMbps = DataConverter.convertToMbps(it) }
                     trySend(SpeedTestProgress.DownloadPhase(downloadMbps, 1f))
                     return
                 }
 
+                clientResponse?.let { uploadMbps = DataConverter.convertToMbps(it) }
                 updateServerMetadata(clientResponse)?.let { metadata ->
                     serverName = metadata.name
                     serverLocation = metadata.location

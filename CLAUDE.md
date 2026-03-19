@@ -6,7 +6,7 @@ runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device
 
 ## Tech Stack
 
-- **Language:** Kotlin (via AGP 9.1.0 built-in Kotlin)
+- **Language:** Kotlin 2.3.0 (via AGP 9.1.0 built-in Kotlin)
 - **UI:** Jetpack Compose with Material 3 / Material You (BOM 2026.02.01)
 - **Min SDK:** 26 (Android 8.0)
 - **Target SDK:** 35 (Android 15)
@@ -15,7 +15,7 @@ runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device
 - **Database:** Room 2.8.4 for local historical data
 - **Async:** Kotlin Coroutines 1.10.2 + Flow
 - **DI:** Hilt 2.59.2
-- **Charts:** Custom Compose components (TrendChart, AreaChart, HeatStrip, SegmentedBar)
+- **Charts:** Custom Compose components (TrendChart with axes/grid/tooltip/quality zones, AreaChart, HeatStrip, SegmentedBar)
 - **Build:** Gradle 9.4.0 with Kotlin DSL, AGP 9.1.0, KSP 2.3.1
 - **Localization:** English (default) + Finnish (fi)
 
@@ -43,7 +43,7 @@ app/src/main/java/com/runcheck/
 │   └── thermal/       # ThermalManager, CPU temp sysfs readers
 ├── domain/
 │   ├── model/         # Domain models (BatteryState, NetworkState, StorageState, etc.)
-│   ├── usecase/       # Business logic (27+ use cases)
+│   ├── usecase/       # Business logic (26 use cases)
 │   ├── repository/    # Repository interfaces
 │   └── scoring/       # Health score algorithm
 ├── ui/
@@ -60,7 +60,7 @@ app/src/main/java/com/runcheck/
 │   ├── pro/           # Pro upgrade screen, trial UI, purchase flow
 │   ├── theme/         # Dark theme, color tokens, typography, spacing
 │   ├── common/        # UiText, UiFormatters (formatPercent, formatTemp, etc.)
-│   ├── components/    # 29 shared composables (see Components below)
+│   ├── components/    # 25 shared composables (see Components below)
 │   └── navigation/    # NavGraph + Screen sealed class (push-based from Home)
 ├── pro/               # Pro/trial state management
 ├── billing/           # Billing state helpers
@@ -83,6 +83,7 @@ app/src/main/java/com/runcheck/
 - **ViewModels must not hold Context** — use `UiText` sealed interface (`UiText.Resource(@StringRes)` / `UiText.Dynamic(value)`) for error messages and status text. Composables resolve with `.resolve()`.
 - **Business logic belongs in use cases** — repositories handle data access only. Calculations (e.g., `CalculateFillRateUseCase`), state machines (e.g., `TrackThrottlingEventsUseCase`), and formatting logic go in `domain/usecase/`.
 - **`BillingManager` is a lifecycle-aware service, not a repository** — initialized/destroyed by `RuncheckApp`. Widget updates triggered from Application via Flow collection, not from the billing layer.
+- **Debug builds always have Pro enabled** — `BillingManager.initialize()` short-circuits with `_isProState = true` when `BuildConfig.DEBUG` is true, so all Pro features are visible during development.
 
 ## Code Style & Conventions
 
@@ -102,28 +103,29 @@ app/src/main/java/com/runcheck/
 
 - **Single dark theme** — no light mode, no AMOLED toggle, no dynamic colors
 - **Dark palette:**
-  - BgPage = `#0B1E24`, BgCard = `#133040`, BgIconCircle = `#1A3A4D`
-  - Accent Teal `#4DD0B8`, Accent Blue `#5BA8F5`, Accent Orange `#F5A05B`, Accent Red `#F55B5B`
-  - Accent Lime `#A8F55B`, Accent Yellow `#F5D45B`
-  - TextPrimary `#E0E0E0`, TextSecondary `#ABABAB`, TextMuted `#707070`
+  - BgPage = `#0B1E24`, BgCard = `#133040`, BgCardAlt = `#0F2A35`, BgIconCircle = `#1A3A48`
+  - Accent Blue `#4A9EDE` (primary), Accent Teal `#5DE4C7` (secondary), Accent Amber `#E8C44A`
+  - Accent Orange `#F5963A`, Accent Red `#F06040`, Accent Lime `#C8E636`, Accent Yellow `#F5D03A`
+  - TextPrimary `#E8E8ED`, TextSecondary `#90A8B0`, TextMuted `#7A949E`, TextOnLime `#1A2E0A`
 - **Typography:** Manrope (custom, body/headers) + JetBrains Mono (numeric displays) via `MaterialTheme.typography` and `MaterialTheme.numericFontFamily`
 - **Navigation:** Push-based from single Home screen (no bottom nav bar)
 - **Cards:** Flat `BgCard` background, no borders, no shadows, no elevation, 16dp rounded corners
-- **Core components** (32+ in `ui/components/`):
-  - Layout: GridCard, ListRow, MetricPill, MetricRow, MetricTile, ActionCard
+- **Core components** (25 in `ui/components/`):
+  - Layout: GridCard, ListRow, MetricPill, MetricRow, ActionCard
   - Indicators: ProgressRing, MiniBar, StatusDot, ConfidenceBadge, SignalBars
-  - Charts: TrendChart, AreaChart, HeatStrip, SegmentedBar, SegmentedBarLegend
+  - Charts: TrendChart (with optional Y/X axes, grid, quality zones, tap/drag tooltip), AreaChart, HeatStrip, SegmentedBar, SegmentedBarLegend
   - Navigation: PrimaryTopBar, DetailTopBar
-  - Typography: AnimatedNumber, SectionHeader, CardSectionTitle, IconCircle
+  - Typography: AnimatedNumber (AnimatedIntText, AnimatedFloatText), SectionHeader, CardSectionTitle, IconCircle
   - Pro: ProBadgePill, ProFeatureCalloutCard, ProFeatureLockedState
-  - Interactive: PullToRefreshWrapper, PrimaryButton, SecondaryButton
+  - Interactive: PullToRefreshWrapper
 - **Section titles:**
   - `SectionHeader` (outline / TextMuted) — page-level sections, above cards
   - `CardSectionTitle` (onSurfaceVariant / TextSecondary) — subsection titles inside cards
 - **Corner radii:** Cards = 16dp, small elements (badges, chips) = 8dp
 - **Dividers:** `outlineVariant.copy(alpha = 0.35f)` everywhere — no hardcoded colors
 - **Value colors:** Data values default to `onSurface`, status labels use `statusColors`. In GridCard, use `statusLabel`/`statusColor` params to separate data from status.
-- **Status colors** via `MaterialTheme.statusColors` extension (healthy/fair/poor/critical) — always paired with icons or text labels for accessibility
+- **Status colors** via `MaterialTheme.statusColors` extension — always paired with icons or text labels for accessibility
+  - Healthy = Teal, Fair = Amber, Poor = Orange, Critical = Red
 - **Animations:**
   - ProgressRing: 1200ms ease-out (`FastOutSlowInEasing`) from 0 to target
   - MiniBar: 800ms ease-out from 0 to target
@@ -144,8 +146,8 @@ The battery detail screen has extensive monitoring capabilities:
 - **Screen On/Off tracking:** `ScreenStateTracker` with BroadcastReceiver for `ACTION_SCREEN_ON/OFF/POWER_DISCONNECTED`, tracks drain rate per screen state
 - **Deep Sleep / Held Awake:** Tracks `PowerManager.isDeviceIdleMode` during screen-off periods
 - **Long-term statistics:** `GetBatteryStatisticsUseCase` queries Room for charged/discharged totals, session counts, average drain rates over configurable period
-- **History:** TrendChart with `SINCE_UNPLUG`, Day, Week, Month, All periods. SINCE_UNPLUG queries last charging timestamp from Room.
-- **Session graph:** Current and power charts with 15m/30m/All windows during charging
+- **History:** TrendChart with `SINCE_UNPLUG`, Day, Week, Month, All periods. SINCE_UNPLUG queries last charging timestamp from Room. Y-axis labels, X-axis time labels, grid, tooltip (value + timestamp), quality zones for Level and Temperature, Min/Avg/Max MetricPills.
+- **Session graph:** Current and power charts with 15m/30m/All windows during charging. Y-axis, X-axis, grid, tooltip, Min/Avg/Max stats.
 
 ## Storage Features
 
@@ -154,15 +156,16 @@ The storage detail screen provides monitoring and cleanup tools:
 - **Hero card:** ProgressRing with usage %, used/total, fill rate, cache total, free space MetricPills
 - **Media breakdown:** `SegmentedBar` (Canvas, 12dp, animated) with 6 categories: Images (Teal), Videos (Blue), Audio (Orange), Documents (Lime), Downloads (Yellow), Other (Muted). `SegmentedBarLegend` with StatusDots.
 - **Cleanup tools:** `ActionCard` components (outlined border) linking to reusable `CleanupScreen`:
-  - Large Files (threshold: 10/50/100/500 MB)
-  - Old Downloads (age: 30/60/90/365 days)
-  - APK Files (no filter, pre-selected)
-  - Trash (API 30+, inline empty via `MediaStore.createDeleteRequest`)
+  - Large Files (threshold: > 10/50/100/500 MB)
+  - Old Downloads (age: > 30/60/90/365 days)
+  - APK Files (no filter, pre-selected) — scans both Downloads + Files collections with filename + MIME type matching
+  - Trash (API 30+, empty via `MediaStore.createDeleteRequest` with `getTrashedUris()` + ActivityResultLauncher)
 - **Cleanup screen:** Shared `cleanup/{type}` route, category-grouped file list with thumbnails (`ThumbnailLoader` LRU-50), `MiniBar` per file, `CleanupBottomBar` with before/after projection, `CleanupSuccessOverlay` fade animation
 - **Delete mechanism:** API 30+ `createDeleteRequest` → system dialog via `ActivityResultLauncher`; API 29 `ContentResolver.delete` fallback
 - **Fill rate:** `CalculateFillRateUseCase` — linear regression on Room history (7-day lookback)
-- **Quick actions:** System intent links (Storage Settings, Free Up Space, Usage Access)
+- **Details card:** Total/Used/Available/Apps/Cache + technical details (File System from `/proc/mounts`, Encryption from `ro.crypto.type` system property, Storage Volumes from `StorageManager`)
 - **SD card:** Shown if detected via `getExternalFilesDirs`
+- **Permissions:** `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO` (API 33+) + `READ_EXTERNAL_STORAGE` (API ≤32) — runtime-requested on StorageDetailScreen entry
 
 ## Settings Features
 
@@ -211,7 +214,7 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 ## Database
 
 - Room with auto-migrations
-- Tables: `battery_readings`, `storage_readings`, `network_readings`, `thermal_readings`, `throttling_events`, `charger_sessions`, `speed_test_results`
+- Tables: `battery_readings`, `storage_readings`, `network_readings`, `thermal_readings`, `throttling_events`, `charging_sessions`, `charger_profiles`, `speed_test_results`, `app_battery_usage`
 - Free tier: retain only 24 hours of readings (delete older on each write)
 - Pro tier: configurable retention (3mo / 6mo / 1yr / forever)
 - Indices on timestamp columns for efficient range queries

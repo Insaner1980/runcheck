@@ -86,8 +86,13 @@ import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.components.PullToRefreshWrapper
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SignalBars
+import com.runcheck.ui.components.ChartQualityZone
+import com.runcheck.ui.components.ChartXLabel
+import com.runcheck.ui.components.ChartYLabel
 import com.runcheck.ui.components.TrendChart
+import com.runcheck.ui.common.formatLocalizedDateTime
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.statusColorForSignalQuality
 
 @Composable
@@ -409,11 +414,43 @@ private fun SignalHistoryCard(
     var selectedMetric by rememberSaveable { mutableStateOf(NetworkHistoryMetric.SIGNAL.name) }
     val metric = NetworkHistoryMetric.valueOf(selectedMetric)
 
-    val chartData = remember(history, metric) {
-        when (metric) {
-            NetworkHistoryMetric.SIGNAL -> history.mapNotNull { it.signalDbm?.toFloat() }
-            NetworkHistoryMetric.LATENCY -> history.mapNotNull { it.latencyMs?.toFloat() }
-        }.downsampleForChart(MAX_NETWORK_HISTORY_POINTS)
+    // Downsample values AND timestamps together
+    val chartPoints = remember(history, metric) {
+        history.mapNotNull { reading ->
+            val value = when (metric) {
+                NetworkHistoryMetric.SIGNAL -> reading.signalDbm?.toFloat()
+                NetworkHistoryMetric.LATENCY -> reading.latencyMs?.toFloat()
+            }
+            value?.let { reading.timestamp to it }
+        }.downsamplePairsForChart(MAX_NETWORK_HISTORY_POINTS)
+    }
+
+    val chartData = remember(chartPoints) { chartPoints.map { it.second } }
+    val chartTimestamps = remember(chartPoints) { chartPoints.map { it.first } }
+
+    // Stats
+    val minVal = remember(chartData) { chartData.minOrNull() }
+    val maxVal = remember(chartData) { chartData.maxOrNull() }
+    val avgVal = remember(chartData) { if (chartData.isNotEmpty()) chartData.average().toFloat() else null }
+
+    // Y-axis labels
+    val yLabels = remember(minVal, maxVal, metric) {
+        if (minVal == null || maxVal == null) null
+        else buildChartYLabels(minVal, maxVal, metric)
+    }
+
+    // X-axis time labels
+    val xLabels = remember(chartTimestamps, selectedPeriod) {
+        if (chartTimestamps.size < 2) null
+        else buildChartXLabels(chartTimestamps, selectedPeriod)
+    }
+
+    // Quality zone bands (signal only — subtle background bands)
+    val qualityZones = signalQualityZones(metric)
+
+    val unit = when (metric) {
+        NetworkHistoryMetric.SIGNAL -> " dBm"
+        NetworkHistoryMetric.LATENCY -> " ms"
     }
 
     NetworkPanel {
@@ -471,8 +508,45 @@ private fun SignalHistoryCard(
                 contentDescription = stringResource(
                     R.string.a11y_chart_trend,
                     networkHistoryMetricLabel(metric)
-                )
+                ),
+                yLabels = yLabels,
+                xLabels = xLabels,
+                showGrid = true,
+                qualityZones = qualityZones,
+                tooltipFormatter = { index ->
+                    val value = formatDecimal(chartData[index], if (metric == NetworkHistoryMetric.LATENCY) 0 else 0)
+                    val time = formatLocalizedDateTime(chartTimestamps[index], "HmMMMd")
+                    "$value$unit · $time"
+                }
             )
+
+            // Min / Avg / Max summary
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+            ) {
+                minVal?.let {
+                    MetricPill(
+                        label = stringResource(R.string.chart_stat_min),
+                        value = "${formatDecimal(it, 0)}$unit",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                avgVal?.let {
+                    MetricPill(
+                        label = stringResource(R.string.chart_stat_avg),
+                        value = "${formatDecimal(it, 0)}$unit",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                maxVal?.let {
+                    MetricPill(
+                        label = stringResource(R.string.chart_stat_max),
+                        value = "${formatDecimal(it, 0)}$unit",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
         } else {
             Text(
                 text = stringResource(R.string.network_history_empty),
@@ -500,15 +574,78 @@ private fun historyPeriodLabel(period: HistoryPeriod): String = when (period) {
 
 private const val MAX_NETWORK_HISTORY_POINTS = 300
 
-private fun List<Float>.downsampleForChart(maxPoints: Int): List<Float> {
+private fun <T> List<T>.downsamplePairsForChart(maxPoints: Int): List<T> {
     if (size <= maxPoints || maxPoints <= 1) return this
-    val lastIndex = lastIndex
+    val lastIdx = lastIndex
     return buildList(maxPoints) {
         for (index in 0 until maxPoints) {
-            val sourceIndex = ((index.toLong() * lastIndex) / (maxPoints - 1)).toInt()
-            add(this@downsampleForChart[sourceIndex])
+            val sourceIndex = ((index.toLong() * lastIdx) / (maxPoints - 1)).toInt()
+            add(this@downsamplePairsForChart[sourceIndex])
         }
     }
+}
+
+private fun buildChartYLabels(minVal: Float, maxVal: Float, metric: NetworkHistoryMetric): List<ChartYLabel> {
+    val range = maxVal - minVal
+    if (range < 1f) return emptyList()
+    // Pick nice step: aim for ~4 labels
+    val rawStep = range / 4f
+    val step = when {
+        rawStep >= 20f -> (rawStep / 10f).toInt() * 10f
+        rawStep >= 5f -> (rawStep / 5f).toInt() * 5f
+        rawStep >= 1f -> rawStep.toInt().toFloat().coerceAtLeast(1f)
+        else -> 1f
+    }
+    val unit = when (metric) {
+        NetworkHistoryMetric.SIGNAL -> ""
+        NetworkHistoryMetric.LATENCY -> ""
+    }
+    val start = (kotlin.math.ceil(minVal / step) * step).toFloat()
+    return buildList {
+        var v = start
+        while (v <= maxVal) {
+            add(ChartYLabel(v, "${v.toInt()}"))
+            v += step
+        }
+    }
+}
+
+private fun buildChartXLabels(timestamps: List<Long>, period: HistoryPeriod): List<ChartXLabel> {
+    if (timestamps.size < 2) return emptyList()
+    val first = timestamps.first()
+    val last = timestamps.last()
+    val span = last - first
+    if (span <= 0) return emptyList()
+
+    // Pick time format skeleton and label count based on period
+    val (skeleton, count) = when (period) {
+        HistoryPeriod.DAY, HistoryPeriod.SINCE_UNPLUG -> "Hm" to 4
+        HistoryPeriod.WEEK -> "EEEHm" to 4
+        HistoryPeriod.MONTH -> "MMMd" to 4
+        HistoryPeriod.ALL -> "MMMd" to 4
+    }
+
+    return buildList {
+        for (i in 0..count) {
+            val position = i.toFloat() / count
+            val time = first + (span * position).toLong()
+            add(ChartXLabel(position, formatLocalizedDateTime(time, skeleton)))
+        }
+    }
+}
+
+@Composable
+private fun signalQualityZones(metric: NetworkHistoryMetric): List<ChartQualityZone>? {
+    if (metric != NetworkHistoryMetric.SIGNAL) return null
+    val colors = MaterialTheme.statusColors
+    // WiFi dBm ranges (most common in history data)
+    return listOf(
+        ChartQualityZone(minValue = -50f, maxValue = 0f, color = colors.healthy.copy(alpha = 0.07f)),
+        ChartQualityZone(minValue = -60f, maxValue = -50f, color = colors.healthy.copy(alpha = 0.05f)),
+        ChartQualityZone(minValue = -70f, maxValue = -60f, color = colors.fair.copy(alpha = 0.06f)),
+        ChartQualityZone(minValue = -80f, maxValue = -70f, color = colors.poor.copy(alpha = 0.06f)),
+        ChartQualityZone(minValue = -120f, maxValue = -80f, color = colors.critical.copy(alpha = 0.06f))
+    )
 }
 
 // ── Speed Test Summary card ─────────────────────────────────────────────────────

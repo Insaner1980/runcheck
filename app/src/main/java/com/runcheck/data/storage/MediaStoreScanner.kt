@@ -72,6 +72,36 @@ class MediaStoreScanner @Inject constructor(
         TrashInfo(totalBytes = totalSize, itemCount = itemCount)
     }
 
+    suspend fun getTrashedUris(): List<Uri> = withContext(Dispatchers.IO) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return@withContext emptyList()
+
+        val uris = mutableListOf<Uri>()
+        val collections = listOf(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+        )
+
+        for (collection in collections) {
+            val bundle = Bundle().apply {
+                putInt(MediaStore.QUERY_ARG_MATCH_TRASHED, MediaStore.MATCH_ONLY)
+            }
+            try {
+                resolver.query(collection, arrayOf(MediaStore.MediaColumns._ID), bundle, null)
+                    ?.use { cursor ->
+                        val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
+                        while (cursor.moveToNext()) {
+                            uris.add(android.content.ContentUris.withAppendedId(collection, cursor.getLong(idCol)))
+                        }
+                    }
+            } catch (error: Exception) {
+                ReleaseSafeLog.error(TAG, "Failed to query trashed URIs for $collection", error)
+            }
+        }
+
+        uris
+    }
+
     suspend fun scanLargeFiles(thresholdBytes: Long): List<ScannedFile> = withContext(Dispatchers.IO) {
         val results = mutableListOf<ScannedFile>()
         val collections = listOf(
@@ -113,7 +143,7 @@ class MediaStoreScanner @Inject constructor(
 
         val selection = "${MediaStore.MediaColumns.DATE_MODIFIED} < ?"
         val selectionArgs = arrayOf(cutoff.toString())
-        val sortOrder = "${MediaStore.MediaColumns.SIZE} DESC LIMIT 500"
+        val sortOrder = "${MediaStore.MediaColumns.SIZE} DESC "
 
         try {
             resolver.query(
@@ -151,11 +181,7 @@ class MediaStoreScanner @Inject constructor(
 
     suspend fun scanApkFiles(): List<ScannedFile> = withContext(Dispatchers.IO) {
         val results = mutableListOf<ScannedFile>()
-        val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            MediaStore.Downloads.EXTERNAL_CONTENT_URI
-        } else {
-            MediaStore.Files.getContentUri("external")
-        }
+        val seen = mutableSetOf<Long>()
 
         val projection = arrayOf(
             MediaStore.MediaColumns._ID,
@@ -164,37 +190,54 @@ class MediaStoreScanner @Inject constructor(
             MediaStore.MediaColumns.DATE_MODIFIED
         )
 
-        val selection = "${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ?"
-        val selectionArgs = arrayOf("%.apk")
-        val sortOrder = "${MediaStore.MediaColumns.SIZE} DESC LIMIT 500"
-
-        try {
-            resolver.query(uri, projection, selection, selectionArgs, sortOrder)
-                ?.use { cursor ->
-                    val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
-                    val nameCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
-                    val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
-                    val dateCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_MODIFIED)
-
-                    while (cursor.moveToNext()) {
-                        val id = cursor.getLong(idCol)
-                        results.add(
-                            ScannedFile(
-                                uri = android.content.ContentUris.withAppendedId(uri, id).toString(),
-                                displayName = cursor.getString(nameCol) ?: context.getString(R.string.fallback_unknown),
-                                sizeBytes = cursor.getLong(sizeCol),
-                                mimeType = "application/vnd.android.package-archive",
-                                dateModified = cursor.getLong(dateCol) * 1000,
-                                category = MediaCategory.APK
-                            )
-                        )
-                    }
-                }
-        } catch (error: Exception) {
-            ReleaseSafeLog.error(TAG, "Failed to scan APK files", error)
+        // Search multiple collections — APKs can live in Downloads or Files
+        val collections = buildList {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                add(MediaStore.Downloads.EXTERNAL_CONTENT_URI)
+            }
+            add(MediaStore.Files.getContentUri("external"))
         }
 
-        results
+        for (collectionUri in collections) {
+            // Try both filename match and MIME type match
+            val queries = listOf(
+                "${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ?" to arrayOf("%.apk"),
+                "${MediaStore.MediaColumns.MIME_TYPE} = ?" to arrayOf("application/vnd.android.package-archive")
+            )
+
+            for ((selection, selectionArgs) in queries) {
+                try {
+                    resolver.query(
+                        collectionUri, projection, selection, selectionArgs,
+                        "${MediaStore.MediaColumns.SIZE} DESC"
+                    )?.use { cursor ->
+                        val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
+                        val nameCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
+                        val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+                        val dateCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_MODIFIED)
+
+                        while (cursor.moveToNext()) {
+                            val id = cursor.getLong(idCol)
+                            if (!seen.add(id)) continue
+                            results.add(
+                                ScannedFile(
+                                    uri = android.content.ContentUris.withAppendedId(collectionUri, id).toString(),
+                                    displayName = cursor.getString(nameCol) ?: context.getString(R.string.fallback_unknown),
+                                    sizeBytes = cursor.getLong(sizeCol),
+                                    mimeType = "application/vnd.android.package-archive",
+                                    dateModified = cursor.getLong(dateCol) * 1000,
+                                    category = MediaCategory.APK
+                                )
+                            )
+                        }
+                    }
+                } catch (error: Exception) {
+                    ReleaseSafeLog.error(TAG, "Failed to scan APK files in $collectionUri with $selection", error)
+                }
+            }
+        }
+
+        results.sortedByDescending { it.sizeBytes }
     }
 
     private fun queryTotalSize(contentUri: Uri): Long {
@@ -264,7 +307,7 @@ class MediaStoreScanner @Inject constructor(
 
         val selection = "${MediaStore.MediaColumns.SIZE} > ?"
         val selectionArgs = arrayOf(thresholdBytes.toString())
-        val sortOrder = "${MediaStore.MediaColumns.SIZE} DESC LIMIT 100"
+        val sortOrder = "${MediaStore.MediaColumns.SIZE} DESC "
 
         try {
             resolver.query(uri, projection, selection, selectionArgs, sortOrder)
