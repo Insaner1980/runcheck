@@ -104,8 +104,10 @@ fun plugTypeLabel(plugType: PlugType): String = when (plugType) {
 
 @Composable
 fun temperatureBandLabel(temperatureC: Float): String = when {
+    temperatureC >= 45f -> stringResource(R.string.thermal_critical)
     temperatureC >= 40f -> stringResource(R.string.thermal_hot)
     temperatureC >= 35f -> stringResource(R.string.thermal_warm)
+    temperatureC >= 25f -> stringResource(R.string.thermal_normal)
     else -> stringResource(R.string.thermal_cool)
 }
 
