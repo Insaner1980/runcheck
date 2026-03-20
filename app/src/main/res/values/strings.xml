@@ -531,6 +531,8 @@
     <string name="speed_test_last_result">Latest Result</string>
     <string name="speed_test_history">History</string>
     <string name="speed_test_no_results">No speed test results yet</string>
+    <string name="speed_test_start_button">Start Test</string>
+    <string name="speed_test_run_again">Run Again</string>
 
     <!-- Pro Upgrade Screen -->
     <string name="pro_upgrade_title">runcheck Pro</string>

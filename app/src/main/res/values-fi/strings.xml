@@ -531,6 +531,8 @@
     <string name="speed_test_cellular_proceed">Jatka</string>
     <string name="speed_test_cellular_cancel">Peruuta</string>
     <string name="speed_test_no_results">Ei nopeustestituloksia vielä</string>
+    <string name="speed_test_start_button">Aloita testi</string>
+    <string name="speed_test_run_again">Testaa uudelleen</string>
 
     <!-- Pro Upgrade Screen -->
     <string name="pro_upgrade_title">runcheck Pro</string>

@@ -522,28 +522,78 @@ private fun SpeedTestHero(
             )
         }
 
-        if (state.phase != SpeedTestPhase.Idle && state.phase !is SpeedTestPhase.Failed) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                AnimatedFloatText(
-                    value = centerValue,
-                    style = MaterialTheme.typography.displaySmall.copy(
-                        fontFamily = MaterialTheme.numericFontFamily,
-                        fontSize = 40.sp,
-                        lineHeight = 44.sp
-                    ),
-                    decimalPlaces = 1
-                )
-                Text(
-                    text = stringResource(R.string.unit_mbps),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = centerLabel,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        when {
+            state.phase == SpeedTestPhase.Idle -> {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = stringResource(R.string.speed_test_start_button),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = accent
+                    )
+                }
+            }
+
+            state.phase == SpeedTestPhase.Completed -> {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    AnimatedFloatText(
+                        value = centerValue,
+                        style = MaterialTheme.typography.displaySmall.copy(
+                            fontFamily = MaterialTheme.numericFontFamily,
+                            fontSize = 40.sp,
+                            lineHeight = 44.sp
+                        ),
+                        decimalPlaces = 1
+                    )
+                    Text(
+                        text = stringResource(R.string.unit_mbps),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.speed_test_run_again),
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = accent
+                    )
+                }
+            }
+
+            state.phase !is SpeedTestPhase.Failed -> {
+                val progressPercent = when (state.phase) {
+                    SpeedTestPhase.Download -> (state.downloadProgress * 100).roundToInt()
+                    SpeedTestPhase.Upload -> (state.uploadProgress * 100).roundToInt()
+                    else -> null
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    AnimatedFloatText(
+                        value = centerValue,
+                        style = MaterialTheme.typography.displaySmall.copy(
+                            fontFamily = MaterialTheme.numericFontFamily,
+                            fontSize = 40.sp,
+                            lineHeight = 44.sp
+                        ),
+                        decimalPlaces = 1
+                    )
+                    Text(
+                        text = stringResource(R.string.unit_mbps),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = if (progressPercent != null) {
+                            "$centerLabel  $progressPercent%"
+                        } else {
+                            centerLabel
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
@@ -737,6 +787,14 @@ private fun LatestResultCard(result: SpeedTestResult) {
                     label = stringResource(R.string.speed_test_ping),
                     value = "${result.pingMs} ${stringResource(R.string.unit_ms)}",
                     modifier = Modifier.weight(1f)
+                )
+            }
+
+            result.serverName?.let { server ->
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                MetricPill(
+                    label = stringResource(R.string.speed_test_server),
+                    value = server
                 )
             }
         }
