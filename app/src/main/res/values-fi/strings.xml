@@ -48,8 +48,10 @@
 
     <!-- Thermal Labels -->
     <string name="thermal_cool">Viileä</string>
+    <string name="thermal_normal">Normaali</string>
     <string name="thermal_warm">Lämmin</string>
     <string name="thermal_hot">Kuuma</string>
+    <string name="thermal_critical">Kriittinen</string>
 
     <!-- Confidence Badges -->
     <string name="confidence_accurate">Tarkka</string>

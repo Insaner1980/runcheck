@@ -48,8 +48,10 @@
 
     <!-- Thermal Labels -->
     <string name="thermal_cool">Cool</string>
+    <string name="thermal_normal">Normal</string>
     <string name="thermal_warm">Warm</string>
     <string name="thermal_hot">Hot</string>
+    <string name="thermal_critical">Critical</string>
 
     <!-- Confidence Badges -->
     <string name="confidence_accurate">Accurate</string>
