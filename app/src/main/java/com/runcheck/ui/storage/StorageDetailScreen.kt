@@ -73,6 +73,7 @@ import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.components.ActionCard
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.ListRow
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.MetricRow
@@ -273,6 +274,9 @@ private fun StorageContent(
             if (storage.sdCardAvailable) {
                 StorageSdCardCard(storage = storage)
             }
+
+            // ── Quick Actions ──────────────────────────────────────────
+            StorageQuickActionsCard()
 
             DetailScreenAdBanner()
 
@@ -602,6 +606,43 @@ private fun StorageSdCardCard(storage: StorageState) {
 }
 
 // ── Quick Actions card ─────────────────────────────────────────────────────────
+
+@Composable
+private fun StorageQuickActionsCard() {
+    val context = LocalContext.current
+
+    StoragePanel {
+        CardSectionTitle(text = stringResource(R.string.storage_quick_actions))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+        ListRow(
+            label = stringResource(R.string.storage_open_settings),
+            icon = Icons.Outlined.Storage,
+            onClick = {
+                context.startActivity(Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS))
+            }
+        )
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+        )
+        ListRow(
+            label = stringResource(R.string.storage_free_up_space),
+            icon = Icons.Outlined.FolderOpen,
+            onClick = {
+                context.startActivity(Intent("android.os.storage.action.MANAGE_STORAGE"))
+            }
+        )
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+        )
+        ListRow(
+            label = stringResource(R.string.storage_usage_access),
+            icon = Icons.Outlined.Settings,
+            onClick = {
+                context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+            }
+        )
+    }
+}
 
 // ── Shared panel ───────────────────────────────────────────────────────────────
 
