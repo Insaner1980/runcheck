@@ -61,11 +61,11 @@ internal object WidgetDataProvider {
         val battery = entryPoint.batteryReadingDao().getLatestReading().first()?.toBatteryState()
             ?: return null
         val network = entryPoint.networkReadingDao().getLatestReading().first()?.toNetworkState()
-            ?: return null
+            ?: DEFAULT_NETWORK
         val thermal = entryPoint.thermalReadingDao().getLatestReading().first()?.toThermalState()
-            ?: return null
+            ?: DEFAULT_THERMAL
         val storage = entryPoint.storageReadingDao().getLatestReading().first()?.toStorageState()
-            ?: return null
+            ?: DEFAULT_STORAGE
 
         val score = entryPoint.healthScoreCalculator().calculate(
             battery = battery,
@@ -79,6 +79,25 @@ internal object WidgetDataProvider {
             batteryLevel = battery.level
         )
     }
+
+    private val DEFAULT_NETWORK = NetworkState(
+        connectionType = ConnectionType.NONE,
+        signalDbm = null,
+        signalQuality = SignalQuality.NO_SIGNAL
+    )
+
+    private val DEFAULT_THERMAL = ThermalState(
+        batteryTempC = 25f,
+        thermalStatus = ThermalStatus.NONE,
+        isThrottling = false
+    )
+
+    private val DEFAULT_STORAGE = StorageState(
+        totalBytes = 1L,
+        availableBytes = 1L,
+        usedBytes = 0L,
+        usagePercent = 0f
+    )
 
     private fun entryPoint(context: Context): WidgetDataEntryPoint =
         EntryPointAccessors.fromApplication(
