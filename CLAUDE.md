@@ -34,23 +34,26 @@ app/src/main/java/com/runcheck/
 │   ├── crash/         # Firebase Crashlytics integration
 │   ├── device/        # Device detection, DeviceProfile, DeviceProfileProvider,
 │   │                  #   DeviceCapabilityManager
-│   ├── db/            # Room database, DAOs, entities, migrations
+│   ├── db/            # Room database (RuncheckDatabase, Converters, RoomTransactionRunner)
+│   │   ├── dao/       # Room DAOs (Battery, Network, Thermal, Storage, Charger, etc.)
+│   │   └── entity/    # Room entities (BatteryReadingEntity, etc.)
 │   ├── export/        # Data export functionality
-│   ├── network/       # ConnectivityManager, TelephonyManager, speed test
+│   ├── network/       # ConnectivityManager, TelephonyManager, SpeedTestService,
+│   │                  #   LatencyMeasurer, NetworkRepositoryImpl, SpeedTestRepositoryImpl
 │   ├── preferences/   # DataStore preferences
-│   ├── storage/       # StorageStatsManager, MediaStoreScanner, ThumbnailLoader,
-│   │                  #   StorageCleanupHelper (createDeleteRequest)
+│   ├── storage/       # MediaStoreScanner, ThumbnailLoader, StorageCleanupHelper,
+│   │                  #   CleanupPagingSource, StorageCleanupRepositoryImpl
 │   └── thermal/       # ThermalManager, CPU temp sysfs readers
 ├── domain/
 │   ├── model/         # Domain models (BatteryState, NetworkState, StorageState, etc.)
-│   ├── usecase/       # Business logic (26 use cases)
+│   ├── usecase/       # Business logic (36 use cases)
 │   ├── repository/    # Repository interfaces
 │   └── scoring/       # Health score algorithm
 ├── ui/
 │   ├── home/          # Single home screen (hub) + ViewModel
 │   ├── battery/       # Battery detail screen + ViewModel + session stats
 │   │                  #   + BatteryInfoContent, BatteryInfoCards
-│   ├── network/       # Network detail screen + ViewModel + speed test
+│   ├── network/       # Network detail + SpeedTest screens + ViewModel
 │   │                  #   + NetworkInfoContent, SpeedTestInfoContent, NetworkInfoCards
 │   ├── thermal/       # Thermal detail screen + ViewModel + session min/max
 │   │                  #   + ThermalInfoContent, ThermalInfoCards
@@ -65,17 +68,20 @@ app/src/main/java/com/runcheck/
 │   ├── pro/           # Pro upgrade screen, trial UI, purchase flow
 │   ├── theme/         # Dark theme, color tokens, typography, spacing
 │   ├── common/        # UiText, UiFormatters (formatPercent, formatTemp, etc.)
-│   ├── components/    # 30 shared composables (see Components below)
+│   ├── chart/         # ChartHelpers, ChartModels (shared chart data/utilities)
+│   ├── fullscreen/    # FullscreenChartScreen + ViewModel (landscape chart route)
+│   ├── components/    # 32 shared composables (see Components below)
 │   │   └── info/      # InfoSheetContent, InfoIcon, InfoBottomSheet, InfoCard, CrossLinkButton
 │   └── navigation/    # NavGraph + Screen sealed class (push-based from Home)
 ├── pro/               # Pro/trial state management
 ├── billing/           # Billing state helpers
-├── widget/            # Home screen widget data provider
+├── widget/            # Glance widgets (BatteryWidget, HealthWidget, WidgetDataProvider)
 ├── worker/            # WorkManager workers (trial notifications)
 ├── service/
-│   └── monitor/       # HealthMonitorWorker, RealTimeMonitorService,
-│                      #   ScreenStateTracker, NotificationHelper,
-│                      #   MonitorScheduler, BootReceiver
+│   └── monitor/       # HealthMonitorWorker, HealthMaintenanceWorker,
+│                      #   RealTimeMonitorService, ScreenStateTracker,
+│                      #   ScreenStateReceiver, MonitoringAlertStateStore,
+│                      #   NotificationHelper, MonitorScheduler, BootReceiver
 ├── di/                # Hilt modules
 └── util/              # Logging, timestamp sanitization
 ```
@@ -116,10 +122,10 @@ app/src/main/java/com/runcheck/
 - **Typography:** Manrope (custom, body/headers) + JetBrains Mono (numeric displays) via `MaterialTheme.typography` and `MaterialTheme.numericFontFamily`
 - **Navigation:** Push-based from single Home screen (no bottom nav bar), includes Learn section
 - **Cards:** Flat `BgCard` background, no borders, no shadows, no elevation, 16dp rounded corners
-- **Core components** (30 in `ui/components/` + `ui/components/info/`):
+- **Core components** (32 in `ui/components/` + `ui/components/info/`):
   - Layout: GridCard, ListRow, MetricPill, MetricRow, ActionCard
   - Indicators: ProgressRing, MiniBar, StatusDot, ConfidenceBadge, SignalBars
-  - Charts: TrendChart (with optional Y/X axes, grid, quality zones, tap/drag tooltip), AreaChart, HeatStrip, SegmentedBar, SegmentedBarLegend
+  - Charts: TrendChart (with optional Y/X axes, grid, quality zones, tap/drag tooltip), AreaChart, HeatStrip, SegmentedBar, SegmentedBarLegend, ExpandableChartContainer
   - Navigation: PrimaryTopBar, DetailTopBar
   - Typography: AnimatedNumber (AnimatedIntText, AnimatedFloatText), SectionHeader, CardSectionTitle, IconCircle
   - Pro: ProBadgePill, ProFeatureCalloutCard, ProFeatureLockedState
@@ -301,4 +307,9 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 - `docs/settings-enhancements-spec.md` — Settings enhancements (per-alert notifications, alert thresholds, temperature unit, data management, grouped layout)
 - `docs/info-tooltips-spec.md` — Info tooltip system (superseded by `educational-content-system.md`)
 - `docs/ui-consistency-audit.md` — UI consistency findings and fixes
+- `docs/ui-reference.md` — UI component reference and patterns
+- `docs/firebase-setup.md` — Firebase / Crashlytics setup guide
+- `docs/release-checklist.md` — Release build and Play Store checklist
+- `docs/play-store-listing.md` — Play Store listing content
+- `docs/privacy-policy.md` — Privacy policy
 - `educational-content-system.md` — Three-tier educational content system spec (info bottom sheets, contextual cards, Learn section)
