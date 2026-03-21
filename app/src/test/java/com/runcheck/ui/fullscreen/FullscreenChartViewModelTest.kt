@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -88,5 +89,48 @@ class FullscreenChartViewModelTest {
 
         assertEquals(BatteryHistoryMetric.VOLTAGE.name, savedStateHandle.get<String>("metric"))
         assertEquals(com.runcheck.domain.model.HistoryPeriod.WEEK.name, savedStateHandle.get<String>("period"))
+    }
+
+    @Test
+    fun `new ViewModel from same SavedStateHandle restores user selections after process death`() = runTest(mainDispatcherRule.testDispatcher) {
+        every { getBatteryHistory(any()) } returns flowOf(batteryHistory)
+        every { getBatteryState() } returns emptyFlow()
+        every { getNetworkHistory(any()) } returns flowOf(emptyList())
+
+        // Simulate first ViewModel session: user changes metric and period
+        val savedStateHandle = SavedStateHandle(
+            mapOf(
+                "source" to FullscreenChartSource.BATTERY_HISTORY.name,
+                "metric" to BatteryHistoryMetric.LEVEL.name,
+                "period" to com.runcheck.domain.model.HistoryPeriod.DAY.name
+            )
+        )
+
+        val firstViewModel = FullscreenChartViewModel(
+            savedStateHandle = savedStateHandle,
+            getBatteryHistory = getBatteryHistory,
+            getBatteryState = getBatteryState,
+            getNetworkHistory = getNetworkHistory
+        )
+        advanceUntilIdle()
+
+        firstViewModel.setMetric(BatteryHistoryMetric.VOLTAGE.name)
+        firstViewModel.setPeriod(com.runcheck.domain.model.HistoryPeriod.WEEK.name)
+        advanceUntilIdle()
+
+        // Simulate process death + restore: create new ViewModel from same SavedStateHandle
+        val restoredViewModel = FullscreenChartViewModel(
+            savedStateHandle = savedStateHandle,
+            getBatteryHistory = getBatteryHistory,
+            getBatteryState = getBatteryState,
+            getNetworkHistory = getNetworkHistory
+        )
+        advanceUntilIdle()
+
+        val state = restoredViewModel.uiState.value
+        assertTrue("Expected Success state after restore, got $state", state is FullscreenChartUiState.Success)
+        state as FullscreenChartUiState.Success
+        assertEquals(BatteryHistoryMetric.VOLTAGE.name, state.selectedMetric)
+        assertEquals(com.runcheck.domain.model.HistoryPeriod.WEEK.name, state.selectedPeriod)
     }
 }
