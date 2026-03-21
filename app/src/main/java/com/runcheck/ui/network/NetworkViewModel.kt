@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
 
 private const val FREE_HISTORY_LIMIT = 5
@@ -80,8 +81,8 @@ class NetworkViewModel @Inject constructor(
         historyJob = null
         historyNetworkJob?.cancel()
         historyNetworkJob = null
-        speedTestJob?.cancel()
-        speedTestJob = null
+        // Do NOT cancel speedTestJob here — it must survive config changes (rotation).
+        // It runs in viewModelScope and will be cancelled in onCleared().
         dismissedCardsJob?.cancel()
         dismissedCardsJob = null
     }
@@ -114,101 +115,114 @@ class NetworkViewModel @Inject constructor(
         }
 
         speedTestJob = viewModelScope.launch {
-            runSpeedTest()
-                .catch { e ->
-                    updateSpeedTestState {
-                        copy(
-                            phase = SpeedTestPhase.Failed(
-                                e.messageOrRes(R.string.speed_test_failed)
-                            ),
-                            isRunning = false
-                        )
-                    }
-                }
-                .collect { progress ->
-                    when (progress) {
-                        is SpeedTestProgress.PingPhase -> {
-                            updateSpeedTestState {
-                                copy(
-                                    phase = SpeedTestPhase.Ping,
-                                    pingMs = progress.pingMs,
-                                    jitterMs = progress.jitterMs
-                                )
-                            }
-                        }
-                        is SpeedTestProgress.DownloadPhase -> {
-                            updateSpeedTestState {
-                                copy(
-                                    phase = SpeedTestPhase.Download,
-                                    downloadMbps = progress.currentMbps,
-                                    downloadProgress = progress.progress
-                                )
-                            }
-                        }
-                        is SpeedTestProgress.UploadPhase -> {
-                            updateSpeedTestState {
-                                copy(
-                                    phase = SpeedTestPhase.Upload,
-                                    uploadMbps = progress.currentMbps,
-                                    uploadProgress = progress.progress
-                                )
-                            }
-                        }
-                        is SpeedTestProgress.Completed -> {
-                            val networkState = (_networkUiState.value as? NetworkUiState.Success)?.networkState
-                            val result = SpeedTestResult(
-                                timestamp = System.currentTimeMillis(),
-                                downloadMbps = progress.downloadMbps,
-                                uploadMbps = progress.uploadMbps,
-                                pingMs = progress.pingMs,
-                                jitterMs = progress.jitterMs,
-                                serverName = progress.serverName,
-                                serverLocation = progress.serverLocation,
-                                connectionType = networkState?.connectionType ?: ConnectionType.NONE,
-                                networkSubtype = networkState?.networkSubtype,
-                                signalDbm = networkState?.signalDbm
-                            )
-                            try {
-                                finalizeSpeedTest(result, FREE_HISTORY_LIMIT)
-                            } catch (e: CancellationException) {
-                                throw e
-                            } catch (error: Exception) {
-                                updateSpeedTestState {
-                                    copy(
-                                        phase = SpeedTestPhase.Failed(
-                                            error.messageOrRes(R.string.speed_test_error_generic)
-                                        ),
-                                        isRunning = false
-                                    )
-                                }
-                                return@collect
-                            }
-
-                            updateSpeedTestState {
-                                copy(
-                                    phase = SpeedTestPhase.Completed,
-                                    isRunning = false,
-                                    downloadMbps = progress.downloadMbps,
-                                    uploadMbps = progress.uploadMbps,
-                                    pingMs = progress.pingMs,
-                                    jitterMs = progress.jitterMs,
-                                    lastResult = result
-                                )
-                            }
-                            loadSpeedTestHistory()
-                        }
-                        is SpeedTestProgress.Failed -> {
+            try {
+                withTimeout(SPEED_TEST_TIMEOUT_MS) {
+                    runSpeedTest()
+                        .catch { e ->
                             updateSpeedTestState {
                                 copy(
                                     phase = SpeedTestPhase.Failed(
-                                        UiText.Resource(R.string.speed_test_error_generic)
+                                        e.messageOrRes(R.string.speed_test_failed)
                                     ),
                                     isRunning = false
                                 )
                             }
                         }
-                    }
+                        .collect { progress ->
+                            when (progress) {
+                                is SpeedTestProgress.PingPhase -> {
+                                    updateSpeedTestState {
+                                        copy(
+                                            phase = SpeedTestPhase.Ping,
+                                            pingMs = progress.pingMs,
+                                            jitterMs = progress.jitterMs
+                                        )
+                                    }
+                                }
+                                is SpeedTestProgress.DownloadPhase -> {
+                                    updateSpeedTestState {
+                                        copy(
+                                            phase = SpeedTestPhase.Download,
+                                            downloadMbps = progress.currentMbps,
+                                            downloadProgress = progress.progress
+                                        )
+                                    }
+                                }
+                                is SpeedTestProgress.UploadPhase -> {
+                                    updateSpeedTestState {
+                                        copy(
+                                            phase = SpeedTestPhase.Upload,
+                                            uploadMbps = progress.currentMbps,
+                                            uploadProgress = progress.progress
+                                        )
+                                    }
+                                }
+                                is SpeedTestProgress.Completed -> {
+                                    val networkState = (_networkUiState.value as? NetworkUiState.Success)?.networkState
+                                    val result = SpeedTestResult(
+                                        timestamp = System.currentTimeMillis(),
+                                        downloadMbps = progress.downloadMbps,
+                                        uploadMbps = progress.uploadMbps,
+                                        pingMs = progress.pingMs,
+                                        jitterMs = progress.jitterMs,
+                                        serverName = progress.serverName,
+                                        serverLocation = progress.serverLocation,
+                                        connectionType = networkState?.connectionType ?: ConnectionType.NONE,
+                                        networkSubtype = networkState?.networkSubtype,
+                                        signalDbm = networkState?.signalDbm
+                                    )
+                                    try {
+                                        finalizeSpeedTest(result, FREE_HISTORY_LIMIT)
+                                    } catch (e: CancellationException) {
+                                        throw e
+                                    } catch (error: Exception) {
+                                        updateSpeedTestState {
+                                            copy(
+                                                phase = SpeedTestPhase.Failed(
+                                                    error.messageOrRes(R.string.speed_test_error_generic)
+                                                ),
+                                                isRunning = false
+                                            )
+                                        }
+                                        return@collect
+                                    }
+
+                                    updateSpeedTestState {
+                                        copy(
+                                            phase = SpeedTestPhase.Completed,
+                                            isRunning = false,
+                                            downloadMbps = progress.downloadMbps,
+                                            uploadMbps = progress.uploadMbps,
+                                            pingMs = progress.pingMs,
+                                            jitterMs = progress.jitterMs,
+                                            lastResult = result
+                                        )
+                                    }
+                                    loadSpeedTestHistory()
+                                }
+                                is SpeedTestProgress.Failed -> {
+                                    updateSpeedTestState {
+                                        copy(
+                                            phase = SpeedTestPhase.Failed(
+                                                UiText.Resource(R.string.speed_test_error_generic)
+                                            ),
+                                            isRunning = false
+                                        )
+                                    }
+                                }
+                            }
+                        }
                 }
+            } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
+                updateSpeedTestState {
+                    copy(
+                        phase = SpeedTestPhase.Failed(
+                            UiText.Resource(R.string.speed_test_error_timeout)
+                        ),
+                        isRunning = false
+                    )
+                }
+            }
         }
     }
 
@@ -318,5 +332,6 @@ class NetworkViewModel @Inject constructor(
 
     private companion object {
         private const val SELECTED_HISTORY_PERIOD_KEY = "network_selected_history_period"
+        private const val SPEED_TEST_TIMEOUT_MS = 90_000L // 90 seconds total (ping + download + upload)
     }
 }

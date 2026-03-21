@@ -8,6 +8,7 @@ import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.repository.BatteryRepository as BatteryRepositoryContract
+import com.runcheck.util.ReleaseSafeLog
 import com.runcheck.util.TimestampSanitizer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -93,22 +94,26 @@ class BatteryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveReading(state: BatteryState) {
-        val entity = BatteryReadingEntity(
-            timestamp = System.currentTimeMillis(),
-            level = state.level,
-            voltageMv = state.voltageMv,
-            temperatureC = state.temperatureC,
-            currentMa = if (state.currentMa.confidence != Confidence.UNAVAILABLE) {
-                state.currentMa.value
-            } else null,
-            currentConfidence = state.currentMa.confidence.name,
-            status = state.chargingStatus.name,
-            plugType = state.plugType.name,
-            health = state.health.name,
-            cycleCount = state.cycleCount,
-            healthPct = state.healthPercent
-        )
-        batteryReadingDao.insert(entity)
+        try {
+            val entity = BatteryReadingEntity(
+                timestamp = System.currentTimeMillis(),
+                level = state.level,
+                voltageMv = state.voltageMv,
+                temperatureC = state.temperatureC,
+                currentMa = if (state.currentMa.confidence != Confidence.UNAVAILABLE) {
+                    state.currentMa.value
+                } else null,
+                currentConfidence = state.currentMa.confidence.name,
+                status = state.chargingStatus.name,
+                plugType = state.plugType.name,
+                health = state.health.name,
+                cycleCount = state.cycleCount,
+                healthPct = state.healthPercent
+            )
+            batteryReadingDao.insert(entity)
+        } catch (e: Exception) {
+            ReleaseSafeLog.error(TAG, "Failed to save battery reading", e)
+        }
     }
 
     override suspend fun getAllReadings(): List<BatteryReading> {
@@ -120,7 +125,11 @@ class BatteryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteOlderThan(cutoff: Long) {
-        batteryReadingDao.deleteOlderThan(cutoff)
+        try {
+            batteryReadingDao.deleteOlderThan(cutoff)
+        } catch (e: Exception) {
+            ReleaseSafeLog.error(TAG, "Failed to delete old battery readings", e)
+        }
     }
 
     override suspend fun deleteAll() {
@@ -129,6 +138,10 @@ class BatteryRepositoryImpl @Inject constructor(
 
     override suspend fun getLastChargingTimestamp(): Long? {
         return batteryReadingDao.getLastChargingTimestamp()
+    }
+
+    private companion object {
+        const val TAG = "BatteryRepository"
     }
 
     private data class BatteryStatePartial(

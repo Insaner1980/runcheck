@@ -5,6 +5,7 @@ import com.runcheck.data.db.entity.NetworkReadingEntity
 import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.repository.NetworkRepository as NetworkRepositoryContract
+import com.runcheck.util.ReleaseSafeLog
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
@@ -57,17 +58,21 @@ class NetworkRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveReading(state: NetworkState) {
-        val entity = NetworkReadingEntity(
-            timestamp = System.currentTimeMillis(),
-            type = state.connectionType.name,
-            signalDbm = state.signalDbm,
-            wifiSpeedMbps = state.wifiSpeedMbps,
-            wifiFrequency = state.wifiFrequencyMhz,
-            carrier = state.carrier,
-            networkSubtype = state.networkSubtype,
-            latencyMs = state.latencyMs
-        )
-        networkReadingDao.insert(entity)
+        try {
+            val entity = NetworkReadingEntity(
+                timestamp = System.currentTimeMillis(),
+                type = state.connectionType.name,
+                signalDbm = state.signalDbm,
+                wifiSpeedMbps = state.wifiSpeedMbps,
+                wifiFrequency = state.wifiFrequencyMhz,
+                carrier = state.carrier,
+                networkSubtype = state.networkSubtype,
+                latencyMs = state.latencyMs
+            )
+            networkReadingDao.insert(entity)
+        } catch (e: Exception) {
+            ReleaseSafeLog.error(TAG, "Failed to save network reading", e)
+        }
     }
 
     override suspend fun getAllReadings(): List<NetworkReading> {
@@ -86,7 +91,11 @@ class NetworkRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteOlderThan(cutoff: Long) {
-        networkReadingDao.deleteOlderThan(cutoff)
+        try {
+            networkReadingDao.deleteOlderThan(cutoff)
+        } catch (e: Exception) {
+            ReleaseSafeLog.error(TAG, "Failed to delete old network readings", e)
+        }
     }
 
     override suspend fun deleteAll() {
@@ -95,6 +104,7 @@ class NetworkRepositoryImpl @Inject constructor(
 
     companion object {
         private const val DISPLAY_UPDATE_INTERVAL_MS = 333L
+        private const val TAG = "NetworkRepository"
     }
 }
 

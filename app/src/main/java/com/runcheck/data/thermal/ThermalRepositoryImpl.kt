@@ -68,14 +68,18 @@ class ThermalRepositoryImpl @Inject constructor(
     override fun getThermalState(): Flow<ThermalState> = thermalStateFlow
 
     override suspend fun saveReading(state: ThermalState) {
-        val entity = ThermalReadingEntity(
-            timestamp = System.currentTimeMillis(),
-            batteryTempC = state.batteryTempC,
-            cpuTempC = state.cpuTempC,
-            thermalStatus = state.thermalStatus.ordinal,
-            throttling = state.isThrottling
-        )
-        thermalReadingDao.insert(entity)
+        try {
+            val entity = ThermalReadingEntity(
+                timestamp = System.currentTimeMillis(),
+                batteryTempC = state.batteryTempC,
+                cpuTempC = state.cpuTempC,
+                thermalStatus = state.thermalStatus.ordinal,
+                throttling = state.isThrottling
+            )
+            thermalReadingDao.insert(entity)
+        } catch (e: Exception) {
+            ReleaseSafeLog.error(TAG, "Failed to save thermal reading", e)
+        }
     }
 
     override suspend fun getAllReadings(): List<ThermalReading> {
@@ -83,7 +87,11 @@ class ThermalRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteOlderThan(cutoff: Long) {
-        thermalReadingDao.deleteOlderThan(cutoff)
+        try {
+            thermalReadingDao.deleteOlderThan(cutoff)
+        } catch (e: Exception) {
+            ReleaseSafeLog.error(TAG, "Failed to delete old thermal readings", e)
+        }
     }
 
     override suspend fun deleteAll() {
