@@ -93,21 +93,19 @@ fun FullscreenChartScreen(
                 }
             }
             is FullscreenChartUiState.Empty -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.navigate_back)
-                            )
-                        }
-                        Text(
-                            text = stringResource(R.string.fullscreen_chart_empty),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                FullscreenChartEmptyContent(
+                    state = state,
+                    source = viewModel.source,
+                    onBack = onBack,
+                    onMetricChange = {
+                        viewModel.setMetric(it)
+                        onSelectionChanged(viewModel.source.name, it, state.selectedPeriod)
+                    },
+                    onPeriodChange = {
+                        viewModel.setPeriod(it)
+                        onSelectionChanged(viewModel.source.name, state.selectedMetric, it)
                     }
-                }
+                )
             }
             is FullscreenChartUiState.Error -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -227,6 +225,70 @@ private fun FullscreenChartContent(
                 val time = formatLocalizedDateTime(state.chartTimestamps[index], state.tooltipTimeSkeleton)
                 "$v${state.unit} · $time"
             }
+        )
+    }
+}
+
+@Composable
+private fun FullscreenChartEmptyContent(
+    state: FullscreenChartUiState.Empty,
+    source: FullscreenChartSource,
+    onBack: () -> Unit,
+    onMetricChange: (String) -> Unit,
+    onPeriodChange: (String) -> Unit
+) {
+    val title = resolveChartTitle(source, state.selectedMetric)
+
+    // Top control row — same as Success so user can switch period/metric
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.navigate_back)
+            )
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)
+        ) {
+            state.periodOptions.forEach { period ->
+                FilterChip(
+                    selected = state.selectedPeriod == period,
+                    onClick = { onPeriodChange(period) },
+                    label = { Text(resolvePeriodLabel(source, period)) }
+                )
+            }
+            Spacer(modifier = Modifier.width(MaterialTheme.spacing.xs))
+            state.metricOptions.forEach { metric ->
+                FilterChip(
+                    selected = state.selectedMetric == metric,
+                    onClick = { onMetricChange(metric) },
+                    label = { Text(resolveMetricLabel(source, metric)) }
+                )
+            }
+        }
+    }
+
+    // Empty message centered in remaining space
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = stringResource(R.string.fullscreen_chart_empty),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

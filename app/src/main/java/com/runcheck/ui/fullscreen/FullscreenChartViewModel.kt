@@ -90,9 +90,10 @@ class FullscreenChartViewModel @Inject constructor(
     private fun loadData() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
-            // Only show loading spinner on initial load — keep current chart visible
+            // Only show loading spinner on initial load — keep current content visible
             // during metric/period changes to avoid flicker
-            if (_uiState.value !is FullscreenChartUiState.Success) {
+            val current = _uiState.value
+            if (current !is FullscreenChartUiState.Success && current !is FullscreenChartUiState.Empty) {
                 _uiState.value = FullscreenChartUiState.Loading
             }
             try {
@@ -124,8 +125,16 @@ class FullscreenChartViewModel @Inject constructor(
         val chartData = chartPoints.map { it.second }
         val chartTimestamps = chartPoints.map { it.first }
 
+        val metricOptions = BatteryHistoryMetric.entries.map { it.name }
+        val periodOptions = HistoryPeriod.entries.map { it.name }
+
         if (chartData.size < 2) {
-            _uiState.value = FullscreenChartUiState.Empty
+            _uiState.value = FullscreenChartUiState.Empty(
+                selectedMetric = metric.name,
+                selectedPeriod = period.name,
+                metricOptions = metricOptions,
+                periodOptions = periodOptions
+            )
             return
         }
 
@@ -140,8 +149,8 @@ class FullscreenChartViewModel @Inject constructor(
             unit = batteryMetricUnit(metric),
             selectedMetric = metric.name,
             selectedPeriod = period.name,
-            metricOptions = BatteryHistoryMetric.entries.map { it.name },
-            periodOptions = HistoryPeriod.entries.map { it.name },
+            metricOptions = metricOptions,
+            periodOptions = periodOptions,
             yLabels = yLabels,
             xLabels = xLabels,
             tooltipDecimals = if (metric == BatteryHistoryMetric.VOLTAGE) 2 else 0
@@ -167,8 +176,16 @@ class FullscreenChartViewModel @Inject constructor(
             )
         } else null
 
+        val metricOptions = SessionGraphMetric.entries.map { it.name }
+        val periodOptions = SessionGraphWindow.entries.map { it.name }
+
         if (summary == null) {
-            _uiState.value = FullscreenChartUiState.Empty
+            _uiState.value = FullscreenChartUiState.Empty(
+                selectedMetric = metric.name,
+                selectedPeriod = window.name,
+                metricOptions = metricOptions,
+                periodOptions = periodOptions
+            )
             return
         }
 
@@ -180,7 +197,12 @@ class FullscreenChartViewModel @Inject constructor(
         val chartTimestamps = chartPoints.map { it.first }
 
         if (chartData.size < 2) {
-            _uiState.value = FullscreenChartUiState.Empty
+            _uiState.value = FullscreenChartUiState.Empty(
+                selectedMetric = metric.name,
+                selectedPeriod = window.name,
+                metricOptions = metricOptions,
+                periodOptions = periodOptions
+            )
             return
         }
 
@@ -195,8 +217,8 @@ class FullscreenChartViewModel @Inject constructor(
             unit = sessionMetricUnit(metric),
             selectedMetric = metric.name,
             selectedPeriod = window.name,
-            metricOptions = SessionGraphMetric.entries.map { it.name },
-            periodOptions = SessionGraphWindow.entries.map { it.name },
+            metricOptions = metricOptions,
+            periodOptions = periodOptions,
             yLabels = yLabels,
             xLabels = xLabels,
             tooltipDecimals = if (metric == SessionGraphMetric.POWER) 1 else 0,
@@ -209,6 +231,11 @@ class FullscreenChartViewModel @Inject constructor(
             .getOrDefault(NetworkHistoryMetric.SIGNAL)
         val period = runCatching { HistoryPeriod.valueOf(currentPeriod) }
             .getOrDefault(HistoryPeriod.DAY)
+
+        val metricOptions = NetworkHistoryMetric.entries.map { it.name }
+        val periodOptions = HistoryPeriod.entries
+            .filter { it != HistoryPeriod.SINCE_UNPLUG }
+            .map { it.name }
 
         val history = getNetworkHistory(period).firstOrNull() ?: emptyList()
 
@@ -224,7 +251,12 @@ class FullscreenChartViewModel @Inject constructor(
         val chartTimestamps = chartPoints.map { it.first }
 
         if (chartData.size < 2) {
-            _uiState.value = FullscreenChartUiState.Empty
+            _uiState.value = FullscreenChartUiState.Empty(
+                selectedMetric = metric.name,
+                selectedPeriod = period.name,
+                metricOptions = metricOptions,
+                periodOptions = periodOptions
+            )
             return
         }
 
@@ -239,10 +271,8 @@ class FullscreenChartViewModel @Inject constructor(
             unit = networkMetricUnit(metric),
             selectedMetric = metric.name,
             selectedPeriod = period.name,
-            metricOptions = NetworkHistoryMetric.entries.map { it.name },
-            periodOptions = HistoryPeriod.entries
-                .filter { it != HistoryPeriod.SINCE_UNPLUG }
-                .map { it.name },
+            metricOptions = metricOptions,
+            periodOptions = periodOptions,
             yLabels = yLabels,
             xLabels = xLabels,
             tooltipDecimals = 0
@@ -252,7 +282,14 @@ class FullscreenChartViewModel @Inject constructor(
 
 sealed interface FullscreenChartUiState {
     data object Loading : FullscreenChartUiState
-    data object Empty : FullscreenChartUiState
+
+    data class Empty(
+        val selectedMetric: String,
+        val selectedPeriod: String,
+        val metricOptions: List<String>,
+        val periodOptions: List<String>
+    ) : FullscreenChartUiState
+
     data object Error : FullscreenChartUiState
 
     data class Success(
