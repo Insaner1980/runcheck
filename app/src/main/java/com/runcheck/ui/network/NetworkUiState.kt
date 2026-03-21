@@ -1,22 +1,21 @@
 package com.runcheck.ui.network
 
-import androidx.compose.runtime.Immutable
 import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SpeedTestResult
-import com.runcheck.domain.repository.NetworkReadingData
 import com.runcheck.ui.common.UiText
 
 sealed interface NetworkUiState {
     data object Loading : NetworkUiState
 
-    @Immutable
     data class Success(
         val networkState: NetworkState,
-        val signalHistory: List<NetworkReadingData> = emptyList(),
+        val signalHistory: List<NetworkReading> = emptyList(),
         val selectedHistoryPeriod: HistoryPeriod = HistoryPeriod.DAY,
         val historyLoadError: UiText? = null,
-        val isPro: Boolean = false
+        val isPro: Boolean = false,
+        val dismissedInfoCards: Set<String> = emptySet()
     ) : NetworkUiState
 
     data class Error(val message: UiText) : NetworkUiState
@@ -31,7 +30,6 @@ sealed interface SpeedTestPhase {
     data class Failed(val error: UiText) : SpeedTestPhase
 }
 
-@Immutable
 data class SpeedTestUiState(
     val phase: SpeedTestPhase = SpeedTestPhase.Idle,
     val isRunning: Boolean = false,

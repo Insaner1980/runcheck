@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.runcheck.ui.theme.BgIconCircle
+import com.runcheck.ui.theme.iconCircleColor
 
 @Composable
 fun IconCircle(
@@ -28,7 +28,7 @@ fun IconCircle(
         modifier = modifier
             .size(size)
             .clearAndSetSemantics {}
-            .background(color = BgIconCircle, shape = CircleShape),
+            .background(color = MaterialTheme.iconCircleColor, shape = CircleShape),
         contentAlignment = Alignment.Center
     ) {
         Icon(

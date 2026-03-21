@@ -1,6 +1,6 @@
 package com.runcheck.domain.usecase
 
-import com.runcheck.domain.repository.StorageReadingData
+import com.runcheck.domain.model.StorageReading
 import javax.inject.Inject
 
 class CalculateFillRateUseCase @Inject constructor() {
@@ -9,7 +9,7 @@ class CalculateFillRateUseCase @Inject constructor() {
      * Calculates storage fill rate in bytes/day using linear regression
      * over historical readings. Returns null if insufficient data.
      */
-    operator fun invoke(readings: List<StorageReadingData>): Long? {
+    operator fun invoke(readings: List<StorageReading>): Long? {
         if (readings.size < MIN_READINGS) return null
 
         val n = readings.size

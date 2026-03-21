@@ -3,9 +3,9 @@ package com.runcheck.data.thermal
 import com.runcheck.data.db.dao.ThermalReadingDao
 import com.runcheck.data.db.entity.ThermalReadingEntity
 import com.runcheck.data.device.DeviceProfileProvider
+import com.runcheck.domain.model.ThermalReading
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
-import com.runcheck.domain.repository.ThermalReadingData
 import com.runcheck.domain.repository.ThermalRepository as ThermalRepositoryContract
 import com.runcheck.domain.usecase.TrackThrottlingEventsUseCase
 import com.runcheck.util.ReleaseSafeLog
@@ -78,12 +78,16 @@ class ThermalRepositoryImpl @Inject constructor(
         thermalReadingDao.insert(entity)
     }
 
-    override suspend fun getAllReadings(): List<ThermalReadingData> {
+    override suspend fun getAllReadings(): List<ThermalReading> {
         return thermalReadingDao.getAll().map { it.toDomain() }
     }
 
     override suspend fun deleteOlderThan(cutoff: Long) {
         thermalReadingDao.deleteOlderThan(cutoff)
+    }
+
+    override suspend fun deleteAll() {
+        thermalReadingDao.deleteAll()
     }
 
     private companion object {
@@ -92,7 +96,7 @@ class ThermalRepositoryImpl @Inject constructor(
     }
 }
 
-private fun ThermalReadingEntity.toDomain() = ThermalReadingData(
+private fun ThermalReadingEntity.toDomain() = ThermalReading(
     timestamp = timestamp,
     batteryTempC = batteryTempC,
     cpuTempC = cpuTempC,

@@ -50,7 +50,7 @@ class ThermalDataSource @Inject constructor(
     }
 
     fun getThermalHeadroom(): Flow<Float?> = flow {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        if (supportsThermalHeadroom(Build.VERSION.SDK_INT)) {
             while (true) {
                 val headroom = try {
                     val value = powerManager.getThermalHeadroom(HEADROOM_FORECAST_SECONDS)
@@ -67,7 +67,7 @@ class ThermalDataSource @Inject constructor(
     }.flowOn(Dispatchers.IO)
 
     fun getThermalStatus(): Flow<ThermalStatus> = flow {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        if (!supportsThermalStatus(Build.VERSION.SDK_INT)) {
             emit(ThermalStatus.NONE)
             return@flow
         }
@@ -76,17 +76,7 @@ class ThermalDataSource @Inject constructor(
     }
 
     private fun mapThermalStatus(status: Int): ThermalStatus {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return ThermalStatus.NONE
-        return when (status) {
-            PowerManager.THERMAL_STATUS_NONE -> ThermalStatus.NONE
-            PowerManager.THERMAL_STATUS_LIGHT -> ThermalStatus.LIGHT
-            PowerManager.THERMAL_STATUS_MODERATE -> ThermalStatus.MODERATE
-            PowerManager.THERMAL_STATUS_SEVERE -> ThermalStatus.SEVERE
-            PowerManager.THERMAL_STATUS_CRITICAL -> ThermalStatus.CRITICAL
-            PowerManager.THERMAL_STATUS_EMERGENCY -> ThermalStatus.EMERGENCY
-            PowerManager.THERMAL_STATUS_SHUTDOWN -> ThermalStatus.SHUTDOWN
-            else -> ThermalStatus.NONE
-        }
+        return mapThermalStatus(status, Build.VERSION.SDK_INT)
     }
 
     companion object {
@@ -112,5 +102,25 @@ class ThermalDataSource @Inject constructor(
                 powerManager.removeThermalStatusListener(listener)
             }
         }.collect { emit(it) }
+    }
+}
+
+internal fun supportsThermalStatus(apiLevel: Int): Boolean =
+    apiLevel >= Build.VERSION_CODES.Q
+
+internal fun supportsThermalHeadroom(apiLevel: Int): Boolean =
+    apiLevel >= Build.VERSION_CODES.R
+
+internal fun mapThermalStatus(status: Int, apiLevel: Int): ThermalStatus {
+    if (!supportsThermalStatus(apiLevel)) return ThermalStatus.NONE
+    return when (status) {
+        PowerManager.THERMAL_STATUS_NONE -> ThermalStatus.NONE
+        PowerManager.THERMAL_STATUS_LIGHT -> ThermalStatus.LIGHT
+        PowerManager.THERMAL_STATUS_MODERATE -> ThermalStatus.MODERATE
+        PowerManager.THERMAL_STATUS_SEVERE -> ThermalStatus.SEVERE
+        PowerManager.THERMAL_STATUS_CRITICAL -> ThermalStatus.CRITICAL
+        PowerManager.THERMAL_STATUS_EMERGENCY -> ThermalStatus.EMERGENCY
+        PowerManager.THERMAL_STATUS_SHUTDOWN -> ThermalStatus.SHUTDOWN
+        else -> ThermalStatus.NONE
     }
 }

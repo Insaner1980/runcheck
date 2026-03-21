@@ -1,15 +1,18 @@
 package com.runcheck.ui.battery
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.HistoryPeriod
-import com.runcheck.domain.repository.ProStatusProvider
+import com.runcheck.domain.usecase.BatteryScreenInsightsUseCase
+import com.runcheck.domain.usecase.ChargerSessionTracker
 import com.runcheck.domain.usecase.GetBatteryHistoryUseCase
 import com.runcheck.domain.usecase.GetBatteryStateUseCase
 import com.runcheck.domain.usecase.GetBatteryStatisticsUseCase
-import com.runcheck.service.monitor.ScreenStateTracker
+import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
+import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.common.messageOr
 import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,17 +29,26 @@ import javax.inject.Inject
 
 @HiltViewModel
 class BatteryViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val getBatteryState: GetBatteryStateUseCase,
     private val getBatteryHistory: GetBatteryHistoryUseCase,
     private val getBatteryStatistics: GetBatteryStatisticsUseCase,
-    private val proStatusProvider: ProStatusProvider,
-    private val screenStateTracker: ScreenStateTracker
+    private val observeProAccess: ObserveProAccessUseCase,
+    private val chargerSessionTracker: ChargerSessionTracker,
+    private val batteryScreenInsights: BatteryScreenInsightsUseCase,
+    private val manageUserPreferences: ManageUserPreferencesUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<BatteryUiState>(BatteryUiState.Loading)
     val uiState: StateFlow<BatteryUiState> = _uiState.asStateFlow()
 
-    private var selectedPeriod = HistoryPeriod.DAY
+    private var selectedPeriod: HistoryPeriod
+        get() = savedStateHandle.get<String>(SELECTED_PERIOD_KEY)
+            ?.let { value -> runCatching { HistoryPeriod.valueOf(value) }.getOrNull() }
+            ?: HistoryPeriod.DAY
+        set(value) {
+            savedStateHandle[SELECTED_PERIOD_KEY] = value.name
+        }
     private var loadJob: Job? = null
 
     // Current stats tracking (in-memory, resets on charging status change)
@@ -45,21 +57,37 @@ class BatteryViewModel @Inject constructor(
     private var currentMin: Int = Int.MAX_VALUE
     private var currentMax: Int = Int.MIN_VALUE
     private var lastChargingStatus: ChargingStatus? = null
+    private var lastTrackedSessionStatus: ChargingStatus? = null
+    private var lastTrackedSessionAt: Long = 0L
 
     // Statistics loaded once per session
     private var cachedStatistics: com.runcheck.domain.usecase.BatteryStatistics? = null
     private var statisticsLoaded = false
 
+    // Dismissed info cards
+    private var dismissedInfoCards: Set<String> = emptySet()
+
+    init {
+        viewModelScope.launch {
+            manageUserPreferences.observeDismissedInfoCards().collect { cards ->
+                dismissedInfoCards = cards
+                // Update existing Success state if present
+                val current = _uiState.value
+                if (current is BatteryUiState.Success) {
+                    _uiState.value = current.copy(dismissedInfoCards = cards)
+                }
+            }
+        }
+    }
+
     fun startObserving() {
         if (loadJob?.isActive == true) return
-        screenStateTracker.start()
         loadBatteryData()
     }
 
     fun stopObserving() {
         loadJob?.cancel()
         loadJob = null
-        screenStateTracker.stop()
     }
 
     fun refresh() {
@@ -96,13 +124,16 @@ class BatteryViewModel @Inject constructor(
             combine(
                 getBatteryState(),
                 getBatteryHistory(selectedPeriod),
-                proStatusProvider.isProUser
-            ) { state, history, isPro ->
+                observeProAccess(),
+                manageUserPreferences.observePreferences()
+            ) { state, history, isPro, preferences ->
                 // Reset stats if charging status changed
                 if (lastChargingStatus != null && lastChargingStatus != state.chargingStatus) {
                     resetCurrentStats()
                 }
                 lastChargingStatus = state.chargingStatus
+
+                batteryScreenInsights.updateChargingStatus(state.chargingStatus)
 
                 // Accumulate current stats
                 val stats = if (state.currentMa.confidence != Confidence.UNAVAILABLE) {
@@ -121,11 +152,10 @@ class BatteryViewModel @Inject constructor(
                     } else null
                 } else null
 
-                // Update screen state tracker tick for idle tracking
-                screenStateTracker.tick()
-
                 val isDischarging = state.chargingStatus != ChargingStatus.CHARGING &&
                     state.chargingStatus != ChargingStatus.FULL
+
+                maybeTrackChargerSession(state)
 
                 BatteryUiState.Success(
                     batteryState = state,
@@ -133,9 +163,11 @@ class BatteryViewModel @Inject constructor(
                     selectedPeriod = selectedPeriod,
                     isPro = isPro,
                     currentStats = stats,
-                    screenUsage = if (isDischarging) screenStateTracker.getScreenUsageStats() else null,
-                    sleepAnalysis = if (isDischarging) screenStateTracker.getSleepAnalysis() else null,
-                    statistics = cachedStatistics
+                    screenUsage = if (isDischarging) batteryScreenInsights.getScreenUsageStats() else null,
+                    sleepAnalysis = if (isDischarging) batteryScreenInsights.getSleepAnalysis() else null,
+                    temperatureUnit = preferences.temperatureUnit,
+                    statistics = cachedStatistics,
+                    dismissedInfoCards = dismissedInfoCards
                 )
             }.sample(333L).catch { e ->
                 ReleaseSafeLog.error("BatteryVM", "Battery data failed", e)
@@ -146,8 +178,23 @@ class BatteryViewModel @Inject constructor(
         }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        screenStateTracker.stop()
+    private suspend fun maybeTrackChargerSession(state: com.runcheck.domain.model.BatteryState) {
+        val now = System.currentTimeMillis()
+        if (lastTrackedSessionStatus != state.chargingStatus ||
+            now - lastTrackedSessionAt >= CHARGER_SESSION_TRACK_INTERVAL_MS
+        ) {
+            chargerSessionTracker.onBatteryState(state, now)
+            lastTrackedSessionStatus = state.chargingStatus
+            lastTrackedSessionAt = now
+        }
+    }
+
+    fun dismissInfoCard(id: String) {
+        viewModelScope.launch { manageUserPreferences.dismissInfoCard(id) }
+    }
+
+    companion object {
+        private const val CHARGER_SESSION_TRACK_INTERVAL_MS = 15_000L
+        private const val SELECTED_PERIOD_KEY = "battery_selected_period"
     }
 }

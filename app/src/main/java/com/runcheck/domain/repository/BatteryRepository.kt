@@ -11,5 +11,6 @@ interface BatteryRepository {
     suspend fun getAllReadings(): List<BatteryReading>
     suspend fun getReadingsSinceSync(since: Long): List<BatteryReading>
     suspend fun deleteOlderThan(cutoff: Long)
+    suspend fun deleteAll()
     suspend fun getLastChargingTimestamp(): Long?
 }

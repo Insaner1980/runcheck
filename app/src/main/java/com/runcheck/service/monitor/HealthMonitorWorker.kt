@@ -4,14 +4,18 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.runcheck.domain.repository.AppBatteryUsageRepository
+import com.runcheck.domain.model.BatteryState
+import com.runcheck.domain.model.StorageState
+import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.repository.BatteryRepository
 import com.runcheck.domain.repository.NetworkRepository
 import com.runcheck.domain.repository.StorageRepository
+import com.runcheck.domain.repository.UserPreferencesRepository
 import com.runcheck.domain.repository.ThermalRepository
-import com.runcheck.domain.usecase.CleanupOldReadingsUseCase
+import com.runcheck.domain.usecase.ChargerSessionTracker
+import com.runcheck.domain.usecase.EvaluateMonitoringAlertsUseCase
+import com.runcheck.domain.usecase.MonitoringAlertSnapshot
 import com.runcheck.util.ReleaseSafeLog
-import com.runcheck.widget.RuncheckWidgets
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
@@ -21,20 +25,36 @@ import kotlinx.coroutines.flow.first
 class HealthMonitorWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
-    private val appBatteryUsageRepository: AppBatteryUsageRepository,
     private val batteryRepository: BatteryRepository,
     private val networkRepository: NetworkRepository,
     private val thermalRepository: ThermalRepository,
     private val storageRepository: StorageRepository,
-    private val cleanupOldReadings: CleanupOldReadingsUseCase
-    ) : CoroutineWorker(context, workerParams) {
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val chargerSessionTracker: ChargerSessionTracker,
+    private val evaluateMonitoringAlerts: EvaluateMonitoringAlertsUseCase,
+    private val monitoringAlertStateStore: MonitoringAlertStateStore,
+    private val notificationHelper: NotificationHelper
+) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
         var coreFailure = false
+        var batteryState: BatteryState? = null
+        var thermalState: ThermalState? = null
+        var storageState: StorageState? = null
+
+        val preferences = try {
+            userPreferencesRepository.getPreferences().first()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            ReleaseSafeLog.error(TAG, "Failed to load notification preferences", e)
+            return Result.retry()
+        }
 
         coreFailure = collectStep("battery") {
-            val batteryState = batteryRepository.getBatteryState().first()
-            batteryRepository.saveReading(batteryState)
+            batteryState = batteryRepository.getBatteryState().first()
+            batteryRepository.saveReading(requireNotNull(batteryState))
+            chargerSessionTracker.onBatteryState(requireNotNull(batteryState))
         }
 
         coreFailure = collectStep("network") {
@@ -43,25 +63,42 @@ class HealthMonitorWorker @AssistedInject constructor(
         } || coreFailure
 
         coreFailure = collectStep("thermal") {
-            val thermalState = thermalRepository.getThermalState().first()
-            thermalRepository.saveReading(thermalState)
+            thermalState = thermalRepository.getThermalState().first()
+            thermalRepository.saveReading(requireNotNull(thermalState))
         } || coreFailure
 
         coreFailure = collectStep("storage") {
-            val storageState = storageRepository.getStorageState().first()
-            storageRepository.saveReading(storageState)
+            storageState = storageRepository.getStorageState().first()
+            storageRepository.saveReading(requireNotNull(storageState))
         } || coreFailure
 
-        coreFailure = collectStep("app_usage") {
-            appBatteryUsageRepository.collectUsageSnapshot()
+        coreFailure = collectStep("alerts") {
+            val snapshot = buildSnapshot(
+                batteryState = requireNotNull(batteryState),
+                thermalState = requireNotNull(thermalState),
+                storageState = requireNotNull(storageState)
+            )
+            val previousSnapshot = monitoringAlertStateStore.getLastSnapshot()
+            val alertDecision = evaluateMonitoringAlerts(previousSnapshot, snapshot, preferences)
+
+            if (alertDecision.lowBattery) {
+                notificationHelper.showLowBatteryAlert(snapshot.batteryLevel)
+            }
+            if (alertDecision.highTemp) {
+                notificationHelper.showHighTempAlert(
+                    snapshot.batteryTempC,
+                    preferences.temperatureUnit
+                )
+            }
+            if (alertDecision.lowStorage) {
+                notificationHelper.showLowStorageAlert(snapshot.storageUsagePercent)
+            }
+            if (alertDecision.chargeComplete) {
+                notificationHelper.showChargeCompleteNotification(snapshot.batteryLevel)
+            }
+
+            monitoringAlertStateStore.update(snapshot)
         } || coreFailure
-
-        collectStep("cleanup") { cleanupOldReadings() }
-
-        // Widget/cleanup failures should not trigger a full retry
-        collectStep("widgets") {
-            RuncheckWidgets.updateAll(applicationContext)
-        }
 
         return if (coreFailure) Result.retry() else Result.success()
     }
@@ -76,6 +113,19 @@ class HealthMonitorWorker @AssistedInject constructor(
             ReleaseSafeLog.error(TAG, "Health monitor step failed: $stepName", e)
             true
         }
+    }
+
+    private fun buildSnapshot(
+        batteryState: BatteryState,
+        thermalState: ThermalState,
+        storageState: StorageState
+    ): MonitoringAlertSnapshot {
+        return MonitoringAlertSnapshot(
+            batteryLevel = batteryState.level,
+            batteryTempC = thermalState.batteryTempC,
+            storageUsagePercent = storageState.usagePercent,
+            chargingStatus = batteryState.chargingStatus
+        )
     }
 
     companion object {

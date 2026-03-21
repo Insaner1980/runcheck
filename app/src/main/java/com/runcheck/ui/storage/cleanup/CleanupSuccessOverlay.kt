@@ -29,10 +29,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.ui.common.formatStorageSize
-import com.runcheck.ui.theme.AccentTeal
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.statusColors
 
 @Composable
 fun CleanupSuccessOverlay(
@@ -68,7 +68,7 @@ fun CleanupSuccessOverlay(
                     imageVector = Icons.Outlined.CheckCircle,
                     contentDescription = successMessage,
                     modifier = Modifier.size(64.dp),
-                    tint = AccentTeal
+                    tint = MaterialTheme.statusColors.healthy
                 )
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
                 Text(

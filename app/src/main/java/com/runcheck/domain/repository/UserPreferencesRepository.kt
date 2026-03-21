@@ -7,6 +7,8 @@ import com.runcheck.domain.model.UserPreferences
 import kotlinx.coroutines.flow.Flow
 
 interface UserPreferencesRepository {
+    fun getDismissedInfoCards(): Flow<Set<String>>
+    suspend fun dismissInfoCard(id: String)
     fun getPreferences(): Flow<UserPreferences>
     suspend fun setMonitoringInterval(interval: MonitoringInterval)
     suspend fun setNotificationsEnabled(enabled: Boolean)
@@ -16,6 +18,9 @@ interface UserPreferencesRepository {
     suspend fun setPermissionEducationSeen(seen: Boolean)
     suspend fun getAppUsageLastCollectedAt(): Long?
     suspend fun setAppUsageLastCollectedAt(timestamp: Long)
+    fun observeSelectedChargerId(): Flow<Long?>
+    suspend fun getSelectedChargerId(): Long?
+    suspend fun setSelectedChargerId(chargerId: Long?)
     // New settings
     suspend fun setNotifLowBattery(enabled: Boolean)
     suspend fun setNotifHighTemp(enabled: Boolean)

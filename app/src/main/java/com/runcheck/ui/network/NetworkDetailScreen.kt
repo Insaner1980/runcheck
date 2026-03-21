@@ -69,10 +69,10 @@ import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.resolve
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SignalQuality
 import com.runcheck.domain.model.SpeedTestResult
-import com.runcheck.domain.repository.NetworkReadingData
 import com.runcheck.ui.common.findActivity
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.isUnknownValue
@@ -86,11 +86,21 @@ import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.PullToRefreshWrapper
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SignalBars
-import com.runcheck.ui.components.ChartQualityZone
-import com.runcheck.ui.components.ChartXLabel
-import com.runcheck.ui.components.ChartYLabel
+import com.runcheck.ui.components.ExpandableChartContainer
 import com.runcheck.ui.components.TrendChart
+import com.runcheck.ui.chart.FullscreenChartSource
+import com.runcheck.ui.chart.NetworkHistoryMetric
+import com.runcheck.ui.chart.MAX_NETWORK_HISTORY_POINTS
+import com.runcheck.ui.chart.buildNetworkXLabels
+import com.runcheck.ui.chart.buildNetworkYLabels
+import com.runcheck.ui.chart.downsamplePairs
+import com.runcheck.ui.chart.historyPeriodLabel
+import com.runcheck.ui.chart.networkHistoryMetricLabel
+import com.runcheck.ui.chart.networkMetricUnit
+import com.runcheck.ui.chart.signalQualityZones
 import com.runcheck.ui.common.formatLocalizedDateTime
+import com.runcheck.ui.components.info.InfoBottomSheet
+import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.statusColorForSignalQuality
@@ -100,6 +110,7 @@ fun NetworkDetailScreen(
     onNavigateToSpeedTest: () -> Unit,
     onBack: () -> Unit = {},
     onUpgradeToPro: () -> Unit = {},
+    onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier,
     viewModel: NetworkViewModel = hiltViewModel()
 ) {
@@ -167,7 +178,9 @@ fun NetworkDetailScreen(
                     onRefresh = { viewModel.refresh() },
                     onNavigateToSpeedTest = onNavigateToSpeedTest,
                     onPeriodChange = { viewModel.setHistoryPeriod(it) },
-                    onUpgradeToPro = onUpgradeToPro
+                    onUpgradeToPro = onUpgradeToPro,
+                    onNavigateToFullscreen = onNavigateToFullscreen,
+                    onDismissInfoCard = { viewModel.dismissInfoCard(it) }
                 )
             }
         }
@@ -187,7 +200,7 @@ private fun NetworkPanel(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(16.dp)
+        shape = MaterialTheme.shapes.large
     ) {
         Column(
             modifier = Modifier
@@ -202,7 +215,7 @@ private fun NetworkPanel(
 // ── Hero section ────────────────────────────────────────────────────────────────
 
 @Composable
-private fun NetworkHeroSection(networkState: NetworkState) {
+private fun NetworkHeroSection(networkState: NetworkState, onInfoClick: (String) -> Unit = {}) {
     val qualityLabel = signalQualityLabel(networkState.signalQuality)
 
     NetworkPanel {
@@ -229,7 +242,11 @@ private fun NetworkHeroSection(networkState: NetworkState) {
 
             networkState.signalDbm?.let { dbm ->
                 Text(
-                    text = "$dbm ${stringResource(R.string.unit_dbm)}",
+                    text = stringResource(
+                        R.string.value_with_unit_int,
+                        dbm,
+                        stringResource(R.string.unit_dbm)
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -244,18 +261,23 @@ private fun NetworkHeroSection(networkState: NetworkState) {
         ) {
             MetricPill(
                 label = stringResource(R.string.network_latency),
-                value = networkState.latencyMs?.let { "$it ${stringResource(R.string.unit_ms)}" } ?: "\u2014",
-                modifier = Modifier.weight(1f)
+                value = networkState.latencyMs?.let {
+                    stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_ms))
+                } ?: stringResource(R.string.placeholder_dash),
+                modifier = Modifier.weight(1f),
+                onInfoClick = { onInfoClick("latency") }
             )
             MetricPill(
                 label = bandwidthPillLabel(networkState),
                 value = bandwidthPillValue(networkState),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onInfoClick = { onInfoClick("bandwidth") }
             )
             MetricPill(
                 label = bandPillLabel(networkState),
                 value = bandPillValue(networkState),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onInfoClick = { onInfoClick(if (networkState.connectionType == ConnectionType.WIFI) "frequency" else "bandwidth") }
             )
         }
     }
@@ -272,9 +294,16 @@ private fun bandwidthPillLabel(state: NetworkState): String = when (state.connec
 
 @Composable
 private fun bandwidthPillValue(state: NetworkState): String = when (state.connectionType) {
-    ConnectionType.WIFI -> state.wifiSpeedMbps?.let { "$it ${stringResource(R.string.unit_mbps)}" } ?: "\u2014"
-    ConnectionType.CELLULAR -> state.estimatedDownstreamKbps?.let { "${it / 1000} ${stringResource(R.string.unit_mbps)}" } ?: "\u2014"
-    ConnectionType.NONE -> "\u2014"
+    ConnectionType.WIFI -> state.wifiSpeedMbps?.let {
+        stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_mbps))
+    } ?: stringResource(R.string.placeholder_dash)
+    ConnectionType.CELLULAR -> state.estimatedDownstreamKbps?.let {
+        stringResource(R.string.value_with_unit_int, it / 1000, stringResource(R.string.unit_mbps))
+    } ?: stringResource(R.string.placeholder_dash)
+    ConnectionType.VPN -> state.estimatedDownstreamKbps?.let {
+        stringResource(R.string.value_with_unit_int, it / 1000, stringResource(R.string.unit_mbps))
+    } ?: stringResource(R.string.placeholder_dash)
+    ConnectionType.NONE -> stringResource(R.string.placeholder_dash)
 }
 
 @Composable
@@ -286,16 +315,21 @@ private fun bandPillLabel(state: NetworkState): String = when (state.connectionT
 @Composable
 private fun bandPillValue(state: NetworkState): String = when (state.connectionType) {
     ConnectionType.WIFI -> state.wifiFrequencyMhz?.let { freq ->
-        "${formatDecimal(freq / 1000f, 1)} ${stringResource(R.string.unit_ghz)}"
-    } ?: "\u2014"
-    ConnectionType.CELLULAR -> state.networkSubtype ?: "\u2014"
-    ConnectionType.NONE -> "\u2014"
+        stringResource(
+            R.string.value_with_unit_text,
+            formatDecimal(freq / 1000f, 1),
+            stringResource(R.string.unit_ghz)
+        )
+    } ?: stringResource(R.string.placeholder_dash)
+    ConnectionType.CELLULAR -> state.networkSubtype ?: stringResource(R.string.placeholder_dash)
+    ConnectionType.VPN -> state.networkSubtype ?: stringResource(R.string.placeholder_dash)
+    ConnectionType.NONE -> stringResource(R.string.placeholder_dash)
 }
 
 // ── Connection Details card ─────────────────────────────────────────────────────
 
 @Composable
-private fun ConnectionDetailsCard(networkState: NetworkState) {
+private fun ConnectionDetailsCard(networkState: NetworkState, onInfoClick: (String) -> Unit = {}) {
     NetworkPanel {
         CardSectionTitle(text = stringResource(R.string.network_section_connection_details))
 
@@ -304,6 +338,7 @@ private fun ConnectionDetailsCard(networkState: NetworkState) {
             value = when (networkState.connectionType) {
                 ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
                 ConnectionType.CELLULAR -> stringResource(R.string.connection_cellular)
+                ConnectionType.VPN -> stringResource(R.string.connection_vpn)
                 ConnectionType.NONE -> stringResource(R.string.connection_none)
             }
         )
@@ -316,23 +351,33 @@ private fun ConnectionDetailsCard(networkState: NetworkState) {
                 MetricRow(label = stringResource(R.string.network_bssid), value = it, copyable = true)
             }
             networkState.wifiStandard?.let {
-                MetricRow(label = stringResource(R.string.network_wifi_standard), value = it)
+                MetricRow(label = stringResource(R.string.network_wifi_standard), value = it, onInfoClick = { onInfoClick("wifiStandard") })
             }
             networkState.wifiFrequencyMhz?.let { freq ->
                 MetricRow(
                     label = stringResource(R.string.network_wifi_frequency),
-                    value = "$freq ${stringResource(R.string.unit_mhz)}"
+                    value = stringResource(
+                        R.string.value_with_unit_int,
+                        freq,
+                        stringResource(R.string.unit_mhz)
+                    ),
+                    onInfoClick = { onInfoClick("frequency") }
                 )
             }
             networkState.wifiSpeedMbps?.let {
                 MetricRow(
                     label = stringResource(R.string.network_wifi_speed),
-                    value = "$it ${stringResource(R.string.unit_mbps)}"
+                    value = stringResource(
+                        R.string.value_with_unit_int,
+                        it,
+                        stringResource(R.string.unit_mbps)
+                    ),
+                    onInfoClick = { onInfoClick("linkSpeed") }
                 )
             }
         }
 
-        if (networkState.connectionType == ConnectionType.CELLULAR) {
+        if (networkState.connectionType == ConnectionType.CELLULAR || networkState.connectionType == ConnectionType.VPN) {
             networkState.carrier?.takeUnless { isUnknownValue(it) }?.let {
                 MetricRow(label = stringResource(R.string.network_carrier), value = it)
             }
@@ -350,13 +395,23 @@ private fun ConnectionDetailsCard(networkState: NetworkState) {
         networkState.estimatedDownstreamKbps?.let {
             MetricRow(
                 label = stringResource(R.string.network_est_bandwidth_down),
-                value = "${it / 1000} ${stringResource(R.string.unit_mbps)}"
+                value = stringResource(
+                    R.string.value_with_unit_int,
+                    it / 1000,
+                    stringResource(R.string.unit_mbps)
+                ),
+                onInfoClick = { onInfoClick("bandwidth") }
             )
         }
         networkState.estimatedUpstreamKbps?.let {
             MetricRow(
                 label = stringResource(R.string.network_est_bandwidth_up),
-                value = "${it / 1000} ${stringResource(R.string.unit_mbps)}"
+                value = stringResource(
+                    R.string.value_with_unit_int,
+                    it / 1000,
+                    stringResource(R.string.unit_mbps)
+                ),
+                onInfoClick = { onInfoClick("bandwidth") }
             )
         }
         networkState.isMetered?.let {
@@ -379,7 +434,10 @@ private fun ConnectionDetailsCard(networkState: NetworkState) {
 // ── IP & DNS card ────────────────────────────────────────────────────────────────
 
 @Composable
-private fun IpDnsCard(networkState: NetworkState) {
+private fun IpDnsCard(
+    networkState: NetworkState,
+    onInfoClick: (String) -> Unit = {}
+) {
     if (networkState.ipAddresses.isEmpty() && networkState.dnsServers.isEmpty() && networkState.mtuBytes == null) return
 
     NetworkPanel {
@@ -398,24 +456,24 @@ private fun IpDnsCard(networkState: NetworkState) {
             MetricRow(label = stringResource(R.string.network_dns_2), value = it, copyable = true)
         }
         networkState.mtuBytes?.let {
-            MetricRow(label = stringResource(R.string.network_mtu), value = it.toString())
+            MetricRow(
+                label = stringResource(R.string.network_mtu),
+                value = it.toString(),
+                onInfoClick = { onInfoClick("mtu") }
+            )
         }
     }
 }
 
 // ── Signal History card ─────────────────────────────────────────────────────────
 
-private enum class NetworkHistoryMetric {
-    SIGNAL,
-    LATENCY
-}
-
 @Composable
 private fun SignalHistoryCard(
-    history: List<NetworkReadingData>,
+    history: List<NetworkReading>,
     selectedPeriod: HistoryPeriod,
     historyLoadError: UiText?,
-    onPeriodChange: (HistoryPeriod) -> Unit
+    onPeriodChange: (HistoryPeriod) -> Unit,
+    onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit
 ) {
     var selectedMetric by rememberSaveable { mutableStateOf(NetworkHistoryMetric.SIGNAL.name) }
     val metric = NetworkHistoryMetric.valueOf(selectedMetric)
@@ -428,7 +486,7 @@ private fun SignalHistoryCard(
                 NetworkHistoryMetric.LATENCY -> reading.latencyMs?.toFloat()
             }
             value?.let { reading.timestamp to it }
-        }.downsamplePairsForChart(MAX_NETWORK_HISTORY_POINTS)
+        }.downsamplePairs(MAX_NETWORK_HISTORY_POINTS)
     }
 
     val chartData = remember(chartPoints) { chartPoints.map { it.second } }
@@ -442,22 +500,19 @@ private fun SignalHistoryCard(
     // Y-axis labels
     val yLabels = remember(minVal, maxVal, metric) {
         if (minVal == null || maxVal == null) null
-        else buildChartYLabels(minVal, maxVal, metric)
+        else buildNetworkYLabels(minVal, maxVal)
     }
 
     // X-axis time labels
     val xLabels = remember(chartTimestamps, selectedPeriod) {
         if (chartTimestamps.size < 2) null
-        else buildChartXLabels(chartTimestamps, selectedPeriod)
+        else buildNetworkXLabels(chartTimestamps, selectedPeriod)
     }
 
     // Quality zone bands (signal only — subtle background bands)
     val qualityZones = signalQualityZones(metric)
 
-    val unit = when (metric) {
-        NetworkHistoryMetric.SIGNAL -> " dBm"
-        NetworkHistoryMetric.LATENCY -> " ms"
-    }
+    val unit = networkMetricUnit(metric)
 
     NetworkPanel {
         CardSectionTitle(text = stringResource(R.string.network_section_signal_history))
@@ -508,23 +563,33 @@ private fun SignalHistoryCard(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
-            TrendChart(
-                data = chartData,
-                modifier = Modifier.fillMaxWidth(),
-                contentDescription = stringResource(
-                    R.string.a11y_chart_trend,
-                    networkHistoryMetricLabel(metric)
-                ),
-                yLabels = yLabels,
-                xLabels = xLabels,
-                showGrid = true,
-                qualityZones = qualityZones,
-                tooltipFormatter = { index ->
-                    val value = formatDecimal(chartData[index], if (metric == NetworkHistoryMetric.LATENCY) 0 else 0)
-                    val time = formatLocalizedDateTime(chartTimestamps[index], "HmMMMd")
-                    "$value$unit · $time"
+            ExpandableChartContainer(
+                onExpand = {
+                    onNavigateToFullscreen(
+                        FullscreenChartSource.NETWORK_HISTORY.name,
+                        metric.name,
+                        selectedPeriod.name
+                    )
                 }
-            )
+            ) {
+                TrendChart(
+                    data = chartData,
+                    modifier = Modifier.fillMaxWidth(),
+                    contentDescription = stringResource(
+                        R.string.a11y_chart_trend,
+                        networkHistoryMetricLabel(metric)
+                    ),
+                    yLabels = yLabels,
+                    xLabels = xLabels,
+                    showGrid = true,
+                    qualityZones = qualityZones,
+                    tooltipFormatter = { index ->
+                        val value = formatDecimal(chartData[index], 0)
+                        val time = formatLocalizedDateTime(chartTimestamps[index], "HmMMMd")
+                        "$value$unit · $time"
+                    }
+                )
+            }
 
             // Min / Avg / Max summary
             Row(
@@ -563,103 +628,13 @@ private fun SignalHistoryCard(
     }
 }
 
-@Composable
-private fun networkHistoryMetricLabel(metric: NetworkHistoryMetric): String = when (metric) {
-    NetworkHistoryMetric.SIGNAL -> stringResource(R.string.network_history_metric_signal)
-    NetworkHistoryMetric.LATENCY -> stringResource(R.string.network_history_metric_latency)
-}
-
-@Composable
-private fun historyPeriodLabel(period: HistoryPeriod): String = when (period) {
-    HistoryPeriod.SINCE_UNPLUG -> stringResource(R.string.history_period_since_unplug)
-    HistoryPeriod.DAY -> stringResource(R.string.history_period_day)
-    HistoryPeriod.WEEK -> stringResource(R.string.history_period_week)
-    HistoryPeriod.MONTH -> stringResource(R.string.history_period_month)
-    HistoryPeriod.ALL -> stringResource(R.string.history_period_all)
-}
-
-private const val MAX_NETWORK_HISTORY_POINTS = 300
-
-private fun <T> List<T>.downsamplePairsForChart(maxPoints: Int): List<T> {
-    if (size <= maxPoints || maxPoints <= 1) return this
-    val lastIdx = lastIndex
-    return buildList(maxPoints) {
-        for (index in 0 until maxPoints) {
-            val sourceIndex = ((index.toLong() * lastIdx) / (maxPoints - 1)).toInt()
-            add(this@downsamplePairsForChart[sourceIndex])
-        }
-    }
-}
-
-private fun buildChartYLabels(minVal: Float, maxVal: Float, metric: NetworkHistoryMetric): List<ChartYLabel> {
-    val range = maxVal - minVal
-    if (range < 1f) return emptyList()
-    // Pick nice step: aim for ~4 labels
-    val rawStep = range / 4f
-    val step = when {
-        rawStep >= 20f -> (rawStep / 10f).toInt() * 10f
-        rawStep >= 5f -> (rawStep / 5f).toInt() * 5f
-        rawStep >= 1f -> rawStep.toInt().toFloat().coerceAtLeast(1f)
-        else -> 1f
-    }
-    val unit = when (metric) {
-        NetworkHistoryMetric.SIGNAL -> ""
-        NetworkHistoryMetric.LATENCY -> ""
-    }
-    val start = (kotlin.math.ceil(minVal / step) * step).toFloat()
-    return buildList {
-        var v = start
-        while (v <= maxVal) {
-            add(ChartYLabel(v, "${v.toInt()}"))
-            v += step
-        }
-    }
-}
-
-private fun buildChartXLabels(timestamps: List<Long>, period: HistoryPeriod): List<ChartXLabel> {
-    if (timestamps.size < 2) return emptyList()
-    val first = timestamps.first()
-    val last = timestamps.last()
-    val span = last - first
-    if (span <= 0) return emptyList()
-
-    // Pick time format skeleton and label count based on period
-    val (skeleton, count) = when (period) {
-        HistoryPeriod.DAY, HistoryPeriod.SINCE_UNPLUG -> "Hm" to 4
-        HistoryPeriod.WEEK -> "EEEHm" to 4
-        HistoryPeriod.MONTH -> "MMMd" to 4
-        HistoryPeriod.ALL -> "MMMd" to 4
-    }
-
-    return buildList {
-        for (i in 0..count) {
-            val position = i.toFloat() / count
-            val time = first + (span * position).toLong()
-            add(ChartXLabel(position, formatLocalizedDateTime(time, skeleton)))
-        }
-    }
-}
-
-@Composable
-private fun signalQualityZones(metric: NetworkHistoryMetric): List<ChartQualityZone>? {
-    if (metric != NetworkHistoryMetric.SIGNAL) return null
-    val colors = MaterialTheme.statusColors
-    // WiFi dBm ranges (most common in history data)
-    return listOf(
-        ChartQualityZone(minValue = -50f, maxValue = 0f, color = colors.healthy.copy(alpha = 0.07f)),
-        ChartQualityZone(minValue = -60f, maxValue = -50f, color = colors.healthy.copy(alpha = 0.05f)),
-        ChartQualityZone(minValue = -70f, maxValue = -60f, color = colors.fair.copy(alpha = 0.06f)),
-        ChartQualityZone(minValue = -80f, maxValue = -70f, color = colors.poor.copy(alpha = 0.06f)),
-        ChartQualityZone(minValue = -120f, maxValue = -80f, color = colors.critical.copy(alpha = 0.06f))
-    )
-}
-
 // ── Speed Test Summary card ─────────────────────────────────────────────────────
 
 @Composable
 private fun SpeedTestSummaryCard(
     lastResult: SpeedTestResult?,
-    onNavigateToSpeedTest: () -> Unit
+    onNavigateToSpeedTest: () -> Unit,
+    onInfoClick: (String) -> Unit = {}
 ) {
     NetworkPanel {
         CardSectionTitle(text = stringResource(R.string.network_section_speed_test))
@@ -671,17 +646,29 @@ private fun SpeedTestSummaryCard(
             ) {
                 MetricPill(
                     label = stringResource(R.string.speed_test_download),
-                    value = "${formatDecimal(lastResult.downloadMbps, 1)} ${stringResource(R.string.unit_mbps)}",
+                    value = stringResource(
+                        R.string.value_with_unit_text,
+                        formatDecimal(lastResult.downloadMbps, 1),
+                        stringResource(R.string.unit_mbps)
+                    ),
                     modifier = Modifier.weight(1f)
                 )
                 MetricPill(
                     label = stringResource(R.string.speed_test_upload),
-                    value = "${formatDecimal(lastResult.uploadMbps, 1)} ${stringResource(R.string.unit_mbps)}",
+                    value = stringResource(
+                        R.string.value_with_unit_text,
+                        formatDecimal(lastResult.uploadMbps, 1),
+                        stringResource(R.string.unit_mbps)
+                    ),
                     modifier = Modifier.weight(1f)
                 )
                 MetricPill(
                     label = stringResource(R.string.speed_test_ping),
-                    value = "${lastResult.pingMs} ${stringResource(R.string.unit_ms)}",
+                    value = stringResource(
+                        R.string.value_with_unit_int,
+                        lastResult.pingMs,
+                        stringResource(R.string.unit_ms)
+                    ),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -689,7 +676,12 @@ private fun SpeedTestSummaryCard(
             lastResult.jitterMs?.let { jitter ->
                 MetricPill(
                     label = stringResource(R.string.network_speed_test_jitter),
-                    value = "$jitter ${stringResource(R.string.unit_ms)}"
+                    value = stringResource(
+                        R.string.value_with_unit_int,
+                        jitter,
+                        stringResource(R.string.unit_ms)
+                    ),
+                    onInfoClick = { onInfoClick("jitter") }
                 )
             }
 
@@ -735,9 +727,12 @@ private fun NetworkContent(
     onRefresh: () -> Unit,
     onNavigateToSpeedTest: () -> Unit,
     onPeriodChange: (HistoryPeriod) -> Unit,
-    onUpgradeToPro: () -> Unit
+    onUpgradeToPro: () -> Unit,
+    onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
+    onDismissInfoCard: (String) -> Unit
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
+    var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val activity = context.findActivity()
     val networkState = state.networkState
@@ -771,7 +766,29 @@ private fun NetworkContent(
         ) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-            NetworkHeroSection(networkState = networkState)
+            NetworkHeroSection(networkState = networkState, onInfoClick = { activeInfoSheet = it })
+
+            // Info cards
+            if ((networkState.signalQuality == SignalQuality.POOR ||
+                    networkState.signalQuality == SignalQuality.NO_SIGNAL) &&
+                NetworkInfoCards.WEAK_SIGNAL_DRAIN !in state.dismissedInfoCards
+            ) {
+                InfoCard(
+                    id = NetworkInfoCards.WEAK_SIGNAL_DRAIN,
+                    headline = stringResource(R.string.info_card_weak_signal_headline),
+                    body = stringResource(R.string.info_card_weak_signal_body),
+                    onDismiss = { onDismissInfoCard(it) }
+                )
+            }
+
+            if (NetworkInfoCards.SPEED_TEST_INFO !in state.dismissedInfoCards) {
+                InfoCard(
+                    id = NetworkInfoCards.SPEED_TEST_INFO,
+                    headline = stringResource(R.string.info_card_speed_test_info_headline),
+                    body = stringResource(R.string.info_card_speed_test_info_body),
+                    onDismiss = { onDismissInfoCard(it) }
+                )
+            }
 
             if (networkState.connectionType == ConnectionType.WIFI && networkState.wifiSsid == null) {
                 WifiNameHelpCard(
@@ -801,16 +818,16 @@ private fun NetworkContent(
                 )
             }
 
-            ConnectionDetailsCard(networkState = networkState)
-
-            IpDnsCard(networkState = networkState)
+            ConnectionDetailsCard(networkState = networkState, onInfoClick = { activeInfoSheet = it })
+            IpDnsCard(networkState = networkState, onInfoClick = { activeInfoSheet = it })
 
             if (state.isPro) {
                 SignalHistoryCard(
                     history = state.signalHistory,
                     selectedPeriod = state.selectedHistoryPeriod,
                     historyLoadError = state.historyLoadError,
-                    onPeriodChange = onPeriodChange
+                    onPeriodChange = onPeriodChange,
+                    onNavigateToFullscreen = onNavigateToFullscreen
                 )
             } else {
                 ProFeatureCalloutCard(
@@ -822,12 +839,30 @@ private fun NetworkContent(
 
             SpeedTestSummaryCard(
                 lastResult = speedTestState.lastResult,
-                onNavigateToSpeedTest = onNavigateToSpeedTest
+                onNavigateToSpeedTest = onNavigateToSpeedTest,
+                onInfoClick = { activeInfoSheet = it }
             )
 
             DetailScreenAdBanner()
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
+        }
+    }
+
+    activeInfoSheet?.let { key ->
+        val content = when (key) {
+            "signalStrength" -> NetworkInfoContent.signalStrength
+            "latency" -> NetworkInfoContent.latency
+            "jitter" -> NetworkInfoContent.jitter
+            "frequency" -> NetworkInfoContent.frequency
+            "wifiStandard" -> NetworkInfoContent.wifiStandard
+            "linkSpeed" -> NetworkInfoContent.linkSpeed
+            "bandwidth" -> NetworkInfoContent.bandwidth
+            "mtu" -> NetworkInfoContent.mtu
+            else -> null
+        }
+        content?.let {
+            InfoBottomSheet(content = it, onDismiss = { activeInfoSheet = null })
         }
     }
 }
@@ -857,7 +892,7 @@ private fun WifiNameHelpCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
@@ -925,7 +960,7 @@ private fun LastResultCard(result: SpeedTestResult) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),

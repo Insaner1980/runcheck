@@ -38,4 +38,7 @@ interface ThrottlingEventDao {
 
     @Query("DELETE FROM throttling_events WHERE timestamp < :cutoff")
     suspend fun deleteOlderThan(cutoff: Long)
+
+    @Query("DELETE FROM throttling_events")
+    suspend fun deleteAll()
 }

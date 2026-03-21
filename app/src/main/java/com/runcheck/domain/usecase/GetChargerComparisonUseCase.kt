@@ -24,10 +24,27 @@ class GetChargerComparisonUseCase @Inject constructor(
             chargers.map { charger ->
                 val chargerSessions = sessions.filter { it.chargerId == charger.id }
                 val completedSessions = chargerSessions.filter { it.endTime != null }
+                val latestCompletedSession = completedSessions.maxByOrNull { it.endTime ?: 0L }
 
                 val avgSpeed = if (completedSessions.isNotEmpty()) {
                     completedSessions.mapNotNull { it.avgCurrentMa }.averageOrNull()
                 } else null
+
+                val avgPower = if (completedSessions.isNotEmpty()) {
+                    completedSessions.mapNotNull { session ->
+                        session.avgPowerMw ?: session.avgCurrentMa?.let { currentMa ->
+                            session.avgVoltageMv?.let { voltageMv ->
+                                (currentMa * voltageMv) / 1000
+                            }
+                        }
+                    }.averageOrNull()
+                } else null
+
+                val latestPower = latestCompletedSession?.avgPowerMw ?: latestCompletedSession?.avgCurrentMa?.let { currentMa ->
+                    latestCompletedSession.avgVoltageMv?.let { voltageMv ->
+                        (currentMa * voltageMv) / 1000
+                    }
+                }
 
                 val avgTimeToFull = if (completedSessions.isNotEmpty()) {
                     completedSessions.mapNotNull { session ->
@@ -41,15 +58,19 @@ class GetChargerComparisonUseCase @Inject constructor(
                     }.averageOrNull()
                 } else null
 
-                val lastUsed = chargerSessions.maxByOrNull { it.startTime }?.startTime
+                val lastUsed = latestCompletedSession?.endTime ?: chargerSessions.maxByOrNull { it.startTime }?.startTime
 
                 ChargerSummary(
                     chargerId = charger.id,
                     chargerName = charger.name,
                     sessionCount = chargerSessions.size,
                     avgChargingSpeedMa = avgSpeed,
+                    avgPowerMw = avgPower,
+                    latestChargingSpeedMa = latestCompletedSession?.avgCurrentMa,
+                    latestPowerMw = latestPower,
                     avgTimeToFullMinutes = avgTimeToFull,
-                    lastUsed = lastUsed
+                    lastUsed = lastUsed,
+                    hasActiveSession = chargerSessions.any { it.endTime == null }
                 )
             }.sortedByDescending { it.lastUsed ?: 0L }
         }

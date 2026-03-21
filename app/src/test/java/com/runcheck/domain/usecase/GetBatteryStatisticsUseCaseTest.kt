@@ -75,9 +75,10 @@ class GetBatteryStatisticsUseCaseTest {
         val result = useCase(periodDays = 7)
 
         assertNotNull(result)
-        assertEquals(0f, result!!.totalChargedPct, 0.01f)
-        assertEquals(20f, result.totalDischargedPct, 0.01f)
-        assertEquals(3, result.readingCount)
+        val stats = requireNotNull(result)
+        assertEquals(0f, stats.totalChargedPct, 0.01f)
+        assertEquals(20f, stats.totalDischargedPct, 0.01f)
+        assertEquals(3, stats.readingCount)
     }
 
     @Test
@@ -98,8 +99,9 @@ class GetBatteryStatisticsUseCaseTest {
         val result = useCase(periodDays = 7)
 
         assertNotNull(result)
-        assertEquals(20f, result!!.totalChargedPct, 0.01f)
-        assertEquals(15f, result.totalDischargedPct, 0.01f)
+        val stats = requireNotNull(result)
+        assertEquals(20f, stats.totalChargedPct, 0.01f)
+        assertEquals(15f, stats.totalDischargedPct, 0.01f)
     }
 
     @Test
@@ -123,7 +125,7 @@ class GetBatteryStatisticsUseCaseTest {
         val result = useCase(periodDays = 7)
 
         assertNotNull(result)
-        assertEquals(2, result!!.chargeSessions)
+        assertEquals(2, requireNotNull(result).chargeSessions)
     }
 
     @Test
@@ -141,8 +143,9 @@ class GetBatteryStatisticsUseCaseTest {
 
         assertNotNull(result)
         // Total drain = 5 + 5 = 10% over 2 hours = 5%/hr
-        assertNotNull(result!!.avgDrainRatePctPerHour)
-        assertEquals(5f, result.avgDrainRatePctPerHour!!, 0.1f)
+        val stats = requireNotNull(result)
+        assertNotNull(stats.avgDrainRatePctPerHour)
+        assertEquals(5f, requireNotNull(stats.avgDrainRatePctPerHour), 0.1f)
     }
 
     @Test
@@ -160,8 +163,9 @@ class GetBatteryStatisticsUseCaseTest {
 
         assertNotNull(result)
         // 10% per hour -> full charge estimate = 100/10 = 10 hours
-        assertNotNull(result!!.fullChargeEstimateHours)
-        assertEquals(10f, result.fullChargeEstimateHours!!, 0.5f)
+        val stats = requireNotNull(result)
+        assertNotNull(stats.fullChargeEstimateHours)
+        assertEquals(10f, requireNotNull(stats.fullChargeEstimateHours), 0.5f)
     }
 
     @Test
@@ -178,8 +182,9 @@ class GetBatteryStatisticsUseCaseTest {
         val result = useCase(periodDays = 7)
 
         assertNotNull(result)
-        assertNull(result!!.avgDrainRatePctPerHour)
-        assertNull(result.fullChargeEstimateHours)
+        val stats = requireNotNull(result)
+        assertNull(stats.avgDrainRatePctPerHour)
+        assertNull(stats.fullChargeEstimateHours)
     }
 
     @Test
@@ -197,7 +202,7 @@ class GetBatteryStatisticsUseCaseTest {
 
         assertNotNull(result)
         // drain is 0%/hr which is < 0.1, so fullChargeEstimateHours should be null
-        assertNull(result!!.fullChargeEstimateHours)
+        assertNull(requireNotNull(result).fullChargeEstimateHours)
     }
 
     @Test
@@ -215,7 +220,7 @@ class GetBatteryStatisticsUseCaseTest {
 
         assertNotNull(result)
         // Should still correctly compute: 80->70->60, discharged = 20
-        assertEquals(20f, result!!.totalDischargedPct, 0.01f)
+        assertEquals(20f, requireNotNull(result).totalDischargedPct, 0.01f)
     }
 
     @Test
@@ -238,8 +243,9 @@ class GetBatteryStatisticsUseCaseTest {
 
         assertNotNull(result)
         // +1 from 50->51 is charged, -3 from 51->48 is discharged
-        assertEquals(1f, result!!.totalChargedPct, 0.01f)
-        assertEquals(3f, result.totalDischargedPct, 0.01f)
+        val stats = requireNotNull(result)
+        assertEquals(1f, stats.totalChargedPct, 0.01f)
+        assertEquals(3f, stats.totalDischargedPct, 0.01f)
     }
 
     @Test
@@ -255,7 +261,8 @@ class GetBatteryStatisticsUseCaseTest {
         val result = useCase(periodDays = 7)
 
         assertNotNull(result)
-        assertNotNull(result!!.avgDrainRatePctPerHour)
-        assertEquals(5f, result.avgDrainRatePctPerHour!!, 0.1f)
+        val stats = requireNotNull(result)
+        assertNotNull(stats.avgDrainRatePctPerHour)
+        assertEquals(5f, requireNotNull(stats.avgDrainRatePctPerHour), 0.1f)
     }
 }

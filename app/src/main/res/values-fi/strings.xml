@@ -186,6 +186,10 @@
     <string name="value_headroom_percent">%1$s%%</string>
     <string name="value_label_colon">%1$s: %2$s</string>
     <string name="value_count_parenthetical">(%1$d)</string>
+    <string name="value_with_unit_text">%1$s %2$s</string>
+    <string name="value_with_suffix_text">%1$s%2$s</string>
+    <string name="value_direction_down">↓ %1$s</string>
+    <string name="value_direction_up">↑ %1$s</string>
     <string name="network_type_cellular">Matkapuhelin</string>
     <string name="fallback_unknown">Tuntematon</string>
     <string name="a11y_scanning_files">Skannataan tiedostoja</string>
@@ -249,6 +253,7 @@
     <!-- Connection Type -->
     <string name="connection_wifi">WiFi</string>
     <string name="connection_cellular">Mobiiliverkko</string>
+    <string name="connection_vpn">VPN</string>
     <string name="connection_none">Ei yhteyttä</string>
     <string name="location_services_open_settings">Avaa asetukset</string>
     <string name="network_wifi_name_help_title">WiFi-nimi ei ole saatavilla</string>
@@ -312,6 +317,10 @@
 
     <!-- Storage Actions -->
     <string name="storage_cleanup_tools">Siivoustyökalut</string>
+    <string name="storage_media_permission_title">Salli mediatiedostojen käyttö tallennustyökaluille</string>
+    <string name="storage_media_permission_message">Anna mediatiedostojen käyttöoikeus vain, jos haluat tarkan kuvat-, videot-, audio-, lataukset- ja siivousehdotusten erittelyn. runcheck käyttää näitä tietoja vain laitteellasi.</string>
+    <string name="storage_media_permission_grant">Myönnä lupa</string>
+    <string name="storage_media_permission_open_settings">Avaa sovelluksen asetukset</string>
     <string name="storage_large_files">Isot tiedostot</string>
     <string name="storage_large_files_desc">Yli 50 MB:n tiedostot</string>
     <string name="storage_old_downloads">Vanhat lataukset</string>
@@ -342,6 +351,8 @@
     </plurals>
     <string name="cleanup_no_files">Tiedostoja ei löytynyt</string>
     <string name="cleanup_no_files_desc">Tallennustilasi näyttää siistiltä!</string>
+    <string name="cleanup_delete_failed">Valittuja tiedostoja ei voitu poistaa.</string>
+    <string name="cleanup_delete_permission_error">Android esti yhden tai useamman tiedoston poistamisen.</string>
     <plurals name="cleanup_free_action">
         <item quantity="one">Vapauta %1$s \u00B7 %2$d kohde</item>
         <item quantity="other">Vapauta %1$s \u00B7 %2$d kohdetta</item>
@@ -362,6 +373,7 @@
     <string name="settings_interval_15">15 minuuttia</string>
     <string name="settings_interval_30">30 minuuttia</string>
     <string name="settings_interval_60">60 minuuttia</string>
+    <string name="settings_monitoring_interval_note">Toimii noin tällä tiheydellä. Doze ja akun optimoinnit voivat viivästää taustatarkistuksia.</string>
     <string name="settings_notifications">Ilmoitukset</string>
     <string name="settings_notifications_desc">Hälytykset: matala akku, korkea lämpötila, vähän tilaa</string>
     <string name="settings_measurement_info">Mittaustiedot</string>
@@ -394,10 +406,18 @@
     <string name="settings_restore_not_found">Tälle Play-tilille ei löytynyt pro-ostosta</string>
     <string name="settings_restore_unavailable">Play Billing ei ole vielä valmis. Yritä hetken kuluttua uudelleen.</string>
     <string name="settings_billing_unavailable">Play Billing ei ole käytettävissä tällä laitteella. pro-oston vaihtoehdot piilotetaan, kunnes laskutus on saatavilla.</string>
+    <string name="settings_pro_section">Pro</string>
+    <string name="settings_status_label">Tila</string>
+    <string name="settings_pro_status_active">Aktiivinen</string>
+    <string name="settings_pro_status_not_active">Ei aktiivinen</string>
     <string name="settings_pro_active">pro aktiivinen</string>
     <string name="settings_pro_thank_you">Kiitos runcheckin tukemisesta!</string>
     <string name="billing_purchase_pending">Maksua käsitellään. Pro avautuu, kun maksu on valmis.</string>
     <string name="billing_purchase_error">Ostoa ei voitu suorittaa. Yritä uudelleen.</string>
+    <string name="billing_purchase_not_ready">Google Play Billing käynnistyy vielä. Yritä hetken kuluttua uudelleen.</string>
+    <string name="billing_service_unavailable">Google Play Billing on tilapäisesti poissa käytöstä. Yritä pian uudelleen.</string>
+    <string name="billing_network_error">Google Playhin ei saatu yhteyttä. Tarkista yhteytesi ja yritä uudelleen.</string>
+    <string name="billing_item_unavailable">Tämä osto ei ole juuri nyt saatavilla.</string>
     <string name="billing_already_owned">Omistat jo runcheck Pron. Palautetaan nyt.</string>
     <string name="settings_version">Versio %1$s</string>
 
@@ -435,6 +455,8 @@
     <string name="settings_feedback">Lähetä palautetta</string>
     <string name="settings_rate">Arvostele Play Storessa</string>
     <string name="settings_privacy_policy">Tietosuojakäytäntö</string>
+    <string name="settings_play_store_web_url" translatable="false">https://play.google.com/store/apps/details?id=com.runcheck</string>
+    <string name="settings_privacy_policy_url" translatable="false">https://github.com/Insaner1980/runcheck/blob/main/docs/privacy-policy.md</string>
     <string name="pro_feature_badge">PRO</string>
     <string name="pro_feature_locked_message">Päivitä runcheck prohon käyttääksesi ominaisuutta %1$s.</string>
     <string name="pro_feature_upgrade_action">Päivitä asetuksissa</string>
@@ -466,10 +488,11 @@
     <string name="notification_low_battery_title">Akku vähissä</string>
     <string name="notification_low_battery_text">Akkua jäljellä %d%%</string>
     <string name="notification_high_temp_title">Korkea lämpötila</string>
-    <string name="notification_high_temp_text">Laitteen lämpötila: %1$.1f\u00B0C</string>
+    <string name="notification_high_temp_text">Laitteen lämpötila: %1$s</string>
     <string name="notification_low_storage_title">Tallennustila vähissä</string>
     <string name="notification_low_storage_text">Tallennustilasta käytössä %1$.0f%%</string>
     <string name="notification_charge_complete_title">Lataus valmis</string>
+    <string name="notification_charge_complete_text">Akku saavutti %1$d%%</string>
     <string name="monitor_realtime_fgs_reason">Edustapalvelua käytetään vain silloin, kun käyttäjä katsoo aktiivisesti reaaliaikaisia laitteen kuntomittareita, jotka vaativat jatkuvia päivityksiä.</string>
     <string name="monitor_realtime_channel_name">Reaaliaikainen seuranta</string>
     <string name="monitor_realtime_channel_description">Näyttää laitteen kunnon reaaliaikaiset tiedot</string>
@@ -487,8 +510,28 @@
     <string name="charger_add_hint">Laturin nimi (esim. Samsung 25W)</string>
     <string name="charger_avg_speed">Keskim. %d mA</string>
     <string name="charger_no_chargers">Ei tallennettuja latureita</string>
+    <string name="charger_empty_body">Lisää latureita tänne ja valitse yksi ennen latausta, jotta vertailudata tallentuu oikealle laturille.</string>
     <string name="charger_last_used">Viimeksi käytetty: %s</string>
+    <string name="charger_last_test">Viimeisin testi: %s</string>
     <string name="charger_delete">Poista</string>
+    <string name="charger_delete_confirm_title">Poistetaanko laturi?</string>
+    <string name="charger_delete_confirm_message">Tämä poistaa laturin %1$s ja sen tallennetun testihistorian.</string>
+    <string name="charger_select">Käytä seuraavassa testissä</string>
+    <string name="charger_selected">Valittu testiin</string>
+    <string name="charger_selected_active">Lataustesti käynnissä</string>
+    <string name="charger_clear_selected">Tyhjennä valinta</string>
+    <string name="charger_no_completed_tests">Ei valmiita testejä vielä</string>
+    <string name="charger_latest_power">Viimeisin testi: %1$s W</string>
+    <string name="charger_latest_current">Viimeisin testi: %1$d mA</string>
+    <string name="charger_average_power">%1$s W keskiarvo</string>
+    <string name="charger_average_current">%1$d mA keskiarvo</string>
+    <string name="charger_historical_title">Historiallinen vertailu</string>
+    <string name="charger_historical_subtitle">Keskiarvo valmiista laturitesteistä.</string>
+    <string name="charger_selection_title">Valittu laturi</string>
+    <string name="charger_selection_none">Laturia ei ole valittu</string>
+    <string name="charger_selection_hint">Valitse tallennettu laturi ennen latausta, jotta Runcheck kirjaa seuraavan session oikealle laturille.</string>
+    <string name="charger_selection_active">Nykyinen lataussessio kirjataan tälle laturille.</string>
+    <string name="charger_selection_ready">Seuraava lataussessio tallennetaan tälle laturille.</string>
     <plurals name="charger_sessions">
         <item quantity="one">%d latauskerta</item>
         <item quantity="other">%d latauskertaa</item>
@@ -497,11 +540,13 @@
     <!-- App Battery Usage -->
     <string name="app_usage_title">Sovellusten akunkäyttö</string>
     <string name="app_usage_no_data">Ei käyttötietoja viimeiseltä 24 tunnilta</string>
+    <string name="app_usage_no_data_message">Tämä voi tapahtua tuoreella asennuksella tai heti käyttöoikeuden myöntämisen jälkeen. Anna Androidille hetki ja yritä uudelleen.</string>
     <string name="app_usage_permission_title">Salli käyttötietojen käyttö</string>
     <string name="app_usage_permission_message">Android vaatii käyttötietojen käyttöoikeuden ennen kuin runcheck voi näyttää sovelluskohtaisen etualan käyttöajan.</string>
     <string name="app_usage_permission_open_settings">Avaa käyttötietojen käyttö</string>
     <string name="app_usage_time_hours_minutes">%1$dh %2$dmin</string>
     <string name="app_usage_time_minutes">%1$dmin</string>
+    <string name="app_usage_percent">%1$d%%</string>
     <string name="app_usage_drain">Arvioitu kulutus: %1$.1f mAh</string>
 
     <!-- Speed Test -->
@@ -572,6 +617,7 @@
     <string name="trial_expired_upgrade">Pro-kokeilusi päättyi. Avaa Pro säilyttääksesi kaikki ominaisuudet.</string>
     <string name="trial_expired_upgrade_with_price">Pro-kokeilusi päättyi. Avaa Pro hintaan %1$s.</string>
     <string name="trial_dismiss">Ohita</string>
+    <string name="a11y_dismiss_card">Sulje kortti</string>
 
     <!-- Trial Notifications -->
     <string name="notification_channel_trial">Kokeilumuistutukset</string>
@@ -622,4 +668,292 @@
     </plurals>
     <string name="a11y_exporting_data">Vienti käynnissä</string>
     <string name="a11y_trial_dialog">Kokeilujakso päättynyt -ikkuna</string>
+
+    <!-- Fullscreen Chart -->
+    <string name="a11y_expand_chart_fullscreen">Näytä kaavio koko näytöllä</string>
+    <string name="fullscreen_chart_empty">Ei dataa tälle ajanjaksolle</string>
+    <string name="fullscreen_chart_error">Kaavion lataus epäonnistui</string>
+    <string name="fullscreen_chart_retry">Yritä uudelleen</string>
+    <string name="fullscreen_chart_title_battery">Akku %1$s</string>
+    <string name="fullscreen_chart_title_session">Istunto %1$s</string>
+    <string name="fullscreen_chart_title_network">Verkko %1$s</string>
+
+    <!-- Info System - Common -->
+    <string name="a11y_info_button">Lisätietoja</string>
+    <string name="info_learn_more">Lue lisää</string>
+    <string name="info_show_less">Näytä vähemmän</string>
+    <string name="info_normal_range_label">Mikä on normaalia</string>
+    <string name="info_why_it_matters_label">Miksi sillä on väliä</string>
+
+    <!-- Info Bottom Sheet - Battery -->
+    <string name="info_battery_voltage_title">Jännite</string>
+    <string name="info_battery_voltage_explanation">Jännite kertoo, kuinka paljon sähköistä painetta akkusi tuottaa juuri nyt. Ajattele sitä kuin vesipaineena putkessa.</string>
+    <string name="info_battery_voltage_range">3,7–4,2 V on normaalia. Alle 3,5 V normaalikäytössä voi viitata kuluneeseen akkuun.</string>
+    <string name="info_battery_voltage_matters">Epävakaa jännite aiheuttaa odottamattomia sammumisia ja epätarkkoja akun prosenttilukemia.</string>
+    <string name="info_battery_voltage_detail">Litiumioniakun nimellisjännite on noin 3,7 V. Se latautuu 4,2 volttiin ja on tyhjä noin 3,0 voltissa. Puhelimesi näyttämä prosentti on arvio tästä jännitekäyrästä, mukautettuna akun ikään.</string>
+
+    <string name="info_battery_temperature_title">Akun lämpötila</string>
+    <string name="info_battery_temperature_explanation">Kuinka kuuma akkusi on juuri nyt. Akut tuottavat lämpöä käytössä ja ladattaessa.</string>
+    <string name="info_battery_temperature_range">20–35 °C on normaalia. Yli 40 °C normaalikäytössä on huolestuttavaa.</string>
+    <string name="info_battery_temperature_matters">Pitkäkestoinen korkea lämpötila heikentää akun kapasiteettia pysyvästi. Jokainen aste yli 30 °C nopeuttaa kemiallista ikääntymistä.</string>
+    <string name="info_battery_temperature_detail">Litiumioniakut kuluvat nopeammin korkeissa lämpötiloissa elektrolyytin hajoamisen vuoksi. Puhelimen käyttö tai säilytys 45 °C:ssa voi kaksinkertaistaa kapasiteetin menetysnopeuden verrattuna 25 °C:een.</string>
+
+    <string name="info_battery_health_status_title">Akun kunto</string>
+    <string name="info_battery_health_status_explanation">Kokonaisarvio akun tilasta perustuen sen kapasiteettiin verrattuna uuteen.</string>
+    <string name="info_battery_health_status_range">Hyvä tai parempi tarkoittaa, että akku toimii hyvin. Kohtalainen tai heikko viittaa huomattavaan kulumiseen.</string>
+    <string name="info_battery_health_status_matters">Kulunut akku pitää vähemmän varausta, mikä tarkoittaa lyhyempää käyttöaikaa latausten välillä ja mahdollisesti odottamattomia sammumisia.</string>
+
+    <string name="info_battery_cycle_count_title">Lataussyklien määrä</string>
+    <string name="info_battery_cycle_count_explanation">Kuinka monta täyttä lataus-purkaussykliä akkusi on suorittanut. 50 %:n käyttö ja lataus kahdesti vastaa yhtä sykliä.</string>
+    <string name="info_battery_cycle_count_range">Useimmat puhelinakut on mitoitettu 500–800 syklille ennen merkittävää heikkenemistä.</string>
+    <string name="info_battery_cycle_count_matters">Korkeampi syklimäärä korreloi vähentyneeseen akun kapasiteettiin. Tämä on keskeinen akun kulumisen mittari.</string>
+    <string name="info_battery_cycle_count_detail">Nykyaikaiset litiumioniakut säilyttävät noin 80 % alkuperäisestä kapasiteetistaan 500 syklin jälkeen ihanteellisissa olosuhteissa. Pikalataus, kuumuus ja syvät purkaukset voivat pienentää tätä lukemaa.</string>
+
+    <string name="info_battery_health_percent_title">Kuntoprosentti</string>
+    <string name="info_battery_health_percent_explanation">Arvio siitä, kuinka suuri osa akun alkuperäisestä kapasiteetista on jäljellä. 100 % tarkoittaa uuden veroista.</string>
+    <string name="info_battery_health_percent_range">90–100 % on erinomainen. 80–90 % on normaalia 1–2 vuoden jälkeen. Alle 80 % tarkoittaa huomattavaa heikkenemistä.</string>
+    <string name="info_battery_health_percent_matters">Tämä kertoo suoraan, kuinka paljon alkuperäisestä kapasiteetista on käytettävissä. Alle 80 % huomaat merkittävästi lyhyemmän akunkeston.</string>
+
+    <string name="info_battery_capacity_title">Akun kapasiteetti</string>
+    <string name="info_battery_capacity_explanation">Kuinka paljon sähkövarausta akkusi voi pitää, mitattuna milliampeeritunteina (mAh). Vertaa suunniteltua kapasiteettia arvioituun nykyiseen.</string>
+    <string name="info_battery_capacity_range">Vaihtelee laitteittain. Tyypillinen puhelinakku on 3000–5000 mAh uutena.</string>
+    <string name="info_battery_capacity_matters">Pienempi kapasiteetti tarkoittaa lyhyempää käyttöaikaa latausten välillä. Suunnitellun ja arvioidun kapasiteetin ero näyttää akun kulumisen.</string>
+
+    <string name="info_battery_current_title">Virta (mA)</string>
+    <string name="info_battery_current_explanation">Kuinka paljon sähkövirtaa kulkee akkuun tai siitä pois juuri nyt. Positiivinen tarkoittaa latausta, negatiivinen purkausta.</string>
+    <string name="info_battery_current_range">Purkaus: -100 – -800 mA on tyypillistä. Lataus: 500–3000 mA laturista riippuen.</string>
+    <string name="info_battery_current_matters">Korkea purkausvirta tarkoittaa, että puhelin työskentelee kovasti ja tyhjenee nopeammin. Latauksen aikana suurempi virta tarkoittaa nopeampaa latausta mutta enemmän lämpöä.</string>
+    <string name="info_battery_current_detail">Virtalukemien tarkkuus vaihtelee laitevalmistajittain. Jotkut puhelimet näyttävät hetkellisen virran, toiset liukuvan keskiarvon. Min/ka/max-tilastot auttavat tasoittamaan hetkellisiä piikkejä.</string>
+
+    <string name="info_battery_power_title">Teho (W)</string>
+    <string name="info_battery_power_explanation">Kuinka paljon tehoa akkusi kuluttaa tai vastaanottaa, laskettuna jännite × virta. Watit antavat tarkemman kuvan kuin milliampeerit yksinään.</string>
+    <string name="info_battery_power_range">Tyypillinen purkaus: 1–5 W. Lataus: 5–25 W laturista ja puhelimen tuesta riippuen.</string>
+    <string name="info_battery_power_matters">Tehonkulutus liittyy suoraan akun tyhjennemisnopeuteen. Suurempi wattimäärä latauksen aikana tarkoittaa nopeampaa latausta mutta myös enemmän lämmöntuottoa.</string>
+
+    <string name="info_battery_drain_rate_title">Kulutustahti</string>
+    <string name="info_battery_drain_rate_explanation">Kuinka nopeasti akun prosentti laskee, mitattuna prosentteina tunnissa.</string>
+    <string name="info_battery_drain_rate_range">0,5–2 %/h on normaalia kevyessä käytössä. 3–5 %/h on kohtalaista. Yli 5 %/h viittaa raskaaseen käyttöön tai ongelmaan.</string>
+    <string name="info_battery_drain_rate_matters">Tämä on yksinkertaisin mittari siitä, kuinka nopeasti puhelimesi käyttää akkua. Jos se on jatkuvasti korkea levossa, jokin saattaa toimia taustalla.</string>
+
+    <string name="info_battery_confidence_title">Mittausluotettavuus</string>
+    <string name="info_battery_confidence_explanation">Kuinka luotettavina runcheck pitää laitteesi akkulukemia. Kaikki puhelimet eivät raportoi tarkkoja virta- ja tehotietoja.</string>
+    <string name="info_battery_confidence_range">Vihreä (Tarkka) tarkoittaa, että lukemat vastaavat odotettuja kuvioita. Keltainen (Arvioitu) tarkoittaa, että arvot ovat johdettuja tai epävarmempia.</string>
+    <string name="info_battery_confidence_matters">Jos luotettavuus on matala, ota virta- ja teholukemat suuntaa-antavina. Varaus- ja lämpötilalukematt ovat lähes aina luotettavia.</string>
+
+    <string name="info_battery_screen_on_off_title">Näyttö päällä/pois -kulutus</string>
+    <string name="info_battery_screen_on_off_explanation">Vertaa akun tyhjennemisvauhtia näytön ollessa päällä ja pois. Näyttö on suurimpia virrankuluttajia.</string>
+    <string name="info_battery_screen_on_off_range">Näyttö pois -kulutuksen pitäisi olla selvästi pienempi. Jos se ylittää 2 %/h, jokin pitää puhelinta hereillä.</string>
+    <string name="info_battery_screen_on_off_matters">Suuri näyttö pois -kulutus tarkoittaa yleensä, että taustasovellus kuluttaa virtaa. Tämä auttaa tunnistamaan piilotettuja virrankuluttajia.</string>
+
+    <string name="info_battery_deep_sleep_title">Syvä uni / Pidetty hereillä</string>
+    <string name="info_battery_deep_sleep_explanation">Seuraa, meneekö puhelimesi syväuneen (Doze-tila) kun näyttö on pois, vai pysyykö se hereillä käsitellen tehtäviä.</string>
+    <string name="info_battery_deep_sleep_range">Terveen puhelimen pitäisi viettää suurin osa näyttö pois -ajasta syvässä unessa. Korkea \'pidetty hereillä\' -aika tarkoittaa, että jokin estää unen.</string>
+    <string name="info_battery_deep_sleep_matters">Syvä uni vähentää akun kulutusta dramaattisesti. Jos puhelintasi pidetään hereillä pitkiä aikoja, taustasovellukset tai herätykset ovat todennäköinen syy.</string>
+
+    <!-- Info Bottom Sheet - Thermal -->
+    <string name="info_thermal_cpu_temp_title">Suorittimen lämpötila</string>
+    <string name="info_thermal_cpu_temp_explanation">Puhelimesi suorittimen nykyinen lämpötila. Suoritin lämpenee vaativissa tehtävissä kuten pelaamisessa tai videon muokkauksessa.</string>
+    <string name="info_thermal_cpu_temp_range">30–45 °C on normaalia kuormituksessa. Yli 50 °C tarkoittaa voimakasta lämpörasitusta.</string>
+    <string name="info_thermal_cpu_temp_matters">Kun suoritin lämpenee liikaa, puhelimesi hidastaa itseään (lämpörajoitus) vaurioiden estämiseksi. Tämä vaikuttaa suoraan suorituskykyyn.</string>
+    <string name="info_thermal_cpu_temp_detail">Suorittimen lämpötila luetaan järjestelmän lämpöaluetiedostoista. Kaikki laitteet eivät tarjoa tätä tietoa, ja raportoitu alue voi vaihdella. Joillakin laitteilla tämä kuvastaa kotelon lämpötilaa suorittimen sirun sijaan.</string>
+
+    <string name="info_thermal_headroom_title">Lämpötilan liikkumavara</string>
+    <string name="info_thermal_headroom_explanation">Kuinka paljon tilaa puhelimellasi on ennen kuin se alkaa hidastaa suorituskykyä jäähtyäkseen. Pienemmät arvot tarkoittavat lähempänä rajoitusta.</string>
+    <string name="info_thermal_headroom_range">Yli 0,5 on mukavaa. 0,2–0,5 tarkoittaa lämpenemistä. Alle 0,2 tarkoittaa, että rajoitus on todennäköisesti tulossa.</string>
+    <string name="info_thermal_headroom_matters">Tämä on paras ennustaja sille, milloin puhelimesi hidastuu. Jos liikkumavara lähestyy nollaa, odota suorituskyvyn laskua kunnes laite jäähtyy.</string>
+    <string name="info_thermal_headroom_detail">Lämpötilan liikkumavaran raportoi Androidin PowerManager-API (API 30+). Se edustaa normalisoitua arvoa, jossa rajoituskynnystä lähestyvät arvot osoittavat välitöntä suorituskyvyn laskua. Käyttöjärjestelmä käyttää useita lämpöantureita tämän arvon laskemiseen.</string>
+
+    <string name="info_thermal_status_title">Lämpötilan tila</string>
+    <string name="info_thermal_status_explanation">Laitteesi Androidille raportoima yleinen lämpötila. Vaihtelee ei mitään (viileä) kriittiseen (hätäjäähdytys tarpeen).</string>
+    <string name="info_thermal_status_range">Ei mitään tai Kevyt on normaalia. Kohtalainen tarkoittaa huomattavaa rajoitusta. Vakava tai korkeampi vaatii jäähtymistä.</string>
+    <string name="info_thermal_status_matters">Korkeammat lämpötilatilat käynnistävät yhä aggressiivisemman rajoituksen — ensin taustatyöt hidastuvat, sitten GPU, sitten CPU. Kriittinen tila voi käynnistää hätäsammutuksen.</string>
+
+    <string name="info_thermal_throttling_title">Rajoitus</string>
+    <string name="info_thermal_throttling_explanation">Vähentääkö puhelimesi parhaillaan suorituskykyä lämpötilan hallitsemiseksi. Aktiivinen rajoitus tarkoittaa, että puhelimesi toimii tarkoituksella hitaammin.</string>
+    <string name="info_thermal_throttling_range">Ei rajoitusta on ihanteellista. Lyhyt rajoitus raskaiden tehtävien aikana on normaalia. Jatkuva rajoitus levossa viittaa laitteisto- tai ohjelmisto-ongelmaan.</string>
+    <string name="info_thermal_throttling_matters">Rajoitus vaikuttaa suoraan käyttökokemukseen — sovellukset avautuvat hitaammin, pelit nykivät ja tehtävät kestävät kauemmin.</string>
+
+    <!-- Info Bottom Sheet - Network -->
+    <string name="info_network_signal_strength_title">Signaalin voimakkuus</string>
+    <string name="info_network_signal_strength_explanation">Kuinka vahva langaton signaali on sijainnissasi, mitattuna dBm:nä (desibelejä suhteessa milliwattiin). Negatiivisempi tarkoittaa heikompaa.</string>
+    <string name="info_network_signal_strength_range">Wi-Fi: -30 – -50 dBm on erinomainen, -70 – -80 dBm on heikko. Mobiili: -80 – -100 dBm on hyvä, alle -110 dBm on heikko.</string>
+    <string name="info_network_signal_strength_matters">Heikko signaali tarkoittaa hitaampia nopeuksia, enemmän katkenneita yhteyksiä ja suurempaa akun kulutusta, kun puhelimesi työskentelee kovemmin yhteyden ylläpitämiseksi.</string>
+    <string name="info_network_signal_strength_detail">Signaalin voimakkuus dBm:nä on logaritminen — jokainen 3 dBm:n muutos kaksinkertaistaa tai puolittaa tehon. -80 dBm:n signaali on 10 kertaa heikompi kuin -70 dBm. Puhelimesi säätää lähetystehoa dynaamisesti signaalin laadun mukaan.</string>
+
+    <string name="info_network_latency_title">Viive (Ping)</string>
+    <string name="info_network_latency_explanation">Kuinka kauan datan kulkeminen puhelimestasi palvelimelle ja takaisin kestää, mitattuna millisekunneissa. Pienempi on parempi.</string>
+    <string name="info_network_latency_range">Alle 20 ms on erinomaista. 20–50 ms on hyvä useimpiin käyttötarkoituksiin. Yli 100 ms on huomattavissa videopuheluissa ja pelaamisessa.</string>
+    <string name="info_network_latency_matters">Korkea viive tekee reaaliaikaisista toiminnoista takkuisia — videopuhelut viivästyvät, verkkopeleissä on nykimistä ja verkkosivut tuntuvat hitailta hyvistäkin latausnopeuksista huolimatta.</string>
+
+    <string name="info_network_jitter_title">Värinä (Jitter)</string>
+    <string name="info_network_jitter_explanation">Kuinka paljon viiveesi vaihtelee paketista toiseen. Korkea jitter tarkoittaa epäjohdonmukaista yhteyttä, vaikka keskinopeus olisi hyvä.</string>
+    <string name="info_network_jitter_range">Alle 5 ms on erinomaista. 5–30 ms on hyväksyttävää. Yli 30 ms voi aiheuttaa laatuongelmia puheluissa ja suoratoistoissa.</string>
+    <string name="info_network_jitter_matters">Jitter aiheuttaa äänikatkoksia, videon jäätymistä ja puskurointia. Yhteys, jolla on matala keskiviive mutta korkea jitter, voi olla huonompi kuin hieman hitaampi mutta vakaa yhteys.</string>
+
+    <string name="info_network_frequency_title">Wi-Fi-taajuus</string>
+    <string name="info_network_frequency_explanation">Radiotaajuus, jota Wi-Fi-yhteytesi käyttää. 2,4 GHz on pitkäkantoisempi mutta hitaampi. 5 GHz ja 6 GHz ovat nopeampia mutta lyhytkantoisempia.</string>
+    <string name="info_network_frequency_range">2,4 GHz: jopa ~150 Mbps. 5 GHz: jopa ~1 Gbps. 6 GHz: jopa ~2 Gbps (Wi-Fi 6E).</string>
+    <string name="info_network_frequency_matters">Oikean taajuuden valinta voi parantaa kokemustasi merkittävästi. Käytä 5/6 GHz reitittimen lähellä nopeutta varten tai 2,4 GHz kantamaan seinien läpi.</string>
+
+    <string name="info_network_wifi_standard_title">Wi-Fi-standardi</string>
+    <string name="info_network_wifi_standard_explanation">Wi-Fi-protokollan versio, jota yhteytesi käyttää. Uudemmat standardit tukevat nopeampia nopeuksia ja parempaa monen laitteen käsittelyä.</string>
+    <string name="info_network_wifi_standard_range">Wi-Fi 4 (802.11n) on perus. Wi-Fi 5 (802.11ac) on hyvä. Wi-Fi 6/6E (802.11ax) on uusin ja nopein.</string>
+    <string name="info_network_wifi_standard_matters">Sekä puhelimesi että reitittimesi on tuettava samaa standardia. Vanhemmalla standardilla yhdistäminen rajoittaa maksiminopeuttasi internet-liittymästäsi riippumatta.</string>
+
+    <string name="info_network_link_speed_title">Linkin nopeus</string>
+    <string name="info_network_link_speed_explanation">Wi-Fi-yhteytesi teoreettinen maksiminopeus, neuvoteltu puhelimesi ja reitittimen välillä.</string>
+    <string name="info_network_link_speed_range">Riippuu Wi-Fi-standardista ja signaalista. 72 Mbps Wi-Fi 4:llä, 433+ Mbps Wi-Fi 5:llä, 1200+ Mbps Wi-Fi 6:lla.</string>
+    <string name="info_network_link_speed_matters">Todelliset nopeudet ovat aina linkin nopeutta pienemmät ylikuorman, häiriöiden ja etäisyyden vuoksi. Mutta matala linkin nopeus rajoittaa suurimman mahdollisen siirtonopeutesi.</string>
+
+    <string name="info_network_bandwidth_title">Kaistanleveys</string>
+    <string name="info_network_bandwidth_explanation">Wi-Fi-yhteytesi käyttämä kanavan leveys. Leveämmät kanavat mahdollistavat enemmän dataa, mutta ovat herkempiä häiriöille.</string>
+    <string name="info_network_bandwidth_range">20 MHz on perus. 40 MHz on yleinen 2,4 GHz:llä. 80 MHz ja 160 MHz käytetään 5/6 GHz:llä korkeille nopeuksille.</string>
+    <string name="info_network_bandwidth_matters">Leveämmät kanavat tarjoavat nopeampia nopeuksia ihanteellisissa olosuhteissa, mutta voivat toimia huonommin ruuhkaisissa Wi-Fi-ympäristöissä, joissa monet verkot ovat päällekkäin.</string>
+
+    <string name="info_network_mtu_title">MTU</string>
+    <string name="info_network_mtu_explanation">Maximum Transmission Unit — suurin pakettikoko, jonka yhteytesi voi lähettää pirstomatta. Yleensä 1500 tavua Ethernet/Wi-Fi:lle.</string>
+    <string name="info_network_mtu_range">1500 on standardi. VPN-yhteydet käyttävät usein pienempiä arvoja (1400–1450). Alle 1400 voi viitata tunnelointiin.</string>
+    <string name="info_network_mtu_matters">Väärä MTU voi aiheuttaa mysteerisiä yhteysongelmia — sivut latautuvat osittain, lataukset pysähtyvät tai VPN-tunnelit katkeavat.</string>
+
+    <!-- Info Bottom Sheet - Storage -->
+    <string name="info_storage_usage_title">Tallennustilan käyttö</string>
+    <string name="info_storage_usage_explanation">Prosentti puhelimesi kokonaistallennustilasta, joka on tällä hetkellä sovellusten, median ja järjestelmätietojen käytössä.</string>
+    <string name="info_storage_usage_range">Alle 75 % on mukavaa. 75–90 % alkaa olla täynnä. Yli 90 % voi aiheuttaa suorituskykyongelmia.</string>
+    <string name="info_storage_usage_matters">Kun tallennustila on lähes täynnä, puhelimesi ei voi luoda väliaikaistiedostoja tehokkaasti, mikä hidastaa sovelluksia, päivityksiä ja jopa perustoimintoja kuten kuvien ottamista.</string>
+
+    <string name="info_storage_fill_rate_title">Täyttövauhti</string>
+    <string name="info_storage_fill_rate_explanation">Kuinka nopeasti tallennustilasi täyttyy, laskettuna käyttötrendeistä viimeisen viikon ajalta.</string>
+    <string name="info_storage_fill_rate_range">Alle 100 Mt/päivä on tyypillistä. Suuret sovellusasennukset tai kuvauspäivät aiheuttavat tilapäisiä piikkejä.</string>
+    <string name="info_storage_fill_rate_matters">Jatkuvasti korkea täyttövauhti tarkoittaa, että sinun täytyy siivota pian. Tämä auttaa ennakoimaan, milloin tila saattaa loppua.</string>
+
+    <string name="info_storage_cache_title">Välimuisti</string>
+    <string name="info_storage_cache_explanation">Sovellusten tallentama väliaikaisdata latausaikojen nopeuttamiseksi. Sisältää ladattuja kuvia, käännettyä koodia ja offline-dataa.</string>
+    <string name="info_storage_cache_range">1–5 Gt on tyypillistä. Sosiaalisen median ja suoratoistosovellusten välimuistit kasvavat eniten.</string>
+    <string name="info_storage_cache_matters">Välimuistin tyhjentäminen vapauttaa tilaa, mutta sovellukset lataavat datan uudelleen internetistä, mikä voi hetkellisesti hidastaa niitä. Se on turvallista ja voi vapauttaa merkittävästi tilaa.</string>
+
+    <string name="info_storage_apps_title">Sovellukset yhteensä</string>
+    <string name="info_storage_apps_explanation">Kaikkien asennettujen sovellusten käyttämä tallennustila, mukaan lukien niiden data ja välimuisti.</string>
+    <string name="info_storage_apps_range">Vaihtelee paljon. 20–50 Gt on yleistä hyvin käytetyssä puhelimessa. Pelit voivat käyttää 2–10 Gt kukin.</string>
+    <string name="info_storage_apps_matters">Sovellukset ovat usein suurimpia tallennustilan kuluttajia. Käyttämättömien sovellusten poistaminen on yksi tehokkaimmista tavoista vapauttaa tilaa.</string>
+
+    <!-- Info Bottom Sheet - Speed Test -->
+    <string name="info_speedtest_download_title">Latausnopeus</string>
+    <string name="info_speedtest_download_explanation">Kuinka nopeasti yhteytesi voi vastaanottaa dataa, mitattuna megabitteinä sekunnissa (Mbps). Vaikuttaa suoratoistoon, selailuun ja tiedostojen lataamiseen.</string>
+    <string name="info_speedtest_download_range">10–50 Mbps on hyvä useimpiin käyttötarkoituksiin. 100+ Mbps on erinomaista. Alle 5 Mbps voi olla ongelmallista videon suoratoistossa.</string>
+    <string name="info_speedtest_download_matters">Latausnopeus määrittää, kuinka nopeasti sisältö latautuu — verkkosivut, videot, sovelluspäivitykset ja tiedostot. Useimmat päivittäiset toiminnot riippuvat latausnopeudesta.</string>
+
+    <string name="info_speedtest_upload_title">Lähetysnopeus</string>
+    <string name="info_speedtest_upload_explanation">Kuinka nopeasti yhteytesi voi lähettää dataa. Vaikuttaa videopuheluihin, kuvien lähettämiseen ja suurten tiedostojen jakamiseen.</string>
+    <string name="info_speedtest_upload_range">5–20 Mbps on hyvä. 50+ Mbps on erinomaista. Alle 2 Mbps voi aiheuttaa videopuheluiden laatuongelmia.</string>
+    <string name="info_speedtest_upload_matters">Lähetysnopeus on kriittinen videopuheluille, suoratoistolle, pilvivarmuuskopioille ja sisällön jakamiselle. Se on tyypillisesti pienempi kuin latausnopeus.</string>
+
+    <string name="info_speedtest_ping_title">Ping</string>
+    <string name="info_speedtest_ping_explanation">Datan edestakainen matka-aika testipalvelimelle ja takaisin. Sama kuin viive — pienempi on parempi.</string>
+    <string name="info_speedtest_ping_range">Alle 20 ms on erinomaista. 20–50 ms on hyvä. Yli 100 ms on huomattavaa viivettä.</string>
+    <string name="info_speedtest_ping_matters">Matala ping on välttämätön reaaliaikaisille toiminnoille kuten pelaamiselle ja videopuheluille. Jopa nopeat latausnopeudet tuntuvat hitailta korkealla pingillä.</string>
+
+    <string name="info_speedtest_jitter_title">Värinä (Jitter)</string>
+    <string name="info_speedtest_jitter_explanation">Pakettien välisten ping-aikojen vaihtelu. Tasainen ajoitus tarkoittaa vakaampaa ja ennustettavampaa yhteyttä.</string>
+    <string name="info_speedtest_jitter_range">Alle 5 ms on erinomaista. 5–20 ms on hyväksyttävää. Yli 30 ms osoittaa yhteyden epävakautta.</string>
+    <string name="info_speedtest_jitter_matters">Korkea jitter aiheuttaa pätkivää ääntä puheluissa, puskurointia suoratoistoissa ja nykimistä peleissä, vaikka keskinopeudet näyttäisivät hyviltä.</string>
+
+    <!-- Info Cards - Battery -->
+    <string name="info_card_health_80_headline">Akkusi on kulunut</string>
+    <string name="info_card_health_80_body">Alle 90 % kunto tarkoittaa, että akku on menettänyt osan alkuperäisestä kapasiteetistaan. Tämä on normaalia ikääntymistä — useimmat akut heikkenevät 80 %:iin 2–3 vuodessa. Saatat huomata lyhyemmän akunkeston latausten välillä.</string>
+    <string name="info_card_dies_before_zero_headline">Puhelin sammuu ennen 0 %?</string>
+    <string name="info_card_dies_before_zero_body">Alle 80 % kunnossa polttoainemittari muuttuu epätarkemmaksi. Puhelimesi voi sammua 5–15 %:ssa, koska jäljellä olevaa kapasiteettia ei voi käyttää. Tämä on merkki siitä, että akku tulisi vaihtaa.</string>
+    <string name="info_card_charging_habits_headline">Latausvinkki</string>
+    <string name="info_card_charging_habits_body">Akun pitäminen 20–80 % välillä ja yön yli täyteen lataamisen välttäminen pidentää sen käyttöikää. Lämpö latauksen aikana on suurin vihollinen — poista paksut kuoret ladattaessa.</string>
+    <string name="info_card_screen_off_drain_headline">Korkea taustakulutus havaittu</string>
+    <string name="info_card_screen_off_drain_body">Akkusi tyhjenee normaalia nopeammin näytön ollessa pois. Tämä tarkoittaa yleensä, että taustasovellus pitää puhelintasi hereillä. Tarkista Sovelluksen käyttö syyllisen tunnistamiseksi.</string>
+
+    <!-- Info Cards - Thermal -->
+    <string name="info_card_thermal_throttling_headline">Miksi puhelimesi hidastuu kuumana</string>
+    <string name="info_card_thermal_throttling_body">Puhelimesi vähentää tarkoituksella CPU:n ja GPU:n nopeutta lämpötilan noustessa laitteistovaurioiden estämiseksi. Tämä suojaa puhelintasi mutta tekee siitä hitaan. Siirry viileämpään ympäristöön ja sulje vaativat sovellukset.</string>
+    <string name="info_card_heat_battery_headline">Kuumuus ja akun kuluminen vahvistavat toisiaan</string>
+    <string name="info_card_heat_battery_body">Korkea lämpötila nopeuttaa akun kemiallista heikkenemistä, ja heikentynyt akku tuottaa enemmän lämpöä kuormituksessa. Tämä luo kierteen. Jos puhelimesi on jatkuvasti lämmin, se ikääntyy nopeammin.</string>
+
+    <!-- Info Cards - Network -->
+    <string name="info_card_weak_signal_headline">Heikko signaali kuluttaa akkua</string>
+    <string name="info_card_weak_signal_body">Kun signaali on heikko, puhelimesi lisää radion lähetystehoa yhteyden ylläpitämiseksi. Tämä voi kuluttaa 2–3 kertaa enemmän akkua kuin vahva signaali. Harkitse siirtymistä lähemmäs reititintä tai ikkunaa.</string>
+    <string name="info_card_speed_test_info_headline">Mitä nopeustestit oikeastaan mittaavat</string>
+    <string name="info_card_speed_test_info_body">Nopeustestit mittaavat yhteyttäsi yhteen palvelimeen yhdellä hetkellä. Todellinen suorituskyky vaihtelee vuorokaudenajan, palvelimen etäisyyden ja verkon ruuhkaisuuden mukaan. Suorita useita testejä eri aikoina parempaa kokonaiskuvaa varten.</string>
+
+    <!-- Info Cards - Storage -->
+    <string name="info_card_full_storage_headline">Miksi täysi puhelin on hidas puhelin</string>
+    <string name="info_card_full_storage_body">Kun tallennustila on yli 75 % täynnä, puhelimellasi on vähemmän tilaa väliaikaistiedostoille, sovellusten välimuistille ja järjestelmätoiminnoille. Tämä voi hidastaa sovellusten avautumista, kuvien tallentamista ja jopa järjestelmäpäivityksiä.</string>
+    <string name="info_card_storage_overview_headline">Minne tallennustilasi oikeastaan menee</string>
+    <string name="info_card_storage_overview_body">Sovellukset ja niiden data käyttävät yleensä eniten tilaa, seuraavina kuvat ja videot. Järjestelmätiedostot, välimuistidata ja ladatut tiedostot voivat myös kertyä. Yllä oleva mediaerottelu näyttää henkilökohtaisen käyttömallisi.</string>
+
+    <!-- Learn Section -->
+    <string name="home_learn">Oppaat</string>
+    <string name="learn_screen_title">Oppaat</string>
+    <string name="learn_topic_battery">Akku</string>
+    <string name="learn_topic_temperature">Lämpötila</string>
+    <string name="learn_topic_network">Verkko</string>
+    <string name="learn_topic_storage">Tallennustila</string>
+    <string name="learn_topic_general">Yleinen</string>
+    <string name="learn_read_time">%1$d min lukuaika</string>
+    <string name="learn_cross_link_check">Tarkista omasi →</string>
+
+    <!-- Learn Articles - Battery -->
+    <string name="learn_battery_health_title">Akun kunto ja lataussyklit</string>
+    <string name="learn_battery_health_preview">Mitä akun kunto todella tarkoittaa, miten syklimäärä vaikuttaa siihen ja milloin harkita vaihtoa.</string>
+    <string name="learn_battery_health_body">## Mitä on akun kunto?\n\nAkun kunto mittaa, kuinka paljon akun alkuperäisestä kapasiteetista on jäljellä. Uusi puhelin alkaa 100 %:sta. Ajan myötä litiumionikennon kemialliset prosessit muuttuvat tehottomammiksi ja suurin mahdollinen varaus pienenee.\n\n## Miten syklimäärä vaikuttaa kuntoon\n\nLataussykli on yksi akun kapasiteetin täysi purku — mutta sen ei tarvitse tapahtua kerralla. 50 %:n käyttö tänään ja 50 % huomenna vastaa yhtä sykliä. Useimmat puhelinakut kestävät 500–800 sykliä ennen 80 %:n kunnon saavuttamista.\n\n## Milloin akku kannattaa vaihtaa\n\nAlle 80 %:n kunnossa huomaat merkittävästi lyhyemmän akunkeston. Alle 70 %:ssa odottamattomat sammutukset yleistyvät, koska polttoainemittari ei voi mitata jäljellä olevaa varausta tarkasti. Useimmat valmistajat suosittelevat vaihtoa noin 80 %:ssa.</string>
+
+    <string name="learn_battery_drain_title">Akun kulutuksen ymmärtäminen</string>
+    <string name="learn_battery_drain_preview">Mikä aiheuttaa suurta kulutusta, miten lukea kulutustietoja ja käytännön vinkkejä akun keston pidentämiseen.</string>
+    <string name="learn_battery_drain_body">## Mikä on kulutustahti?\n\nKulutustahti mittaa, kuinka nopeasti akun prosentti laskee, yleensä ilmaistuna prosentteina tunnissa (%/h). Kevyt käyttö voi näyttää 0,5–1 %/h, kun taas pelaaminen tai navigointi voi yltää 10 %/h tai enemmän.\n\n## Yleisiä kulutuksen syitä\n\nNäyttö on suurin virrankuluttaja, seuraavana mobiiliradio (erityisesti heikolla signaalilla), GPS ja suoritinintensiiviset sovellukset. Taustaprosessit kuten synkronointi, sijaintipalvelut ja push-ilmoitukset vaikuttavat myös.\n\n## Näyttö päällä vs. pois\n\nNäyttö päällä- ja pois-kulutuksen vertailu auttaa tunnistamaan ongelmia. Jos puhelimesi tyhjenee nopeasti näytön ollessa pois, taustasovellus todennäköisesti pitää sitä hereillä. Tarkista syvän unen analyysi nähdäksesi, meneekö puhelimesi Doze-tilaan kunnolla.</string>
+
+    <string name="learn_battery_charging_title">Latausmyytit ja parhaat käytännöt</string>
+    <string name="learn_battery_charging_preview">Erota fakta fiktiosta lataustottumuksissa ja opi, mikä todella pidentää akun kestoa.</string>
+    <string name="learn_battery_charging_body">## Myytti: Akku pitää tyhjentää kokonaan ennen latausta\n\nVäärin. Litiumioniakut suosivat itse asiassa osittaisia latauksia. Syvät purkaukset (alle 20 %) rasittavat akkua enemmän kuin täydentäminen 50 %:sta.\n\n## Myytti: Yön yli lataaminen vahingoittaa akkua\n\nPääosin väärin nykyaikaisille puhelimille. Useimmat laitteet lopettavat lataamisen 100 %:ssa ja ylläpitävät varausta. Kuitenkin akun pitäminen 100 %:ssa lämpimässä ympäristössä kiihdyttää heikkenemistä.\n\n## Mikä todella auttaa\n\nPidä akku 20–80 %:n välillä mahdollisuuksien mukaan. Vältä kuumuutta latauksen aikana — poista kuoret, älä lataa suorassa auringonvalossa. Käytä valmistajan laturia tai sertifioitua. Hitaampi lataus tuottaa vähemmän lämpöä ja on hellempi akulle.</string>
+
+    <string name="learn_battery_current_power_title">Virta ja teho selitettynä</string>
+    <string name="learn_battery_current_power_preview">Mitä milliampeerit ja watit tarkoittavat akullesi ja miten tulkita näitä lukemia.</string>
+    <string name="learn_battery_current_power_body">## Virta (mA)\n\nVirta mittaa sähkön kulkua milliampeereina. Purkautuessa se on negatiivinen (virtaa ulos). Ladattaessa positiivinen (virtaa sisään). Suuremmat itseisarvot tarkoittavat enemmän tehonkäyttöä.\n\n## Teho (W)\n\nTeho wateissa on jännite kertaa virta (V × A). Watit antavat tarkemman kuvan energiankäytöstä, koska ne huomioivat jännitemuutokset. Puhelin, joka käyttää 500 mA 3,7 V:lla, kuluttaa noin 1,85 W.\n\n## Lukemien tarkkuus\n\nKaikki puhelimet eivät raportoi virtaa tarkasti. Jotkut näyttävät hetkellisiä lukemia, toiset tasoitettuja keskiarvoja. runcheckin luottamusmerkki kertoo, kuinka luotettavia laitteesi lukemat ovat. Käytä keskiarvoa ja min/max-tilastoja paremman kuvan saamiseksi yksittäisen lukeman sijaan.</string>
+
+    <!-- Learn Articles - Temperature -->
+    <string name="learn_thermal_normal_temps_title">Normaalit puhelimen lämpötilat</string>
+    <string name="learn_thermal_normal_temps_preview">Mitkä lämpötilat ovat turvallisia, milloin huolestua ja miten puhelimesi hallitsee lämpöä.</string>
+    <string name="learn_thermal_normal_temps_body">## Mikä on normaalia?\n\nLevossa olevan puhelimen tulisi olla lähellä huoneenlämpöä (20–25 °C). Kevyessä käytössä 25–35 °C on tyypillistä. Pelaamisen tai kameran käytön aikana 35–42 °C on yleistä ja hyväksyttävää.\n\n## Milloin huolestua\n\nYli 45 °C normaalikäytössä on huolestuttavaa. Jos puhelimesi tuntuu epämukavan kuumalta käteen, se on todennäköisesti yli 40 °C. Akun lämpötila-anturi antaa tarkan lukeman tuntemuksen sijaan.\n\n## Miten puhelimesi hallitsee lämpöä\n\nAndroid valvoo useita lämpöalueita laitteessa. Kun lämpötila nousee, se ensin vähentää taustatyötä, sitten rajoittaa CPU/GPU-taajuuksia (rajoitus) ja ääritapauksissa voi näyttää lämpövaroituksen tai sammua vaurioiden estämiseksi.</string>
+
+    <string name="learn_thermal_throttling_title">Lämpörajoituksen ymmärtäminen</string>
+    <string name="learn_thermal_throttling_preview">Miksi puhelimesi hidastuu kuumana, mitä rajoitustasot tarkoittavat ja miten minimoida se.</string>
+    <string name="learn_thermal_throttling_body">## Mikä on rajoitus?\n\nLämpörajoitus on puhelimesi tarkoituksellista prosessorinopeuden vähentämistä lämmön hallitsemiseksi. Se on turvamekanismi, joka suojaa laitteistoa vaurioilta.\n\n## Rajoitustasot\n\nAndroid määrittelee useita tasoja: Ei mitään (täysi nopeus), Kevyt (pieni vähennys), Kohtalainen (huomattava), Vakava (merkittävä vaikutus), Kriittinen (hätä). Päivittäinen rajoitus pysyy yleensä Kevyellä tai Kohtalaisella.\n\n## Lämpötilan liikkumavara\n\nLiikkumavara-arvo näyttää, kuinka lähellä rajoitusta olet. Ajattele sitä lämpötilabudjettina — kun se saavuttaa nollan, rajoitus alkaa. Liikkumavaran seuranta auttaa ennakoimaan suorituskyvyn laskuja ennen niiden tapahtumista.\n\n## Rajoituksen vähentäminen\n\nVältä vaativien sovellusten käyttöä ladattaessa. Poista puhelimen kuoret, jotka pidättävät lämpöä. Vähennä näytön kirkkautta. Kuumissa ympäristöissä anna puhelimellesi taukoja vaativien tehtävien välillä.</string>
+
+    <string name="learn_thermal_feedback_title">Lämpö-akku-takaisinkytkentäsilmukka</string>
+    <string name="learn_thermal_feedback_preview">Miten kuumuus vahingoittaa akkuja ja miten vahingoittuneet akut luovat lisää lämpöä.</string>
+    <string name="learn_thermal_feedback_body">## Kierre\n\nKorkeat lämpötilat nopeuttavat akun kemiallista heikkenemistä. Heikentyneen akun sisäinen vastus on korkeampi. Korkeampi vastus tarkoittaa, että enemmän energiaa hukataan lämpönä latauksen ja purkauksen aikana. Enemmän lämpöä tarkoittaa nopeampaa heikkenemistä.\n\n## Tärkeät luvut\n\n25 °C:ssa akku saattaa kestää 500 sykliä 80 %:n kuntoon. 35 °C:ssa tämä voi laskea 300 sykliin. 45 °C:ssa vielä vähemmän. Jokainen 10 °C:n nousu karkeasti kaksinkertaistaa kemiallisen ikääntymisen nopeuden.\n\n## Kierteen katkaiseminen\n\nVältä lataamista kuumissa ympäristöissä. Älä käytä vaativia sovelluksia ladattaessa. Jos puhelimesi lämpenee usein, tarkista vialliset sovellukset. Harkitse akun vaihtoa, jos kunto on alle 80 % ja puhelin käy lämpimänä — vanha akku todennäköisesti myötävaikuttaa lämpöongelmaan.</string>
+
+    <!-- Learn Articles - Network -->
+    <string name="learn_network_signal_title">Signaalin voimakkuus ja dBm</string>
+    <string name="learn_network_signal_preview">Mitä dBm tarkoittaa, miten lukea signaalin voimakkuutta ja miksi se on tärkeämpää kuin palkit.</string>
+    <string name="learn_network_signal_body">## Miksi dBm palkkien sijaan?\n\nSignaalipalkit ovat yksinkertaistettuja ja vaihtelevat valmistajittain — neljä palkkia yhdessä puhelimessa voi näkyä kolmena toisessa. dBm (desibelejä suhteessa milliwattiin) on todellinen mittaus, joka antaa johdonmukaisen ja tarkan lukeman.\n\n## dBm-arvojen lukeminen\n\ndBm-arvot ovat negatiivisia — lähempänä nollaa tarkoittaa vahvempaa. Asteikko on logaritminen: jokainen 3 dBm:n muutos kaksinkertaistaa tai puolittaa signaalitehon. Joten -70 dBm on kymmenen kertaa vahvempi kuin -80 dBm.\n\n## Signaalin laadun alueet\n\nWi-Fi: -30 – -50 dBm on erinomainen, -50 – -70 dBm on hyvä, -70 – -80 dBm on heikko, alle -80 dBm on huono. Mobiili: -80 – -100 dBm on hyvä, -100 – -110 dBm on kohtalainen, alle -110 dBm on huono.\n\n## Vaikutus akkuun\n\nHeikot signaalit pakottavat puhelimesi lisäämään radion lähetystehoa, mikä tyhjentää akkua nopeammin. Siirtyminen paremmalla signaalilla olevaan paikkaan voi huomattavasti parantaa akunkestoa.</string>
+
+    <string name="learn_network_wifi_bands_title">Wi-Fi-kaistat ja standardit</string>
+    <string name="learn_network_wifi_bands_preview">2,4 GHz vs 5 GHz vs 6 GHz, Wi-Fi-sukupolvet ja oikean yhteyden valinta.</string>
+    <string name="learn_network_wifi_bands_body">## Taajuuskaistat\n\n2,4 GHz kantaa pidemmälle ja läpäisee seinät paremmin, mutta on hitaampi ja ruuhkaisempi. 5 GHz on nopeampi ja vähemmän häiriöaltis, mutta lyhyempi kantama. 6 GHz (Wi-Fi 6E) tarjoaa parhaat nopeudet ja vähiten ruuhkaa, mutta vaatii uudempia laitteita ja on lyhyin kantama.\n\n## Wi-Fi-standardit\n\nWi-Fi 4 (802.11n): jopa 600 Mbps, esitelty 2009. Wi-Fi 5 (802.11ac): jopa 3,5 Gbps, vain 5 GHz. Wi-Fi 6 (802.11ax): jopa 9,6 Gbps, molemmat kaistat, parempi ruuhkaisissa ympäristöissä. Wi-Fi 6E: sama kuin Wi-Fi 6 plus 6 GHz -kaista.\n\n## Käytännön vinkkejä\n\nYhdistä 5 GHz:iin reitittimen lähellä nopeimpia nopeuksia varten. Käytä 2,4 GHz:iä kun tarvitset kantamaa seinien läpi. Puhelimesi valitsee yleensä parhaan kaistan automaattisesti, mutta voit erottaa verkkonimet reitittimen asetuksissa manuaalista valintaa varten.</string>
+
+    <string name="learn_network_speed_tests_title">Miten nopeustestit toimivat</string>
+    <string name="learn_network_speed_tests_preview">Mitä nopeustestit mittaavat, niiden rajoitukset ja miten saada merkityksellisiä tuloksia.</string>
+    <string name="learn_network_speed_tests_body">## Mitä ne mittaavat\n\nNopeustesti lähettää ja vastaanottaa dataa testipalvelimelle mitaten: latausnopeus (kuinka nopeasti vastaanotat), lähetysnopeus (kuinka nopeasti lähetät), ping (edestakainen viive) ja jitter (viiveen vaihtelu).\n\n## Rajoitukset\n\nTulokset kuvastavat reittiä puhelimesi ja yhden tietyn palvelimen välillä yhdellä tietyllä hetkellä. Tulokset vaihtelevat: vuorokaudenaika, palvelimen etäisyys, Wi-Fi vs mobiili, muut verkkoa käyttävät laitteet ja taustasovellukset.\n\n## Hyödyllisten tulosten saaminen\n\nSuorita testejä eri vuorokaudenaikoina. Sulje muut sovellukset ensin. Testaa sekä Wi-Fi:llä että mobiiliverkolla. Vertaa useita tuloksia yksittäisen testin sijaan. Käytä runcheckin historiaa trendien seuraamiseen ajan mittaan.</string>
+
+    <!-- Learn Articles - Storage -->
+    <string name="learn_storage_slowdown_title">Täysi tallennustila ja suorituskyky</string>
+    <string name="learn_storage_slowdown_preview">Miksi lähes täysi puhelin toimii hitaammin ja mitä voit tehdä asialle.</string>
+    <string name="learn_storage_slowdown_body">## Miten tallennustila vaikuttaa nopeuteen\n\nNykyaikainen flash-tallennustila (UFS/eMMC) tarvitsee vapaata tilaa tehokkaaseen toimintaan. Ohjain käyttää vapaita lohkoja kulumisen tasaamiseen, roskien keräämiseen ja kirjoituksen vahvistuksen hallintaan. Alle 25 % vapaata tilaa rajoittaa näitä toimintoja.\n\n## Mitä huomaat\n\nSovellusten avautuminen kestää kauemmin. Kuvien tallentaminen viivästyy. Järjestelmäpäivitykset voivat epäonnistua. Sovellukset voivat kaatua, kun ne eivät voi kirjoittaa väliaikaistietoja. Koko järjestelmä tuntuu hitaalta.\n\n## Korjaaminen\n\nAloita runcheckin siivoustyökaluilla — suuret tiedostot, vanhat lataukset ja APK-asennusohjelmat ovat helppoja voittoja. Tarkista sovellukset, joita et ole käyttänyt viime aikoina. Siirrä kuvat pilvipalveluun. Tyhjennä sovellusten välimuistit (sosiaalisen median sovellukset ovat usein suurimpia syyllisiä).</string>
+
+    <string name="learn_storage_breakdown_title">Minne tallennustilasi menee</string>
+    <string name="learn_storage_breakdown_preview">Ymmärrä, mikä käyttää tallennustilaasi ja miten hallita kutakin kategoriaa tehokkaasti.</string>
+    <string name="learn_storage_breakdown_body">## Pääkategoriat\n\nSovellukset ja niiden data käyttävät tyypillisesti eniten tilaa (30–60 % useimmissa puhelimissa). Kuvat ja videot ovat yleensä toisena. Järjestelmätiedostot vievät 10–15 Gt, jota et voi vapauttaa. Lataukset, asiakirjat ja ääni muodostavat lopun.\n\n## Piilotetut tallennustilan kuluttajat\n\nSovellusten välimuistit kasvavat ajan myötä — sosiaalisen median sovellukset voivat välimuistittaa gigatavuja kuvia ja videoita. Viestisovellukset tallentavat kaiken vastaanotetun median. Offline-kartat ja musiikki voivat viedä merkittävästi tilaa. Vanhat APK-asennustiedostot jäävät Latauksiin.\n\n## Hallintastrategiat\n\nTarkista säännöllisesti suuret tiedostot (runcheck löytää nämä). Aseta viestisovellukset olemaan lataamatta mediaa automaattisesti. Käytä suoratoistoa offline-latausten sijaan kun tallennustila on tiukilla. runcheckin mediaerottelu näyttää tarkalleen, minne tilasi menee.</string>
+
+    <!-- Learn Articles - General -->
+    <string name="learn_health_score_title">Miten terveyspisteytys toimii</string>
+    <string name="learn_health_score_preview">Miten runcheck laskee kokonaisterveyspisteen akun, verkon, lämpötilan ja tallennustilan tiedoista.</string>
+    <string name="learn_health_score_body">## Mitä se mittaa\n\nTerveyspiste yhdistää neljä kategoriaa: akku (taso, kunto, kulutustahti), verkko (signaalin laatu, viive), lämpötila (lämpötila, liikkumavara, rajoitus) ja tallennustila (vapaa tila, täyttövauhti).\n\n## Miten se lasketaan\n\nKukin kategoria tuottaa 0–100 alapisteen nykyisten lukemien perusteella verrattuna ihanteellisiin alueisiin. Nämä painotetaan ja yhdistetään kokonaispisteeksi. Akku ja lämpötila painotetaan hieman korkeammalle, koska ne vaikuttavat koko laitteen kokemukseen.\n\n## Pistealueet\n\n90–100: Erinomainen — laitteesi on loistavassa kunnossa. 70–89: Hyvä — normaalia kulumista ja pieniä ongelmia. 50–69: Kohtalainen — huomattavia ongelmia, joihin voisi puuttua. Alle 50: Heikko — merkittäviä ongelmia, jotka vaikuttavat päivittäiseen käyttöön.\n\n## Pisteen parantaminen\n\nPiste korostaa, mikä kategoria tarvitsee huomiota. Tarkista kunkin kategorian yksityiskohtanäkymä tarkempia suosituksia varten. Joitakin tekijöitä (kuten akun ikä) ei voi parantaa ilman laitteistomuutoksia, mutta monia muita (kuten tallennustilan vapauttaminen tai signaalin parantaminen) voi korjata helposti.</string>
+
+    <string name="learn_sw_vs_hw_title">Ohjelmisto- vs laitteisto-ongelmat</string>
+    <string name="learn_sw_vs_hw_preview">Miten erottaa, johtuvatko puhelimesi ongelmat ohjelmistosta (korjattavissa) vai laitteistosta (vaatii huoltoa).</string>
+    <string name="learn_sw_vs_hw_body">## Ohjelmisto-ongelmat\n\nOhjelmisto-ongelmat ovat yleensä korjattavissa ilman huoltoa: korkea kulutus viallisesta sovelluksesta, hidas suorituskyky täydestä tallennustilasta, huono verkko väärästä asetuksesta, ylikuumeneminen jumittuneesta taustaprosessista. Nämä ilmaantuvat usein äkillisesti sovelluspäivityksen tai asetusmuutoksen jälkeen.\n\n## Laitteisto-ongelmat\n\nLaitteisto-ongelmat vaativat fyysistä korjausta tai vaihtoa: akun kunto alle 80 % (kemia heikentynyt), jatkuva ylikuumeneminen levossa (lämpötahnan tai sirun heikkeneminen), Wi-Fi katkeilee reitittimestä riippumatta (antenniongelma).\n\n## Miten erottaa toisistaan\n\nKäytä runcheckin dataa ajan mittaan. Ohjelmisto-ongelmat näyttävät usein äkillisiä muutoksia — kulutuspiikit sovelluksen asennuksen jälkeen tai lämpötilahypyt käyttöjärjestelmäpäivityksen jälkeen. Laitteisto-ongelmat näyttävät asteittaisia trendejä — akun kunto laskee hitaasti, lämpösuorituskyky heikkenee johdonmukaisesti.\n\n## Mitä tehdä\n\nOhjelmistolle: kokeile vikasietotilaa sovellusten poissulkemiseksi, tyhjennä välimuistit, tarkista käyttöjärjestelmäpäivitykset. Laitteistolle: tarkista takuutilanne, käy valtuutetussa huollossa. Akun vaihto on yleensä edullinen ja tekee suurimman eron vanhenevissa puhelimissa.</string>
 </resources>

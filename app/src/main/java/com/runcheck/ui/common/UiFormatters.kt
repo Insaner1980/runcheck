@@ -12,6 +12,7 @@ import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.SignalQuality
+import com.runcheck.domain.model.TemperatureUnit
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -35,6 +36,37 @@ fun formatLocalizedDateTime(timestamp: Long, skeleton: String): String {
     return SimpleDateFormat(pattern, locale).format(Date(timestamp))
 }
 
+fun convertTemperature(valueCelsius: Number, unit: TemperatureUnit): Double {
+    val value = valueCelsius.toDouble()
+    return when (unit) {
+        TemperatureUnit.CELSIUS -> value
+        TemperatureUnit.FAHRENHEIT -> (value * 9.0 / 5.0) + 32.0
+    }
+}
+
+@androidx.annotation.StringRes
+fun temperatureUnitRes(unit: TemperatureUnit): Int = when (unit) {
+    TemperatureUnit.CELSIUS -> R.string.unit_celsius
+    TemperatureUnit.FAHRENHEIT -> R.string.unit_fahrenheit
+}
+
+fun formatTemperatureValue(
+    valueCelsius: Number,
+    unit: TemperatureUnit,
+    fractionDigits: Int = 1
+): String = formatDecimal(convertTemperature(valueCelsius, unit), fractionDigits)
+
+fun formatTemperature(
+    context: Context,
+    valueCelsius: Number,
+    unit: TemperatureUnit,
+    fractionDigits: Int = 1
+): String = context.getString(
+    R.string.value_with_suffix_text,
+    formatTemperatureValue(valueCelsius, unit, fractionDigits),
+    context.getString(temperatureUnitRes(unit))
+)
+
 @Composable
 fun rememberFormattedDateTime(timestamp: Long, skeleton: String): String =
     remember(timestamp, skeleton) {
@@ -49,11 +81,22 @@ fun formatPercent(value: Int): String = stringResource(R.string.value_percent, v
 
 @Composable
 fun formatPercent(value: Float, fractionDigits: Int = 1): String =
-    "${formatDecimal(value, fractionDigits)}${stringResource(R.string.unit_percent)}"
+    stringResource(
+        R.string.value_with_suffix_text,
+        formatDecimal(value, fractionDigits),
+        stringResource(R.string.unit_percent)
+    )
 
 @Composable
-fun formatTemperature(value: Float, fractionDigits: Int = 1): String =
-    "${formatDecimal(value, fractionDigits)}${stringResource(R.string.unit_celsius)}"
+fun formatTemperature(
+    valueCelsius: Float,
+    unit: TemperatureUnit,
+    fractionDigits: Int = 1
+): String = stringResource(
+    R.string.value_with_suffix_text,
+    formatTemperatureValue(valueCelsius, unit, fractionDigits),
+    stringResource(temperatureUnitRes(unit))
+)
 
 @Composable
 fun scoreLabel(score: Int): String = when {
@@ -73,6 +116,7 @@ fun connectionDisplayLabel(
     ConnectionType.CELLULAR -> networkSubtype
         ?.takeUnless(::isUnknownValue)
         ?: stringResource(R.string.connection_cellular)
+    ConnectionType.VPN -> stringResource(R.string.connection_vpn)
     ConnectionType.NONE -> stringResource(R.string.connection_none)
 }
 

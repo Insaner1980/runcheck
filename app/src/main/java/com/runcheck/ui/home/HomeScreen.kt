@@ -21,10 +21,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.DataUsage
@@ -43,7 +42,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -107,21 +105,16 @@ import com.runcheck.pro.ProStatus
 import com.runcheck.ui.pro.TrialHomeCard
 import com.runcheck.ui.pro.PostExpirationUpgradeCard
 import com.runcheck.ui.pro.TrialWelcomeSheet
-import com.runcheck.ui.theme.AccentBlue
-import com.runcheck.ui.theme.AccentOrange
-import com.runcheck.ui.theme.AccentTeal
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.statusColorForPercent
 import com.runcheck.ui.theme.statusColorForSignalQuality
 import com.runcheck.ui.theme.statusColorForStoragePercent
 import com.runcheck.ui.theme.statusColorForTemperature
-import com.runcheck.ui.theme.BgCardAlt
-import com.runcheck.ui.theme.TextMuted
-import com.runcheck.ui.theme.TextSecondary
+import com.runcheck.ui.theme.numericHeroLargeValueTextStyle
+import com.runcheck.ui.theme.numericHeroValueTextStyle
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.reducedMotion
-import com.runcheck.ui.theme.statusColors
 import kotlin.math.sin
 
 @Composable
@@ -135,6 +128,7 @@ fun HomeScreen(
     onNavigateToAppUsage: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToProUpgrade: () -> Unit,
+    onNavigateToLearn: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -236,6 +230,7 @@ fun HomeScreen(
                     onNavigateToSpeedTest = onNavigateToSpeedTest,
                     onNavigateToAppUsage = onNavigateToAppUsage,
                     onNavigateToProUpgrade = onNavigateToProUpgrade,
+                    onNavigateToLearn = onNavigateToLearn,
                     onDismissUpgradeCard = { viewModel.dismissUpgradeCard() }
                 )
 
@@ -268,6 +263,7 @@ private fun HomeContent(
     onNavigateToSpeedTest: () -> Unit,
     onNavigateToAppUsage: () -> Unit,
     onNavigateToProUpgrade: () -> Unit,
+    onNavigateToLearn: () -> Unit = {},
     onDismissUpgradeCard: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -342,7 +338,10 @@ private fun HomeContent(
             GridCard(
                 icon = Icons.Outlined.Thermostat,
                 title = stringResource(R.string.home_thermal_card),
-                subtitle = formatTemperature(state.thermalState.batteryTempC),
+                subtitle = formatTemperature(
+                    state.thermalState.batteryTempC,
+                    state.temperatureUnit
+                ),
                 subtitleColor = MaterialTheme.colorScheme.onSurface,
                 statusLabel = temperatureBandLabel(state.thermalState.batteryTempC),
                 statusColor = statusColorForTemperature(state.thermalState.batteryTempC),
@@ -395,7 +394,7 @@ private fun HomeContent(
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
         Card(
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.large,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainer
             ),
@@ -426,6 +425,12 @@ private fun HomeContent(
                         )
                     }
                 }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                ListRow(
+                    label = stringResource(R.string.home_learn),
+                    icon = Icons.AutoMirrored.Outlined.MenuBook,
+                    onClick = onNavigateToLearn
+                )
             }
         }
 
@@ -433,7 +438,7 @@ private fun HomeContent(
 
         if (state.proState.status == ProStatus.PRO_PURCHASED) {
             Card(
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
                 ),
@@ -446,12 +451,10 @@ private fun HomeContent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = AccentTeal.copy(alpha = 0.16f)
-                    ) {
-                        IconCircle(icon = Icons.Outlined.Star)
-                    }
+                    IconCircle(
+                        icon = Icons.Outlined.Star,
+                        tint = MaterialTheme.statusColors.healthy
+                    )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = stringResource(R.string.home_insights_title),
@@ -461,7 +464,7 @@ private fun HomeContent(
                         Text(
                             text = stringResource(R.string.home_insights_desc),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -469,13 +472,9 @@ private fun HomeContent(
         } else if (state.proState.status == ProStatus.TRIAL_EXPIRED) {
             Card(
                 onClick = onNavigateToProUpgrade,
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer
-                ),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
@@ -486,22 +485,10 @@ private fun HomeContent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                shape = CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Lock,
-                            contentDescription = null,
-                            modifier = Modifier.size(22.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                    IconCircle(
+                        icon = Icons.Outlined.Lock,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = stringResource(R.string.home_pro_title),
@@ -511,7 +498,7 @@ private fun HomeContent(
                         Text(
                             text = stringResource(R.string.home_pro_history_desc),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     Icon(
@@ -563,12 +550,18 @@ private fun HealthScoreCard(
     val statusLabel = scoreLabel(score)
     val formattedSummary = stringResource(R.string.home_device_good_shape, statusLabel.lowercase())
     val statusWord = statusLabel.lowercase()
-    val annotatedSummary = remember(formattedSummary, statusWord) {
+    val healthyColor = MaterialTheme.statusColors.healthy
+    val annotatedSummary = remember(formattedSummary, statusWord, healthyColor) {
         buildAnnotatedString {
             val startIndex = formattedSummary.indexOf(statusWord)
             if (startIndex >= 0) {
                 append(formattedSummary.substring(0, startIndex))
-                withStyle(SpanStyle(color = AccentTeal, fontWeight = FontWeight.Bold)) {
+                withStyle(
+                    SpanStyle(
+                        color = healthyColor,
+                        fontWeight = FontWeight.Bold
+                    )
+                ) {
                     append(statusWord)
                 }
                 append(formattedSummary.substring(startIndex + statusWord.length))
@@ -579,7 +572,7 @@ private fun HealthScoreCard(
     }
 
     Card(
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
@@ -614,11 +607,7 @@ private fun HealthScoreCard(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = score.toString(),
-                        style = MaterialTheme.typography.displayLarge.copy(
-                            fontFamily = MaterialTheme.numericFontFamily,
-                            fontSize = 48.sp,
-                            fontWeight = FontWeight.Bold
-                        ),
+                        style = MaterialTheme.numericHeroValueTextStyle,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -629,14 +618,14 @@ private fun HealthScoreCard(
             Text(
                 text = annotatedSummary,
                 style = MaterialTheme.typography.bodyLarge,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             if (batteryTempC >= 38f) {
                 Text(
                     text = stringResource(R.string.home_temp_elevated),
                     style = MaterialTheme.typography.bodySmall,
-                    color = AccentOrange
+                    color = MaterialTheme.statusColors.poor
                 )
             }
 
@@ -680,7 +669,7 @@ private fun BatteryHeroCard(
 ) {
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
@@ -704,10 +693,7 @@ private fun BatteryHeroCard(
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             text = battery.level.toString(),
-                            style = MaterialTheme.typography.displayLarge.copy(
-                                fontFamily = MaterialTheme.numericFontFamily,
-                                fontSize = 54.sp
-                            ),
+                            style = MaterialTheme.numericHeroLargeValueTextStyle,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
@@ -715,14 +701,14 @@ private fun BatteryHeroCard(
                             style = MaterialTheme.typography.headlineLarge.copy(
                                 fontFamily = MaterialTheme.numericFontFamily
                             ),
-                            color = TextSecondary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 2.dp, bottom = 11.dp)
                         )
                     }
                     Text(
                         text = chargingStatusLabel(battery.chargingStatus),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -796,7 +782,7 @@ private fun HealthBreakdownRow(
             style = MaterialTheme.typography.titleMedium.copy(
                 fontFamily = MaterialTheme.numericFontFamily
             ),
-            color = TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

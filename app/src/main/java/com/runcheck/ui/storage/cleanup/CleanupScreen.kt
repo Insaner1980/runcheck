@@ -14,8 +14,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -39,8 +39,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemContentType
+import androidx.paging.compose.itemKey
 import com.runcheck.R
 import com.runcheck.ui.common.formatStorageSize
+import com.runcheck.ui.common.resolve
+import com.runcheck.ui.storage.buildMediaDeleteRequest
+import com.runcheck.ui.storage.MediaDeleteRequestResult
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.theme.spacing
 
@@ -66,11 +73,16 @@ fun CleanupScreen(
     }
 
     // Observe delete intents from ViewModel
-    LaunchedEffect(Unit) {
-        viewModel.deleteIntent.collect { pendingIntent ->
-            deleteLauncher.launch(
-                IntentSenderRequest.Builder(pendingIntent.intentSender).build()
-            )
+    LaunchedEffect(viewModel, context) {
+        viewModel.deleteRequestUris.collect { uris ->
+            when (val requestResult = buildMediaDeleteRequest(context, uris)) {
+                is MediaDeleteRequestResult.Ready -> {
+                    deleteLauncher.launch(requestResult.request)
+                }
+                is MediaDeleteRequestResult.Failed -> {
+                    viewModel.onDeleteFailed(com.runcheck.ui.common.UiText.Resource(requestResult.messageRes))
+                }
+            }
         }
     }
 
@@ -84,10 +96,10 @@ fun CleanupScreen(
             },
             bottomBar = {
                 val results = uiState as? CleanupUiState.Results
-                CleanupBottomBar(
-                    visible = results != null && results.selectedUris.isNotEmpty(),
+                    CleanupBottomBar(
+                    visible = results != null && results.selectedCount > 0,
                     selectedSize = results?.selectedSize ?: 0L,
-                    selectedCount = results?.selectedUris?.size ?: 0,
+                    selectedCount = results?.selectedCount ?: 0,
                     currentUsagePercent = results?.currentUsagePercent ?: 0f,
                     projectedUsagePercent = results?.projectedUsagePercent ?: 0f,
                     onDelete = { viewModel.requestDelete() }
@@ -174,6 +186,25 @@ fun CleanupScreen(
                     is CleanupUiState.Success -> {
                         // Handled by overlay
                     }
+
+                    is CleanupUiState.Error -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = state.message.resolve(),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                                androidx.compose.material3.TextButton(onClick = { viewModel.scan() }) {
+                                    Text(text = stringResource(R.string.common_retry))
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -193,9 +224,15 @@ private fun CleanupResultsList(
     viewModel: CleanupViewModel
 ) {
     val context = LocalContext.current
-    val maxFileSize = remember(state.groups) {
-        state.groups.flatMap { it.files }.maxOfOrNull { it.sizeBytes } ?: 1L
-    }
+    val maxFileSize = state.maxFileSizeBytes.coerceAtLeast(1L)
+    val pagedItemsByCategory = state.groups
+        .filter { it.expanded }
+        .associate { group ->
+            val pagingFlow = remember(viewModel, group.category, state.pagerGeneration) {
+                viewModel.pagerFlowFor(group.category)
+            }
+            group.category to pagingFlow.collectAsLazyPagingItems()
+        }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -221,32 +258,45 @@ private fun CleanupResultsList(
                 }
                 CategoryGroup(
                     group = group,
-                    selectedUris = state.selectedUris,
                     onToggleExpanded = { viewModel.toggleGroupExpanded(group.category) },
                     onToggleGroupSelection = { viewModel.toggleGroupSelection(group.category) }
                 )
             }
 
             if (group.expanded) {
-                itemsIndexed(
-                    items = group.files,
-                    key = { _, file -> file.uri },
-                    contentType = { _, _ -> "cleanup_file" }
-                ) { index, file ->
-                    Column(modifier = Modifier.animateItem()) {
-                        if (index > 0) {
-                            HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                                modifier = Modifier.padding(start = 56.dp)
+                val lazyItems = pagedItemsByCategory[group.category]
+                if (lazyItems != null && lazyItems.loadState.refresh is LoadState.Loading && lazyItems.itemCount == 0) {
+                    item(key = "loading_${group.category}_${state.pagerGeneration}") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = MaterialTheme.spacing.base),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                } else if (lazyItems != null) {
+                    items(
+                        count = lazyItems.itemCount,
+                        key = { index -> lazyItems.peek(index)?.uri ?: "${group.category}_$index" },
+                        contentType = { _ -> "cleanup_file" }
+                    ) { index ->
+                        val file = lazyItems[index] ?: return@items
+                        Column {
+                            if (index > 0) {
+                                HorizontalDivider(
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                                    modifier = Modifier.padding(start = 56.dp)
+                                )
+                            }
+                            FileListItem(
+                                file = file,
+                                isSelected = viewModel.isSelected(file),
+                                maxFileSize = maxFileSize,
+                                onToggle = { viewModel.toggleSelection(file) }
                             )
                         }
-                        FileListItem(
-                            file = file,
-                            isSelected = file.uri in state.selectedUris,
-                            maxFileSize = maxFileSize,
-                            onLoadThumbnail = { uri -> viewModel.loadThumbnail(uri) },
-                            onToggle = { viewModel.toggleSelection(file.uri) }
-                        )
                     }
                 }
             }

@@ -75,7 +75,7 @@ fun ConfidenceBadge(
                 contentDescription = label
                 role = Role.Image
             }
-            .background(backgroundColor, RoundedCornerShape(50))
+            .background(backgroundColor, MaterialTheme.shapes.extraLarge)
             .padding(horizontal = 12.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center
     ) {

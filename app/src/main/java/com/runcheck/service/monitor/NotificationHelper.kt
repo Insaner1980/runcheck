@@ -9,6 +9,8 @@ import android.content.pm.PackageManager
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.runcheck.R
+import com.runcheck.domain.model.TemperatureUnit
+import com.runcheck.ui.common.formatTemperature
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -79,6 +81,7 @@ class NotificationHelper @Inject constructor(
     /** Posts a notification when battery drops below the user-defined threshold. */
     fun showLowBatteryAlert(level: Int) {
         if (!canPostNotifications()) return
+        createChannels()
         val notification = NotificationCompat.Builder(context, CHANNEL_ALERTS)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentTitle(context.getString(R.string.notification_low_battery_title))
@@ -90,13 +93,19 @@ class NotificationHelper @Inject constructor(
         notificationManager.notify(NOTIFICATION_LOW_BATTERY, notification)
     }
 
-    /** Posts a notification when device temperature exceeds 42 degrees C. */
-    fun showHighTempAlert(tempC: Float) {
+    /** Posts a notification when device temperature exceeds the alert threshold. */
+    fun showHighTempAlert(tempC: Float, temperatureUnit: TemperatureUnit) {
         if (!canPostNotifications()) return
+        createChannels()
         val notification = NotificationCompat.Builder(context, CHANNEL_ALERTS)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentTitle(context.getString(R.string.notification_high_temp_title))
-            .setContentText(context.getString(R.string.notification_high_temp_text, tempC))
+            .setContentText(
+                context.getString(
+                    R.string.notification_high_temp_text,
+                    formatTemperature(context, tempC, temperatureUnit)
+                )
+            )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()
@@ -107,6 +116,7 @@ class NotificationHelper @Inject constructor(
     /** Posts a notification when storage usage exceeds 90%. */
     fun showLowStorageAlert(percentUsed: Float) {
         if (!canPostNotifications()) return
+        createChannels()
         val notification = NotificationCompat.Builder(context, CHANNEL_ALERTS)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentTitle(context.getString(R.string.notification_low_storage_title))
@@ -118,14 +128,15 @@ class NotificationHelper @Inject constructor(
         notificationManager.notify(NOTIFICATION_LOW_STORAGE, notification)
     }
 
-    /** Posts a notification when charging completes, with an optional summary. */
-    fun showChargeCompleteNotification(summary: String) {
+    /** Posts a notification when charging completes. */
+    fun showChargeCompleteNotification(level: Int) {
         if (!canPostNotifications()) return
+        createChannels()
         val notification = NotificationCompat.Builder(context, CHANNEL_STATUS)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(context.getString(R.string.notification_charge_complete_title))
-            .setContentText(summary)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentText(context.getString(R.string.notification_charge_complete_text, level))
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setAutoCancel(true)
             .build()
 
@@ -134,6 +145,7 @@ class NotificationHelper @Inject constructor(
 
     fun showTrialDay5Notification() {
         if (!canPostNotifications()) return
+        createChannels()
         val notification = NotificationCompat.Builder(context, CHANNEL_TRIAL)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(context.getString(R.string.notification_trial_day5_title))
@@ -146,6 +158,7 @@ class NotificationHelper @Inject constructor(
 
     fun showTrialDay7Notification() {
         if (!canPostNotifications()) return
+        createChannels()
         val notification = NotificationCompat.Builder(context, CHANNEL_TRIAL)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(context.getString(R.string.notification_trial_day7_title))

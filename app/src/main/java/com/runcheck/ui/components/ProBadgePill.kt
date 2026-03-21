@@ -27,7 +27,7 @@ fun ProBadgePill(
     val accentColor = MaterialTheme.colorScheme.primary
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         color = accentColor.copy(alpha = 0.12f)
     ) {
         Row(

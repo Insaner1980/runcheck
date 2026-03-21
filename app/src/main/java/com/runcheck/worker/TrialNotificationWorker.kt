@@ -4,7 +4,8 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.runcheck.pro.ProManager
+import com.runcheck.billing.ProPurchaseRefreshResult
+import com.runcheck.data.billing.BillingManager
 import com.runcheck.service.monitor.NotificationHelper
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -13,12 +14,23 @@ import dagger.assisted.AssistedInject
 class TrialNotificationWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
-    private val proManager: ProManager,
+    private val billingManager: BillingManager,
     private val notificationHelper: NotificationHelper
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
-        if (proManager.isPro()) return Result.success()
+        billingManager.initialize()
+        billingManager.awaitInitialized()
+
+        if (billingManager.isPro()) {
+            return Result.success()
+        }
+
+        when (billingManager.refreshPurchaseStatus()) {
+            ProPurchaseRefreshResult.ACTIVE -> return Result.success()
+            ProPurchaseRefreshResult.UNAVAILABLE -> return Result.retry()
+            ProPurchaseRefreshResult.NOT_ACTIVE -> Unit
+        }
 
         val notificationType = inputData.getString(KEY_NOTIFICATION_TYPE) ?: return Result.failure()
 

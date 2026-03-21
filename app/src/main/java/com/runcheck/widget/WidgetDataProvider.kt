@@ -164,6 +164,7 @@ private fun StorageReadingEntity.toStorageState(): StorageState {
 
 private fun classifySignal(dbm: Int?, type: ConnectionType): SignalQuality {
     if (type == ConnectionType.NONE) return SignalQuality.NO_SIGNAL
+    if (type == ConnectionType.VPN && dbm == null) return SignalQuality.GOOD
     if (dbm == null) return SignalQuality.NO_SIGNAL
 
     return when (type) {
@@ -176,6 +177,14 @@ private fun classifySignal(dbm: Int?, type: ConnectionType): SignalQuality {
         }
 
         ConnectionType.CELLULAR -> when {
+            dbm > -80 -> SignalQuality.EXCELLENT
+            dbm > -90 -> SignalQuality.GOOD
+            dbm > -100 -> SignalQuality.FAIR
+            dbm > -110 -> SignalQuality.POOR
+            else -> SignalQuality.NO_SIGNAL
+        }
+
+        ConnectionType.VPN -> when {
             dbm > -80 -> SignalQuality.EXCELLENT
             dbm > -90 -> SignalQuality.GOOD
             dbm > -100 -> SignalQuality.FAIR

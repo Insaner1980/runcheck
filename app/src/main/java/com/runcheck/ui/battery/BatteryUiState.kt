@@ -1,12 +1,12 @@
 package com.runcheck.ui.battery
 
-import androidx.compose.runtime.Immutable
 import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.model.ScreenUsageStats
+import com.runcheck.domain.model.SleepAnalysis
+import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.usecase.BatteryStatistics
-import com.runcheck.service.monitor.ScreenUsageStats
-import com.runcheck.service.monitor.SleepAnalysis
 
 data class CurrentStats(
     val avg: Int,
@@ -18,7 +18,6 @@ data class CurrentStats(
 sealed interface BatteryUiState {
     data object Loading : BatteryUiState
 
-    @Immutable
     data class Success(
         val batteryState: BatteryState,
         val history: List<BatteryReading> = emptyList(),
@@ -27,7 +26,9 @@ sealed interface BatteryUiState {
         val currentStats: CurrentStats? = null,
         val screenUsage: ScreenUsageStats? = null,
         val sleepAnalysis: SleepAnalysis? = null,
-        val statistics: BatteryStatistics? = null
+        val temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS,
+        val statistics: BatteryStatistics? = null,
+        val dismissedInfoCards: Set<String> = emptySet()
     ) : BatteryUiState
 
     data class Error(val message: String) : BatteryUiState

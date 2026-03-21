@@ -1,7 +1,6 @@
 package com.runcheck.domain.usecase
 
 import com.runcheck.domain.model.ChargerProfile
-import com.runcheck.domain.model.ChargerSummary
 import com.runcheck.domain.model.ChargingSession
 import com.runcheck.domain.repository.ChargerRepository
 import com.runcheck.domain.repository.ProStatusProvider
@@ -10,6 +9,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -45,7 +45,9 @@ class GetChargerComparisonUseCaseTest {
         endTime: Long? = null,
         startLevel: Int = 20,
         endLevel: Int? = null,
-        avgCurrentMa: Int? = null
+        avgCurrentMa: Int? = null,
+        avgVoltageMv: Int? = null,
+        avgPowerMw: Int? = null
     ) = ChargingSession(
         id = id,
         chargerId = chargerId,
@@ -55,8 +57,8 @@ class GetChargerComparisonUseCaseTest {
         endLevel = endLevel,
         avgCurrentMa = avgCurrentMa,
         maxCurrentMa = null,
-        avgVoltageMv = null,
-        avgPowerMw = null,
+        avgVoltageMv = avgVoltageMv,
+        avgPowerMw = avgPowerMw,
         plugType = "USB"
     )
 
@@ -97,6 +99,7 @@ class GetChargerComparisonUseCaseTest {
         assertEquals(1, result[0].sessionCount)
         assertNotNull(result[0].avgChargingSpeedMa)
         assertEquals(2000, result[0].avgChargingSpeedMa)
+        assertFalse(result[0].hasActiveSession)
     }
 
     @Test
@@ -249,6 +252,7 @@ class GetChargerComparisonUseCaseTest {
         assertNull(result[0].avgTimeToFullMinutes)
         // lastUsed should still be set (based on all sessions)
         assertEquals(1000L, result[0].lastUsed)
+        assertTrue(result[0].hasActiveSession)
     }
 
     @Test
@@ -347,5 +351,62 @@ class GetChargerComparisonUseCaseTest {
         assertNull(summary.avgChargingSpeedMa)
         assertNull(summary.avgTimeToFullMinutes)
         assertEquals(5_000_000L, summary.lastUsed)
+        assertTrue(summary.hasActiveSession)
+    }
+
+    @Test
+    fun `power summary uses saved power when available`() = runTest {
+        every { proStatusProvider.isPro() } returns true
+        every { chargerRepository.getChargerProfiles() } returns flowOf(
+            listOf(charger(1L, "Fast USB-C"))
+        )
+        every { chargerRepository.getAllSessions() } returns flowOf(
+            listOf(
+                session(
+                    chargerId = 1L,
+                    startTime = 1000L,
+                    endTime = 3_601_000L,
+                    startLevel = 20,
+                    endLevel = 80,
+                    avgCurrentMa = 2200,
+                    avgVoltageMv = 9000,
+                    avgPowerMw = 19_800
+                )
+            )
+        )
+
+        useCase = createUseCase()
+        val result = useCase().first()
+
+        assertEquals(19_800, result[0].avgPowerMw)
+        assertEquals(19_800, result[0].latestPowerMw)
+    }
+
+    @Test
+    fun `power summary falls back to derived current times voltage`() = runTest {
+        every { proStatusProvider.isPro() } returns true
+        every { chargerRepository.getChargerProfiles() } returns flowOf(
+            listOf(charger(1L, "Derived Power"))
+        )
+        every { chargerRepository.getAllSessions() } returns flowOf(
+            listOf(
+                session(
+                    chargerId = 1L,
+                    startTime = 1000L,
+                    endTime = 3_601_000L,
+                    startLevel = 20,
+                    endLevel = 80,
+                    avgCurrentMa = 2000,
+                    avgVoltageMv = 5000,
+                    avgPowerMw = null
+                )
+            )
+        )
+
+        useCase = createUseCase()
+        val result = useCase().first()
+
+        assertEquals(10_000, result[0].avgPowerMw)
+        assertEquals(10_000, result[0].latestPowerMw)
     }
 }

@@ -40,7 +40,6 @@ import com.runcheck.ui.theme.spacing
 @Composable
 fun CategoryGroup(
     group: FileGroup,
-    selectedUris: Set<String>,
     onToggleExpanded: () -> Unit,
     onToggleGroupSelection: () -> Unit,
     modifier: Modifier = Modifier
@@ -48,7 +47,7 @@ fun CategoryGroup(
     val context = LocalContext.current
     val color = categoryColor(group.category)
     val label = categoryLabel(context, group.category)
-    val allSelected = group.files.all { it.uri in selectedUris }
+    val allSelected = group.itemCount > 0 && group.selectedCount == group.itemCount
     val expandedLabel = if (group.expanded) {
         stringResource(R.string.a11y_collapse)
     } else {
@@ -89,8 +88,9 @@ fun CategoryGroup(
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
+            Spacer(modifier = Modifier.width(2.dp))
             Text(
-                text = " " + stringResource(R.string.value_count_parenthetical, group.files.size),
+                text = stringResource(R.string.value_count_parenthetical, group.itemCount),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

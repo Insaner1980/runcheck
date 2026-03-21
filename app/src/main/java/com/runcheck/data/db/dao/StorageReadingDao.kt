@@ -21,6 +21,9 @@ interface StorageReadingDao {
     @Query("DELETE FROM storage_readings WHERE timestamp < :before")
     suspend fun deleteOlderThan(before: Long)
 
+    @Query("DELETE FROM storage_readings")
+    suspend fun deleteAll()
+
     @Query("SELECT COUNT(*) FROM storage_readings")
     suspend fun getCount(): Int
 

@@ -53,6 +53,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -71,9 +72,11 @@ import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.PlugType
+import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.ui.common.batteryHealthLabel
 import com.runcheck.ui.common.chargingStatusLabel
 import com.runcheck.ui.common.formatDecimal
+import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.common.plugTypeLabel
 import com.runcheck.ui.common.temperatureBandLabel
 import com.runcheck.ui.components.AreaChart
@@ -87,24 +90,47 @@ import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.ProgressRing
 import com.runcheck.ui.components.PullToRefreshWrapper
-import com.runcheck.ui.components.ChartQualityZone
-import com.runcheck.ui.components.ChartXLabel
-import com.runcheck.ui.components.ChartYLabel
+import com.runcheck.ui.components.ExpandableChartContainer
 import com.runcheck.ui.components.TrendChart
+import com.runcheck.ui.chart.BatteryHistoryMetric
+import com.runcheck.ui.chart.SessionGraphMetric
+import com.runcheck.ui.chart.SessionGraphWindow
+import com.runcheck.ui.chart.ChargingSessionSummary
+import com.runcheck.ui.chart.MAX_HISTORY_CHART_POINTS
+import com.runcheck.ui.chart.MAX_SESSION_CHART_POINTS
+import com.runcheck.ui.chart.FullscreenChartSource
+import com.runcheck.ui.chart.batteryMetricUnit
+import com.runcheck.ui.chart.batteryQualityZones
+import com.runcheck.ui.components.info.InfoBottomSheet
+import com.runcheck.ui.components.info.InfoCard
+import com.runcheck.ui.chart.buildBatteryXLabels
+import com.runcheck.ui.chart.buildBatteryYLabels
+import com.runcheck.ui.chart.buildSessionXLabels
+import com.runcheck.ui.chart.calculateChargingSessionSummary
+import com.runcheck.ui.chart.chartPointsFor
+import com.runcheck.ui.chart.downsamplePairs
+import com.runcheck.ui.chart.graphPointsFor
+import com.runcheck.ui.chart.hasGraphData
+import com.runcheck.ui.chart.historyMetricLabel
+import com.runcheck.ui.chart.historyPeriodLabel
+import com.runcheck.ui.chart.sessionGraphMetricLabel
+import com.runcheck.ui.chart.sessionGraphWindowLabel
 import com.runcheck.ui.common.formatLocalizedDateTime
+import com.runcheck.domain.model.ScreenUsageStats
+import com.runcheck.domain.model.SleepAnalysis
 import com.runcheck.domain.usecase.BatteryStatistics
-import com.runcheck.service.monitor.ScreenUsageStats
-import com.runcheck.service.monitor.SleepAnalysis
 import com.runcheck.ui.theme.numericFontFamily
+import com.runcheck.ui.theme.numericHeroLevelTextStyle
+import com.runcheck.ui.theme.numericHeroUnitTextStyle
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
-import kotlin.math.roundToInt
 
 @Composable
 fun BatteryDetailScreen(
     onBack: () -> Unit,
     onNavigateToCharger: () -> Unit,
     onUpgradeToPro: () -> Unit,
+    onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier,
     viewModel: BatteryViewModel = hiltViewModel()
 ) {
@@ -167,7 +193,9 @@ fun BatteryDetailScreen(
                     onRefresh = { viewModel.refresh() },
                     onPeriodChange = { viewModel.setHistoryPeriod(it) },
                     onNavigateToCharger = onNavigateToCharger,
-                    onUpgradeToPro = onUpgradeToPro
+                    onUpgradeToPro = onUpgradeToPro,
+                    onNavigateToFullscreen = onNavigateToFullscreen,
+                    onDismissInfoCard = { viewModel.dismissInfoCard(it) }
                 )
             }
         }
@@ -180,8 +208,11 @@ private fun BatteryContent(
     onRefresh: () -> Unit,
     onPeriodChange: (HistoryPeriod) -> Unit,
     onNavigateToCharger: () -> Unit,
-    onUpgradeToPro: () -> Unit
+    onUpgradeToPro: () -> Unit,
+    onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
+    onDismissInfoCard: (String) -> Unit
 ) {
+    var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
     var isRefreshing by remember { mutableStateOf(false) }
     val battery = state.batteryState
     var selectedHistoryMetric by rememberSaveable { mutableStateOf(BatteryHistoryMetric.LEVEL.name) }
@@ -218,7 +249,33 @@ private fun BatteryContent(
         ) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-            BatteryHeroSection(battery = battery, history = state.history)
+            BatteryHeroSection(
+                battery = battery,
+                history = state.history,
+                onInfoClick = { activeInfoSheet = it }
+            )
+
+            // Health degradation card - show when healthPercent < 90% and not dismissed
+            if (battery.healthPercent != null && battery.healthPercent < 90 &&
+                BatteryInfoCards.HEALTH_80_PERCENT !in state.dismissedInfoCards) {
+                InfoCard(
+                    id = BatteryInfoCards.HEALTH_80_PERCENT,
+                    headline = stringResource(R.string.info_card_health_80_headline),
+                    body = stringResource(R.string.info_card_health_80_body),
+                    onDismiss = onDismissInfoCard
+                )
+            }
+
+            // Dies before zero card - show when healthPercent < 80%
+            if (battery.healthPercent != null && battery.healthPercent < 80 &&
+                BatteryInfoCards.DIES_BEFORE_ZERO !in state.dismissedInfoCards) {
+                InfoCard(
+                    id = BatteryInfoCards.DIES_BEFORE_ZERO,
+                    headline = stringResource(R.string.info_card_dies_before_zero_headline),
+                    body = stringResource(R.string.info_card_dies_before_zero_body),
+                    onDismiss = onDismissInfoCard
+                )
+            }
 
             BatteryPanel {
                 CardSectionTitle(text = stringResource(R.string.battery_section_details))
@@ -228,19 +285,23 @@ private fun BatteryContent(
                     value = stringResource(
                         R.string.value_voltage_volts,
                         (battery.voltageMv / 1000f).toDouble()
-                    )
+                    ),
+                    onInfoClick = { activeInfoSheet = "voltage" }
                 )
                 MetricRow(
                     label = stringResource(R.string.battery_temperature),
-                    value = buildTemperatureValue(battery.temperatureC),
-
-                    valueColor = temperatureColor(battery.temperatureC)
+                    value = buildTemperatureValue(
+                        temperatureC = battery.temperatureC,
+                        temperatureUnit = state.temperatureUnit
+                    ),
+                    valueColor = temperatureColor(battery.temperatureC),
+                    onInfoClick = { activeInfoSheet = "temperature" }
                 )
                 MetricRow(
                     label = stringResource(R.string.battery_health),
                     value = batteryHealthLabel(battery.health),
-
-                    valueColor = healthColor(battery.health)
+                    valueColor = healthColor(battery.health),
+                    onInfoClick = { activeInfoSheet = "healthStatus" }
                 )
                 MetricRow(
                     label = stringResource(R.string.battery_technology),
@@ -252,14 +313,16 @@ private fun BatteryContent(
                     MetricRow(
                         label = stringResource(R.string.battery_cycle_count),
                         value = count.toString(),
-                        showDivider = battery.healthPercent != null
+                        showDivider = battery.healthPercent != null,
+                        onInfoClick = { activeInfoSheet = "cycleCount" }
                     )
                 }
                 battery.healthPercent?.let { pct ->
                     MetricRow(
                         label = stringResource(R.string.battery_health_percent),
                         value = stringResource(R.string.value_percent, pct),
-                        showDivider = battery.estimatedCapacityMah != null
+                        showDivider = battery.estimatedCapacityMah != null,
+                        onInfoClick = { activeInfoSheet = "healthPercent" }
                     )
                 }
                 if (battery.estimatedCapacityMah != null && battery.designCapacityMah != null) {
@@ -270,7 +333,8 @@ private fun BatteryContent(
                             battery.estimatedCapacityMah,
                             battery.designCapacityMah
                         ),
-                        showDivider = false
+                        showDivider = false,
+                        onInfoClick = { activeInfoSheet = "capacity" }
                     )
                 }
             }
@@ -346,7 +410,10 @@ private fun BatteryContent(
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
                     CardSectionTitle(text = stringResource(R.string.battery_session_title))
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                    BatterySessionSummary(summary = summary)
+                    BatterySessionSummary(
+                        summary = summary,
+                        temperatureUnit = state.temperatureUnit
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
@@ -396,6 +463,17 @@ private fun BatteryContent(
                 }
             }
 
+            // Charging habits card - show when battery is charging
+            if (battery.chargingStatus == ChargingStatus.CHARGING &&
+                BatteryInfoCards.CHARGING_HABITS !in state.dismissedInfoCards) {
+                InfoCard(
+                    id = BatteryInfoCards.CHARGING_HABITS,
+                    headline = stringResource(R.string.info_card_charging_habits_headline),
+                    body = stringResource(R.string.info_card_charging_habits_body),
+                    onDismiss = onDismissInfoCard
+                )
+            }
+
             chargingSessionSummary?.let { summary ->
                 if (summary.hasMeaningfulRemainingEstimate(currentLevel = battery.level)) {
                     BatteryRemainingTimePanel(
@@ -409,19 +487,38 @@ private fun BatteryContent(
                         selectedMetric = sessionMetric,
                         onMetricChange = { selectedSessionMetric = it.name },
                         selectedWindow = sessionWindow,
-                        onWindowChange = { selectedSessionWindow = it.name }
+                        onWindowChange = { selectedSessionWindow = it.name },
+                        onNavigateToFullscreen = onNavigateToFullscreen
                     )
                 }
             }
 
             // Screen On/Off usage (#5) — only during discharge
             state.screenUsage?.let { usage ->
-                BatteryScreenUsagePanel(usage = usage)
+                BatteryScreenUsagePanel(
+                    usage = usage,
+                    onInfoClick = { activeInfoSheet = it }
+                )
+            }
+
+            // Screen-off drain card - show when screen-off drain rate > 2%/h
+            if (state.screenUsage?.screenOffDrainRate != null &&
+                state.screenUsage.screenOffDrainRate > 2f &&
+                BatteryInfoCards.SCREEN_OFF_DRAIN !in state.dismissedInfoCards) {
+                InfoCard(
+                    id = BatteryInfoCards.SCREEN_OFF_DRAIN,
+                    headline = stringResource(R.string.info_card_screen_off_drain_headline),
+                    body = stringResource(R.string.info_card_screen_off_drain_body),
+                    onDismiss = onDismissInfoCard
+                )
             }
 
             // Sleep analysis (#8) — only during discharge
             state.sleepAnalysis?.let { sleep ->
-                BatterySleepAnalysisPanel(sleep = sleep)
+                BatterySleepAnalysisPanel(
+                    sleep = sleep,
+                    onInfoClick = { activeInfoSheet = it }
+                )
             }
 
             BatteryPanel {
@@ -452,7 +549,8 @@ private fun BatteryContent(
                 selectedMetric = historyMetric,
                 onMetricChange = { selectedHistoryMetric = it.name },
                 onPeriodChange = onPeriodChange,
-                onUpgradeToPro = onUpgradeToPro
+                onUpgradeToPro = onUpgradeToPro,
+                onNavigateToFullscreen = onNavigateToFullscreen
             )
 
             // Long-term statistics (#9) — Pro feature
@@ -465,16 +563,51 @@ private fun BatteryContent(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }
     }
+
+    activeInfoSheet?.let { key ->
+        val content = when (key) {
+            "voltage" -> BatteryInfoContent.voltage
+            "temperature" -> BatteryInfoContent.temperature
+            "healthStatus" -> BatteryInfoContent.healthStatus
+            "cycleCount" -> BatteryInfoContent.cycleCount
+            "healthPercent" -> BatteryInfoContent.healthPercent
+            "capacity" -> BatteryInfoContent.capacity
+            "currentMa" -> BatteryInfoContent.currentMa
+            "powerW" -> BatteryInfoContent.powerW
+            "drainRate" -> BatteryInfoContent.drainRate
+            "confidence" -> BatteryInfoContent.confidence
+            "screenOnOff" -> BatteryInfoContent.screenOnOff
+            "deepSleep" -> BatteryInfoContent.deepSleep
+            else -> null
+        }
+        content?.let {
+            InfoBottomSheet(
+                content = it,
+                onDismiss = { activeInfoSheet = null }
+            )
+        }
+    }
 }
 
 @Composable
 private fun BatteryHeroSection(
     battery: BatteryState,
-    history: List<BatteryReading>
+    history: List<BatteryReading>,
+    onInfoClick: (String) -> Unit = {}
 ) {
+    val view = LocalView.current
+    var lastAnnouncedChargingStatus by remember { mutableStateOf<ChargingStatus?>(null) }
     val healthLabel = batteryHealthLabel(battery.health)
     val statusLabel = chargingStatusLabel(battery.chargingStatus)
     val statusText = stringResource(R.string.battery_hero_status, healthLabel, statusLabel)
+
+    LaunchedEffect(battery.chargingStatus, statusText, view) {
+        val previousStatus = lastAnnouncedChargingStatus
+        if (previousStatus != null && previousStatus != battery.chargingStatus) {
+            view.announceForAccessibility(statusText)
+        }
+        lastAnnouncedChargingStatus = battery.chargingStatus
+    }
 
     val drainRatePctPerHour = remember(history) {
         calculateDrainRate(history)
@@ -529,19 +662,12 @@ private fun BatteryHeroSection(
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             text = battery.level.toString(),
-                            fontSize = 48.sp,
-                            lineHeight = 48.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = (-2).sp,
-                            fontFamily = MaterialTheme.numericFontFamily,
+                            style = MaterialTheme.numericHeroLevelTextStyle,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = stringResource(R.string.unit_percent),
-                            fontSize = 20.sp,
-                            lineHeight = 20.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            fontFamily = MaterialTheme.numericFontFamily,
+                            style = MaterialTheme.numericHeroUnitTextStyle,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(start = 3.dp, bottom = 6.dp)
                         )
@@ -572,14 +698,16 @@ private fun BatteryHeroSection(
                     value = drainRatePctPerHour?.let {
                         stringResource(R.string.value_percent_per_hour, it)
                     } ?: stringResource(R.string.battery_estimating),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("drainRate") }
                 )
                 MetricPill(
                     label = stringResource(R.string.battery_power),
                     value = powerW?.let {
                         stringResource(R.string.value_watts, it)
                     } ?: stringResource(R.string.battery_estimating),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("powerW") }
                 )
                 MetricPill(
                     label = stringResource(R.string.battery_remaining),
@@ -615,7 +743,8 @@ private fun BatteryHistoryPanel(
     selectedMetric: BatteryHistoryMetric,
     onMetricChange: (BatteryHistoryMetric) -> Unit,
     onPeriodChange: (HistoryPeriod) -> Unit,
-    onUpgradeToPro: () -> Unit
+    onUpgradeToPro: () -> Unit,
+    onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit
 ) {
     BatteryPanel {
         CardSectionTitle(text = stringResource(R.string.battery_history_title))
@@ -691,23 +820,33 @@ private fun BatteryHistoryPanel(
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
-                TrendChart(
-                    data = chartData,
-                    modifier = Modifier.fillMaxWidth(),
-                    contentDescription = stringResource(
-                        R.string.a11y_chart_trend,
-                        historyMetricLabel(selectedMetric)
-                    ),
-                    yLabels = yLabels,
-                    xLabels = xLabels,
-                    showGrid = true,
-                    qualityZones = qualityZones,
-                    tooltipFormatter = { index ->
-                        val v = formatDecimal(chartData[index], if (selectedMetric == BatteryHistoryMetric.VOLTAGE) 2 else 0)
-                        val time = formatLocalizedDateTime(chartTimestamps[index], "HmMMMd")
-                        "$v$unit · $time"
+                ExpandableChartContainer(
+                    onExpand = {
+                        onNavigateToFullscreen(
+                            FullscreenChartSource.BATTERY_HISTORY.name,
+                            selectedMetric.name,
+                            state.selectedPeriod.name
+                        )
                     }
-                )
+                ) {
+                    TrendChart(
+                        data = chartData,
+                        modifier = Modifier.fillMaxWidth(),
+                        contentDescription = stringResource(
+                            R.string.a11y_chart_trend,
+                            historyMetricLabel(selectedMetric)
+                        ),
+                        yLabels = yLabels,
+                        xLabels = xLabels,
+                        showGrid = true,
+                        qualityZones = qualityZones,
+                        tooltipFormatter = { index ->
+                            val v = formatDecimal(chartData[index], if (selectedMetric == BatteryHistoryMetric.VOLTAGE) 2 else 0)
+                            val time = formatLocalizedDateTime(chartTimestamps[index], "HmMMMd")
+                            "$v$unit · $time"
+                        }
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
@@ -790,6 +929,7 @@ private fun BatteryHistoryPreviewPlaceholder() {
         listOf(72f, 70f, 65f, 68f, 60f, 55f, 58f, 52f, 48f, 53f, 50f, 45f, 42f, 47f, 44f, 40f, 38f, 43f, 46f, 50f)
     }
     val chartColor = MaterialTheme.colorScheme.primary
+    val chartShape = MaterialTheme.shapes.large
 
     Box(
         modifier = Modifier
@@ -797,11 +937,11 @@ private fun BatteryHistoryPreviewPlaceholder() {
             .height(148.dp)
             .graphicsLayer {
                 clip = true
-                shape = RoundedCornerShape(16.dp)
+                shape = chartShape
             }
             .background(
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
-                shape = RoundedCornerShape(16.dp)
+                shape = chartShape
             )
     ) {
         // Blurred fake area chart (blur requires API 31+)
@@ -838,7 +978,10 @@ private fun BatteryHistoryPreviewPlaceholder() {
 
 
 @Composable
-private fun BatterySessionSummary(summary: ChargingSessionSummary) {
+private fun BatterySessionSummary(
+    summary: ChargingSessionSummary,
+    temperatureUnit: TemperatureUnit
+) {
     val supplementalStats = listOfNotNull(
         summary.recentSpeedPctPerHour?.let {
             BatteryStatItem(
@@ -900,9 +1043,9 @@ private fun BatterySessionSummary(summary: ChargingSessionSummary) {
             )
             BatterySummaryStat(
                 label = stringResource(R.string.battery_session_peak_temp),
-                value = stringResource(
-                    R.string.value_temperature,
-                    summary.peakTemperatureC.toDouble()
+                value = formatTemperature(
+                    summary.peakTemperatureC,
+                    temperatureUnit
                 ),
                 modifier = Modifier.weight(1f)
             )
@@ -967,7 +1110,8 @@ private fun BatterySessionGraphPanel(
     selectedMetric: SessionGraphMetric,
     onMetricChange: (SessionGraphMetric) -> Unit,
     selectedWindow: SessionGraphWindow,
-    onWindowChange: (SessionGraphWindow) -> Unit
+    onWindowChange: (SessionGraphWindow) -> Unit,
+    onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit
 ) {
     val hasAnyGraphData = remember(summary.readings) { summary.hasGraphData() }
     val chartPoints = remember(summary.readings, selectedMetric, selectedWindow) {
@@ -1038,23 +1182,33 @@ private fun BatterySessionGraphPanel(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
-            TrendChart(
-                data = chartData,
-                modifier = Modifier.fillMaxWidth(),
-                contentDescription = stringResource(
-                    R.string.a11y_chart_trend,
-                    sessionGraphMetricLabel(selectedMetric)
-                ),
-                yLabels = yLabels,
-                xLabels = xLabels,
-                showGrid = true,
-                tooltipFormatter = { index ->
-                    val decimals = if (selectedMetric == SessionGraphMetric.POWER) 1 else 0
-                    val v = formatDecimal(chartData[index], decimals)
-                    val time = formatLocalizedDateTime(chartTimestamps[index], "Hm")
-                    "$v$sessionUnit · $time"
+            ExpandableChartContainer(
+                onExpand = {
+                    onNavigateToFullscreen(
+                        FullscreenChartSource.BATTERY_SESSION.name,
+                        selectedMetric.name,
+                        selectedWindow.name
+                    )
                 }
-            )
+            ) {
+                TrendChart(
+                    data = chartData,
+                    modifier = Modifier.fillMaxWidth(),
+                    contentDescription = stringResource(
+                        R.string.a11y_chart_trend,
+                        sessionGraphMetricLabel(selectedMetric)
+                    ),
+                    yLabels = yLabels,
+                    xLabels = xLabels,
+                    showGrid = true,
+                    tooltipFormatter = { index ->
+                        val decimals = if (selectedMetric == SessionGraphMetric.POWER) 1 else 0
+                        val v = formatDecimal(chartData[index], decimals)
+                        val time = formatLocalizedDateTime(chartTimestamps[index], "Hm")
+                        "$v$sessionUnit · $time"
+                    }
+                )
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
@@ -1113,24 +1267,6 @@ private fun BatterySummaryStat(
 }
 
 
-private fun <T> List<T>.downsamplePairs(maxPoints: Int): List<T> {
-    if (size <= maxPoints || maxPoints <= 1) return this
-    val lastIdx = lastIndex
-    return buildList(maxPoints) {
-        for (index in 0 until maxPoints) {
-            val sourceIndex = ((index.toLong() * lastIdx) / (maxPoints - 1)).toInt()
-            add(this@downsamplePairs[sourceIndex])
-        }
-    }
-}
-
-private const val MAX_HISTORY_CHART_POINTS = 300
-private const val MAX_SESSION_CHART_POINTS = 240
-private const val RECENT_SESSION_SAMPLE_COUNT = 4
-private const val MIN_SESSION_SPEED_DURATION_MS = 10 * 60_000L
-private const val MIN_RECENT_SPEED_DURATION_MS = 5 * 60_000L
-private const val MAX_DELIVERY_INTERVAL_MS = 30 * 60_000L
-private const val MIN_ESTIMATE_PACE_PER_HOUR = 0.25f
 private const val TARGET_CHARGE_EIGHTY = 80
 private const val TARGET_CHARGE_FULL = 100
 
@@ -1145,7 +1281,7 @@ private fun BatteryPanel(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(16.dp)
+        shape = MaterialTheme.shapes.large
     ) {
         Column(
             modifier = Modifier
@@ -1173,229 +1309,27 @@ private fun healthColor(health: BatteryHealth): Color = when (health) {
 }
 
 @Composable
-private fun historyPeriodLabel(period: HistoryPeriod): String = when (period) {
-    HistoryPeriod.SINCE_UNPLUG -> stringResource(R.string.history_period_since_unplug)
-    HistoryPeriod.DAY -> stringResource(R.string.history_period_day)
-    HistoryPeriod.WEEK -> stringResource(R.string.history_period_week)
-    HistoryPeriod.MONTH -> stringResource(R.string.history_period_month)
-    HistoryPeriod.ALL -> stringResource(R.string.history_period_all)
-}
-
-@Composable
-private fun historyMetricLabel(metric: BatteryHistoryMetric): String = when (metric) {
-    BatteryHistoryMetric.LEVEL -> stringResource(R.string.battery_history_metric_level)
-    BatteryHistoryMetric.TEMPERATURE -> stringResource(R.string.battery_history_metric_temperature)
-    BatteryHistoryMetric.CURRENT -> stringResource(R.string.battery_history_metric_current)
-    BatteryHistoryMetric.VOLTAGE -> stringResource(R.string.battery_history_metric_voltage)
-}
-
-@Composable
-private fun sessionGraphMetricLabel(metric: SessionGraphMetric): String = when (metric) {
-    SessionGraphMetric.CURRENT -> stringResource(R.string.battery_history_metric_current)
-    SessionGraphMetric.POWER -> stringResource(R.string.battery_session_graph_metric_power)
-}
-
-@Composable
-private fun sessionGraphWindowLabel(window: SessionGraphWindow): String = when (window) {
-    SessionGraphWindow.FIFTEEN_MINUTES -> stringResource(R.string.battery_session_graph_window_15m)
-    SessionGraphWindow.THIRTY_MINUTES -> stringResource(R.string.battery_session_graph_window_30m)
-    SessionGraphWindow.ALL -> stringResource(R.string.history_period_all)
-}
-
-@Composable
-private fun buildTemperatureValue(temperatureC: Float): String {
+private fun buildTemperatureValue(
+    temperatureC: Float,
+    temperatureUnit: TemperatureUnit
+): String {
     return stringResource(
         R.string.home_thermal_summary,
-        stringResource(R.string.value_temperature, temperatureC.toDouble()),
+        formatTemperature(temperatureC, temperatureUnit),
         temperatureBandLabel(temperatureC)
     )
 }
-
-private enum class BatteryHistoryMetric {
-    LEVEL,
-    TEMPERATURE,
-    CURRENT,
-    VOLTAGE
-}
-
-private enum class SessionGraphMetric {
-    CURRENT,
-    POWER
-}
-
-private enum class SessionGraphWindow(val durationMs: Long?) {
-    FIFTEEN_MINUTES(15 * 60_000L),
-    THIRTY_MINUTES(30 * 60_000L),
-    ALL(null)
-}
-
-private data class ChargingSessionSummary(
-    val startLevel: Int,
-    val gainPercent: Int,
-    val durationMs: Long,
-    val peakTemperatureC: Float,
-    val averageCurrentMa: Int?,
-    val deliveredMah: Int?,
-    val averagePowerW: Float?,
-    val averageSpeedPctPerHour: Float?,
-    val recentSpeedPctPerHour: Float?,
-    val remainingTo80Ms: Long?,
-    val remainingTo100Ms: Long?,
-    val readings: List<BatteryReading>
-)
 
 private data class BatteryStatItem(
     val label: String,
     val value: String
 )
 
-private fun List<BatteryReading>.chartPointsFor(metric: BatteryHistoryMetric): List<Pair<Long, Float>> = when (metric) {
-    BatteryHistoryMetric.LEVEL -> map { it.timestamp to it.level.toFloat() }
-    BatteryHistoryMetric.TEMPERATURE -> map { it.timestamp to it.temperatureC }
-    BatteryHistoryMetric.CURRENT -> mapNotNull { r -> r.currentMa?.let { r.timestamp to it.toFloat() } }
-    BatteryHistoryMetric.VOLTAGE -> map { it.timestamp to it.voltageMv / 1000f }
-}
-
-private fun calculateChargingSessionSummary(
-    history: List<BatteryReading>,
-    currentLevel: Int,
-    chargingStatus: ChargingStatus
-): ChargingSessionSummary? {
-    if (chargingStatus != ChargingStatus.CHARGING || history.isEmpty()) return null
-
-    val sorted = history.sortedBy { it.timestamp }
-    val latestChargingIndex = sorted.indexOfLast { it.status == ChargingStatus.CHARGING.name }
-    if (latestChargingIndex == -1) return null
-
-    var startIndex = latestChargingIndex
-    while (startIndex > 0 && sorted[startIndex - 1].status == ChargingStatus.CHARGING.name) {
-        startIndex--
-    }
-
-    val session = sorted.subList(startIndex, latestChargingIndex + 1)
-    val first = session.firstOrNull() ?: return null
-    val last = session.lastOrNull() ?: return null
-    val durationMs = (last.timestamp - first.timestamp).coerceAtLeast(0L)
-    val gainPercent = currentLevel - first.level
-    val averageSpeedPctPerHour = sessionAverageSpeed(gainPercent, durationMs)
-    val recentSpeedPctPerHour = sessionRecentSpeed(session)
-    val deliveredMah = sessionDeliveredMah(session)
-    val averageCurrentMa = sessionAverageCurrent(session, deliveredMah)
-    val averagePowerW = averageCurrentMa?.let { currentMa ->
-        val avgVoltageV = session.map { it.voltageMv / 1000f }.average().toFloat()
-        (currentMa * avgVoltageV) / 1000f
-    }
-    val paceForEstimate = averageSpeedPctPerHour ?: recentSpeedPctPerHour
-
-    return ChargingSessionSummary(
-        startLevel = first.level,
-        gainPercent = gainPercent,
-        durationMs = durationMs,
-        peakTemperatureC = session.maxOf { it.temperatureC },
-        averageCurrentMa = averageCurrentMa,
-        deliveredMah = deliveredMah,
-        averagePowerW = averagePowerW,
-        averageSpeedPctPerHour = averageSpeedPctPerHour,
-        recentSpeedPctPerHour = recentSpeedPctPerHour,
-        remainingTo80Ms = estimateRemainingChargeMs(
-            currentLevel = currentLevel,
-            targetLevel = TARGET_CHARGE_EIGHTY,
-            pacePctPerHour = paceForEstimate
-        ),
-        remainingTo100Ms = estimateRemainingChargeMs(
-            currentLevel = currentLevel,
-            targetLevel = TARGET_CHARGE_FULL,
-            pacePctPerHour = paceForEstimate
-        ),
-        readings = session
-    )
-}
-
-private fun List<BatteryReading>.graphPointsFor(
-    metric: SessionGraphMetric,
-    window: SessionGraphWindow
-): List<Pair<Long, Float>> {
-    if (isEmpty()) return emptyList()
-
-    val filtered = window.durationMs?.let { duration ->
-        val latestTimestamp = last().timestamp
-        filter { latestTimestamp - it.timestamp <= duration }
-    } ?: this
-
-    return when (metric) {
-        SessionGraphMetric.CURRENT -> filtered.mapNotNull { r -> r.currentMa?.let { r.timestamp to it.toFloat() } }
-        SessionGraphMetric.POWER -> filtered.mapNotNull { r ->
-            r.currentMa?.let { currentMa ->
-                r.timestamp to (currentMa * (r.voltageMv / 1000f)) / 1000f
-            }
-        }
-    }
-}
-
-private fun sessionAverageSpeed(gainPercent: Int, durationMs: Long): Float? {
-    if (durationMs < MIN_SESSION_SPEED_DURATION_MS || gainPercent <= 0) return null
-    return gainPercent * 3_600_000f / durationMs
-}
-
-private fun sessionRecentSpeed(session: List<BatteryReading>): Float? {
-    val recent = session.takeLast(RECENT_SESSION_SAMPLE_COUNT)
-    if (recent.size < 2) return null
-    val first = recent.first()
-    val last = recent.last()
-    val durationMs = (last.timestamp - first.timestamp).coerceAtLeast(0L)
-    val levelGain = last.level - first.level
-    if (durationMs < MIN_RECENT_SPEED_DURATION_MS || levelGain <= 0) return null
-    return levelGain * 3_600_000f / durationMs
-}
-
-private fun sessionDeliveredMah(session: List<BatteryReading>): Int? {
-    var deliveredMah = 0f
-    var hasIntervals = false
-
-    session.zipWithNext().forEach { (start, end) ->
-        val startCurrent = start.currentMa
-        val endCurrent = end.currentMa
-        val durationMs = end.timestamp - start.timestamp
-        if (startCurrent != null && endCurrent != null && durationMs in 1..MAX_DELIVERY_INTERVAL_MS) {
-            val averageCurrent = ((startCurrent + endCurrent) / 2f).coerceAtLeast(0f)
-            deliveredMah += averageCurrent * (durationMs / 3_600_000f)
-            hasIntervals = true
-        }
-    }
-
-    return if (hasIntervals) deliveredMah.roundToInt() else null
-}
-
-private fun sessionAverageCurrent(
-    session: List<BatteryReading>,
-    deliveredMah: Int?
-): Int? {
-    if (deliveredMah == null || session.size < 2) return null
-    val durationMs = (session.last().timestamp - session.first().timestamp).coerceAtLeast(0L)
-    if (durationMs <= 0L) return null
-    return (deliveredMah / (durationMs / 3_600_000f)).roundToInt()
-}
-
-private fun estimateRemainingChargeMs(
-    currentLevel: Int,
-    targetLevel: Int,
-    pacePctPerHour: Float?
-): Long? {
-    if (pacePctPerHour == null || pacePctPerHour < MIN_ESTIMATE_PACE_PER_HOUR || currentLevel >= targetLevel) {
-        return null
-    }
-    return (((targetLevel - currentLevel) / pacePctPerHour) * 3_600_000f).roundToInt().toLong()
-}
-
 private fun ChargingSessionSummary.hasMeaningfulRemainingEstimate(currentLevel: Int): Boolean {
     val eightyAvailable = currentLevel >= TARGET_CHARGE_EIGHTY || remainingTo80Ms != null
     val fullAvailable = currentLevel >= TARGET_CHARGE_FULL || remainingTo100Ms != null
     return eightyAvailable || fullAvailable
 }
-
-private fun ChargingSessionSummary.hasGraphData(): Boolean =
-    readings.graphPointsFor(SessionGraphMetric.CURRENT, SessionGraphWindow.ALL).size >= 2 ||
-        readings.graphPointsFor(SessionGraphMetric.POWER, SessionGraphWindow.ALL).size >= 2
 
 @Composable
 private fun remainingChargeText(
@@ -1416,94 +1350,6 @@ private fun formatPercentPerHour(value: Float): String =
 private fun formatWatts(value: Float): String =
     stringResource(R.string.value_watts, value.toDouble())
 
-// ── Chart helper functions ──────────────────────────────────────────────────────
-
-private fun buildBatteryYLabels(minVal: Float, maxVal: Float): List<ChartYLabel> {
-    val range = maxVal - minVal
-    if (range < 1f) return emptyList()
-    val rawStep = range / 4f
-    val step = when {
-        rawStep >= 20f -> (rawStep / 10f).toInt() * 10f
-        rawStep >= 5f -> (rawStep / 5f).toInt() * 5f
-        rawStep >= 1f -> rawStep.toInt().toFloat().coerceAtLeast(1f)
-        else -> if (rawStep >= 0.1f) {
-            val s = (rawStep * 10).toInt() / 10f
-            s.coerceAtLeast(0.1f)
-        } else 0.1f
-    }
-    val start = (kotlin.math.ceil(minVal / step.toDouble()) * step).toFloat()
-    return buildList {
-        var v = start
-        while (v <= maxVal) {
-            val label = if (step < 1f) formatDecimal(v, 1) else "${v.toInt()}"
-            add(ChartYLabel(v, label))
-            v += step
-        }
-    }
-}
-
-private fun buildBatteryXLabels(timestamps: List<Long>, period: HistoryPeriod): List<ChartXLabel> {
-    if (timestamps.size < 2) return emptyList()
-    val first = timestamps.first()
-    val last = timestamps.last()
-    val span = last - first
-    if (span <= 0) return emptyList()
-    val (skeleton, count) = when (period) {
-        HistoryPeriod.SINCE_UNPLUG, HistoryPeriod.DAY -> "Hm" to 4
-        HistoryPeriod.WEEK -> "EEEHm" to 4
-        HistoryPeriod.MONTH -> "MMMd" to 4
-        HistoryPeriod.ALL -> "MMMd" to 4
-    }
-    return buildList {
-        for (i in 0..count) {
-            val position = i.toFloat() / count
-            val time = first + (span * position).toLong()
-            add(ChartXLabel(position, formatLocalizedDateTime(time, skeleton)))
-        }
-    }
-}
-
-private fun buildSessionXLabels(timestamps: List<Long>): List<ChartXLabel> {
-    if (timestamps.size < 2) return emptyList()
-    val first = timestamps.first()
-    val last = timestamps.last()
-    val span = last - first
-    if (span <= 0) return emptyList()
-    val count = 4
-    return buildList {
-        for (i in 0..count) {
-            val position = i.toFloat() / count
-            val time = first + (span * position).toLong()
-            add(ChartXLabel(position, formatLocalizedDateTime(time, "Hm")))
-        }
-    }
-}
-
-@Composable
-private fun batteryQualityZones(metric: BatteryHistoryMetric): List<ChartQualityZone>? {
-    val colors = MaterialTheme.statusColors
-    return when (metric) {
-        BatteryHistoryMetric.LEVEL -> listOf(
-            ChartQualityZone(minValue = 50f, maxValue = 100f, color = colors.healthy.copy(alpha = 0.06f)),
-            ChartQualityZone(minValue = 20f, maxValue = 50f, color = colors.fair.copy(alpha = 0.06f)),
-            ChartQualityZone(minValue = 0f, maxValue = 20f, color = colors.critical.copy(alpha = 0.06f))
-        )
-        BatteryHistoryMetric.TEMPERATURE -> listOf(
-            ChartQualityZone(minValue = 0f, maxValue = 35f, color = colors.healthy.copy(alpha = 0.06f)),
-            ChartQualityZone(minValue = 35f, maxValue = 40f, color = colors.fair.copy(alpha = 0.06f)),
-            ChartQualityZone(minValue = 40f, maxValue = 45f, color = colors.poor.copy(alpha = 0.06f)),
-            ChartQualityZone(minValue = 45f, maxValue = 60f, color = colors.critical.copy(alpha = 0.06f))
-        )
-        else -> null
-    }
-}
-
-private fun batteryMetricUnit(metric: BatteryHistoryMetric): String = when (metric) {
-    BatteryHistoryMetric.LEVEL -> "%"
-    BatteryHistoryMetric.TEMPERATURE -> "°C"
-    BatteryHistoryMetric.CURRENT -> " mA"
-    BatteryHistoryMetric.VOLTAGE -> " V"
-}
 
 @Composable
 private fun formatDuration(durationMs: Long): String {
@@ -1533,7 +1379,10 @@ private fun formatDurationCompact(durationMs: Long): String {
 // ── Screen On/Off panel (#5) ────────────────────────────────────────────────
 
 @Composable
-private fun BatteryScreenUsagePanel(usage: ScreenUsageStats) {
+private fun BatteryScreenUsagePanel(
+    usage: ScreenUsageStats,
+    onInfoClick: (String) -> Unit = {}
+) {
     BatteryPanel {
         CardSectionTitle(text = stringResource(R.string.battery_usage_section))
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
@@ -1546,7 +1395,8 @@ private fun BatteryScreenUsagePanel(usage: ScreenUsageStats) {
                     label = stringResource(R.string.battery_screen_on),
                     value = usage.screenOnDrainRate?.let {
                         stringResource(R.string.value_percent_per_hour, it.toDouble())
-                    } ?: stringResource(R.string.battery_estimating)
+                    } ?: stringResource(R.string.battery_estimating),
+                    onInfoClick = { onInfoClick("screenOnOff") }
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -1560,7 +1410,8 @@ private fun BatteryScreenUsagePanel(usage: ScreenUsageStats) {
                     label = stringResource(R.string.battery_screen_off),
                     value = usage.screenOffDrainRate?.let {
                         stringResource(R.string.value_percent_per_hour, it.toDouble())
-                    } ?: stringResource(R.string.battery_estimating)
+                    } ?: stringResource(R.string.battery_estimating),
+                    onInfoClick = { onInfoClick("screenOnOff") }
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -1576,7 +1427,10 @@ private fun BatteryScreenUsagePanel(usage: ScreenUsageStats) {
 // ── Sleep Analysis panel (#8) ───────────────────────────────────────────────
 
 @Composable
-private fun BatterySleepAnalysisPanel(sleep: SleepAnalysis) {
+private fun BatterySleepAnalysisPanel(
+    sleep: SleepAnalysis,
+    onInfoClick: (String) -> Unit = {}
+) {
     BatteryPanel {
         CardSectionTitle(text = stringResource(R.string.battery_sleep_analysis))
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
@@ -1588,7 +1442,8 @@ private fun BatterySleepAnalysisPanel(sleep: SleepAnalysis) {
                 label = stringResource(R.string.battery_deep_sleep),
                 value = formatDurationCompact(sleep.deepSleepDurationMs),
                 modifier = Modifier.weight(1f),
-                valueColor = MaterialTheme.statusColors.healthy
+                valueColor = MaterialTheme.statusColors.healthy,
+                onInfoClick = { onInfoClick("deepSleep") }
             )
             MetricPill(
                 label = stringResource(R.string.battery_held_awake),
@@ -1598,7 +1453,8 @@ private fun BatterySleepAnalysisPanel(sleep: SleepAnalysis) {
                     MaterialTheme.statusColors.fair
                 } else {
                     MaterialTheme.colorScheme.onSurface
-                }
+                },
+                onInfoClick = { onInfoClick("deepSleep") }
             )
         }
     }

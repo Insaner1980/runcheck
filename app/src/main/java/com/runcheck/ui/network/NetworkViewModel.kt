@@ -1,17 +1,19 @@
 package com.runcheck.ui.network
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.runcheck.R
 import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.SpeedTestProgress
 import com.runcheck.domain.model.SpeedTestResult
-import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.usecase.FinalizeSpeedTestUseCase
-import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.usecase.GetMeasuredNetworkStateUseCase
 import com.runcheck.domain.usecase.GetNetworkHistoryUseCase
 import com.runcheck.domain.usecase.GetSpeedTestHistoryUseCase
+import com.runcheck.domain.usecase.IsProUserUseCase
+import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.RunSpeedTestUseCase
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.messageOrRes
@@ -31,12 +33,14 @@ private const val PRO_HISTORY_LIMIT = 100
 
 @HiltViewModel
 class NetworkViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val getMeasuredNetworkState: GetMeasuredNetworkStateUseCase,
     private val runSpeedTest: RunSpeedTestUseCase,
     private val getSpeedTestHistory: GetSpeedTestHistoryUseCase,
     private val finalizeSpeedTest: FinalizeSpeedTestUseCase,
-    private val proStatusProvider: ProStatusProvider,
-    private val getNetworkHistory: GetNetworkHistoryUseCase
+    private val isProUser: IsProUserUseCase,
+    private val getNetworkHistory: GetNetworkHistoryUseCase,
+    private val manageUserPreferences: ManageUserPreferencesUseCase
 ) : ViewModel() {
 
     private val _networkUiState = MutableStateFlow<NetworkUiState>(NetworkUiState.Loading)
@@ -47,8 +51,15 @@ class NetworkViewModel @Inject constructor(
     private var networkJob: Job? = null
     private var historyJob: Job? = null
     private var speedTestJob: Job? = null
-    private var selectedHistoryPeriod = HistoryPeriod.DAY
+    private var selectedHistoryPeriod: HistoryPeriod
+        get() = savedStateHandle.get<String>(SELECTED_HISTORY_PERIOD_KEY)
+            ?.let { value -> runCatching { HistoryPeriod.valueOf(value) }.getOrNull() }
+            ?: HistoryPeriod.DAY
+        set(value) {
+            savedStateHandle[SELECTED_HISTORY_PERIOD_KEY] = value.name
+        }
     private var historyNetworkJob: Job? = null
+    private var dismissedCardsJob: Job? = null
 
     fun startObserving() {
         if (networkJob?.isActive != true) {
@@ -56,6 +67,9 @@ class NetworkViewModel @Inject constructor(
         }
         if (historyJob?.isActive != true) {
             loadSpeedTestHistory()
+        }
+        if (dismissedCardsJob?.isActive != true) {
+            collectDismissedCards()
         }
     }
 
@@ -68,6 +82,8 @@ class NetworkViewModel @Inject constructor(
         historyNetworkJob = null
         speedTestJob?.cancel()
         speedTestJob = null
+        dismissedCardsJob?.cancel()
+        dismissedCardsJob = null
     }
 
     fun refresh() {
@@ -184,11 +200,33 @@ class NetworkViewModel @Inject constructor(
                         is SpeedTestProgress.Failed -> {
                             updateSpeedTestState {
                                 copy(
-                                    phase = SpeedTestPhase.Failed(UiText.Dynamic(progress.error)),
+                                    phase = SpeedTestPhase.Failed(
+                                        UiText.Resource(R.string.speed_test_error_generic)
+                                    ),
                                     isRunning = false
                                 )
                             }
                         }
+                    }
+                }
+        }
+    }
+
+    fun dismissInfoCard(id: String) {
+        viewModelScope.launch {
+            manageUserPreferences.dismissInfoCard(id)
+        }
+    }
+
+    private fun collectDismissedCards() {
+        dismissedCardsJob?.cancel()
+        dismissedCardsJob = viewModelScope.launch {
+            manageUserPreferences.observeDismissedInfoCards()
+                .collect { dismissedCards ->
+                    _networkUiState.update { current ->
+                        (current as? NetworkUiState.Success)?.copy(
+                            dismissedInfoCards = dismissedCards
+                        ) ?: current
                     }
                 }
         }
@@ -210,7 +248,7 @@ class NetworkViewModel @Inject constructor(
                     }
                 }
                 .collect { state ->
-                    val isPro = proStatusProvider.isPro()
+                    val isPro = isProUser()
                     _networkUiState.update { current ->
                         val existing = current as? NetworkUiState.Success
                         NetworkUiState.Success(
@@ -218,7 +256,8 @@ class NetworkViewModel @Inject constructor(
                             signalHistory = existing?.signalHistory ?: emptyList(),
                             selectedHistoryPeriod = selectedHistoryPeriod,
                             historyLoadError = existing?.historyLoadError,
-                            isPro = isPro
+                            isPro = isPro,
+                            dismissedInfoCards = existing?.dismissedInfoCards ?: emptySet()
                         )
                     }
                 }
@@ -247,7 +286,7 @@ class NetworkViewModel @Inject constructor(
     private fun loadSpeedTestHistory() {
         historyJob?.cancel()
         historyJob = viewModelScope.launch {
-            val limit = if (proStatusProvider.isPro()) PRO_HISTORY_LIMIT else FREE_HISTORY_LIMIT
+            val limit = if (isProUser()) PRO_HISTORY_LIMIT else FREE_HISTORY_LIMIT
             getSpeedTestHistory(limit)
                 .catch { e ->
                     updateSpeedTestState {
@@ -275,5 +314,9 @@ class NetworkViewModel @Inject constructor(
     override fun onCleared() {
         stopObserving()
         super.onCleared()
+    }
+
+    private companion object {
+        private const val SELECTED_HISTORY_PERIOD_KEY = "network_selected_history_period"
     }
 }

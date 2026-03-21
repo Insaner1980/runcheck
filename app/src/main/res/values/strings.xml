@@ -186,6 +186,10 @@
     <string name="value_headroom_percent">%1$s%%</string>
     <string name="value_label_colon">%1$s: %2$s</string>
     <string name="value_count_parenthetical">(%1$d)</string>
+    <string name="value_with_unit_text">%1$s %2$s</string>
+    <string name="value_with_suffix_text">%1$s%2$s</string>
+    <string name="value_direction_down">↓ %1$s</string>
+    <string name="value_direction_up">↑ %1$s</string>
     <string name="network_type_cellular">Cellular</string>
     <string name="fallback_unknown">Unknown</string>
     <string name="a11y_scanning_files">Scanning files</string>
@@ -249,6 +253,7 @@
     <!-- Connection Type -->
     <string name="connection_wifi">WiFi</string>
     <string name="connection_cellular">Cellular</string>
+    <string name="connection_vpn">VPN</string>
     <string name="connection_none">None</string>
     <string name="location_services_open_settings">Open settings</string>
     <string name="network_wifi_name_help_title">WiFi name is unavailable</string>
@@ -312,6 +317,10 @@
 
     <!-- Storage Actions -->
     <string name="storage_cleanup_tools">Cleanup Tools</string>
+    <string name="storage_media_permission_title">Allow media access for storage tools</string>
+    <string name="storage_media_permission_message">Grant media access only if you want accurate photos, videos, audio, downloads, and cleanup suggestions. runcheck uses this data only on your device.</string>
+    <string name="storage_media_permission_grant">Grant permission</string>
+    <string name="storage_media_permission_open_settings">Open app settings</string>
     <string name="storage_large_files">Large Files</string>
     <string name="storage_large_files_desc">Files larger than 50 MB</string>
     <string name="storage_old_downloads">Old Downloads</string>
@@ -342,6 +351,8 @@
     </plurals>
     <string name="cleanup_no_files">No files found</string>
     <string name="cleanup_no_files_desc">Your storage is looking clean!</string>
+    <string name="cleanup_delete_failed">Could not delete the selected files.</string>
+    <string name="cleanup_delete_permission_error">Android blocked deletion for one or more files.</string>
     <plurals name="cleanup_free_action">
         <item quantity="one">Free %1$s \u00B7 %2$d item</item>
         <item quantity="other">Free %1$s \u00B7 %2$d items</item>
@@ -362,6 +373,7 @@
     <string name="settings_interval_15">15 minutes</string>
     <string name="settings_interval_30">30 minutes</string>
     <string name="settings_interval_60">60 minutes</string>
+    <string name="settings_monitoring_interval_note">Runs approximately on this cadence. Doze and battery optimizations may delay background checks.</string>
     <string name="settings_notifications">Notifications</string>
     <string name="settings_notifications_desc">Alerts for low battery, high temperature, low storage</string>
     <string name="settings_measurement_info">Measurement Info</string>
@@ -394,10 +406,18 @@
     <string name="settings_restore_not_found">No pro purchase found for this Play account</string>
     <string name="settings_restore_unavailable">Play Billing is not ready yet. Try again in a moment.</string>
     <string name="settings_billing_unavailable">Play Billing is unavailable on this device. Upgrade options are hidden until billing becomes available.</string>
+    <string name="settings_pro_section">Pro</string>
+    <string name="settings_status_label">Status</string>
+    <string name="settings_pro_status_active">Active</string>
+    <string name="settings_pro_status_not_active">Not active</string>
     <string name="settings_pro_active">pro active</string>
     <string name="settings_pro_thank_you">Thank you for supporting runcheck!</string>
     <string name="billing_purchase_pending">Payment is being processed. Pro will unlock when complete.</string>
     <string name="billing_purchase_error">Purchase could not be completed. Please try again.</string>
+    <string name="billing_purchase_not_ready">Google Play Billing is still starting up. Try again in a moment.</string>
+    <string name="billing_service_unavailable">Google Play Billing is temporarily unavailable. Try again shortly.</string>
+    <string name="billing_network_error">Could not reach Google Play. Check your connection and try again.</string>
+    <string name="billing_item_unavailable">This purchase is not available right now.</string>
     <string name="billing_already_owned">You already own runcheck Pro. Restoring now.</string>
     <string name="settings_version">Version %1$s</string>
 
@@ -435,6 +455,8 @@
     <string name="settings_feedback">Send Feedback</string>
     <string name="settings_rate">Rate on Play Store</string>
     <string name="settings_privacy_policy">Privacy Policy</string>
+    <string name="settings_play_store_web_url" translatable="false">https://play.google.com/store/apps/details?id=com.runcheck</string>
+    <string name="settings_privacy_policy_url" translatable="false">https://github.com/Insaner1980/runcheck/blob/main/docs/privacy-policy.md</string>
     <string name="pro_feature_badge">PRO</string>
     <string name="pro_feature_locked_message">Upgrade to runcheck pro to use %1$s.</string>
     <string name="pro_feature_upgrade_action">Upgrade in Settings</string>
@@ -467,10 +489,11 @@
     <string name="notification_low_battery_title">Low Battery</string>
     <string name="notification_low_battery_text">Battery at %d%%</string>
     <string name="notification_high_temp_title">High Temperature</string>
-    <string name="notification_high_temp_text">Device temperature: %1$.1f\u00B0C</string>
+    <string name="notification_high_temp_text">Device temperature: %1$s</string>
     <string name="notification_low_storage_title">Low Storage</string>
     <string name="notification_low_storage_text">Storage %1$.0f%% full</string>
     <string name="notification_charge_complete_title">Charging Complete</string>
+    <string name="notification_charge_complete_text">Battery reached %1$d%%</string>
     <string name="monitor_realtime_channel_name">Real-Time Monitoring</string>
     <string name="monitor_realtime_channel_description">Shows real-time device health data</string>
     <string name="monitor_realtime_notification_text">Monitoring device health…</string>
@@ -487,8 +510,28 @@
     <string name="charger_add_hint">Charger name (e.g. Samsung 25W)</string>
     <string name="charger_avg_speed">Avg %d mA</string>
     <string name="charger_no_chargers">No chargers saved yet</string>
+    <string name="charger_empty_body">Add chargers here, then select one before you start charging to save comparison data.</string>
     <string name="charger_last_used">Last used: %s</string>
+    <string name="charger_last_test">Last test: %s</string>
     <string name="charger_delete">Delete</string>
+    <string name="charger_delete_confirm_title">Delete charger?</string>
+    <string name="charger_delete_confirm_message">This will delete %1$s and its saved test history.</string>
+    <string name="charger_select">Use for next test</string>
+    <string name="charger_selected">Selected for testing</string>
+    <string name="charger_selected_active">Charging test in progress</string>
+    <string name="charger_clear_selected">Clear selection</string>
+    <string name="charger_no_completed_tests">No completed tests yet</string>
+    <string name="charger_latest_power">Latest test: %1$s W</string>
+    <string name="charger_latest_current">Latest test: %1$d mA</string>
+    <string name="charger_average_power">%1$s W avg</string>
+    <string name="charger_average_current">%1$d mA avg</string>
+    <string name="charger_historical_title">Historical comparison</string>
+    <string name="charger_historical_subtitle">Average result from completed charger tests.</string>
+    <string name="charger_selection_title">Selected charger</string>
+    <string name="charger_selection_none">No charger selected</string>
+    <string name="charger_selection_hint">Choose a saved charger before charging so Runcheck can log the next session to the right profile.</string>
+    <string name="charger_selection_active">The current charging session is being logged to this charger.</string>
+    <string name="charger_selection_ready">The next charging session will be saved to this charger.</string>
     <plurals name="charger_sessions">
         <item quantity="one">%d session</item>
         <item quantity="other">%d sessions</item>
@@ -497,11 +540,13 @@
     <!-- App Battery Usage -->
     <string name="app_usage_title">App Battery Usage</string>
     <string name="app_usage_no_data">No usage data available for the last 24 hours</string>
+    <string name="app_usage_no_data_message">This can happen on a fresh install or right after granting usage access. Give Android a moment, then retry.</string>
     <string name="app_usage_permission_title">Allow usage access</string>
     <string name="app_usage_permission_message">Android requires Usage Access permission before runcheck can show per-app foreground time.</string>
     <string name="app_usage_permission_open_settings">Open usage access</string>
     <string name="app_usage_time_hours_minutes">%1$dh %2$dm</string>
     <string name="app_usage_time_minutes">%1$dm</string>
+    <string name="app_usage_percent">%1$d%%</string>
     <string name="app_usage_drain">Est. drain: %1$.1f mAh</string>
 
     <!-- Speed Test -->
@@ -572,6 +617,7 @@
     <string name="trial_expired_upgrade">Your Pro trial ended. Unlock Pro to keep all features.</string>
     <string name="trial_expired_upgrade_with_price">Your Pro trial ended. Unlock Pro for %1$s.</string>
     <string name="trial_dismiss">Dismiss</string>
+    <string name="a11y_dismiss_card">Dismiss card</string>
 
     <!-- Trial Notifications -->
     <string name="notification_channel_trial">Trial Reminders</string>
@@ -622,4 +668,292 @@
     </plurals>
     <string name="a11y_exporting_data">Exporting data</string>
     <string name="a11y_trial_dialog">Trial expired dialog</string>
+
+    <!-- Fullscreen Chart -->
+    <string name="a11y_expand_chart_fullscreen">View chart fullscreen</string>
+    <string name="fullscreen_chart_empty">No data for this period</string>
+    <string name="fullscreen_chart_error">Failed to load chart data</string>
+    <string name="fullscreen_chart_retry">Retry</string>
+    <string name="fullscreen_chart_title_battery">Battery %1$s</string>
+    <string name="fullscreen_chart_title_session">Session %1$s</string>
+    <string name="fullscreen_chart_title_network">Network %1$s</string>
+
+    <!-- Info System - Common -->
+    <string name="a11y_info_button">More info</string>
+    <string name="info_learn_more">Learn more</string>
+    <string name="info_show_less">Show less</string>
+    <string name="info_normal_range_label">What\'s normal</string>
+    <string name="info_why_it_matters_label">Why it matters</string>
+
+    <!-- Info Bottom Sheet - Battery -->
+    <string name="info_battery_voltage_title">Voltage</string>
+    <string name="info_battery_voltage_explanation">Voltage is how much electrical pressure your battery is producing right now. Think of it like water pressure in a pipe.</string>
+    <string name="info_battery_voltage_range">3.7–4.2 V is healthy. Below 3.5 V under normal use may signal a worn battery.</string>
+    <string name="info_battery_voltage_matters">Erratic voltage causes unexpected shutdowns and inaccurate battery percentage readings.</string>
+    <string name="info_battery_voltage_detail">A lithium-ion cell has a nominal voltage of ~3.7 V. It charges to 4.2 V and is considered empty around 3.0 V. The percentage your phone shows is a mapping from this voltage curve, adjusted for battery age.</string>
+
+    <string name="info_battery_temperature_title">Battery Temperature</string>
+    <string name="info_battery_temperature_explanation">How hot your battery is right now. Batteries generate heat during use and charging.</string>
+    <string name="info_battery_temperature_range">20–35 °C is normal. Above 40 °C during regular use is concerning.</string>
+    <string name="info_battery_temperature_matters">Sustained high temperatures permanently degrade battery capacity. Every degree above 30 °C accelerates chemical aging.</string>
+    <string name="info_battery_temperature_detail">Lithium-ion batteries degrade faster at high temperatures due to accelerated electrolyte decomposition. Storing or operating a phone at 45 °C can double the rate of capacity loss compared to 25 °C.</string>
+
+    <string name="info_battery_health_status_title">Battery Health</string>
+    <string name="info_battery_health_status_explanation">An overall assessment of your battery\'s condition based on its capacity relative to when it was new.</string>
+    <string name="info_battery_health_status_range">Good or better means your battery is performing well. Fair or Poor means noticeable degradation.</string>
+    <string name="info_battery_health_status_matters">A degraded battery holds less charge, which means shorter usage between charges and potentially unexpected shutdowns.</string>
+
+    <string name="info_battery_cycle_count_title">Cycle Count</string>
+    <string name="info_battery_cycle_count_explanation">How many full charge-discharge cycles your battery has completed. Using 50% and recharging twice counts as one cycle.</string>
+    <string name="info_battery_cycle_count_range">Most phone batteries are rated for 500–800 cycles before significant degradation.</string>
+    <string name="info_battery_cycle_count_matters">Higher cycle counts correlate with reduced battery capacity. This is a key indicator of battery wear.</string>
+    <string name="info_battery_cycle_count_detail">Modern lithium-ion batteries retain about 80% of their original capacity after 500 cycles under ideal conditions. Fast charging, heat, and deep discharges can reduce this number.</string>
+
+    <string name="info_battery_health_percent_title">Health Percentage</string>
+    <string name="info_battery_health_percent_explanation">The estimated percentage of your battery\'s original capacity that remains. 100% means like-new.</string>
+    <string name="info_battery_health_percent_range">90–100% is excellent. 80–90% is normal after 1–2 years. Below 80% means noticeable degradation.</string>
+    <string name="info_battery_health_percent_matters">This directly tells you how much of the original battery capacity is available. Below 80%, you\'ll notice significantly shorter battery life.</string>
+
+    <string name="info_battery_capacity_title">Battery Capacity</string>
+    <string name="info_battery_capacity_explanation">The amount of electrical charge your battery can hold, measured in milliamp-hours (mAh). Compares the design capacity to estimated current capacity.</string>
+    <string name="info_battery_capacity_range">Varies by device. A typical phone battery is 3000–5000 mAh when new.</string>
+    <string name="info_battery_capacity_matters">Lower capacity means less usage time between charges. The gap between design and estimated capacity shows how much your battery has worn.</string>
+
+    <string name="info_battery_current_title">Current (mA)</string>
+    <string name="info_battery_current_explanation">How much electrical current is flowing in or out of your battery right now. Positive means charging, negative means discharging.</string>
+    <string name="info_battery_current_range">Discharging: -100 to -800 mA is typical. Charging: 500–3000 mA depending on charger.</string>
+    <string name="info_battery_current_matters">High discharge current means your phone is working hard and will drain faster. During charging, higher current means faster charging but more heat.</string>
+    <string name="info_battery_current_detail">The accuracy of current readings varies by device manufacturer. Some phones report instantaneous current, others report a rolling average. The min/avg/max stats help smooth out momentary spikes.</string>
+
+    <string name="info_battery_power_title">Power (W)</string>
+    <string name="info_battery_power_explanation">How much power your battery is consuming or receiving, calculated from voltage × current. Watts give a more accurate picture than mA alone.</string>
+    <string name="info_battery_power_range">Typical discharge: 1–5 W. Charging: 5–25 W depending on charger and phone support.</string>
+    <string name="info_battery_power_matters">Power consumption directly relates to how fast your battery drains. Higher wattage during charging means faster charge times but also more heat generation.</string>
+
+    <string name="info_battery_drain_rate_title">Drain Rate</string>
+    <string name="info_battery_drain_rate_explanation">How fast your battery percentage is dropping, measured as percent per hour.</string>
+    <string name="info_battery_drain_rate_range">0.5–2%/h is normal for light use. 3–5%/h is moderate. Above 5%/h suggests heavy use or a problem.</string>
+    <string name="info_battery_drain_rate_matters">This is the simplest indicator of how fast your phone is using battery. If it\'s consistently high while idle, something may be running in the background.</string>
+
+    <string name="info_battery_confidence_title">Measurement Confidence</string>
+    <string name="info_battery_confidence_explanation">How reliable runcheck considers the battery readings from your device. Not all phones report accurate current and power data.</string>
+    <string name="info_battery_confidence_range">Green (Accurate) means readings match expected patterns. Yellow (Estimated) means values are derived or less certain.</string>
+    <string name="info_battery_confidence_matters">If confidence is low, take current and power readings as approximate. Level and temperature readings are almost always reliable.</string>
+
+    <string name="info_battery_screen_on_off_title">Screen On/Off Drain</string>
+    <string name="info_battery_screen_on_off_explanation">Compares how fast your battery drains with the screen on versus off. The screen is one of the biggest power consumers.</string>
+    <string name="info_battery_screen_on_off_range">Screen-off drain should be much lower than screen-on. If screen-off drain is above 2%/h, something is keeping your phone awake.</string>
+    <string name="info_battery_screen_on_off_matters">Large screen-off drain usually means a background app or service is consuming power. This helps identify hidden battery drainers.</string>
+
+    <string name="info_battery_deep_sleep_title">Deep Sleep / Held Awake</string>
+    <string name="info_battery_deep_sleep_explanation">Tracks whether your phone enters deep sleep (Doze mode) when the screen is off, or stays awake processing tasks.</string>
+    <string name="info_battery_deep_sleep_range">A healthy phone should spend most of its screen-off time in deep sleep. High \'held awake\' time means something is preventing sleep.</string>
+    <string name="info_battery_deep_sleep_matters">Deep sleep dramatically reduces battery drain. If your phone is held awake for extended periods, background apps or wake locks are likely the cause.</string>
+
+    <!-- Info Bottom Sheet - Thermal -->
+    <string name="info_thermal_cpu_temp_title">CPU Temperature</string>
+    <string name="info_thermal_cpu_temp_explanation">The current temperature of your phone\'s processor. The CPU heats up during intensive tasks like gaming or video editing.</string>
+    <string name="info_thermal_cpu_temp_range">30–45 °C is normal under load. Above 50 °C means heavy thermal stress.</string>
+    <string name="info_thermal_cpu_temp_matters">When the CPU gets too hot, your phone will slow itself down (thermal throttling) to prevent damage. This directly affects performance.</string>
+    <string name="info_thermal_cpu_temp_detail">CPU temperature is read from system thermal zone files. Not all devices expose this data, and the reported zone may vary. On some devices, this reflects the skin temperature rather than the CPU die temperature.</string>
+
+    <string name="info_thermal_headroom_title">Thermal Headroom</string>
+    <string name="info_thermal_headroom_explanation">How much room your phone has before it starts throttling performance to cool down. Lower numbers mean closer to throttling.</string>
+    <string name="info_thermal_headroom_range">Above 0.5 is comfortable. 0.2–0.5 means getting warm. Below 0.2 means throttling is likely imminent.</string>
+    <string name="info_thermal_headroom_matters">This is the best predictor of when your phone will slow down. If headroom drops near zero, expect reduced performance until the device cools.</string>
+    <string name="info_thermal_headroom_detail">Thermal headroom is reported by Android\'s PowerManager API (API 30+). It represents a normalized value where values approaching the throttling threshold indicate imminent performance reduction. The OS uses multiple thermal sensors to calculate this value.</string>
+
+    <string name="info_thermal_status_title">Thermal Status</string>
+    <string name="info_thermal_status_explanation">The overall thermal state your device has reported to Android. Ranges from none (cool) to critical (emergency cooling needed).</string>
+    <string name="info_thermal_status_range">None or Light is normal. Moderate means noticeable throttling. Severe or higher needs cooldown.</string>
+    <string name="info_thermal_status_matters">Higher thermal status levels trigger increasingly aggressive throttling — first background tasks slow, then GPU, then CPU. Critical status may trigger an emergency shutdown.</string>
+
+    <string name="info_thermal_throttling_title">Throttling</string>
+    <string name="info_thermal_throttling_explanation">Whether your phone is currently reducing its performance to control temperature. Active throttling means your phone is intentionally running slower.</string>
+    <string name="info_thermal_throttling_range">No throttling is ideal. Brief throttling during heavy workloads is normal. Persistent throttling at idle suggests a hardware or software issue.</string>
+    <string name="info_thermal_throttling_matters">Throttling directly impacts your user experience — apps open slower, games drop frames, and tasks take longer to complete.</string>
+
+    <!-- Info Bottom Sheet - Network -->
+    <string name="info_network_signal_strength_title">Signal Strength</string>
+    <string name="info_network_signal_strength_explanation">How strong the wireless signal is at your location, measured in dBm (decibels relative to one milliwatt). More negative means weaker.</string>
+    <string name="info_network_signal_strength_range">Wi-Fi: -30 to -50 dBm is excellent, -70 to -80 dBm is weak. Cellular: -80 to -100 dBm is good, below -110 dBm is poor.</string>
+    <string name="info_network_signal_strength_matters">Weak signal means slower speeds, more dropped connections, and higher battery drain as your phone works harder to maintain the connection.</string>
+    <string name="info_network_signal_strength_detail">Signal strength in dBm is logarithmic — every 3 dBm change doubles or halves the power. A -80 dBm signal is 10 times weaker than -70 dBm. Your phone dynamically adjusts transmission power based on signal quality.</string>
+
+    <string name="info_network_latency_title">Latency (Ping)</string>
+    <string name="info_network_latency_explanation">How long it takes for data to travel from your phone to a server and back, measured in milliseconds. Lower is better.</string>
+    <string name="info_network_latency_range">Under 20 ms is excellent. 20–50 ms is good for most uses. Above 100 ms is noticeable in video calls and gaming.</string>
+    <string name="info_network_latency_matters">High latency makes real-time activities feel sluggish — video calls lag, online games stutter, and web pages feel slow to respond even with fast download speeds.</string>
+
+    <string name="info_network_jitter_title">Jitter</string>
+    <string name="info_network_jitter_explanation">How much your latency varies from one packet to the next. High jitter means an inconsistent connection even if average speed is good.</string>
+    <string name="info_network_jitter_range">Under 5 ms is excellent. 5–30 ms is acceptable. Above 30 ms can cause quality issues in calls and streaming.</string>
+    <string name="info_network_jitter_matters">Jitter causes audio dropouts, video freezing, and buffering. A connection with low average latency but high jitter can be worse than a slightly slower but stable connection.</string>
+
+    <string name="info_network_frequency_title">Wi-Fi Frequency</string>
+    <string name="info_network_frequency_explanation">The radio band your Wi-Fi connection is using. 2.4 GHz has longer range but slower speeds. 5 GHz and 6 GHz are faster but shorter range.</string>
+    <string name="info_network_frequency_range">2.4 GHz: up to ~150 Mbps. 5 GHz: up to ~1 Gbps. 6 GHz: up to ~2 Gbps (Wi-Fi 6E).</string>
+    <string name="info_network_frequency_matters">Choosing the right band can significantly improve your experience. Use 5/6 GHz near the router for speed, or 2.4 GHz for range through walls.</string>
+
+    <string name="info_network_wifi_standard_title">Wi-Fi Standard</string>
+    <string name="info_network_wifi_standard_explanation">The Wi-Fi protocol version your connection is using. Newer standards support faster speeds and better handling of multiple devices.</string>
+    <string name="info_network_wifi_standard_range">Wi-Fi 4 (802.11n) is basic. Wi-Fi 5 (802.11ac) is good. Wi-Fi 6/6E (802.11ax) is latest and fastest.</string>
+    <string name="info_network_wifi_standard_matters">Both your phone and router must support the same standard. Connecting via an older standard limits your maximum speed regardless of your internet plan.</string>
+
+    <string name="info_network_link_speed_title">Link Speed</string>
+    <string name="info_network_link_speed_explanation">The theoretical maximum speed of your current Wi-Fi connection, negotiated between your phone and router.</string>
+    <string name="info_network_link_speed_range">Depends on your Wi-Fi standard and signal. 72 Mbps on Wi-Fi 4, 433+ Mbps on Wi-Fi 5, 1200+ Mbps on Wi-Fi 6.</string>
+    <string name="info_network_link_speed_matters">Actual speeds are always lower than link speed due to overhead, interference, and distance. But a low link speed caps your maximum possible throughput.</string>
+
+    <string name="info_network_bandwidth_title">Bandwidth</string>
+    <string name="info_network_bandwidth_explanation">The channel width your Wi-Fi connection is using. Wider channels allow more data to flow but are more susceptible to interference.</string>
+    <string name="info_network_bandwidth_range">20 MHz is basic. 40 MHz is common on 2.4 GHz. 80 MHz and 160 MHz are used on 5/6 GHz for high speeds.</string>
+    <string name="info_network_bandwidth_matters">Wider channels deliver faster speeds in ideal conditions but may perform worse in crowded Wi-Fi environments where many networks overlap.</string>
+
+    <string name="info_network_mtu_title">MTU</string>
+    <string name="info_network_mtu_explanation">Maximum Transmission Unit — the largest packet size your connection can send without fragmenting. Usually 1500 bytes for Ethernet/Wi-Fi.</string>
+    <string name="info_network_mtu_range">1500 is standard. VPN connections often use lower values (1400–1450). Values below 1400 may indicate tunneling.</string>
+    <string name="info_network_mtu_matters">Incorrect MTU can cause mysterious connection issues — pages that partially load, downloads that stall, or VPN tunnels that fail.</string>
+
+    <!-- Info Bottom Sheet - Storage -->
+    <string name="info_storage_usage_title">Storage Usage</string>
+    <string name="info_storage_usage_explanation">The percentage of your phone\'s total storage that is currently occupied by apps, media, and system data.</string>
+    <string name="info_storage_usage_range">Under 75% is comfortable. 75–90% is getting full. Above 90% may cause performance issues.</string>
+    <string name="info_storage_usage_matters">When storage is nearly full, your phone can\'t create temporary files efficiently, which slows down apps, updates, and even basic operations like taking photos.</string>
+
+    <string name="info_storage_fill_rate_title">Fill Rate</string>
+    <string name="info_storage_fill_rate_explanation">How fast your storage is filling up, calculated from usage trends over the past week.</string>
+    <string name="info_storage_fill_rate_range">Under 100 MB/day is typical. Large app installs or photo shoots cause temporary spikes.</string>
+    <string name="info_storage_fill_rate_matters">A consistently high fill rate means you\'ll need to clean up sooner. This helps predict when you might run out of space.</string>
+
+    <string name="info_storage_cache_title">Cache</string>
+    <string name="info_storage_cache_explanation">Temporary data stored by apps to speed up loading times. Includes downloaded images, compiled code, and offline data.</string>
+    <string name="info_storage_cache_range">1–5 GB is typical. Social media and streaming apps tend to accumulate the most cache.</string>
+    <string name="info_storage_cache_matters">Clearing cache frees space but apps will reload data from the internet, which may briefly slow them down. It\'s safe to clear and can recover significant space.</string>
+
+    <string name="info_storage_apps_title">Apps Total</string>
+    <string name="info_storage_apps_explanation">The total storage used by all installed applications, including their data and cache.</string>
+    <string name="info_storage_apps_range">Varies widely. 20–50 GB is common on a well-used phone. Games can use 2–10 GB each.</string>
+    <string name="info_storage_apps_matters">Apps are often the largest storage consumers. Uninstalling unused apps is one of the most effective ways to reclaim space.</string>
+
+    <!-- Info Bottom Sheet - Speed Test -->
+    <string name="info_speedtest_download_title">Download Speed</string>
+    <string name="info_speedtest_download_explanation">How fast your connection can receive data, measured in Megabits per second (Mbps). This affects streaming, browsing, and downloading files.</string>
+    <string name="info_speedtest_download_range">10–50 Mbps is good for most uses. 100+ Mbps is excellent. Under 5 Mbps may struggle with video streaming.</string>
+    <string name="info_speedtest_download_matters">Download speed determines how quickly content loads — web pages, videos, app updates, and files. Most daily activities depend on download speed.</string>
+
+    <string name="info_speedtest_upload_title">Upload Speed</string>
+    <string name="info_speedtest_upload_explanation">How fast your connection can send data. This affects video calls, uploading photos, and sending large files.</string>
+    <string name="info_speedtest_upload_range">5–20 Mbps is good. 50+ Mbps is excellent. Under 2 Mbps may cause video call quality issues.</string>
+    <string name="info_speedtest_upload_matters">Upload speed is critical for video calls, livestreaming, cloud backups, and sharing content. It\'s typically lower than download speed.</string>
+
+    <string name="info_speedtest_ping_title">Ping</string>
+    <string name="info_speedtest_ping_explanation">The round-trip time for data to travel to the test server and back. Same as latency — lower is better.</string>
+    <string name="info_speedtest_ping_range">Under 20 ms is excellent. 20–50 ms is good. Above 100 ms is noticeable lag.</string>
+    <string name="info_speedtest_ping_matters">Low ping is essential for real-time activities like gaming and video calls. Even fast download speeds feel slow with high ping.</string>
+
+    <string name="info_speedtest_jitter_title">Jitter</string>
+    <string name="info_speedtest_jitter_explanation">The variation in ping times between packets. Consistent timing means a more stable and predictable connection.</string>
+    <string name="info_speedtest_jitter_range">Under 5 ms is excellent. 5–20 ms is acceptable. Above 30 ms indicates connection instability.</string>
+    <string name="info_speedtest_jitter_matters">High jitter causes choppy audio in calls, buffering in streams, and rubber-banding in games, even when average speeds look fine.</string>
+
+    <!-- Info Cards - Battery -->
+    <string name="info_card_health_80_headline">Your battery has degraded</string>
+    <string name="info_card_health_80_body">Below 90% health means your battery has lost some of its original capacity. This is normal aging — most batteries degrade to 80% within 2–3 years. You may notice shorter battery life between charges.</string>
+    <string name="info_card_dies_before_zero_headline">Phone dying before 0%?</string>
+    <string name="info_card_dies_before_zero_body">Below 80% health, the fuel gauge becomes less accurate. Your phone may shut down at 5–15% because the remaining capacity isn\'t usable. This is a sign the battery should be replaced.</string>
+    <string name="info_card_charging_habits_headline">Charging tip</string>
+    <string name="info_card_charging_habits_body">Keeping your battery between 20–80% and avoiding overnight full charges helps extend its lifespan. Heat during charging is the biggest enemy — remove thick cases when charging.</string>
+    <string name="info_card_screen_off_drain_headline">High background drain detected</string>
+    <string name="info_card_screen_off_drain_body">Your battery is draining faster than normal with the screen off. This usually means a background app is keeping your phone awake. Check App Usage to identify the culprit.</string>
+
+    <!-- Info Cards - Thermal -->
+    <string name="info_card_thermal_throttling_headline">Why your phone slows down when it\'s hot</string>
+    <string name="info_card_thermal_throttling_body">Your phone intentionally reduces CPU and GPU speed when temperature rises to prevent hardware damage. This protects your phone but makes it feel sluggish. Move to a cooler environment and close intensive apps.</string>
+    <string name="info_card_heat_battery_headline">Heat and battery wear compound each other</string>
+    <string name="info_card_heat_battery_body">High temperature accelerates battery chemical degradation, and a degraded battery generates more heat under load. This creates a cycle. If your phone is consistently warm, it will age faster.</string>
+
+    <!-- Info Cards - Network -->
+    <string name="info_card_weak_signal_headline">Weak signal drains your battery</string>
+    <string name="info_card_weak_signal_body">When signal is poor, your phone boosts its radio transmission power to maintain the connection. This can use 2–3 times more battery than a strong signal. Consider moving closer to your router or a window.</string>
+    <string name="info_card_speed_test_info_headline">What speed tests actually measure</string>
+    <string name="info_card_speed_test_info_body">Speed tests measure your connection to one server at one moment. Real-world performance varies by time of day, server distance, and network congestion. Run multiple tests at different times for a better picture.</string>
+
+    <!-- Info Cards - Storage -->
+    <string name="info_card_full_storage_headline">Why a full phone is a slow phone</string>
+    <string name="info_card_full_storage_body">When storage is above 75% full, your phone has less room for temporary files, app caches, and system operations. This can slow down app launches, photo saving, and even system updates.</string>
+    <string name="info_card_storage_overview_headline">Where your storage actually goes</string>
+    <string name="info_card_storage_overview_body">Apps and their data usually use the most space, followed by photos and videos. System files, cached data, and downloaded files can also add up. The media breakdown above shows your personal usage pattern.</string>
+
+    <!-- Learn Section -->
+    <string name="home_learn">Learn</string>
+    <string name="learn_screen_title">Learn</string>
+    <string name="learn_topic_battery">Battery</string>
+    <string name="learn_topic_temperature">Temperature</string>
+    <string name="learn_topic_network">Network</string>
+    <string name="learn_topic_storage">Storage</string>
+    <string name="learn_topic_general">General</string>
+    <string name="learn_read_time">%1$d min read</string>
+    <string name="learn_cross_link_check">Check yours →</string>
+
+    <!-- Learn Articles - Battery -->
+    <string name="learn_battery_health_title">Battery Health &amp; Cycle Count</string>
+    <string name="learn_battery_health_preview">What battery health really means, how cycle count affects it, and when to consider a replacement.</string>
+    <string name="learn_battery_health_body">## What is battery health?\n\nBattery health measures how much of your battery\'s original capacity remains. A new phone starts at 100%. Over time, the chemical processes inside the lithium-ion cell become less efficient, and the maximum charge it can hold decreases.\n\n## How cycle count affects health\n\nA charge cycle is one full discharge of the battery\'s capacity — but it doesn\'t have to happen all at once. Using 50% today and 50% tomorrow equals one cycle. Most phone batteries are rated for 500–800 cycles before reaching 80% health.\n\n## When to replace your battery\n\nBelow 80% health, you\'ll notice significantly shorter battery life. Below 70%, unexpected shutdowns become common because the fuel gauge can\'t accurately measure remaining charge. Most manufacturers recommend replacement around 80%.</string>
+
+    <string name="learn_battery_drain_title">Understanding Battery Drain</string>
+    <string name="learn_battery_drain_preview">What causes high drain, how to read drain rates, and practical tips to extend battery life.</string>
+    <string name="learn_battery_drain_body">## What is drain rate?\n\nDrain rate measures how fast your battery percentage is dropping, usually expressed as percent per hour (%/h). Light use might show 0.5–1%/h, while gaming or navigation can hit 10%/h or more.\n\n## Common drain causes\n\nThe screen is the biggest power consumer, followed by cellular radio (especially with weak signal), GPS, and CPU-intensive apps. Background processes like sync, location services, and push notifications also contribute.\n\n## Screen on vs. screen off\n\nComparing screen-on and screen-off drain rates helps identify problems. If your phone drains fast with the screen off, a background app is likely keeping it awake. Check the deep sleep analysis to see if your phone is entering Doze mode properly.</string>
+
+    <string name="learn_battery_charging_title">Charging Myths &amp; Best Practices</string>
+    <string name="learn_battery_charging_preview">Separate fact from fiction about charging habits and learn what actually extends battery life.</string>
+    <string name="learn_battery_charging_body">## Myth: You should fully discharge before charging\n\nFalse. Lithium-ion batteries actually prefer partial charges. Deep discharges (below 20%) stress the battery more than topping up from 50%.\n\n## Myth: Overnight charging damages your battery\n\nMostly false for modern phones. Most devices stop charging at 100% and trickle-charge to maintain it. However, keeping the battery at 100% in a warm environment does accelerate degradation.\n\n## What actually helps\n\nKeep your battery between 20–80% when practical. Avoid heat during charging — remove cases, don\'t charge in direct sunlight. Use the manufacturer\'s charger or a certified one. Slower charging generates less heat and is gentler on the battery.</string>
+
+    <string name="learn_battery_current_power_title">Current &amp; Power Explained</string>
+    <string name="learn_battery_current_power_preview">What milliamps and watts mean for your battery, and how to interpret these readings.</string>
+    <string name="learn_battery_current_power_body">## Current (mA)\n\nCurrent measures the flow of electricity in milliamps. When discharging, it\'s negative (power flowing out). When charging, it\'s positive (power flowing in). Higher absolute values mean more power is being used or delivered.\n\n## Power (W)\n\nPower in watts equals voltage times current (V × A). Watts give a more accurate picture of energy use because they account for voltage changes. A phone using 500 mA at 3.7 V uses about 1.85 W.\n\n## Reading accuracy\n\nNot all phones report current accurately. Some show instantaneous readings that fluctuate rapidly, others show smoothed averages. The confidence badge in runcheck tells you how reliable your device\'s readings are. Use the average and min/max stats for a better picture than any single reading.</string>
+
+    <!-- Learn Articles - Temperature -->
+    <string name="learn_thermal_normal_temps_title">Normal Phone Temperatures</string>
+    <string name="learn_thermal_normal_temps_preview">What temperatures are safe, when to worry, and how your phone manages heat.</string>
+    <string name="learn_thermal_normal_temps_body">## What\'s normal?\n\nA phone at rest should be near room temperature (20–25 °C). Under light use, 25–35 °C is typical. During gaming or camera use, 35–42 °C is common and acceptable.\n\n## When to worry\n\nAbove 45 °C during normal use is concerning. If your phone feels uncomfortably hot to touch, it\'s likely above 40 °C. The battery temperature sensor gives you an accurate reading rather than relying on feel.\n\n## How your phone manages heat\n\nAndroid monitors multiple thermal zones across the device. When temperatures rise, it first reduces background work, then limits CPU/GPU frequencies (throttling), and in extreme cases may display a thermal warning or shut down to prevent damage.</string>
+
+    <string name="learn_thermal_throttling_title">Understanding Thermal Throttling</string>
+    <string name="learn_thermal_throttling_preview">Why your phone slows down when hot, what the throttling levels mean, and how to minimize it.</string>
+    <string name="learn_thermal_throttling_body">## What is throttling?\n\nThermal throttling is your phone intentionally reducing processor speed to control heat. It\'s a safety mechanism that protects your hardware from damage.\n\n## Throttling levels\n\nAndroid defines several levels: None (full speed), Light (minor reduction), Moderate (noticeable), Severe (significant impact), Critical (emergency). Most daily throttling stays at Light or Moderate.\n\n## Thermal headroom\n\nThe headroom value shows how close you are to throttling. Think of it as a temperature budget — when it reaches zero, throttling kicks in. Monitoring headroom helps predict performance dips before they happen.\n\n## Reducing throttling\n\nAvoid using intensive apps while charging. Remove phone cases that trap heat. Reduce screen brightness. In hot environments, give your phone breaks between demanding tasks.</string>
+
+    <string name="learn_thermal_feedback_title">The Heat-Battery Feedback Loop</string>
+    <string name="learn_thermal_feedback_preview">How heat damages batteries and how damaged batteries create more heat.</string>
+    <string name="learn_thermal_feedback_body">## The cycle\n\nHigh temperatures accelerate battery chemical degradation. A degraded battery has higher internal resistance. Higher resistance means more energy is wasted as heat during charging and discharging. More heat means faster degradation.\n\n## Numbers that matter\n\nAt 25 °C, a battery might last 500 cycles to 80% health. At 35 °C, that might drop to 300 cycles. At 45 °C, even less. Each 10 °C increase roughly doubles the rate of chemical aging.\n\n## Breaking the cycle\n\nAvoid charging in hot environments. Don\'t use demanding apps while charging. If your phone gets hot frequently, check for misbehaving apps. Consider replacing the battery if health is below 80% and the phone runs warm — the old battery is likely contributing to the heat problem.</string>
+
+    <!-- Learn Articles - Network -->
+    <string name="learn_network_signal_title">Signal Strength &amp; dBm</string>
+    <string name="learn_network_signal_preview">What dBm means, how to read signal strength, and why it matters more than bars.</string>
+    <string name="learn_network_signal_body">## Why dBm instead of bars?\n\nSignal bars are simplified and vary by manufacturer — four bars on one phone might show three bars on another. dBm (decibels relative to one milliwatt) is the actual measurement, giving you a consistent and accurate reading.\n\n## Reading dBm values\n\ndBm values are negative — closer to zero means stronger. The scale is logarithmic: every 3 dBm change doubles or halves the signal power. So -70 dBm is ten times stronger than -80 dBm.\n\n## Signal quality ranges\n\nFor Wi-Fi: -30 to -50 dBm is excellent, -50 to -70 dBm is good, -70 to -80 dBm is weak, below -80 dBm is poor. For cellular: -80 to -100 dBm is good, -100 to -110 dBm is fair, below -110 dBm is poor.\n\n## Battery impact\n\nWeak signals force your phone to increase radio transmission power, draining battery faster. Moving to a location with better signal can noticeably improve battery life.</string>
+
+    <string name="learn_network_wifi_bands_title">Wi-Fi Bands &amp; Standards</string>
+    <string name="learn_network_wifi_bands_preview">2.4 GHz vs 5 GHz vs 6 GHz, Wi-Fi generations, and choosing the right connection.</string>
+    <string name="learn_network_wifi_bands_body">## Frequency bands\n\n2.4 GHz travels farther and penetrates walls better, but is slower and more congested. 5 GHz is faster with less interference but shorter range. 6 GHz (Wi-Fi 6E) offers the best speeds and least congestion but requires newer devices and has the shortest range.\n\n## Wi-Fi standards\n\nWi-Fi 4 (802.11n): up to 600 Mbps, introduced in 2009. Wi-Fi 5 (802.11ac): up to 3.5 Gbps, 5 GHz only. Wi-Fi 6 (802.11ax): up to 9.6 Gbps, both bands, better in crowded environments. Wi-Fi 6E: same as Wi-Fi 6 plus 6 GHz band.\n\n## Practical tips\n\nConnect to 5 GHz when near your router for fastest speeds. Use 2.4 GHz when you need range through walls. Your phone usually auto-selects the best band, but you can separate network names in your router settings for manual control.</string>
+
+    <string name="learn_network_speed_tests_title">How Speed Tests Work</string>
+    <string name="learn_network_speed_tests_preview">What speed tests measure, their limitations, and how to get meaningful results.</string>
+    <string name="learn_network_speed_tests_body">## What they measure\n\nA speed test sends and receives data to a test server, measuring: download speed (how fast you receive), upload speed (how fast you send), ping (round-trip latency), and jitter (latency variation).\n\n## Limitations\n\nResults reflect the path between your phone and one specific server at one specific moment. Results vary by: time of day (networks are slower during peak hours), server distance, Wi-Fi vs cellular, other devices using your network, and background apps.\n\n## Getting useful results\n\nRun tests at different times of day. Close other apps first. Test on both Wi-Fi and cellular. Compare multiple results rather than relying on a single test. Use the history in runcheck to track trends over time.</string>
+
+    <!-- Learn Articles - Storage -->
+    <string name="learn_storage_slowdown_title">Full Storage &amp; Performance</string>
+    <string name="learn_storage_slowdown_preview">Why a nearly-full phone runs slower and what you can do about it.</string>
+    <string name="learn_storage_slowdown_body">## How storage affects speed\n\nModern flash storage (UFS/eMMC) needs free space to operate efficiently. The controller uses free blocks for wear leveling, garbage collection, and write amplification management. Below about 25% free space, these operations become constrained.\n\n## What you\'ll notice\n\nApp launches take longer. Photos take a moment to save. System updates may fail. Apps may crash when they can\'t write temporary data. The overall system feels sluggish.\n\n## Fixing it\n\nStart with the cleanup tools in runcheck — large files, old downloads, and APK installers are easy wins. Review apps you haven\'t used recently. Move photos to cloud storage. Clear app caches (social media apps are often the biggest offenders).</string>
+
+    <string name="learn_storage_breakdown_title">Where Your Storage Goes</string>
+    <string name="learn_storage_breakdown_preview">Understanding what uses your storage and how to manage each category effectively.</string>
+    <string name="learn_storage_breakdown_body">## The main categories\n\nApps and their data typically use the most space (30–60% on most phones). Photos and videos are usually second. System files take 10–15 GB that you can\'t reclaim. Downloads, documents, and audio make up the rest.\n\n## Hidden storage consumers\n\nApp caches grow over time — social media apps can cache gigabytes of images and videos. Messaging apps store all received media. Offline maps and music can use significant space. Old APK installer files linger in Downloads.\n\n## Management strategies\n\nRegularly review large files (runcheck can find these). Set messaging apps to not auto-download media. Use streaming instead of offline downloads when storage is tight. The media breakdown chart in runcheck shows exactly where your space is going.</string>
+
+    <!-- Learn Articles - General -->
+    <string name="learn_health_score_title">How the Health Score Works</string>
+    <string name="learn_health_score_preview">How runcheck calculates the overall health score from battery, network, thermal, and storage data.</string>
+    <string name="learn_health_score_body">## What it measures\n\nThe health score combines four categories: battery (level, health, drain rate), network (signal quality, latency), thermal (temperature, headroom, throttling), and storage (available space, fill rate).\n\n## How it\'s calculated\n\nEach category produces a 0–100 sub-score based on current readings compared to ideal ranges. These are weighted and combined into the overall score. Battery and thermal are weighted slightly higher because they affect the entire device experience.\n\n## Score ranges\n\n90–100: Excellent — your device is in great shape. 70–89: Good — normal wear and minor issues. 50–69: Fair — noticeable issues that could be addressed. Below 50: Poor — significant problems affecting daily use.\n\n## Improving your score\n\nThe score highlights which category needs attention. Check the detail screen for each category to see specific recommendations. Some factors (like battery age) can\'t be improved without hardware changes, but many others (like clearing storage or fixing signal issues) can be addressed easily.</string>
+
+    <string name="learn_sw_vs_hw_title">Software vs Hardware Problems</string>
+    <string name="learn_sw_vs_hw_preview">How to tell if your phone\'s issues are from software (fixable) or hardware (needs repair).</string>
+    <string name="learn_sw_vs_hw_body">## Software problems\n\nSoftware issues are usually fixable without repair: high drain from a misbehaving app, slow performance from full storage, poor network from bad settings, overheating from a stuck background process. These often appear suddenly after an app update or setting change.\n\n## Hardware problems\n\nHardware issues require physical repair or replacement: battery health below 80% (chemistry degraded), persistent overheating at idle (thermal paste failure or chip degradation), Wi-Fi that disconnects regardless of router (antenna issue).\n\n## How to tell the difference\n\nUse runcheck\'s data over time. Software problems often show sudden changes — drain rate spikes after installing an app, or temperature jumps after an OS update. Hardware problems show gradual trends — battery health slowly declining, thermal performance consistently worsening.\n\n## What to do\n\nFor software: try safe mode to rule out apps, clear caches, check for OS updates. For hardware: check warranty status, visit an authorized repair center. Battery replacement is usually affordable and makes the biggest difference for aging phones.</string>
 </resources>

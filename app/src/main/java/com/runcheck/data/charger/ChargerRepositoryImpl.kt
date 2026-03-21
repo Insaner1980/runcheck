@@ -58,6 +58,10 @@ class ChargerRepositoryImpl @Inject constructor(
     override suspend fun getActiveSession(): ChargingSession? {
         return chargerDao.getActiveSession()?.toDomain()
     }
+
+    override suspend fun deleteSessionsOlderThan(cutoff: Long) {
+        chargerDao.deleteSessionsOlderThan(cutoff)
+    }
 }
 
 private fun ChargerProfileEntity.toDomain() = ChargerProfile(

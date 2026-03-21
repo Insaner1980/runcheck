@@ -1,11 +1,13 @@
 package com.runcheck
 
 import android.app.Application
+import android.os.StrictMode
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.runcheck.data.billing.BillingManager
 import com.runcheck.domain.repository.CrashReportingController
 import com.runcheck.domain.repository.MonitoringScheduler
+import com.runcheck.domain.repository.ScreenStateRepository
 import com.runcheck.pro.ProManager
 import com.runcheck.service.monitor.NotificationHelper
 import com.runcheck.util.ReleaseSafeLog
@@ -41,10 +43,14 @@ class RuncheckApp : Application(), Configuration.Provider {
     lateinit var monitorScheduler: dagger.Lazy<MonitoringScheduler>
 
     @Inject
+    lateinit var screenStateRepository: dagger.Lazy<ScreenStateRepository>
+
+    @Inject
     lateinit var crashReportingController: dagger.Lazy<CrashReportingController>
 
     override fun onCreate() {
         super.onCreate()
+        configureDebugStrictMode()
 
         // Defer heavy initialization to after the first frame
         launchSafely(Dispatchers.Default, "billing/pro initialization") {
@@ -56,6 +62,7 @@ class RuncheckApp : Application(), Configuration.Provider {
         }
         launchSafely(Dispatchers.Default, "crash reporting + scheduling") {
             crashReportingController.get().initialize()
+            screenStateRepository.get().initialize()
             monitorScheduler.get().ensureScheduled()
         }
         // Update widgets when pro status changes
@@ -91,6 +98,23 @@ class RuncheckApp : Application(), Configuration.Provider {
                 ReleaseSafeLog.error(TAG, "Application coroutine failed: $taskName", t)
             }
         }
+    }
+
+    private fun configureDebugStrictMode() {
+        if (!BuildConfig.DEBUG) return
+
+        StrictMode.setThreadPolicy(
+            StrictMode.ThreadPolicy.Builder()
+                .detectAll()
+                .penaltyLog()
+                .build()
+        )
+        StrictMode.setVmPolicy(
+            StrictMode.VmPolicy.Builder()
+                .detectAll()
+                .penaltyLog()
+                .build()
+        )
     }
 
     private companion object {

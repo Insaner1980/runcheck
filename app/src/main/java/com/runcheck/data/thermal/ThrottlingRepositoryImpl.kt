@@ -45,6 +45,10 @@ class ThrottlingRepositoryImpl @Inject constructor(
     override suspend fun deleteOlderThan(cutoff: Long) {
         throttlingEventDao.deleteOlderThan(cutoff)
     }
+
+    override suspend fun deleteAll() {
+        throttlingEventDao.deleteAll()
+    }
 }
 
 private fun ThrottlingEventEntity.toDomain() = ThrottlingEvent(

@@ -8,10 +8,12 @@ import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.scoring.HealthScoreCalculator
+import com.runcheck.domain.usecase.ChargerSessionTracker
 import com.runcheck.domain.usecase.GetBatteryStateUseCase
 import com.runcheck.domain.usecase.GetNetworkStateUseCase
 import com.runcheck.domain.usecase.GetStorageStateUseCase
 import com.runcheck.domain.usecase.GetThermalStateUseCase
+import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.pro.ProManager
 import com.runcheck.pro.ProStatus
 import com.runcheck.pro.TrialManager
@@ -37,7 +39,9 @@ class HomeViewModel @Inject constructor(
     private val getStorageState: GetStorageStateUseCase,
     private val proManager: ProManager,
     private val trialManager: TrialManager,
-    private val healthScoreCalculator: HealthScoreCalculator
+    private val chargerSessionTracker: ChargerSessionTracker,
+    private val healthScoreCalculator: HealthScoreCalculator,
+    private val manageUserPreferences: ManageUserPreferencesUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -46,6 +50,8 @@ class HomeViewModel @Inject constructor(
 
     // In-memory flag: show expiration modal only once per session
     private var expirationModalShownThisSession = false
+    private var lastTrackedSessionStatus: com.runcheck.domain.model.ChargingStatus? = null
+    private var lastTrackedSessionAt: Long = 0L
 
     fun startObserving() {
         if (loadJob?.isActive == true) return
@@ -115,7 +121,11 @@ class HomeViewModel @Inject constructor(
                 )
             }
 
-            combine(dataFlow, proManager.proState) { data, proState ->
+            combine(
+                dataFlow,
+                proManager.proState,
+                manageUserPreferences.observePreferences()
+            ) { data, proState, preferences ->
                 val showWelcomeSheet = proState.status == ProStatus.TRIAL_ACTIVE &&
                     !trialManager.isWelcomeShown()
 
@@ -153,6 +163,7 @@ class HomeViewModel @Inject constructor(
                     networkState = data.network,
                     thermalState = data.thermal,
                     storageState = data.storage,
+                    temperatureUnit = preferences.temperatureUnit,
                     proState = proState,
                     showWelcomeSheet = showWelcomeSheet,
                     showDay5Banner = showDay5Banner,
@@ -163,8 +174,20 @@ class HomeViewModel @Inject constructor(
                 .catch { e ->
                     _uiState.value = HomeUiState.Error(e.messageOr("Unknown error"))
                 }.collect { state ->
+                maybeTrackChargerSession(state.batteryState)
                 _uiState.value = state
             }
+        }
+    }
+
+    private suspend fun maybeTrackChargerSession(state: BatteryState) {
+        val now = System.currentTimeMillis()
+        if (lastTrackedSessionStatus != state.chargingStatus ||
+            now - lastTrackedSessionAt >= CHARGER_SESSION_TRACK_INTERVAL_MS
+        ) {
+            chargerSessionTracker.onBatteryState(state, now)
+            lastTrackedSessionStatus = state.chargingStatus
+            lastTrackedSessionAt = now
         }
     }
 
@@ -178,5 +201,6 @@ class HomeViewModel @Inject constructor(
 
     companion object {
         private const val DISPLAY_UPDATE_INTERVAL_MS = 333L
+        private const val CHARGER_SESSION_TRACK_INTERVAL_MS = 15_000L
     }
 }

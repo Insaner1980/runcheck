@@ -1,7 +1,7 @@
 package com.runcheck.domain.usecase
 
 import com.runcheck.domain.model.HistoryPeriod
-import com.runcheck.domain.repository.NetworkReadingData
+import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.repository.NetworkRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -9,7 +9,7 @@ import javax.inject.Inject
 class GetNetworkHistoryUseCase @Inject constructor(
     private val networkRepository: NetworkRepository
 ) {
-    operator fun invoke(period: HistoryPeriod = HistoryPeriod.DAY): Flow<List<NetworkReadingData>> {
+    operator fun invoke(period: HistoryPeriod = HistoryPeriod.DAY): Flow<List<NetworkReading>> {
         val since = when (period) {
             HistoryPeriod.ALL, HistoryPeriod.SINCE_UNPLUG -> 0L
             else -> System.currentTimeMillis() - period.durationMs

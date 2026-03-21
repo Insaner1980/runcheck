@@ -38,6 +38,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,10 +82,10 @@ import com.runcheck.ui.components.AnimatedFloatText
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.SectionHeader
-import com.runcheck.ui.theme.AccentBlue
-
+import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.theme.RuncheckTheme
 import com.runcheck.ui.theme.numericFontFamily
+import com.runcheck.ui.theme.numericSpeedHeroValueTextStyle
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
 import kotlin.math.roundToInt
@@ -171,6 +172,7 @@ private fun SpeedTestContent(
     onStartSpeedTest: () -> Unit
 ) {
     var showCellularWarning by remember { mutableStateOf(false) }
+    var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
     val hasConnection = networkState.connectionType != ConnectionType.NONE
 
     Column(
@@ -209,7 +211,10 @@ private fun SpeedTestContent(
         )
 
         // Combined metrics card (Download, Upload, Ping, Jitter)
-        SpeedMetricsCard(state = speedTestState)
+        SpeedMetricsCard(
+            state = speedTestState,
+            onInfoClick = { key -> activeInfoSheet = key }
+        )
 
         if (speedTestState.phase is SpeedTestPhase.Failed) {
             SpeedTestFailureCard(error = speedTestState.phase.error.resolve())
@@ -246,6 +251,19 @@ private fun SpeedTestContent(
             onDismiss = { showCellularWarning = false }
         )
     }
+
+    activeInfoSheet?.let { key ->
+        val content = when (key) {
+            "download" -> SpeedTestInfoContent.download
+            "upload" -> SpeedTestInfoContent.upload
+            "ping" -> SpeedTestInfoContent.ping
+            "jitter" -> SpeedTestInfoContent.jitter
+            else -> null
+        }
+        content?.let {
+            InfoBottomSheet(content = it, onDismiss = { activeInfoSheet = null })
+        }
+    }
 }
 
 // ── Network context panel ────────────────────────────────────────────────────────
@@ -255,7 +273,8 @@ private fun NetworkContextPanel(networkState: NetworkState) {
     val connectionLabel = when (networkState.connectionType) {
         ConnectionType.NONE -> stringResource(R.string.network_no_connection)
         ConnectionType.WIFI,
-        ConnectionType.CELLULAR -> connectionDisplayLabel(
+        ConnectionType.CELLULAR,
+        ConnectionType.VPN -> connectionDisplayLabel(
             connectionType = networkState.connectionType,
             wifiSsid = networkState.wifiSsid,
             networkSubtype = networkState.networkSubtype
@@ -264,7 +283,7 @@ private fun NetworkContextPanel(networkState: NetworkState) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
@@ -284,7 +303,11 @@ private fun NetworkContextPanel(networkState: NetworkState) {
             networkState.latencyMs?.let { latency ->
                 MetricPill(
                     label = stringResource(R.string.speed_test_ping),
-                    value = "$latency ${stringResource(R.string.unit_ms)}"
+                    value = stringResource(
+                        R.string.value_with_unit_int,
+                        latency,
+                        stringResource(R.string.unit_ms)
+                    )
                 )
             }
         }
@@ -539,11 +562,7 @@ private fun SpeedTestHero(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     AnimatedFloatText(
                         value = centerValue,
-                        style = MaterialTheme.typography.displaySmall.copy(
-                            fontFamily = MaterialTheme.numericFontFamily,
-                            fontSize = 40.sp,
-                            lineHeight = 44.sp
-                        ),
+                        style = MaterialTheme.numericSpeedHeroValueTextStyle,
                         decimalPlaces = 1
                     )
                     Text(
@@ -571,11 +590,7 @@ private fun SpeedTestHero(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     AnimatedFloatText(
                         value = centerValue,
-                        style = MaterialTheme.typography.displaySmall.copy(
-                            fontFamily = MaterialTheme.numericFontFamily,
-                            fontSize = 40.sp,
-                            lineHeight = 44.sp
-                        ),
+                        style = MaterialTheme.numericSpeedHeroValueTextStyle,
                         decimalPlaces = 1
                     )
                     Text(
@@ -602,12 +617,15 @@ private fun SpeedTestHero(
 // ── Combined metrics card (2x2 grid) ─────────────────────────────────────────────
 
 @Composable
-private fun SpeedMetricsCard(state: SpeedTestUiState) {
+private fun SpeedMetricsCard(
+    state: SpeedTestUiState,
+    onInfoClick: (String) -> Unit = {}
+) {
     val accent = MaterialTheme.colorScheme.primary
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
@@ -627,15 +645,25 @@ private fun SpeedMetricsCard(state: SpeedTestUiState) {
             ) {
                 MetricPill(
                     label = stringResource(R.string.speed_test_download),
-                    value = "${formatDecimal(state.downloadMbps, 1)} ${stringResource(R.string.unit_mbps)}",
+                    value = stringResource(
+                        R.string.value_with_unit_text,
+                        formatDecimal(state.downloadMbps, 1),
+                        stringResource(R.string.unit_mbps)
+                    ),
                     valueColor = accent,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("download") }
                 )
                 MetricPill(
                     label = stringResource(R.string.speed_test_upload),
-                    value = "${formatDecimal(state.uploadMbps, 1)} ${stringResource(R.string.unit_mbps)}",
-                    valueColor = AccentBlue,
-                    modifier = Modifier.weight(1f)
+                    value = stringResource(
+                        R.string.value_with_unit_text,
+                        formatDecimal(state.uploadMbps, 1),
+                        stringResource(R.string.unit_mbps)
+                    ),
+                    valueColor = accent,
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("upload") }
                 )
             }
 
@@ -649,20 +677,30 @@ private fun SpeedMetricsCard(state: SpeedTestUiState) {
                 MetricPill(
                     label = stringResource(R.string.speed_test_ping),
                     value = if (state.pingMs > 0) {
-                        "${state.pingMs} ${stringResource(R.string.unit_ms)}"
+                        stringResource(
+                            R.string.value_with_unit_int,
+                            state.pingMs,
+                            stringResource(R.string.unit_ms)
+                        )
                     } else {
                         stringResource(R.string.placeholder_dash)
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("ping") }
                 )
                 MetricPill(
                     label = stringResource(R.string.speed_test_jitter),
                     value = if (state.jitterMs > 0) {
-                        "${state.jitterMs} ${stringResource(R.string.unit_ms)}"
+                        stringResource(
+                            R.string.value_with_unit_int,
+                            state.jitterMs,
+                            stringResource(R.string.unit_ms)
+                        )
                     } else {
                         stringResource(R.string.placeholder_dash)
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("jitter") }
                 )
             }
         }
@@ -699,7 +737,7 @@ private fun CellularDataWarningDialog(
 private fun SpeedTestFailureCard(error: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer
         ),
@@ -718,7 +756,7 @@ private fun SpeedTestFailureCard(error: String) {
 private fun EmptyHistoryCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
@@ -742,7 +780,7 @@ private fun LatestResultCard(result: SpeedTestResult) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
@@ -773,19 +811,31 @@ private fun LatestResultCard(result: SpeedTestResult) {
             ) {
                 MetricPill(
                     label = stringResource(R.string.speed_test_download),
-                    value = "${formatDecimal(result.downloadMbps, 1)} ${stringResource(R.string.unit_mbps)}",
+                    value = stringResource(
+                        R.string.value_with_unit_text,
+                        formatDecimal(result.downloadMbps, 1),
+                        stringResource(R.string.unit_mbps)
+                    ),
                     valueColor = accent,
                     modifier = Modifier.weight(1f)
                 )
                 MetricPill(
                     label = stringResource(R.string.speed_test_upload),
-                    value = "${formatDecimal(result.uploadMbps, 1)} ${stringResource(R.string.unit_mbps)}",
-                    valueColor = AccentBlue,
+                    value = stringResource(
+                        R.string.value_with_unit_text,
+                        formatDecimal(result.uploadMbps, 1),
+                        stringResource(R.string.unit_mbps)
+                    ),
+                    valueColor = accent,
                     modifier = Modifier.weight(1f)
                 )
                 MetricPill(
                     label = stringResource(R.string.speed_test_ping),
-                    value = "${result.pingMs} ${stringResource(R.string.unit_ms)}",
+                    value = stringResource(
+                        R.string.value_with_unit_int,
+                        result.pingMs,
+                        stringResource(R.string.unit_ms)
+                    ),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -821,7 +871,7 @@ private fun HistorySection(results: List<SpeedTestResult>) {
 private fun HistoryResultItem(result: SpeedTestResult) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
@@ -861,7 +911,7 @@ private fun HistoryResultItem(result: SpeedTestResult) {
                         style = MaterialTheme.typography.titleSmall.copy(
                             fontFamily = MaterialTheme.numericFontFamily
                         ),
-                        color = AccentBlue
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = stringResource(R.string.speed_test_upload),

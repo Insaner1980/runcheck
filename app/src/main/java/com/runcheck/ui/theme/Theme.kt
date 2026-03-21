@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 val LocalReducedMotion = staticCompositionLocalOf { false }
@@ -17,18 +18,26 @@ val MaterialTheme.reducedMotion: Boolean
     @ReadOnlyComposable
     get() = LocalReducedMotion.current
 
+val MaterialTheme.iconCircleColor: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = colorScheme.surfaceContainerHighest
+
 private val RuncheckColorScheme = darkColorScheme(
     background = BgPage,
     surface = BgPage,
     surfaceContainer = BgCard,
     surfaceContainerHigh = BgCardAlt,
+    surfaceContainerHighest = BgIconCircle,
     primary = AccentBlue,
     secondary = AccentTeal,
-    tertiary = AccentOrange,
+    tertiary = AccentAmber,
     error = AccentRed,
     onSurface = TextPrimary,
     onSurfaceVariant = TextSecondary,
     outline = TextMuted,
+    outlineVariant = TextMuted,
+    surfaceVariant = BgIconCircle,
     onBackground = TextPrimary,
     onPrimary = BgPage,
     onSecondary = BgPage,
@@ -61,6 +70,7 @@ fun RuncheckTheme(
         MaterialTheme(
             colorScheme = RuncheckColorScheme,
             typography = RuncheckTypography,
+            shapes = RuncheckShapes,
             content = content
         )
     }

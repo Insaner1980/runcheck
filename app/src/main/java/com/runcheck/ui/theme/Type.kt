@@ -25,6 +25,69 @@ val MaterialTheme.numericFontFamily: FontFamily
     @ReadOnlyComposable
     get() = LocalNumericFontFamily.current
 
+val MaterialTheme.numericHeroValueTextStyle: TextStyle
+    @Composable
+    @ReadOnlyComposable
+    get() = typography.displayLarge.copy(
+        fontFamily = numericFontFamily,
+        fontWeight = FontWeight.Bold,
+        lineHeight = 48.sp
+    )
+
+val MaterialTheme.numericHeroLevelTextStyle: TextStyle
+    @Composable
+    @ReadOnlyComposable
+    get() = numericHeroValueTextStyle.copy(letterSpacing = (-2).sp)
+
+val MaterialTheme.numericHeroLargeValueTextStyle: TextStyle
+    @Composable
+    @ReadOnlyComposable
+    get() = typography.displayLarge.copy(
+        fontFamily = numericFontFamily,
+        fontSize = 54.sp
+    )
+
+val MaterialTheme.numericHeroUnitTextStyle: TextStyle
+    @Composable
+    @ReadOnlyComposable
+    get() = typography.headlineLarge.copy(
+        fontFamily = numericFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        lineHeight = 20.sp
+    )
+
+val MaterialTheme.numericRingValueTextStyle: TextStyle
+    @Composable
+    @ReadOnlyComposable
+    get() = typography.displayMedium.copy(
+        fontFamily = numericFontFamily,
+        fontSize = 32.sp,
+        lineHeight = 32.sp,
+        fontWeight = FontWeight.Bold
+    )
+
+val MaterialTheme.numericSpeedHeroValueTextStyle: TextStyle
+    @Composable
+    @ReadOnlyComposable
+    get() = typography.displaySmall.copy(
+        fontFamily = numericFontFamily,
+        fontSize = 40.sp,
+        lineHeight = 44.sp
+    )
+
+val MaterialTheme.chartAxisTextStyle: TextStyle
+    @Composable
+    @ReadOnlyComposable
+    get() = typography.labelSmall.copy(fontFamily = numericFontFamily)
+
+val MaterialTheme.chartTooltipTextStyle: TextStyle
+    @Composable
+    @ReadOnlyComposable
+    get() = typography.bodySmall.copy(
+        fontFamily = numericFontFamily,
+        fontSize = 11.sp
+    )
+
 val RuncheckTypography = Typography(
     displayLarge = TextStyle(
         fontFamily = ManropeFontFamily,

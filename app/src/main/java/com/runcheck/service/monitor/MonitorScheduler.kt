@@ -1,6 +1,7 @@
 package com.runcheck.service.monitor
 
 import android.content.Context
+import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
@@ -20,7 +21,7 @@ class MonitorScheduler @Inject constructor(
 ) : MonitoringScheduler {
 
     override fun schedule(interval: MonitoringInterval) {
-        val workRequest = PeriodicWorkRequestBuilder<HealthMonitorWorker>(
+        val alertWorkRequest = PeriodicWorkRequestBuilder<HealthMonitorWorker>(
             interval.minutes.toLong(),
             TimeUnit.MINUTES
         ).build()
@@ -28,13 +29,32 @@ class MonitorScheduler @Inject constructor(
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             HealthMonitorWorker.WORK_NAME,
             ExistingPeriodicWorkPolicy.UPDATE,
-            workRequest
+            alertWorkRequest
+        )
+
+        val maintenanceWorkRequest = PeriodicWorkRequestBuilder<HealthMaintenanceWorker>(
+            interval.minutes.toLong(),
+            TimeUnit.MINUTES
+        )
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiresBatteryNotLow(true)
+                    .build()
+            )
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            HealthMaintenanceWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            maintenanceWorkRequest
         )
     }
 
     override fun cancel() {
         WorkManager.getInstance(context)
             .cancelUniqueWork(HealthMonitorWorker.WORK_NAME)
+        WorkManager.getInstance(context)
+            .cancelUniqueWork(HealthMaintenanceWorker.WORK_NAME)
     }
 
     override suspend fun ensureScheduled() {

@@ -2,11 +2,12 @@ package com.runcheck.ui.charger
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.usecase.AddChargerUseCase
 import com.runcheck.domain.usecase.DeleteChargerUseCase
 import com.runcheck.domain.usecase.GetChargerComparisonUseCase
-import com.runcheck.domain.usecase.GetChargerSessionsUseCase
+import com.runcheck.domain.usecase.IsProUserUseCase
+import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
+import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.common.messageOr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -23,10 +24,11 @@ import javax.inject.Inject
 @HiltViewModel
 class ChargerViewModel @Inject constructor(
     private val getChargerComparison: GetChargerComparisonUseCase,
-    private val getChargerSessions: GetChargerSessionsUseCase,
     private val addChargerUseCase: AddChargerUseCase,
     private val deleteChargerUseCase: DeleteChargerUseCase,
-    private val proStatusProvider: ProStatusProvider
+    private val observeProAccess: ObserveProAccessUseCase,
+    private val isProUser: IsProUserUseCase,
+    private val manageUserPreferences: ManageUserPreferencesUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ChargerUiState>(ChargerUiState.Loading)
@@ -34,20 +36,28 @@ class ChargerViewModel @Inject constructor(
     private var proObserverJob: Job? = null
     private var loadJob: Job? = null
 
-    init {
-        observeProState()
-    }
-
     fun refresh() {
-        if (proStatusProvider.isPro()) {
+        if (isProUser()) {
             loadChargerData()
         } else {
             _uiState.value = ChargerUiState.Locked
         }
     }
 
+    fun startObserving() {
+        if (proObserverJob?.isActive == true) return
+        observeProState()
+    }
+
+    fun stopObserving() {
+        proObserverJob?.cancel()
+        proObserverJob = null
+        loadJob?.cancel()
+        loadJob = null
+    }
+
     fun addCharger(name: String) {
-        if (!proStatusProvider.isPro()) return
+        if (!isProUser()) return
         viewModelScope.launch {
             try {
                 addChargerUseCase(name)
@@ -60,10 +70,36 @@ class ChargerViewModel @Inject constructor(
     }
 
     fun deleteCharger(id: Long) {
-        if (!proStatusProvider.isPro()) return
+        if (!isProUser()) return
         viewModelScope.launch {
             try {
                 deleteChargerUseCase(id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.value = ChargerUiState.Error(e.messageOr("Unknown error"))
+            }
+        }
+    }
+
+    fun selectCharger(id: Long) {
+        if (!isProUser()) return
+        viewModelScope.launch {
+            try {
+                manageUserPreferences.setSelectedChargerId(id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.value = ChargerUiState.Error(e.messageOr("Unknown error"))
+            }
+        }
+    }
+
+    fun clearSelectedCharger() {
+        if (!isProUser()) return
+        viewModelScope.launch {
+            try {
+                manageUserPreferences.setSelectedChargerId(null)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -76,7 +112,7 @@ class ChargerViewModel @Inject constructor(
         proObserverJob?.cancel()
         proObserverJob = viewModelScope.launch {
             try {
-                proStatusProvider.isProUser.collectLatest { isPro ->
+                observeProAccess().collectLatest { isPro ->
                     if (!isPro) {
                         loadJob?.cancel()
                         _uiState.value = ChargerUiState.Locked
@@ -97,11 +133,11 @@ class ChargerViewModel @Inject constructor(
         loadJob = viewModelScope.launch {
             combine(
                 getChargerComparison(),
-                getChargerSessions()
-            ) { chargers, sessions ->
+                manageUserPreferences.observeSelectedChargerId()
+            ) { chargers, selectedChargerId ->
                 ChargerUiState.Success(
                     chargers = chargers,
-                    sessions = sessions
+                    selectedChargerId = selectedChargerId
                 )
             }.catch { e ->
                 _uiState.value = ChargerUiState.Error(e.messageOr("Unknown error"))
@@ -109,5 +145,10 @@ class ChargerViewModel @Inject constructor(
                 _uiState.value = state
             }
         }
+    }
+
+    override fun onCleared() {
+        stopObserving()
+        super.onCleared()
     }
 }

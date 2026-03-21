@@ -18,6 +18,69 @@ Dependency injection: Hilt. Database: Room. UI: Jetpack Compose + Material 3.
 
 ---
 
+## Current Project Snapshot
+
+- Package root: `com.runcheck`
+- Main module: single `app` module
+- Architecture: Clean Architecture with `data/`, `domain/`, and `ui/`
+- Dependency injection: Hilt
+- Database: Room
+- Preferences: DataStore
+- UI: Jetpack Compose + Material 3
+- Background work: WorkManager
+- Widgets: Glance
+- Speed test: M-Lab NDT7 (`ndt7-client-android`)
+- Build: Gradle Kotlin DSL
+- Compile SDK: 36
+- Target SDK: 35
+- Min SDK: 26
+
+High-level package layout:
+
+```text
+app/src/main/java/com/runcheck/
+├── data/
+├── domain/
+├── ui/
+├── billing/
+├── pro/
+├── di/
+├── service/
+├── worker/
+├── widget/
+└── util/
+```
+
+Current navigation snapshot:
+
+```text
+Home
+├── Battery Detail
+│   ├── Charger Comparison [PRO]
+│   └── Fullscreen Chart
+├── Network Detail
+│   ├── Speed Test
+│   └── Fullscreen Chart
+├── Thermal Detail
+├── Storage Detail
+│   └── Cleanup/{type}
+├── App Usage [PRO]
+├── Learn
+│   └── Learn Article
+├── Settings
+└── Pro Upgrade
+```
+
+Current runtime systems:
+
+- `RuncheckApp` initializes billing, Pro state, notification channels, crash reporting, screen-state tracking, periodic monitoring, and widget refresh hooks
+- WorkManager runs `HealthMonitorWorker` for snapshot collection + alert evaluation
+- WorkManager runs `HealthMaintenanceWorker` for app-usage refresh, cleanup, and widget refresh
+- Widgets are backed by Room snapshots and treated as a Pro feature
+- Trial state currently counts as Pro access through `ProState.isPro`
+
+---
+
 ## Code Review Priorities
 
 When reviewing a PR or file, check for these in order:
@@ -48,14 +111,17 @@ When reviewing a PR or file, check for these in order:
 - Uses M-Lab NDT7 (`ndt7-client-android` Kotlin library). No other speed test backend.
 - Never hardcode a fixed server — NDT7 auto-selects nearest global server.
 - Cellular warning dialog must appear before test starts if active network is not WiFi.
+- Outbound network calls are allowed only for user-initiated speed tests and Crashlytics when the user has enabled crash reporting.
+- Reading current connection details (WiFi, 5G, SSID, signal, IP, DNS) must stay on-device via Android APIs and must not trigger socket, HTTP, or ping-style probes.
 
 ### 6. Animations
 - All animations must check `LocalReducedMotion.current` (or `MaterialTheme.reducedMotion`) and skip/shorten if true.
 - Standard durations: ProgressRing 1200ms, MiniBar 800ms, SegmentedBar 800ms, Thermometer 1200ms, Battery wave 2000ms loop.
 
 ### 7. UI consistency
-- Background colors: BgPage `#0B1E24`, BgCard `#133040`, BgIconCircle `#1A3A4D`.
-- Primary accent: Teal `#5DE4C7`.
+- Background colors: BgPage `#0B1E24`, BgCard `#133040`, BgIconCircle `#1A3A48`.
+- Primary accent: Blue `#4A9EDE`.
+- Secondary/status accent: Teal `#5DE4C7`.
 - Gauge arcs must be neutral (white/gray) — not colored. Accent color is for the indicator only.
 - Status colors (Teal/Blue/Orange/Red) are for small badges and status dots only, never for large fills.
 - Typography: Manrope for body text, JetBrains Mono for hero numbers and gauge values.
@@ -81,6 +147,7 @@ Raise a review comment for any of the following:
 - Touch target smaller than 48dp
 - Sysfs read for thermal data (use PowerManager API instead)
 - NDT7 speed test using a fixed server URL
+- Any outbound network call outside the speed test flow or toggle-controlled Crashlytics
 
 ---
 
@@ -91,3 +158,14 @@ Raise a review comment for any of the following:
 - One-time Pro purchase only. No subscription, no ads.
 - NDT7 backend for speed tests. No alternatives.
 - Minimum SDK: 26. Do not lower.
+
+---
+
+## Low-CPU Verification
+
+- This repository is often worked on with limited CPU headroom. Avoid heavy local verification by default.
+- Do not run full Gradle builds or full test suites unless explicitly requested or required to unblock the task.
+- Prefer static analysis, targeted file review, and minimal commands first.
+- If verification is needed, use the smallest scoped check possible: one compile task, one module task, or one narrowly filtered test class.
+- Avoid running multiple coding agents or tools that may build the same repo in parallel.
+- When verification is intentionally skipped or minimized, say so clearly in the final response.

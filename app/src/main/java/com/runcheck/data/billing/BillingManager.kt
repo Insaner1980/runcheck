@@ -16,6 +16,7 @@ import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.queryProductDetails
 import com.android.billingclient.api.queryPurchasesAsync
 import com.runcheck.BuildConfig
+import com.runcheck.R
 import com.runcheck.billing.ProPurchaseRefreshResult
 import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.billing.PurchaseEvent
@@ -35,7 +36,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
@@ -48,6 +48,7 @@ import kotlin.coroutines.resume
  * not a data repository — it must be explicitly initialized and destroyed.
  */
 @Singleton
+@Suppress("DEPRECATION")
 class BillingManager @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) : PurchasesUpdatedListener,
@@ -62,11 +63,6 @@ class BillingManager @Inject constructor(
 
     private val _isProState = MutableStateFlow(false)
     override val isProUser: Flow<Boolean> = _isProState.asStateFlow()
-    override val proState: Flow<com.runcheck.pro.ProState>
-        get() = _isProState.asStateFlow().map { isPro ->
-            if (isPro) com.runcheck.pro.ProState(status = com.runcheck.pro.ProStatus.PRO_PURCHASED)
-            else com.runcheck.pro.ProState()
-        }
     private val _billingAvailable = MutableStateFlow(false)
     override val billingAvailable: Flow<Boolean> = _billingAvailable.asStateFlow()
 
@@ -112,32 +108,44 @@ class BillingManager @Inject constructor(
 
         billingClient?.startConnection(object : BillingClientStateListener {
             override fun onBillingSetupFinished(billingResult: BillingResult) {
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    reconnectAttempts = 0
-                    _billingAvailable.value = true
-                    scope.launch {
-                        queryExistingPurchases()
-                        queryProductDetails()
+                when (billingResult.responseCode) {
+                    BillingClient.BillingResponseCode.OK -> {
+                        reconnectAttempts = 0
+                        _billingAvailable.value = true
+                        scope.launch {
+                            queryExistingPurchases()
+                            queryProductDetails()
+                            _initComplete.complete(Unit)
+                        }
+                    }
+                    BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
+                    BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
+                    BillingClient.BillingResponseCode.NETWORK_ERROR,
+                    BillingClient.BillingResponseCode.ERROR -> {
+                        _billingAvailable.value = false
+                        scheduleReconnect()
                         _initComplete.complete(Unit)
                     }
-                } else {
-                    _billingAvailable.value = false
-                    _initComplete.complete(Unit)
+                    BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
+                    BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
+                    BillingClient.BillingResponseCode.DEVELOPER_ERROR,
+                    BillingClient.BillingResponseCode.ITEM_UNAVAILABLE,
+                    BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
+                    BillingClient.BillingResponseCode.ITEM_NOT_OWNED,
+                    BillingClient.BillingResponseCode.USER_CANCELED -> {
+                        _billingAvailable.value = false
+                        _initComplete.complete(Unit)
+                    }
+                    else -> {
+                        _billingAvailable.value = false
+                        _initComplete.complete(Unit)
+                    }
                 }
             }
 
             override fun onBillingServiceDisconnected() {
                 _billingAvailable.value = false
-                if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-                    val delayMs = RECONNECT_BASE_DELAY_MS * (1L shl reconnectAttempts)
-                    reconnectAttempts++
-                    scope.launch {
-                        delay(delayMs)
-                        reconnect()
-                    }
-                } else {
-                    _initComplete.complete(Unit)
-                }
+                scheduleReconnect()
             }
         })
     }
@@ -155,10 +163,21 @@ class BillingManager @Inject constructor(
             .setProductType(BillingClient.ProductType.INAPP)
             .build()
         val result = client.queryPurchasesAsync(params)
-        if (result.billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-            return syncPurchases(result.purchasesList, emitEvents = false)
+        return when (result.billingResult.responseCode) {
+            BillingClient.BillingResponseCode.OK -> {
+                syncPurchases(result.purchasesList, emitEvents = false)
+            }
+            in reconnectableBillingResponseCodes() -> {
+                _billingAvailable.value = false
+                scheduleReconnect()
+                ProPurchaseRefreshResult.UNAVAILABLE
+            }
+            in nonReadyBillingResponseCodes() -> {
+                _billingAvailable.value = false
+                ProPurchaseRefreshResult.UNAVAILABLE
+            }
+            else -> ProPurchaseRefreshResult.UNAVAILABLE
         }
-        return ProPurchaseRefreshResult.UNAVAILABLE
     }
 
     private suspend fun queryProductDetails(): com.android.billingclient.api.ProductDetails? {
@@ -171,13 +190,26 @@ class BillingManager @Inject constructor(
             .setProductList(listOf(product))
             .build()
         val result: ProductDetailsResult = client.queryProductDetails(params)
-        if (result.billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-            cachedProductDetails = result.productDetailsList?.firstOrNull()
-            cachedFormattedPrice = cachedProductDetails?.oneTimePurchaseOfferDetails?.formattedPrice
-            _billingAvailable.value = cachedProductDetails != null
-        } else {
-            cachedProductDetails = null
-            _billingAvailable.value = false
+        when (result.billingResult.responseCode) {
+            BillingClient.BillingResponseCode.OK -> {
+                cachedProductDetails = result.productDetailsList?.firstOrNull()
+                cachedFormattedPrice = cachedProductDetails?.oneTimePurchaseOfferDetails?.formattedPrice
+                _billingAvailable.value = cachedProductDetails != null
+            }
+            in reconnectableBillingResponseCodes() -> {
+                _billingAvailable.value = cachedProductDetails != null
+                scheduleReconnect()
+            }
+            in nonReadyBillingResponseCodes() -> {
+                cachedProductDetails = null
+                cachedFormattedPrice = null
+                _billingAvailable.value = false
+            }
+            else -> {
+                cachedProductDetails = null
+                cachedFormattedPrice = null
+                _billingAvailable.value = false
+            }
         }
         return cachedProductDetails
     }
@@ -195,7 +227,9 @@ class BillingManager @Inject constructor(
         val productDetails = cachedProductDetails
         val client = billingClient
         if (productDetails == null || client == null || !client.isReady) {
-            _purchaseEvents.tryEmit(PurchaseEvent.Error("Billing not ready"))
+            _purchaseEvents.tryEmit(
+                PurchaseEvent.Error(context.getString(R.string.billing_purchase_not_ready))
+            )
             return
         }
 
@@ -208,7 +242,22 @@ class BillingManager @Inject constructor(
 
         val result = client.launchBillingFlow(activity, billingFlowParams)
         if (result.responseCode != BillingClient.BillingResponseCode.OK) {
-            _purchaseEvents.tryEmit(PurchaseEvent.Error("Could not start purchase"))
+            if (result.responseCode == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) {
+                _purchaseEvents.tryEmit(PurchaseEvent.AlreadyOwned)
+                scope.launch { queryExistingPurchases() }
+            } else if (result.responseCode == BillingClient.BillingResponseCode.USER_CANCELED) {
+                _purchaseEvents.tryEmit(PurchaseEvent.Canceled)
+            } else {
+                _purchaseEvents.tryEmit(
+                    PurchaseEvent.Error(
+                        billingMessageFor(
+                            responseCode = result.responseCode,
+                            debugMessage = result.debugMessage
+                        )
+                    )
+                )
+                maybeReconnectAfterFailure(result.responseCode)
+            }
         }
     }
 
@@ -218,8 +267,10 @@ class BillingManager @Inject constructor(
     ) {
         when (billingResult.responseCode) {
             BillingClient.BillingResponseCode.OK -> {
-                if (purchases != null) {
+                if (!purchases.isNullOrEmpty()) {
                     scope.launch { syncPurchases(purchases, emitEvents = true) }
+                } else {
+                    scope.launch { queryExistingPurchases() }
                 }
             }
             BillingClient.BillingResponseCode.USER_CANCELED -> {
@@ -229,9 +280,30 @@ class BillingManager @Inject constructor(
                 _purchaseEvents.tryEmit(PurchaseEvent.AlreadyOwned)
                 scope.launch { queryExistingPurchases() }
             }
+            in reconnectableBillingResponseCodes(),
+            BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
+            BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
+            BillingClient.BillingResponseCode.ITEM_UNAVAILABLE,
+            BillingClient.BillingResponseCode.ITEM_NOT_OWNED,
+            BillingClient.BillingResponseCode.DEVELOPER_ERROR -> {
+                _purchaseEvents.tryEmit(
+                    PurchaseEvent.Error(
+                        billingMessageFor(
+                            responseCode = billingResult.responseCode,
+                            debugMessage = billingResult.debugMessage
+                        )
+                    )
+                )
+                maybeReconnectAfterFailure(billingResult.responseCode)
+            }
             else -> {
                 _purchaseEvents.tryEmit(
-                    PurchaseEvent.Error(billingResult.debugMessage)
+                    PurchaseEvent.Error(
+                        billingMessageFor(
+                            responseCode = billingResult.responseCode,
+                            debugMessage = billingResult.debugMessage
+                        )
+                    )
                 )
             }
         }
@@ -254,6 +326,7 @@ class BillingManager @Inject constructor(
         return when {
             purchased.isNotEmpty() -> {
                 updateProState(true)
+                if (emitEvents) _purchaseEvents.tryEmit(PurchaseEvent.Success)
                 purchased
                     .filter { !it.isAcknowledged }
                     .forEach { acknowledgePurchaseWithRetry(it) }
@@ -302,6 +375,32 @@ class BillingManager @Inject constructor(
         _isProState.value = isPro
     }
 
+    private fun scheduleReconnect() {
+        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            val delayMs = RECONNECT_BASE_DELAY_MS * (1L shl reconnectAttempts)
+            reconnectAttempts++
+            scope.launch {
+                delay(delayMs)
+                reconnect()
+            }
+        } else {
+            _initComplete.complete(Unit)
+        }
+    }
+
+    private fun maybeReconnectAfterFailure(responseCode: Int) {
+        if (responseCode in reconnectableBillingResponseCodes()) {
+            _billingAvailable.value = false
+            scheduleReconnect()
+        }
+    }
+
+    private fun billingMessageFor(responseCode: Int, debugMessage: String): String {
+        val fallback = debugMessage.ifBlank { context.getString(R.string.billing_purchase_error) }
+        val messageRes = billingMessageResFor(responseCode)
+        return if (messageRes != null) context.getString(messageRes) else fallback
+    }
+
     fun destroy() {
         scope.cancel()
         billingClient?.endConnection()
@@ -319,4 +418,31 @@ class BillingManager @Inject constructor(
         private const val MAX_ACK_RETRIES = 3
         private const val ACK_RETRY_BASE_DELAY_MS = 2_000L
     }
+}
+
+internal fun reconnectableBillingResponseCodes(): Set<Int> = setOf(
+    BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
+    BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
+    BillingClient.BillingResponseCode.NETWORK_ERROR,
+    BillingClient.BillingResponseCode.ERROR
+)
+
+internal fun nonReadyBillingResponseCodes(): Set<Int> = setOf(
+    BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
+    BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
+    BillingClient.BillingResponseCode.DEVELOPER_ERROR,
+    BillingClient.BillingResponseCode.ITEM_UNAVAILABLE,
+    BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
+    BillingClient.BillingResponseCode.ITEM_NOT_OWNED,
+    BillingClient.BillingResponseCode.USER_CANCELED
+)
+
+internal fun billingMessageResFor(responseCode: Int): Int? = when (responseCode) {
+    BillingClient.BillingResponseCode.NETWORK_ERROR -> R.string.billing_network_error
+    BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
+    BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
+    BillingClient.BillingResponseCode.BILLING_UNAVAILABLE -> R.string.billing_service_unavailable
+    BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
+    BillingClient.BillingResponseCode.ITEM_UNAVAILABLE -> R.string.billing_item_unavailable
+    else -> null
 }

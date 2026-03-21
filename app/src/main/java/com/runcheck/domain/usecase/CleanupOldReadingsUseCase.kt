@@ -1,11 +1,12 @@
 package com.runcheck.domain.usecase
 
 import com.runcheck.domain.model.DataRetention
+import com.runcheck.domain.repository.AppBatteryUsageRepository
 import com.runcheck.domain.repository.BatteryRepository
+import com.runcheck.domain.repository.ChargerRepository
 import com.runcheck.domain.repository.DatabaseTransactionRunner
 import com.runcheck.domain.repository.NetworkRepository
 import com.runcheck.domain.repository.ProStatusProvider
-import com.runcheck.domain.repository.AppBatteryUsageRepository
 import com.runcheck.domain.repository.SpeedTestRepository
 import com.runcheck.domain.repository.StorageRepository
 import com.runcheck.domain.repository.ThermalRepository
@@ -20,6 +21,7 @@ class CleanupOldReadingsUseCase @Inject constructor(
     private val networkRepository: NetworkRepository,
     private val thermalRepository: ThermalRepository,
     private val storageRepository: StorageRepository,
+    private val chargerRepository: ChargerRepository,
     private val throttlingRepository: ThrottlingRepository,
     private val appBatteryUsageRepository: AppBatteryUsageRepository,
     private val speedTestRepository: SpeedTestRepository,
@@ -34,6 +36,7 @@ class CleanupOldReadingsUseCase @Inject constructor(
             networkRepository.deleteOlderThan(cutoff)
             thermalRepository.deleteOlderThan(cutoff)
             storageRepository.deleteOlderThan(cutoff)
+            chargerRepository.deleteSessionsOlderThan(cutoff)
             throttlingRepository.deleteOlderThan(cutoff)
             appBatteryUsageRepository.deleteOlderThan(cutoff)
             speedTestRepository.deleteOlderThan(cutoff)

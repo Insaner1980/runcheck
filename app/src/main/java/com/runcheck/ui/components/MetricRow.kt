@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.runcheck.R
 import androidx.compose.runtime.remember
+import com.runcheck.ui.components.info.InfoIcon
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
 
@@ -37,7 +38,8 @@ fun MetricRow(
     valueColor: Color = MaterialTheme.colorScheme.onSurface,
     showDivider: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,
-    copyable: Boolean = false
+    copyable: Boolean = false,
+    onInfoClick: (() -> Unit)? = null
 ) {
     val truncate = maxLines < Int.MAX_VALUE
 
@@ -66,11 +68,16 @@ fun MetricRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (onInfoClick != null) {
+                    InfoIcon(onClick = onInfoClick)
+                }
+            }
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleLarge.copy(

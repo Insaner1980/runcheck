@@ -173,6 +173,7 @@ class HealthScoreCalculator @Inject constructor() {
         val expectedDownload = when (network.connectionType) {
             ConnectionType.WIFI -> 50.0 // 50 Mbps considered good for WiFi
             ConnectionType.CELLULAR -> 20.0 // 20 Mbps considered good for cellular
+            ConnectionType.VPN -> 20.0
             ConnectionType.NONE -> 1.0
         }
         val downloadRatio = (speedTest.downloadMbps / expectedDownload).coerceAtMost(1.0)

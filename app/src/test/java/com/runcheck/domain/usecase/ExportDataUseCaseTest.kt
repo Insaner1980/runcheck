@@ -2,15 +2,15 @@ package com.runcheck.domain.usecase
 
 import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.DataRetention
+import com.runcheck.domain.model.NetworkReading
+import com.runcheck.domain.model.StorageReading
+import com.runcheck.domain.model.ThermalReading
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.repository.BatteryRepository
 import com.runcheck.domain.repository.FileExportRepository
-import com.runcheck.domain.repository.NetworkReadingData
 import com.runcheck.domain.repository.NetworkRepository
 import com.runcheck.domain.repository.ProStatusProvider
-import com.runcheck.domain.repository.StorageReadingData
 import com.runcheck.domain.repository.StorageRepository
-import com.runcheck.domain.repository.ThermalReadingData
 import com.runcheck.domain.repository.ThermalRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
 import io.mockk.coEvery
@@ -127,7 +127,7 @@ class ExportDataUseCaseTest {
     @Test
     fun `CSV escaping - value with newline is quoted`() = runTest {
         coEvery { networkRepository.getAllReadings() } returns listOf(
-            NetworkReadingData(
+            NetworkReading(
                 timestamp = 1_700_000_000_000L,
                 type = "WIFI",
                 signalDbm = -50,
@@ -406,7 +406,7 @@ class ExportDataUseCaseTest {
     @Test
     fun `thermal status integer is formatted as enum name`() = runTest {
         coEvery { thermalRepository.getAllReadings() } returns listOf(
-            ThermalReadingData(
+            ThermalReading(
                 timestamp = 1_700_000_000_000L,
                 batteryTempC = 35f,
                 cpuTempC = 60f,
@@ -427,7 +427,7 @@ class ExportDataUseCaseTest {
     @Test
     fun `storage export formats bytes correctly`() = runTest {
         coEvery { storageRepository.getAllReadings() } returns listOf(
-            StorageReadingData(
+            StorageReading(
                 timestamp = 1_700_000_000_000L,
                 totalBytes = 128_000_000_000L,
                 availableBytes = 64_000_000_000L,
@@ -450,7 +450,7 @@ class ExportDataUseCaseTest {
     @Test
     fun `CSV escaping - value with carriage return is quoted`() = runTest {
         coEvery { networkRepository.getAllReadings() } returns listOf(
-            NetworkReadingData(
+            NetworkReading(
                 timestamp = 1_700_000_000_000L,
                 type = "WIFI",
                 signalDbm = -50,
@@ -473,7 +473,7 @@ class ExportDataUseCaseTest {
     @Test
     fun `null values in CSV are empty strings`() = runTest {
         coEvery { networkRepository.getAllReadings() } returns listOf(
-            NetworkReadingData(
+            NetworkReading(
                 timestamp = 1_700_000_000_000L,
                 type = "WIFI",
                 signalDbm = null,

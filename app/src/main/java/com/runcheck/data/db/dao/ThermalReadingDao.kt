@@ -21,6 +21,9 @@ interface ThermalReadingDao {
     @Query("DELETE FROM thermal_readings WHERE timestamp < :before")
     suspend fun deleteOlderThan(before: Long)
 
+    @Query("DELETE FROM thermal_readings")
+    suspend fun deleteAll()
+
     @Query("SELECT COUNT(*) FROM thermal_readings")
     suspend fun getCount(): Int
 

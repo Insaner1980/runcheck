@@ -16,6 +16,8 @@ runcheck is an Android device health diagnostics app built with Kotlin and Jetpa
 
 Legacy billing or ad-related code may still exist in the repo. Do not expand that surface unless the task is explicitly about cleanup or migration.
 
+---
+
 ## Current Project Snapshot
 
 - Package root: `com.runcheck`
@@ -23,6 +25,7 @@ Legacy billing or ad-related code may still exist in the repo. Do not expand tha
 - Architecture: Clean Architecture with `data/`, `domain/`, and `ui/`
 - Dependency injection: Hilt
 - Database: Room
+- Preferences: DataStore
 - UI: Jetpack Compose + Material 3
 - Background work: WorkManager
 - Widgets: Glance
@@ -47,6 +50,34 @@ app/src/main/java/com/runcheck/
 ├── widget/
 └── util/
 ```
+
+Current navigation snapshot:
+
+```text
+Home
+├── Battery Detail
+│   ├── Charger Comparison [PRO]
+│   └── Fullscreen Chart
+├── Network Detail
+│   ├── Speed Test
+│   └── Fullscreen Chart
+├── Thermal Detail
+├── Storage Detail
+│   └── Cleanup/{type}
+├── App Usage [PRO]
+├── Learn
+│   └── Learn Article
+├── Settings
+└── Pro Upgrade
+```
+
+Current runtime systems:
+
+- `RuncheckApp` initializes billing, Pro state, notification channels, crash reporting, screen-state tracking, periodic monitoring, and widget refresh hooks
+- WorkManager runs `HealthMonitorWorker` for snapshot collection + alert evaluation
+- WorkManager runs `HealthMaintenanceWorker` for app-usage refresh, cleanup, and widget refresh
+- Widgets are backed by Room snapshots and treated as a Pro feature
+- Trial state currently counts as Pro access through `ProState.isPro`
 
 ## Architecture Rules
 
@@ -108,6 +139,8 @@ Rules:
 - Use M-Lab NDT7 only
 - Do not hardcode a server; NDT7 chooses the nearest server
 - Show the cellular warning before the test starts when the active network is not Wi-Fi
+- Outbound network calls are allowed only for user-initiated speed tests and Crashlytics when the user has enabled crash reporting
+- Reading current connection details such as Wi-Fi, 5G, SSID, signal, IP, or DNS must stay on-device via Android APIs and must not trigger socket, HTTP, or ping-style probes
 
 ### 6. Motion and animation
 
@@ -125,8 +158,9 @@ Rules:
 - Background colors:
   - `BgPage` `#0B1E24`
   - `BgCard` `#133040`
-  - `BgIconCircle` `#1A3A4D`
-- Primary accent: teal `#5DE4C7`
+  - `BgIconCircle` `#1A3A48`
+- Primary accent: blue `#4A9EDE`
+- Secondary/status accent: teal `#5DE4C7`
 - Gauge arcs stay neutral white/gray; accent color is only for the indicator
 - Status colors are for small badges and dots, not large fills
 - Typography:
@@ -155,6 +189,7 @@ Raise a review comment or fix request for any of these:
 - Touch targets smaller than 48dp
 - Sysfs-based thermal reads
 - NDT7 speed tests pinned to a fixed server
+- Any outbound network call outside the speed test flow or toggle-controlled Crashlytics
 
 ## Working Conventions
 
@@ -173,6 +208,15 @@ Raise a review comment or fix request for any of these:
 - Compose uses the BOM defined in the version catalog
 - Hilt, Room, KSP, ktlint, and detekt are already wired into the build
 - Crash reporting code may exist, but do not add analytics or tracking behavior
+
+## Low-CPU Verification
+
+- This repository is often worked on with limited CPU headroom. Avoid heavy local verification by default.
+- Do not run full Gradle builds or full test suites unless explicitly requested or required to unblock the task.
+- Prefer static analysis, targeted file review, and minimal commands first.
+- If verification is needed, use the smallest scoped check possible: one compile task, one module task, or one narrowly filtered test class.
+- Avoid running multiple coding agents or tools that may build the same repo in parallel.
+- When verification is intentionally skipped or minimized, say so clearly in the final response.
 
 Useful local commands:
 

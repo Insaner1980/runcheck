@@ -1,5 +1,6 @@
 package com.runcheck.ui.battery
 
+import androidx.lifecycle.SavedStateHandle
 import com.runcheck.domain.model.BatteryHealth
 import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.BatteryState
@@ -8,12 +9,15 @@ import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.model.PlugType
-import com.runcheck.domain.repository.ProStatusProvider
+import com.runcheck.domain.model.UserPreferences
+import com.runcheck.domain.usecase.BatteryScreenInsightsUseCase
+import com.runcheck.domain.usecase.ChargerSessionTracker
 import com.runcheck.domain.usecase.BatteryStatistics
 import com.runcheck.domain.usecase.GetBatteryHistoryUseCase
 import com.runcheck.domain.usecase.GetBatteryStateUseCase
 import com.runcheck.domain.usecase.GetBatteryStatisticsUseCase
-import com.runcheck.service.monitor.ScreenStateTracker
+import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
+import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.every
@@ -42,8 +46,10 @@ class BatteryViewModelTest {
     private val getBatteryState: GetBatteryStateUseCase = mockk()
     private val getBatteryHistory: GetBatteryHistoryUseCase = mockk()
     private val getBatteryStatistics: GetBatteryStatisticsUseCase = mockk()
-    private val proStatusProvider: ProStatusProvider = mockk()
-    private val screenStateTracker: ScreenStateTracker = mockk(relaxed = true)
+    private val observeProAccess: ObserveProAccessUseCase = mockk()
+    private val chargerSessionTracker: ChargerSessionTracker = mockk(relaxed = true)
+    private val batteryScreenInsights: BatteryScreenInsightsUseCase = mockk(relaxed = true)
+    private val manageUserPreferences: ManageUserPreferencesUseCase = mockk(relaxed = true)
     private lateinit var viewModel: BatteryViewModel
 
     private fun makeBatteryState(
@@ -91,7 +97,9 @@ class BatteryViewModelTest {
             fullChargeEstimateHours = 28.5f,
             readingCount = 100
         )
-        every { proStatusProvider.isProUser } returns flowOf(false)
+        every { observeProAccess() } returns flowOf(false)
+        every { manageUserPreferences.observeDismissedInfoCards() } returns flowOf(emptySet())
+        every { manageUserPreferences.observePreferences() } returns flowOf(UserPreferences())
     }
 
     @After
@@ -102,13 +110,18 @@ class BatteryViewModelTest {
         }
     }
 
-    private fun createViewModel(): BatteryViewModel {
+    private fun createViewModel(
+        savedStateHandle: SavedStateHandle = SavedStateHandle()
+    ): BatteryViewModel {
         return BatteryViewModel(
+            savedStateHandle = savedStateHandle,
             getBatteryState = getBatteryState,
             getBatteryHistory = getBatteryHistory,
             getBatteryStatistics = getBatteryStatistics,
-            proStatusProvider = proStatusProvider,
-            screenStateTracker = screenStateTracker
+            observeProAccess = observeProAccess,
+            chargerSessionTracker = chargerSessionTracker,
+            batteryScreenInsights = batteryScreenInsights,
+            manageUserPreferences = manageUserPreferences
         )
     }
 
@@ -139,8 +152,7 @@ class BatteryViewModelTest {
         assertEquals(HistoryPeriod.DAY, success.selectedPeriod)
         assertNotNull("Statistics should be loaded", success.statistics)
 
-        verify { screenStateTracker.start() }
-        verify { screenStateTracker.tick() }
+        verify { batteryScreenInsights.updateChargingStatus(ChargingStatus.DISCHARGING) }
     }
 
     @Test
@@ -248,5 +260,19 @@ class BatteryViewModelTest {
 
         // Verify that getBatteryHistory was called with WEEK
         verify { getBatteryHistory(HistoryPeriod.WEEK) }
+    }
+
+    @Test
+    fun `setHistoryPeriod writes selected period to saved state`() = runTest(mainDispatcherRule.testDispatcher) {
+        every { getBatteryState() } returns flowOf(makeBatteryState())
+
+        val savedStateHandle = SavedStateHandle()
+        viewModel = createViewModel(savedStateHandle = savedStateHandle)
+        viewModel.startObserving()
+        advanceUntilIdle()
+
+        viewModel.setHistoryPeriod(HistoryPeriod.MONTH)
+
+        assertEquals(HistoryPeriod.MONTH.name, savedStateHandle.get<String>("battery_selected_period"))
     }
 }

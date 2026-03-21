@@ -123,6 +123,10 @@ class BatteryRepositoryImpl @Inject constructor(
         batteryReadingDao.deleteOlderThan(cutoff)
     }
 
+    override suspend fun deleteAll() {
+        batteryReadingDao.deleteAll()
+    }
+
     override suspend fun getLastChargingTimestamp(): Long? {
         return batteryReadingDao.getLastChargingTimestamp()
     }

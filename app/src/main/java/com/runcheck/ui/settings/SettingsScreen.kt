@@ -1,7 +1,6 @@
 package com.runcheck.ui.settings
 
 import android.Manifest
-import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -56,11 +55,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.disabled
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -68,19 +64,18 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.BuildConfig
 import com.runcheck.R
-import com.runcheck.ui.common.UiText
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.ui.common.findActivity
+import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPill
-import com.runcheck.ui.components.ProFeatureCalloutCard
-import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @Composable
@@ -123,6 +118,12 @@ fun SettingsScreen(
             SettingsCard {
                 CardSectionTitle(text = stringResource(R.string.settings_monitoring_interval))
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                Text(
+                    text = stringResource(R.string.settings_monitoring_interval_note),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
                 MonitoringInterval.entries.forEachIndexed { index, interval ->
                     if (index > 0) SettingsDivider()
                     SettingsRadioRow(
@@ -158,15 +159,12 @@ fun SettingsScreen(
                 )
                 SettingsDivider()
 
-                val subAlpha = if (masterEnabled) 1f else 0.38f
-                Column(modifier = Modifier
-                    .alpha(subAlpha)
-                    .then(if (!masterEnabled) Modifier.semantics { disabled() } else Modifier)
-                ) {
+                Column {
                     SettingsToggle(
                         title = stringResource(R.string.settings_notif_low_battery),
                         description = stringResource(R.string.settings_notif_low_battery_desc),
                         checked = uiState.preferences.notifLowBattery,
+                        enabled = masterEnabled,
                         onCheckedChange = { if (masterEnabled) viewModel.setNotifLowBattery(it) }
                     )
                     SettingsDivider()
@@ -174,6 +172,7 @@ fun SettingsScreen(
                         title = stringResource(R.string.settings_notif_high_temp),
                         description = stringResource(R.string.settings_notif_high_temp_desc),
                         checked = uiState.preferences.notifHighTemp,
+                        enabled = masterEnabled,
                         onCheckedChange = { if (masterEnabled) viewModel.setNotifHighTemp(it) }
                     )
                     SettingsDivider()
@@ -181,6 +180,7 @@ fun SettingsScreen(
                         title = stringResource(R.string.settings_notif_low_storage),
                         description = stringResource(R.string.settings_notif_low_storage_desc),
                         checked = uiState.preferences.notifLowStorage,
+                        enabled = masterEnabled,
                         onCheckedChange = { if (masterEnabled) viewModel.setNotifLowStorage(it) }
                     )
                     SettingsDivider()
@@ -188,6 +188,7 @@ fun SettingsScreen(
                         title = stringResource(R.string.settings_notif_charge_complete),
                         description = stringResource(R.string.settings_notif_charge_complete_desc),
                         checked = uiState.preferences.notifChargeComplete,
+                        enabled = masterEnabled,
                         onCheckedChange = { if (masterEnabled) viewModel.setNotifChargeComplete(it) }
                     )
                 }
@@ -201,33 +202,35 @@ fun SettingsScreen(
                 SettingsSlider(
                     label = stringResource(R.string.settings_threshold_battery),
                     value = uiState.preferences.alertBatteryThreshold,
+                    allowedValues = LOW_BATTERY_THRESHOLD_VALUES,
                     valueLabelFor = { current ->
                         context.getString(R.string.value_percent, current)
                     },
-                    range = 5f..50f,
-                    steps = 8,
                     onValueChange = { viewModel.setAlertBatteryThreshold(it) }
                 )
                 SettingsDivider()
                 SettingsSlider(
                     label = stringResource(R.string.settings_threshold_temp),
                     value = uiState.preferences.alertTempThreshold,
+                    allowedValues = TEMPERATURE_THRESHOLD_VALUES,
                     valueLabelFor = { current ->
-                        "$current${context.getString(R.string.unit_celsius)}"
+                        formatTemperature(
+                            context = context,
+                            valueCelsius = current,
+                            unit = uiState.preferences.temperatureUnit,
+                            fractionDigits = 0
+                        )
                     },
-                    range = 35f..50f,
-                    steps = 14,
                     onValueChange = { viewModel.setAlertTempThreshold(it) }
                 )
                 SettingsDivider()
                 SettingsSlider(
                     label = stringResource(R.string.settings_threshold_storage),
                     value = uiState.preferences.alertStorageThreshold,
+                    allowedValues = LOW_STORAGE_THRESHOLD_VALUES,
                     valueLabelFor = { current ->
                         context.getString(R.string.value_percent, current)
                     },
-                    range = 70f..99f,
-                    steps = 5,
                     onValueChange = { viewModel.setAlertStorageThreshold(it) }
                 )
             }
@@ -260,46 +263,43 @@ fun SettingsScreen(
                 CardSectionTitle(text = stringResource(R.string.settings_data_section))
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
 
-                if (uiState.isPro) {
-                    Text(
-                        text = stringResource(R.string.settings_data_retention_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                Text(
+                    text = if (uiState.isPro) {
+                        stringResource(R.string.settings_data_retention_description)
+                    } else {
+                        stringResource(R.string.settings_data_retention_free)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                DataRetention.entries.forEachIndexed { index, retention ->
+                    if (index > 0) SettingsDivider()
+                    SettingsRadioRow(
+                        label = retention.label(),
+                        selected = uiState.preferences.dataRetention == retention,
+                        enabled = uiState.isPro,
+                        onSelect = { viewModel.setDataRetention(retention) }
                     )
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                    DataRetention.entries.forEachIndexed { index, retention ->
-                        if (index > 0) SettingsDivider()
-                        SettingsRadioRow(
-                            label = retention.label(),
-                            selected = uiState.preferences.dataRetention == retention,
-                            onSelect = { viewModel.setDataRetention(retention) }
+                }
+                SettingsDivider()
+                OutlinedButton(
+                    onClick = { viewModel.exportData() },
+                    enabled = uiState.isPro && !uiState.isExporting,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (uiState.isExporting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(18.dp)
+                                .semantics {
+                                    contentDescription = context.getString(R.string.a11y_exporting_data)
+                                },
+                            strokeWidth = 2.dp
                         )
+                    } else {
+                        Text(stringResource(R.string.settings_export_data))
                     }
-                    SettingsDivider()
-                    OutlinedButton(
-                        onClick = { viewModel.exportData() },
-                        enabled = !uiState.isExporting,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        if (uiState.isExporting) {
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .semantics {
-                                        contentDescription = context.getString(R.string.a11y_exporting_data)
-                                    },
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text(stringResource(R.string.settings_export_data))
-                        }
-                    }
-                } else {
-                    Text(
-                        text = stringResource(R.string.settings_data_retention_free),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
 
                 SettingsDivider()
@@ -311,29 +311,34 @@ fun SettingsScreen(
                 )
             }
 
-            if (!uiState.isPro) {
-                ProFeatureCalloutCard(
-                    message = stringResource(R.string.pro_feature_export_message),
-                    actionLabel = stringResource(R.string.pro_feature_upgrade_action),
-                    onAction = { activity?.let { viewModel.purchasePro(it) } }
-                )
-            }
-
             // ── PRO ────────────────────────────────────────────────────
             SettingsCard {
-                CardSectionTitle(
-                    text = if (uiState.isPro) stringResource(R.string.settings_pro_active)
-                    else stringResource(R.string.settings_upgrade_pro)
-                )
+                CardSectionTitle(text = stringResource(R.string.settings_pro_section))
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
 
+                SettingsValueRow(
+                    label = stringResource(R.string.settings_status_label),
+                    value = if (uiState.isPro) {
+                        stringResource(R.string.settings_pro_status_active)
+                    } else {
+                        stringResource(R.string.settings_pro_status_not_active)
+                    },
+                    valueColor = if (uiState.isPro) {
+                        MaterialTheme.statusColors.healthy
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+
                 if (uiState.isPro) {
+                    SettingsDivider()
                     Text(
                         text = stringResource(R.string.settings_pro_thank_you),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 } else if (uiState.billingAvailable) {
+                    SettingsDivider()
                     Button(
                         onClick = { activity?.let { viewModel.purchasePro(it) } },
                         modifier = Modifier.fillMaxWidth()
@@ -421,7 +426,10 @@ fun SettingsScreen(
                 CardSectionTitle(text = stringResource(R.string.settings_about))
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
                 Text(
-                    text = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
+                    text = stringResource(
+                        R.string.settings_version,
+                        "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -430,16 +438,29 @@ fun SettingsScreen(
                     label = stringResource(R.string.settings_rate),
                     onClick = {
                         try {
-                            context.startActivity(Intent(Intent.ACTION_VIEW,
-                                Uri.parse("market://details?id=${context.packageName}"))
-                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                        } catch (_: Exception) { }
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("market://details?id=${context.packageName}")
+                                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            )
+                        } catch (_: Exception) {
+                            openExternalUri(
+                                context = context,
+                                uri = context.getString(R.string.settings_play_store_web_url)
+                            )
+                        }
                     }
                 )
                 SettingsDivider()
                 SettingsNavigationRow(
                     label = stringResource(R.string.settings_privacy_policy),
-                    onClick = { /* TODO: open privacy policy URL */ }
+                    onClick = {
+                        openExternalUri(
+                            context = context,
+                            uri = context.getString(R.string.settings_privacy_policy_url)
+                        )
+                    }
                 )
                 SettingsDivider()
                 SettingsNavigationRow(
@@ -467,6 +488,12 @@ fun SettingsScreen(
                 LaunchedEffect(status) {
                     Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
                     viewModel.clearExportStatus()
+                }
+            }
+            uiState.clearDataStatus?.let { status ->
+                LaunchedEffect(status) {
+                    Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
+                    viewModel.clearClearDataStatus()
                 }
             }
             uiState.exportUris?.let { exportUriStrings ->
@@ -511,8 +538,7 @@ fun SettingsScreen(
                 Button(
                     onClick = {
                         showClearDialog = false
-                        // TODO: viewModel.clearAllData()
-                        Toast.makeText(context, context.getString(R.string.settings_data_cleared), Toast.LENGTH_SHORT).show()
+                        viewModel.clearAllData()
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error,
@@ -534,7 +560,7 @@ fun SettingsScreen(
 @Composable
 private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
     Card(
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -551,16 +577,27 @@ private fun SettingsDivider() {
 }
 
 @Composable
-private fun SettingsRadioRow(label: String, selected: Boolean, onSelect: () -> Unit) {
+private fun SettingsRadioRow(
+    label: String,
+    selected: Boolean,
+    enabled: Boolean = true,
+    onSelect: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .defaultMinSize(minHeight = 48.dp)
-            .selectable(selected = selected, onClick = onSelect, role = Role.RadioButton)
+            .alpha(if (enabled) 1f else 0.38f)
+            .selectable(
+                selected = selected,
+                enabled = enabled,
+                onClick = onSelect,
+                role = Role.RadioButton
+            )
             .padding(vertical = MaterialTheme.spacing.xs),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        RadioButton(selected = selected, onClick = null)
+        RadioButton(selected = selected, onClick = null, enabled = enabled)
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
@@ -574,13 +611,20 @@ private fun SettingsToggle(
     title: String,
     description: String,
     checked: Boolean,
+    enabled: Boolean = true,
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .defaultMinSize(minHeight = 48.dp)
-            .toggleable(value = checked, onValueChange = onCheckedChange, role = Role.Switch),
+            .alpha(if (enabled) 1f else 0.38f)
+            .toggleable(
+                value = checked,
+                enabled = enabled,
+                onValueChange = onCheckedChange,
+                role = Role.Switch
+            ),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -588,7 +632,7 @@ private fun SettingsToggle(
             Text(text = title, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
             Text(text = description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Switch(checked = checked, onCheckedChange = null)
+        Switch(checked = checked, onCheckedChange = null, enabled = enabled)
     }
 }
 
@@ -596,14 +640,16 @@ private fun SettingsToggle(
 private fun SettingsSlider(
     label: String,
     value: Int,
+    allowedValues: List<Int>,
     valueLabelFor: (Int) -> String,
-    range: ClosedFloatingPointRange<Float>,
-    steps: Int,
     onValueChange: (Int) -> Unit
 ) {
     val context = LocalContext.current
-    var sliderValue by remember(value) { mutableFloatStateOf(value.toFloat()) }
-    val currentValue = sliderValue.roundToInt()
+    var sliderValue by remember(value, allowedValues) {
+        mutableFloatStateOf(allowedValues.indexForValue(value).toFloat())
+    }
+    val currentIndex = sliderValue.roundToInt().coerceIn(0, allowedValues.lastIndex)
+    val currentValue = allowedValues[currentIndex]
     val valueLabel = valueLabelFor(currentValue)
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -620,10 +666,14 @@ private fun SettingsSlider(
         }
         Slider(
             value = sliderValue,
-            onValueChange = { sliderValue = it },
-            onValueChangeFinished = { onValueChange(sliderValue.roundToInt()) },
-            valueRange = range,
-            steps = steps,
+            onValueChange = { sliderValue = it.coerceIn(0f, allowedValues.lastIndex.toFloat()) },
+            onValueChangeFinished = {
+                onValueChange(
+                    allowedValues[sliderValue.roundToInt().coerceIn(0, allowedValues.lastIndex)]
+                )
+            },
+            valueRange = 0f..allowedValues.lastIndex.toFloat(),
+            steps = (allowedValues.size - 2).coerceAtLeast(0),
             modifier = Modifier.semantics {
                 contentDescription = context.getString(R.string.value_label_colon, label, valueLabel)
             },
@@ -633,6 +683,25 @@ private fun SettingsSlider(
                 inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             )
         )
+    }
+}
+
+@Composable
+private fun SettingsValueRow(
+    label: String,
+    value: String,
+    valueColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 48.dp)
+            .padding(vertical = MaterialTheme.spacing.xs),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+        Text(text = value, style = MaterialTheme.typography.bodyMedium, color = valueColor)
     }
 }
 
@@ -669,3 +738,16 @@ private fun DataRetention.label(): String = when (this) {
     DataRetention.ONE_YEAR -> stringResource(R.string.settings_retention_1_year)
     DataRetention.FOREVER -> stringResource(R.string.settings_retention_forever)
 }
+
+private fun List<Int>.indexForValue(value: Int): Int =
+    indexOf(value).takeIf { it >= 0 } ?: indices.minBy { index -> abs(this[index] - value) }
+
+private fun openExternalUri(context: android.content.Context, uri: String) {
+    context.startActivity(
+        Intent(Intent.ACTION_VIEW, Uri.parse(uri)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    )
+}
+
+private val LOW_BATTERY_THRESHOLD_VALUES = (5..50 step 5).toList()
+private val TEMPERATURE_THRESHOLD_VALUES = (35..50).toList()
+private val LOW_STORAGE_THRESHOLD_VALUES = listOf(70, 75, 80, 85, 90, 95, 99)

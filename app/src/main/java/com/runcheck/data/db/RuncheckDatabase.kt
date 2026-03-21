@@ -36,7 +36,7 @@ import com.runcheck.data.db.entity.ThrottlingEventEntity
         AppBatteryUsageEntity::class,
         SpeedTestResultEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

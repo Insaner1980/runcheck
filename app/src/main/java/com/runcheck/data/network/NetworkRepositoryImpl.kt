@@ -2,8 +2,8 @@ package com.runcheck.data.network
 
 import com.runcheck.data.db.dao.NetworkReadingDao
 import com.runcheck.data.db.entity.NetworkReadingEntity
+import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.model.NetworkState
-import com.runcheck.domain.repository.NetworkReadingData
 import com.runcheck.domain.repository.NetworkRepository as NetworkRepositoryContract
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -70,11 +70,11 @@ class NetworkRepositoryImpl @Inject constructor(
         networkReadingDao.insert(entity)
     }
 
-    override suspend fun getAllReadings(): List<NetworkReadingData> {
+    override suspend fun getAllReadings(): List<NetworkReading> {
         return networkReadingDao.getAll().map { it.toDomain() }
     }
 
-    override fun getReadingsSince(since: Long, limit: Int?): Flow<List<NetworkReadingData>> {
+    override fun getReadingsSince(since: Long, limit: Int?): Flow<List<NetworkReading>> {
         val readingsFlow = if (limit != null) {
             networkReadingDao.getReadingsSinceLimited(since, limit)
         } else {
@@ -89,12 +89,16 @@ class NetworkRepositoryImpl @Inject constructor(
         networkReadingDao.deleteOlderThan(cutoff)
     }
 
+    override suspend fun deleteAll() {
+        networkReadingDao.deleteAll()
+    }
+
     companion object {
         private const val DISPLAY_UPDATE_INTERVAL_MS = 333L
     }
 }
 
-private fun NetworkReadingEntity.toDomain() = NetworkReadingData(
+private fun NetworkReadingEntity.toDomain() = NetworkReading(
     timestamp = timestamp,
     type = type,
     signalDbm = signalDbm,

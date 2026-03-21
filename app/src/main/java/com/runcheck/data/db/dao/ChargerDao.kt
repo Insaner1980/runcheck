@@ -32,6 +32,9 @@ interface ChargerDao {
     @Query("SELECT * FROM charging_sessions WHERE end_time IS NULL LIMIT 1")
     suspend fun getActiveSession(): ChargingSessionEntity?
 
+    @Query("DELETE FROM charging_sessions WHERE end_time IS NOT NULL AND end_time < :cutoff")
+    suspend fun deleteSessionsOlderThan(cutoff: Long)
+
     @Query(
         """UPDATE charging_sessions
            SET end_time = :endTime,

@@ -69,7 +69,7 @@ fun ListRow(
             if (onClick != null) {
                 Spacer(modifier = Modifier.width(4.dp))
                 Surface(
-                    shape = RoundedCornerShape(999.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
                 ) {
                     Icon(

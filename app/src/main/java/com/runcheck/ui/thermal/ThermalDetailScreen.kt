@@ -32,6 +32,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,12 +61,15 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
+import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
 import com.runcheck.domain.model.ThrottlingEvent
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.formatTemperature
+import com.runcheck.ui.common.formatTemperatureValue
 import com.runcheck.ui.common.rememberFormattedDateTime
+import com.runcheck.ui.common.temperatureUnitRes
 import com.runcheck.ui.common.temperatureBandLabel
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.HeatStrip
@@ -74,9 +78,11 @@ import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.PullToRefreshWrapper
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.StatusDot
-import com.runcheck.ui.theme.BgIconCircle
-import com.runcheck.ui.theme.TextSecondary
+import com.runcheck.ui.components.info.InfoBottomSheet
+import com.runcheck.ui.components.info.InfoCard
+import com.runcheck.ui.theme.iconCircleColor
 import com.runcheck.ui.theme.numericFontFamily
+import com.runcheck.ui.theme.numericHeroValueTextStyle
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColorForTemperature
@@ -145,7 +151,8 @@ fun ThermalDetailScreen(
                 ThermalContent(
                     state = state,
                     onRefresh = { viewModel.refresh() },
-                    onUpgradeToPro = onUpgradeToPro
+                    onUpgradeToPro = onUpgradeToPro,
+                    onDismissInfoCard = { viewModel.dismissInfoCard(it) }
                 )
             }
         }
@@ -156,8 +163,10 @@ fun ThermalDetailScreen(
 private fun ThermalContent(
     state: ThermalUiState.Success,
     onRefresh: () -> Unit,
-    onUpgradeToPro: () -> Unit
+    onUpgradeToPro: () -> Unit,
+    onDismissInfoCard: (String) -> Unit
 ) {
+    var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
     var isRefreshing by remember { mutableStateOf(false) }
     val thermal = state.thermalState
 
@@ -184,16 +193,53 @@ private fun ThermalContent(
             item {
                 ThermalHeroCard(
                     thermal = thermal,
+                    temperatureUnit = state.temperatureUnit,
                     sessionMinTemp = state.sessionMinTemp,
                     sessionMaxTemp = state.sessionMaxTemp
                 )
             }
 
             // HeatStrip
-            item { HeatStrip(temperatureC = thermal.batteryTempC) }
+            item {
+                HeatStrip(
+                    temperatureC = thermal.batteryTempC,
+                    temperatureUnit = state.temperatureUnit
+                )
+            }
+
+            // Info cards
+            if (ThermalInfoCards.THROTTLING_EXPLAINER !in state.dismissedInfoCards) {
+                item {
+                    InfoCard(
+                        id = ThermalInfoCards.THROTTLING_EXPLAINER,
+                        headline = stringResource(R.string.info_card_thermal_throttling_headline),
+                        body = stringResource(R.string.info_card_thermal_throttling_body),
+                        onDismiss = { onDismissInfoCard(it) }
+                    )
+                }
+            }
+
+            if (thermal.batteryTempC > 35f &&
+                ThermalInfoCards.HEAT_BATTERY_LOOP !in state.dismissedInfoCards
+            ) {
+                item {
+                    InfoCard(
+                        id = ThermalInfoCards.HEAT_BATTERY_LOOP,
+                        headline = stringResource(R.string.info_card_heat_battery_headline),
+                        body = stringResource(R.string.info_card_heat_battery_body),
+                        onDismiss = { onDismissInfoCard(it) }
+                    )
+                }
+            }
 
             // Metrics grid
-            item { ThermalMetricsCard(thermal = thermal) }
+            item {
+                ThermalMetricsCard(
+                    thermal = thermal,
+                    temperatureUnit = state.temperatureUnit,
+                    onInfoClick = { key -> activeInfoSheet = key }
+                )
+            }
 
             // Throttling section
             item {
@@ -211,7 +257,10 @@ private fun ThermalContent(
                         items = state.throttlingEvents,
                         key = { event -> event.id.takeIf { it != 0L } ?: event.timestamp }
                     ) { event ->
-                        ThrottlingEventItem(event = event)
+                        ThrottlingEventItem(
+                            event = event,
+                            temperatureUnit = state.temperatureUnit
+                        )
                     }
                 }
             } else {
@@ -228,6 +277,22 @@ private fun ThermalContent(
             item { Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl)) }
         }
     }
+
+    activeInfoSheet?.let { key ->
+        val content = when (key) {
+            "cpuTemp" -> ThermalInfoContent.cpuTemp
+            "thermalHeadroom" -> ThermalInfoContent.thermalHeadroom
+            "thermalStatus" -> ThermalInfoContent.thermalStatus
+            "throttling" -> ThermalInfoContent.throttling
+            else -> null
+        }
+        content?.let {
+            InfoBottomSheet(
+                content = it,
+                onDismiss = { activeInfoSheet = null }
+            )
+        }
+    }
 }
 
 // ── Hero card ────────────────────────────────────────────────────────────────────
@@ -235,6 +300,7 @@ private fun ThermalContent(
 @Composable
 private fun ThermalHeroCard(
     thermal: ThermalState,
+    temperatureUnit: TemperatureUnit,
     sessionMinTemp: Float? = null,
     sessionMaxTemp: Float? = null
 ) {
@@ -242,7 +308,7 @@ private fun ThermalHeroCard(
     val bandLabel = temperatureBandLabel(thermal.batteryTempC)
 
     Card(
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
@@ -270,6 +336,7 @@ private fun ThermalHeroCard(
                 // Thermometer visual
                 ThermometerIcon(
                     temperatureC = thermal.batteryTempC,
+                    temperatureUnit = temperatureUnit,
                     color = tempColor,
                     modifier = Modifier.size(width = 40.dp, height = 120.dp)
                 )
@@ -280,20 +347,16 @@ private fun ThermalHeroCard(
                 Column(horizontalAlignment = Alignment.Start) {
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
-                            text = formatDecimal(thermal.batteryTempC, 1),
-                            style = MaterialTheme.typography.displayLarge.copy(
-                                fontFamily = MaterialTheme.numericFontFamily,
-                                fontSize = 48.sp,
-                                fontWeight = FontWeight.Bold
-                            ),
+                            text = formatTemperatureValue(thermal.batteryTempC, temperatureUnit),
+                            style = MaterialTheme.numericHeroValueTextStyle,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = stringResource(R.string.unit_celsius),
+                            text = stringResource(temperatureUnitRes(temperatureUnit)),
                             style = MaterialTheme.typography.headlineLarge.copy(
                                 fontFamily = MaterialTheme.numericFontFamily
                             ),
-                            color = TextSecondary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 2.dp, bottom = 10.dp)
                         )
                     }
@@ -309,11 +372,21 @@ private fun ThermalHeroCard(
                         Text(
                             text = buildAnnotatedString {
                                 withStyle(SpanStyle(color = statusColorForTemperature(sessionMinTemp))) {
-                                    append("↓ ${formatTemperature(sessionMinTemp)}")
+                                    append(
+                                        stringResource(
+                                            R.string.value_direction_down,
+                                            formatTemperature(sessionMinTemp, temperatureUnit)
+                                        )
+                                    )
                                 }
                                 append(" · ")
                                 withStyle(SpanStyle(color = statusColorForTemperature(sessionMaxTemp))) {
-                                    append("↑ ${formatTemperature(sessionMaxTemp)}")
+                                    append(
+                                        stringResource(
+                                            R.string.value_direction_up,
+                                            formatTemperature(sessionMaxTemp, temperatureUnit)
+                                        )
+                                    )
                                 }
                             },
                             style = MaterialTheme.typography.bodySmall
@@ -332,6 +405,7 @@ private fun ThermalHeroCard(
 @Composable
 private fun ThermometerIcon(
     temperatureC: Float,
+    temperatureUnit: TemperatureUnit,
     color: Color,
     modifier: Modifier = Modifier,
     minTemp: Float = 15f,
@@ -349,10 +423,10 @@ private fun ThermometerIcon(
         label = "thermFill"
     )
 
-    val trackColor = BgIconCircle
+    val trackColor = MaterialTheme.iconCircleColor
     val a11yDesc = stringResource(
         R.string.a11y_heat_strip,
-        formatTemperature(temperatureC),
+        formatTemperature(temperatureC, temperatureUnit),
         temperatureBandLabel(temperatureC)
     )
 
@@ -445,9 +519,13 @@ private fun ThermometerIcon(
 // ── Metrics grid card ────────────────────────────────────────────────────────────
 
 @Composable
-private fun ThermalMetricsCard(thermal: ThermalState) {
+private fun ThermalMetricsCard(
+    thermal: ThermalState,
+    temperatureUnit: TemperatureUnit,
+    onInfoClick: (String) -> Unit = {}
+) {
     Card(
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
@@ -467,11 +545,12 @@ private fun ThermalMetricsCard(thermal: ThermalState) {
                 MetricPill(
                     label = stringResource(R.string.thermal_cpu_temp),
                     value = thermal.cpuTempC?.let {
-                        "${formatDecimal(it, 1)}${stringResource(R.string.unit_celsius)}"
+                        formatTemperature(it, temperatureUnit)
                     } ?: stringResource(R.string.thermal_cpu_unavailable),
                     valueColor = thermal.cpuTempC?.let {
                         statusColorForTemperature(it)
                     } ?: MaterialTheme.colorScheme.onSurface,
+                    onInfoClick = { onInfoClick("cpuTemp") },
                     modifier = Modifier.weight(1f)
                 )
                 MetricPill(
@@ -482,6 +561,7 @@ private fun ThermalMetricsCard(thermal: ThermalState) {
                     valueColor = thermal.thermalHeadroom?.let { headroom ->
                         headroomColor(headroom)
                     } ?: MaterialTheme.colorScheme.onSurface,
+                    onInfoClick = { onInfoClick("thermalHeadroom") },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -497,6 +577,7 @@ private fun ThermalMetricsCard(thermal: ThermalState) {
                     label = stringResource(R.string.thermal_status),
                     value = thermalStatusLabel(thermal.thermalStatus),
                     valueColor = thermalStatusColor(thermal.thermalStatus),
+                    onInfoClick = { onInfoClick("thermalStatus") },
                     modifier = Modifier.weight(1f)
                 )
                 MetricPill(
@@ -511,6 +592,7 @@ private fun ThermalMetricsCard(thermal: ThermalState) {
                     } else {
                         MaterialTheme.statusColors.healthy
                     },
+                    onInfoClick = { onInfoClick("throttling") },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -523,7 +605,7 @@ private fun ThermalMetricsCard(thermal: ThermalState) {
 @Composable
 private fun ThrottlingEmptyState() {
     Card(
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
@@ -547,7 +629,10 @@ private fun ThrottlingEmptyState() {
 }
 
 @Composable
-private fun ThrottlingEventItem(event: ThrottlingEvent) {
+private fun ThrottlingEventItem(
+    event: ThrottlingEvent,
+    temperatureUnit: TemperatureUnit
+) {
     val formattedTime = rememberFormattedDateTime(event.timestamp, "yMMMdHm")
     val statusColor = when (event.thermalStatus.lowercase()) {
         "severe" -> MaterialTheme.statusColors.poor
@@ -557,7 +642,7 @@ private fun ThrottlingEventItem(event: ThrottlingEvent) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
@@ -590,7 +675,7 @@ private fun ThrottlingEventItem(event: ThrottlingEvent) {
                     )
                 }
                 Text(
-                    text = formatTemperature(event.batteryTempC),
+                    text = formatTemperature(event.batteryTempC, temperatureUnit),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontFamily = MaterialTheme.numericFontFamily
                     ),
@@ -600,7 +685,11 @@ private fun ThrottlingEventItem(event: ThrottlingEvent) {
 
             event.cpuTempC?.let { cpuTemp ->
                 Text(
-                    text = stringResource(R.string.value_label_colon, stringResource(R.string.thermal_cpu_temp), formatTemperature(cpuTemp)),
+                    text = stringResource(
+                        R.string.value_label_colon,
+                        stringResource(R.string.thermal_cpu_temp),
+                        formatTemperature(cpuTemp, temperatureUnit)
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

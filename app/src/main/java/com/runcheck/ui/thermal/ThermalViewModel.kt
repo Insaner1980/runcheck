@@ -4,9 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThrottlingEvent
-import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.usecase.GetThermalStateUseCase
 import com.runcheck.domain.usecase.GetThrottlingHistoryUseCase
+import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
+import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.common.messageOr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +23,8 @@ import javax.inject.Inject
 class ThermalViewModel @Inject constructor(
     private val getThermalState: GetThermalStateUseCase,
     private val getThrottlingHistory: GetThrottlingHistoryUseCase,
-    private val proStatusProvider: ProStatusProvider
+    private val observeProAccess: ObserveProAccessUseCase,
+    private val manageUserPreferences: ManageUserPreferencesUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ThermalUiState>(ThermalUiState.Loading)
@@ -45,14 +47,22 @@ class ThermalViewModel @Inject constructor(
         loadJob = null
     }
 
+    fun dismissInfoCard(id: String) {
+        viewModelScope.launch {
+            manageUserPreferences.dismissInfoCard(id)
+        }
+    }
+
     private fun loadThermalData() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             combine(
                 getThermalState(),
                 getThrottlingHistory(),
-                proStatusProvider.isProUser
-            ) { thermalState: ThermalState, events: List<ThrottlingEvent>, isPro: Boolean ->
+                observeProAccess(),
+                manageUserPreferences.observePreferences(),
+                manageUserPreferences.observeDismissedInfoCards()
+            ) { thermalState: ThermalState, events: List<ThrottlingEvent>, isPro: Boolean, preferences, dismissedCards: Set<String> ->
                 val currentTemp = thermalState.batteryTempC
                 sessionMinTemp = sessionMinTemp?.coerceAtMost(currentTemp) ?: currentTemp
                 sessionMaxTemp = sessionMaxTemp?.coerceAtLeast(currentTemp) ?: currentTemp
@@ -61,8 +71,10 @@ class ThermalViewModel @Inject constructor(
                     thermalState = thermalState,
                     throttlingEvents = events,
                     isPro = isPro,
+                    temperatureUnit = preferences.temperatureUnit,
                     sessionMinTemp = sessionMinTemp,
-                    sessionMaxTemp = sessionMaxTemp
+                    sessionMaxTemp = sessionMaxTemp,
+                    dismissedInfoCards = dismissedCards
                 )
             }
                 .catch { e ->

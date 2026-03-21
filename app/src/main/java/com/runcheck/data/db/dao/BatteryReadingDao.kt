@@ -35,6 +35,9 @@ interface BatteryReadingDao {
     @Query("DELETE FROM battery_readings WHERE timestamp < :before")
     suspend fun deleteOlderThan(before: Long)
 
+    @Query("DELETE FROM battery_readings")
+    suspend fun deleteAll()
+
     @Query("SELECT COUNT(*) FROM battery_readings")
     suspend fun getCount(): Int
 

@@ -4,6 +4,7 @@ import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.repository.AppBatteryUsageRepository
 import com.runcheck.domain.repository.BatteryRepository
+import com.runcheck.domain.repository.ChargerRepository
 import com.runcheck.domain.repository.DatabaseTransactionRunner
 import com.runcheck.domain.repository.NetworkRepository
 import com.runcheck.domain.repository.ProStatusProvider
@@ -29,6 +30,7 @@ class CleanupOldReadingsUseCaseTest {
     private lateinit var networkRepository: NetworkRepository
     private lateinit var thermalRepository: ThermalRepository
     private lateinit var storageRepository: StorageRepository
+    private lateinit var chargerRepository: ChargerRepository
     private lateinit var throttlingRepository: ThrottlingRepository
     private lateinit var appBatteryUsageRepository: AppBatteryUsageRepository
     private lateinit var speedTestRepository: SpeedTestRepository
@@ -43,6 +45,7 @@ class CleanupOldReadingsUseCaseTest {
         networkRepository = mockk(relaxed = true)
         thermalRepository = mockk(relaxed = true)
         storageRepository = mockk(relaxed = true)
+        chargerRepository = mockk(relaxed = true)
         throttlingRepository = mockk(relaxed = true)
         appBatteryUsageRepository = mockk(relaxed = true)
         speedTestRepository = mockk(relaxed = true)
@@ -60,6 +63,7 @@ class CleanupOldReadingsUseCaseTest {
             networkRepository,
             thermalRepository,
             storageRepository,
+            chargerRepository,
             throttlingRepository,
             appBatteryUsageRepository,
             speedTestRepository,
@@ -101,6 +105,11 @@ class CleanupOldReadingsUseCaseTest {
             })
         }
         coVerify {
+            chargerRepository.deleteSessionsOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - twentyFourHoursMs, afterInvoke - twentyFourHoursMs, toleranceMs)
+            })
+        }
+        coVerify {
             throttlingRepository.deleteOlderThan(withArg { cutoff ->
                 assertCutoffInRange(cutoff, beforeInvoke - twentyFourHoursMs, afterInvoke - twentyFourHoursMs, toleranceMs)
             })
@@ -132,6 +141,7 @@ class CleanupOldReadingsUseCaseTest {
         coVerify(exactly = 0) { networkRepository.deleteOlderThan(any()) }
         coVerify(exactly = 0) { thermalRepository.deleteOlderThan(any()) }
         coVerify(exactly = 0) { storageRepository.deleteOlderThan(any()) }
+        coVerify(exactly = 0) { chargerRepository.deleteSessionsOlderThan(any()) }
         coVerify(exactly = 0) { throttlingRepository.deleteOlderThan(any()) }
         coVerify(exactly = 0) { appBatteryUsageRepository.deleteOlderThan(any()) }
         coVerify(exactly = 0) { speedTestRepository.deleteOlderThan(any()) }
@@ -159,6 +169,11 @@ class CleanupOldReadingsUseCaseTest {
         }
         coVerify {
             networkRepository.deleteOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - sixMonthsMs, afterInvoke - sixMonthsMs, toleranceMs)
+            })
+        }
+        coVerify {
+            chargerRepository.deleteSessionsOlderThan(withArg { cutoff ->
                 assertCutoffInRange(cutoff, beforeInvoke - sixMonthsMs, afterInvoke - sixMonthsMs, toleranceMs)
             })
         }
@@ -194,6 +209,11 @@ class CleanupOldReadingsUseCaseTest {
                 assertCutoffInRange(cutoff, beforeInvoke - threeMonthsMs, afterInvoke - threeMonthsMs, toleranceMs)
             })
         }
+        coVerify {
+            chargerRepository.deleteSessionsOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - threeMonthsMs, afterInvoke - threeMonthsMs, toleranceMs)
+            })
+        }
     }
 
     @Test
@@ -223,6 +243,11 @@ class CleanupOldReadingsUseCaseTest {
         }
         coVerify {
             storageRepository.deleteOlderThan(withArg { cutoff ->
+                assertCutoffInRange(cutoff, beforeInvoke - oneYearMs, afterInvoke - oneYearMs, toleranceMs)
+            })
+        }
+        coVerify {
+            chargerRepository.deleteSessionsOlderThan(withArg { cutoff ->
                 assertCutoffInRange(cutoff, beforeInvoke - oneYearMs, afterInvoke - oneYearMs, toleranceMs)
             })
         }

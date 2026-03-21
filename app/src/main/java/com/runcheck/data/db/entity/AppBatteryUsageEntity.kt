@@ -7,7 +7,11 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "app_battery_usage",
-    indices = [Index(value = ["timestamp"]), Index(value = ["package_name"])]
+    indices = [
+        Index(value = ["timestamp"]),
+        Index(value = ["package_name"]),
+        Index(value = ["package_name", "timestamp"])
+    ]
 )
 data class AppBatteryUsageEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

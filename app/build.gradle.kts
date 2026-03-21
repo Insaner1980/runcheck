@@ -31,6 +31,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
+        buildConfigField("String", "ROOM_DB_NAME", "\"runcheck.db\"")
         val proProductId = providers.environmentVariable("RUNCHECK_PRO_PRODUCT_ID").getOrElse("runcheck_pro")
         val latencyHost = providers.environmentVariable("RUNCHECK_LATENCY_HOST").getOrElse("locate.measurementlab.net")
         val latencyPort = providers.environmentVariable("RUNCHECK_LATENCY_PORT")
@@ -58,10 +59,14 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("boolean", "ROOM_DEBUG_TOOLS_ENABLED", "true")
+        }
         release {
             isDebuggable = false
             isMinifyEnabled = true
             isShrinkResources = true
+            buildConfigField("boolean", "ROOM_DEBUG_TOOLS_ENABLED", "false")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -136,7 +141,7 @@ dependencies {
 
     // Room
     implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
+    implementation(libs.room.paging)
     ksp(libs.room.compiler)
 
     // Hilt
@@ -157,6 +162,10 @@ dependencies {
 
     // DataStore
     implementation(libs.datastore.preferences)
+
+    // Paging
+    implementation(libs.paging.runtime)
+    implementation(libs.paging.compose)
 
     // Core
     implementation(libs.core.ktx)
@@ -187,4 +196,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.mockk)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.room.testing)
 }

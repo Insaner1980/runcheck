@@ -1,14 +1,14 @@
 package com.runcheck.ui.storage
 
-import android.app.PendingIntent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.runcheck.data.storage.MediaStoreScanner
-import com.runcheck.data.storage.StorageCleanupHelper
-import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.usecase.GetStorageStateUseCase
+import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
+import com.runcheck.domain.usecase.ObserveProAccessUseCase
+import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.common.messageOr
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -24,17 +24,17 @@ import javax.inject.Inject
 @HiltViewModel
 class StorageViewModel @Inject constructor(
     private val getStorageState: GetStorageStateUseCase,
-    private val proStatusProvider: ProStatusProvider,
-    private val mediaStoreScanner: MediaStoreScanner,
-    private val cleanupHelper: StorageCleanupHelper
+    private val observeProAccess: ObserveProAccessUseCase,
+    private val storageCleanup: StorageCleanupUseCase,
+    private val manageUserPreferences: ManageUserPreferencesUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<StorageUiState>(StorageUiState.Loading)
     val uiState: StateFlow<StorageUiState> = _uiState.asStateFlow()
     private var loadJob: Job? = null
 
-    private val _trashDeleteIntent = MutableSharedFlow<PendingIntent>(extraBufferCapacity = 1)
-    val trashDeleteIntent: SharedFlow<PendingIntent> = _trashDeleteIntent.asSharedFlow()
+    private val _trashDeleteRequestUris = MutableSharedFlow<List<String>>(replay = 1)
+    val trashDeleteRequestUris: SharedFlow<List<String>> = _trashDeleteRequestUris.asSharedFlow()
 
     fun startObserving() {
         if (loadJob?.isActive == true) return
@@ -52,11 +52,9 @@ class StorageViewModel @Inject constructor(
 
     fun emptyTrash() {
         viewModelScope.launch {
-            val uris = mediaStoreScanner.getTrashedUris()
+            val uris = storageCleanup.getTrashedUris()
             if (uris.isEmpty()) return@launch
-            cleanupHelper.createDeleteRequestFromUris(uris)?.let { pendingIntent ->
-                _trashDeleteIntent.tryEmit(pendingIntent)
-            }
+            _trashDeleteRequestUris.emit(uris)
         }
     }
 
@@ -64,14 +62,34 @@ class StorageViewModel @Inject constructor(
         refresh()
     }
 
+    fun onTrashDeleteRequestFailed(message: String) {
+        _uiState.value = StorageUiState.Error(message)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun onTrashDeleteRequestConsumed() {
+        _trashDeleteRequestUris.resetReplayCache()
+    }
+
+    fun dismissInfoCard(id: String) {
+        viewModelScope.launch {
+            manageUserPreferences.dismissInfoCard(id)
+        }
+    }
+
     private fun loadStorageData() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             combine(
                 getStorageState(),
-                proStatusProvider.isProUser
-            ) { state, isPro ->
-                StorageUiState.Success(storageState = state, isPro = isPro)
+                observeProAccess(),
+                manageUserPreferences.observeDismissedInfoCards()
+            ) { state, isPro, dismissedCards ->
+                StorageUiState.Success(
+                    storageState = state,
+                    isPro = isPro,
+                    dismissedInfoCards = dismissedCards
+                )
             }
                 .catch { e ->
                     _uiState.value = StorageUiState.Error(e.messageOr("Unknown error"))

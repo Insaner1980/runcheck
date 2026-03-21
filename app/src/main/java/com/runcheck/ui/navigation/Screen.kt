@@ -16,4 +16,16 @@ sealed class Screen(val route: String) {
             const val ROUTE = "cleanup/{type}"
         }
     }
+    data object Learn : Screen("learn")
+    data class LearnArticle(val articleId: String) : Screen("learn/$articleId") {
+        companion object {
+            const val ROUTE = "learn/{articleId}"
+        }
+    }
+    data class FullscreenChart(val source: String, val metric: String, val period: String)
+        : Screen("fullscreen_chart/$source/$metric/$period") {
+        companion object {
+            const val ROUTE = "fullscreen_chart/{source}/{metric}/{period}"
+        }
+    }
 }

@@ -7,7 +7,7 @@ runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device
 ## Tech Stack
 
 - **Language:** Kotlin 2.3.0 (via AGP 9.1.0 built-in Kotlin)
-- **UI:** Jetpack Compose with Material 3 / Material You (BOM 2026.02.01)
+- **UI:** Jetpack Compose with Material 3 / Material You (BOM 2026.03.00)
 - **Min SDK:** 26 (Android 8.0)
 - **Target SDK:** 35 (Android 15)
 - **Compile SDK:** 36
@@ -49,18 +49,24 @@ app/src/main/java/com/runcheck/
 ├── ui/
 │   ├── home/          # Single home screen (hub) + ViewModel
 │   ├── battery/       # Battery detail screen + ViewModel + session stats
+│   │                  #   + BatteryInfoContent, BatteryInfoCards
 │   ├── network/       # Network detail screen + ViewModel + speed test
+│   │                  #   + NetworkInfoContent, SpeedTestInfoContent, NetworkInfoCards
 │   ├── thermal/       # Thermal detail screen + ViewModel + session min/max
+│   │                  #   + ThermalInfoContent, ThermalInfoCards
 │   ├── storage/       # Storage detail screen + ViewModel + cleanup/
 │   │                  #   (CleanupScreen, CleanupViewModel, FileListItem, CategoryGroup)
+│   │                  #   + StorageInfoContent, StorageInfoCards
 │   ├── charger/       # Charger comparison screen + ViewModel
 │   ├── appusage/      # App battery usage screen + ViewModel
+│   ├── learn/         # Learn section — article catalog, list screen, detail screen
 │   ├── settings/      # Settings screen + ViewModel
 │   ├── ads/           # Ad banner components
 │   ├── pro/           # Pro upgrade screen, trial UI, purchase flow
 │   ├── theme/         # Dark theme, color tokens, typography, spacing
 │   ├── common/        # UiText, UiFormatters (formatPercent, formatTemp, etc.)
-│   ├── components/    # 25 shared composables (see Components below)
+│   ├── components/    # 30 shared composables (see Components below)
+│   │   └── info/      # InfoSheetContent, InfoIcon, InfoBottomSheet, InfoCard, CrossLinkButton
 │   └── navigation/    # NavGraph + Screen sealed class (push-based from Home)
 ├── pro/               # Pro/trial state management
 ├── billing/           # Billing state helpers
@@ -108,9 +114,9 @@ app/src/main/java/com/runcheck/
   - Accent Orange `#F5963A`, Accent Red `#F06040`, Accent Lime `#C8E636`, Accent Yellow `#F5D03A`
   - TextPrimary `#E8E8ED`, TextSecondary `#90A8B0`, TextMuted `#7A949E`, TextOnLime `#1A2E0A`
 - **Typography:** Manrope (custom, body/headers) + JetBrains Mono (numeric displays) via `MaterialTheme.typography` and `MaterialTheme.numericFontFamily`
-- **Navigation:** Push-based from single Home screen (no bottom nav bar)
+- **Navigation:** Push-based from single Home screen (no bottom nav bar), includes Learn section
 - **Cards:** Flat `BgCard` background, no borders, no shadows, no elevation, 16dp rounded corners
-- **Core components** (25 in `ui/components/`):
+- **Core components** (30 in `ui/components/` + `ui/components/info/`):
   - Layout: GridCard, ListRow, MetricPill, MetricRow, ActionCard
   - Indicators: ProgressRing, MiniBar, StatusDot, ConfidenceBadge, SignalBars
   - Charts: TrendChart (with optional Y/X axes, grid, quality zones, tap/drag tooltip), AreaChart, HeatStrip, SegmentedBar, SegmentedBarLegend
@@ -118,6 +124,7 @@ app/src/main/java/com/runcheck/
   - Typography: AnimatedNumber (AnimatedIntText, AnimatedFloatText), SectionHeader, CardSectionTitle, IconCircle
   - Pro: ProBadgePill, ProFeatureCalloutCard, ProFeatureLockedState
   - Interactive: PullToRefreshWrapper
+  - Educational: InfoIcon, InfoBottomSheet, InfoSheetContent (data class), InfoCard (dismissible), CrossLinkButton
 - **Section titles:**
   - `SectionHeader` (outline / TextMuted) — page-level sections, above cards
   - `CardSectionTitle` (onSurfaceVariant / TextSecondary) — subsection titles inside cards
@@ -182,6 +189,33 @@ Settings screen uses grouped card layout with these sections:
 - **About:** Version, Rate on Play Store, Privacy Policy, Send Feedback
 
 All preferences stored in `DataStore<Preferences>` via `UserPreferencesRepository`.
+
+## Educational Content System
+
+Three-tier in-app educational system explaining technical metrics and concepts to users:
+
+### Tier 1 — Info Bottom Sheets (per metric)
+- Small `(?)` icon (`InfoIcon`, 16dp, 48dp touch target) next to metric labels in `MetricRow` and `MetricPill` via optional `onInfoClick` parameter
+- Tapping opens `InfoBottomSheet` (`ModalBottomSheet`, max 60% screen height, scrollable) with: title, plain-language explanation, "What's normal" highlight card (`surfaceContainerHigh`, 8dp corners), "Why it matters", optional expandable "Learn more" deeper detail (`AnimatedVisibility`)
+- Content defined in `*InfoContent.kt` objects per screen (e.g., `BatteryInfoContent.voltage`)
+- State: `var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }` in each detail screen content composable
+- **Coverage:** Battery (12 metrics), Thermal (4), Network (8), Storage (4), Speed Test (4) = 32 total
+
+### Tier 2 — Contextual Info Cards (per screen section)
+- `InfoCard` composable: `surfaceContainerHigh` background, 3dp left `primary` accent border (`Modifier.drawBehind`), `InfoOutlined` 20dp icon, `Close` dismiss button, 16dp corners
+- Dismissible — dismissed state stored in DataStore via `UserPreferencesRepository.getDismissedInfoCards()` / `dismissInfoCard(id)` using `stringSetPreferencesKey`
+- Card IDs defined in `*InfoCards.kt` objects (e.g., `BatteryInfoCards.HEALTH_80_PERCENT`)
+- Each ViewModel collects `dismissedInfoCards: Set<String>` into UiState and exposes `dismissInfoCard(id: String)`
+- Cards shown conditionally (e.g., health < 90%, charging, high drain, full storage) and disappear permanently when dismissed
+- **Coverage:** Battery (4 cards), Thermal (2), Network (2), Storage (2) = 10 total
+
+### Tier 3 — Learn Section (standalone screen)
+- Accessible from Home screen Quick Tools card (Learn `ListRow` with `MenuBook` icon)
+- `LearnScreen`: scrollable list of `LearnArticleCard` composables grouped by `LearnTopic` (Battery, Temperature, Network, Storage, General) with `CardSectionTitle` per group
+- `LearnArticleDetailScreen`: body text parsed with `## ` headers → `titleSmall`, `\n\n` paragraph breaks → `bodyMedium`, `CrossLinkButton` for navigating to relevant detail screens
+- Article catalog: `LearnArticleCatalog` object with 14 articles (Battery 4, Temperature 3, Network 3, Storage 2, General 2)
+- Navigation: `Screen.Learn` + `Screen.LearnArticle(articleId)` routes in NavGraph
+- **Not Pro-gated** — all educational content is free
 
 ## Device Detection System
 
@@ -265,5 +299,6 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 - `docs/storage-ui-design.md` — Storage UI design spec (SegmentedBar, ActionCard, FileListItem, visual patterns)
 - `docs/storage-cleanup-spec.md` — Storage cleanup implementation (CleanupScreen, delete flow, thumbnails, category groups, success overlay)
 - `docs/settings-enhancements-spec.md` — Settings enhancements (per-alert notifications, alert thresholds, temperature unit, data management, grouped layout)
-- `docs/info-tooltips-spec.md` — Info tooltip system
+- `docs/info-tooltips-spec.md` — Info tooltip system (superseded by `educational-content-system.md`)
 - `docs/ui-consistency-audit.md` — UI consistency findings and fixes
+- `educational-content-system.md` — Three-tier educational content system spec (info bottom sheets, contextual cards, Learn section)

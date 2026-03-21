@@ -35,6 +35,9 @@ interface NetworkReadingDao {
     @Query("DELETE FROM network_readings WHERE timestamp < :before")
     suspend fun deleteOlderThan(before: Long)
 
+    @Query("DELETE FROM network_readings")
+    suspend fun deleteAll()
+
     @Query("SELECT COUNT(*) FROM network_readings")
     suspend fun getCount(): Int
 

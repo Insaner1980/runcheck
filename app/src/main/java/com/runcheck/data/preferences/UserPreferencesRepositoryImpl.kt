@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
@@ -35,6 +36,17 @@ class UserPreferencesRepositoryImpl @Inject constructor(
             emit(emptyPreferences())
         } else {
             throw error
+        }
+    }
+
+    override fun getDismissedInfoCards(): Flow<Set<String>> = preferencesFlow.map { prefs ->
+        prefs[KEY_DISMISSED_INFO_CARDS] ?: emptySet()
+    }
+
+    override suspend fun dismissInfoCard(id: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[KEY_DISMISSED_INFO_CARDS] ?: emptySet()
+            prefs[KEY_DISMISSED_INFO_CARDS] = current + id
         }
     }
 
@@ -92,6 +104,23 @@ class UserPreferencesRepositoryImpl @Inject constructor(
         context.dataStore.edit { it[KEY_APP_USAGE_LAST_COLLECTED_AT] = timestamp }
     }
 
+    override fun observeSelectedChargerId(): Flow<Long?> = preferencesFlow.map { prefs ->
+        prefs[KEY_SELECTED_CHARGER_ID]
+    }
+
+    override suspend fun getSelectedChargerId(): Long? =
+        preferencesFlow.map { prefs -> prefs[KEY_SELECTED_CHARGER_ID] }.first()
+
+    override suspend fun setSelectedChargerId(chargerId: Long?) {
+        context.dataStore.edit { prefs ->
+            if (chargerId == null) {
+                prefs.remove(KEY_SELECTED_CHARGER_ID)
+            } else {
+                prefs[KEY_SELECTED_CHARGER_ID] = chargerId
+            }
+        }
+    }
+
     override suspend fun setNotifLowBattery(enabled: Boolean) {
         context.dataStore.edit { it[KEY_NOTIF_LOW_BATTERY] = enabled }
     }
@@ -131,6 +160,7 @@ class UserPreferencesRepositoryImpl @Inject constructor(
         private val KEY_CRASH_REPORTING = booleanPreferencesKey("crash_reporting_enabled")
         private val KEY_PERMISSION_EDUCATION_SEEN = booleanPreferencesKey("permission_education_seen")
         private val KEY_APP_USAGE_LAST_COLLECTED_AT = longPreferencesKey("app_usage_last_collected_at")
+        private val KEY_SELECTED_CHARGER_ID = longPreferencesKey("selected_charger_id")
         private val KEY_NOTIF_LOW_BATTERY = booleanPreferencesKey("notif_low_battery")
         private val KEY_NOTIF_HIGH_TEMP = booleanPreferencesKey("notif_high_temp")
         private val KEY_NOTIF_LOW_STORAGE = booleanPreferencesKey("notif_low_storage")
@@ -139,6 +169,7 @@ class UserPreferencesRepositoryImpl @Inject constructor(
         private val KEY_ALERT_TEMP = intPreferencesKey("alert_temp_threshold")
         private val KEY_ALERT_STORAGE = intPreferencesKey("alert_storage_threshold")
         private val KEY_TEMP_UNIT = stringPreferencesKey("temp_unit")
+        private val KEY_DISMISSED_INFO_CARDS = stringSetPreferencesKey("dismissed_info_cards")
     }
 }
 

@@ -1,14 +1,16 @@
 package com.runcheck.ui.network
 
+import androidx.lifecycle.SavedStateHandle
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SignalQuality
 import com.runcheck.domain.model.SpeedTestProgress
-import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.usecase.FinalizeSpeedTestUseCase
 import com.runcheck.domain.usecase.GetMeasuredNetworkStateUseCase
 import com.runcheck.domain.usecase.GetNetworkHistoryUseCase
 import com.runcheck.domain.usecase.GetSpeedTestHistoryUseCase
+import com.runcheck.domain.usecase.IsProUserUseCase
+import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.RunSpeedTestUseCase
 import com.runcheck.ui.MainDispatcherRule
 import com.runcheck.ui.common.UiText
@@ -41,8 +43,9 @@ class NetworkViewModelTest {
     private val runSpeedTest: RunSpeedTestUseCase = mockk()
     private val getSpeedTestHistory: GetSpeedTestHistoryUseCase = mockk()
     private val finalizeSpeedTest: FinalizeSpeedTestUseCase = mockk(relaxed = true)
-    private val proStatusProvider: ProStatusProvider = mockk()
+    private val isProUser: IsProUserUseCase = mockk()
     private val getNetworkHistory: GetNetworkHistoryUseCase = mockk()
+    private val manageUserPreferences: ManageUserPreferencesUseCase = mockk(relaxed = true)
     private lateinit var viewModel: NetworkViewModel
 
     private val testNetworkState = NetworkState(
@@ -55,9 +58,10 @@ class NetworkViewModelTest {
 
     @Before
     fun setup() {
-        every { proStatusProvider.isPro() } returns false
+        every { isProUser() } returns false
         every { getSpeedTestHistory(any()) } returns flowOf(emptyList())
         every { getNetworkHistory(any()) } returns flowOf(emptyList())
+        every { manageUserPreferences.observeDismissedInfoCards() } returns flowOf(emptySet())
     }
 
     @After
@@ -68,14 +72,18 @@ class NetworkViewModelTest {
         }
     }
 
-    private fun createViewModel(): NetworkViewModel {
+    private fun createViewModel(
+        savedStateHandle: SavedStateHandle = SavedStateHandle()
+    ): NetworkViewModel {
         return NetworkViewModel(
+            savedStateHandle = savedStateHandle,
             getMeasuredNetworkState = getMeasuredNetworkState,
             runSpeedTest = runSpeedTest,
             getSpeedTestHistory = getSpeedTestHistory,
             finalizeSpeedTest = finalizeSpeedTest,
-            proStatusProvider = proStatusProvider,
-            getNetworkHistory = getNetworkHistory
+            isProUser = isProUser,
+            getNetworkHistory = getNetworkHistory,
+            manageUserPreferences = manageUserPreferences
         )
     }
 
@@ -253,5 +261,22 @@ class NetworkViewModelTest {
         val speedState = viewModel.speedTestState.value
         assertTrue(speedState.phase is SpeedTestPhase.Failed)
         assertFalse(speedState.isRunning)
+    }
+
+    @Test
+    fun `selected network history period restores from saved state`() = runTest(mainDispatcherRule.testDispatcher) {
+        every { getMeasuredNetworkState() } returns flowOf(testNetworkState)
+
+        viewModel = createViewModel(
+            savedStateHandle = SavedStateHandle(
+                mapOf("network_selected_history_period" to com.runcheck.domain.model.HistoryPeriod.MONTH.name)
+            )
+        )
+        viewModel.startObserving()
+        advanceUntilIdle()
+
+        val state = viewModel.networkUiState.value as NetworkUiState.Success
+        assertEquals(com.runcheck.domain.model.HistoryPeriod.MONTH, state.selectedHistoryPeriod)
+        verify { getNetworkHistory(com.runcheck.domain.model.HistoryPeriod.MONTH) }
     }
 }

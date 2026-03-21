@@ -55,13 +55,9 @@ import com.runcheck.domain.model.ScannedFile
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.components.IconCircle
 import com.runcheck.ui.components.MiniBar
-import com.runcheck.ui.theme.AccentBlue
-import com.runcheck.ui.theme.AccentLime
-import com.runcheck.ui.theme.AccentOrange
-import com.runcheck.ui.theme.AccentTeal
-import com.runcheck.ui.theme.AccentYellow
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.statusColors
 import kotlin.math.roundToInt
 
 @Composable
@@ -69,7 +65,6 @@ fun FileListItem(
     file: ScannedFile,
     isSelected: Boolean,
     maxFileSize: Long,
-    onLoadThumbnail: suspend (String) -> Bitmap?,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -87,8 +82,8 @@ fun FileListItem(
     val showThumbnail = file.category == MediaCategory.IMAGE || file.category == MediaCategory.VIDEO
 
     if (showThumbnail) {
-        LaunchedEffect(file.uri) {
-            thumbnail = onLoadThumbnail(file.uri)?.asImageBitmap()
+        LaunchedEffect(file.uri, context) {
+            thumbnail = loadCleanupThumbnail(context, file.uri)?.asImageBitmap()
         }
     }
 
@@ -115,7 +110,7 @@ fun FileListItem(
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .clip(RoundedCornerShape(8.dp)),
+                .clip(MaterialTheme.shapes.small),
             contentAlignment = Alignment.Center
         ) {
             val loadedThumbnail = thumbnail
@@ -179,14 +174,18 @@ fun FileListItem(
     }
 }
 
-fun categoryColor(category: MediaCategory): Color = when (category) {
-    MediaCategory.VIDEO -> AccentBlue
-    MediaCategory.IMAGE -> AccentTeal
-    MediaCategory.AUDIO -> AccentOrange
-    MediaCategory.DOCUMENT -> AccentLime
-    MediaCategory.DOWNLOAD -> AccentYellow
-    MediaCategory.APK -> AccentLime
-    MediaCategory.OTHER -> AccentYellow
+@Composable
+fun categoryColor(category: MediaCategory): Color {
+    val colors = MaterialTheme.statusColors
+    return when (category) {
+        MediaCategory.VIDEO -> MaterialTheme.colorScheme.primary
+        MediaCategory.IMAGE -> colors.healthy
+        MediaCategory.AUDIO -> colors.poor
+        MediaCategory.DOCUMENT -> colors.fair
+        MediaCategory.DOWNLOAD -> MaterialTheme.colorScheme.primary
+        MediaCategory.APK -> MaterialTheme.colorScheme.onSurfaceVariant
+        MediaCategory.OTHER -> MaterialTheme.colorScheme.outline
+    }
 }
 
 fun categoryIcon(category: MediaCategory): ImageVector = when (category) {

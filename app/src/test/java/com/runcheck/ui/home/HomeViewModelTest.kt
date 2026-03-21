@@ -12,11 +12,14 @@ import com.runcheck.domain.model.SignalQuality
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.scoring.HealthScoreCalculator
+import com.runcheck.domain.usecase.ChargerSessionTracker
 import com.runcheck.domain.usecase.GetBatteryStateUseCase
 import com.runcheck.domain.usecase.GetNetworkStateUseCase
 import com.runcheck.domain.usecase.GetStorageStateUseCase
 import com.runcheck.domain.usecase.GetThermalStateUseCase
+import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.pro.ProManager
 import com.runcheck.pro.ProState
 import com.runcheck.pro.ProStatus
@@ -52,7 +55,9 @@ class HomeViewModelTest {
     private val getStorageState: GetStorageStateUseCase = mockk()
     private val proManager: ProManager = mockk()
     private val trialManager: TrialManager = mockk(relaxed = true)
+    private val chargerSessionTracker: ChargerSessionTracker = mockk(relaxed = true)
     private val healthScoreCalculator = HealthScoreCalculator()
+    private val manageUserPreferences: ManageUserPreferencesUseCase = mockk(relaxed = true)
 
     private val proStateFlow = MutableStateFlow(ProState())
 
@@ -98,6 +103,7 @@ class HomeViewModelTest {
         every { getThermalState() } returns flowOf(testThermal)
         every { getStorageState() } returns flowOf(testStorage)
         every { proManager.proState } returns proStateFlow
+        every { manageUserPreferences.observePreferences() } returns flowOf(UserPreferences())
     }
 
     @After
@@ -116,7 +122,9 @@ class HomeViewModelTest {
             getStorageState = getStorageState,
             proManager = proManager,
             trialManager = trialManager,
-            healthScoreCalculator = healthScoreCalculator
+            chargerSessionTracker = chargerSessionTracker,
+            healthScoreCalculator = healthScoreCalculator,
+            manageUserPreferences = manageUserPreferences
         )
     }
 

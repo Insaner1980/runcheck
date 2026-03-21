@@ -45,9 +45,7 @@ import com.runcheck.pro.ProFeature
 import com.runcheck.pro.ProStatus
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.common.resolve
-import com.runcheck.ui.theme.AccentOrange
-import com.runcheck.ui.theme.AccentRed
-import com.runcheck.ui.theme.TextSecondary
+import com.runcheck.ui.theme.statusColors
 
 @Composable
 fun ProUpgradeScreen(
@@ -112,7 +110,7 @@ private fun ProUpgradeContent(
         Text(
             text = stringResource(R.string.pro_upgrade_subtitle),
             style = MaterialTheme.typography.bodyLarge,
-            color = TextSecondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
 
@@ -134,7 +132,7 @@ private fun ProUpgradeContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.large,
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary
             )
@@ -156,7 +154,7 @@ private fun ProUpgradeContent(
             Text(
                 text = stringResource(R.string.billing_purchase_pending),
                 style = MaterialTheme.typography.bodySmall,
-                color = AccentOrange,
+                color = MaterialTheme.statusColors.poor,
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -166,7 +164,7 @@ private fun ProUpgradeContent(
             Text(
                 text = error.resolve(),
                 style = MaterialTheme.typography.bodySmall,
-                color = AccentRed,
+                color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -175,7 +173,7 @@ private fun ProUpgradeContent(
         Text(
             text = stringResource(R.string.pro_upgrade_one_time),
             style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
 
@@ -229,7 +227,7 @@ private fun ProActiveContent() {
         Text(
             text = stringResource(R.string.settings_pro_thank_you),
             style = MaterialTheme.typography.bodyLarge,
-            color = TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

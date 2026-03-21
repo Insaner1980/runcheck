@@ -15,4 +15,5 @@ interface ThrottlingRepository {
     )
     suspend fun updateDuration(id: Long, durationMs: Long)
     suspend fun deleteOlderThan(cutoff: Long)
+    suspend fun deleteAll()
 }

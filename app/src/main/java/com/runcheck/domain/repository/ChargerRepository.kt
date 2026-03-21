@@ -21,4 +21,5 @@ interface ChargerRepository {
         avgPowerMw: Int?
     )
     suspend fun getActiveSession(): ChargingSession?
+    suspend fun deleteSessionsOlderThan(cutoff: Long)
 }

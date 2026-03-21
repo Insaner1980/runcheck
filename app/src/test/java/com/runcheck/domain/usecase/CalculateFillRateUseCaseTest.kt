@@ -1,6 +1,6 @@
 package com.runcheck.domain.usecase
 
-import com.runcheck.domain.repository.StorageReadingData
+import com.runcheck.domain.model.StorageReading
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -27,7 +27,7 @@ class CalculateFillRateUseCaseTest {
 
         // Each day, used storage grows by 1 GB (available decreases by 1 GB)
         val readings = (0..4).map { i ->
-            StorageReadingData(
+            StorageReading(
                 timestamp = baseTime + i * dayMs,
                 totalBytes = totalBytes,
                 availableBytes = 64_000_000_000L - i * 1_000_000_000L,
@@ -42,15 +42,16 @@ class CalculateFillRateUseCaseTest {
         // Linear regression on perfectly linear data should yield ~1 GB/day
         val expectedBytesPerDay = 1_000_000_000L
         val tolerance = 10_000L // tiny rounding tolerance
+        val rate = requireNotNull(bytesPerDay)
         assertTrue(
             "Expected ~$expectedBytesPerDay bytes/day, got $bytesPerDay",
-            kotlin.math.abs(bytesPerDay!! - expectedBytesPerDay) < tolerance
+            kotlin.math.abs(rate - expectedBytesPerDay) < tolerance
         )
     }
 
     @Test
     fun `less than 3 readings returns null`() {
-        val reading = StorageReadingData(
+        val reading = StorageReading(
             timestamp = 1_000_000_000L,
             totalBytes = 128_000_000_000L,
             availableBytes = 64_000_000_000L,
@@ -70,7 +71,7 @@ class CalculateFillRateUseCaseTest {
     fun `exactly 3 readings returns non-null result`() {
         val dayMs = 24L * 60 * 60 * 1000
         val readings = (0..2).map { i ->
-            StorageReadingData(
+            StorageReading(
                 timestamp = 1_000_000_000L + i * dayMs,
                 totalBytes = 128_000_000_000L,
                 availableBytes = 64_000_000_000L - i * 500_000_000L,
@@ -86,7 +87,7 @@ class CalculateFillRateUseCaseTest {
     fun `identical timestamps returns null without crash`() {
         val sameTime = 1_000_000_000L
         val readings = (0..4).map {
-            StorageReadingData(
+            StorageReading(
                 timestamp = sameTime,
                 totalBytes = 128_000_000_000L,
                 availableBytes = 64_000_000_000L,
@@ -107,7 +108,7 @@ class CalculateFillRateUseCaseTest {
 
         // Cleanup happened: available increases each day
         val readings = (0..4).map { i ->
-            StorageReadingData(
+            StorageReading(
                 timestamp = baseTime + i * dayMs,
                 totalBytes = 128_000_000_000L,
                 availableBytes = 50_000_000_000L + i * 2_000_000_000L,
@@ -121,7 +122,7 @@ class CalculateFillRateUseCaseTest {
         assertNotNull(bytesPerDay)
         assertTrue(
             "Decreasing usage should yield negative rate, got $bytesPerDay",
-            bytesPerDay!! < 0
+            requireNotNull(bytesPerDay) < 0
         )
     }
 
@@ -131,7 +132,7 @@ class CalculateFillRateUseCaseTest {
         val dayMs = 24L * 60 * 60 * 1000
 
         val readings = (0..4).map { i ->
-            StorageReadingData(
+            StorageReading(
                 timestamp = baseTime + i * dayMs,
                 totalBytes = 128_000_000_000L,
                 availableBytes = 64_000_000_000L, // no change
@@ -143,7 +144,7 @@ class CalculateFillRateUseCaseTest {
         val bytesPerDay = useCase(readings)
 
         assertNotNull(bytesPerDay)
-        assertEquals("Flat usage should yield zero rate", 0L, bytesPerDay!!)
+        assertEquals("Flat usage should yield zero rate", 0L, requireNotNull(bytesPerDay))
     }
 
     // --- formatEstimate() tests ---

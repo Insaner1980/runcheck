@@ -3,9 +3,13 @@ package com.runcheck.data.battery
 import android.content.Context
 import android.os.Build
 import com.runcheck.data.device.DeviceProfile
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class BatteryDataSourceFactory(
-    private val context: Context
+@Singleton
+class BatteryDataSourceFactory @Inject constructor(
+    @param:ApplicationContext private val context: Context
 ) {
     private var cachedSource: BatteryDataSource? = null
     private var cachedProfileKey: String? = null

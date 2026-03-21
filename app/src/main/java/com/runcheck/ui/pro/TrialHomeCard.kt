@@ -1,6 +1,5 @@
 package com.runcheck.ui.pro
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,8 +30,7 @@ import com.runcheck.R
 import com.runcheck.pro.ProState
 import com.runcheck.pro.ProStatus
 import com.runcheck.pro.TrialManager
-import com.runcheck.ui.theme.AccentOrange
-import com.runcheck.ui.theme.TextSecondary
+import com.runcheck.ui.theme.statusColors
 
 @Composable
 fun TrialHomeCard(
@@ -43,7 +41,11 @@ fun TrialHomeCard(
     if (proState.status != ProStatus.TRIAL_ACTIVE) return
 
     val isUrgent = proState.trialDaysRemaining <= 1
-    val borderColor = if (isUrgent) AccentOrange else MaterialTheme.colorScheme.primary
+    val accentColor = if (isUrgent) {
+        MaterialTheme.statusColors.poor
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
     val progress = 1f - (proState.trialDaysRemaining.toFloat() / TrialManager.TRIAL_DURATION_DAYS)
     val progressDescription = stringResource(
         R.string.a11y_progress_percent,
@@ -54,11 +56,10 @@ fun TrialHomeCard(
     Card(
         onClick = onNavigateToProUpgrade,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = borderColor.copy(alpha = 0.08f)
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
-        border = BorderStroke(1.dp, borderColor.copy(alpha = 0.4f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
@@ -79,14 +80,14 @@ fun TrialHomeCard(
                     },
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = borderColor
+                    color = accentColor
                 )
 
                 if (isUrgent) {
                     TextButton(onClick = onNavigateToProUpgrade) {
                         Text(
                             text = stringResource(R.string.trial_keep_pro),
-                            color = AccentOrange,
+                            color = accentColor,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -106,8 +107,8 @@ fun TrialHomeCard(
                         progressBarRangeInfo =
                             androidx.compose.ui.semantics.ProgressBarRangeInfo(progress, 0f..1f)
                     },
-                color = borderColor,
-                trackColor = borderColor.copy(alpha = 0.2f)
+                color = accentColor,
+                trackColor = accentColor.copy(alpha = 0.2f)
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -115,7 +116,7 @@ fun TrialHomeCard(
             Text(
                 text = stringResource(R.string.trial_pro_trial_label),
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -131,13 +132,9 @@ fun PostExpirationUpgradeCard(
     Card(
         onClick = onNavigateToProUpgrade,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        border = BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -165,7 +162,7 @@ fun PostExpirationUpgradeCard(
                 TextButton(onClick = onDismiss) {
                     Text(
                         text = stringResource(R.string.trial_dismiss),
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

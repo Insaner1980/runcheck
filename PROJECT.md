@@ -1,487 +1,463 @@
 # runcheck — Project Overview
 
-Native Android device health monitor. Kotlin + Jetpack Compose. Single dark theme.
+Android device health diagnostics app built with Kotlin and Jetpack Compose. Single dark theme, one-time Pro purchase, no subscriptions.
 
 ---
 
-## Screens & Navigation
+## Technical Snapshot
 
-Push-based navigation from single Home screen. No bottom nav bar, no tabs.
+- Package root: `com.runcheck`
+- Main module: single `app` module
+- Architecture: Clean Architecture with `data/`, `domain/`, and `ui/`
+- Dependency injection: Hilt
+- Database: Room
+- Preferences: DataStore
+- Background work: WorkManager
+- Widgets: Glance app widgets
+- Speed test backend: M-Lab NDT7
+- Build: Gradle Kotlin DSL
+- Compile SDK: 36
+- Target SDK: 35
+- Min SDK: 26
+- Java target: 17
 
+High-level package layout:
+
+```text
+app/src/main/java/com/runcheck/
+├── data/
+├── domain/
+├── ui/
+├── billing/
+├── pro/
+├── di/
+├── service/
+├── worker/
+├── widget/
+└── util/
 ```
+
+---
+
+## Navigation
+
+Push-based navigation from a single Home screen. No bottom nav, no tabs.
+
+```text
 Home
 ├── Battery Detail
-│   └── Charger Comparison [PRO]
+│   ├── Charger Comparison [PRO]
+│   └── Fullscreen Chart
 ├── Network Detail
-│   └── Speed Test
+│   ├── Speed Test
+│   └── Fullscreen Chart
 ├── Thermal Detail
 ├── Storage Detail
-│   └── Cleanup (Large Files / Old Downloads / APK Files)
+│   └── Cleanup/{type}
 ├── App Usage [PRO]
+├── Learn
+│   └── Learn Article
 ├── Settings
 └── Pro Upgrade
 ```
+
+Defined routes in code:
+
+- `home`
+- `battery`
+- `charger`
+- `network`
+- `speed_test`
+- `thermal`
+- `storage`
+- `cleanup/{type}`
+- `app_usage`
+- `learn`
+- `learn/{articleId}`
+- `fullscreen_chart/{source}/{metric}/{period}`
+- `settings`
+- `pro_upgrade`
+
+State restoration details:
+
+- `rememberSaveable` is used for screen-local UI state such as sheet visibility and metric chip selections.
+- `SavedStateHandle` is used for route-backed or deep state that must survive recreation, including battery/network history period, cleanup filter selection, and fullscreen chart metric/period.
+- Free-tier entry into `charger` and `app_usage` routes redirects to `pro_upgrade`.
+
+---
+
+## Runtime Systems
+
+### App Startup
+
+`RuncheckApp` initializes and coordinates:
+
+- Billing and Pro state
+- Notification channels
+- Crash reporting controller
+- Screen-state tracking repository
+- Periodic monitoring scheduling
+- Widget refreshes when Pro state changes
+
+### Background Monitoring
+
+Two WorkManager jobs are scheduled through `MonitorScheduler`:
+
+- `HealthMonitorWorker`
+  - collects battery, network, thermal, and storage snapshots
+  - persists readings into Room
+  - evaluates alert conditions
+  - posts notifications for low battery, high temperature, low storage, and charge complete
+- `HealthMaintenanceWorker`
+  - collects per-app usage snapshots
+  - cleans up old readings
+  - refreshes widgets
+
+Supporting monitor components include:
+
+- `BootReceiver`
+- `ScreenStateReceiver`
+- `ScreenStateTracker`
+- `MonitoringAlertStateStore`
+- `NotificationHelper`
+
+### Widgets
+
+Two Glance widgets are present:
+
+- Battery widget
+- Health score widget
+
+Widget data is read from the latest Room snapshots. Widget access is treated as a Pro feature.
 
 ---
 
 ## Home Screen
 
-### Health Score Card
-- Overall score 0–100 displayed in animated ProgressRing (color from statusColorForPercent)
-- Status label: Healthy / Fair / Poor / Critical
-- Description: "Your device is in [status] shape"
-- Temperature warning if ≥ 38°C
-- Breakdown rows with StatusDot per category:
-  - Battery (40% weight)
-  - Thermal (25% weight)
-  - Network (25% weight)
-  - Storage (10% weight)
+Home is the single entry point and aggregates the latest device state from battery, network, thermal, and storage.
 
-### Battery Hero Card
-- Large battery level (54sp, JetBrains Mono)
-- Charging status text
-- Animated battery icon with wave animation during charge (2000ms tween, respects reducedMotion)
-- MetricPills: Health status (color-coded), Plug Type
+Main sections:
 
-### Quick Info Grid (2×2)
-| Card | Content |
-|------|---------|
-| Network | Signal quality label + SignalBars + color indicator |
-| Thermal | Battery temp °C + band label (Cool/Normal/Warm/Hot/Critical) |
-| Charger | "Test & Compare" — Pro-locked in free tier |
-| Storage | Free space + usage % with color |
+- Health score hero with animated `ProgressRing`
+- Battery hero card
+- 2×2 quick status grid
+  - Network
+  - Thermal
+  - Charger comparison
+  - Storage
+- Quick tools card
+  - Speed Test
+  - App Usage
+  - Learn
+- Trial / expired-trial / Pro state cards
 
-### Quick Tools
-- Speed Test — always available, SpeedGauge icon
-- App Usage — Pro-locked, battery usage icon
+Trial and Pro UI handled on Home:
 
-### Pro Status Cards
-- Active trial: days remaining + upgrade prompt
-- Trial expired: upgrade card with border
-- Pro purchased: "Insights" card with star icon
+- Welcome sheet for trial onboarding
+- Day-5 trial snackbar/banner
+- Trial-expiration modal
+- Post-expiration upgrade card
+- Purchased Pro “Insights” card
 
 ---
 
-## Battery Detail Screen
+## Battery Detail
 
-### Hero Section
-- ProgressRing (152dp) with battery level %
-- Status text: "Good · Discharging" (health + charging status)
-- mAh remaining (from CHARGE_COUNTER, if available): "Good · Discharging · ~2700 mAh remaining"
-- MetricPills row: Drain rate (%/h), Power (W), Remaining time
+Battery detail is the richest diagnostics screen and mixes live state, recent history, current-session insights, and Pro-only long-range history.
 
-### Details Panel
-| Metric | Source |
-|--------|--------|
-| Voltage | V (converted from mV) |
-| Temperature | °C with color (green < 35, yellow 35-40, red > 40) |
-| Health | Good / Overheat / Dead / Over Voltage / Cold / Unknown |
-| Technology | Li-ion etc. or "Not available" |
-| Cycle Count | API 34+ or null |
-| Health % | API 34+ or null |
-| Capacity | Estimated / Design mAh (PowerProfile reflection + healthPct) |
+Key sections:
 
-### Current / Charging Panel
-- Current reading (mA) with ConfidenceBadge (Accurate / Estimated / Unavailable)
-- W + mV line under current: "0.9 W · 4125 mV"
-- Charging session summary (during charge): start level, gain %, duration, peak temp, speeds, delivered mAh, avg power
-- Status/Type MetricPills
-- Current stats (in-memory, resets on status change): Average / Minimum / Maximum mA
+- Hero ring with battery level
+- Health + charging summary
+- Optional mAh remaining estimate
+- Current / charging details with `ConfidenceBadge`
+- Session-level current statistics
+- Screen-on / screen-off drain analysis
+- Sleep analysis while discharging
+- Charger comparison CTA
+- Charging session graph
+- Pro-only remaining charge estimates
+- Pro-only history chart
+- Pro-only battery statistics panel
 
-### Screen On/Off Panel (discharge only)
-- Two columns: Screen On vs Screen Off
-- Drain rate %/h per state
-- Duration per state
-- Data from ScreenStateTracker (BroadcastReceiver: ACTION_SCREEN_ON/OFF)
+Battery-specific supporting behavior:
 
-### Sleep Analysis Panel (discharge only)
-- Deep Sleep duration (PowerManager.isDeviceIdleMode = true)
-- Held Awake duration (isDeviceIdleMode = false while screen off)
-- Color: green for deep sleep, yellow for held awake if > deep sleep
-
-### Charger Comparison CTA
-- Button navigating to ChargerComparisonScreen
-
-### Session Graph (during charge)
-- Metrics: Current (mA) / Power (W)
-- Windows: 15m / 30m / All
-- TrendChart with Y-axis, X-axis time labels, grid, tooltip, Min/Avg/Max stats
-- Downsampling preserves timestamps (max 240 points)
-
-### Remaining Charge Time (during charge, Pro)
-- To 80% and To 100% estimates based on charge rate
-
-### History Panel (Pro)
-- Periods: Since Unplug / 24h / Week / Month / All
-- Metrics: Level / Temperature / Current / Voltage
-- TrendChart with Y-axis labels, X-axis time labels, grid lines, quality zones (Level: green >50%, yellow 20-50%, red <20%; Temperature: green <35°, yellow 35-40°, orange 40-45°, red >45°), tap/drag tooltip (value + timestamp)
-- Min / Avg / Max MetricPill summary row below chart
-- Downsampling preserves timestamps (max 300 points)
-- "Since Unplug" queries last CHARGING timestamp from Room
-
-### Statistics Panel (Pro)
-- Period: last 10 days (from Room)
-- Charged / Discharged total %
-- Charge sessions count
-- Average drain rate %/h
-- Full charge estimate (hours)
+- Current readings use `MeasuredValue<Int>`
+- Current stats are tracked in-memory and reset on status change
+- Session and history charts can open a fullscreen landscape chart route
+- Battery screen also consumes dismissed educational/info cards
 
 ---
 
-## Network Detail Screen
+## Network Detail
 
-### Hero Section
-- SignalBars (5-bar visual, color by quality)
-- Quality label: Excellent / Good / Fair / Poor / No Signal
-- dBm value (if available)
-- MetricPills: Latency (ms), Speed/Bandwidth (Mbps), Frequency (GHz) or Subtype
+Network detail focuses on current connection state plus historical signal/latency data.
 
-### WiFi Name Help Card
-- Shown when SSID unknown due to missing location permission
-- "Grant Permission" / "Enable Location" / "Open Settings"
+Main sections:
 
-### Connection Details Card
-**WiFi:** SSID, BSSID (copyable), WiFi Standard, Frequency, Link Speed
-**Cellular:** Carrier, Subtype (4G/5G/LTE), Roaming
-**Both:** Downstream/Upstream bandwidth, Metered, VPN
+- Signal hero with `SignalBars`
+- Wi-Fi name permission help card when SSID is unavailable
+- Connection details card
+- IP / DNS / MTU section
+- Pro-only signal history chart
+- Speed test summary card
 
-### IP & DNS Section
-- IPv4 (copyable)
-- IPv6 (copyable, truncated with ellipsis)
-- DNS 1 & 2 (copyable)
-- MTU
+Historical chart behavior:
 
-### Signal History (Pro)
-- Metrics: Signal Strength (dBm) / Latency (ms)
-- Periods: 24h / Week / Month / All
-- TrendChart with Y-axis (dBm/ms), X-axis time labels, grid lines, signal quality zone bands (Excellent/Good/Fair/Poor/NoSignal colored backgrounds), tap/drag tooltip (value + timestamp)
-- Min / Avg / Max MetricPill summary row
-- Downsampling preserves timestamps (max 300 points)
-
-### Speed Test Summary
-- Last result: Download / Upload / Ping / Jitter / Server / Time
-- "Run Speed Test" button
+- Metrics: signal strength or latency
+- Period selection is stored in ViewModel saved state
+- Fullscreen chart route is available from the expandable chart container
 
 ---
 
-## Speed Test Screen
+## Speed Test
 
-### States
-1. **Ready:** Animated radar icon, "Start Test" button
-2. **Cellular warning dialog:** "Speed test on cellular may use data" → Proceed / Cancel
-3. **Testing:** Phase indicator (Download/Upload/Ping), progress %, real-time speed
-4. **Results:** Download / Upload / Ping / Jitter / Server / "Run Again"
-5. **History:** Past results list
+Speed tests use M-Lab NDT7 only.
 
----
+Flow:
 
-## Thermal Detail Screen
+1. Ready state with current connection context
+2. Cellular warning dialog before test start when the active network is cellular
+3. Ping phase
+4. Download phase
+5. Upload phase
+6. Completed or failed state
+7. Result history list
 
-### Hero Card
-- Canvas thermometer (40×120dp) with animated fill (1200ms FastOutSlowIn)
-- Large temperature (48sp, JetBrains Mono)
-- Band label with color: Cool / Normal / Warm / Hot / Critical
-- Session min/max range (annotated string): "↓ 27.3°C · ↑ 35.3°C" (color-coded per temp)
+Stored result fields include:
 
-### Heat Strip
-- Color zones aligned with statusColorForTemperature thresholds (35/40/45°C) with ±1°C soft transitions
-- Position indicator (white dot) on gradient strip
+- Download Mbps
+- Upload Mbps
+- Ping
+- Jitter
+- Server name/location
+- Connection type and subtype
+- Optional signal strength
 
-### Metrics Grid
-| Metric | Detail |
-|--------|--------|
-| CPU Temperature | °C or "Unavailable" |
-| Thermal Headroom | % (inverted) |
-| Thermal Status | Normal / Light / Moderate / Severe / Critical / Emergency / Shutdown |
-| Throttling | Active / None |
-
-### Throttling Log (Pro)
-- Event list: timestamp, status level, battery temp, CPU temp, foreground app, duration
-- Empty state: "No thermal throttling events" with healthy indicator
+Free tier stores a limited history. Pro keeps a larger history.
 
 ---
 
-## Storage Detail Screen
+## Thermal Detail
 
-### Hero Card
-- ProgressRing (152dp) with usage %
-- Used / Total (JetBrains Mono, center)
-- Free space + fill rate estimate text
-- MetricPills: Cache total, Fill Rate, Available
+Thermal detail surfaces both live thermal state and throttling history.
 
-### Media Breakdown Card
-- SegmentedBar (Canvas, 12dp, 800ms ease-out, 2dp gaps)
-- 6 categories with accent colors:
-  - Images (Teal), Videos (Blue), Audio (Orange)
-  - Documents (Lime), Downloads (Yellow), Other (Muted)
-- SegmentedBarLegend with StatusDot + label + size per row
+Main sections:
 
-### Cleanup Tools Section
-ActionCards with colored IconCircles:
-| Tool | Icon Color | Action |
-|------|-----------|--------|
-| Large Files | Orange | → CleanupScreen(LARGE_FILES) |
-| Old Downloads | Blue | → CleanupScreen(OLD_DOWNLOADS) |
-| APK Files | Lime | → CleanupScreen(APK_FILES) |
-| Trash (API 30+) | Red | Empty trash (createDeleteRequest) |
+- Animated thermometer hero
+- Heat strip
+- Metrics grid
+- Pro-only throttling log
+- Educational/info cards
 
-### Details Card
-- Total / Used (%) / Available / Apps / Cache (across N apps)
-- Technical details (separated by divider): File System (f2fs/ext4), Encryption (FBE/FDE/None), Storage Volumes count
+Important implementation constraints:
 
-### SD Card Card (if present)
-- Total / Available
+- Thermal state comes from Android PowerManager APIs
+- No sysfs-based thermal reads
+- Session min/max values are tracked while the screen is active
 
 ---
 
-## Cleanup Screen (Shared)
+## Storage Detail
 
-Single reusable screen for all cleanup types. Navigated via `cleanup/{type}` route.
+Storage detail combines usage diagnostics, media breakdown, cleanup entry points, and storage health guidance.
 
-### Filter Chips
-| Type | Options | Default |
-|------|---------|---------|
-| LARGE_FILES | > 10 MB / > 50 MB / > 100 MB / > 500 MB | > 50 MB |
-| OLD_DOWNLOADS | > 30 days / > 60 days / > 90 days / > 1 year | > 30 days |
-| APK_FILES | (none) | — |
+Main sections:
 
-### States
-1. **Scanning:** CircularProgressIndicator
-2. **Empty:** "No files found · Your storage is looking clean!"
-3. **Results:** Grouped file list (see below)
-4. **Deleting:** Progress indicator
-5. **Success:** Overlay with CheckCircle (AccentTeal, 64dp) + "X GB freed" (titleLarge, fade in/out)
+- Usage hero ring
+- Media permission card when needed
+- Media breakdown segmented bar
+- Cleanup tools section
+- Storage detail metrics
+- Optional SD card section
+- Educational/info cards
 
-### Results View
-- Summary: "Found N files · X GB"
-- File groups (collapsible, sorted by total size descending):
-  - Group header: StatusDot + category label + count + total size + "All" checkbox
-  - Largest group expanded by default
-  - AnimatedVisibility for expand/collapse
-- Per file:
-  - Checkbox (primary color)
-  - Thumbnail (48dp, RoundedCornerShape 8dp) — real thumbnail for images/videos via ThumbnailLoader (LRU cache 50), IconCircle fallback for others
-  - File name (titleSmall, ellipsis)
-  - Category + relative date (bodySmall)
-  - MiniBar showing relative size (3dp, category color)
-  - Size (bodyMedium, numericFontFamily)
-- APK_FILES: all pre-selected by default
+Cleanup tool entry points:
 
-### Sticky Bottom Bar (AnimatedVisibility slide-up)
-- Before/after usage projection: "67% → 59%" with MiniBar
-- Delete button (error color): "Free X GB · N items"
+- Large Files
+- Old Downloads
+- APK Files
+- Trash (API 30+)
 
-### Delete Flow
-- API 30+: `MediaStore.createDeleteRequest()` → system confirmation dialog via ActivityResultLauncher
-- API 29: `ContentResolver.delete()` per URI (no batch dialog)
-- On success: Success overlay 1.8s → re-scan
+Free tier behavior:
+
+- Storage screen itself is available
+- Cleanup tools are gated behind a Pro callout
 
 ---
 
-## Charger Comparison (Pro)
+## Cleanup Screen
 
-- FAB to add charger (name input dialog)
-- Charger list with test summaries (charge rate mAh/hr or W, date)
-- Delete charger (trash icon)
-- Historical charge rate comparison
+Cleanup is a shared route driven by `cleanup/{type}` and `CleanupType`.
 
----
+Supported cleanup types:
 
-## App Usage (Pro)
+- `LARGE_FILES`
+- `OLD_DOWNLOADS`
+- `APK_FILES`
 
-- Requires PACKAGE_USAGE_STATS permission
-- Permission grant card when not available
-- App list sorted by foreground time
-- Per app: icon, name, foreground time, relative progress bar, percentage
+Filter behavior:
 
----
+- Large files: 10 / 50 / 100 / 500 MB
+- Old downloads: 30 / 60 / 90 days / 1 year
+- APK files: no chip filters
 
-## Settings Screen
+UI and data behavior:
 
-Grouped card layout. Each section is a card with `CardSectionTitle`.
-
-### Monitoring
-- Interval: 15 / 30 / 60 min (radio buttons)
-
-### Notifications
-- Master toggle (on/off, dims sub-toggles when off)
-- Low Battery (toggle + description)
-- High Temperature (toggle + description)
-- Low Storage (toggle + description)
-- Charge Complete (toggle + description, default off)
-
-### Alert Thresholds
-- Low Battery Warning: Slider 5–50%, default 20%, steps of 5%
-- High Temperature Warning: Slider 35–50°C, default 42°C, steps of 1°C
-- Low Storage Warning: Slider 70–99%, default 90%, steps of 5%
-- Value displayed right-aligned in numericFontFamily with primary color
-
-### Display
-- Temperature Unit: Celsius (°C) / Fahrenheit (°F) radio
-
-### Data
-- Retention: 3mo / 6mo / 1yr / Forever (Pro, radio)
-- Export as CSV (Pro, OutlinedButton)
-- Clear All Monitoring Data (error color → AlertDialog confirmation)
-
-### Pro
-- Status: Active ✓ / Purchase button + price / Restore purchase
-
-### Privacy
-- Crash Reporting toggle (Firebase Crashlytics)
-
-### Device
-- Model name (titleMedium)
-- MetricPill grid: API Level, Current Reading (Reliable/Unreliable with status color), Cycle Count, Thermal Zones
-
-### About
-- Version (build)
-- Rate on Play Store (→ market:// intent)
-- Privacy Policy (→ URL)
-- Send Feedback (→ mailto: intent)
+- Scanning, empty, results, deleting, and success states
+- Grouped file results by media category
+- Expand/collapse per category
+- Selection by file or whole group
+- Paging-backed item loading per group
+- API 30+ delete flow uses system delete request / intent sender
+- Selected filter is stored through `SavedStateHandle`
 
 ---
 
-## Pro Upgrade Screen
+## App Usage
 
-### Features Listed
-| Feature | Icon |
-|---------|------|
-| Extended History | Calendar |
-| Charger Comparison | Charging |
-| Per-App Battery Usage | Data Usage |
-| Widgets | Widgets |
-| CSV Export | Download |
-| Thermal Logs | Thermometer |
-| Ad-Free | No Accounts |
+App Usage is Pro-gated and backed by paging.
 
-- "Purchase €3.49" button (Google Play Billing)
-- "One-time purchase, no subscription" footnote
-- Success state: "Thank You!" with confetti animation
-- Trial system: 7-day free trial, reminders on day 5 and 7
+Behavior:
 
----
+- Locked route redirects to Pro Upgrade for free tier
+- Uses usage-access permission instead of normal runtime permission
+- Shows permission education card when access is missing
+- Refreshes usage snapshot when the user returns from system settings
+- Displays total foreground time summary and per-app list items
 
-## Health Score Algorithm
+Background support:
 
-```
-overallScore = battery × 0.4 + thermal × 0.25 + network × 0.25 + storage × 0.1
-```
-
-### Battery Score (0–100)
-Base 100, penalties for:
-- Health status (overheat -40, dead -80, cold -20)
-- Temperature outside 20–35°C range (up to -40)
-- Voltage outside 3500–4250 mV range (up to -20)
-- Health % degradation (up to -60)
-
-### Thermal Score (0–100)
-Based on battery/CPU temperature and throttling status.
-
-### Network Score (0–100)
-Based on signal quality and speed test data.
-
-### Storage Score (0–100)
-Based on usage % (0 penalty at 25–50%, up to -80 at 95%+).
+- Usage snapshots are collected periodically in maintenance work
+- Data is persisted and then paged back into the UI
 
 ---
 
-## Notifications
+## Learn
 
-| Alert | Trigger | Channel | Priority |
-|-------|---------|---------|----------|
-| Low Battery | Level below threshold | Alerts | High |
-| High Temperature | Temp > 42°C | Alerts | High |
-| Low Storage | Usage > 90% | Alerts | High |
-| Charge Complete | Charging → Full | Status | Low |
-| Trial Day 5 | 5th day of trial | Trial | Default |
-| Trial Day 7 | 7th day of trial | Trial | Default |
+Learn is a lightweight educational content flow built entirely in-app.
 
----
+Screens:
 
-## Visual Design
+- Learn topic list screen
+- Learn article detail screen
 
-### Theme
-- Single dark theme — no light mode, no AMOLED toggle
-- BgPage `#0B1E24`, BgCard `#133040`, BgCardAlt `#0F2A35`, BgIconCircle `#1A3A48`
-- Typography: Manrope (body) + JetBrains Mono (numbers)
+Behavior:
 
-### Accent Colors
-| Color | Hex | Role | Usage |
-|-------|-----|------|-------|
-| Blue | `#4A9EDE` | Primary | Main accent, interactive elements, videos |
-| Teal | `#5DE4C7` | Secondary | Healthy status, success, images |
-| Amber | `#E8C44A` | — | Fair status, estimated confidence |
-| Orange | `#F5963A` | Tertiary | Poor status, warning, audio |
-| Red | `#F06040` | Error | Critical status, error, delete |
-| Lime | `#C8E636` | — | Documents, APKs |
-| Yellow | `#F5D03A` | — | Attention, downloads |
-
-### Status Colors
-| Level | Score | Color |
-|-------|-------|-------|
-| Healthy | 75–100 | Teal |
-| Fair | 50–74 | Amber |
-| Poor | 25–49 | Orange |
-| Critical | 0–24 | Red |
-
-### Card Style
-- Background: `surfaceContainer`, no border, no shadow, no elevation
-- Corner radius: 16dp (cards), 8dp (small elements)
-- ActionCards: same + 1dp `outlineVariant` border at 35% alpha
-- Dividers: `outlineVariant.copy(alpha = 0.35f)`
-
-### Animations
-| Element | Duration | Easing |
-|---------|----------|--------|
-| ProgressRing | 1200ms | FastOutSlowInEasing |
-| MiniBar | 800ms | FastOutSlowInEasing |
-| SegmentedBar | 800ms | FastOutSlowInEasing |
-| Thermometer fill | 1200ms | FastOutSlowInEasing |
-| Battery wave | 2000ms | LinearEasing (loop) |
-| Cleanup bottom bar | 200ms | slide vertical |
-| Success overlay | 200ms in / 300ms out | fade |
-| Screen transitions | 300ms | slide + fade |
-
-All animations respect `MaterialTheme.reducedMotion`.
-
-### Accessibility
-- WCAG AA contrast: 4.5:1 body text, 3:1 large text
-- Minimum touch target: 48dp
-- Status colors always paired with text labels or icons
-- Content descriptions on visual elements (charts, rings, bars)
-- Reduced motion support
+- Articles are grouped by topic
+- Article detail renders structured body text from catalog resources
+- Some articles expose cross-link buttons into app routes
 
 ---
 
-## Components (25)
+## Fullscreen Chart
 
-### Layout
-`GridCard` · `ListRow` · `MetricPill` · `MetricRow` · `ActionCard`
+Fullscreen charts are launched from battery and network trend sections.
 
-### Indicators
-`ProgressRing` · `MiniBar` · `StatusDot` · `ConfidenceBadge` · `SignalBars`
+Behavior:
 
-### Charts & Visuals
-`TrendChart` (Y/X axes, grid, quality zones, tap/drag tooltip — all optional) · `AreaChart` · `HeatStrip` · `SegmentedBar` · `SegmentedBarLegend`
-
-### Navigation
-`PrimaryTopBar` · `DetailTopBar`
-
-### Typography
-`AnimatedNumber` (`AnimatedIntText`, `AnimatedFloatText`) · `SectionHeader` · `CardSectionTitle` · `IconCircle`
-
-### Pro
-`ProBadgePill` · `ProFeatureCalloutCard` · `ProFeatureLockedState`
-
-### Interactive
-`PullToRefreshWrapper`
+- Landscape-only while the route is visible
+- Supports battery history, battery session, and network history sources
+- Metric and period chip selections are stored in `SavedStateHandle`
+- Uses the same chart data model and tooltip formatting as embedded charts
 
 ---
 
-## Localization
+## Settings
 
-| Language | File |
-|----------|------|
-| English (default) | `res/values/strings.xml` |
-| Finnish | `res/values-fi/strings.xml` |
+Settings is broader than a simple preferences page and covers monitoring, privacy, export, purchase flow, and device capability info.
+
+Sections:
+
+- Monitoring interval
+- Notifications
+  - master notifications toggle
+  - low battery
+  - high temperature
+  - low storage
+  - charge complete
+- Alert thresholds
+  - low battery threshold
+  - temperature threshold
+  - low storage threshold
+- Display
+  - Celsius / Fahrenheit
+- Data
+  - data retention
+  - CSV export
+  - clear all data
+- Pro
+  - current Pro status
+  - upgrade CTA
+  - restore purchase
+- Privacy
+  - crash reporting toggle
+- Device
+  - device model
+  - API level
+  - current-now reliability
+  - cycle-count availability
+  - thermal zone count
+- About
+  - version
+  - Play Store link
+  - privacy policy
+  - feedback email intent
+
+Notes:
+
+- Notification permission handling is built into Settings for Android 13+
+- Crash reporting is opt-in
+- Export shares one or more CSV files through `FileProvider`
+
+---
+
+## Persistence
+
+Primary persisted data:
+
+- Battery readings
+- Network readings
+- Thermal readings
+- Storage readings
+- Throttling events
+- Speed test results
+- Charger profiles / sessions
+- App usage snapshots
+- Device profile info
+- User preferences and dismissed info cards
+
+Persistence technologies:
+
+- Room for telemetry/history entities
+- DataStore for user preferences and UI dismissals
+
+---
+
+## Monetization Model
+
+Pro state is handled through `BillingManager`, `ProManager`, and `ProState`.
+
+Current product behavior:
+
+- Trial state is treated as Pro access
+- Expired trial loses gated features
+- Purchased Pro unlocks all Pro features permanently
+- No subscriptions
+
+Pro-gated areas currently include:
+
+- Charger Comparison
+- App Usage
+- Extended history
+- Thermal logs
+- CSV export
+- Widgets
+- Remaining charge time
+
+---
+
+## Notes for Maintenance
+
+- `PROJECT.md` should describe the code as it exists now, not the intended roadmap only.
+- `CODEX.md` and `AGENTS.md` should stay aligned when repository rules or project snapshot notes are updated.

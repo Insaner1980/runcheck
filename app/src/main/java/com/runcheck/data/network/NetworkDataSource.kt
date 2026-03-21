@@ -146,11 +146,16 @@ class NetworkDataSource @Inject constructor(
     ): NetworkInfo {
         val isWifi = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
         val isCellular = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+        val isVpn = resolveVpnState(
+            hasVpnTransport = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN),
+            hasNotVpnCapability = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+        )
         val canReadWifiDetails = canReadWifiDetails()
 
         val connectionType = when {
             isWifi -> ConnectionType.WIFI
             isCellular -> ConnectionType.CELLULAR
+            isVpn -> ConnectionType.VPN
             else -> ConnectionType.NONE
         }
 
@@ -176,11 +181,6 @@ class NetworkDataSource @Inject constructor(
 
         // Some devices expose VPN transport alongside a normal network; require the
         // network to also lose NOT_VPN before surfacing VPN as active.
-        val isVpn = resolveVpnState(
-            hasVpnTransport = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN),
-            hasNotVpnCapability = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
-        )
-
         // Metered status
         val isMetered = !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
 
@@ -478,6 +478,7 @@ class NetworkDataSource @Inject constructor(
     @Suppress("DEPRECATION")
     private fun classifySignal(dbm: Int?, type: ConnectionType): SignalQuality {
         if (type == ConnectionType.NONE) return SignalQuality.NO_SIGNAL
+        if (type == ConnectionType.VPN && dbm == null) return SignalQuality.GOOD
 
         if (dbm != null) {
             return when (type) {
@@ -489,6 +490,13 @@ class NetworkDataSource @Inject constructor(
                     else -> SignalQuality.NO_SIGNAL
                 }
                 ConnectionType.CELLULAR -> when {
+                    dbm > -80 -> SignalQuality.EXCELLENT
+                    dbm > -90 -> SignalQuality.GOOD
+                    dbm > -100 -> SignalQuality.FAIR
+                    dbm > -110 -> SignalQuality.POOR
+                    else -> SignalQuality.NO_SIGNAL
+                }
+                ConnectionType.VPN -> when {
                     dbm > -80 -> SignalQuality.EXCELLENT
                     dbm > -90 -> SignalQuality.GOOD
                     dbm > -100 -> SignalQuality.FAIR

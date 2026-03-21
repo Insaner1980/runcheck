@@ -8,11 +8,12 @@ import com.runcheck.billing.ProPurchaseRefreshResult
 import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.billing.PurchaseEvent
 import com.runcheck.domain.model.DataRetention
-import com.runcheck.domain.model.TemperatureUnit
-import com.runcheck.domain.repository.ProStatusProvider
-import com.runcheck.domain.repository.UserPreferencesRepository
 import com.runcheck.domain.model.MonitoringInterval
+import com.runcheck.domain.model.TemperatureUnit
+import com.runcheck.domain.usecase.ClearMonitoringDataUseCase
 import com.runcheck.domain.usecase.ExportDataUseCase
+import com.runcheck.domain.usecase.IsProUserUseCase
+import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveSettingsUseCase
 import com.runcheck.domain.usecase.SetCrashReportingEnabledUseCase
 import com.runcheck.domain.usecase.SetDataRetentionUseCase
@@ -34,17 +35,19 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val observeSettings: ObserveSettingsUseCase,
     private val proPurchaseManager: ProPurchaseManager,
-    private val proStatusProvider: ProStatusProvider,
+    private val isProUser: IsProUserUseCase,
+    private val clearMonitoringDataUseCase: ClearMonitoringDataUseCase,
     private val exportDataUseCase: ExportDataUseCase,
     private val setDataRetentionUseCase: SetDataRetentionUseCase,
     private val setMonitoringIntervalUseCase: SetMonitoringIntervalUseCase,
     private val setNotificationsEnabledUseCase: SetNotificationsEnabledUseCase,
     private val setCrashReportingEnabledUseCase: SetCrashReportingEnabledUseCase,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val manageUserPreferences: ManageUserPreferencesUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+    private var isFetchingPrice = false
 
     init {
         viewModelScope.launch {
@@ -69,21 +72,12 @@ class SettingsViewModel @Inject constructor(
                             billingAvailable = billingAvailable
                         )
                     }
+                    if (billingAvailable) {
+                        fetchProPriceIfNeeded()
+                    }
                 }
         }
-        viewModelScope.launch {
-            try {
-                proPurchaseManager.getFormattedPrice()?.let { price ->
-                    _uiState.update { current -> current.copy(proPrice = price) }
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                _uiState.update { current ->
-                    current.copy(errorMessage = UiText.Resource(R.string.common_error_generic))
-                }
-            }
-        }
+        fetchProPriceIfNeeded(force = true)
         viewModelScope.launch {
             proPurchaseManager.purchaseEvents.collect { event ->
                 when (event) {
@@ -98,7 +92,7 @@ class SettingsViewModel @Inject constructor(
                     }
                     is PurchaseEvent.Canceled,
                     is PurchaseEvent.Success -> {
-                        // No action needed
+                        _uiState.update { it.copy(billingStatus = null) }
                     }
                 }
             }
@@ -183,7 +177,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun exportData() {
-        if (!proStatusProvider.isPro()) {
+        if (!isProUser()) {
             _uiState.update {
                 it.copy(errorMessage = UiText.Resource(R.string.pro_feature_locked_generic))
             }
@@ -225,6 +219,10 @@ class SettingsViewModel @Inject constructor(
         _uiState.update { it.copy(exportUris = null) }
     }
 
+    fun clearClearDataStatus() {
+        _uiState.update { it.copy(clearDataStatus = null) }
+    }
+
     fun clearBillingStatus() {
         _uiState.update { it.copy(billingStatus = null) }
     }
@@ -237,49 +235,64 @@ class SettingsViewModel @Inject constructor(
 
     fun setNotifLowBattery(enabled: Boolean) {
         executePreferenceUpdate {
-            userPreferencesRepository.setNotifLowBattery(enabled)
+            manageUserPreferences.setNotifLowBattery(enabled)
         }
     }
 
     fun setNotifHighTemp(enabled: Boolean) {
         executePreferenceUpdate {
-            userPreferencesRepository.setNotifHighTemp(enabled)
+            manageUserPreferences.setNotifHighTemp(enabled)
         }
     }
 
     fun setNotifLowStorage(enabled: Boolean) {
         executePreferenceUpdate {
-            userPreferencesRepository.setNotifLowStorage(enabled)
+            manageUserPreferences.setNotifLowStorage(enabled)
         }
     }
 
     fun setNotifChargeComplete(enabled: Boolean) {
         executePreferenceUpdate {
-            userPreferencesRepository.setNotifChargeComplete(enabled)
+            manageUserPreferences.setNotifChargeComplete(enabled)
         }
     }
 
     fun setAlertBatteryThreshold(value: Int) {
         executePreferenceUpdate {
-            userPreferencesRepository.setAlertBatteryThreshold(value)
+            manageUserPreferences.setAlertBatteryThreshold(value)
         }
     }
 
     fun setAlertTempThreshold(value: Int) {
         executePreferenceUpdate {
-            userPreferencesRepository.setAlertTempThreshold(value)
+            manageUserPreferences.setAlertTempThreshold(value)
         }
     }
 
     fun setAlertStorageThreshold(value: Int) {
         executePreferenceUpdate {
-            userPreferencesRepository.setAlertStorageThreshold(value)
+            manageUserPreferences.setAlertStorageThreshold(value)
         }
     }
 
     fun setTemperatureUnit(unit: TemperatureUnit) {
         executePreferenceUpdate {
-            userPreferencesRepository.setTemperatureUnit(unit)
+            manageUserPreferences.setTemperatureUnit(unit)
+        }
+    }
+
+    fun clearAllData() {
+        viewModelScope.launch {
+            try {
+                clearMonitoringDataUseCase()
+                _uiState.update {
+                    it.copy(clearDataStatus = UiText.Resource(R.string.settings_data_cleared))
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _uiState.update { it.copy(errorMessage = UiText.Resource(R.string.common_error_generic)) }
+            }
         }
     }
 
@@ -291,6 +304,28 @@ class SettingsViewModel @Inject constructor(
                 throw e
             } catch (_: Exception) {
                 _uiState.update { it.copy(errorMessage = UiText.Resource(R.string.common_error_generic)) }
+            }
+        }
+    }
+
+    private fun fetchProPriceIfNeeded(force: Boolean = false) {
+        if (isFetchingPrice || (!force && _uiState.value.proPrice != null)) {
+            return
+        }
+        viewModelScope.launch {
+            isFetchingPrice = true
+            try {
+                proPurchaseManager.getFormattedPrice()?.let { price ->
+                    _uiState.update { current -> current.copy(proPrice = price) }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _uiState.update { current ->
+                    current.copy(errorMessage = UiText.Resource(R.string.common_error_generic))
+                }
+            } finally {
+                isFetchingPrice = false
             }
         }
     }

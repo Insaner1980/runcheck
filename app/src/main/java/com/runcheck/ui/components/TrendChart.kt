@@ -42,13 +42,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextMeasurer
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.runcheck.ui.theme.TextMuted
-import com.runcheck.ui.theme.TextSecondary
+import com.runcheck.ui.theme.chartAxisTextStyle
+import com.runcheck.ui.theme.chartTooltipTextStyle
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.reducedMotion
 
@@ -81,6 +80,7 @@ data class ChartYLabel(
 fun TrendChart(
     data: List<Float>,
     modifier: Modifier = Modifier,
+    chartHeight: Dp = 200.dp,
     lineColor: Color = MaterialTheme.colorScheme.primary,
     fillColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
     contentDescription: String? = null,
@@ -120,20 +120,16 @@ fun TrendChart(
     val hasXLabels = xLabels != null && xLabels.isNotEmpty()
 
     val textMeasurer = rememberTextMeasurer()
-    val labelStyle = TextStyle(
-        fontFamily = MaterialTheme.numericFontFamily,
-        fontSize = 10.sp,
-        color = TextMuted
+    val labelStyle = MaterialTheme.chartAxisTextStyle.copy(
+        color = MaterialTheme.colorScheme.onSurfaceVariant
     )
-    val tooltipLabelStyle = TextStyle(
-        fontFamily = MaterialTheme.numericFontFamily,
-        fontSize = 11.sp,
+    val tooltipLabelStyle = MaterialTheme.chartTooltipTextStyle.copy(
         color = MaterialTheme.colorScheme.onSurface
     )
 
     // Calculate left padding for Y-axis labels
     val yLabelWidth = if (hasYLabels) {
-        val maxWidth = yLabels!!.maxOf { textMeasurer.measure(it.label, labelStyle).size.width }
+        val maxWidth = yLabels.maxOf { textMeasurer.measure(it.label, labelStyle).size.width }
         with(LocalDensity.current) { (maxWidth + 6.dp.toPx()).toDp() }
     } else 0.dp
 
@@ -146,7 +142,7 @@ fun TrendChart(
     Canvas(
         modifier = modifier
             .fillMaxWidth()
-            .height(200.dp + xLabelHeight)
+            .height(chartHeight + xLabelHeight)
             .then(
                 if (contentDescription == null) Modifier
                 else Modifier.semantics {

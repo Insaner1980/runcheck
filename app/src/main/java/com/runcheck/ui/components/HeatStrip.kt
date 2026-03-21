@@ -21,6 +21,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
+import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.common.temperatureBandLabel
 import com.runcheck.ui.theme.reducedMotion
@@ -29,6 +30,7 @@ import com.runcheck.ui.theme.statusColors
 @Composable
 fun HeatStrip(
     temperatureC: Float,
+    temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS,
     modifier: Modifier = Modifier,
     minTemp: Float = 15f,
     maxTemp: Float = 50f
@@ -38,7 +40,7 @@ fun HeatStrip(
     val reducedMotion = MaterialTheme.reducedMotion
     val stripContentDescription = stringResource(
         R.string.a11y_heat_strip,
-        formatTemperature(temperatureC),
+        formatTemperature(temperatureC, temperatureUnit),
         temperatureBandLabel(temperatureC)
     )
 

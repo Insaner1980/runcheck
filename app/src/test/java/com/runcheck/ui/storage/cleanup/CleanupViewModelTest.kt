@@ -1,17 +1,22 @@
 package com.runcheck.ui.storage.cleanup
 
 import androidx.lifecycle.SavedStateHandle
-import com.runcheck.data.storage.MediaStoreScanner
-import com.runcheck.data.storage.StorageCleanupHelper
-import com.runcheck.data.storage.StorageDataSource
-import com.runcheck.data.storage.ThumbnailLoader
+import androidx.paging.PagingData
+import com.runcheck.domain.model.CleanupGroupSummary
+import com.runcheck.domain.model.CleanupScanQuery
+import com.runcheck.domain.model.CleanupSummary
 import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.ScannedFile
+import com.runcheck.domain.model.StorageState
+import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.MainDispatcherRule
+import com.runcheck.ui.common.UiText
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
@@ -29,10 +34,7 @@ class CleanupViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val mediaStoreScanner: MediaStoreScanner = mockk()
-    private val cleanupHelper: StorageCleanupHelper = mockk(relaxed = true)
-    private val storageDataSource: StorageDataSource = mockk()
-    private val thumbnailLoader: ThumbnailLoader = mockk(relaxed = true)
+    private val storageCleanup: StorageCleanupUseCase = mockk()
 
     private val testFiles = listOf(
         ScannedFile(
@@ -69,10 +71,11 @@ class CleanupViewModelTest {
         )
     )
 
-    private val storageInfo = StorageDataSource.StorageInfo(
+    private val storageState = StorageState(
         totalBytes = 128_000_000_000L,
         availableBytes = 64_000_000_000L,
         usedBytes = 64_000_000_000L,
+        usagePercent = 50f,
         appsBytes = null,
         totalCacheBytes = null,
         appCount = null,
@@ -80,29 +83,59 @@ class CleanupViewModelTest {
         trashInfo = null,
         sdCardAvailable = false,
         sdCardTotalBytes = null,
-        sdCardAvailableBytes = null
+        sdCardAvailableBytes = null,
+        fileSystemType = null,
+        encryptionStatus = null,
+        storageVolumes = 1
     )
 
     @Before
     fun setup() {
-        coEvery { storageDataSource.getStorageInfo() } returns storageInfo
+        coEvery { storageCleanup.getCurrentStorageState() } returns storageState
+        coEvery { storageCleanup.findExistingUris(any()) } returns emptySet()
+    }
+
+    private fun createSummary(files: List<ScannedFile>): CleanupSummary {
+        val groups = files.groupBy { it.category }
+            .map { (category, categoryFiles) ->
+                CleanupGroupSummary(
+                    category = category,
+                    itemCount = categoryFiles.size,
+                    totalBytes = categoryFiles.sumOf { it.sizeBytes }
+                )
+            }
+            .sortedByDescending { it.totalBytes }
+        return CleanupSummary(
+            groups = groups,
+            totalCount = files.size,
+            totalBytes = files.sumOf { it.sizeBytes },
+            maxFileSizeBytes = files.maxOfOrNull { it.sizeBytes } ?: 0L
+        )
+    }
+
+    private fun stubCleanupData(files: List<ScannedFile>) {
+        val summary = createSummary(files)
+        coEvery { storageCleanup.getCleanupSummary(any()) } returns summary
+        every { storageCleanup.getCleanupItems(any(), any()) } answers {
+            val category = secondArg<MediaCategory>()
+            flowOf(PagingData.from(files.filter { it.category == category }))
+        }
+        coEvery { storageCleanup.getCleanupGroupUris(any(), any()) } answers {
+            val category = secondArg<MediaCategory>()
+            files.filter { it.category == category }.map { it.uri }.toSet()
+        }
     }
 
     private fun createViewModel(
         type: String = "LARGE_FILES",
-        files: List<ScannedFile> = testFiles
+        files: List<ScannedFile> = testFiles,
+        savedStateValues: Map<String, Any> = mapOf("type" to type)
     ): CleanupViewModel {
-        coEvery { mediaStoreScanner.scanLargeFiles(any()) } returns files
-        coEvery { mediaStoreScanner.scanOldDownloads(any()) } returns files
-        coEvery { mediaStoreScanner.scanApkFiles() } returns files
-
-        val savedStateHandle = SavedStateHandle(mapOf("type" to type))
+        stubCleanupData(files)
+        val savedStateHandle = SavedStateHandle(savedStateValues)
         return CleanupViewModel(
             savedStateHandle = savedStateHandle,
-            mediaStoreScanner = mediaStoreScanner,
-            cleanupHelper = cleanupHelper,
-            storageDataSource = storageDataSource,
-            thumbnailLoader = thumbnailLoader
+            storageCleanup = storageCleanup
         )
     }
 
@@ -115,71 +148,60 @@ class CleanupViewModelTest {
         assertTrue("Expected Results but got $state", state is CleanupUiState.Results)
         val results = state as CleanupUiState.Results
 
-        // Should have 3 groups: VIDEO, IMAGE, DOCUMENT
         assertEquals(3, results.groups.size)
 
-        // Groups sorted by total bytes descending
-        // VIDEO group should be first (500M + 200M = 700M)
         val videoGroup = results.groups[0]
         assertEquals(MediaCategory.VIDEO, videoGroup.category)
-        assertEquals(2, videoGroup.files.size)
+        assertEquals(2, videoGroup.itemCount)
         assertEquals(700_000_000L, videoGroup.totalBytes)
 
-        // IMAGE group second (80M)
         val imageGroup = results.groups[1]
         assertEquals(MediaCategory.IMAGE, imageGroup.category)
-        assertEquals(1, imageGroup.files.size)
+        assertEquals(1, imageGroup.itemCount)
         assertEquals(80_000_000L, imageGroup.totalBytes)
 
-        // DOCUMENT group third (60M)
         val docGroup = results.groups[2]
         assertEquals(MediaCategory.DOCUMENT, docGroup.category)
-        assertEquals(1, docGroup.files.size)
+        assertEquals(1, docGroup.itemCount)
         assertEquals(60_000_000L, docGroup.totalBytes)
 
-        // Total size should be sum of all files
         assertEquals(840_000_000L, results.totalSize)
         assertEquals(4, results.totalCount)
-
-        // Largest group should be expanded by default
-        assertTrue("Largest group should be expanded", results.groups[0].expanded)
+        assertEquals(500_000_000L, results.maxFileSizeBytes)
+        assertTrue(results.groups[0].expanded)
     }
 
     @Test
-    fun `toggle file selection updates selected set`() = runTest(mainDispatcherRule.testDispatcher) {
+    fun `toggle file selection updates selected state`() = runTest(mainDispatcherRule.testDispatcher) {
         val viewModel = createViewModel()
         advanceUntilIdle()
 
-        // Initially no selections (LARGE_FILES does not preselect)
         var state = viewModel.uiState.value as CleanupUiState.Results
-        assertTrue("No files should be selected initially", state.selectedUris.isEmpty())
+        assertEquals(0, state.selectedCount)
         assertEquals(0L, state.selectedSize)
 
-        // Select first file
-        viewModel.toggleSelection("content://media/1")
+        viewModel.toggleSelection(testFiles[0])
         advanceUntilIdle()
 
         state = viewModel.uiState.value as CleanupUiState.Results
-        assertTrue(state.selectedUris.contains("content://media/1"))
-        assertEquals(1, state.selectedUris.size)
+        assertEquals(1, state.selectedCount)
         assertEquals(500_000_000L, state.selectedSize)
+        assertTrue(viewModel.isSelected(testFiles[0]))
 
-        // Select second file
-        viewModel.toggleSelection("content://media/3")
+        viewModel.toggleSelection(testFiles[2])
         advanceUntilIdle()
 
         state = viewModel.uiState.value as CleanupUiState.Results
-        assertEquals(2, state.selectedUris.size)
+        assertEquals(2, state.selectedCount)
         assertEquals(580_000_000L, state.selectedSize)
 
-        // Deselect first file
-        viewModel.toggleSelection("content://media/1")
+        viewModel.toggleSelection(testFiles[0])
         advanceUntilIdle()
 
         state = viewModel.uiState.value as CleanupUiState.Results
-        assertEquals(1, state.selectedUris.size)
-        assertFalse(state.selectedUris.contains("content://media/1"))
-        assertTrue(state.selectedUris.contains("content://media/3"))
+        assertEquals(1, state.selectedCount)
+        assertFalse(viewModel.isSelected(testFiles[0]))
+        assertTrue(viewModel.isSelected(testFiles[2]))
         assertEquals(80_000_000L, state.selectedSize)
     }
 
@@ -188,24 +210,21 @@ class CleanupViewModelTest {
         val viewModel = createViewModel()
         advanceUntilIdle()
 
-        // Select entire VIDEO group
         viewModel.toggleGroupSelection(MediaCategory.VIDEO)
         advanceUntilIdle()
 
         var state = viewModel.uiState.value as CleanupUiState.Results
-        assertTrue(state.selectedUris.contains("content://media/1"))
-        assertTrue(state.selectedUris.contains("content://media/2"))
-        assertEquals(2, state.selectedUris.size)
+        val videoGroup = state.groups.first { it.category == MediaCategory.VIDEO }
+        assertEquals(2, videoGroup.selectedCount)
+        assertEquals(2, state.selectedCount)
         assertEquals(700_000_000L, state.selectedSize)
 
-        // Toggle VIDEO group again: should deselect all VIDEO files
         viewModel.toggleGroupSelection(MediaCategory.VIDEO)
         advanceUntilIdle()
 
         state = viewModel.uiState.value as CleanupUiState.Results
-        assertFalse(state.selectedUris.contains("content://media/1"))
-        assertFalse(state.selectedUris.contains("content://media/2"))
-        assertEquals(0, state.selectedUris.size)
+        assertEquals(0, state.selectedCount)
+        assertEquals(0L, state.selectedSize)
     }
 
     @Test
@@ -218,38 +237,46 @@ class CleanupViewModelTest {
     }
 
     @Test
+    fun `scan failure produces Error state instead of Empty`() = runTest(mainDispatcherRule.testDispatcher) {
+        coEvery { storageCleanup.getCleanupSummary(any()) } throws IllegalStateException("boom")
+        every { storageCleanup.getCleanupItems(any(), any()) } returns flowOf(PagingData.empty())
+
+        val savedStateHandle = SavedStateHandle(mapOf("type" to "LARGE_FILES"))
+        val viewModel = CleanupViewModel(
+            savedStateHandle = savedStateHandle,
+            storageCleanup = storageCleanup
+        )
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state is CleanupUiState.Error)
+        assertEquals(
+            UiText.Resource(com.runcheck.R.string.common_error_generic),
+            (state as CleanupUiState.Error).message
+        )
+    }
+
+    @Test
     fun `delete success triggers re-scan`() = runTest(mainDispatcherRule.testDispatcher) {
         val viewModel = createViewModel()
         advanceUntilIdle()
 
-        // Select a file
-        viewModel.toggleSelection("content://media/1")
+        viewModel.toggleSelection(testFiles[0])
         advanceUntilIdle()
 
-        // Simulate delete confirmed (called after system dialog)
         viewModel.onDeleteConfirmed()
+        advanceTimeBy(200L)
         runCurrent()
 
-        // State should be Success (freed bytes shown)
         val state = viewModel.uiState.value
-        assertTrue(
-            "Expected Success after delete but got $state",
-            state is CleanupUiState.Success
-        )
+        assertTrue(state is CleanupUiState.Success)
 
-        // After delay, re-scan is triggered. Advance past the 1800ms delay.
         advanceTimeBy(2000L)
         advanceUntilIdle()
 
-        // After re-scan, we should be back in Results (since mock returns files)
         val stateAfterRescan = viewModel.uiState.value
-        assertTrue(
-            "Expected Results after re-scan but got $stateAfterRescan",
-            stateAfterRescan is CleanupUiState.Results
-        )
-
-        // Verify scanner was called again for the re-scan
-        coVerify(atLeast = 2) { mediaStoreScanner.scanLargeFiles(any()) }
+        assertTrue(stateAfterRescan is CleanupUiState.Results)
+        coVerify(atLeast = 2) { storageCleanup.getCleanupSummary(any()) }
     }
 
     @Test
@@ -273,15 +300,11 @@ class CleanupViewModelTest {
             )
         )
 
-        coEvery { mediaStoreScanner.scanApkFiles() } returns apkFiles
-
         val viewModel = createViewModel(type = "APK_FILES", files = apkFiles)
         advanceUntilIdle()
 
         val state = viewModel.uiState.value as CleanupUiState.Results
-        assertEquals(2, state.selectedUris.size)
-        assertTrue(state.selectedUris.contains("content://media/10"))
-        assertTrue(state.selectedUris.contains("content://media/11"))
+        assertEquals(2, state.selectedCount)
         assertEquals(80_000_000L, state.selectedSize)
     }
 
@@ -293,14 +316,45 @@ class CleanupViewModelTest {
         val stateNoSelection = viewModel.uiState.value as CleanupUiState.Results
         val initialPct = stateNoSelection.currentUsagePercent
 
-        // Select a large file
-        viewModel.toggleSelection("content://media/1") // 500 MB
+        viewModel.toggleSelection(testFiles[0])
         advanceUntilIdle()
 
         val stateWithSelection = viewModel.uiState.value as CleanupUiState.Results
-        assertTrue(
-            "Projected usage should be less than current usage",
-            stateWithSelection.projectedUsagePercent < initialPct
+        assertTrue(stateWithSelection.projectedUsagePercent < initialPct)
+    }
+
+    @Test
+    fun `partially deselecting selected group updates counts and size`() = runTest(mainDispatcherRule.testDispatcher) {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.toggleGroupSelection(MediaCategory.VIDEO)
+        advanceUntilIdle()
+        viewModel.toggleSelection(testFiles[0])
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as CleanupUiState.Results
+        val videoGroup = state.groups.first { it.category == MediaCategory.VIDEO }
+        assertEquals(1, videoGroup.selectedCount)
+        assertEquals(1, state.selectedCount)
+        assertEquals(200_000_000L, state.selectedSize)
+    }
+
+    @Test
+    fun `selected filter restores from saved state`() = runTest(mainDispatcherRule.testDispatcher) {
+        val viewModel = createViewModel(
+            savedStateValues = mapOf(
+                "type" to "LARGE_FILES",
+                "cleanup_selected_filter" to 2
+            )
         )
+        advanceUntilIdle()
+
+        assertEquals(2, viewModel.getSelectedFilterIndex())
+        coVerify {
+            storageCleanup.getCleanupSummary(
+                match { query -> query.filterValue == 100L * 1024 * 1024 }
+            )
+        }
     }
 }

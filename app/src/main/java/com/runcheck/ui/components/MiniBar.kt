@@ -18,7 +18,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.runcheck.ui.theme.BgIconCircle
+import com.runcheck.ui.theme.iconCircleColor
 import com.runcheck.ui.theme.reducedMotion
 
 @Composable
@@ -26,13 +26,13 @@ fun MiniBar(
     progress: Float,
     modifier: Modifier = Modifier,
     height: Dp = 6.dp,
-    trackColor: Color = BgIconCircle,
+    trackColor: Color = MaterialTheme.iconCircleColor,
     fillColor: Color = MaterialTheme.colorScheme.primary,
     animationDuration: Int = 800,
     contentDescription: String? = null
 ) {
     val isReducedMotion = MaterialTheme.reducedMotion
-    val pillShape = RoundedCornerShape(50)
+    val pillShape = MaterialTheme.shapes.extraLarge
 
     val animatedProgress by animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),

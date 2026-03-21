@@ -2,8 +2,8 @@ package com.runcheck.data.storage
 
 import com.runcheck.data.db.dao.StorageReadingDao
 import com.runcheck.data.db.entity.StorageReadingEntity
+import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.StorageState
-import com.runcheck.domain.repository.StorageReadingData
 import com.runcheck.domain.repository.StorageRepository as StorageRepositoryContract
 import com.runcheck.domain.usecase.CalculateFillRateUseCase
 import kotlinx.coroutines.Dispatchers
@@ -76,16 +76,20 @@ class StorageRepositoryImpl @Inject constructor(
         storageReadingDao.insert(entity)
     }
 
-    override suspend fun getAllReadings(): List<StorageReadingData> {
+    override suspend fun getAllReadings(): List<StorageReading> {
         return storageReadingDao.getAll().map { it.toDomain() }
     }
 
     override suspend fun deleteOlderThan(cutoff: Long) {
         storageReadingDao.deleteOlderThan(cutoff)
     }
+
+    override suspend fun deleteAll() {
+        storageReadingDao.deleteAll()
+    }
 }
 
-private fun StorageReadingEntity.toDomain() = StorageReadingData(
+private fun StorageReadingEntity.toDomain() = StorageReading(
     timestamp = timestamp,
     totalBytes = totalBytes,
     availableBytes = availableBytes,

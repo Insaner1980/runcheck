@@ -30,10 +30,10 @@ import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.components.MiniBar
-import com.runcheck.ui.theme.AccentTeal
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.statusColors
 
 @Composable
 fun CleanupBottomBar(
@@ -96,7 +96,7 @@ fun CleanupBottomBar(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(4.dp),
-                        fillColor = AccentTeal,
+                        fillColor = MaterialTheme.statusColors.healthy,
                         contentDescription = projectionDesc
                     )
 

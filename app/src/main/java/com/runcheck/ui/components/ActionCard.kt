@@ -46,7 +46,7 @@ fun ActionCard(
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(16.dp)
+        shape = MaterialTheme.shapes.large
     ) {
         Row(
             modifier = Modifier
