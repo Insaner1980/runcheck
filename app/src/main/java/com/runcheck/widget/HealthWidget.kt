@@ -1,12 +1,22 @@
 package com.runcheck.widget
 
 import android.content.Context
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalSize
+import androidx.glance.action.actionStartActivity
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.SizeMode
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
@@ -18,13 +28,20 @@ import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.glance.appwidget.cornerRadius
-import androidx.glance.background
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.runcheck.MainActivity
 import com.runcheck.R
 
 class HealthWidget : GlanceAppWidget() {
+
+    companion object {
+        private val SMALL = DpSize(110.dp, 110.dp)
+        private val MEDIUM = DpSize(180.dp, 110.dp)
+        private val LARGE = DpSize(250.dp, 150.dp)
+    }
+
+    override val sizeMode = SizeMode.Responsive(
+        setOf(SMALL, MEDIUM, LARGE)
+    )
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         if (!WidgetDataProvider.isProUnlocked(context)) {
@@ -42,19 +59,21 @@ class HealthWidget : GlanceAppWidget() {
 
         provideContent {
             GlanceTheme {
+                val size = LocalSize.current
                 Column(
                     modifier = GlanceModifier
                         .fillMaxSize()
                         .padding(12.dp)
                         .cornerRadius(16.dp)
-                        .background(GlanceTheme.colors.widgetBackground),
+                        .background(GlanceTheme.colors.widgetBackground)
+                        .clickable(actionStartActivity<MainActivity>()),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = snapshot.overallScore.toString(),
                         style = TextStyle(
-                            fontSize = 40.sp,
+                            fontSize = if (size.width >= LARGE.width) 48.sp else 40.sp,
                             fontWeight = FontWeight.Bold,
                             color = GlanceTheme.colors.onSurface
                         )
@@ -86,7 +105,8 @@ class HealthWidget : GlanceAppWidget() {
                         .fillMaxSize()
                         .padding(12.dp)
                         .cornerRadius(16.dp)
-                        .background(GlanceTheme.colors.widgetBackground),
+                        .background(GlanceTheme.colors.widgetBackground)
+                        .clickable(actionStartActivity<MainActivity>()),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -118,7 +138,8 @@ class HealthWidget : GlanceAppWidget() {
                         .fillMaxSize()
                         .padding(12.dp)
                         .cornerRadius(16.dp)
-                        .background(GlanceTheme.colors.widgetBackground),
+                        .background(GlanceTheme.colors.widgetBackground)
+                        .clickable(actionStartActivity<MainActivity>()),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -143,7 +164,7 @@ class HealthWidget : GlanceAppWidget() {
     }
 }
 
-@androidx.compose.runtime.Composable
+@Composable
 private fun MiniIndicator(label: String, value: String) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
