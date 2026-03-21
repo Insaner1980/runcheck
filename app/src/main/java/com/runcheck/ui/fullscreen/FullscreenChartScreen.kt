@@ -106,7 +106,7 @@ fun FullscreenChartScreen(
                             color = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                        Button(onClick = { viewModel.setPeriod(state.toString()) }) {
+                        Button(onClick = { viewModel.retry() }) {
                             Text(stringResource(R.string.fullscreen_chart_retry))
                         }
                     }

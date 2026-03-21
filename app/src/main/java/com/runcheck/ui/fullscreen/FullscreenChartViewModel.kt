@@ -83,6 +83,10 @@ class FullscreenChartViewModel @Inject constructor(
         loadData()
     }
 
+    fun retry() {
+        loadData()
+    }
+
     private fun loadData() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
