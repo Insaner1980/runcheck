@@ -90,7 +90,11 @@ class FullscreenChartViewModel @Inject constructor(
     private fun loadData() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
-            _uiState.value = FullscreenChartUiState.Loading
+            // Only show loading spinner on initial load — keep current chart visible
+            // during metric/period changes to avoid flicker
+            if (_uiState.value !is FullscreenChartUiState.Success) {
+                _uiState.value = FullscreenChartUiState.Loading
+            }
             try {
                 when (source) {
                     FullscreenChartSource.BATTERY_HISTORY -> loadBatteryHistory()
@@ -195,7 +199,8 @@ class FullscreenChartViewModel @Inject constructor(
             periodOptions = SessionGraphWindow.entries.map { it.name },
             yLabels = yLabels,
             xLabels = xLabels,
-            tooltipDecimals = if (metric == SessionGraphMetric.POWER) 1 else 0
+            tooltipDecimals = if (metric == SessionGraphMetric.POWER) 1 else 0,
+            tooltipTimeSkeleton = "Hm"
         )
     }
 
@@ -260,6 +265,7 @@ sealed interface FullscreenChartUiState {
         val periodOptions: List<String>,
         val yLabels: List<ChartYLabel>,
         val xLabels: List<ChartXLabel>,
-        val tooltipDecimals: Int = 0
+        val tooltipDecimals: Int = 0,
+        val tooltipTimeSkeleton: String = "HmMMMd"
     ) : FullscreenChartUiState
 }

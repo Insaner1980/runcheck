@@ -53,9 +53,17 @@ import com.runcheck.ui.common.formatLocalizedDateTime
 import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.theme.spacing
 
+/** Keys for passing selections back via savedStateHandle. */
+object FullscreenChartResult {
+    const val KEY_SOURCE = "fullscreen_result_source"
+    const val KEY_METRIC = "fullscreen_result_metric"
+    const val KEY_PERIOD = "fullscreen_result_period"
+}
+
 @Composable
 fun FullscreenChartScreen(
     onBack: () -> Unit,
+    onSelectionChanged: (source: String, metric: String, period: String) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier,
     viewModel: FullscreenChartViewModel = hiltViewModel()
 ) {
@@ -119,8 +127,14 @@ fun FullscreenChartScreen(
                     state = state,
                     source = viewModel.source,
                     onBack = onBack,
-                    onMetricChange = { viewModel.setMetric(it) },
-                    onPeriodChange = { viewModel.setPeriod(it) }
+                    onMetricChange = {
+                        viewModel.setMetric(it)
+                        onSelectionChanged(viewModel.source.name, it, state.selectedPeriod)
+                    },
+                    onPeriodChange = {
+                        viewModel.setPeriod(it)
+                        onSelectionChanged(viewModel.source.name, state.selectedMetric, it)
+                    }
                 )
             }
         }
@@ -208,7 +222,7 @@ private fun FullscreenChartContent(
             qualityZones = qualityZones,
             tooltipFormatter = { index ->
                 val v = formatDecimal(state.chartData[index], state.tooltipDecimals)
-                val time = formatLocalizedDateTime(state.chartTimestamps[index], "HmMMMd")
+                val time = formatLocalizedDateTime(state.chartTimestamps[index], state.tooltipTimeSkeleton)
                 "$v${state.unit} · $time"
             }
         )

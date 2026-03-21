@@ -131,6 +131,10 @@ fun BatteryDetailScreen(
     onNavigateToCharger: () -> Unit,
     onUpgradeToPro: () -> Unit,
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit = { _, _, _ -> },
+    fullscreenResultSource: String? = null,
+    fullscreenResultMetric: String? = null,
+    fullscreenResultPeriod: String? = null,
+    onFullscreenResultConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: BatteryViewModel = hiltViewModel()
 ) {
@@ -195,7 +199,11 @@ fun BatteryDetailScreen(
                     onNavigateToCharger = onNavigateToCharger,
                     onUpgradeToPro = onUpgradeToPro,
                     onNavigateToFullscreen = onNavigateToFullscreen,
-                    onDismissInfoCard = { viewModel.dismissInfoCard(it) }
+                    onDismissInfoCard = { viewModel.dismissInfoCard(it) },
+                    fullscreenResultSource = fullscreenResultSource,
+                    fullscreenResultMetric = fullscreenResultMetric,
+                    fullscreenResultPeriod = fullscreenResultPeriod,
+                    onFullscreenResultConsumed = onFullscreenResultConsumed
                 )
             }
         }
@@ -210,7 +218,11 @@ private fun BatteryContent(
     onNavigateToCharger: () -> Unit,
     onUpgradeToPro: () -> Unit,
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
-    onDismissInfoCard: (String) -> Unit
+    onDismissInfoCard: (String) -> Unit,
+    fullscreenResultSource: String? = null,
+    fullscreenResultMetric: String? = null,
+    fullscreenResultPeriod: String? = null,
+    onFullscreenResultConsumed: () -> Unit = {}
 ) {
     var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
     var isRefreshing by remember { mutableStateOf(false) }
@@ -221,6 +233,24 @@ private fun BatteryContent(
     val historyMetric = BatteryHistoryMetric.valueOf(selectedHistoryMetric)
     val sessionMetric = SessionGraphMetric.valueOf(selectedSessionMetric)
     val sessionWindow = SessionGraphWindow.valueOf(selectedSessionWindow)
+
+    // Apply fullscreen chart selection results when navigating back
+    LaunchedEffect(fullscreenResultSource, fullscreenResultMetric, fullscreenResultPeriod) {
+        if (fullscreenResultSource != null && fullscreenResultMetric != null && fullscreenResultPeriod != null) {
+            when (fullscreenResultSource) {
+                FullscreenChartSource.BATTERY_HISTORY.name -> {
+                    selectedHistoryMetric = fullscreenResultMetric
+                    val period = runCatching { HistoryPeriod.valueOf(fullscreenResultPeriod) }.getOrNull()
+                    if (period != null) onPeriodChange(period)
+                }
+                FullscreenChartSource.BATTERY_SESSION.name -> {
+                    selectedSessionMetric = fullscreenResultMetric
+                    selectedSessionWindow = fullscreenResultPeriod
+                }
+            }
+            onFullscreenResultConsumed()
+        }
+    }
     val chargingSessionSummary = remember(state.history, battery.level, battery.chargingStatus) {
         calculateChargingSessionSummary(
             history = state.history,

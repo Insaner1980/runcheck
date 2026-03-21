@@ -7,7 +7,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -22,6 +24,7 @@ import com.runcheck.ui.pro.ProUpgradeScreen
 import com.runcheck.ui.settings.SettingsScreen
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.runcheck.ui.fullscreen.FullscreenChartResult
 import com.runcheck.ui.fullscreen.FullscreenChartScreen
 import com.runcheck.ui.learn.LearnArticleDetailScreen
 import com.runcheck.ui.learn.LearnScreen
@@ -106,23 +109,56 @@ fun RuncheckNavHost(
                 onNavigateToLearn = { navController.navigateSingleTop(Screen.Learn.route) }
             )
         }
-        composable(Screen.Battery.route) {
+        composable(Screen.Battery.route) { entry ->
+            val resultSource by entry.savedStateHandle
+                .getStateFlow<String?>(FullscreenChartResult.KEY_SOURCE, null)
+                .collectAsStateWithLifecycle()
+            val resultMetric by entry.savedStateHandle
+                .getStateFlow<String?>(FullscreenChartResult.KEY_METRIC, null)
+                .collectAsStateWithLifecycle()
+            val resultPeriod by entry.savedStateHandle
+                .getStateFlow<String?>(FullscreenChartResult.KEY_PERIOD, null)
+                .collectAsStateWithLifecycle()
             BatteryDetailScreen(
                 onBack = { navController.popBackStack() },
                 onNavigateToCharger = { navController.navigateSingleTop(Screen.Charger.route) },
                 onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
                 onNavigateToFullscreen = { source, metric, period ->
                     navController.navigateSingleTop(Screen.FullscreenChart(source, metric, period).route)
+                },
+                fullscreenResultSource = resultSource,
+                fullscreenResultMetric = resultMetric,
+                fullscreenResultPeriod = resultPeriod,
+                onFullscreenResultConsumed = {
+                    entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_SOURCE)
+                    entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_METRIC)
+                    entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_PERIOD)
                 }
             )
         }
-        composable(Screen.Network.route) {
+        composable(Screen.Network.route) { entry ->
+            val resultSource by entry.savedStateHandle
+                .getStateFlow<String?>(FullscreenChartResult.KEY_SOURCE, null)
+                .collectAsStateWithLifecycle()
+            val resultMetric by entry.savedStateHandle
+                .getStateFlow<String?>(FullscreenChartResult.KEY_METRIC, null)
+                .collectAsStateWithLifecycle()
+            val resultPeriod by entry.savedStateHandle
+                .getStateFlow<String?>(FullscreenChartResult.KEY_PERIOD, null)
+                .collectAsStateWithLifecycle()
             NetworkDetailScreen(
                 onBack = { navController.popBackStack() },
                 onNavigateToSpeedTest = { navController.navigateSingleTop(Screen.SpeedTest.route) },
                 onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
                 onNavigateToFullscreen = { source, metric, period ->
                     navController.navigateSingleTop(Screen.FullscreenChart(source, metric, period).route)
+                },
+                fullscreenResultMetric = resultMetric,
+                fullscreenResultPeriod = resultPeriod,
+                onFullscreenResultConsumed = {
+                    entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_SOURCE)
+                    entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_METRIC)
+                    entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_PERIOD)
                 }
             )
         }
@@ -209,7 +245,16 @@ fun RuncheckNavHost(
                 navArgument("period") { type = NavType.StringType }
             )
         ) {
-            FullscreenChartScreen(onBack = { navController.popBackStack() })
+            FullscreenChartScreen(
+                onBack = { navController.popBackStack() },
+                onSelectionChanged = { source, metric, period ->
+                    navController.previousBackStackEntry?.savedStateHandle?.apply {
+                        set(FullscreenChartResult.KEY_SOURCE, source)
+                        set(FullscreenChartResult.KEY_METRIC, metric)
+                        set(FullscreenChartResult.KEY_PERIOD, period)
+                    }
+                }
+            )
         }
     }
 }

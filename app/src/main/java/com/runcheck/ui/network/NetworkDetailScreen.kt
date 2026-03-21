@@ -111,6 +111,9 @@ fun NetworkDetailScreen(
     onBack: () -> Unit = {},
     onUpgradeToPro: () -> Unit = {},
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit = { _, _, _ -> },
+    fullscreenResultMetric: String? = null,
+    fullscreenResultPeriod: String? = null,
+    onFullscreenResultConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: NetworkViewModel = hiltViewModel()
 ) {
@@ -180,7 +183,10 @@ fun NetworkDetailScreen(
                     onPeriodChange = { viewModel.setHistoryPeriod(it) },
                     onUpgradeToPro = onUpgradeToPro,
                     onNavigateToFullscreen = onNavigateToFullscreen,
-                    onDismissInfoCard = { viewModel.dismissInfoCard(it) }
+                    onDismissInfoCard = { viewModel.dismissInfoCard(it) },
+                    fullscreenResultMetric = fullscreenResultMetric,
+                    fullscreenResultPeriod = fullscreenResultPeriod,
+                    onFullscreenResultConsumed = onFullscreenResultConsumed
                 )
             }
         }
@@ -473,9 +479,19 @@ private fun SignalHistoryCard(
     selectedPeriod: HistoryPeriod,
     historyLoadError: UiText?,
     onPeriodChange: (HistoryPeriod) -> Unit,
-    onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit
+    onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
+    overrideMetric: String? = null
 ) {
     var selectedMetric by rememberSaveable { mutableStateOf(NetworkHistoryMetric.SIGNAL.name) }
+
+    // Apply metric override from fullscreen chart
+    LaunchedEffect(overrideMetric) {
+        if (overrideMetric != null) {
+            val valid = runCatching { NetworkHistoryMetric.valueOf(overrideMetric) }.isSuccess
+            if (valid) selectedMetric = overrideMetric
+        }
+    }
+
     val metric = NetworkHistoryMetric.valueOf(selectedMetric)
 
     // Downsample values AND timestamps together
@@ -729,10 +745,22 @@ private fun NetworkContent(
     onPeriodChange: (HistoryPeriod) -> Unit,
     onUpgradeToPro: () -> Unit,
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
-    onDismissInfoCard: (String) -> Unit
+    onDismissInfoCard: (String) -> Unit,
+    fullscreenResultMetric: String? = null,
+    fullscreenResultPeriod: String? = null,
+    onFullscreenResultConsumed: () -> Unit = {}
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // Apply fullscreen chart selection results when navigating back
+    LaunchedEffect(fullscreenResultMetric, fullscreenResultPeriod) {
+        if (fullscreenResultMetric != null && fullscreenResultPeriod != null) {
+            val period = runCatching { HistoryPeriod.valueOf(fullscreenResultPeriod) }.getOrNull()
+            if (period != null) onPeriodChange(period)
+            onFullscreenResultConsumed()
+        }
+    }
     val context = LocalContext.current
     val activity = context.findActivity()
     val networkState = state.networkState
@@ -827,7 +855,8 @@ private fun NetworkContent(
                     selectedPeriod = state.selectedHistoryPeriod,
                     historyLoadError = state.historyLoadError,
                     onPeriodChange = onPeriodChange,
-                    onNavigateToFullscreen = onNavigateToFullscreen
+                    onNavigateToFullscreen = onNavigateToFullscreen,
+                    overrideMetric = fullscreenResultMetric
                 )
             } else {
                 ProFeatureCalloutCard(
