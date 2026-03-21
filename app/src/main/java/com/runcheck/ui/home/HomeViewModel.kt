@@ -1,5 +1,6 @@
 package com.runcheck.ui.home
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.runcheck.domain.model.BatteryState
@@ -33,6 +34,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val getBatteryState: GetBatteryStateUseCase,
     private val getNetworkState: GetNetworkStateUseCase,
     private val getThermalState: GetThermalStateUseCase,
@@ -48,8 +50,10 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
     private var loadJob: Job? = null
 
-    // In-memory flag: show expiration modal only once per session
-    private var expirationModalShownThisSession = false
+    // Persisted across process death via SavedStateHandle
+    private var expirationModalShownThisSession: Boolean
+        get() = savedStateHandle.get<Boolean>(KEY_EXPIRATION_MODAL_SHOWN) ?: false
+        set(value) { savedStateHandle[KEY_EXPIRATION_MODAL_SHOWN] = value }
     private var lastTrackedSessionStatus: com.runcheck.domain.model.ChargingStatus? = null
     private var lastTrackedSessionAt: Long = 0L
 
@@ -202,5 +206,6 @@ class HomeViewModel @Inject constructor(
     companion object {
         private const val DISPLAY_UPDATE_INTERVAL_MS = 333L
         private const val CHARGER_SESSION_TRACK_INTERVAL_MS = 15_000L
+        private const val KEY_EXPIRATION_MODAL_SHOWN = "expiration_modal_shown"
     }
 }

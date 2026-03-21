@@ -1,5 +1,6 @@
 package com.runcheck.ui.thermal
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.runcheck.domain.model.ThermalState
@@ -21,6 +22,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ThermalViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val getThermalState: GetThermalStateUseCase,
     private val getThrottlingHistory: GetThrottlingHistoryUseCase,
     private val observeProAccess: ObserveProAccessUseCase,
@@ -30,8 +32,17 @@ class ThermalViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<ThermalUiState>(ThermalUiState.Loading)
     val uiState: StateFlow<ThermalUiState> = _uiState.asStateFlow()
     private var loadJob: Job? = null
-    private var sessionMinTemp: Float? = null
-    private var sessionMaxTemp: Float? = null
+    private var sessionMinTemp: Float?
+        get() = savedStateHandle.get<Float>(KEY_SESSION_MIN_TEMP)
+        set(value) { savedStateHandle[KEY_SESSION_MIN_TEMP] = value }
+    private var sessionMaxTemp: Float?
+        get() = savedStateHandle.get<Float>(KEY_SESSION_MAX_TEMP)
+        set(value) { savedStateHandle[KEY_SESSION_MAX_TEMP] = value }
+
+    private companion object {
+        const val KEY_SESSION_MIN_TEMP = "thermal_session_min_temp"
+        const val KEY_SESSION_MAX_TEMP = "thermal_session_max_temp"
+    }
 
     fun refresh() {
         loadThermalData()

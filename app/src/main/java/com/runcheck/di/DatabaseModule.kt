@@ -2,6 +2,7 @@ package com.runcheck.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.runcheck.BuildConfig
@@ -15,11 +16,13 @@ import com.runcheck.data.db.dao.StorageReadingDao
 import com.runcheck.data.db.dao.ThermalReadingDao
 import com.runcheck.data.db.dao.SpeedTestResultDao
 import com.runcheck.data.db.dao.ThrottlingEventDao
+import com.runcheck.util.ReleaseSafeLog
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import java.io.File
 import javax.inject.Singleton
 
 @Module
@@ -188,10 +191,21 @@ object DatabaseModule {
             BuildConfig.ROOM_DB_NAME
         )
             .addMigrations(*ALL_MIGRATIONS)
+            .addCallback(object : RoomDatabase.Callback() {
+                override fun onDestructiveMigration(db: SupportSQLiteDatabase) {
+                    ReleaseSafeLog.error(
+                        TAG,
+                        "Database destructive migration triggered — historical data lost"
+                    )
+                }
+            })
+            .fallbackToDestructiveMigration()
             .build()
 
         return database
     }
+
+    private const val TAG = "DatabaseModule"
 
     @Provides
     @Singleton

@@ -6,6 +6,7 @@ import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.repository.StorageRepository as StorageRepositoryContract
 import com.runcheck.domain.usecase.CalculateFillRateUseCase
+import com.runcheck.util.ReleaseSafeLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -64,16 +65,20 @@ class StorageRepositoryImpl @Inject constructor(
     }.flowOn(Dispatchers.IO)
 
     override suspend fun saveReading(state: StorageState) {
-        val entity = StorageReadingEntity(
-            timestamp = System.currentTimeMillis(),
-            totalBytes = state.totalBytes,
-            availableBytes = state.availableBytes,
-            appsBytes = state.appsBytes ?: 0L,
-            mediaBytes = state.mediaBreakdown?.let {
-                it.imagesBytes + it.videosBytes + it.audioBytes + it.documentsBytes + it.downloadsBytes
-            } ?: 0L
-        )
-        storageReadingDao.insert(entity)
+        try {
+            val entity = StorageReadingEntity(
+                timestamp = System.currentTimeMillis(),
+                totalBytes = state.totalBytes,
+                availableBytes = state.availableBytes,
+                appsBytes = state.appsBytes ?: 0L,
+                mediaBytes = state.mediaBreakdown?.let {
+                    it.imagesBytes + it.videosBytes + it.audioBytes + it.documentsBytes + it.downloadsBytes
+                } ?: 0L
+            )
+            storageReadingDao.insert(entity)
+        } catch (e: Exception) {
+            ReleaseSafeLog.error(TAG, "Failed to save storage reading", e)
+        }
     }
 
     override suspend fun getAllReadings(): List<StorageReading> {
@@ -81,11 +86,19 @@ class StorageRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteOlderThan(cutoff: Long) {
-        storageReadingDao.deleteOlderThan(cutoff)
+        try {
+            storageReadingDao.deleteOlderThan(cutoff)
+        } catch (e: Exception) {
+            ReleaseSafeLog.error(TAG, "Failed to delete old storage readings", e)
+        }
     }
 
     override suspend fun deleteAll() {
         storageReadingDao.deleteAll()
+    }
+
+    private companion object {
+        const val TAG = "StorageRepository"
     }
 }
 
