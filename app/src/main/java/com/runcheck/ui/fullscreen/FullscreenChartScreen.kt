@@ -63,9 +63,11 @@ fun FullscreenChartScreen(
     val activity = LocalContext.current.findActivity()
 
     DisposableEffect(Unit) {
+        val previousOrientation = activity?.requestedOrientation
+            ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         onDispose {
-            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            activity?.requestedOrientation = previousOrientation
         }
     }
 
