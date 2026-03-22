@@ -222,7 +222,8 @@ private fun ThermalContent(
                         id = ThermalInfoCards.THROTTLING_EXPLAINER,
                         headline = stringResource(R.string.info_card_thermal_throttling_headline),
                         body = stringResource(R.string.info_card_thermal_throttling_body),
-                        onDismiss = { onDismissInfoCard(it) }
+                        onDismiss = { onDismissInfoCard(it) },
+                        onLearnMore = { onNavigateToLearnArticle("thermal_throttling") }
                     )
                 }
             }
@@ -235,7 +236,8 @@ private fun ThermalContent(
                         id = ThermalInfoCards.HEAT_BATTERY_LOOP,
                         headline = stringResource(R.string.info_card_heat_battery_headline),
                         body = stringResource(R.string.info_card_heat_battery_body),
-                        onDismiss = { onDismissInfoCard(it) }
+                        onDismiss = { onDismissInfoCard(it) },
+                        onLearnMore = { onNavigateToLearnArticle("thermal_feedback") }
                     )
                 }
             }

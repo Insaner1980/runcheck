@@ -684,6 +684,7 @@
     <string name="a11y_info_button">More info</string>
     <string name="info_learn_more">Learn more</string>
     <string name="info_show_less">Show less</string>
+    <string name="info_card_read_article">Read full article →</string>
     <string name="info_normal_range_label">What\'s normal</string>
     <string name="info_why_it_matters_label">Why it matters</string>
 
@@ -799,7 +800,7 @@
 
     <string name="info_network_wifi_standard_title">Wi-Fi Standard</string>
     <string name="info_network_wifi_standard_explanation">The Wi-Fi protocol version your connection is using. Newer standards support faster speeds and better handling of multiple devices.</string>
-    <string name="info_network_wifi_standard_range">Wi-Fi 4 (802.11n) is basic. Wi-Fi 5 (802.11ac) is good. Wi-Fi 6/6E (802.11ax) is latest and fastest.</string>
+    <string name="info_network_wifi_standard_range">Wi-Fi 4 (802.11n) is basic. Wi-Fi 5 (802.11ac) is good. Wi-Fi 6/6E (802.11ax) is very fast. Wi-Fi 7 (802.11be) is the newest standard.</string>
     <string name="info_network_wifi_standard_matters">Both your phone and router must support the same standard. Connecting via an older standard limits your maximum speed regardless of your internet plan.</string>
 
     <string name="info_network_link_speed_title">Link Speed</string>
@@ -937,7 +938,7 @@
 
     <string name="learn_network_wifi_bands_title">Wi-Fi Bands &amp; Standards</string>
     <string name="learn_network_wifi_bands_preview">2.4 GHz vs 5 GHz vs 6 GHz, Wi-Fi generations, and choosing the right connection.</string>
-    <string name="learn_network_wifi_bands_body">## Frequency bands\n\n2.4 GHz travels farther and penetrates walls better, but is slower and more congested. 5 GHz is faster with less interference but shorter range. 6 GHz (Wi-Fi 6E) offers the best speeds and least congestion but requires newer devices and has the shortest range.\n\n## Wi-Fi standards\n\nWi-Fi 4 (802.11n): up to 600 Mbps, introduced in 2009. Wi-Fi 5 (802.11ac): up to 3.5 Gbps, 5 GHz only. Wi-Fi 6 (802.11ax): up to 9.6 Gbps, both bands, better in crowded environments. Wi-Fi 6E: same as Wi-Fi 6 plus 6 GHz band.\n\n## Practical tips\n\nConnect to 5 GHz when near your router for fastest speeds. Use 2.4 GHz when you need range through walls. Your phone usually auto-selects the best band, but you can separate network names in your router settings for manual control.</string>
+    <string name="learn_network_wifi_bands_body">## Frequency bands\n\n2.4 GHz travels farther and penetrates walls better, but is slower and more congested. 5 GHz is faster with less interference but shorter range. 6 GHz (Wi-Fi 6E) offers the best speeds and least congestion but requires newer devices and has the shortest range.\n\n## Wi-Fi standards\n\nWi-Fi 4 (802.11n): up to 600 Mbps, introduced in 2009. Wi-Fi 5 (802.11ac): up to 3.5 Gbps, 5 GHz only. Wi-Fi 6 (802.11ax): up to 9.6 Gbps, both bands, better in crowded environments. Wi-Fi 6E: same as Wi-Fi 6 plus 6 GHz band. Wi-Fi 7 (802.11be): up to 46 Gbps, multi-link operation across bands simultaneously.\n\n## Practical tips\n\nConnect to 5 GHz when near your router for fastest speeds. Use 2.4 GHz when you need range through walls. Your phone usually auto-selects the best band, but you can separate network names in your router settings for manual control.</string>
 
     <string name="learn_network_speed_tests_title">How Speed Tests Work</string>
     <string name="learn_network_speed_tests_preview">What speed tests measure, their limitations, and how to get meaningful results.</string>

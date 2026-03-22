@@ -810,7 +810,8 @@ private fun NetworkContent(
                     id = NetworkInfoCards.WEAK_SIGNAL_DRAIN,
                     headline = stringResource(R.string.info_card_weak_signal_headline),
                     body = stringResource(R.string.info_card_weak_signal_body),
-                    onDismiss = { onDismissInfoCard(it) }
+                    onDismiss = { onDismissInfoCard(it) },
+                    onLearnMore = { onNavigateToLearnArticle("network_signal") }
                 )
             }
 
@@ -819,7 +820,8 @@ private fun NetworkContent(
                     id = NetworkInfoCards.SPEED_TEST_INFO,
                     headline = stringResource(R.string.info_card_speed_test_info_headline),
                     body = stringResource(R.string.info_card_speed_test_info_body),
-                    onDismiss = { onDismissInfoCard(it) }
+                    onDismiss = { onDismissInfoCard(it) },
+                    onLearnMore = { onNavigateToLearnArticle("network_speed_tests") }
                 )
             }
 

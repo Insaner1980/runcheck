@@ -297,7 +297,8 @@ private fun BatteryContent(
                     id = BatteryInfoCards.HEALTH_80_PERCENT,
                     headline = stringResource(R.string.info_card_health_80_headline),
                     body = stringResource(R.string.info_card_health_80_body),
-                    onDismiss = onDismissInfoCard
+                    onDismiss = onDismissInfoCard,
+                    onLearnMore = { onNavigateToLearnArticle("battery_health") }
                 )
             }
 
@@ -308,7 +309,8 @@ private fun BatteryContent(
                     id = BatteryInfoCards.DIES_BEFORE_ZERO,
                     headline = stringResource(R.string.info_card_dies_before_zero_headline),
                     body = stringResource(R.string.info_card_dies_before_zero_body),
-                    onDismiss = onDismissInfoCard
+                    onDismiss = onDismissInfoCard,
+                    onLearnMore = { onNavigateToLearnArticle("battery_health") }
                 )
             }
 
@@ -505,7 +507,8 @@ private fun BatteryContent(
                     id = BatteryInfoCards.CHARGING_HABITS,
                     headline = stringResource(R.string.info_card_charging_habits_headline),
                     body = stringResource(R.string.info_card_charging_habits_body),
-                    onDismiss = onDismissInfoCard
+                    onDismiss = onDismissInfoCard,
+                    onLearnMore = { onNavigateToLearnArticle("battery_charging") }
                 )
             }
 
@@ -544,7 +547,8 @@ private fun BatteryContent(
                     id = BatteryInfoCards.SCREEN_OFF_DRAIN,
                     headline = stringResource(R.string.info_card_screen_off_drain_headline),
                     body = stringResource(R.string.info_card_screen_off_drain_body),
-                    onDismiss = onDismissInfoCard
+                    onDismiss = onDismissInfoCard,
+                    onLearnMore = { onNavigateToLearnArticle("battery_drain") }
                 )
             }
 
