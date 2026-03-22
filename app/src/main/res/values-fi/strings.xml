@@ -684,6 +684,7 @@
     <string name="a11y_info_button">Lisätietoja</string>
     <string name="info_learn_more">Lue lisää</string>
     <string name="info_show_less">Näytä vähemmän</string>
+    <string name="info_card_read_article">Lue koko artikkeli →</string>
     <string name="info_normal_range_label">Mikä on normaalia</string>
     <string name="info_why_it_matters_label">Miksi sillä on väliä</string>
 
@@ -799,7 +800,7 @@
 
     <string name="info_network_wifi_standard_title">Wi-Fi-standardi</string>
     <string name="info_network_wifi_standard_explanation">Wi-Fi-protokollan versio, jota yhteytesi käyttää. Uudemmat standardit tukevat nopeampia nopeuksia ja parempaa monen laitteen käsittelyä.</string>
-    <string name="info_network_wifi_standard_range">Wi-Fi 4 (802.11n) on perus. Wi-Fi 5 (802.11ac) on hyvä. Wi-Fi 6/6E (802.11ax) on uusin ja nopein.</string>
+    <string name="info_network_wifi_standard_range">Wi-Fi 4 (802.11n) on perus. Wi-Fi 5 (802.11ac) on hyvä. Wi-Fi 6/6E (802.11ax) on erittäin nopea. Wi-Fi 7 (802.11be) on uusin standardi.</string>
     <string name="info_network_wifi_standard_matters">Sekä puhelimesi että reitittimesi on tuettava samaa standardia. Vanhemmalla standardilla yhdistäminen rajoittaa maksiminopeuttasi internet-liittymästäsi riippumatta.</string>
 
     <string name="info_network_link_speed_title">Linkin nopeus</string>
@@ -937,7 +938,7 @@
 
     <string name="learn_network_wifi_bands_title">Wi-Fi-kaistat ja standardit</string>
     <string name="learn_network_wifi_bands_preview">2,4 GHz vs 5 GHz vs 6 GHz, Wi-Fi-sukupolvet ja oikean yhteyden valinta.</string>
-    <string name="learn_network_wifi_bands_body">## Taajuuskaistat\n\n2,4 GHz kantaa pidemmälle ja läpäisee seinät paremmin, mutta on hitaampi ja ruuhkaisempi. 5 GHz on nopeampi ja vähemmän häiriöaltis, mutta lyhyempi kantama. 6 GHz (Wi-Fi 6E) tarjoaa parhaat nopeudet ja vähiten ruuhkaa, mutta vaatii uudempia laitteita ja on lyhyin kantama.\n\n## Wi-Fi-standardit\n\nWi-Fi 4 (802.11n): jopa 600 Mbps, esitelty 2009. Wi-Fi 5 (802.11ac): jopa 3,5 Gbps, vain 5 GHz. Wi-Fi 6 (802.11ax): jopa 9,6 Gbps, molemmat kaistat, parempi ruuhkaisissa ympäristöissä. Wi-Fi 6E: sama kuin Wi-Fi 6 plus 6 GHz -kaista.\n\n## Käytännön vinkkejä\n\nYhdistä 5 GHz:iin reitittimen lähellä nopeimpia nopeuksia varten. Käytä 2,4 GHz:iä kun tarvitset kantamaa seinien läpi. Puhelimesi valitsee yleensä parhaan kaistan automaattisesti, mutta voit erottaa verkkonimet reitittimen asetuksissa manuaalista valintaa varten.</string>
+    <string name="learn_network_wifi_bands_body">## Taajuuskaistat\n\n2,4 GHz kantaa pidemmälle ja läpäisee seinät paremmin, mutta on hitaampi ja ruuhkaisempi. 5 GHz on nopeampi ja vähemmän häiriöaltis, mutta lyhyempi kantama. 6 GHz (Wi-Fi 6E) tarjoaa parhaat nopeudet ja vähiten ruuhkaa, mutta vaatii uudempia laitteita ja on lyhyin kantama.\n\n## Wi-Fi-standardit\n\nWi-Fi 4 (802.11n): jopa 600 Mbps, esitelty 2009. Wi-Fi 5 (802.11ac): jopa 3,5 Gbps, vain 5 GHz. Wi-Fi 6 (802.11ax): jopa 9,6 Gbps, molemmat kaistat, parempi ruuhkaisissa ympäristöissä. Wi-Fi 6E: sama kuin Wi-Fi 6 plus 6 GHz -kaista. Wi-Fi 7 (802.11be): jopa 46 Gbps, multi-link-toiminta eri kaistoilla samanaikaisesti.\n\n## Käytännön vinkkejä\n\nYhdistä 5 GHz:iin reitittimen lähellä nopeimpia nopeuksia varten. Käytä 2,4 GHz:iä kun tarvitset kantamaa seinien läpi. Puhelimesi valitsee yleensä parhaan kaistan automaattisesti, mutta voit erottaa verkkonimet reitittimen asetuksissa manuaalista valintaa varten.</string>
 
     <string name="learn_network_speed_tests_title">Miten nopeustestit toimivat</string>
     <string name="learn_network_speed_tests_preview">Mitä nopeustestit mittaavat, niiden rajoitukset ja miten saada merkityksellisiä tuloksia.</string>

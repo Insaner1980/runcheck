@@ -290,7 +290,8 @@ private fun StorageContent(
                     id = StorageInfoCards.FULL_STORAGE_SLOW,
                     headline = stringResource(R.string.info_card_full_storage_headline),
                     body = stringResource(R.string.info_card_full_storage_body),
-                    onDismiss = { onDismissInfoCard(it) }
+                    onDismiss = { onDismissInfoCard(it) },
+                    onLearnMore = { onNavigateToLearnArticle("storage_slowdown") }
                 )
             }
 
@@ -313,7 +314,8 @@ private fun StorageContent(
                     id = StorageInfoCards.STORAGE_OVERVIEW,
                     headline = stringResource(R.string.info_card_storage_overview_headline),
                     body = stringResource(R.string.info_card_storage_overview_body),
-                    onDismiss = { onDismissInfoCard(it) }
+                    onDismiss = { onDismissInfoCard(it) },
+                    onLearnMore = { onNavigateToLearnArticle("storage_breakdown") }
                 )
             }
 
