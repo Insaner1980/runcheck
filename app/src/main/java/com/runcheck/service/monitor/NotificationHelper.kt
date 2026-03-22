@@ -26,8 +26,11 @@ class NotificationHelper @Inject constructor(
 ) {
 
     companion object {
-        const val CHANNEL_ALERTS = "device_pulse_alerts"
-        const val CHANNEL_STATUS = "device_pulse_status"
+        const val CHANNEL_ALERTS = "runcheck_alerts"
+        const val CHANNEL_STATUS = "runcheck_status"
+
+        // Legacy channel IDs from the old "DevicePulse" name — deleted on upgrade
+        private val LEGACY_CHANNEL_IDS = listOf("device_pulse_alerts", "device_pulse_status")
         const val CHANNEL_TRIAL = "runcheck_trial"
         const val NOTIFICATION_LOW_BATTERY = 1001
         const val NOTIFICATION_HIGH_TEMP = 1002
@@ -75,6 +78,11 @@ class NotificationHelper @Inject constructor(
             notificationManager.createNotificationChannels(
                 listOf(alertChannel, statusChannel, trialChannel)
             )
+
+            // Remove leftover channels from the old "DevicePulse" app name
+            for (legacyId in LEGACY_CHANNEL_IDS) {
+                notificationManager.deleteNotificationChannel(legacyId)
+            }
         }
     }
 
