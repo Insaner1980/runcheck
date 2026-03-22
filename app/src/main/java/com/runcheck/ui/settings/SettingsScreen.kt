@@ -542,6 +542,7 @@ fun SettingsScreen(
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
+            shape = MaterialTheme.shapes.large,
             title = { Text(stringResource(R.string.settings_clear_confirm_title)) },
             text = { Text(stringResource(R.string.settings_clear_confirm_message)) },
             confirmButton = {

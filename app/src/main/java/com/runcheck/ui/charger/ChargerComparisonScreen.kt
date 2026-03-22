@@ -488,6 +488,7 @@ private fun AddChargerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.large,
         title = { Text(stringResource(R.string.charger_add)) },
         text = {
             OutlinedTextField(
@@ -522,6 +523,7 @@ private fun DeleteChargerDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.large,
         title = { Text(stringResource(R.string.charger_delete_confirm_title)) },
         text = { Text(stringResource(R.string.charger_delete_confirm_message, chargerName)) },
         confirmButton = {

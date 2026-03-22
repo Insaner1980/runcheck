@@ -910,7 +910,7 @@
     <string name="learn_topic_storage">Storage</string>
     <string name="learn_topic_general">General</string>
     <string name="learn_read_time">%1$d min read</string>
-    <string name="learn_cross_link_check">Check yours →</string>
+    <string name="learn_cross_link_check">Check yours</string>
     <string name="learn_article_not_found">Article not found</string>
     <string name="related_articles_header">Related articles</string>
 

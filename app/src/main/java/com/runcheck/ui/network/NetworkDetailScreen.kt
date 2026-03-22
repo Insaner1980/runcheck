@@ -1160,6 +1160,7 @@ private fun CellularDataWarningDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.large,
         icon = {
             Icon(
                 Icons.Default.CellTower,

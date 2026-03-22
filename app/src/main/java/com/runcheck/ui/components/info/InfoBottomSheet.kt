@@ -48,6 +48,7 @@ fun InfoBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
         modifier = modifier
     ) {
         Column(

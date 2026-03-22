@@ -325,13 +325,18 @@ class MediaStoreScanner @Inject constructor(
 
     private fun queryTotalSize(contentUri: Uri): Long {
         return try {
+            var total = 0L
             resolver.query(
                 contentUri,
-                arrayOf("SUM(${MediaStore.MediaColumns.SIZE})"),
+                arrayOf(MediaStore.MediaColumns.SIZE),
                 null, null, null
             )?.use { cursor ->
-                if (cursor.moveToFirst()) cursor.getLong(0) else 0L
-            } ?: 0L
+                val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+                while (cursor.moveToNext()) {
+                    total += cursor.getLong(sizeCol)
+                }
+            }
+            total
         } catch (error: Exception) {
             ReleaseSafeLog.error(TAG, "Failed to query total size for $contentUri", error)
             0L
@@ -356,12 +361,16 @@ class MediaStoreScanner @Inject constructor(
             try {
                 resolver.query(
                     uri,
-                    arrayOf("SUM(${MediaStore.MediaColumns.SIZE})"),
+                    arrayOf(MediaStore.MediaColumns.SIZE),
                     "${MediaStore.MediaColumns.MIME_TYPE} LIKE ?",
                     arrayOf(mimePattern),
                     null
                 )?.use { cursor ->
-                    if (cursor.moveToFirst()) total += cursor.getLong(0)
+                    val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+                    while (cursor.moveToNext()) {
+                        coroutineContext.ensureActive()
+                        total += cursor.getLong(sizeCol)
+                    }
                 }
             } catch (error: CancellationException) {
                 throw error
@@ -483,26 +492,34 @@ class MediaStoreScanner @Inject constructor(
         selection: String,
         selectionArgs: Array<String>
     ): CleanupAggregateSummary? {
-        val projection = arrayOf(
-            "COUNT(*)",
-            "COALESCE(SUM(${MediaStore.MediaColumns.SIZE}), 0)",
-            "COALESCE(MAX(${MediaStore.MediaColumns.SIZE}), 0)"
-        )
+        val projection = arrayOf(MediaStore.MediaColumns.SIZE)
         return try {
+            val coroutineContext = currentCoroutineContext()
             resolver.query(collection, projection, selection, selectionArgs, null)
                 ?.use { cursor ->
-                    if (!cursor.moveToFirst()) return@use null
-                    val count = cursor.getInt(0)
+                    val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+                    var count = 0
+                    var totalBytes = 0L
+                    var maxSize = 0L
+                    while (cursor.moveToNext()) {
+                        coroutineContext.ensureActive()
+                        count++
+                        val size = cursor.getLong(sizeCol)
+                        totalBytes += size
+                        if (size > maxSize) maxSize = size
+                    }
                     if (count == 0) return@use null
                     CleanupAggregateSummary(
                         group = CleanupGroupSummary(
                             category = category,
                             itemCount = count,
-                            totalBytes = cursor.getLong(1)
+                            totalBytes = totalBytes
                         ),
-                        maxFileSizeBytes = cursor.getLong(2)
+                        maxFileSizeBytes = maxSize
                     )
                 }
+        } catch (error: CancellationException) {
+            throw error
         } catch (error: Exception) {
             ReleaseSafeLog.error(TAG, "Failed to aggregate cleanup summary for $category", error)
             null
@@ -602,27 +619,36 @@ class MediaStoreScanner @Inject constructor(
             MediaStore.MediaColumns.DATE_MODIFIED
         )
         return try {
-            resolver.query(
-                collection,
-                projection,
-                selection,
-                selectionArgs,
-                "$sortOrder LIMIT $limit OFFSET $offset"
-            )?.use { cursor ->
-                val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
-                val nameCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
-                val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
-                val mimeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.MIME_TYPE)
-                val dateCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_MODIFIED)
+            val cursor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val queryArgs = Bundle().apply {
+                    putString(ContentResolver.QUERY_ARG_SQL_SELECTION, selection)
+                    putStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS, selectionArgs)
+                    putString(ContentResolver.QUERY_ARG_SQL_SORT_ORDER, sortOrder)
+                    putInt(ContentResolver.QUERY_ARG_LIMIT, limit)
+                    putInt(ContentResolver.QUERY_ARG_OFFSET, offset)
+                }
+                resolver.query(collection, projection, queryArgs, null)
+            } else {
+                resolver.query(
+                    collection, projection, selection, selectionArgs,
+                    "$sortOrder LIMIT $limit OFFSET $offset"
+                )
+            }
+            cursor?.use { c ->
+                val idCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
+                val nameCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
+                val sizeCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+                val mimeCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns.MIME_TYPE)
+                val dateCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_MODIFIED)
                 buildList {
-                    while (cursor.moveToNext()) {
+                    while (c.moveToNext()) {
                         add(
                             ScannedFile(
-                                uri = android.content.ContentUris.withAppendedId(collection, cursor.getLong(idCol)).toString(),
-                                displayName = cursor.getString(nameCol) ?: context.getString(R.string.fallback_unknown),
-                                sizeBytes = cursor.getLong(sizeCol),
-                                mimeType = cursor.getString(mimeCol) ?: "",
-                                dateModified = cursor.getLong(dateCol) * 1000,
+                                uri = android.content.ContentUris.withAppendedId(collection, c.getLong(idCol)).toString(),
+                                displayName = c.getString(nameCol) ?: context.getString(R.string.fallback_unknown),
+                                sizeBytes = c.getLong(sizeCol),
+                                mimeType = c.getString(mimeCol) ?: "",
+                                dateModified = c.getLong(dateCol) * 1000,
                                 category = category
                             )
                         )

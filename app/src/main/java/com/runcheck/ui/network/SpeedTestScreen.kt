@@ -716,6 +716,7 @@ private fun CellularDataWarningDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.large,
         title = { Text(text = stringResource(R.string.speed_test_title)) },
         text = { Text(text = stringResource(R.string.speed_test_cellular_warning)) },
         confirmButton = {
