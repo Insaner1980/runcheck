@@ -97,6 +97,7 @@ import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericRingValueTextStyle
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.statusColorForStoragePercent
 import com.runcheck.ui.theme.statusColors
 
 @Composable
@@ -450,7 +451,7 @@ private fun StorageHeroCard(storage: StorageState, onInfoClick: (String) -> Unit
                 modifier = Modifier.size(152.dp),
                 strokeWidth = 10.dp,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                progressColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                progressColor = statusColorForStoragePercent(usagePercent),
                 contentDescription = stringResource(
                     R.string.a11y_progress_percent,
                     stringResource(R.string.storage_title),
@@ -493,7 +494,8 @@ private fun StorageHeroCard(storage: StorageState, onInfoClick: (String) -> Unit
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
+                verticalAlignment = Alignment.Bottom
             ) {
                 storage.totalCacheBytes?.let { cache ->
                     MetricPill(
