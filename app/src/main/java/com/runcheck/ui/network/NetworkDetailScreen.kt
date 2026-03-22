@@ -101,6 +101,8 @@ import com.runcheck.ui.chart.signalQualityZones
 import com.runcheck.ui.common.formatLocalizedDateTime
 import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
+import com.runcheck.ui.learn.LearnTopic
+import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.statusColorForSignalQuality
@@ -111,6 +113,7 @@ fun NetworkDetailScreen(
     onBack: () -> Unit = {},
     onUpgradeToPro: () -> Unit = {},
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit = { _, _, _ -> },
+    onNavigateToLearnArticle: (articleId: String) -> Unit = {},
     fullscreenResultMetric: String? = null,
     fullscreenResultPeriod: String? = null,
     onFullscreenResultConsumed: () -> Unit = {},
@@ -183,6 +186,7 @@ fun NetworkDetailScreen(
                     onPeriodChange = { viewModel.setHistoryPeriod(it) },
                     onUpgradeToPro = onUpgradeToPro,
                     onNavigateToFullscreen = onNavigateToFullscreen,
+                    onNavigateToLearnArticle = onNavigateToLearnArticle,
                     onDismissInfoCard = { viewModel.dismissInfoCard(it) },
                     fullscreenResultMetric = fullscreenResultMetric,
                     fullscreenResultPeriod = fullscreenResultPeriod,
@@ -745,6 +749,7 @@ private fun NetworkContent(
     onPeriodChange: (HistoryPeriod) -> Unit,
     onUpgradeToPro: () -> Unit,
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
+    onNavigateToLearnArticle: (articleId: String) -> Unit,
     onDismissInfoCard: (String) -> Unit,
     fullscreenResultMetric: String? = null,
     fullscreenResultPeriod: String? = null,
@@ -870,6 +875,11 @@ private fun NetworkContent(
                 lastResult = speedTestState.lastResult,
                 onNavigateToSpeedTest = onNavigateToSpeedTest,
                 onInfoClick = { activeInfoSheet = it }
+            )
+
+            RelatedArticlesSection(
+                topic = LearnTopic.NETWORK,
+                onNavigateToArticle = onNavigateToLearnArticle
             )
 
             DetailScreenAdBanner()

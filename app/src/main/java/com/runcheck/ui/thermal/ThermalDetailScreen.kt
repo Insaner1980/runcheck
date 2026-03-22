@@ -87,12 +87,15 @@ import com.runcheck.ui.theme.numericHeroValueTextStyle
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColorForTemperature
+import com.runcheck.ui.learn.LearnTopic
+import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.statusColors
 
 @Composable
 fun ThermalDetailScreen(
     onBack: () -> Unit,
     onUpgradeToPro: () -> Unit,
+    onNavigateToLearnArticle: (articleId: String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ThermalViewModel = hiltViewModel()
 ) {
@@ -153,6 +156,7 @@ fun ThermalDetailScreen(
                     state = state,
                     onRefresh = { viewModel.refresh() },
                     onUpgradeToPro = onUpgradeToPro,
+                    onNavigateToLearnArticle = onNavigateToLearnArticle,
                     onDismissInfoCard = { viewModel.dismissInfoCard(it) }
                 )
             }
@@ -165,6 +169,7 @@ private fun ThermalContent(
     state: ThermalUiState.Success,
     onRefresh: () -> Unit,
     onUpgradeToPro: () -> Unit,
+    onNavigateToLearnArticle: (articleId: String) -> Unit,
     onDismissInfoCard: (String) -> Unit
 ) {
     var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
@@ -274,6 +279,13 @@ private fun ThermalContent(
                         onAction = onUpgradeToPro
                     )
                 }
+            }
+
+            item {
+                RelatedArticlesSection(
+                    topic = LearnTopic.TEMPERATURE,
+                    onNavigateToArticle = onNavigateToLearnArticle
+                )
             }
 
             item { DetailScreenAdBanner() }

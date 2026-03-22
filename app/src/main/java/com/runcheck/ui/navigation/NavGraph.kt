@@ -126,6 +126,9 @@ fun RuncheckNavHost(
                 onNavigateToFullscreen = { source, metric, period ->
                     navController.navigateSingleTop(Screen.FullscreenChart(source, metric, period).route)
                 },
+                onNavigateToLearnArticle = { articleId ->
+                    navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
+                },
                 fullscreenResultSource = resultSource,
                 fullscreenResultMetric = resultMetric,
                 fullscreenResultPeriod = resultPeriod,
@@ -153,6 +156,9 @@ fun RuncheckNavHost(
                 onNavigateToFullscreen = { source, metric, period ->
                     navController.navigateSingleTop(Screen.FullscreenChart(source, metric, period).route)
                 },
+                onNavigateToLearnArticle = { articleId ->
+                    navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
+                },
                 fullscreenResultMetric = resultMetric,
                 fullscreenResultPeriod = resultPeriod,
                 onFullscreenResultConsumed = {
@@ -165,7 +171,10 @@ fun RuncheckNavHost(
         composable(Screen.Thermal.route) {
             ThermalDetailScreen(
                 onBack = { navController.popBackStack() },
-                onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) }
+                onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
+                onNavigateToLearnArticle = { articleId ->
+                    navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
+                }
             )
         }
         composable(Screen.Storage.route) {
@@ -174,7 +183,10 @@ fun RuncheckNavHost(
                 onNavigateToCleanup = { type ->
                     navController.navigateSingleTop(Screen.Cleanup(type.name).route)
                 },
-                onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) }
+                onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
+                onNavigateToLearnArticle = { articleId ->
+                    navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
+                }
             )
         }
         composable(

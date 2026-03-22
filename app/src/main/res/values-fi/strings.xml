@@ -898,6 +898,7 @@
     <string name="learn_read_time">%1$d min lukuaika</string>
     <string name="learn_cross_link_check">Tarkista omasi →</string>
     <string name="learn_article_not_found">Artikkelia ei löytynyt</string>
+    <string name="related_articles_header">Aiheeseen liittyvät artikkelit</string>
 
     <!-- Learn Articles - Battery -->
     <string name="learn_battery_health_title">Akun kunto ja lataussyklit</string>

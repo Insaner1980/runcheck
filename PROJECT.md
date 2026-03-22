@@ -457,6 +457,12 @@ Pro-gated areas currently include:
 
 ---
 
+## Future Considerations
+
+- **Learn article read/unread tracking:** Currently no persistence of which Learn articles the user has read. With only 14 articles this isn't needed yet, but if the catalog grows significantly (30+), consider adding DataStore-backed read state with visual indicators (e.g., unread dot on `LearnArticleCard`).
+
+---
+
 ## Notes for Maintenance
 
 - `PROJECT.md` should describe the code as it exists now, not the intended roadmap only.
