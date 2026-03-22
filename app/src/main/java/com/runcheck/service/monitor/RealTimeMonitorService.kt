@@ -242,12 +242,18 @@ class RealTimeMonitorService : Service() {
     }
 
     private fun createInitialNotification(): Notification {
+        val contentIntent = PendingIntent.getActivity(
+            this, 0,
+            Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(getString(R.string.monitor_realtime_notification_text))
             .setSmallIcon(R.drawable.ic_notification)
             .setOngoing(true)
             .setSilent(true)
+            .setContentIntent(contentIntent)
             .build()
     }
 

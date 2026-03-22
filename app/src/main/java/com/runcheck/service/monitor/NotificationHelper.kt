@@ -2,12 +2,15 @@ package com.runcheck.service.monitor
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import com.runcheck.MainActivity
 import com.runcheck.R
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.ui.common.formatTemperature
@@ -38,6 +41,13 @@ class NotificationHelper @Inject constructor(
         const val NOTIFICATION_CHARGE_COMPLETE = 1004
         const val NOTIFICATION_TRIAL_DAY5 = 1005
         const val NOTIFICATION_TRIAL_DAY7 = 1006
+
+        /** Intent extra key for deep-linking to a specific screen from notifications. */
+        const val EXTRA_NAVIGATE_TO = "navigate_to"
+        const val NAVIGATE_BATTERY = "battery"
+        const val NAVIGATE_THERMAL = "thermal"
+        const val NAVIGATE_STORAGE = "storage"
+        const val NAVIGATE_PRO_UPGRADE = "pro_upgrade"
     }
 
     private val notificationManager: NotificationManager
@@ -95,6 +105,7 @@ class NotificationHelper @Inject constructor(
             .setContentTitle(context.getString(R.string.notification_low_battery_title))
             .setContentText(context.getString(R.string.notification_low_battery_text, level))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(deepLinkIntent(NAVIGATE_BATTERY, NOTIFICATION_LOW_BATTERY))
             .setAutoCancel(true)
             .build()
 
@@ -115,6 +126,7 @@ class NotificationHelper @Inject constructor(
                 )
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(deepLinkIntent(NAVIGATE_THERMAL, NOTIFICATION_HIGH_TEMP))
             .setAutoCancel(true)
             .build()
 
@@ -130,6 +142,7 @@ class NotificationHelper @Inject constructor(
             .setContentTitle(context.getString(R.string.notification_low_storage_title))
             .setContentText(context.getString(R.string.notification_low_storage_text, percentUsed))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(deepLinkIntent(NAVIGATE_STORAGE, NOTIFICATION_LOW_STORAGE))
             .setAutoCancel(true)
             .build()
 
@@ -145,6 +158,7 @@ class NotificationHelper @Inject constructor(
             .setContentTitle(context.getString(R.string.notification_charge_complete_title))
             .setContentText(context.getString(R.string.notification_charge_complete_text, level))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(deepLinkIntent(NAVIGATE_BATTERY, NOTIFICATION_CHARGE_COMPLETE))
             .setAutoCancel(true)
             .build()
 
@@ -159,6 +173,7 @@ class NotificationHelper @Inject constructor(
             .setContentTitle(context.getString(R.string.notification_trial_day5_title))
             .setContentText(context.getString(R.string.notification_trial_day5_text))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(deepLinkIntent(NAVIGATE_PRO_UPGRADE, NOTIFICATION_TRIAL_DAY5))
             .setAutoCancel(true)
             .build()
         notificationManager.notify(NOTIFICATION_TRIAL_DAY5, notification)
@@ -172,9 +187,27 @@ class NotificationHelper @Inject constructor(
             .setContentTitle(context.getString(R.string.notification_trial_day7_title))
             .setContentText(context.getString(R.string.notification_trial_day7_text))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(deepLinkIntent(NAVIGATE_PRO_UPGRADE, NOTIFICATION_TRIAL_DAY7))
             .setAutoCancel(true)
             .build()
         notificationManager.notify(NOTIFICATION_TRIAL_DAY7, notification)
+    }
+
+    /**
+     * Creates a PendingIntent that opens the app and navigates to a specific screen.
+     * Uses distinct request codes so each notification gets its own PendingIntent.
+     */
+    private fun deepLinkIntent(route: String, requestCode: Int): PendingIntent {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            putExtra(EXTRA_NAVIGATE_TO, route)
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        return PendingIntent.getActivity(
+            context,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
     }
 
     /** Cancels a notification by its ID. */
