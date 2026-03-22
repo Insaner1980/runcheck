@@ -62,7 +62,7 @@ fun LearnScreen(
             ) { item ->
                 when (item) {
                     is LearnArticleListItem.Header -> {
-                        CardSectionTitle(text = topicLabel(item.topic))
+                        CardSectionTitle(text = stringResource(item.topic.labelRes))
                     }
                     is LearnArticleListItem.Article -> {
                         val article = item.article
@@ -98,15 +98,6 @@ private sealed interface LearnArticleListItem {
     data class Spacer(val topic: LearnTopic) : LearnArticleListItem {
         override val key: String = "spacer_${topic.name}"
     }
-}
-
-@Composable
-private fun topicLabel(topic: LearnTopic): String = when (topic) {
-    LearnTopic.BATTERY -> stringResource(R.string.learn_topic_battery)
-    LearnTopic.TEMPERATURE -> stringResource(R.string.learn_topic_temperature)
-    LearnTopic.NETWORK -> stringResource(R.string.learn_topic_network)
-    LearnTopic.STORAGE -> stringResource(R.string.learn_topic_storage)
-    LearnTopic.GENERAL -> stringResource(R.string.learn_topic_general)
 }
 
 @Preview(showBackground = true, widthDp = 412, heightDp = 915)

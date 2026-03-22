@@ -37,7 +37,7 @@ fun LearnArticleDetailScreen(
 
         if (article == null) {
             Text(
-                text = "Article not found",
+                text = stringResource(R.string.learn_article_not_found),
                 modifier = Modifier.padding(MaterialTheme.spacing.base)
             )
             return
