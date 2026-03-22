@@ -27,11 +27,19 @@ class BatteryRepositoryImpl @Inject constructor(
     private val batteryCapacityReader: BatteryCapacityReader
 ) : BatteryRepositoryContract {
 
-    override fun getBatteryState(): Flow<BatteryState> = flow {
+    @Volatile
+    private var cachedSource: BatteryDataSource? = null
+
+    private suspend fun getOrCreateSource(): BatteryDataSource {
+        cachedSource?.let { return it }
         val profile = withContext(Dispatchers.IO) {
             deviceProfileProvider.getDeviceProfile()
         }
-        val source = batteryDataSourceFactory.create(profile)
+        return batteryDataSourceFactory.create(profile).also { cachedSource = it }
+    }
+
+    override fun getBatteryState(): Flow<BatteryState> = flow {
+        val source = getOrCreateSource()
 
         val stateFlow = combine(
             source.getLevel(),
