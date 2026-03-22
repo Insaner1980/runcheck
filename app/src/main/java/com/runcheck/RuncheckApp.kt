@@ -1,6 +1,7 @@
 package com.runcheck
 
 import android.app.Application
+import android.content.Context
 import android.os.StrictMode
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
@@ -20,12 +21,32 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltAndroidApp
 class RuncheckApp : Application(), Configuration.Provider {
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /**
+     * Apply the user's chosen locale to the Application context so that
+     * background workers (WorkManager) and services that call getString()
+     * produce notification strings in the correct language.
+     */
+    override fun attachBaseContext(base: Context) {
+        val prefs = base.getSharedPreferences(
+            MainActivity.LANGUAGE_PREFS, Context.MODE_PRIVATE
+        )
+        val tag = prefs.getString(MainActivity.KEY_LANGUAGE_TAG, null)
+        if (tag != null) {
+            val locale = Locale.forLanguageTag(tag)
+            val config = base.resources.configuration.apply { setLocale(locale) }
+            super.attachBaseContext(base.createConfigurationContext(config))
+        } else {
+            super.attachBaseContext(base)
+        }
+    }
 
     @Inject
     lateinit var workerFactory: HiltWorkerFactory

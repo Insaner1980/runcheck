@@ -37,10 +37,18 @@ import com.runcheck.ui.theme.LocalReducedMotion
 
 @Composable
 fun RuncheckNavHost(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    deepLinkRoute: String? = null
 ) {
     val navController = rememberNavController()
     val reducedMotion = LocalReducedMotion.current
+
+    // Navigate to the deep-link screen once on initial composition
+    androidx.compose.runtime.LaunchedEffect(deepLinkRoute) {
+        if (deepLinkRoute != null) {
+            navController.navigateSingleTop(deepLinkRoute)
+        }
+    }
 
     NavHost(
         modifier = modifier,
