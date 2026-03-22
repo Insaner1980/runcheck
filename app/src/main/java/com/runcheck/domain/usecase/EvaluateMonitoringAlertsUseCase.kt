@@ -23,7 +23,8 @@ class EvaluateMonitoringAlertsUseCase @Inject constructor() {
     operator fun invoke(
         previous: MonitoringAlertSnapshot?,
         current: MonitoringAlertSnapshot,
-        preferences: UserPreferences
+        preferences: UserPreferences,
+        chargeCompleteFiredPreviously: Boolean = false
     ): MonitoringAlertDecision {
         if (!preferences.notificationsEnabled) {
             return MonitoringAlertDecision()
@@ -40,6 +41,7 @@ class EvaluateMonitoringAlertsUseCase @Inject constructor() {
                 current.storageUsagePercent > preferences.alertStorageThreshold &&
                 (previous == null || previous.storageUsagePercent <= preferences.alertStorageThreshold),
             chargeComplete = preferences.notifChargeComplete &&
+                !chargeCompleteFiredPreviously &&
                 previous?.chargingStatus == ChargingStatus.CHARGING &&
                 current.chargingStatus == ChargingStatus.FULL
         )
