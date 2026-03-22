@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -40,12 +41,20 @@ class MonitoringAlertStateStore @Inject constructor(
         )
     }
 
-    suspend fun update(snapshot: MonitoringAlertSnapshot) {
+    suspend fun wasChargeCompleteFired(): Boolean {
+        val preferences = context.monitoringAlertStateDataStore.data.first()
+        return preferences[KEY_CHARGE_COMPLETE_FIRED] ?: false
+    }
+
+    suspend fun update(snapshot: MonitoringAlertSnapshot, chargeCompleteFired: Boolean? = null) {
         context.monitoringAlertStateDataStore.edit { preferences ->
             preferences[KEY_LAST_BATTERY_LEVEL] = snapshot.batteryLevel
             preferences[KEY_LAST_BATTERY_TEMP_C] = snapshot.batteryTempC
             preferences[KEY_LAST_STORAGE_USAGE_PERCENT] = snapshot.storageUsagePercent
             preferences[KEY_LAST_CHARGING_STATUS] = snapshot.chargingStatus.name
+            if (chargeCompleteFired != null) {
+                preferences[KEY_CHARGE_COMPLETE_FIRED] = chargeCompleteFired
+            }
         }
     }
 
@@ -57,5 +66,6 @@ class MonitoringAlertStateStore @Inject constructor(
         private val KEY_LAST_BATTERY_TEMP_C = floatPreferencesKey("last_battery_temp_c")
         private val KEY_LAST_STORAGE_USAGE_PERCENT = floatPreferencesKey("last_storage_usage_percent")
         private val KEY_LAST_CHARGING_STATUS = stringPreferencesKey("last_charging_status")
+        private val KEY_CHARGE_COMPLETE_FIRED = booleanPreferencesKey("charge_complete_fired")
     }
 }

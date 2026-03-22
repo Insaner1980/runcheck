@@ -5,6 +5,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.runcheck.domain.model.BatteryState
+import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.repository.BatteryRepository
@@ -79,7 +80,23 @@ class HealthMonitorWorker @AssistedInject constructor(
                 storageState = requireNotNull(storageState)
             )
             val previousSnapshot = monitoringAlertStateStore.getLastSnapshot()
-            val alertDecision = evaluateMonitoringAlerts(previousSnapshot, snapshot, preferences)
+            val chargeCompleteFired = monitoringAlertStateStore.wasChargeCompleteFired()
+            val alertDecision = evaluateMonitoringAlerts(
+                previousSnapshot, snapshot, preferences, chargeCompleteFired
+            )
+
+            // Reset charge-complete flag when phone is unplugged
+            val isUnplugged = snapshot.chargingStatus == ChargingStatus.DISCHARGING ||
+                snapshot.chargingStatus == ChargingStatus.NOT_CHARGING
+            val newChargeCompleteFired = when {
+                isUnplugged -> false
+                alertDecision.chargeComplete -> true
+                else -> chargeCompleteFired
+            }
+
+            // Persist state before posting notifications so a retry
+            // after a crash here won't re-evaluate the same transition.
+            monitoringAlertStateStore.update(snapshot, newChargeCompleteFired)
 
             if (alertDecision.lowBattery) {
                 notificationHelper.showLowBatteryAlert(snapshot.batteryLevel)
@@ -96,8 +113,6 @@ class HealthMonitorWorker @AssistedInject constructor(
             if (alertDecision.chargeComplete) {
                 notificationHelper.showChargeCompleteNotification(snapshot.batteryLevel)
             }
-
-            monitoringAlertStateStore.update(snapshot)
         } || coreFailure
 
         return if (coreFailure) Result.retry() else Result.success()
