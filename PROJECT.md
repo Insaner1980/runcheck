@@ -121,6 +121,18 @@ Supporting monitor components include:
 - `MonitoringAlertStateStore`
 - `NotificationHelper`
 
+### Live Notification
+
+`RealTimeMonitorService` provides an opt-in persistent notification with real-time battery stats:
+
+- **Opt-in** — disabled by default, toggled in Settings → Live Notification
+- Runs as a foreground service (`FOREGROUND_SERVICE_TYPE_SPECIAL_USE`)
+- Updates every 5 seconds with live battery data from `BatteryRepository`
+- Uses `BigTextStyle` — collapsed shows level/status/temp, expanded shows additional lines
+- Configurable per-metric toggles: Current (mA/W), Charging status, Temperature, Screen stats, Remaining time
+- Stops immediately when user disables the toggle
+- Tapping the notification opens the app
+
 ### Widgets
 
 Two Glance widgets are present:
@@ -370,6 +382,10 @@ Settings is broader than a simple preferences page and covers monitoring, privac
 Sections:
 
 - Monitoring interval
+- Live Notification
+  - master toggle (opt-in, disabled by default)
+  - per-metric toggles: current, drain rate, temperature, screen stats, remaining time
+  - starts/stops `RealTimeMonitorService` foreground service
 - Notifications
   - master notifications toggle
   - low battery
@@ -382,6 +398,7 @@ Sections:
   - low storage threshold
 - Display
   - Celsius / Fahrenheit
+  - Language override (System / English / Finnish)
 - Data
   - data retention
   - CSV export
@@ -460,6 +477,133 @@ Pro-gated areas currently include:
 ## Future Considerations
 
 - **Learn article read/unread tracking:** Currently no persistence of which Learn articles the user has read. With only 14 articles this isn't needed yet, but if the catalog grows significantly (30+), consider adding DataStore-backed read state with visual indicators (e.g., unread dot on `LearnArticleCard`).
+
+---
+
+## Brand & Design System
+
+Single dark theme — no light mode, no AMOLED toggle, no dynamic colors.
+
+### Color Palette
+
+**Backgrounds:**
+
+| Token | Hex | Material3 Role | Usage |
+|-------|-----|----------------|-------|
+| BgPage | `#0B1E24` | `background`, `surface` | Page background |
+| BgCard | `#133040` | `surfaceContainer` | Card backgrounds |
+| BgCardAlt | `#0F2A35` | `surfaceContainerHigh` | Info cards, elevated surfaces |
+| BgIconCircle | `#1A3A48` | `surfaceContainerHighest`, `surfaceVariant` | Icon circle backgrounds |
+
+**Accents:**
+
+| Token | Hex | Material3 Role | Usage |
+|-------|-----|----------------|-------|
+| AccentBlue | `#4A9EDE` | `primary` | Primary accent, buttons, links, brand |
+| AccentTeal | `#5DE4C7` | `secondary` | Healthy status, positive values |
+| AccentAmber | `#E8C44A` | `tertiary` | Fair status, warnings |
+| AccentOrange | `#F5963A` | — | Poor status |
+| AccentRed | `#F06040` | `error` | Critical status, destructive actions |
+| AccentLime | `#C8E636` | — | Storage documents category |
+| AccentYellow | `#F5D03A` | — | Storage downloads category |
+
+**Text:**
+
+| Token | Hex | Material3 Role | Usage |
+|-------|-----|----------------|-------|
+| TextPrimary | `#E8E8ED` | `onSurface`, `onBackground` | Main text |
+| TextSecondary | `#90A8B0` | `onSurfaceVariant` | Labels, descriptions |
+| TextMuted | `#7A949E` | `outline`, `outlineVariant` | Hints, dividers, disabled text |
+| TextOnLime | `#1A2E0A` | — | Text on lime-colored backgrounds |
+
+### Status Colors
+
+Used via `MaterialTheme.statusColors` extension. Always paired with icons or text labels for accessibility.
+
+| Status | Color | Thresholds |
+|--------|-------|------------|
+| Healthy | AccentTeal `#5DE4C7` | Battery ≥75%, Temp <35°C, Storage <75%, Signal Excellent/Good |
+| Fair | AccentAmber `#E8C44A` | Battery 50–74%, Temp 35–39°C, Storage 75–84%, Signal Fair |
+| Poor | AccentOrange `#F5963A` | Battery 25–49%, Temp 40–44°C, Storage 85–94%, Signal Poor |
+| Critical | AccentRed `#F06040` | Battery <25%, Temp ≥45°C, Storage ≥95%, No Signal |
+
+**Confidence badges:**
+
+| Badge | Background | Text |
+|-------|-----------|------|
+| Accurate | AccentBlue `#4A9EDE` | BgPage `#0B1E24` |
+| Estimated | AccentAmber `#E8C44A` | BgPage `#0B1E24` |
+| Unavailable | TextMuted `#7A949E` | TextPrimary `#E8E8ED` |
+
+### Typography
+
+**Font families:**
+- **Manrope** — all body text, headers, labels (`MaterialTheme.typography`)
+- **JetBrains Mono** — numeric displays, values, charts (`MaterialTheme.numericFontFamily`)
+
+**Type scale (Manrope):**
+
+| Style | Size | Weight |
+|-------|------|--------|
+| displayLarge | 48sp | Bold, -0.04em tracking |
+| displayMedium | 36sp | Bold |
+| displaySmall | 28sp | SemiBold |
+| headlineLarge | 20sp | SemiBold |
+| headlineMedium | 16sp | SemiBold |
+| headlineSmall | 14sp | SemiBold |
+| titleLarge | 20sp | Medium |
+| titleMedium | 16sp | Medium |
+| titleSmall | 14sp | Medium |
+| bodyLarge | 15sp | Normal |
+| bodyMedium | 14sp | Normal |
+| bodySmall | 13sp | Normal |
+| labelLarge | 12sp | SemiBold, 0.08em tracking |
+| labelMedium | 10sp | SemiBold |
+| labelSmall | 10sp | Medium |
+
+**Numeric text styles (JetBrains Mono):**
+
+| Style | Base | Size | Usage |
+|-------|------|------|-------|
+| numericHeroValueTextStyle | displayLarge | 48sp Bold | Large hero values |
+| numericHeroLargeValueTextStyle | displayLarge | 54sp | Battery level display |
+| numericHeroLevelTextStyle | displayLarge | 48sp Bold, -2sp tracking | Compact hero values |
+| numericHeroUnitTextStyle | headlineLarge | 20sp SemiBold | Units next to hero values |
+| numericRingValueTextStyle | displayMedium | 32sp Bold | ProgressRing center value |
+| numericSpeedHeroValueTextStyle | displaySmall | 40sp | Speed test hero display |
+| chartAxisTextStyle | labelSmall | 10sp | Chart axis labels |
+| chartTooltipTextStyle | bodySmall | 11sp | Chart tooltip values |
+
+### Shapes & Spacing
+
+**Corner radii:**
+
+| Shape | Radius | Usage |
+|-------|--------|-------|
+| large | 16dp | Cards, panels, dialogs |
+| medium | 8dp | Badges, chips, small elements |
+| small | 8dp | Compact elements |
+| extraLarge | 50% | Circles (icons, avatars) |
+
+**Spacing grid (4dp base):**
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| xs | 4dp | Tight gaps |
+| sm | 8dp | Small gaps, inter-row spacing |
+| md | 12dp | Between cards, standard gaps |
+| base | 16dp | Card padding, section spacing |
+| lg | 24dp | Between sections |
+| xl | 32dp | Page margins, large separations |
+
+**Dividers:** `outlineVariant.copy(alpha = 0.35f)` — no hardcoded colors.
+
+**Contrast:** Minimum 4.5:1 body text, 3:1 large text (WCAG AA). Minimum touch target 48dp.
+
+### Logo
+
+Health-score arc (~210°) wrapping a phone silhouette, rendered in AccentBlue.
+Icon source files in `icons/` directory (SVG masters + 512px PNG exports).
 
 ---
 

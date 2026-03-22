@@ -15,7 +15,27 @@ data class UserPreferences(
     val alertTempThreshold: Int = 42,
     val alertStorageThreshold: Int = 90,
     // Display
-    val temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS
+    val temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS,
+    val appLanguage: AppLanguage = AppLanguage.SYSTEM,
+    // Live notification
+    val liveNotificationEnabled: Boolean = false,
+    val liveNotifCurrent: Boolean = true,
+    val liveNotifDrainRate: Boolean = true,
+    val liveNotifTemperature: Boolean = true,
+    val liveNotifScreenStats: Boolean = false,
+    val liveNotifRemainingTime: Boolean = false
 )
 
 enum class TemperatureUnit { CELSIUS, FAHRENHEIT }
+
+enum class AppLanguage {
+    SYSTEM,
+    ENGLISH,
+    FINNISH;
+
+    fun toLanguageTag(): String? = when (this) {
+        SYSTEM -> null
+        ENGLISH -> "en"
+        FINNISH -> "fi"
+    }
+}

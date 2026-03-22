@@ -450,6 +450,8 @@
     <string name="settings_temp_unit">Temperature Unit</string>
     <string name="settings_temp_celsius">Celsius (°C)</string>
     <string name="settings_temp_fahrenheit">Fahrenheit (°F)</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">System default</string>
 
     <!-- Settings: Data Management -->
     <string name="settings_data_section">Data</string>
@@ -507,6 +509,26 @@
     <string name="monitor_realtime_channel_name">Real-Time Monitoring</string>
     <string name="monitor_realtime_channel_description">Shows real-time device health data</string>
     <string name="monitor_realtime_notification_text">Monitoring device health…</string>
+
+    <!-- Live Notification -->
+    <string name="settings_live_notification">Live Notification</string>
+    <string name="settings_live_notification_desc">Show real-time battery stats in the notification bar. Runs as a foreground service while enabled.</string>
+    <string name="settings_live_notification_show">Show in notification</string>
+    <string name="settings_live_notif_current">Current (mA / W)</string>
+    <string name="settings_live_notif_drain_rate">Charging status</string>
+    <string name="settings_live_notif_temperature">Temperature</string>
+    <string name="settings_live_notif_screen_stats">Screen on/off stats</string>
+    <string name="settings_live_notif_remaining_time">Remaining time</string>
+    <string name="live_notif_current_with_power">%1$d mA (%2$s W)</string>
+    <string name="live_notif_current">%1$d mA</string>
+    <string name="live_notif_charging">Charging</string>
+    <string name="live_notif_discharging">Discharging</string>
+    <string name="live_notif_screen_on">Screen tracking active</string>
+    <string name="live_notif_remaining">Estimating remaining time…</string>
+
+    <!-- Info Card: Live Notification -->
+    <string name="info_card_live_notif_headline">Live battery monitoring</string>
+    <string name="info_card_live_notif_body">The live notification shows real-time battery data in your notification bar. You can choose which metrics to display in Settings → Live Notification. The service uses minimal battery — it reads the same sensors the system already monitors.</string>
 
     <!-- Export -->
     <string name="settings_export_data">Export Data (CSV)</string>
@@ -748,7 +770,7 @@
 
     <string name="info_battery_drain_rate_title">Drain Rate</string>
     <string name="info_battery_drain_rate_explanation">How fast your battery percentage is dropping, measured as percent per hour.</string>
-    <string name="info_battery_drain_rate_range">0.5–2%/h is normal for light use. 3–5%/h is moderate. Above 5%/h suggests heavy use or a problem.</string>
+    <string name="info_battery_drain_rate_range" formatted="false">0.5–2%/h is normal for light use. 3–5%/h is moderate. Above 5%/h suggests heavy use or a problem.</string>
     <string name="info_battery_drain_rate_matters">This is the simplest indicator of how fast your phone is using battery. If it\'s consistently high while idle, something may be running in the background.</string>
 
     <string name="info_battery_confidence_title">Measurement Confidence</string>
@@ -917,11 +939,11 @@
     <!-- Learn Articles - Battery -->
     <string name="learn_battery_health_title">Battery Health &amp; Cycle Count</string>
     <string name="learn_battery_health_preview">What battery health really means, how charge cycles affect it, and when to consider a replacement.</string>
-    <string name="learn_battery_health_body">## What is battery health?\n\nBattery health measures how much of your battery\'s original capacity remains. A new phone starts at 100%. Over time, the chemical processes inside the lithium-ion cell become less efficient, and the maximum charge it can hold decreases.\n\n## How cycle count affects health\n\nA charge cycle is one full discharge of the battery\'s capacity, but it does not have to happen all at once. Using 50% today and 50% tomorrow equals one cycle. Many phone batteries still retain about 80% capacity after roughly 500 cycles under favorable conditions, but heat, fast charging, and deep discharges can shorten that. runcheck only shows cycle count on devices and Android versions that report it.\n\n## When to replace your battery\n\nBelow about 80% health, shorter battery life becomes easier to notice. If you also see sudden shutdowns, fast percentage drops, or the phone getting unusually warm, battery replacement is usually reasonable.</string>
+    <string name="learn_battery_health_body" formatted="false">## What is battery health?\n\nBattery health measures how much of your battery\'s original capacity remains. A new phone starts at 100%. Over time, the chemical processes inside the lithium-ion cell become less efficient, and the maximum charge it can hold decreases.\n\n## How cycle count affects health\n\nA charge cycle is one full discharge of the battery\'s capacity, but it does not have to happen all at once. Using 50% today and 50% tomorrow equals one cycle. Many phone batteries still retain about 80% capacity after roughly 500 cycles under favorable conditions, but heat, fast charging, and deep discharges can shorten that. runcheck only shows cycle count on devices and Android versions that report it.\n\n## When to replace your battery\n\nBelow about 80% health, shorter battery life becomes easier to notice. If you also see sudden shutdowns, fast percentage drops, or the phone getting unusually warm, battery replacement is usually reasonable.</string>
 
     <string name="learn_battery_drain_title">Understanding Battery Drain</string>
     <string name="learn_battery_drain_preview">What causes high drain, how to read drain rates, and practical tips to extend battery life.</string>
-    <string name="learn_battery_drain_body">## What is drain rate?\n\nDrain rate measures how fast your battery percentage is dropping, usually expressed as percent per hour (%/h). Light use might show 0.5–1%/h, while gaming or navigation can hit 10%/h or more.\n\n## Common drain causes\n\nThe screen is the biggest power consumer, followed by cellular radio (especially with weak signal), GPS, and CPU-intensive apps. Background processes like sync, location services, and push notifications also contribute.\n\n## Screen on vs. screen off\n\nComparing screen-on and screen-off drain rates helps identify problems. If your phone drains fast with the screen off, background activity is likely keeping it awake. Check the Screen Off and Sleep Analysis sections together to see whether the phone is spending enough time in low-power sleep.</string>
+    <string name="learn_battery_drain_body" formatted="false">## What is drain rate?\n\nDrain rate measures how fast your battery percentage is dropping, usually expressed as percent per hour (%/h). Light use might show 0.5–1%/h, while gaming or navigation can hit 10%/h or more.\n\n## Common drain causes\n\nThe screen is the biggest power consumer, followed by cellular radio (especially with weak signal), GPS, and CPU-intensive apps. Background processes like sync, location services, and push notifications also contribute.\n\n## Screen on vs. screen off\n\nComparing screen-on and screen-off drain rates helps identify problems. If your phone drains fast with the screen off, background activity is likely keeping it awake. Check the Screen Off and Sleep Analysis sections together to see whether the phone is spending enough time in low-power sleep.</string>
 
     <string name="learn_battery_charging_title">Charging Myths &amp; Best Practices</string>
     <string name="learn_battery_charging_preview">Separate fact from fiction about charging habits and learn what actually extends battery life.</string>
@@ -969,7 +991,7 @@
     <!-- Learn Articles - General -->
     <string name="learn_health_score_title">How the Health Score Works</string>
     <string name="learn_health_score_preview">How runcheck calculates the overall health score from battery, network, thermal, and storage data.</string>
-    <string name="learn_health_score_body">## What it measures\n\nThe health score combines four categories: battery, network, thermal, and storage. Battery score looks at battery health flags, temperature, voltage, and health percentage when available. Network score uses signal quality and latency, and it can also use a recent speed test. Thermal score uses battery temperature, CPU temperature if available, and Android\'s thermal status. Storage score is based on overall storage usage percentage.\n\n## How it\'s calculated\n\nEach category starts near an ideal range and loses points as readings move into less healthy ranges. The overall score weights battery at 40%, network at 25%, thermal at 25%, and storage at 10%. A recent speed test can refine the network score, but the score still works without one.\n\n## Score ranges\n\n90–100: Excellent — your device is in great shape. 70–89: Good — normal wear and minor issues. 50–69: Fair — noticeable issues that could be addressed. Below 50: Poor — significant problems affecting daily use.\n\n## Improving your score\n\nThe score highlights which category needs attention. Check the matching detail screen to see which input is dragging the score down. Some factors, like long-term battery wear, may need hardware repair, while others, like signal quality or storage pressure, can often be improved immediately.</string>
+    <string name="learn_health_score_body" formatted="false">## What it measures\n\nThe health score combines four categories: battery, network, thermal, and storage. Battery score looks at battery health flags, temperature, voltage, and health percentage when available. Network score uses signal quality and latency, and it can also use a recent speed test. Thermal score uses battery temperature, CPU temperature if available, and Android\'s thermal status. Storage score is based on overall storage usage percentage.\n\n## How it\'s calculated\n\nEach category starts near an ideal range and loses points as readings move into less healthy ranges. The overall score weights battery at 40%, network at 25%, thermal at 25%, and storage at 10%. A recent speed test can refine the network score, but the score still works without one.\n\n## Score ranges\n\n90–100: Excellent — your device is in great shape. 70–89: Good — normal wear and minor issues. 50–69: Fair — noticeable issues that could be addressed. Below 50: Poor — significant problems affecting daily use.\n\n## Improving your score\n\nThe score highlights which category needs attention. Check the matching detail screen to see which input is dragging the score down. Some factors, like long-term battery wear, may need hardware repair, while others, like signal quality or storage pressure, can often be improved immediately.</string>
 
     <string name="learn_sw_vs_hw_title">Software vs Hardware Problems</string>
     <string name="learn_sw_vs_hw_preview">How to tell if your phone\'s issues are from software (fixable) or hardware (needs repair).</string>

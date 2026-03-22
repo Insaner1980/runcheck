@@ -1,5 +1,6 @@
 package com.runcheck.domain.usecase
 
+import com.runcheck.domain.model.AppLanguage
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.repository.UserPreferencesRepository
@@ -49,5 +50,33 @@ class ManageUserPreferencesUseCase @Inject constructor(
 
     suspend fun setTemperatureUnit(unit: TemperatureUnit) {
         userPreferencesRepository.setTemperatureUnit(unit)
+    }
+
+    suspend fun setAppLanguage(language: AppLanguage) {
+        userPreferencesRepository.setAppLanguage(language)
+    }
+
+    suspend fun setLiveNotificationEnabled(enabled: Boolean) {
+        userPreferencesRepository.setLiveNotificationEnabled(enabled)
+    }
+
+    suspend fun setLiveNotifCurrent(enabled: Boolean) {
+        userPreferencesRepository.setLiveNotifCurrent(enabled)
+    }
+
+    suspend fun setLiveNotifDrainRate(enabled: Boolean) {
+        userPreferencesRepository.setLiveNotifDrainRate(enabled)
+    }
+
+    suspend fun setLiveNotifTemperature(enabled: Boolean) {
+        userPreferencesRepository.setLiveNotifTemperature(enabled)
+    }
+
+    suspend fun setLiveNotifScreenStats(enabled: Boolean) {
+        userPreferencesRepository.setLiveNotifScreenStats(enabled)
+    }
+
+    suspend fun setLiveNotifRemainingTime(enabled: Boolean) {
+        userPreferencesRepository.setLiveNotifRemainingTime(enabled)
     }
 }

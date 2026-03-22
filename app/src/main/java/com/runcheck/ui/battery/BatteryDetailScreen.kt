@@ -312,6 +312,15 @@ private fun BatteryContent(
                 onInfoClick = { activeInfoSheet = it }
             )
 
+            // Live notification info card - show once to inform about the feature
+            InfoCard(
+                id = InfoCardCatalog.BatteryLiveNotification.id,
+                headline = stringResource(InfoCardCatalog.BatteryLiveNotification.headlineRes),
+                body = stringResource(InfoCardCatalog.BatteryLiveNotification.bodyRes),
+                onDismiss = onDismissInfoCard,
+                visible = InfoCardCatalog.BatteryLiveNotification.id !in state.dismissedInfoCards
+            )
+
             // Health degradation card - show when healthPercent < 90% and not dismissed
             if (battery.healthPercent != null && battery.healthPercent < 90) {
                 InfoCard(

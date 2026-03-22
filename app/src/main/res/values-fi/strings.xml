@@ -450,6 +450,8 @@
     <string name="settings_temp_unit">Lämpötilayksikkö</string>
     <string name="settings_temp_celsius">Celsius (°C)</string>
     <string name="settings_temp_fahrenheit">Fahrenheit (°F)</string>
+    <string name="settings_language">Kieli</string>
+    <string name="settings_language_system">Järjestelmän oletus</string>
 
     <!-- Settings: Data Management -->
     <string name="settings_data_section">Data</string>
@@ -507,6 +509,26 @@
     <string name="monitor_realtime_channel_name">Reaaliaikainen seuranta</string>
     <string name="monitor_realtime_channel_description">Näyttää laitteen kunnon reaaliaikaiset tiedot</string>
     <string name="monitor_realtime_notification_text">Seurataan laitteen kuntoa…</string>
+
+    <!-- Live Notification -->
+    <string name="settings_live_notification">Live-ilmoitus</string>
+    <string name="settings_live_notification_desc">Näytä reaaliaikaiset akkutiedot ilmoituspalkissa. Toimii etualan palveluna ollessaan päällä.</string>
+    <string name="settings_live_notification_show">Näytä ilmoituksessa</string>
+    <string name="settings_live_notif_current">Virta (mA / W)</string>
+    <string name="settings_live_notif_drain_rate">Lataustila</string>
+    <string name="settings_live_notif_temperature">Lämpötila</string>
+    <string name="settings_live_notif_screen_stats">Näyttö päällä/pois -tilastot</string>
+    <string name="settings_live_notif_remaining_time">Jäljellä oleva aika</string>
+    <string name="live_notif_current_with_power">%1$d mA (%2$s W)</string>
+    <string name="live_notif_current">%1$d mA</string>
+    <string name="live_notif_charging">Ladataan</string>
+    <string name="live_notif_discharging">Purkautuu</string>
+    <string name="live_notif_screen_on">Näytön seuranta aktiivinen</string>
+    <string name="live_notif_remaining">Arvioidaan jäljellä olevaa aikaa…</string>
+
+    <!-- Info Card: Live Notification -->
+    <string name="info_card_live_notif_headline">Reaaliaikainen akkuseuranta</string>
+    <string name="info_card_live_notif_body">Live-ilmoitus näyttää reaaliaikaiset akkutiedot ilmoituspalkissa. Voit valita näytettävät tiedot kohdasta Asetukset → Live-ilmoitus. Palvelu käyttää minimaalisesti akkua — se lukee samoja antureita, joita järjestelmä jo seuraa.</string>
 
     <!-- Export -->
     <string name="settings_export_data">Vie data (CSV)</string>
@@ -727,7 +749,7 @@
 
     <string name="info_battery_health_percent_title">Kuntoprosentti</string>
     <string name="info_battery_health_percent_explanation">Arvio siitä, kuinka suuri osa akun alkuperäisestä kapasiteetista on jäljellä. 100 % tarkoittaa uuden veroista.</string>
-    <string name="info_battery_health_percent_range">90–100 % on erinomainen. 80–90 % on normaalia 1–2 vuoden jälkeen. Alle 80 % tarkoittaa huomattavaa heikkenemistä.</string>
+    <string name="info_battery_health_percent_range" formatted="false">90–100 % on erinomainen. 80–90 % on normaalia 1–2 vuoden jälkeen. Alle 80 % tarkoittaa huomattavaa heikkenemistä.</string>
     <string name="info_battery_health_percent_matters">Tämä kertoo suoraan, kuinka paljon alkuperäisestä kapasiteetista on käytettävissä. Alle 80 % huomaat merkittävästi lyhyemmän akunkeston.</string>
 
     <string name="info_battery_capacity_title">Akun kapasiteetti</string>
@@ -748,7 +770,7 @@
 
     <string name="info_battery_drain_rate_title">Kulutustahti</string>
     <string name="info_battery_drain_rate_explanation">Kuinka nopeasti akun prosentti laskee, mitattuna prosentteina tunnissa.</string>
-    <string name="info_battery_drain_rate_range">0,5–2 %/h on normaalia kevyessä käytössä. 3–5 %/h on kohtalaista. Yli 5 %/h viittaa raskaaseen käyttöön tai ongelmaan.</string>
+    <string name="info_battery_drain_rate_range" formatted="false">0,5–2 %/h on normaalia kevyessä käytössä. 3–5 %/h on kohtalaista. Yli 5 %/h viittaa raskaaseen käyttöön tai ongelmaan.</string>
     <string name="info_battery_drain_rate_matters">Tämä on yksinkertaisin mittari siitä, kuinka nopeasti puhelimesi käyttää akkua. Jos se on jatkuvasti korkea levossa, jokin saattaa toimia taustalla.</string>
 
     <string name="info_battery_confidence_title">Mittausluotettavuus</string>
@@ -775,7 +797,7 @@
 
     <string name="info_thermal_headroom_title">Lämpötilan liikkumavara</string>
     <string name="info_thermal_headroom_explanation">runcheck näyttää jäljellä olevan marginaalin ennen kuin Android ennustaa vakavan lämpörajoituksen. Pienempi prosentti tarkoittaa vähemmän liikkumavaraa.</string>
-    <string name="info_thermal_headroom_range">Noin 50 % tai enemmän on mukava tila. 20–50 % tarkoittaa, että laite lämpenee. Lähellä 0 %:a vakava rajoitus voi olla lähellä.</string>
+    <string name="info_thermal_headroom_range" formatted="false">Noin 50 % tai enemmän on mukava tila. 20–50 % tarkoittaa, että laite lämpenee. Lähellä 0 %:a vakava rajoitus voi olla lähellä.</string>
     <string name="info_thermal_headroom_matters">Tämä auttaa havaitsemaan todennäköisen suorituskyvyn laskun ennen kuin lämpötila muuttuu vakavaksi. Laskeva arvo kertoo, että laite käyttää lämpöbudjettiaan.</string>
     <string name="info_thermal_headroom_detail">Androidin PowerManager-API (API 30+) ennustaa lämpöpainetta, jossa arvo 1,0 tarkoittaa vakavan rajoituksen rajaa. runcheck muuntaa tämän signaalin jäljellä olevaksi liikkumavaraksi helpompaa lukemista varten, joten pienempi näytetty prosentti tarkoittaa vähemmän marginaalia.</string>
 
@@ -834,7 +856,7 @@
     <!-- Info Bottom Sheet - Storage -->
     <string name="info_storage_usage_title">Tallennustilan käyttö</string>
     <string name="info_storage_usage_explanation">Prosentti puhelimesi kokonaistallennustilasta, joka on tällä hetkellä sovellusten, median ja järjestelmätietojen käytössä.</string>
-    <string name="info_storage_usage_range">Alle 75 % on mukavaa. 75–90 % alkaa olla täynnä. Yli 90 % voi aiheuttaa suorituskykyongelmia.</string>
+    <string name="info_storage_usage_range" formatted="false">Alle 75 % on mukavaa. 75–90 % alkaa olla täynnä. Yli 90 % voi aiheuttaa suorituskykyongelmia.</string>
     <string name="info_storage_usage_matters">Kun tallennustila on lähes täynnä, puhelimesi ei voi luoda väliaikaistiedostoja tehokkaasti, mikä hidastaa sovelluksia, päivityksiä ja jopa perustoimintoja kuten kuvien ottamista.</string>
 
     <string name="info_storage_fill_rate_title">Täyttövauhti</string>
@@ -921,11 +943,11 @@
 
     <string name="learn_battery_drain_title">Akun kulutuksen ymmärtäminen</string>
     <string name="learn_battery_drain_preview">Mikä aiheuttaa suurta kulutusta, miten lukea kulutustietoja ja käytännön vinkkejä akun keston pidentämiseen.</string>
-    <string name="learn_battery_drain_body">## Mikä on kulutustahti?\n\nKulutustahti mittaa, kuinka nopeasti akun prosentti laskee, yleensä ilmaistuna prosentteina tunnissa (%/h). Kevyt käyttö voi näyttää 0,5–1 %/h, kun taas pelaaminen tai navigointi voi yltää 10 %/h tai enemmän.\n\n## Yleisiä kulutuksen syitä\n\nNäyttö on suurin virrankuluttaja, seuraavana mobiiliradio (erityisesti heikolla signaalilla), GPS ja suoritinintensiiviset sovellukset. Taustaprosessit kuten synkronointi, sijaintipalvelut ja push-ilmoitukset vaikuttavat myös.\n\n## Näyttö päällä vs. pois\n\nNäyttö päällä- ja pois-kulutuksen vertailu auttaa tunnistamaan ongelmia. Jos puhelimesi tyhjenee nopeasti näytön ollessa pois, taustatoiminta todennäköisesti pitää sitä hereillä. Tarkista Näyttö pois- ja Unianalyysi-osiot yhdessä nähdäksesi, viettääkö puhelin tarpeeksi aikaa matalan tehon unessa.</string>
+    <string name="learn_battery_drain_body" formatted="false">## Mikä on kulutustahti?\n\nKulutustahti mittaa, kuinka nopeasti akun prosentti laskee, yleensä ilmaistuna prosentteina tunnissa (%/h). Kevyt käyttö voi näyttää 0,5–1 %/h, kun taas pelaaminen tai navigointi voi yltää 10 %/h tai enemmän.\n\n## Yleisiä kulutuksen syitä\n\nNäyttö on suurin virrankuluttaja, seuraavana mobiiliradio (erityisesti heikolla signaalilla), GPS ja suoritinintensiiviset sovellukset. Taustaprosessit kuten synkronointi, sijaintipalvelut ja push-ilmoitukset vaikuttavat myös.\n\n## Näyttö päällä vs. pois\n\nNäyttö päällä- ja pois-kulutuksen vertailu auttaa tunnistamaan ongelmia. Jos puhelimesi tyhjenee nopeasti näytön ollessa pois, taustatoiminta todennäköisesti pitää sitä hereillä. Tarkista Näyttö pois- ja Unianalyysi-osiot yhdessä nähdäksesi, viettääkö puhelin tarpeeksi aikaa matalan tehon unessa.</string>
 
     <string name="learn_battery_charging_title">Latausmyytit ja parhaat käytännöt</string>
     <string name="learn_battery_charging_preview">Erota fakta fiktiosta lataustottumuksissa ja opi, mikä todella pidentää akun kestoa.</string>
-    <string name="learn_battery_charging_body">## Myytti: Akku pitää tyhjentää kokonaan ennen latausta\n\nVäärin. Litiumioniakut suosivat itse asiassa osittaisia latauksia. Syvät purkaukset (alle 20 %) rasittavat akkua enemmän kuin täydentäminen 50 %:sta.\n\n## Myytti: Yön yli lataaminen vahingoittaa akkua\n\nPääosin väärin nykyaikaisille puhelimille. Ne hallitsevat latausta automaattisesti ja yleensä pysäyttävät tai täydentävät latausta tarpeen mukaan akun täytyttyä. Kuitenkin akun pitäminen lämpimänä ja pitkään 100 %:ssa kiihdyttää kulumista.\n\n## Mikä todella auttaa\n\nPidä akku 20–80 %:n välillä mahdollisuuksien mukaan. Vältä lämpöä latauksen aikana: poista paksut kuoret, jos ne keräävät lämpöä, vältä suoraa aurinkoa ja jätä raskas pelaaminen väliin latauksen aikana. Käytä valmistajan laturia tai sertifioitua vaihtoehtoa. Hitaampi lataus tuottaa yleensä vähemmän lämpöä ja on akulle lempeämpi.</string>
+    <string name="learn_battery_charging_body" formatted="false">## Myytti: Akku pitää tyhjentää kokonaan ennen latausta\n\nVäärin. Litiumioniakut suosivat itse asiassa osittaisia latauksia. Syvät purkaukset (alle 20 %) rasittavat akkua enemmän kuin täydentäminen 50 %:sta.\n\n## Myytti: Yön yli lataaminen vahingoittaa akkua\n\nPääosin väärin nykyaikaisille puhelimille. Ne hallitsevat latausta automaattisesti ja yleensä pysäyttävät tai täydentävät latausta tarpeen mukaan akun täytyttyä. Kuitenkin akun pitäminen lämpimänä ja pitkään 100 %:ssa kiihdyttää kulumista.\n\n## Mikä todella auttaa\n\nPidä akku 20–80 %:n välillä mahdollisuuksien mukaan. Vältä lämpöä latauksen aikana: poista paksut kuoret, jos ne keräävät lämpöä, vältä suoraa aurinkoa ja jätä raskas pelaaminen väliin latauksen aikana. Käytä valmistajan laturia tai sertifioitua vaihtoehtoa. Hitaampi lataus tuottaa yleensä vähemmän lämpöä ja on akulle lempeämpi.</string>
 
     <string name="learn_battery_current_power_title">Virta ja teho selitettynä</string>
     <string name="learn_battery_current_power_preview">Mitä milliampeerit ja watit tarkoittavat akullesi ja miten tulkita näitä lukemia.</string>
@@ -969,7 +991,7 @@
     <!-- Learn Articles - General -->
     <string name="learn_health_score_title">Miten terveyspisteytys toimii</string>
     <string name="learn_health_score_preview">Miten runcheck laskee kokonaisterveyspisteen akun, verkon, lämpötilan ja tallennustilan tiedoista.</string>
-    <string name="learn_health_score_body">## Mitä se mittaa\n\nTerveyspiste yhdistää neljä kategoriaa: akun, verkon, lämmön ja tallennustilan. Akkupiste huomioi akun kuntotilat, lämpötilan, jännitteen ja kuntoprosentin silloin kun se on saatavilla. Verkkopiste käyttää signaalin laatua ja viivettä, ja se voi hyödyntää myös tuoretta nopeustestiä. Lämpöpiste käyttää akun lämpötilaa, CPU-lämpöä jos saatavilla, sekä Androidin lämpötilatilaa. Tallennustilapiste perustuu kokonaiskäytön prosenttiin.\n\n## Miten se lasketaan\n\nJokainen kategoria alkaa lähellä ihannealuetta ja menettää pisteitä, kun lukemat siirtyvät vähemmän terveisiin arvoihin. Kokonaispiste painottaa akkua 40 %, verkkoa 25 %, lämpöä 25 % ja tallennustilaa 10 %. Tuore nopeustesti voi tarkentaa verkkopistettä, mutta piste toimii myös ilman sitä.\n\n## Pistealueet\n\n90–100: Erinomainen — laitteesi on loistavassa kunnossa. 70–89: Hyvä — normaalia kulumista ja pieniä ongelmia. 50–69: Kohtalainen — huomattavia ongelmia, joihin voisi puuttua. Alle 50: Heikko — merkittäviä ongelmia, jotka vaikuttavat päivittäiseen käyttöön.\n\n## Pisteen parantaminen\n\nPiste korostaa, mikä kategoria tarvitsee huomiota. Tarkista vastaava yksityiskohtanäkymä nähdäksesi, mikä syö pistettä. Osa tekijöistä, kuten pitkälle edennyt akun kuluminen, voi vaatia laitteistokorjausta, mutta monet muut, kuten heikko signaali tai täysi tallennustila, ovat usein korjattavissa heti.</string>
+    <string name="learn_health_score_body" formatted="false">## Mitä se mittaa\n\nTerveyspiste yhdistää neljä kategoriaa: akun, verkon, lämmön ja tallennustilan. Akkupiste huomioi akun kuntotilat, lämpötilan, jännitteen ja kuntoprosentin silloin kun se on saatavilla. Verkkopiste käyttää signaalin laatua ja viivettä, ja se voi hyödyntää myös tuoretta nopeustestiä. Lämpöpiste käyttää akun lämpötilaa, CPU-lämpöä jos saatavilla, sekä Androidin lämpötilatilaa. Tallennustilapiste perustuu kokonaiskäytön prosenttiin.\n\n## Miten se lasketaan\n\nJokainen kategoria alkaa lähellä ihannealuetta ja menettää pisteitä, kun lukemat siirtyvät vähemmän terveisiin arvoihin. Kokonaispiste painottaa akkua 40 %, verkkoa 25 %, lämpöä 25 % ja tallennustilaa 10 %. Tuore nopeustesti voi tarkentaa verkkopistettä, mutta piste toimii myös ilman sitä.\n\n## Pistealueet\n\n90–100: Erinomainen — laitteesi on loistavassa kunnossa. 70–89: Hyvä — normaalia kulumista ja pieniä ongelmia. 50–69: Kohtalainen — huomattavia ongelmia, joihin voisi puuttua. Alle 50: Heikko — merkittäviä ongelmia, jotka vaikuttavat päivittäiseen käyttöön.\n\n## Pisteen parantaminen\n\nPiste korostaa, mikä kategoria tarvitsee huomiota. Tarkista vastaava yksityiskohtanäkymä nähdäksesi, mikä syö pistettä. Osa tekijöistä, kuten pitkälle edennyt akun kuluminen, voi vaatia laitteistokorjausta, mutta monet muut, kuten heikko signaali tai täysi tallennustila, ovat usein korjattavissa heti.</string>
 
     <string name="learn_sw_vs_hw_title">Ohjelmisto- vs laitteisto-ongelmat</string>
     <string name="learn_sw_vs_hw_preview">Miten erottaa, johtuvatko puhelimesi ongelmat ohjelmistosta (korjattavissa) vai laitteistosta (vaatii huoltoa).</string>

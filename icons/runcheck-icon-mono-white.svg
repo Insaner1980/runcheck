@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Health score arc -->
+  <circle
+    cx="256" cy="256" r="184"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="24"
+    stroke-dasharray="676 1156"
+    stroke-linecap="round"
+    transform="rotate(135 256 256)"
+  />
+
+  <!-- Phone body -->
+  <rect
+    x="196" y="172"
+    width="120" height="168"
+    rx="20" ry="20"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="16"
+  />
+
+  <!-- Phone screen -->
+  <rect
+    x="212" y="190"
+    width="88" height="132"
+    rx="8" ry="8"
+    fill="#ffffff"
+    opacity="0.28"
+  />
+</svg>

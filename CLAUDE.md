@@ -185,9 +185,10 @@ The storage detail screen provides monitoring and cleanup tools:
 Settings screen uses grouped card layout with these sections:
 
 - **Monitoring:** Interval selection (15/30/60 min)
+- **Live Notification:** Opt-in persistent notification with real-time battery stats. Master toggle starts/stops `RealTimeMonitorService`. Per-metric toggles: Current (mA/W), Charging status, Temperature, Screen stats, Remaining time. Sub-toggles only visible when master is enabled. Disabled by default.
 - **Notifications:** Master toggle + per-alert toggles (Low Battery, High Temp, Low Storage, Charge Complete). Master off dims and disables sub-toggles.
 - **Alert thresholds:** Sliders for battery (5–50%, default 20), temperature (35–50°C, default 42), storage (70–99%, default 90). Value displayed in numericFontFamily with primary color.
-- **Display:** Temperature unit (°C/°F) — stored in DataStore, affects all temperature displays
+- **Display:** Temperature unit (°C/°F) + Language override (System/English/Finnish) — stored in DataStore
 - **Data:** Retention (Pro), export (CSV), clear speed tests, clear all data (error-color button + AlertDialog confirmation)
 - **Pro:** Status display, purchase button, restore purchase
 - **Privacy:** Crash reporting toggle (Firebase Crashlytics)
@@ -213,7 +214,7 @@ Three-tier in-app educational system explaining technical metrics and concepts t
 - Card IDs defined in `*InfoCards.kt` objects (e.g., `BatteryInfoCards.HEALTH_80_PERCENT`)
 - Each ViewModel collects `dismissedInfoCards: Set<String>` into UiState and exposes `dismissInfoCard(id: String)`
 - Cards shown conditionally (e.g., health < 90%, charging, high drain, full storage) and disappear permanently when dismissed
-- **Coverage:** Battery (4 cards), Thermal (2), Network (2), Storage (2) = 10 total
+- **Coverage:** Battery (5 cards), Thermal (2), Network (2), Storage (2) = 11 total
 
 ### Tier 3 — Learn Section (standalone screen)
 - Accessible from Home screen Quick Tools card (Learn `ListRow` with `MenuBook` icon)
@@ -246,7 +247,10 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 
 - Use WorkManager for periodic background readings (not foreground service for periodic work)
 - Default interval: 30 minutes (user-configurable: 15 / 30 / 60 min)
-- Foreground service only when user is actively viewing real-time data
+- Foreground service (`RealTimeMonitorService`) for two purposes:
+  1. When user is actively viewing real-time data on Battery screen (binding-based lifecycle)
+  2. When user enables **Live Notification** in Settings (opt-in, persistent until disabled)
+- Live notification mode: `BigTextStyle`, updates every 5s, configurable metrics, stays active even when app is closed
 - `ScreenStateTracker` runs as `@Singleton`, started/stopped by BatteryViewModel lifecycle
 - Respect battery optimization — don't fight the OS
 - Detect and handle data gaps gracefully in trend charts

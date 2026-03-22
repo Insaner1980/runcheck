@@ -127,11 +127,22 @@ object InfoCardCatalog {
         purpose = "Explain how storage is typically distributed across apps, media, and system data."
     )
 
+    val BatteryLiveNotification = DismissibleInfoCardDefinition(
+        key = "battery_live_notification",
+        version = 1,
+        screen = InfoCardScreen.BATTERY_DETAIL,
+        headlineRes = R.string.info_card_live_notif_headline,
+        bodyRes = R.string.info_card_live_notif_body,
+        learnArticleId = null,
+        purpose = "Explain the live notification feature and how to configure it in Settings."
+    )
+
     val all = listOf(
         BatteryHealthDegraded,
         BatteryDiesBeforeZero,
         BatteryChargingHabits,
         BatteryScreenOffDrain,
+        BatteryLiveNotification,
         NetworkWeakSignalDrain,
         NetworkSpeedTestScope,
         ThermalThrottlingExplainer,

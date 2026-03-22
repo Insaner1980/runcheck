@@ -5,10 +5,10 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Health score arc: ~210° arc starting from lower-left -->
+    <!-- Health score arc -->
     <path
         android:pathData="M34.2,73.8 A28,28,0,1,1,81.1,47.1"
-        android:strokeColor="#4A9EDE"
+        android:strokeColor="#000000"
         android:strokeWidth="4"
         android:strokeLineCap="round"
         android:fillColor="#00000000" />
@@ -16,13 +16,13 @@
     <!-- Phone body outline -->
     <path
         android:pathData="M48,41 L60,41 A3.5,3.5,0,0,1,63.5,44.5 L63.5,63.5 A3.5,3.5,0,0,1,60,67 L48,67 A3.5,3.5,0,0,1,44.5,63.5 L44.5,44.5 A3.5,3.5,0,0,1,48,41 Z"
-        android:strokeColor="#4A9EDE"
+        android:strokeColor="#000000"
         android:strokeWidth="3"
         android:fillColor="#00000000" />
 
     <!-- Phone screen fill -->
     <path
         android:pathData="M48.5,44 L59.5,44 A1.5,1.5,0,0,1,61,45.5 L61,62.5 A1.5,1.5,0,0,1,59.5,64 L48.5,64 A1.5,1.5,0,0,1,47,62.5 L47,45.5 A1.5,1.5,0,0,1,48.5,44 Z"
-        android:fillColor="#4A9EDE"
+        android:fillColor="#000000"
         android:fillAlpha="0.28" />
 </vector>

@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>runcheck — Know your Android's real condition</title>
+    <meta name="description" content="Battery health, thermal monitoring, network diagnostics, and storage analysis — all in one app. No ads, no accounts, no data collection.">
+    <meta property="og:title" content="runcheck — Know your Android's real condition">
+    <meta property="og:description" content="Battery health, thermal monitoring, network diagnostics, and storage analysis — unified in a single local-first dashboard.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" type="image/svg+xml" href="icons/runcheck-icon-color-flat.svg">
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Manrope', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        rc: {
+                            blue: '#4A9EDE',
+                            teal: '#5DE4C7',
+                            amber: '#E8C44A',
+                            orange: '#F5963A',
+                            red: '#F06040',
+                            lime: '#C8E636',
+                            yellow: '#F5D03A',
+                            page: '#0B1E24',
+                            card: '#133040',
+                            cardalt: '#0F2A35',
+                            icon: '#1A3A48',
+                            text: '#E8E8ED',
+                            textsec: '#90A8B0',
+                            textmut: '#7A949E',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg-page: #F0F5F8;
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --bg-elevated: rgba(255, 255, 255, 0.95);
+            --text-primary: #1A2E3A;
+            --text-secondary: #5A7080;
+            --text-muted: #8A9CAA;
+            --border-color: rgba(74, 158, 222, 0.1);
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 24px rgba(74,158,222,0.06);
+            --grid-color: rgba(74, 158, 222, 0.03);
+        }
+        .dark {
+            --bg-page: #0B1E24;
+            --bg-card: rgba(19, 48, 64, 0.6);
+            --bg-elevated: rgba(19, 48, 64, 0.8);
+            --text-primary: #E8E8ED;
+            --text-secondary: #90A8B0;
+            --text-muted: #7A949E;
+            --border-color: rgba(255, 255, 255, 0.06);
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 24px rgba(0,0,0,0.15);
+            --grid-color: rgba(255, 255, 255, 0.02);
+        }
+
+        ::selection { background-color: #4A9EDE; color: white; }
+        body {
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        .bg-grid {
+            background-size: 48px 48px;
+            background-image:
+                linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+        }
+
+        .hero-glow {
+            position: absolute; top: -20%; left: 50%; transform: translateX(-50%);
+            width: 800px; height: 800px;
+            background: radial-gradient(circle, rgba(74,158,222,0.06) 0%, transparent 65%);
+            pointer-events: none;
+        }
+        .dark .hero-glow {
+            background: radial-gradient(circle, rgba(93,228,199,0.06) 0%, transparent 65%);
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Scroll reveal */
+        .reveal {
+            opacity: 0; transform: translateY(28px);
+            transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1), transform 0.65s cubic-bezier(0.16,1,0.3,1);
+        }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+        .stagger > .reveal:nth-child(1) { transition-delay: 0ms; }
+        .stagger > .reveal:nth-child(2) { transition-delay: 90ms; }
+        .stagger > .reveal:nth-child(3) { transition-delay: 180ms; }
+        .stagger > .reveal:nth-child(4) { transition-delay: 270ms; }
+        .stagger > .reveal:nth-child(5) { transition-delay: 360ms; }
+
+        .hero-reveal {
+            opacity: 0; transform: translateY(20px);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+        .hero-reveal.visible { opacity: 1; transform: translateY(0); }
+        .hero-reveal:nth-child(2) { transition-delay: 100ms; }
+        .hero-reveal:nth-child(3) { transition-delay: 200ms; }
+        .hero-reveal:nth-child(4) { transition-delay: 300ms; }
+
+        .phone-reveal {
+            opacity: 0; transform: translateY(40px);
+            transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1) 0.25s, transform 0.8s cubic-bezier(0.16,1,0.3,1) 0.25s;
+        }
+        .phone-reveal.visible { opacity: 1; transform: translateY(0); }
+
+        /* CTA glow */
+        .glow-btn { transition: box-shadow 0.3s ease, background-color 0.2s ease; }
+        .glow-btn:hover { box-shadow: 0 0 24px rgba(74,158,222,0.3), 0 0 60px rgba(74,158,222,0.08); }
+
+        /* Cards */
+        .site-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--card-shadow);
+            transition: transform 0.35s ease, box-shadow 0.35s ease;
+        }
+        .site-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.08), 0 0 20px rgba(74,158,222,0.06);
+        }
+        .dark .site-card:hover {
+            box-shadow: 0 16px 50px rgba(0,0,0,0.35), 0 0 30px rgba(93,228,199,0.04);
+        }
+
+        /* App mockup panels (always dark) */
+        .app-panel {
+            background: linear-gradient(145deg, #133040, #0B1E24);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+        }
+
+        .gauge-glow { filter: drop-shadow(0 0 8px rgba(93,228,199,0.35)); }
+        .gauge-glow-sm { filter: drop-shadow(0 0 5px rgba(93,228,199,0.25)); }
+
+        /* Signal bar animation */
+        .signal-bar { transform-origin: bottom; transform: scaleY(0); }
+        .signal-bar.animate { transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); transform: scaleY(1); }
+        .signal-bar:nth-child(1) { transition-delay: 0.1s; }
+        .signal-bar:nth-child(2) { transition-delay: 0.2s; }
+        .signal-bar:nth-child(3) { transition-delay: 0.3s; }
+        .signal-bar:nth-child(4) { transition-delay: 0.4s; }
+        .signal-bar:nth-child(5) { transition-delay: 0.5s; }
+
+        .heat-indicator {
+            box-shadow: 0 0 8px rgba(255,255,255,0.4);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .trust-icon { transition: border-color 0.3s, box-shadow 0.3s; }
+        .trust-icon:hover { border-color: #4A9EDE; box-shadow: 0 0 16px rgba(74,158,222,0.15); }
+
+        .terminal-line { opacity: 0; transform: translateX(-8px); transition: opacity 0.3s ease, transform 0.3s ease; }
+        .terminal-line.typed { opacity: 1; transform: translateX(0); }
+
+        /* Phone mockup auto-scroll */
+        .phone-scroll-content {
+            animation: phoneScroll 16s ease-in-out infinite;
+            animation-play-state: paused;
+        }
+        .phone-scroll-content.scrolling {
+            animation-play-state: running;
+        }
+        @keyframes phoneScroll {
+            0%, 10% { transform: translateY(0); }
+            45%, 55% { transform: translateY(var(--scroll-distance)); }
+            90%, 100% { transform: translateY(0); }
+        }
+
+        /* Gallery phone hover */
+        .gallery-phone { transition: transform 0.3s ease; flex-shrink: 0; scroll-snap-align: center; }
+        .gallery-phone:hover { transform: translateY(-6px); }
+
+        /* FAQ accordion */
+        .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.16,1,0.3,1), padding 0.3s ease; }
+        .faq-answer.open { max-height: 400px; }
+        .faq-chevron { transition: transform 0.3s ease; }
+        .faq-chevron.open { transform: rotate(180deg); }
+
+        /* Category card */
+        .category-card { transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease; }
+        .category-card:hover { transform: translateY(-4px); }
+
+        /* Guide card */
+        .guide-card {
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .guide-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(74,158,222,0.08), 0 2px 8px rgba(0,0,0,0.03);
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            .reveal, .hero-reveal, .phone-reveal, .terminal-line { opacity: 1; transform: none; transition: none; }
+            .site-card:hover, .gallery-phone:hover, .category-card:hover, .guide-card:hover { transform: none; }
+            .signal-bar { transform: scaleY(1) !important; transition: none !important; }
+            .phone-scroll-content { animation: none; }
+        }
+    </style>
+
+    <!-- Schema.org FAQPage markup -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "Does runcheck need root access?",
+                "acceptedAnswer": { "@type": "Answer", "text": "No. runcheck uses only standard Android APIs (BatteryManager, PowerManager, ConnectivityManager, StorageManager) that are available without root. Some advanced metrics like exact cycle count may require Android 14+ or specific manufacturer support." }
+            },
+            {
+                "@type": "Question",
+                "name": "How accurate is the battery health reading?",
+                "acceptedAnswer": { "@type": "Answer", "text": "It depends on your device. runcheck shows confidence badges (Accurate, Estimated, Unavailable) for every reading. On Pixel and Samsung devices with Android 14+, health data comes directly from hardware. On older devices, health is estimated from available data with clear labeling." }
+            },
+            {
+                "@type": "Question",
+                "name": "Does the app drain my battery?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Minimal impact. Background monitoring uses WorkManager with configurable intervals (15/30/60 minutes). The app respects battery optimization and doesn't fight the OS. Real-time monitoring only runs when you're actively viewing the app." }
+            },
+            {
+                "@type": "Question",
+                "name": "What Android versions are supported?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Android 8.0 (API 26) and above. Some features like trash management require Android 11+, and certain battery metrics are more accurate on Android 14+." }
+            },
+            {
+                "@type": "Question",
+                "name": "How is the health score calculated?",
+                "acceptedAnswer": { "@type": "Answer", "text": "The health score combines four categories: Battery (40%), Thermal (25%), Network (25%), and Storage (10%). Each category score accounts for current state, trends, and device-specific reliability. The algorithm uses confidence-weighted readings to avoid misleading results." }
+            },
+            {
+                "@type": "Question",
+                "name": "Is my data sent anywhere?",
+                "acceptedAnswer": { "@type": "Answer", "text": "No. All data stays on your device in a local Room database. There are no analytics SDKs, no telemetry, no account system. The only optional network feature is crash reporting (Firebase Crashlytics), which you can disable in Settings." }
+            },
+            {
+                "@type": "Question",
+                "name": "What does Pro include?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Pro is a one-time purchase (€3.49) that unlocks: extended data history (up to forever), charger comparison tool, per-app battery usage, thermal throttling logs, home screen widgets, and CSV data export. All core diagnostics remain free." }
+            },
+            {
+                "@type": "Question",
+                "name": "Can I get a refund?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Yes. Google Play's standard refund policy applies. You can request a refund within 48 hours of purchase through Google Play, or contact us directly." }
+            }
+        ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "runcheck",
+        "operatingSystem": "Android",
+        "applicationCategory": "UtilitiesApplication",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "EUR"
+        },
+        "description": "Battery health, thermal monitoring, network diagnostics, and storage analysis — all in one local-first Android app."
+    }
+    </script>
+</head>
+<body class="font-sans antialiased">
+
+    <!-- Nav -->
+    <header class="fixed top-0 w-full z-50 backdrop-blur-md border-b transition-colors" style="background: color-mix(in srgb, var(--bg-page) 90%, transparent); border-color: var(--border-color);">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-8">
+                <a href="#" class="flex items-center gap-2">
+                    <svg class="w-7 h-7 shrink-0" viewBox="0 0 512 512" fill="none"><circle cx="256" cy="256" r="184" stroke="#4A9EDE" stroke-width="24" stroke-dasharray="676 1156" stroke-linecap="round" transform="rotate(135 256 256)"/><rect x="196" y="172" width="120" height="168" rx="20" stroke="#4A9EDE" stroke-width="12" fill="none"/><rect x="210" y="188" width="92" height="136" rx="10" fill="#4A9EDE" opacity="0.12"/></svg>
+                    <span class="font-bold text-lg tracking-tight font-mono"><span class="text-[var(--text-primary)]">run</span><span class="text-rc-blue">check</span></span>
+                </a>
+                <nav class="hidden md:flex items-center gap-6 text-sm font-medium" style="color: var(--text-secondary);">
+                    <a href="#features" class="hover:text-[var(--text-primary)] transition-colors">Features</a>
+                    <a href="#trust" class="hover:text-[var(--text-primary)] transition-colors">Why runcheck</a>
+                    <a href="#pro" class="hover:text-[var(--text-primary)] transition-colors">Pro</a>
+                    <a href="#articles" class="hover:text-[var(--text-primary)] transition-colors">Articles</a>
+                    <a href="#faq" class="hover:text-[var(--text-primary)] transition-colors">FAQ</a>
+                </nav>
+            </div>
+            <div class="flex items-center gap-4">
+                <button id="theme-toggle" class="p-2 transition-colors hover:text-[var(--text-primary)]" style="color: var(--text-secondary);" aria-label="Toggle theme">
+                    <i class="ph ph-moon text-xl block dark:hidden"></i>
+                    <i class="ph ph-sun text-xl hidden dark:block"></i>
+                </button>
+                <a href="#download" class="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-rc-blue text-white text-sm font-medium rounded-lg hover:bg-[#3D8BC8] transition-colors">
+                    <i class="ph-fill ph-google-play-logo"></i>
+                    Get for Android
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="pt-16">
+
+        <!-- ===== HERO ===== -->
+        <section class="relative pt-24 pb-32 lg:pt-32 lg:pb-40 overflow-hidden bg-grid" style="border-bottom: 1px solid var(--border-color);">
+            <div class="hero-glow"></div>
+            <div class="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row items-center gap-16 lg:gap-8">
+
+                <!-- Text -->
+                <div class="flex-1 max-w-2xl text-center lg:text-left z-10">
+                    <div class="hero-reveal inline-flex items-center gap-2 px-3 py-1 mb-8 text-xs font-mono font-medium border rounded-full" style="color: var(--text-secondary); border-color: var(--border-color);">
+                        <span class="w-2 h-2 rounded-full bg-rc-teal animate-pulse"></span>
+                        Available on Google Play
+                    </div>
+                    <h1 class="hero-reveal text-5xl lg:text-7xl font-semibold tracking-tight leading-[1.08] mb-6 text-balance">
+                        Know your Android's<br class="hidden lg:block"> real condition.
+                    </h1>
+                    <p class="hero-reveal text-lg mb-10 text-balance max-w-xl mx-auto lg:mx-0 leading-relaxed" style="color: var(--text-secondary);">
+                        Battery health, thermal monitoring, network diagnostics, and storage analysis — unified in a single local-first dashboard. No accounts, no tracking, just data.
+                    </p>
+                    <div class="hero-reveal flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
+                        <a href="#" class="glow-btn inline-flex items-center justify-center px-6 py-3.5 text-base font-medium text-white bg-rc-blue hover:bg-[#3D8BC8] transition-colors rounded-lg w-full sm:w-auto gap-2.5">
+                            <i class="ph-fill ph-google-play-logo text-xl"></i>
+                            Download on Google Play
+                        </a>
+                        <span class="text-sm font-mono" style="color: var(--text-muted);">Free &middot; Android 8+</span>
+                    </div>
+                </div>
+
+                <!-- Phone mockup with scrolling app content -->
+                <div class="phone-reveal flex-1 relative w-full max-w-[340px] lg:max-w-none flex justify-center lg:justify-end z-10">
+                    <div class="phone-frame relative w-[300px] h-[640px] bg-zinc-950 rounded-[40px] border-[7px] border-zinc-800 shadow-2xl dark:shadow-[0_25px_60px_-10px_rgba(74,158,222,0.12)] overflow-hidden ring-1 ring-zinc-700/50 flex flex-col">
+
+                        <!-- Status bar -->
+                        <div class="h-12 w-full px-6 flex justify-between items-center bg-[#0a0a0a] text-zinc-500 text-[10px] font-mono select-none z-20 shrink-0">
+                            <span>09:41</span>
+                            <div class="flex items-center gap-1.5">
+                                <i class="ph-fill ph-cell-signal-full text-xs"></i>
+                                <i class="ph-fill ph-wifi-high text-xs"></i>
+                                <i class="ph-fill ph-battery-full text-xs"></i>
+                            </div>
+                        </div>
+
+                        <!-- Scrolling app content -->
+                        <div class="flex-1 overflow-hidden relative">
+                            <div class="phone-scroll-content w-full bg-[#0B1E24] px-4 pt-4 pb-6 text-white font-sans flex flex-col gap-3" style="--scroll-distance: -580px;">
+
+                                <!-- App header -->
+                                <div class="flex justify-between items-end mb-1">
+                                    <div>
+                                        <h2 class="text-lg font-semibold tracking-tight">Dashboard</h2>
+                                        <p class="text-[10px] text-rc-textsec font-mono mt-0.5">Pixel 8 Pro</p>
+                                    </div>
+                                    <div class="w-7 h-7 rounded-full bg-rc-card flex items-center justify-center">
+                                        <i class="ph ph-gear text-rc-textmut text-sm"></i>
+                                    </div>
+                                </div>
+
+                                <!-- Status line -->
+                                <p class="text-[9px] text-rc-textsec">Battery is <span class="text-rc-teal">good</span> · Temperature is <span class="text-rc-teal">cool</span> · Connection is <span class="text-rc-text">WiFi</span></p>
+
+                                <!-- Health Score Card -->
+                                <div class="bg-rc-card rounded-2xl p-4">
+                                    <div class="text-[9px] font-mono text-rc-textmut tracking-widest uppercase mb-3">Health Score</div>
+                                    <div class="flex items-center gap-4">
+                                        <div class="relative w-24 h-24 shrink-0">
+                                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                                <circle cx="50" cy="50" r="40" fill="none" stroke="#1A3A48" stroke-width="8"/>
+                                                <circle class="bento-gauge" data-target="88" cx="50" cy="50" r="40" fill="none" stroke="#5DE4C7" stroke-width="8" stroke-dasharray="251" stroke-dashoffset="251" stroke-linecap="round"/>
+                                            </svg>
+                                            <div class="absolute inset-0 flex items-center justify-center">
+                                                <span class="text-2xl font-mono font-semibold bento-gauge-num" data-target="88">0</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-medium">Your device is in <span class="text-rc-teal">good</span> shape</div>
+                                            <div class="flex gap-2 mt-2 flex-wrap">
+                                                <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-rc-textsec flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-rc-teal"></span>Battery 97</span>
+                                                <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-rc-textsec flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-rc-teal"></span>Thermal 93</span>
+                                            </div>
+                                            <div class="flex gap-2 mt-1 flex-wrap">
+                                                <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-rc-textsec flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-rc-teal"></span>Network 84</span>
+                                                <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-rc-textsec flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-rc-teal"></span>Storage 92</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Battery Hero Card -->
+                                <div class="bg-rc-card rounded-2xl p-4">
+                                    <div class="text-[9px] font-mono text-rc-textmut tracking-widest uppercase mb-2">Battery</div>
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <div class="flex items-baseline gap-0.5">
+                                                <span class="text-4xl font-mono font-semibold">78</span>
+                                                <span class="text-lg text-rc-textmut font-mono">%</span>
+                                            </div>
+                                            <div class="text-[11px] text-rc-textsec mt-0.5">Discharging</div>
+                                        </div>
+                                        <!-- Battery icon -->
+                                        <div class="relative w-12 h-[72px] mr-2">
+                                            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-1.5 rounded-t bg-rc-textsec/40"></div>
+                                            <div class="absolute top-1.5 w-full h-[calc(100%-6px)] rounded-lg border-2 border-rc-textsec/50 overflow-hidden">
+                                                <div class="absolute bottom-0 w-full bg-rc-teal/80 rounded-b-sm" style="height: 78%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-3 mt-3">
+                                        <div class="flex-1 bg-white/[0.04] rounded-lg px-2.5 py-1.5 text-center">
+                                            <div class="text-[8px] text-rc-textmut">Health</div>
+                                            <div class="text-[11px] font-mono text-rc-teal">Good</div>
+                                        </div>
+                                        <div class="flex-1 bg-white/[0.04] rounded-lg px-2.5 py-1.5 text-center">
+                                            <div class="text-[8px] text-rc-textmut">Charger</div>
+                                            <div class="text-[11px] font-mono text-rc-text">USB-C</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Network + Thermal side by side -->
+                                <div class="grid grid-cols-2 gap-2.5">
+                                    <div class="bg-rc-card rounded-2xl p-3">
+                                        <div class="flex items-center gap-1.5 mb-2">
+                                            <div class="w-7 h-7 rounded-full bg-rc-icon flex items-center justify-center">
+                                                <i class="ph ph-wifi-high text-rc-teal text-xs"></i>
+                                            </div>
+                                        </div>
+                                        <div class="text-[9px] text-rc-textmut mb-0.5">Network</div>
+                                        <span class="text-sm font-mono text-rc-text">WiFi</span>
+                                        <div class="text-[9px] text-rc-teal font-mono mt-0.5">Excellent</div>
+                                    </div>
+                                    <div class="bg-rc-card rounded-2xl p-3">
+                                        <div class="flex items-center gap-1.5 mb-2">
+                                            <div class="w-7 h-7 rounded-full bg-rc-icon flex items-center justify-center">
+                                                <i class="ph ph-thermometer text-rc-teal text-xs"></i>
+                                            </div>
+                                        </div>
+                                        <div class="text-[9px] text-rc-textmut mb-0.5">Thermal</div>
+                                        <span class="text-sm font-mono text-rc-text">31.2<span class="text-[9px] text-rc-textmut">&deg;C</span></span>
+                                        <div class="text-[9px] text-rc-teal font-mono mt-0.5">Cool</div>
+                                    </div>
+                                </div>
+
+                                <!-- Charger + Storage side by side -->
+                                <div class="grid grid-cols-2 gap-2.5">
+                                    <div class="bg-rc-card rounded-2xl p-3 relative">
+                                        <div class="flex items-center gap-1.5 mb-2">
+                                            <div class="w-7 h-7 rounded-full bg-rc-icon/40 flex items-center justify-center">
+                                                <i class="ph ph-battery-charging-vertical text-rc-textsec text-xs"></i>
+                                            </div>
+                                        </div>
+                                        <div class="text-[9px] text-rc-textmut mb-0.5">Chargers</div>
+                                        <span class="text-[11px] text-rc-textsec">Test & compare</span>
+                                        <div class="absolute top-2 right-2 px-1.5 py-0.5 bg-rc-blue/20 rounded text-[7px] font-mono text-rc-blue">PRO</div>
+                                    </div>
+                                    <div class="bg-rc-card rounded-2xl p-3">
+                                        <div class="flex items-center gap-1.5 mb-2">
+                                            <div class="w-7 h-7 rounded-full bg-rc-icon/40 flex items-center justify-center">
+                                                <i class="ph ph-hard-drives text-rc-teal text-xs"></i>
+                                            </div>
+                                        </div>
+                                        <div class="text-[9px] text-rc-textmut mb-0.5">Storage</div>
+                                        <span class="text-sm font-mono text-rc-text">180 GB</span>
+                                        <div class="text-[9px] text-rc-teal font-mono mt-0.5">free</div>
+                                    </div>
+                                </div>
+
+                                <!-- Quick Tools -->
+                                <div>
+                                    <div class="text-[9px] font-mono text-rc-textmut tracking-widest uppercase mb-2 mt-1">Quick Tools</div>
+                                    <div class="bg-rc-card rounded-2xl overflow-hidden">
+                                        <div class="flex items-center gap-3 px-4 py-3 border-b border-white/[0.04]">
+                                            <i class="ph ph-gauge text-rc-textsec text-sm"></i>
+                                            <span class="text-[12px] text-rc-text">Speed Test</span>
+                                            <i class="ph ph-caret-right text-rc-textmut text-xs ml-auto"></i>
+                                        </div>
+                                        <div class="flex items-center gap-3 px-4 py-3 border-b border-white/[0.04]">
+                                            <i class="ph ph-chart-pie text-rc-textsec text-sm"></i>
+                                            <span class="text-[12px] text-rc-text">App Usage</span>
+                                            <span class="px-1.5 py-0.5 bg-rc-blue/20 rounded text-[7px] font-mono text-rc-blue ml-auto">PRO</span>
+                                        </div>
+                                        <div class="flex items-center gap-3 px-4 py-3">
+                                            <i class="ph ph-book-open text-rc-textsec text-sm"></i>
+                                            <span class="text-[12px] text-rc-text">Learn</span>
+                                            <i class="ph ph-caret-right text-rc-textmut text-xs ml-auto"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- Home indicator -->
+                        <div class="absolute bottom-1 w-full flex justify-center pb-2 z-20">
+                            <div class="w-24 h-1 bg-zinc-600 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== BENTO FEATURES ===== -->
+        <section id="features" class="py-24 lg:py-32">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="reveal mb-16">
+                    <h2 class="text-3xl lg:text-4xl font-semibold tracking-tight mb-4">Four diagnostics, one score.</h2>
+                    <p style="color: var(--text-secondary);" class="max-w-2xl">Each check runs entirely on the device. No servers, no accounts, no tracking. Just the phone talking to itself.</p>
+                </div>
+
+                <div class="stagger grid grid-cols-1 md:grid-cols-3 gap-4 md:grid-rows-[auto_auto]">
+
+                    <!-- Battery — tall card -->
+                    <div class="reveal site-card md:row-span-2 rounded-2xl p-5">
+                        <div class="flex items-center gap-3 mb-5">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--grid-color);">
+                                <i class="ph ph-battery-charging text-xl text-rc-blue"></i>
+                            </div>
+                            <span class="font-mono text-[11px] tracking-widest uppercase" style="color: var(--text-muted);">Battery</span>
+                        </div>
+                        <div class="app-panel p-6 flex flex-col items-center text-white">
+                            <div class="relative w-[130px] h-[130px] mb-4">
+                                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6"/>
+                                    <circle class="gauge-glow bento-gauge" data-target="96" cx="50" cy="50" r="42" fill="none" stroke="#5DE4C7" stroke-width="6" stroke-dasharray="263.9" stroke-dashoffset="263.9" stroke-linecap="round"/>
+                                </svg>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span class="text-4xl font-mono font-semibold bento-gauge-num" data-target="96">0</span>
+                                    <span class="text-[11px] font-mono text-rc-textmut">% health</span>
+                                </div>
+                            </div>
+                            <div class="w-full space-y-3">
+                                <div class="flex items-baseline justify-between">
+                                    <span class="text-3xl font-mono font-semibold">79<span class="text-base text-rc-textmut">%</span></span>
+                                    <span class="text-sm text-rc-textsec">Discharging</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="w-[6px] h-[6px] rounded-full bg-rc-teal shrink-0"></span>
+                                    <span class="text-sm text-rc-teal">Good</span>
+                                </div>
+                                <div class="border-t border-white/[0.06] pt-3 grid grid-cols-2 gap-y-2.5 gap-x-4 text-[12px]">
+                                    <div>
+                                        <span class="text-rc-textmut block">Cycles</span>
+                                        <span class="font-mono">142</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-rc-textmut block">Capacity</span>
+                                        <span class="font-mono">4 152 mAh</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-rc-textmut block">Voltage</span>
+                                        <span class="font-mono">3.85 V</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-rc-textmut block">Temperature</span>
+                                        <span class="font-mono">31.2 &deg;C</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Network — wide card -->
+                    <div class="reveal site-card md:col-span-2 rounded-2xl p-5">
+                        <div class="flex items-center gap-3 mb-5">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--grid-color);">
+                                <i class="ph ph-wifi-high text-xl text-rc-blue"></i>
+                            </div>
+                            <span class="font-mono text-[11px] tracking-widest uppercase" style="color: var(--text-muted);">Network</span>
+                        </div>
+                        <div class="app-panel p-6 text-white">
+                            <div class="flex items-center justify-between mb-5">
+                                <div>
+                                    <div class="text-sm text-rc-textmut mb-1">Signal Quality</div>
+                                    <span class="text-3xl font-mono font-semibold">Good</span>
+                                    <div class="text-[13px] font-mono text-rc-textmut mt-1">-62 dBm &middot; WiFi 6</div>
+                                </div>
+                                <div id="signal-bars" class="flex items-end gap-[4px] h-10">
+                                    <div class="signal-bar w-[6px] rounded-sm bg-rc-blue" style="height: 25%"></div>
+                                    <div class="signal-bar w-[6px] rounded-sm bg-rc-blue" style="height: 45%"></div>
+                                    <div class="signal-bar w-[6px] rounded-sm bg-rc-blue" style="height: 65%"></div>
+                                    <div class="signal-bar w-[6px] rounded-sm bg-rc-blue" style="height: 85%"></div>
+                                    <div class="signal-bar w-[6px] rounded-sm bg-rc-icon" style="height: 100%"></div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4 text-[12px]">
+                                <div>
+                                    <span class="text-rc-textmut block">Latency</span>
+                                    <span class="font-mono text-lg">14 <span class="text-rc-textmut text-xs">ms</span></span>
+                                </div>
+                                <div>
+                                    <span class="text-rc-textmut block">Bandwidth</span>
+                                    <span class="font-mono text-lg">86 <span class="text-rc-textmut text-xs">Mbps</span></span>
+                                </div>
+                                <div>
+                                    <span class="text-rc-textmut block">Network</span>
+                                    <span class="font-mono text-lg">WiFi</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thermal -->
+                    <div class="reveal site-card rounded-2xl p-5">
+                        <div class="flex items-center gap-3 mb-5">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--grid-color);">
+                                <i class="ph ph-thermometer-hot text-xl text-rc-blue"></i>
+                            </div>
+                            <span class="font-mono text-[11px] tracking-widest uppercase" style="color: var(--text-muted);">Thermal</span>
+                        </div>
+                        <div class="app-panel p-5 text-white">
+                            <div class="flex items-baseline gap-1.5 mb-1">
+                                <span class="text-3xl font-mono font-semibold">33.7</span>
+                                <span class="text-base font-mono text-rc-textmut">&deg;C</span>
+                            </div>
+                            <span class="text-sm text-rc-teal mb-4 block">Cool</span>
+                            <div class="relative w-full h-3 rounded-full overflow-visible mb-4" style="background: linear-gradient(to right, #5DE4C7 0%, #5DE4C7 35%, #E8C44A 60%, #F5963A 80%, #F06040 100%);">
+                                <div class="heat-indicator absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-white border-2 border-white/80" style="left: 28%;"></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3 text-[12px]">
+                                <div>
+                                    <span class="text-rc-textmut block">Headroom</span>
+                                    <span class="font-mono text-rc-teal">31%</span>
+                                </div>
+                                <div>
+                                    <span class="text-rc-textmut block">Throttling</span>
+                                    <span class="font-mono text-rc-teal">None</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Storage -->
+                    <div class="reveal site-card rounded-2xl p-5">
+                        <div class="flex items-center gap-3 mb-5">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--grid-color);">
+                                <i class="ph ph-hard-drives text-xl text-rc-blue"></i>
+                            </div>
+                            <span class="font-mono text-[11px] tracking-widest uppercase" style="color: var(--text-muted);">Storage</span>
+                        </div>
+                        <div class="app-panel p-5 text-white">
+                            <div class="flex items-center gap-5 mb-4">
+                                <div class="relative w-[80px] h-[80px] shrink-0">
+                                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                        <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="7"/>
+                                        <circle class="gauge-glow-sm bento-gauge" data-target="29" cx="50" cy="50" r="40" fill="none" stroke="#5DE4C7" stroke-width="7" stroke-dasharray="251.3" stroke-dashoffset="251.3" stroke-linecap="round"/>
+                                    </svg>
+                                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                        <span class="text-base font-mono font-semibold">76</span>
+                                        <span class="text-[9px] font-mono text-rc-textmut">GB</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-[12px] text-rc-textmut">256 GB total</div>
+                                    <div class="text-sm text-rc-teal mt-0.5">180 GB free</div>
+                                </div>
+                            </div>
+                            <!-- Segmented bar with real categories -->
+                            <div class="w-full h-2.5 rounded-full overflow-hidden flex gap-0.5 mb-2.5">
+                                <div class="h-full bg-rc-teal rounded-l-full" style="width: 18%" title="Images"></div>
+                                <div class="h-full bg-rc-blue" style="width: 22%" title="Videos"></div>
+                                <div class="h-full bg-rc-orange" style="width: 8%" title="Audio"></div>
+                                <div class="h-full bg-rc-lime" style="width: 5%" title="Documents"></div>
+                                <div class="h-full bg-rc-yellow" style="width: 10%" title="Downloads"></div>
+                                <div class="h-full bg-rc-textmut rounded-r-full" style="width: 6%" title="Other"></div>
+                            </div>
+                            <div class="flex flex-wrap gap-x-3 gap-y-1 text-[10px]">
+                                <span class="text-rc-textsec flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-sm bg-rc-teal inline-block"></span>Images</span>
+                                <span class="text-rc-textsec flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-sm bg-rc-blue inline-block"></span>Videos</span>
+                                <span class="text-rc-textsec flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-sm bg-rc-orange inline-block"></span>Audio</span>
+                                <span class="text-rc-textsec flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-sm bg-rc-lime inline-block"></span>Docs</span>
+                                <span class="text-rc-textsec flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-sm bg-rc-yellow inline-block"></span>Downloads</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Health Score -->
+                <div class="reveal mt-8 p-8 lg:p-12 rounded-2xl backdrop-blur-sm flex flex-col lg:flex-row gap-8 items-center justify-between site-card" id="health-score-card">
+                    <div class="max-w-xl">
+                        <div class="flex items-center gap-3 mb-3">
+                            <i class="ph ph-activity text-2xl text-rc-blue"></i>
+                            <h3 class="text-xl font-medium">Unified Health Score</h3>
+                        </div>
+                        <p style="color: var(--text-secondary);" class="leading-relaxed">All four categories combined into a single 0&ndash;100 score. Battery weighs 40%, thermal and network 25% each, storage 10%. One number that tells you how the phone is actually doing &mdash; with honest confidence indicators for every reading.</p>
+                    </div>
+                    <div class="flex flex-col items-center shrink-0">
+                        <div class="relative w-[140px] h-[140px]">
+                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="42" fill="none" stroke-width="6" class="stroke-zinc-200 dark:stroke-white/[0.06]"/>
+                                <circle id="health-gauge-arc" class="gauge-glow" cx="50" cy="50" r="42" fill="none" stroke="#5DE4C7" stroke-width="6" stroke-dasharray="263.9" stroke-dashoffset="263.9" stroke-linecap="round"/>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span class="text-4xl font-mono font-semibold" id="health-score-num">0</span>
+                            </div>
+                        </div>
+                        <span class="text-sm font-medium text-rc-teal mt-2">Healthy</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== TRUST / WHY RUNCHECK ===== -->
+        <section id="trust" class="py-24 lg:py-32" style="border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); background: color-mix(in srgb, var(--bg-page) 95%, var(--bg-card));">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="reveal text-center max-w-2xl mx-auto mb-16">
+                    <h2 class="text-3xl lg:text-4xl font-semibold tracking-tight mb-4">Built different, on purpose.</h2>
+                    <p style="color: var(--text-secondary);">Diagnostics apps have a trust problem. Most are ad-filled, collect data they shouldn't, and show numbers they can't back up.</p>
+                </div>
+
+                <div class="stagger grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                    <div class="reveal text-center">
+                        <div class="trust-icon w-14 h-14 rounded-xl border flex items-center justify-center mx-auto mb-5" style="border-color: var(--border-color); background: color-mix(in srgb, var(--bg-card) 50%, transparent);">
+                            <i class="ph ph-lock-simple text-2xl text-rc-blue"></i>
+                        </div>
+                        <h4 class="text-base font-medium mb-2">No accounts, no tracking</h4>
+                        <p class="text-sm leading-relaxed" style="color: var(--text-secondary);">Everything runs on-device. No data leaves the phone. No analytics SDKs, no telemetry.</p>
+                    </div>
+                    <div class="reveal text-center">
+                        <div class="trust-icon w-14 h-14 rounded-xl border flex items-center justify-center mx-auto mb-5" style="border-color: var(--border-color); background: color-mix(in srgb, var(--bg-card) 50%, transparent);">
+                            <i class="ph ph-prohibit text-2xl text-rc-blue"></i>
+                        </div>
+                        <h4 class="text-base font-medium mb-2">No ads, ever</h4>
+                        <p class="text-sm leading-relaxed" style="color: var(--text-secondary);">Not now, not later. The free tier is fully functional. Pro is a one-time purchase, not a subscription.</p>
+                    </div>
+                    <div class="reveal text-center">
+                        <div class="trust-icon w-14 h-14 rounded-xl border flex items-center justify-center mx-auto mb-5" style="border-color: var(--border-color); background: color-mix(in srgb, var(--bg-card) 50%, transparent);">
+                            <i class="ph ph-shield-check text-2xl text-rc-blue"></i>
+                        </div>
+                        <h4 class="text-base font-medium mb-2">Honest readings</h4>
+                        <p class="text-sm leading-relaxed" style="color: var(--text-secondary);">Confidence badges show when a measurement is estimated vs. hardware-accurate. No fake precision.</p>
+                    </div>
+                </div>
+
+                <!-- Terminal -->
+                <div class="reveal mt-16 max-w-2xl mx-auto bg-zinc-950 rounded-xl border border-zinc-800 shadow-xl overflow-hidden font-mono text-[13px] leading-relaxed p-6 text-zinc-400" id="terminal">
+                    <div class="flex gap-2 mb-4 border-b border-zinc-800 pb-4">
+                        <div class="w-3 h-3 rounded-full bg-zinc-800"></div>
+                        <div class="w-3 h-3 rounded-full bg-zinc-800"></div>
+                        <div class="w-3 h-3 rounded-full bg-zinc-800"></div>
+                    </div>
+                    <div class="space-y-2">
+                        <p class="terminal-line"><span class="text-rc-blue">&gt;</span> init runcheck_monitor</p>
+                        <p class="terminal-line"><span class="text-zinc-600">[OK]</span> Loading local Room database...</p>
+                        <p class="terminal-line"><span class="text-zinc-600">[OK]</span> Reading battery stats from power_supply/</p>
+                        <p class="terminal-line"><span class="text-zinc-600">[OK]</span> Reading thermal zones via PowerManager API</p>
+                        <p class="terminal-line"><span class="text-zinc-600">[OK]</span> Network interface scan complete</p>
+                        <p class="terminal-line"><span class="text-rc-blue">&gt;</span> calculate_health_score()</p>
+                        <p class="terminal-line"><span class="text-rc-teal">[DONE]</span> Health score computed locally: <span class="text-white">94</span></p>
+                        <p class="terminal-line mt-2"><span class="text-rc-blue">&gt;</span> upload_diagnostics()</p>
+                        <p class="terminal-line text-rc-red">Error: Method 'upload_diagnostics' does not exist.</p>
+                        <p class="terminal-line text-rc-red/60">This is by design.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== SCREENSHOTS ===== -->
+        <section class="py-24 lg:py-32 overflow-hidden">
+            <div class="max-w-7xl mx-auto px-6 mb-12">
+                <div class="reveal text-center">
+                    <h2 class="text-3xl lg:text-4xl font-semibold tracking-tight mb-4">Every screen, built for clarity.</h2>
+                    <p style="color: var(--text-secondary);">Swipe through the actual app screens. Content scrolls inside each frame.</p>
+                </div>
+            </div>
+            <div class="flex gap-6 overflow-x-auto pb-8 px-6 sm:px-12 snap-x no-scrollbar justify-start lg:justify-center">
+
+                <!-- Battery Detail phone -->
+                <div class="gallery-phone w-[220px] h-[470px] bg-zinc-950 rounded-[32px] border-[5px] border-zinc-800 shadow-xl overflow-hidden ring-1 ring-zinc-700/30 flex flex-col">
+                    <div class="h-9 w-full px-4 flex justify-between items-center bg-[#0a0a0a] text-zinc-500 text-[8px] font-mono shrink-0">
+                        <span>09:41</span>
+                        <div class="flex items-center gap-1"><i class="ph-fill ph-wifi-high text-[8px]"></i><i class="ph-fill ph-battery-full text-[8px]"></i></div>
+                    </div>
+                    <div class="flex-1 overflow-hidden relative">
+                        <div class="phone-scroll-content w-full bg-rc-page px-3 pt-2 pb-4 text-white font-sans flex flex-col gap-2" style="--scroll-distance: -420px;">
+                            <!-- Top bar -->
+                            <div class="flex items-center gap-2 mb-1">
+                                <i class="ph ph-caret-left text-rc-text text-sm"></i>
+                                <span class="text-sm font-semibold">Battery</span>
+                            </div>
+                            <!-- Hero -->
+                            <div class="bg-rc-card rounded-xl p-3 flex flex-col items-center">
+                                <div class="relative w-20 h-20 mb-2">
+                                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                        <circle cx="50" cy="50" r="40" fill="none" stroke="#1A3A48" stroke-width="8"/>
+                                        <circle cx="50" cy="50" r="40" fill="none" stroke="#5DE4C7" stroke-width="8" stroke-dasharray="251" stroke-dashoffset="55" stroke-linecap="round"/>
+                                    </svg>
+                                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                        <span class="text-xl font-mono font-bold">78</span>
+                                        <span class="text-[7px] font-mono text-rc-textmut">%</span>
+                                    </div>
+                                </div>
+                                <div class="text-[10px] text-rc-teal mb-1">Good, Discharging</div>
+                                <div class="flex gap-2 w-full">
+                                    <div class="flex-1 bg-white/[0.04] rounded-lg px-2 py-1 text-center">
+                                        <div class="text-[7px] text-rc-textmut">Drain</div>
+                                        <div class="text-[10px] font-mono">2.1%/h</div>
+                                    </div>
+                                    <div class="flex-1 bg-white/[0.04] rounded-lg px-2 py-1 text-center">
+                                        <div class="text-[7px] text-rc-textmut">Power</div>
+                                        <div class="text-[10px] font-mono">1.8 W</div>
+                                    </div>
+                                    <div class="flex-1 bg-white/[0.04] rounded-lg px-2 py-1 text-center">
+                                        <div class="text-[7px] text-rc-textmut">Time</div>
+                                        <div class="text-[10px] font-mono">~12h</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Details -->
+                            <div class="bg-rc-card rounded-xl p-3">
+                                <div class="text-[8px] text-rc-textsec font-medium mb-2">Battery Details</div>
+                                <div class="space-y-2 text-[9px]">
+                                    <div class="flex justify-between border-b border-white/[0.04] pb-1.5"><span class="text-rc-textsec">Voltage</span><span class="font-mono">3 852 mV</span></div>
+                                    <div class="flex justify-between border-b border-white/[0.04] pb-1.5"><span class="text-rc-textsec">Temperature</span><span class="font-mono text-rc-teal">31.2 &deg;C</span></div>
+                                    <div class="flex justify-between border-b border-white/[0.04] pb-1.5"><span class="text-rc-textsec">Health</span><span class="font-mono text-rc-teal">Good</span></div>
+                                    <div class="flex justify-between border-b border-white/[0.04] pb-1.5"><span class="text-rc-textsec">Technology</span><span class="font-mono">Li-ion</span></div>
+                                    <div class="flex justify-between border-b border-white/[0.04] pb-1.5"><span class="text-rc-textsec">Cycles</span><span class="font-mono">142</span></div>
+                                    <div class="flex justify-between"><span class="text-rc-textsec">Capacity</span><span class="font-mono">4 152 mAh</span></div>
+                                </div>
+                            </div>
+                            <!-- Current -->
+                            <div class="bg-rc-card rounded-xl p-3">
+                                <div class="text-[8px] text-rc-textsec font-medium mb-2">Current</div>
+                                <div class="flex items-baseline gap-1">
+                                    <span class="text-2xl font-mono font-semibold">-284</span>
+                                    <span class="text-[10px] font-mono text-rc-textmut">mA</span>
+                                </div>
+                                <div class="text-[8px] text-rc-textmut mt-0.5">1.8 W · 3 852 mV</div>
+                                <div class="flex gap-2 mt-2">
+                                    <div class="flex-1 bg-white/[0.04] rounded-lg px-2 py-1 text-center">
+                                        <div class="text-[7px] text-rc-textmut">Min</div>
+                                        <div class="text-[9px] font-mono">-142</div>
+                                    </div>
+                                    <div class="flex-1 bg-white/[0.04] rounded-lg px-2 py-1 text-center">
+                                        <div class="text-[7px] text-rc-textmut">Avg</div>
+                                        <div class="text-[9px] font-mono">-280</div>
+                                    </div>
+                                    <div class="flex-1 bg-white/[0.04] rounded-lg px-2 py-1 text-center">
+                                        <div class="text-[7px] text-rc-textmut">Max</div>
+                                        <div class="text-[9px] font-mono">-512</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Chart placeholder -->
+                            <div class="bg-rc-card rounded-xl p-3">
+                                <div class="text-[8px] text-rc-textsec font-medium mb-2">History</div>
+                                <div class="flex gap-1 mb-2">
+                                    <span class="text-[7px] font-mono px-1.5 py-0.5 rounded bg-rc-blue/20 text-rc-blue">Day</span>
+                                    <span class="text-[7px] font-mono px-1.5 py-0.5 rounded bg-white/[0.04] text-rc-textmut">Week</span>
+                                    <span class="text-[7px] font-mono px-1.5 py-0.5 rounded bg-white/[0.04] text-rc-textmut">Month</span>
+                                </div>
+                                <!-- Mini chart SVG -->
+                                <svg class="w-full h-16" viewBox="0 0 200 60" fill="none">
+                                    <defs>
+                                        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#4A9EDE" stop-opacity="0.3"/>
+                                            <stop offset="100%" stop-color="#4A9EDE" stop-opacity="0"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M0,45 C20,42 40,38 60,35 C80,32 100,28 120,22 C140,18 160,15 180,20 C190,22 200,18 200,18 L200,60 L0,60 Z" fill="url(#chartGrad)"/>
+                                    <path d="M0,45 C20,42 40,38 60,35 C80,32 100,28 120,22 C140,18 160,15 180,20 C190,22 200,18 200,18" stroke="#4A9EDE" stroke-width="1.5" fill="none"/>
+                                </svg>
+                                <div class="flex justify-between text-[7px] font-mono text-rc-textmut mt-1">
+                                    <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>Now</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Network phone -->
+                <div class="gallery-phone w-[220px] h-[470px] bg-zinc-950 rounded-[32px] border-[5px] border-zinc-800 shadow-xl overflow-hidden ring-1 ring-zinc-700/30 flex flex-col">
+                    <div class="h-9 w-full px-4 flex justify-between items-center bg-[#0a0a0a] text-zinc-500 text-[8px] font-mono shrink-0">
+                        <span>09:41</span>
+                        <div class="flex items-center gap-1"><i class="ph-fill ph-wifi-high text-[8px]"></i><i class="ph-fill ph-battery-full text-[8px]"></i></div>
+                    </div>
+                    <div class="flex-1 overflow-hidden relative">
+                        <div class="phone-scroll-content w-full bg-rc-page px-3 pt-2 pb-4 text-white font-sans flex flex-col gap-2" style="--scroll-distance: -300px;">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i class="ph ph-caret-left text-rc-text text-sm"></i>
+                                <span class="text-sm font-semibold">Network</span>
+                            </div>
+                            <!-- Signal Hero -->
+                            <div class="bg-rc-card rounded-xl p-3 flex flex-col items-center">
+                                <div class="flex items-end gap-[3px] h-10 mb-2">
+                                    <div class="w-[5px] rounded-sm bg-rc-teal" style="height: 20%"></div>
+                                    <div class="w-[5px] rounded-sm bg-rc-teal" style="height: 40%"></div>
+                                    <div class="w-[5px] rounded-sm bg-rc-teal" style="height: 60%"></div>
+                                    <div class="w-[5px] rounded-sm bg-rc-teal" style="height: 80%"></div>
+                                    <div class="w-[5px] rounded-sm bg-rc-icon" style="height: 100%"></div>
+                                </div>
+                                <div class="text-lg font-mono font-semibold">Excellent</div>
+                                <div class="text-[9px] font-mono text-rc-textmut">-52 dBm · WiFi 6</div>
+                                <div class="flex gap-2 mt-2 w-full">
+                                    <div class="flex-1 bg-white/[0.04] rounded-lg px-2 py-1 text-center">
+                                        <div class="text-[7px] text-rc-textmut">Latency</div>
+                                        <div class="text-[10px] font-mono">8 ms</div>
+                                    </div>
+                                    <div class="flex-1 bg-white/[0.04] rounded-lg px-2 py-1 text-center">
+                                        <div class="text-[7px] text-rc-textmut">Speed</div>
+                                        <div class="text-[10px] font-mono">144 Mbps</div>
+                                    </div>
+                                    <div class="flex-1 bg-white/[0.04] rounded-lg px-2 py-1 text-center">
+                                        <div class="text-[7px] text-rc-textmut">Band</div>
+                                        <div class="text-[10px] font-mono">5 GHz</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Connection details -->
+                            <div class="bg-rc-card rounded-xl p-3">
+                                <div class="text-[8px] text-rc-textsec font-medium mb-2">Connection Details</div>
+                                <div class="space-y-2 text-[9px]">
+                                    <div class="flex justify-between border-b border-white/[0.04] pb-1.5"><span class="text-rc-textsec">Type</span><span class="font-mono">WiFi</span></div>
+                                    <div class="flex justify-between border-b border-white/[0.04] pb-1.5"><span class="text-rc-textsec">SSID</span><span class="font-mono">HomeNet-5G</span></div>
+                                    <div class="flex justify-between border-b border-white/[0.04] pb-1.5"><span class="text-rc-textsec">Standard</span><span class="font-mono">WiFi 6</span></div>
+                                    <div class="flex justify-between border-b border-white/[0.04] pb-1.5"><span class="text-rc-textsec">Frequency</span><span class="font-mono">5180 MHz</span></div>
+                                    <div class="flex justify-between"><span class="text-rc-textsec">Link Speed</span><span class="font-mono">866 Mbps</span></div>
+                                </div>
+                            </div>
+                            <!-- Speed test card -->
+                            <div class="bg-rc-card rounded-xl p-3 flex flex-col items-center">
+                                <div class="text-[8px] text-rc-textsec font-medium mb-2 self-start">Speed Test</div>
+                                <div class="w-16 h-16 rounded-full border-2 border-rc-blue/30 flex items-center justify-center mb-2">
+                                    <i class="ph ph-gauge text-2xl text-rc-blue"></i>
+                                </div>
+                                <div class="text-[10px] text-rc-textsec">Tap to start</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thermal phone -->
+                <div class="gallery-phone w-[220px] h-[470px] bg-zinc-950 rounded-[32px] border-[5px] border-zinc-800 shadow-xl overflow-hidden ring-1 ring-zinc-700/30 flex flex-col">
+                    <div class="h-9 w-full px-4 flex justify-between items-center bg-[#0a0a0a] text-zinc-500 text-[8px] font-mono shrink-0">
+                        <span>09:41</span>
+                        <div class="flex items-center gap-1"><i class="ph-fill ph-wifi-high text-[8px]"></i><i class="ph-fill ph-battery-full text-[8px]"></i></div>
+                    </div>
+                    <div class="flex-1 overflow-hidden relative">
+                        <div class="phone-scroll-content w-full bg-rc-page px-3 pt-2 pb-4 text-white font-sans flex flex-col gap-2" style="--scroll-distance: -250px;">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i class="ph ph-caret-left text-rc-text text-sm"></i>
+                                <span class="text-sm font-semibold">Thermal</span>
+                            </div>
+                            <!-- Thermal Hero -->
+                            <div class="bg-rc-card rounded-xl p-4 flex items-center gap-4">
+                                <!-- Thermometer -->
+                                <div class="relative w-8 h-20 flex flex-col items-center">
+                                    <div class="w-3 flex-1 rounded-t-full bg-rc-icon relative overflow-hidden">
+                                        <div class="absolute bottom-0 w-full bg-rc-teal rounded-t-sm" style="height: 40%"></div>
+                                    </div>
+                                    <div class="w-7 h-7 rounded-full bg-rc-icon flex items-center justify-center -mt-1">
+                                        <div class="w-4 h-4 rounded-full bg-rc-teal"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex items-baseline gap-1">
+                                        <span class="text-3xl font-mono font-semibold">33.7</span>
+                                        <span class="text-lg font-mono text-rc-textmut">&deg;C</span>
+                                    </div>
+                                    <div class="text-sm text-rc-teal">Cool</div>
+                                    <div class="text-[8px] text-rc-textmut mt-1">&#8595;31.0 &middot; &#8593;35.2</div>
+                                </div>
+                            </div>
+                            <!-- Heat strip -->
+                            <div class="bg-rc-card rounded-xl p-3">
+                                <div class="relative w-full h-4 rounded-full overflow-visible mb-3" style="background: linear-gradient(to right, #5DE4C7, #5DE4C7 35%, #E8C44A 60%, #F5963A 80%, #F06040);">
+                                    <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-2 border-white shadow-lg" style="left: 28%;"></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div class="bg-white/[0.04] rounded-lg px-2 py-1.5 text-center">
+                                        <div class="text-[7px] text-rc-textmut">CPU Temp</div>
+                                        <div class="text-[10px] font-mono">35.1&deg;C</div>
+                                    </div>
+                                    <div class="bg-white/[0.04] rounded-lg px-2 py-1.5 text-center">
+                                        <div class="text-[7px] text-rc-textmut">Headroom</div>
+                                        <div class="text-[10px] font-mono text-rc-teal">31%</div>
+                                    </div>
+                                    <div class="bg-white/[0.04] rounded-lg px-2 py-1.5 text-center">
+                                        <div class="text-[7px] text-rc-textmut">Status</div>
+                                        <div class="text-[10px] font-mono text-rc-teal">Normal</div>
+                                    </div>
+                                    <div class="bg-white/[0.04] rounded-lg px-2 py-1.5 text-center">
+                                        <div class="text-[7px] text-rc-textmut">Throttling</div>
+                                        <div class="text-[10px] font-mono text-rc-teal">None</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Throttling events -->
+                            <div class="bg-rc-card rounded-xl p-3">
+                                <div class="text-[8px] text-rc-textsec font-medium mb-2">Throttling Events</div>
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-rc-teal"></span>
+                                    <span class="text-[9px] text-rc-textsec">No throttling events detected</span>
+                                </div>
+                            </div>
+                            <!-- History chart -->
+                            <div class="bg-rc-card rounded-xl p-3">
+                                <div class="text-[8px] text-rc-textsec font-medium mb-2">Temperature History</div>
+                                <svg class="w-full h-12" viewBox="0 0 200 45" fill="none">
+                                    <defs><linearGradient id="tGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5DE4C7" stop-opacity="0.25"/><stop offset="100%" stop-color="#5DE4C7" stop-opacity="0"/></linearGradient></defs>
+                                    <path d="M0,30 C30,28 50,32 80,25 C110,18 130,22 160,20 C180,18 200,22 200,22 L200,45 L0,45 Z" fill="url(#tGrad)"/>
+                                    <path d="M0,30 C30,28 50,32 80,25 C110,18 130,22 160,20 C180,18 200,22 200,22" stroke="#5DE4C7" stroke-width="1.5" fill="none"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Storage phone -->
+                <div class="gallery-phone w-[220px] h-[470px] bg-zinc-950 rounded-[32px] border-[5px] border-zinc-800 shadow-xl overflow-hidden ring-1 ring-zinc-700/30 flex flex-col">
+                    <div class="h-9 w-full px-4 flex justify-between items-center bg-[#0a0a0a] text-zinc-500 text-[8px] font-mono shrink-0">
+                        <span>09:41</span>
+                        <div class="flex items-center gap-1"><i class="ph-fill ph-wifi-high text-[8px]"></i><i class="ph-fill ph-battery-full text-[8px]"></i></div>
+                    </div>
+                    <div class="flex-1 overflow-hidden relative">
+                        <div class="phone-scroll-content w-full bg-rc-page px-3 pt-2 pb-4 text-white font-sans flex flex-col gap-2" style="--scroll-distance: -420px;">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i class="ph ph-caret-left text-rc-text text-sm"></i>
+                                <span class="text-sm font-semibold">Storage</span>
+                            </div>
+                            <!-- Hero -->
+                            <div class="bg-rc-card rounded-xl p-3 flex flex-col items-center">
+                                <div class="relative w-20 h-20 mb-2">
+                                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                        <circle cx="50" cy="50" r="40" fill="none" stroke="#1A3A48" stroke-width="8"/>
+                                        <circle cx="50" cy="50" r="40" fill="none" stroke="#5DE4C7" stroke-width="8" stroke-dasharray="251" stroke-dashoffset="178" stroke-linecap="round"/>
+                                    </svg>
+                                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                        <span class="text-lg font-mono font-bold">29%</span>
+                                    </div>
+                                </div>
+                                <div class="text-[10px] text-rc-text font-mono">76 / 256 GB</div>
+                                <div class="text-[9px] text-rc-teal">180 GB free</div>
+                                <div class="flex gap-2 mt-2 w-full">
+                                    <div class="flex-1 bg-white/[0.04] rounded-lg px-2 py-1 text-center">
+                                        <div class="text-[7px] text-rc-textmut">Cache</div>
+                                        <div class="text-[10px] font-mono">2.4 GB</div>
+                                    </div>
+                                    <div class="flex-1 bg-white/[0.04] rounded-lg px-2 py-1 text-center">
+                                        <div class="text-[7px] text-rc-textmut">Fill Rate</div>
+                                        <div class="text-[10px] font-mono">~50 MB/d</div>
+                                    </div>
+                                    <div class="flex-1 bg-white/[0.04] rounded-lg px-2 py-1 text-center">
+                                        <div class="text-[7px] text-rc-textmut">Free</div>
+                                        <div class="text-[10px] font-mono">180 GB</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Media breakdown -->
+                            <div class="bg-rc-card rounded-xl p-3">
+                                <div class="text-[8px] text-rc-textsec font-medium mb-2">Media Breakdown</div>
+                                <div class="w-full h-3 rounded-full overflow-hidden flex gap-0.5 mb-2">
+                                    <div class="h-full bg-rc-teal rounded-l-full" style="width: 24%"></div>
+                                    <div class="h-full bg-rc-blue" style="width: 30%"></div>
+                                    <div class="h-full bg-rc-orange" style="width: 8%"></div>
+                                    <div class="h-full bg-rc-lime" style="width: 5%"></div>
+                                    <div class="h-full bg-rc-yellow" style="width: 12%"></div>
+                                    <div class="h-full bg-rc-textmut rounded-r-full" style="width: 4%"></div>
+                                </div>
+                                <div class="space-y-1 text-[8px]">
+                                    <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-rc-teal"></span><span class="text-rc-textsec flex-1">Images</span><span class="font-mono">12.4 GB</span></div>
+                                    <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-rc-blue"></span><span class="text-rc-textsec flex-1">Videos</span><span class="font-mono">18.2 GB</span></div>
+                                    <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-rc-orange"></span><span class="text-rc-textsec flex-1">Audio</span><span class="font-mono">4.8 GB</span></div>
+                                    <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-rc-lime"></span><span class="text-rc-textsec flex-1">Documents</span><span class="font-mono">2.1 GB</span></div>
+                                    <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-rc-yellow"></span><span class="text-rc-textsec flex-1">Downloads</span><span class="font-mono">6.5 GB</span></div>
+                                </div>
+                            </div>
+                            <!-- Cleanup tools -->
+                            <div class="bg-rc-card rounded-xl p-3">
+                                <div class="text-[8px] text-rc-textsec font-medium mb-2">Cleanup Tools</div>
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center gap-2 bg-white/[0.02] border border-white/[0.04] rounded-lg px-2.5 py-2">
+                                        <div class="w-6 h-6 rounded-full bg-rc-orange/20 flex items-center justify-center"><i class="ph ph-file-arrow-up text-rc-orange text-[10px]"></i></div>
+                                        <div class="flex-1"><div class="text-[9px]">Large Files</div><div class="text-[7px] text-rc-textmut">Files over 50 MB</div></div>
+                                        <i class="ph ph-caret-right text-rc-textmut text-[10px]"></i>
+                                    </div>
+                                    <div class="flex items-center gap-2 bg-white/[0.02] border border-white/[0.04] rounded-lg px-2.5 py-2">
+                                        <div class="w-6 h-6 rounded-full bg-rc-blue/20 flex items-center justify-center"><i class="ph ph-download text-rc-blue text-[10px]"></i></div>
+                                        <div class="flex-1"><div class="text-[9px]">Old Downloads</div><div class="text-[7px] text-rc-textmut">Older than 90 days</div></div>
+                                        <i class="ph ph-caret-right text-rc-textmut text-[10px]"></i>
+                                    </div>
+                                    <div class="flex items-center gap-2 bg-white/[0.02] border border-white/[0.04] rounded-lg px-2.5 py-2">
+                                        <div class="w-6 h-6 rounded-full bg-rc-textsec/20 flex items-center justify-center"><i class="ph ph-package text-rc-textsec text-[10px]"></i></div>
+                                        <div class="flex-1"><div class="text-[9px]">APK Files</div><div class="text-[7px] text-rc-textmut">Installation packages</div></div>
+                                        <i class="ph ph-caret-right text-rc-textmut text-[10px]"></i>
+                                    </div>
+                                    <div class="flex items-center gap-2 bg-white/[0.02] border border-white/[0.04] rounded-lg px-2.5 py-2">
+                                        <div class="w-6 h-6 rounded-full bg-rc-red/20 flex items-center justify-center"><i class="ph ph-trash text-rc-red text-[10px]"></i></div>
+                                        <div class="flex-1"><div class="text-[9px]">Trash</div><div class="text-[7px] text-rc-textmut">Recently deleted files</div></div>
+                                        <i class="ph ph-caret-right text-rc-textmut text-[10px]"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Speed Test phone -->
+                <div class="gallery-phone w-[220px] h-[470px] bg-zinc-950 rounded-[32px] border-[5px] border-zinc-800 shadow-xl overflow-hidden ring-1 ring-zinc-700/30 flex flex-col">
+                    <div class="h-9 w-full px-4 flex justify-between items-center bg-[#0a0a0a] text-zinc-500 text-[8px] font-mono shrink-0">
+                        <span>09:41</span>
+                        <div class="flex items-center gap-1"><i class="ph-fill ph-wifi-high text-[8px]"></i><i class="ph-fill ph-battery-full text-[8px]"></i></div>
+                    </div>
+                    <div class="flex-1 overflow-hidden relative">
+                        <div class="w-full bg-rc-page px-3 pt-2 pb-4 text-white font-sans flex flex-col gap-2">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i class="ph ph-caret-left text-rc-text text-sm"></i>
+                                <span class="text-sm font-semibold">Speed Test</span>
+                            </div>
+                            <!-- Network context -->
+                            <div class="flex gap-2">
+                                <div class="flex-1 bg-rc-card rounded-lg px-2 py-1.5 text-center">
+                                    <div class="text-[7px] text-rc-textmut">Connection</div>
+                                    <div class="text-[9px] font-mono">WiFi</div>
+                                </div>
+                                <div class="flex-1 bg-rc-card rounded-lg px-2 py-1.5 text-center">
+                                    <div class="text-[7px] text-rc-textmut">Ping</div>
+                                    <div class="text-[9px] font-mono">8 ms</div>
+                                </div>
+                            </div>
+                            <!-- Speed gauge -->
+                            <div class="bg-rc-card rounded-xl p-4 flex flex-col items-center">
+                                <div class="w-24 h-24 rounded-full border-[3px] border-rc-blue/20 flex items-center justify-center mb-3 relative">
+                                    <div class="absolute inset-0 rounded-full border-[3px] border-transparent border-t-rc-blue animate-spin" style="animation-duration: 3s;"></div>
+                                    <div class="text-center">
+                                        <div class="text-2xl font-mono font-bold text-rc-blue">142</div>
+                                        <div class="text-[8px] font-mono text-rc-textmut">Mbps</div>
+                                    </div>
+                                </div>
+                                <div class="text-[9px] text-rc-teal">Download complete</div>
+                            </div>
+                            <!-- Results -->
+                            <div class="bg-rc-card rounded-xl p-3">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div class="text-center">
+                                        <div class="text-[7px] text-rc-textmut">Download</div>
+                                        <div class="text-sm font-mono">142 <span class="text-[8px] text-rc-textmut">Mbps</span></div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-[7px] text-rc-textmut">Upload</div>
+                                        <div class="text-sm font-mono">48 <span class="text-[8px] text-rc-textmut">Mbps</span></div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-[7px] text-rc-textmut">Ping</div>
+                                        <div class="text-sm font-mono">8 <span class="text-[8px] text-rc-textmut">ms</span></div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-[7px] text-rc-textmut">Jitter</div>
+                                        <div class="text-sm font-mono">2.1 <span class="text-[8px] text-rc-textmut">ms</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Latest result -->
+                            <div class="bg-rc-card rounded-xl p-3">
+                                <div class="text-[8px] text-rc-textsec font-medium mb-2">Latest Result</div>
+                                <div class="text-[8px] text-rc-textmut">Today, 09:38</div>
+                                <div class="flex gap-3 mt-1 text-[9px]">
+                                    <span class="font-mono">&#8595; 142 Mbps</span>
+                                    <span class="font-mono">&#8593; 48 Mbps</span>
+                                    <span class="font-mono text-rc-textmut">8 ms</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ===== PRO ===== -->
+        <section id="pro" class="py-24 lg:py-32" style="border-top: 1px solid var(--border-color);">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="reveal text-center max-w-2xl mx-auto mb-20">
+                    <h2 class="text-3xl lg:text-4xl font-semibold tracking-tight mb-4">Pay once, keep forever.</h2>
+                    <p style="color: var(--text-secondary);">No subscriptions. Free does the job. Pro adds depth for those who want historical data and advanced tools.</p>
+                </div>
+
+                <div class="stagger grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                    <!-- Free -->
+                    <div class="reveal p-8 rounded-2xl site-card">
+                        <h3 class="text-xl font-medium mb-4">Free</h3>
+                        <div class="text-3xl font-mono font-semibold mb-1">&euro;0</div>
+                        <p class="text-sm mb-8" style="color: var(--text-muted);">Full diagnostics, no strings</p>
+                        <ul class="space-y-3.5 text-sm" style="color: var(--text-secondary);">
+                            <li class="flex items-center gap-3"><i class="ph-fill ph-check-circle text-rc-teal text-base shrink-0"></i>Health score dashboard</li>
+                            <li class="flex items-center gap-3"><i class="ph-fill ph-check-circle text-rc-teal text-base shrink-0"></i>Battery diagnostics</li>
+                            <li class="flex items-center gap-3"><i class="ph-fill ph-check-circle text-rc-teal text-base shrink-0"></i>Thermal monitoring</li>
+                            <li class="flex items-center gap-3"><i class="ph-fill ph-check-circle text-rc-teal text-base shrink-0"></i>Network &amp; speed test</li>
+                            <li class="flex items-center gap-3"><i class="ph-fill ph-check-circle text-rc-teal text-base shrink-0"></i>Storage analysis &amp; cleanup</li>
+                            <li class="flex items-center gap-3"><i class="ph-fill ph-check-circle text-rc-teal text-base shrink-0"></i>Alerts &amp; notifications</li>
+                        </ul>
+                    </div>
+
+                    <!-- Pro -->
+                    <div class="reveal p-8 rounded-2xl relative site-card" style="border-color: rgba(74,158,222,0.25);">
+                        <div class="absolute -top-3 right-6 px-3 py-1 bg-rc-blue text-white text-[11px] font-mono font-medium rounded-full tracking-wide uppercase">Best value</div>
+                        <h3 class="text-xl font-medium mb-4">Pro</h3>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-3xl font-mono font-semibold">&euro;3.49</span>
+                            <span class="text-sm font-mono" style="color: var(--text-muted);">once</span>
+                        </div>
+                        <p class="text-sm mb-8" style="color: var(--text-muted);">One-time purchase, not a subscription</p>
+                        <ul class="space-y-3.5 text-sm" style="color: var(--text-secondary);">
+                            <li class="flex items-center gap-3"><i class="ph-fill ph-check-circle text-rc-blue text-base shrink-0"></i>Everything in Free</li>
+                            <li class="flex items-center gap-3"><i class="ph-fill ph-check-circle text-rc-blue text-base shrink-0"></i>Extended history &amp; trends</li>
+                            <li class="flex items-center gap-3"><i class="ph-fill ph-check-circle text-rc-blue text-base shrink-0"></i>Charger comparison tool</li>
+                            <li class="flex items-center gap-3"><i class="ph-fill ph-check-circle text-rc-blue text-base shrink-0"></i>Per-app battery usage</li>
+                            <li class="flex items-center gap-3"><i class="ph-fill ph-check-circle text-rc-blue text-base shrink-0"></i>Home screen widgets</li>
+                            <li class="flex items-center gap-3"><i class="ph-fill ph-check-circle text-rc-blue text-base shrink-0"></i>CSV data export</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== ARTICLES / GUIDES ===== -->
+        <section id="articles" class="py-24 lg:py-32" style="border-top: 1px solid var(--border-color); background: color-mix(in srgb, var(--bg-page) 95%, var(--bg-card));">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="reveal text-center max-w-2xl mx-auto mb-16">
+                    <span class="font-mono text-xs text-rc-blue tracking-wider uppercase block mb-2">Resources</span>
+                    <h2 class="text-2xl lg:text-3xl font-semibold tracking-tight mb-4">160+ articles across five topics.</h2>
+                    <p style="color: var(--text-secondary);">In-depth guides on Android diagnostics, battery care, thermal management, network optimization, and storage maintenance.</p>
+                </div>
+
+                <div class="stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+
+                    <!-- Battery -->
+                    <a href="#" class="reveal category-card group block p-6 rounded-2xl site-card hover:!border-rc-teal/30">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-xl bg-rc-teal/10 flex items-center justify-center">
+                                <i class="ph ph-battery-charging text-xl text-rc-teal"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-medium group-hover:text-rc-teal transition-colors">Battery</h3>
+                                <span class="text-xs font-mono" style="color: var(--text-muted);">42 articles</span>
+                            </div>
+                        </div>
+                        <ul class="space-y-2 text-sm" style="color: var(--text-secondary);">
+                            <li class="flex items-center gap-2"><i class="ph ph-caret-right text-xs text-rc-teal"></i>How to check battery health</li>
+                            <li class="flex items-center gap-2"><i class="ph ph-caret-right text-xs text-rc-teal"></i>Understanding charge cycles</li>
+                            <li class="flex items-center gap-2"><i class="ph ph-caret-right text-xs text-rc-teal"></i>Drain rate optimization</li>
+                        </ul>
+                        <div class="mt-4 text-xs font-medium text-rc-teal group-hover:underline">Browse all &rarr;</div>
+                    </a>
+
+                    <!-- Thermal -->
+                    <a href="#" class="reveal category-card group block p-6 rounded-2xl site-card hover:!border-rc-orange/30">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-xl bg-rc-orange/10 flex items-center justify-center">
+                                <i class="ph ph-thermometer-hot text-xl text-rc-orange"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-medium group-hover:text-rc-orange transition-colors">Thermal</h3>
+                                <span class="text-xs font-mono" style="color: var(--text-muted);">28 articles</span>
+                            </div>
+                        </div>
+                        <ul class="space-y-2 text-sm" style="color: var(--text-secondary);">
+                            <li class="flex items-center gap-2"><i class="ph ph-caret-right text-xs text-rc-orange"></i>Why your phone overheats</li>
+                            <li class="flex items-center gap-2"><i class="ph ph-caret-right text-xs text-rc-orange"></i>Thermal throttling explained</li>
+                            <li class="flex items-center gap-2"><i class="ph ph-caret-right text-xs text-rc-orange"></i>Safe temperature ranges</li>
+                        </ul>
+                        <div class="mt-4 text-xs font-medium text-rc-orange group-hover:underline">Browse all &rarr;</div>
+                    </a>
+
+                    <!-- Network -->
+                    <a href="#" class="reveal category-card group block p-6 rounded-2xl site-card hover:!border-rc-blue/30">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-xl bg-rc-blue/10 flex items-center justify-center">
+                                <i class="ph ph-wifi-high text-xl text-rc-blue"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-medium group-hover:text-rc-blue transition-colors">Network</h3>
+                                <span class="text-xs font-mono" style="color: var(--text-muted);">38 articles</span>
+                            </div>
+                        </div>
+                        <ul class="space-y-2 text-sm" style="color: var(--text-secondary);">
+                            <li class="flex items-center gap-2"><i class="ph ph-caret-right text-xs text-rc-blue"></i>WiFi signal optimization</li>
+                            <li class="flex items-center gap-2"><i class="ph ph-caret-right text-xs text-rc-blue"></i>Understanding speed tests</li>
+                            <li class="flex items-center gap-2"><i class="ph ph-caret-right text-xs text-rc-blue"></i>5G vs WiFi 6 comparison</li>
+                        </ul>
+                        <div class="mt-4 text-xs font-medium text-rc-blue group-hover:underline">Browse all &rarr;</div>
+                    </a>
+
+                    <!-- Storage -->
+                    <a href="#" class="reveal category-card group block p-6 rounded-2xl site-card hover:!border-rc-lime/30">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-xl bg-rc-lime/10 flex items-center justify-center">
+                                <i class="ph ph-hard-drives text-xl text-rc-lime"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-medium group-hover:text-rc-lime transition-colors">Storage</h3>
+                                <span class="text-xs font-mono" style="color: var(--text-muted);">30 articles</span>
+                            </div>
+                        </div>
+                        <ul class="space-y-2 text-sm" style="color: var(--text-secondary);">
+                            <li class="flex items-center gap-2"><i class="ph ph-caret-right text-xs text-rc-lime"></i>Reclaim wasted space</li>
+                            <li class="flex items-center gap-2"><i class="ph ph-caret-right text-xs text-rc-lime"></i>Storage slowdown causes</li>
+                            <li class="flex items-center gap-2"><i class="ph ph-caret-right text-xs text-rc-lime"></i>Media file management</li>
+                        </ul>
+                        <div class="mt-4 text-xs font-medium text-rc-lime group-hover:underline">Browse all &rarr;</div>
+                    </a>
+
+                    <!-- General -->
+                    <a href="#" class="reveal category-card group block p-6 rounded-2xl site-card hover:!border-rc-amber/30 sm:col-span-2 lg:col-span-1">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-xl bg-rc-amber/10 flex items-center justify-center">
+                                <i class="ph ph-book-open text-xl text-rc-amber"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-medium group-hover:text-rc-amber transition-colors">General</h3>
+                                <span class="text-xs font-mono" style="color: var(--text-muted);">22 articles</span>
+                            </div>
+                        </div>
+                        <ul class="space-y-2 text-sm" style="color: var(--text-secondary);">
+                            <li class="flex items-center gap-2"><i class="ph ph-caret-right text-xs text-rc-amber"></i>Full diagnostic walkthrough</li>
+                            <li class="flex items-center gap-2"><i class="ph ph-caret-right text-xs text-rc-amber"></i>Software vs hardware issues</li>
+                            <li class="flex items-center gap-2"><i class="ph ph-caret-right text-xs text-rc-amber"></i>When to replace your phone</li>
+                        </ul>
+                        <div class="mt-4 text-xs font-medium text-rc-amber group-hover:underline">Browse all &rarr;</div>
+                    </a>
+
+                </div>
+
+                <!-- Numbers strip -->
+                <div class="reveal mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto text-center">
+                    <div>
+                        <div class="text-3xl font-mono font-semibold text-rc-blue">160+</div>
+                        <div class="text-sm mt-1" style="color: var(--text-muted);">Articles</div>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-mono font-semibold text-rc-teal">32</div>
+                        <div class="text-sm mt-1" style="color: var(--text-muted);">Info tooltips</div>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-mono font-semibold text-rc-amber">5</div>
+                        <div class="text-sm mt-1" style="color: var(--text-muted);">Topic areas</div>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-mono font-semibold text-rc-orange">0</div>
+                        <div class="text-sm mt-1" style="color: var(--text-muted);">Data collected</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== FAQ ===== -->
+        <section id="faq" class="py-24 lg:py-32" style="border-top: 1px solid var(--border-color);">
+            <div class="max-w-3xl mx-auto px-6">
+                <div class="reveal text-center mb-16">
+                    <h2 class="text-3xl lg:text-4xl font-semibold tracking-tight mb-4">Frequently asked questions</h2>
+                    <p style="color: var(--text-secondary);">Everything you want to know before installing.</p>
+                </div>
+
+                <div class="reveal space-y-3" id="faq-list">
+
+                    <div class="faq-item rounded-xl overflow-hidden" style="border: 1px solid var(--border-color); background: var(--bg-card);">
+                        <button class="faq-toggle w-full flex items-center justify-between p-5 text-left font-medium" onclick="toggleFaq(this)">
+                            <span>Does runcheck need root access?</span>
+                            <i class="ph ph-caret-down faq-chevron text-lg shrink-0 ml-4" style="color: var(--text-muted);"></i>
+                        </button>
+                        <div class="faq-answer px-5">
+                            <p class="pb-5 text-sm leading-relaxed" style="color: var(--text-secondary);">No. runcheck uses only standard Android APIs (BatteryManager, PowerManager, ConnectivityManager, StorageManager) that are available without root. Some advanced metrics like exact cycle count may require Android 14+ or specific manufacturer support.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item rounded-xl overflow-hidden" style="border: 1px solid var(--border-color); background: var(--bg-card);">
+                        <button class="faq-toggle w-full flex items-center justify-between p-5 text-left font-medium" onclick="toggleFaq(this)">
+                            <span>How accurate is the battery health reading?</span>
+                            <i class="ph ph-caret-down faq-chevron text-lg shrink-0 ml-4" style="color: var(--text-muted);"></i>
+                        </button>
+                        <div class="faq-answer px-5">
+                            <p class="pb-5 text-sm leading-relaxed" style="color: var(--text-secondary);">It depends on your device. runcheck shows confidence badges — <span class="text-rc-teal font-mono text-xs">Accurate</span>, <span class="text-rc-amber font-mono text-xs">Estimated</span>, or <span class="font-mono text-xs" style="color: var(--text-muted);">Unavailable</span> — for every reading. On Pixel and Samsung devices with Android 14+, health data comes directly from hardware. On older devices, health is estimated with clear labeling.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item rounded-xl overflow-hidden" style="border: 1px solid var(--border-color); background: var(--bg-card);">
+                        <button class="faq-toggle w-full flex items-center justify-between p-5 text-left font-medium" onclick="toggleFaq(this)">
+                            <span>Does the app drain my battery?</span>
+                            <i class="ph ph-caret-down faq-chevron text-lg shrink-0 ml-4" style="color: var(--text-muted);"></i>
+                        </button>
+                        <div class="faq-answer px-5">
+                            <p class="pb-5 text-sm leading-relaxed" style="color: var(--text-secondary);">Minimal impact. Background monitoring uses WorkManager with configurable intervals (15, 30, or 60 minutes). The app respects battery optimization and doesn't fight the OS. Real-time monitoring only runs when you're actively viewing the app.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item rounded-xl overflow-hidden" style="border: 1px solid var(--border-color); background: var(--bg-card);">
+                        <button class="faq-toggle w-full flex items-center justify-between p-5 text-left font-medium" onclick="toggleFaq(this)">
+                            <span>What Android versions are supported?</span>
+                            <i class="ph ph-caret-down faq-chevron text-lg shrink-0 ml-4" style="color: var(--text-muted);"></i>
+                        </button>
+                        <div class="faq-answer px-5">
+                            <p class="pb-5 text-sm leading-relaxed" style="color: var(--text-secondary);">Android 8.0 (Oreo) and above. Some features like trash management require Android 11+, and certain battery metrics are more accurate on Android 14+. The app adapts its capabilities to your device's API level automatically.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item rounded-xl overflow-hidden" style="border: 1px solid var(--border-color); background: var(--bg-card);">
+                        <button class="faq-toggle w-full flex items-center justify-between p-5 text-left font-medium" onclick="toggleFaq(this)">
+                            <span>How is the health score calculated?</span>
+                            <i class="ph ph-caret-down faq-chevron text-lg shrink-0 ml-4" style="color: var(--text-muted);"></i>
+                        </button>
+                        <div class="faq-answer px-5">
+                            <p class="pb-5 text-sm leading-relaxed" style="color: var(--text-secondary);">The score combines four categories: Battery (40%), Thermal (25%), Network (25%), and Storage (10%). Each sub-score factors in current state, trends, and device-specific reliability. The algorithm uses confidence-weighted readings — if a metric is unreliable, it contributes less to the final score rather than skewing it.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item rounded-xl overflow-hidden" style="border: 1px solid var(--border-color); background: var(--bg-card);">
+                        <button class="faq-toggle w-full flex items-center justify-between p-5 text-left font-medium" onclick="toggleFaq(this)">
+                            <span>Is my data sent anywhere?</span>
+                            <i class="ph ph-caret-down faq-chevron text-lg shrink-0 ml-4" style="color: var(--text-muted);"></i>
+                        </button>
+                        <div class="faq-answer px-5">
+                            <p class="pb-5 text-sm leading-relaxed" style="color: var(--text-secondary);">No. All data stays on your device in a local database. There are no analytics SDKs, no telemetry, no account system. The only optional network feature is crash reporting (Firebase Crashlytics), which is off by default and can be toggled in Settings.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item rounded-xl overflow-hidden" style="border: 1px solid var(--border-color); background: var(--bg-card);">
+                        <button class="faq-toggle w-full flex items-center justify-between p-5 text-left font-medium" onclick="toggleFaq(this)">
+                            <span>What does Pro include?</span>
+                            <i class="ph ph-caret-down faq-chevron text-lg shrink-0 ml-4" style="color: var(--text-muted);"></i>
+                        </button>
+                        <div class="faq-answer px-5">
+                            <p class="pb-5 text-sm leading-relaxed" style="color: var(--text-secondary);">Pro is a one-time purchase (&euro;3.49) that unlocks: extended data history (up to forever), charger comparison tool, per-app battery usage tracking, thermal throttling logs, home screen widgets, and CSV data export. All core diagnostics and educational content remain free.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item rounded-xl overflow-hidden" style="border: 1px solid var(--border-color); background: var(--bg-card);">
+                        <button class="faq-toggle w-full flex items-center justify-between p-5 text-left font-medium" onclick="toggleFaq(this)">
+                            <span>Can I get a refund?</span>
+                            <i class="ph ph-caret-down faq-chevron text-lg shrink-0 ml-4" style="color: var(--text-muted);"></i>
+                        </button>
+                        <div class="faq-answer px-5">
+                            <p class="pb-5 text-sm leading-relaxed" style="color: var(--text-secondary);">Yes. Google Play's standard refund policy applies — you can request a refund within 48 hours of purchase through Google Play, or contact us directly.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== CTA ===== -->
+        <section id="download" class="py-24 lg:py-32 relative overflow-hidden" style="border-top: 1px solid var(--border-color);">
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-3xl pointer-events-none" style="background: radial-gradient(circle, rgba(74,158,222,0.06) 0%, transparent 70%);"></div>
+            <div class="reveal max-w-2xl mx-auto px-6 text-center relative z-10">
+                <h2 class="text-3xl lg:text-4xl font-semibold tracking-tight mb-4">Stop guessing.<br>Start checking.</h2>
+                <p class="text-lg mb-10" style="color: var(--text-secondary);">One app. Four diagnostics. Zero data collection.</p>
+                <a href="#" class="glow-btn inline-flex items-center justify-center px-8 py-4 text-base font-medium text-white bg-rc-blue hover:bg-[#3D8BC8] transition-colors rounded-lg gap-2.5">
+                    <i class="ph-fill ph-google-play-logo text-xl"></i>
+                    Download <span class="font-mono">run<span class="text-white/80">check</span></span>
+                </a>
+                <p class="text-sm font-mono mt-4" style="color: var(--text-muted);">Free &middot; Android 8+ &middot; No accounts</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-12" style="border-top: 1px solid var(--border-color);">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-2">
+                <i class="ph-fill ph-activity text-rc-blue"></i>
+                <span class="font-bold tracking-tight font-mono"><span style="color: var(--text-primary);">run</span><span class="text-rc-blue">check</span></span>
+            </div>
+            <div class="flex flex-wrap justify-center gap-6 text-sm" style="color: var(--text-secondary);">
+                <a href="#" class="hover:text-[var(--text-primary)] transition-colors">Privacy Policy</a>
+                <a href="#" class="hover:text-[var(--text-primary)] transition-colors">Contact</a>
+                <a href="#" class="hover:text-[var(--text-primary)] transition-colors">Play Store</a>
+            </div>
+            <div class="text-xs font-mono" style="color: var(--text-muted);">
+                &copy; 2026 runcheck. Android is a trademark of Google LLC.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Theme toggle
+        const toggle = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+        if (localStorage.getItem('theme') === 'light') {
+            html.classList.replace('dark', 'light');
+        } else if (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            html.classList.replace('dark', 'light');
+        }
+        toggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            html.classList.toggle('light');
+            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // Reduced motion
+        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // Scroll reveal
+        if (!prefersReduced) {
+            const revealObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        revealObserver.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+            document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+            // Hero stagger
+            setTimeout(() => {
+                document.querySelectorAll('.hero-reveal').forEach((el, i) => {
+                    setTimeout(() => el.classList.add('visible'), i * 120);
+                });
+                setTimeout(() => document.querySelector('.phone-reveal')?.classList.add('visible'), 300);
+            }, 100);
+        } else {
+            document.querySelectorAll('.reveal, .hero-reveal, .phone-reveal').forEach(el => el.classList.add('visible'));
+        }
+
+        // Phone auto-scroll animation
+        const phoneScrollObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const content = entry.target.querySelector('.phone-scroll-content');
+                if (content) {
+                    if (entry.isIntersecting) {
+                        content.classList.add('scrolling');
+                    } else {
+                        content.classList.remove('scrolling');
+                    }
+                }
+            });
+        }, { threshold: 0.3 });
+        document.querySelectorAll('.phone-frame, .gallery-phone').forEach(phone => {
+            phoneScrollObserver.observe(phone);
+        });
+
+        // Health score gauge animation
+        const healthCard = document.getElementById('health-score-card');
+        const scoreNum = document.getElementById('health-score-num');
+        const gaugeArc = document.getElementById('health-gauge-arc');
+        if (healthCard && scoreNum && gaugeArc) {
+            const target = 88;
+            const circumference = 263.9;
+            let triggered = false;
+            const scoreObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !triggered) {
+                        triggered = true;
+                        const targetOffset = circumference - (circumference * target / 100);
+                        if (prefersReduced) { scoreNum.textContent = target; gaugeArc.style.strokeDashoffset = targetOffset; return; }
+                        const duration = 1400;
+                        const start = performance.now();
+                        function animate(now) {
+                            const elapsed = now - start;
+                            const progress = Math.min(elapsed / duration, 1);
+                            const eased = 1 - Math.pow(1 - progress, 3);
+                            scoreNum.textContent = Math.round(eased * target);
+                            gaugeArc.style.strokeDashoffset = circumference - (circumference * eased * target / 100);
+                            if (progress < 1) requestAnimationFrame(animate);
+                        }
+                        requestAnimationFrame(animate);
+                        scoreObserver.unobserve(healthCard);
+                    }
+                });
+            }, { threshold: 0.4 });
+            scoreObserver.observe(healthCard);
+        }
+
+        // Bento gauge animations
+        document.querySelectorAll('.bento-gauge').forEach(gauge => {
+            const target = parseInt(gauge.dataset.target);
+            const circumference = parseFloat(gauge.getAttribute('stroke-dasharray'));
+            const numEl = gauge.closest('.app-panel, .bg-rc-card, [class*="bg-rc"]')?.querySelector('.bento-gauge-num');
+            let fired = false;
+            const obs = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !fired) {
+                        fired = true;
+                        const targetOffset = circumference - (circumference * target / 100);
+                        if (prefersReduced) { gauge.style.strokeDashoffset = targetOffset; if (numEl) numEl.textContent = target; return; }
+                        const duration = 1200;
+                        const start = performance.now();
+                        function anim(now) {
+                            const elapsed = now - start;
+                            const progress = Math.min(elapsed / duration, 1);
+                            const eased = 1 - Math.pow(1 - progress, 3);
+                            gauge.style.strokeDashoffset = circumference - (circumference * eased * target / 100);
+                            if (numEl) numEl.textContent = Math.round(eased * target);
+                            if (progress < 1) requestAnimationFrame(anim);
+                        }
+                        requestAnimationFrame(anim);
+                        obs.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.3 });
+            const parent = gauge.closest('.site-card, .phone-frame, .bg-rc-card') || gauge.parentElement;
+            obs.observe(parent);
+        });
+
+        // Signal bars animation
+        const signalBars = document.getElementById('signal-bars');
+        if (signalBars) {
+            let signalFired = false;
+            const signalObs = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !signalFired) {
+                        signalFired = true;
+                        signalBars.querySelectorAll('.signal-bar').forEach(bar => {
+                            if (prefersReduced) { bar.style.transform = 'scaleY(1)'; return; }
+                            bar.classList.add('animate');
+                        });
+                        signalObs.unobserve(signalBars);
+                    }
+                });
+            }, { threshold: 0.5 });
+            signalObs.observe(signalBars);
+        }
+
+        // Terminal typewriter
+        const terminal = document.getElementById('terminal');
+        if (terminal) {
+            let triggered = false;
+            const termObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !triggered) {
+                        triggered = true;
+                        const lines = terminal.querySelectorAll('.terminal-line');
+                        if (prefersReduced) { lines.forEach(l => l.classList.add('typed')); return; }
+                        lines.forEach((line, i) => setTimeout(() => line.classList.add('typed'), i * 180));
+                        termObserver.unobserve(terminal);
+                    }
+                });
+            }, { threshold: 0.3 });
+            termObserver.observe(terminal);
+        }
+
+        // FAQ accordion
+        function toggleFaq(button) {
+            const item = button.closest('.faq-item');
+            const answer = item.querySelector('.faq-answer');
+            const chevron = item.querySelector('.faq-chevron');
+            const isOpen = answer.classList.contains('open');
+
+            // Close all others
+            document.querySelectorAll('.faq-answer.open').forEach(a => {
+                a.classList.remove('open');
+                a.closest('.faq-item').querySelector('.faq-chevron').classList.remove('open');
+            });
+
+            if (!isOpen) {
+                answer.classList.add('open');
+                chevron.classList.add('open');
+            }
+        }
+    </script>
+
+</body>
+</html>

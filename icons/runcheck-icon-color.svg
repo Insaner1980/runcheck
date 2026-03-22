@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6CBAEE"/>
+      <stop offset="100%" stop-color="#2A80C4"/>
+    </linearGradient>
+    <filter id="arcGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.290 0 0 0 0 0.620 0 0 0 0 0.871 0 0 0 0.5 0" result="colorBlur"/>
+      <feMerge>
+        <feMergeNode in="colorBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="phoneGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.290 0 0 0 0 0.620 0 0 0 0 0.871 0 0 0 0.35 0" result="colorBlur"/>
+      <feMerge>
+        <feMergeNode in="colorBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Health score arc -->
+  <circle
+    cx="256" cy="256" r="184"
+    fill="none"
+    stroke="url(#arcGrad)"
+    stroke-width="24"
+    stroke-dasharray="676 1156"
+    stroke-linecap="round"
+    transform="rotate(135 256 256)"
+    filter="url(#arcGlow)"
+  />
+
+  <!-- Phone body -->
+  <rect
+    x="196" y="172"
+    width="120" height="168"
+    rx="20" ry="20"
+    fill="none"
+    stroke="#4A9EDE"
+    stroke-width="16"
+    filter="url(#phoneGlow)"
+  />
+
+  <!-- Phone screen -->
+  <rect
+    x="212" y="190"
+    width="88" height="132"
+    rx="8" ry="8"
+    fill="#4A9EDE"
+    opacity="0.28"
+  />
+</svg>

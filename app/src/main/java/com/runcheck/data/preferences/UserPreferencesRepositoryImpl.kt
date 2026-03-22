@@ -12,6 +12,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.runcheck.domain.model.AppLanguage
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.model.TemperatureUnit
@@ -78,7 +79,16 @@ class UserPreferencesRepositoryImpl @Inject constructor(
             alertStorageThreshold = prefs[KEY_ALERT_STORAGE] ?: 90,
             temperatureUnit = prefs[KEY_TEMP_UNIT]
                 ?.let { stored -> enumValueOrNull<TemperatureUnit>(stored) }
-                ?: TemperatureUnit.CELSIUS
+                ?: TemperatureUnit.CELSIUS,
+            appLanguage = prefs[KEY_APP_LANGUAGE]
+                ?.let { stored -> enumValueOrNull<AppLanguage>(stored) }
+                ?: AppLanguage.SYSTEM,
+            liveNotificationEnabled = prefs[KEY_LIVE_NOTIF_ENABLED] ?: false,
+            liveNotifCurrent = prefs[KEY_LIVE_NOTIF_CURRENT] ?: true,
+            liveNotifDrainRate = prefs[KEY_LIVE_NOTIF_DRAIN_RATE] ?: true,
+            liveNotifTemperature = prefs[KEY_LIVE_NOTIF_TEMPERATURE] ?: true,
+            liveNotifScreenStats = prefs[KEY_LIVE_NOTIF_SCREEN_STATS] ?: false,
+            liveNotifRemainingTime = prefs[KEY_LIVE_NOTIF_REMAINING_TIME] ?: false
         )
     }
 
@@ -162,6 +172,40 @@ class UserPreferencesRepositoryImpl @Inject constructor(
         context.dataStore.edit { it[KEY_TEMP_UNIT] = unit.name }
     }
 
+    override suspend fun setAppLanguage(language: AppLanguage) {
+        context.dataStore.edit { it[KEY_APP_LANGUAGE] = language.name }
+        // Mirror to SharedPreferences so MainActivity.attachBaseContext can read it
+        // synchronously before Hilt is initialized.
+        context.getSharedPreferences("runcheck_language", android.content.Context.MODE_PRIVATE)
+            .edit()
+            .putString("language_tag", language.toLanguageTag())
+            .apply()
+    }
+
+    override suspend fun setLiveNotificationEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_LIVE_NOTIF_ENABLED] = enabled }
+    }
+
+    override suspend fun setLiveNotifCurrent(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_LIVE_NOTIF_CURRENT] = enabled }
+    }
+
+    override suspend fun setLiveNotifDrainRate(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_LIVE_NOTIF_DRAIN_RATE] = enabled }
+    }
+
+    override suspend fun setLiveNotifTemperature(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_LIVE_NOTIF_TEMPERATURE] = enabled }
+    }
+
+    override suspend fun setLiveNotifScreenStats(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_LIVE_NOTIF_SCREEN_STATS] = enabled }
+    }
+
+    override suspend fun setLiveNotifRemainingTime(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_LIVE_NOTIF_REMAINING_TIME] = enabled }
+    }
+
     companion object {
         private val KEY_MONITORING_INTERVAL = stringPreferencesKey("monitoring_interval")
         private val KEY_NOTIFICATIONS = booleanPreferencesKey("notifications")
@@ -178,6 +222,13 @@ class UserPreferencesRepositoryImpl @Inject constructor(
         private val KEY_ALERT_TEMP = intPreferencesKey("alert_temp_threshold")
         private val KEY_ALERT_STORAGE = intPreferencesKey("alert_storage_threshold")
         private val KEY_TEMP_UNIT = stringPreferencesKey("temp_unit")
+        private val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
+        private val KEY_LIVE_NOTIF_ENABLED = booleanPreferencesKey("live_notif_enabled")
+        private val KEY_LIVE_NOTIF_CURRENT = booleanPreferencesKey("live_notif_current")
+        private val KEY_LIVE_NOTIF_DRAIN_RATE = booleanPreferencesKey("live_notif_drain_rate")
+        private val KEY_LIVE_NOTIF_TEMPERATURE = booleanPreferencesKey("live_notif_temperature")
+        private val KEY_LIVE_NOTIF_SCREEN_STATS = booleanPreferencesKey("live_notif_screen_stats")
+        private val KEY_LIVE_NOTIF_REMAINING_TIME = booleanPreferencesKey("live_notif_remaining_time")
         private val KEY_DISMISSED_INFO_CARDS = stringSetPreferencesKey("dismissed_info_cards")
     }
 }

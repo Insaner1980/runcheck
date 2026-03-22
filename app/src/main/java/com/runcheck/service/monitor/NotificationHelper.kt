@@ -83,7 +83,7 @@ class NotificationHelper @Inject constructor(
         if (!canPostNotifications()) return
         createChannels()
         val notification = NotificationCompat.Builder(context, CHANNEL_ALERTS)
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(context.getString(R.string.notification_low_battery_title))
             .setContentText(context.getString(R.string.notification_low_battery_text, level))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -98,7 +98,7 @@ class NotificationHelper @Inject constructor(
         if (!canPostNotifications()) return
         createChannels()
         val notification = NotificationCompat.Builder(context, CHANNEL_ALERTS)
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(context.getString(R.string.notification_high_temp_title))
             .setContentText(
                 context.getString(
@@ -118,7 +118,7 @@ class NotificationHelper @Inject constructor(
         if (!canPostNotifications()) return
         createChannels()
         val notification = NotificationCompat.Builder(context, CHANNEL_ALERTS)
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(context.getString(R.string.notification_low_storage_title))
             .setContentText(context.getString(R.string.notification_low_storage_text, percentUsed))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -133,7 +133,7 @@ class NotificationHelper @Inject constructor(
         if (!canPostNotifications()) return
         createChannels()
         val notification = NotificationCompat.Builder(context, CHANNEL_STATUS)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(context.getString(R.string.notification_charge_complete_title))
             .setContentText(context.getString(R.string.notification_charge_complete_text, level))
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -147,7 +147,7 @@ class NotificationHelper @Inject constructor(
         if (!canPostNotifications()) return
         createChannels()
         val notification = NotificationCompat.Builder(context, CHANNEL_TRIAL)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(context.getString(R.string.notification_trial_day5_title))
             .setContentText(context.getString(R.string.notification_trial_day5_text))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -160,7 +160,7 @@ class NotificationHelper @Inject constructor(
         if (!canPostNotifications()) return
         createChannels()
         val notification = NotificationCompat.Builder(context, CHANNEL_TRIAL)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(context.getString(R.string.notification_trial_day7_title))
             .setContentText(context.getString(R.string.notification_trial_day7_text))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

@@ -9,6 +9,7 @@ import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.billing.PurchaseEvent
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
+import com.runcheck.domain.model.AppLanguage
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.usecase.ClearMonitoringDataUseCase
 import com.runcheck.domain.usecase.ExportDataUseCase
@@ -281,6 +282,38 @@ class SettingsViewModel @Inject constructor(
         executePreferenceUpdate {
             manageUserPreferences.setTemperatureUnit(unit)
         }
+    }
+
+    fun setAppLanguage(language: AppLanguage) {
+        executePreferenceUpdate {
+            manageUserPreferences.setAppLanguage(language)
+        }
+    }
+
+    fun setLiveNotificationEnabled(enabled: Boolean) {
+        executePreferenceUpdate {
+            manageUserPreferences.setLiveNotificationEnabled(enabled)
+        }
+    }
+
+    fun setLiveNotifCurrent(enabled: Boolean) {
+        executePreferenceUpdate { manageUserPreferences.setLiveNotifCurrent(enabled) }
+    }
+
+    fun setLiveNotifDrainRate(enabled: Boolean) {
+        executePreferenceUpdate { manageUserPreferences.setLiveNotifDrainRate(enabled) }
+    }
+
+    fun setLiveNotifTemperature(enabled: Boolean) {
+        executePreferenceUpdate { manageUserPreferences.setLiveNotifTemperature(enabled) }
+    }
+
+    fun setLiveNotifScreenStats(enabled: Boolean) {
+        executePreferenceUpdate { manageUserPreferences.setLiveNotifScreenStats(enabled) }
+    }
+
+    fun setLiveNotifRemainingTime(enabled: Boolean) {
+        executePreferenceUpdate { manageUserPreferences.setLiveNotifRemainingTime(enabled) }
     }
 
     fun resetTips() {

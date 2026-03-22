@@ -66,6 +66,8 @@ import com.runcheck.BuildConfig
 import com.runcheck.R
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
+import com.runcheck.domain.model.AppLanguage
+import com.runcheck.service.monitor.RealTimeMonitorService
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.ui.common.findActivity
 import com.runcheck.ui.common.formatTemperature
@@ -134,6 +136,75 @@ fun SettingsScreen(
                         },
                         selected = uiState.preferences.monitoringInterval == interval,
                         onSelect = { viewModel.setMonitoringInterval(interval) }
+                    )
+                }
+            }
+
+            // ── LIVE NOTIFICATION ─────────────────────────────────────
+            SettingsCard {
+                CardSectionTitle(text = stringResource(R.string.settings_live_notification))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+
+                val liveEnabled = uiState.preferences.liveNotificationEnabled
+
+                SettingsToggle(
+                    title = stringResource(R.string.settings_live_notification),
+                    description = stringResource(R.string.settings_live_notification_desc),
+                    checked = liveEnabled,
+                    onCheckedChange = { enabled ->
+                        if (enabled && !hasNotificationPermission && notificationsPermissionRequired) {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            viewModel.setLiveNotificationEnabled(enabled)
+                            val serviceIntent = Intent(context, RealTimeMonitorService::class.java)
+                            if (enabled) {
+                                context.startForegroundService(serviceIntent)
+                            } else {
+                                serviceIntent.action = RealTimeMonitorService.ACTION_STOP
+                                context.startService(serviceIntent)
+                            }
+                        }
+                    }
+                )
+
+                if (liveEnabled) {
+                    SettingsDivider()
+                    Text(
+                        text = stringResource(R.string.settings_live_notification_show),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(top = MaterialTheme.spacing.xs)
+                    )
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                    SettingsToggle(
+                        title = stringResource(R.string.settings_live_notif_current),
+                        description = null,
+                        checked = uiState.preferences.liveNotifCurrent,
+                        onCheckedChange = { viewModel.setLiveNotifCurrent(it) }
+                    )
+                    SettingsToggle(
+                        title = stringResource(R.string.settings_live_notif_drain_rate),
+                        description = null,
+                        checked = uiState.preferences.liveNotifDrainRate,
+                        onCheckedChange = { viewModel.setLiveNotifDrainRate(it) }
+                    )
+                    SettingsToggle(
+                        title = stringResource(R.string.settings_live_notif_temperature),
+                        description = null,
+                        checked = uiState.preferences.liveNotifTemperature,
+                        onCheckedChange = { viewModel.setLiveNotifTemperature(it) }
+                    )
+                    SettingsToggle(
+                        title = stringResource(R.string.settings_live_notif_screen_stats),
+                        description = null,
+                        checked = uiState.preferences.liveNotifScreenStats,
+                        onCheckedChange = { viewModel.setLiveNotifScreenStats(it) }
+                    )
+                    SettingsToggle(
+                        title = stringResource(R.string.settings_live_notif_remaining_time),
+                        description = null,
+                        checked = uiState.preferences.liveNotifRemainingTime,
+                        onCheckedChange = { viewModel.setLiveNotifRemainingTime(it) }
                     )
                 }
             }
@@ -255,6 +326,39 @@ fun SettingsScreen(
                     label = stringResource(R.string.settings_temp_fahrenheit),
                     selected = uiState.preferences.temperatureUnit == TemperatureUnit.FAHRENHEIT,
                     onSelect = { viewModel.setTemperatureUnit(TemperatureUnit.FAHRENHEIT) }
+                )
+
+                SettingsDivider()
+
+                Text(
+                    text = stringResource(R.string.settings_language),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                SettingsRadioRow(
+                    label = stringResource(R.string.settings_language_system),
+                    selected = uiState.preferences.appLanguage == AppLanguage.SYSTEM,
+                    onSelect = {
+                        viewModel.setAppLanguage(AppLanguage.SYSTEM)
+                        (context as? android.app.Activity)?.recreate()
+                    }
+                )
+                SettingsRadioRow(
+                    label = "English",
+                    selected = uiState.preferences.appLanguage == AppLanguage.ENGLISH,
+                    onSelect = {
+                        viewModel.setAppLanguage(AppLanguage.ENGLISH)
+                        (context as? android.app.Activity)?.recreate()
+                    }
+                )
+                SettingsRadioRow(
+                    label = "Suomi",
+                    selected = uiState.preferences.appLanguage == AppLanguage.FINNISH,
+                    onSelect = {
+                        viewModel.setAppLanguage(AppLanguage.FINNISH)
+                        (context as? android.app.Activity)?.recreate()
+                    }
                 )
             }
 
@@ -620,7 +724,7 @@ private fun SettingsRadioRow(
 @Composable
 private fun SettingsToggle(
     title: String,
-    description: String,
+    description: String? = null,
     checked: Boolean,
     enabled: Boolean = true,
     onCheckedChange: (Boolean) -> Unit
@@ -641,7 +745,9 @@ private fun SettingsToggle(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(text = title, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-            Text(text = description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (description != null) {
+                Text(text = description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
         Switch(checked = checked, onCheckedChange = null, enabled = enabled)
     }
