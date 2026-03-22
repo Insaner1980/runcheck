@@ -264,7 +264,7 @@ class RealTimeMonitorService : Service() {
 
     companion object {
         const val CHANNEL_ID = "real_time_monitor"
-        const val NOTIFICATION_ID = 1001
+        const val NOTIFICATION_ID = 2001
         const val ACTION_STOP = "com.runcheck.STOP_MONITORING"
         private const val IDLE_STOP_DELAY_MS = 30_000L
         private const val UPDATE_INTERVAL_MS = 5_000L

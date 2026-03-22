@@ -132,11 +132,11 @@ class NotificationHelper @Inject constructor(
     fun showChargeCompleteNotification(level: Int) {
         if (!canPostNotifications()) return
         createChannels()
-        val notification = NotificationCompat.Builder(context, CHANNEL_STATUS)
+        val notification = NotificationCompat.Builder(context, CHANNEL_ALERTS)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(context.getString(R.string.notification_charge_complete_title))
             .setContentText(context.getString(R.string.notification_charge_complete_text, level))
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()
 
@@ -172,6 +172,19 @@ class NotificationHelper @Inject constructor(
     /** Cancels a notification by its ID. */
     fun cancelNotification(id: Int) {
         notificationManager.cancel(id)
+    }
+
+    /**
+     * Returns true when notifications can actually reach the user:
+     * POST_NOTIFICATIONS permission granted (API 33+) AND app-level
+     * notifications enabled AND the alerts channel is not disabled.
+     */
+    fun areAlertsEffectivelyEnabled(): Boolean {
+        if (!canPostNotifications()) return false
+        val nm = notificationManager
+        if (!nm.areNotificationsEnabled()) return false
+        val channel = nm.getNotificationChannel(CHANNEL_ALERTS)
+        return channel == null || channel.importance != NotificationManager.IMPORTANCE_NONE
     }
 
     private fun canPostNotifications(): Boolean {
