@@ -103,6 +103,8 @@ import com.runcheck.ui.chart.batteryMetricUnit
 import com.runcheck.ui.chart.batteryQualityZones
 import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
+import com.runcheck.ui.learn.LearnTopic
+import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.chart.buildBatteryXLabels
 import com.runcheck.ui.chart.buildBatteryYLabels
 import com.runcheck.ui.chart.buildSessionXLabels
@@ -131,6 +133,7 @@ fun BatteryDetailScreen(
     onNavigateToCharger: () -> Unit,
     onUpgradeToPro: () -> Unit,
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit = { _, _, _ -> },
+    onNavigateToLearnArticle: (articleId: String) -> Unit = {},
     fullscreenResultSource: String? = null,
     fullscreenResultMetric: String? = null,
     fullscreenResultPeriod: String? = null,
@@ -199,6 +202,7 @@ fun BatteryDetailScreen(
                     onNavigateToCharger = onNavigateToCharger,
                     onUpgradeToPro = onUpgradeToPro,
                     onNavigateToFullscreen = onNavigateToFullscreen,
+                    onNavigateToLearnArticle = onNavigateToLearnArticle,
                     onDismissInfoCard = { viewModel.dismissInfoCard(it) },
                     fullscreenResultSource = fullscreenResultSource,
                     fullscreenResultMetric = fullscreenResultMetric,
@@ -218,6 +222,7 @@ private fun BatteryContent(
     onNavigateToCharger: () -> Unit,
     onUpgradeToPro: () -> Unit,
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
+    onNavigateToLearnArticle: (articleId: String) -> Unit,
     onDismissInfoCard: (String) -> Unit,
     fullscreenResultSource: String? = null,
     fullscreenResultMetric: String? = null,
@@ -587,6 +592,11 @@ private fun BatteryContent(
             if (state.isPro && state.statistics != null) {
                 BatteryStatisticsPanel(statistics = state.statistics)
             }
+
+            RelatedArticlesSection(
+                topic = LearnTopic.BATTERY,
+                onNavigateToArticle = onNavigateToLearnArticle
+            )
 
             DetailScreenAdBanner()
 

@@ -91,6 +91,8 @@ import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SegmentData
 import com.runcheck.ui.components.SegmentedBar
 import com.runcheck.ui.components.SegmentedBarLegend
+import com.runcheck.ui.learn.LearnTopic
+import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericRingValueTextStyle
 import com.runcheck.ui.theme.spacing
@@ -101,6 +103,7 @@ fun StorageDetailScreen(
     onBack: () -> Unit,
     onNavigateToCleanup: (com.runcheck.ui.storage.cleanup.CleanupType) -> Unit = {},
     onUpgradeToPro: () -> Unit = {},
+    onNavigateToLearnArticle: (articleId: String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: StorageViewModel = hiltViewModel()
 ) {
@@ -229,6 +232,7 @@ fun StorageDetailScreen(
                     onRefresh = { viewModel.refresh() },
                     onNavigateToCleanup = onNavigateToCleanup,
                     onUpgradeToPro = onUpgradeToPro,
+                    onNavigateToLearnArticle = onNavigateToLearnArticle,
                     onEmptyTrash = { viewModel.emptyTrash() },
                     onDismissInfoCard = { viewModel.dismissInfoCard(it) }
                 )
@@ -246,6 +250,7 @@ private fun StorageContent(
     onRefresh: () -> Unit,
     onNavigateToCleanup: (com.runcheck.ui.storage.cleanup.CleanupType) -> Unit = {},
     onUpgradeToPro: () -> Unit = {},
+    onNavigateToLearnArticle: (articleId: String) -> Unit = {},
     onEmptyTrash: () -> Unit = {},
     onDismissInfoCard: (String) -> Unit = {}
 ) {
@@ -338,6 +343,11 @@ private fun StorageContent(
 
             // ── Quick Actions ──────────────────────────────────────────
             StorageQuickActionsCard()
+
+            RelatedArticlesSection(
+                topic = LearnTopic.STORAGE,
+                onNavigateToArticle = onNavigateToLearnArticle
+            )
 
             DetailScreenAdBanner()
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
