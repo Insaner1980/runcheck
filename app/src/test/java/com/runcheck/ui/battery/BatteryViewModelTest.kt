@@ -16,6 +16,7 @@ import com.runcheck.domain.usecase.BatteryStatistics
 import com.runcheck.domain.usecase.GetBatteryHistoryUseCase
 import com.runcheck.domain.usecase.GetBatteryStateUseCase
 import com.runcheck.domain.usecase.GetBatteryStatisticsUseCase
+import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.MainDispatcherRule
@@ -50,6 +51,7 @@ class BatteryViewModelTest {
     private val chargerSessionTracker: ChargerSessionTracker = mockk(relaxed = true)
     private val batteryScreenInsights: BatteryScreenInsightsUseCase = mockk(relaxed = true)
     private val manageUserPreferences: ManageUserPreferencesUseCase = mockk(relaxed = true)
+    private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase = mockk(relaxed = true)
     private lateinit var viewModel: BatteryViewModel
 
     private fun makeBatteryState(
@@ -98,8 +100,8 @@ class BatteryViewModelTest {
             readingCount = 100
         )
         every { observeProAccess() } returns flowOf(false)
-        every { manageUserPreferences.observeDismissedInfoCards() } returns flowOf(emptySet())
         every { manageUserPreferences.observePreferences() } returns flowOf(UserPreferences())
+        every { manageInfoCardDismissals.observeDismissedCardIds() } returns flowOf(emptySet())
     }
 
     @After
@@ -121,7 +123,8 @@ class BatteryViewModelTest {
             observeProAccess = observeProAccess,
             chargerSessionTracker = chargerSessionTracker,
             batteryScreenInsights = batteryScreenInsights,
-            manageUserPreferences = manageUserPreferences
+            manageUserPreferences = manageUserPreferences,
+            manageInfoCardDismissals = manageInfoCardDismissals
         )
     }
 

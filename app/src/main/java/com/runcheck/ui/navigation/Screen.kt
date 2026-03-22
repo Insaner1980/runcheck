@@ -28,4 +28,26 @@ sealed class Screen(val route: String) {
             const val ROUTE = "fullscreen_chart/{source}/{metric}/{period}"
         }
     }
+
+    companion object {
+        // Learn article cross-links should only target routes that can be opened directly
+        // without additional arguments.
+        val learnCrossLinkRoutes: Set<String> by lazy {
+            setOf(
+                Home.route,
+                Battery.route,
+                Network.route,
+                SpeedTest.route,
+                Thermal.route,
+                Storage.route,
+                Settings.route,
+                Charger.route,
+                AppUsage.route,
+                ProUpgrade.route,
+                Learn.route
+            )
+        }
+
+        fun isValidLearnCrossLinkRoute(route: String): Boolean = route in learnCrossLinkRoutes
+    }
 }

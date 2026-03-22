@@ -11,6 +11,7 @@ import com.runcheck.domain.usecase.ChargerSessionTracker
 import com.runcheck.domain.usecase.GetBatteryHistoryUseCase
 import com.runcheck.domain.usecase.GetBatteryStateUseCase
 import com.runcheck.domain.usecase.GetBatteryStatisticsUseCase
+import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.common.messageOr
@@ -36,7 +37,8 @@ class BatteryViewModel @Inject constructor(
     private val observeProAccess: ObserveProAccessUseCase,
     private val chargerSessionTracker: ChargerSessionTracker,
     private val batteryScreenInsights: BatteryScreenInsightsUseCase,
-    private val manageUserPreferences: ManageUserPreferencesUseCase
+    private val manageUserPreferences: ManageUserPreferencesUseCase,
+    private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<BatteryUiState>(BatteryUiState.Loading)
@@ -69,7 +71,7 @@ class BatteryViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            manageUserPreferences.observeDismissedInfoCards().collect { cards ->
+            manageInfoCardDismissals.observeDismissedCardIds().collect { cards ->
                 dismissedInfoCards = cards
                 // Update existing Success state if present
                 val current = _uiState.value
@@ -190,7 +192,7 @@ class BatteryViewModel @Inject constructor(
     }
 
     fun dismissInfoCard(id: String) {
-        viewModelScope.launch { manageUserPreferences.dismissInfoCard(id) }
+        viewModelScope.launch { manageInfoCardDismissals.dismissCard(id) }
     }
 
     companion object {

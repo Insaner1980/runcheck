@@ -7,9 +7,6 @@ import com.runcheck.domain.model.UserPreferences
 import kotlinx.coroutines.flow.Flow
 
 interface UserPreferencesRepository {
-    fun getDismissedInfoCards(): Flow<Set<String>>
-    suspend fun dismissInfoCard(id: String)
-    suspend fun resetDismissedInfoCards()
     fun getPreferences(): Flow<UserPreferences>
     suspend fun setMonitoringInterval(interval: MonitoringInterval)
     suspend fun setNotificationsEnabled(enabled: Boolean)

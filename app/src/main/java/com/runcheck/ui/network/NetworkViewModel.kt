@@ -13,7 +13,7 @@ import com.runcheck.domain.usecase.GetMeasuredNetworkStateUseCase
 import com.runcheck.domain.usecase.GetNetworkHistoryUseCase
 import com.runcheck.domain.usecase.GetSpeedTestHistoryUseCase
 import com.runcheck.domain.usecase.IsProUserUseCase
-import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
+import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.RunSpeedTestUseCase
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.messageOrRes
@@ -41,7 +41,7 @@ class NetworkViewModel @Inject constructor(
     private val finalizeSpeedTest: FinalizeSpeedTestUseCase,
     private val isProUser: IsProUserUseCase,
     private val getNetworkHistory: GetNetworkHistoryUseCase,
-    private val manageUserPreferences: ManageUserPreferencesUseCase
+    private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase
 ) : ViewModel() {
 
     private val _networkUiState = MutableStateFlow<NetworkUiState>(NetworkUiState.Loading)
@@ -228,14 +228,14 @@ class NetworkViewModel @Inject constructor(
 
     fun dismissInfoCard(id: String) {
         viewModelScope.launch {
-            manageUserPreferences.dismissInfoCard(id)
+            manageInfoCardDismissals.dismissCard(id)
         }
     }
 
     private fun collectDismissedCards() {
         dismissedCardsJob?.cancel()
         dismissedCardsJob = viewModelScope.launch {
-            manageUserPreferences.observeDismissedInfoCards()
+            manageInfoCardDismissals.observeDismissedCardIds()
                 .collect { dismissedCards ->
                     _networkUiState.update { current ->
                         (current as? NetworkUiState.Success)?.copy(

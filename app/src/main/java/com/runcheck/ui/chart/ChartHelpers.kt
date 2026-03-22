@@ -7,6 +7,8 @@ import com.runcheck.R
 import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.model.TemperatureUnit
+import com.runcheck.ui.common.convertTemperature
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.formatLocalizedDateTime
 import com.runcheck.ui.components.ChartQualityZone
@@ -40,9 +42,14 @@ fun <T> List<T>.downsamplePairs(maxPoints: Int): List<T> {
 
 // ── Battery history chart points ────────────────────────────────────────────────
 
-fun List<BatteryReading>.chartPointsFor(metric: BatteryHistoryMetric): List<Pair<Long, Float>> = when (metric) {
+fun List<BatteryReading>.chartPointsFor(
+    metric: BatteryHistoryMetric,
+    temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS
+): List<Pair<Long, Float>> = when (metric) {
     BatteryHistoryMetric.LEVEL -> map { it.timestamp to it.level.toFloat() }
-    BatteryHistoryMetric.TEMPERATURE -> map { it.timestamp to it.temperatureC }
+    BatteryHistoryMetric.TEMPERATURE -> map {
+        it.timestamp to convertTemperature(it.temperatureC, temperatureUnit).toFloat()
+    }
     BatteryHistoryMetric.CURRENT -> mapNotNull { r -> r.currentMa?.let { r.timestamp to it.toFloat() } }
     BatteryHistoryMetric.VOLTAGE -> map { it.timestamp to it.voltageMv / 1000f }
 }
@@ -295,7 +302,10 @@ fun buildNetworkXLabels(timestamps: List<Long>, period: HistoryPeriod): List<Cha
 // ── Quality zone builders ───────────────────────────────────────────────────────
 
 @Composable
-fun batteryQualityZones(metric: BatteryHistoryMetric): List<ChartQualityZone>? {
+fun batteryQualityZones(
+    metric: BatteryHistoryMetric,
+    temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS
+): List<ChartQualityZone>? {
     val colors = MaterialTheme.statusColors
     return when (metric) {
         BatteryHistoryMetric.LEVEL -> listOf(
@@ -304,10 +314,26 @@ fun batteryQualityZones(metric: BatteryHistoryMetric): List<ChartQualityZone>? {
             ChartQualityZone(minValue = 0f, maxValue = 20f, color = colors.critical.copy(alpha = 0.06f))
         )
         BatteryHistoryMetric.TEMPERATURE -> listOf(
-            ChartQualityZone(minValue = 0f, maxValue = 35f, color = colors.healthy.copy(alpha = 0.06f)),
-            ChartQualityZone(minValue = 35f, maxValue = 40f, color = colors.fair.copy(alpha = 0.06f)),
-            ChartQualityZone(minValue = 40f, maxValue = 45f, color = colors.poor.copy(alpha = 0.06f)),
-            ChartQualityZone(minValue = 45f, maxValue = 60f, color = colors.critical.copy(alpha = 0.06f))
+            ChartQualityZone(
+                minValue = convertTemperature(0, temperatureUnit).toFloat(),
+                maxValue = convertTemperature(35, temperatureUnit).toFloat(),
+                color = colors.healthy.copy(alpha = 0.06f)
+            ),
+            ChartQualityZone(
+                minValue = convertTemperature(35, temperatureUnit).toFloat(),
+                maxValue = convertTemperature(40, temperatureUnit).toFloat(),
+                color = colors.fair.copy(alpha = 0.06f)
+            ),
+            ChartQualityZone(
+                minValue = convertTemperature(40, temperatureUnit).toFloat(),
+                maxValue = convertTemperature(45, temperatureUnit).toFloat(),
+                color = colors.poor.copy(alpha = 0.06f)
+            ),
+            ChartQualityZone(
+                minValue = convertTemperature(45, temperatureUnit).toFloat(),
+                maxValue = convertTemperature(60, temperatureUnit).toFloat(),
+                color = colors.critical.copy(alpha = 0.06f)
+            )
         )
         else -> null
     }
@@ -328,9 +354,12 @@ fun signalQualityZones(metric: NetworkHistoryMetric): List<ChartQualityZone>? {
 
 // ── Unit helpers ────────────────────────────────────────────────────────────────
 
-fun batteryMetricUnit(metric: BatteryHistoryMetric): String = when (metric) {
+fun batteryMetricUnit(
+    metric: BatteryHistoryMetric,
+    temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS
+): String = when (metric) {
     BatteryHistoryMetric.LEVEL -> "%"
-    BatteryHistoryMetric.TEMPERATURE -> "°C"
+    BatteryHistoryMetric.TEMPERATURE -> if (temperatureUnit == TemperatureUnit.CELSIUS) "°C" else "°F"
     BatteryHistoryMetric.CURRENT -> " mA"
     BatteryHistoryMetric.VOLTAGE -> " V"
 }

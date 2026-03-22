@@ -182,10 +182,6 @@ private class FakeBatteryRepository(
 private class FakeUserPreferencesRepository(
     private var selectedChargerId: Long?
 ) : UserPreferencesRepository {
-    override fun getDismissedInfoCards(): Flow<Set<String>> = flowOf(emptySet())
-
-    override suspend fun dismissInfoCard(id: String) = Unit
-
     override fun getPreferences() = emptyFlow<com.runcheck.domain.model.UserPreferences>()
 
     override suspend fun setMonitoringInterval(interval: com.runcheck.domain.model.MonitoringInterval) = Unit

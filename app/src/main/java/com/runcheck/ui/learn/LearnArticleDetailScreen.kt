@@ -1,18 +1,21 @@
 package com.runcheck.ui.learn
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import com.runcheck.R
 import com.runcheck.ui.components.DetailTopBar
@@ -31,7 +34,7 @@ fun LearnArticleDetailScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(
-            title = article?.let { stringResource(it.titleRes) } ?: "",
+            title = article?.let { stringResource(it.titleRes) } ?: stringResource(R.string.learn_screen_title),
             onBack = onBack
         )
 
@@ -43,53 +46,103 @@ fun LearnArticleDetailScreen(
             return
         }
 
-        Column(
+        val bodyText = stringResource(article.bodyRes)
+        val bodyBlocks = remember(bodyText) { LearnArticleBodyFormatter.parse(bodyText) }
+
+        LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = MaterialTheme.spacing.base)
+                .fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = MaterialTheme.spacing.base,
+                top = MaterialTheme.spacing.sm,
+                end = MaterialTheme.spacing.base,
+                bottom = MaterialTheme.spacing.xl
+            ),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
         ) {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-
-            val bodyText = stringResource(article.bodyRes)
-            parseArticleBody(bodyText)
-
-            article.crossLinkRoute?.let { route ->
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
-                CrossLinkButton(
-                    label = stringResource(R.string.learn_cross_link_check),
-                    onClick = { onNavigateToRoute(route) }
-                )
+            itemsIndexed(
+                items = bodyBlocks,
+                key = { index, block -> "${block::class.simpleName ?: "learn_block"}_$index" },
+                contentType = { _, block -> block::class.simpleName ?: "learn_block" }
+            ) { _, block ->
+                LearnArticleBlockItem(block = block)
             }
 
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
+            article.crossLinkRoute?.let { route ->
+                item(key = "cross_link", contentType = "learn_cross_link") {
+                    CrossLinkButton(
+                        label = stringResource(R.string.learn_cross_link_check),
+                        onClick = { onNavigateToRoute(route) }
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun parseArticleBody(body: String) {
-    val paragraphs = remember(body) { body.split("\n\n") }
-
-    paragraphs.forEach { paragraph ->
-        val trimmed = paragraph.trim()
-        if (trimmed.isEmpty()) return@forEach
-
-        if (trimmed.startsWith("## ")) {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
+private fun LearnArticleBlockItem(
+    block: LearnArticleBlock,
+    modifier: Modifier = Modifier
+) {
+    when (block) {
+        is LearnArticleBlock.Heading -> {
             Text(
-                text = trimmed.removePrefix("## "),
+                text = block.text,
+                modifier = modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-        } else {
+        }
+
+        is LearnArticleBlock.Paragraph -> {
             Text(
-                text = trimmed,
+                text = block.text,
+                modifier = modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        }
+
+        is LearnArticleBlock.BulletList -> {
+            LearnArticleList(
+                items = block.items,
+                markerLabel = { "•" },
+                modifier = modifier
+            )
+        }
+
+        is LearnArticleBlock.NumberedList -> {
+            LearnArticleList(
+                items = block.items,
+                markerLabel = { index -> "${index + 1}." },
+                modifier = modifier
+            )
+        }
+    }
+}
+
+@Composable
+private fun LearnArticleList(
+    items: List<AnnotatedString>,
+    markerLabel: (Int) -> String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)
+    ) {
+        items.forEachIndexed { index, item ->
+            Text(
+                text = buildAnnotatedString {
+                    append(markerLabel(index))
+                    append(" ")
+                    append(item)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }

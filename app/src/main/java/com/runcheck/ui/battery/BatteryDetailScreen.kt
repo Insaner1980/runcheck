@@ -50,7 +50,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.ui.graphics.Color
-import android.os.Build
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -100,28 +99,30 @@ import com.runcheck.ui.chart.ChargingSessionSummary
 import com.runcheck.ui.chart.MAX_HISTORY_CHART_POINTS
 import com.runcheck.ui.chart.MAX_SESSION_CHART_POINTS
 import com.runcheck.ui.chart.FullscreenChartSource
-import com.runcheck.ui.chart.batteryMetricUnit
 import com.runcheck.ui.chart.batteryQualityZones
+import com.runcheck.ui.chart.buildBatteryHistoryChartModel
+import com.runcheck.ui.chart.buildBatterySessionChartModel
+import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
+import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.learn.LearnTopic
 import com.runcheck.ui.learn.RelatedArticlesSection
-import com.runcheck.ui.chart.buildBatteryXLabels
-import com.runcheck.ui.chart.buildBatteryYLabels
-import com.runcheck.ui.chart.buildSessionXLabels
 import com.runcheck.ui.chart.calculateChargingSessionSummary
-import com.runcheck.ui.chart.chartPointsFor
-import com.runcheck.ui.chart.downsamplePairs
-import com.runcheck.ui.chart.graphPointsFor
+import com.runcheck.ui.chart.formatChartTooltip
 import com.runcheck.ui.chart.hasGraphData
 import com.runcheck.ui.chart.historyMetricLabel
 import com.runcheck.ui.chart.historyPeriodLabel
 import com.runcheck.ui.chart.sessionGraphMetricLabel
 import com.runcheck.ui.chart.sessionGraphWindowLabel
-import com.runcheck.ui.common.formatLocalizedDateTime
 import com.runcheck.domain.model.ScreenUsageStats
 import com.runcheck.domain.model.SleepAnalysis
 import com.runcheck.domain.usecase.BatteryStatistics
+import com.runcheck.ui.fullscreen.FullscreenChartSeedStore
+import com.runcheck.ui.fullscreen.FullscreenChartUiState
+import com.runcheck.ui.fullscreen.parseFullscreenChartSource
+import com.runcheck.ui.fullscreen.sanitizeFullscreenMetric
+import com.runcheck.ui.fullscreen.sanitizeFullscreenPeriod
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroLevelTextStyle
 import com.runcheck.ui.theme.numericHeroUnitTextStyle
@@ -236,23 +237,43 @@ private fun BatteryContent(
     var selectedHistoryMetric by rememberSaveable { mutableStateOf(BatteryHistoryMetric.LEVEL.name) }
     var selectedSessionMetric by rememberSaveable { mutableStateOf(SessionGraphMetric.CURRENT.name) }
     var selectedSessionWindow by rememberSaveable { mutableStateOf(SessionGraphWindow.ALL.name) }
-    val historyMetric = BatteryHistoryMetric.valueOf(selectedHistoryMetric)
-    val sessionMetric = SessionGraphMetric.valueOf(selectedSessionMetric)
-    val sessionWindow = SessionGraphWindow.valueOf(selectedSessionWindow)
+    val historyMetric = BatteryHistoryMetric.entries.firstOrNull { it.name == selectedHistoryMetric }
+        ?: BatteryHistoryMetric.LEVEL
+    val sessionMetric = SessionGraphMetric.entries.firstOrNull { it.name == selectedSessionMetric }
+        ?: SessionGraphMetric.CURRENT
+    val sessionWindow = SessionGraphWindow.entries.firstOrNull { it.name == selectedSessionWindow }
+        ?: SessionGraphWindow.ALL
 
     // Apply fullscreen chart selection results when navigating back
     LaunchedEffect(fullscreenResultSource, fullscreenResultMetric, fullscreenResultPeriod) {
         if (fullscreenResultSource != null && fullscreenResultMetric != null && fullscreenResultPeriod != null) {
-            when (fullscreenResultSource) {
-                FullscreenChartSource.BATTERY_HISTORY.name -> {
-                    selectedHistoryMetric = fullscreenResultMetric
-                    val period = runCatching { HistoryPeriod.valueOf(fullscreenResultPeriod) }.getOrNull()
+            when (parseFullscreenChartSource(fullscreenResultSource)) {
+                FullscreenChartSource.BATTERY_HISTORY -> {
+                    selectedHistoryMetric = sanitizeFullscreenMetric(
+                        source = FullscreenChartSource.BATTERY_HISTORY,
+                        rawMetric = fullscreenResultMetric
+                    )
+                    val period = runCatching {
+                        HistoryPeriod.valueOf(
+                            sanitizeFullscreenPeriod(
+                                source = FullscreenChartSource.BATTERY_HISTORY,
+                                rawPeriod = fullscreenResultPeriod
+                            )
+                        )
+                    }.getOrNull()
                     if (period != null) onPeriodChange(period)
                 }
-                FullscreenChartSource.BATTERY_SESSION.name -> {
-                    selectedSessionMetric = fullscreenResultMetric
-                    selectedSessionWindow = fullscreenResultPeriod
+                FullscreenChartSource.BATTERY_SESSION -> {
+                    selectedSessionMetric = sanitizeFullscreenMetric(
+                        source = FullscreenChartSource.BATTERY_SESSION,
+                        rawMetric = fullscreenResultMetric
+                    )
+                    selectedSessionWindow = sanitizeFullscreenPeriod(
+                        source = FullscreenChartSource.BATTERY_SESSION,
+                        rawPeriod = fullscreenResultPeriod
+                    )
                 }
+                else -> Unit
             }
             onFullscreenResultConsumed()
         }
@@ -292,26 +313,30 @@ private fun BatteryContent(
             )
 
             // Health degradation card - show when healthPercent < 90% and not dismissed
-            if (battery.healthPercent != null && battery.healthPercent < 90 &&
-                BatteryInfoCards.HEALTH_80_PERCENT !in state.dismissedInfoCards) {
+            if (battery.healthPercent != null && battery.healthPercent < 90) {
                 InfoCard(
-                    id = BatteryInfoCards.HEALTH_80_PERCENT,
-                    headline = stringResource(R.string.info_card_health_80_headline),
-                    body = stringResource(R.string.info_card_health_80_body),
+                    id = InfoCardCatalog.BatteryHealthDegraded.id,
+                    headline = stringResource(InfoCardCatalog.BatteryHealthDegraded.headlineRes),
+                    body = stringResource(InfoCardCatalog.BatteryHealthDegraded.bodyRes),
                     onDismiss = onDismissInfoCard,
-                    onLearnMore = { onNavigateToLearnArticle("battery_health") }
+                    visible = InfoCardCatalog.BatteryHealthDegraded.id !in state.dismissedInfoCards,
+                    onLearnMore = {
+                        InfoCardCatalog.BatteryHealthDegraded.learnArticleId?.let(onNavigateToLearnArticle)
+                    }
                 )
             }
 
             // Dies before zero card - show when healthPercent < 80%
-            if (battery.healthPercent != null && battery.healthPercent < 80 &&
-                BatteryInfoCards.DIES_BEFORE_ZERO !in state.dismissedInfoCards) {
+            if (battery.healthPercent != null && battery.healthPercent < 80) {
                 InfoCard(
-                    id = BatteryInfoCards.DIES_BEFORE_ZERO,
-                    headline = stringResource(R.string.info_card_dies_before_zero_headline),
-                    body = stringResource(R.string.info_card_dies_before_zero_body),
+                    id = InfoCardCatalog.BatteryDiesBeforeZero.id,
+                    headline = stringResource(InfoCardCatalog.BatteryDiesBeforeZero.headlineRes),
+                    body = stringResource(InfoCardCatalog.BatteryDiesBeforeZero.bodyRes),
                     onDismiss = onDismissInfoCard,
-                    onLearnMore = { onNavigateToLearnArticle("battery_health") }
+                    visible = InfoCardCatalog.BatteryDiesBeforeZero.id !in state.dismissedInfoCards,
+                    onLearnMore = {
+                        InfoCardCatalog.BatteryDiesBeforeZero.learnArticleId?.let(onNavigateToLearnArticle)
+                    }
                 )
             }
 
@@ -502,14 +527,16 @@ private fun BatteryContent(
             }
 
             // Charging habits card - show when battery is charging
-            if (battery.chargingStatus == ChargingStatus.CHARGING &&
-                BatteryInfoCards.CHARGING_HABITS !in state.dismissedInfoCards) {
+            if (battery.chargingStatus == ChargingStatus.CHARGING) {
                 InfoCard(
-                    id = BatteryInfoCards.CHARGING_HABITS,
-                    headline = stringResource(R.string.info_card_charging_habits_headline),
-                    body = stringResource(R.string.info_card_charging_habits_body),
+                    id = InfoCardCatalog.BatteryChargingHabits.id,
+                    headline = stringResource(InfoCardCatalog.BatteryChargingHabits.headlineRes),
+                    body = stringResource(InfoCardCatalog.BatteryChargingHabits.bodyRes),
                     onDismiss = onDismissInfoCard,
-                    onLearnMore = { onNavigateToLearnArticle("battery_charging") }
+                    visible = InfoCardCatalog.BatteryChargingHabits.id !in state.dismissedInfoCards,
+                    onLearnMore = {
+                        InfoCardCatalog.BatteryChargingHabits.learnArticleId?.let(onNavigateToLearnArticle)
+                    }
                 )
             }
 
@@ -542,14 +569,17 @@ private fun BatteryContent(
 
             // Screen-off drain card - show when screen-off drain rate > 2%/h
             if (state.screenUsage?.screenOffDrainRate != null &&
-                state.screenUsage.screenOffDrainRate > 2f &&
-                BatteryInfoCards.SCREEN_OFF_DRAIN !in state.dismissedInfoCards) {
+                state.screenUsage.screenOffDrainRate > 2f
+            ) {
                 InfoCard(
-                    id = BatteryInfoCards.SCREEN_OFF_DRAIN,
-                    headline = stringResource(R.string.info_card_screen_off_drain_headline),
-                    body = stringResource(R.string.info_card_screen_off_drain_body),
+                    id = InfoCardCatalog.BatteryScreenOffDrain.id,
+                    headline = stringResource(InfoCardCatalog.BatteryScreenOffDrain.headlineRes),
+                    body = stringResource(InfoCardCatalog.BatteryScreenOffDrain.bodyRes),
                     onDismiss = onDismissInfoCard,
-                    onLearnMore = { onNavigateToLearnArticle("battery_drain") }
+                    visible = InfoCardCatalog.BatteryScreenOffDrain.id !in state.dismissedInfoCards,
+                    onLearnMore = {
+                        InfoCardCatalog.BatteryScreenOffDrain.learnArticleId?.let(onNavigateToLearnArticle)
+                    }
                 )
             }
 
@@ -836,30 +866,52 @@ private fun BatteryHistoryPanel(
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-            val chartPoints = remember(state.history, selectedMetric) {
-                state.history
-                    .chartPointsFor(selectedMetric)
-                    .downsamplePairs(MAX_HISTORY_CHART_POINTS)
+            val chartModel = remember(
+                state.history,
+                selectedMetric,
+                state.selectedPeriod,
+                state.temperatureUnit
+            ) {
+                buildBatteryHistoryChartModel(
+                    history = state.history,
+                    metric = selectedMetric,
+                    period = state.selectedPeriod,
+                    temperatureUnit = state.temperatureUnit,
+                    maxPoints = MAX_HISTORY_CHART_POINTS
+                )
             }
-            val chartData = remember(chartPoints) { chartPoints.map { it.second } }
-            val chartTimestamps = remember(chartPoints) { chartPoints.map { it.first } }
+            val qualityZones = batteryQualityZones(selectedMetric, state.temperatureUnit)
 
-            val minVal = remember(chartData) { chartData.minOrNull() }
-            val maxVal = remember(chartData) { chartData.maxOrNull() }
-            val avgVal = remember(chartData) { if (chartData.isNotEmpty()) chartData.average().toFloat() else null }
-
-            val yLabels = remember(minVal, maxVal) {
-                if (minVal == null || maxVal == null) null
-                else buildBatteryYLabels(minVal, maxVal)
-            }
-            val xLabels = remember(chartTimestamps, state.selectedPeriod) {
-                if (chartTimestamps.size < 2) null
-                else buildBatteryXLabels(chartTimestamps, state.selectedPeriod)
-            }
-            val qualityZones = batteryQualityZones(selectedMetric)
-            val unit = batteryMetricUnit(selectedMetric)
-
-            if (chartData.size >= 2) {
+            if (chartModel.chartData.size >= 2) {
+                val chartAccessibilitySummary = rememberChartAccessibilitySummary(
+                    title = stringResource(
+                        R.string.fullscreen_chart_title_battery,
+                        historyMetricLabel(selectedMetric)
+                    ),
+                    chartData = chartModel.chartData,
+                    unit = chartModel.unit,
+                    decimals = chartModel.tooltipDecimals,
+                    timeContext = stringResource(
+                        R.string.a11y_chart_context_history,
+                        historyPeriodLabel(state.selectedPeriod)
+                    )
+                )
+                val fullscreenSeed = remember(chartModel, selectedMetric, state.selectedPeriod, state.temperatureUnit) {
+                    FullscreenChartUiState.Success(
+                        chartData = chartModel.chartData,
+                        chartTimestamps = chartModel.chartTimestamps,
+                        unit = chartModel.unit,
+                        selectedMetric = selectedMetric.name,
+                        selectedPeriod = state.selectedPeriod.name,
+                        metricOptions = BatteryHistoryMetric.entries.map { it.name },
+                        periodOptions = HistoryPeriod.entries.map { it.name },
+                        yLabels = chartModel.yLabels,
+                        xLabels = chartModel.xLabels,
+                        tooltipDecimals = chartModel.tooltipDecimals,
+                        tooltipTimeSkeleton = chartModel.tooltipTimeSkeleton,
+                        temperatureUnit = state.temperatureUnit
+                    )
+                }
                 Text(
                     text = "${historyPeriodLabel(state.selectedPeriod)} · ${historyMetricLabel(selectedMetric)}",
                     style = MaterialTheme.typography.labelLarge,
@@ -867,6 +919,10 @@ private fun BatteryHistoryPanel(
                 )
                 ExpandableChartContainer(
                     onExpand = {
+                        FullscreenChartSeedStore.prime(
+                            source = FullscreenChartSource.BATTERY_HISTORY,
+                            state = fullscreenSeed
+                        )
                         onNavigateToFullscreen(
                             FullscreenChartSource.BATTERY_HISTORY.name,
                             selectedMetric.name,
@@ -875,20 +931,15 @@ private fun BatteryHistoryPanel(
                     }
                 ) {
                     TrendChart(
-                        data = chartData,
+                        data = chartModel.chartData,
                         modifier = Modifier.fillMaxWidth(),
-                        contentDescription = stringResource(
-                            R.string.a11y_chart_trend,
-                            historyMetricLabel(selectedMetric)
-                        ),
-                        yLabels = yLabels,
-                        xLabels = xLabels,
+                        contentDescription = chartAccessibilitySummary,
+                        yLabels = chartModel.yLabels.ifEmpty { null },
+                        xLabels = chartModel.xLabels.ifEmpty { null },
                         showGrid = true,
                         qualityZones = qualityZones,
                         tooltipFormatter = { index ->
-                            val v = formatDecimal(chartData[index], if (selectedMetric == BatteryHistoryMetric.VOLTAGE) 2 else 0)
-                            val time = formatLocalizedDateTime(chartTimestamps[index], "HmMMMd")
-                            "$v$unit · $time"
+                            formatChartTooltip(chartModel, index)
                         }
                     )
                 }
@@ -896,25 +947,25 @@ private fun BatteryHistoryPanel(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
                 ) {
-                    val decimals = if (selectedMetric == BatteryHistoryMetric.VOLTAGE) 2 else 0
-                    minVal?.let {
+                    val decimals = chartModel.tooltipDecimals
+                    chartModel.minValue?.let {
                         MetricPill(
                             label = stringResource(R.string.chart_stat_min),
-                            value = "${formatDecimal(it, decimals)}$unit",
+                            value = "${formatDecimal(it, decimals)}${chartModel.unit}",
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    avgVal?.let {
+                    chartModel.averageValue?.let {
                         MetricPill(
                             label = stringResource(R.string.chart_stat_avg),
-                            value = "${formatDecimal(it, decimals)}$unit",
+                            value = "${formatDecimal(it, decimals)}${chartModel.unit}",
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    maxVal?.let {
+                    chartModel.maxValue?.let {
                         MetricPill(
                             label = stringResource(R.string.chart_stat_max),
-                            value = "${formatDecimal(it, decimals)}$unit",
+                            value = "${formatDecimal(it, decimals)}${chartModel.unit}",
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -1159,33 +1210,16 @@ private fun BatterySessionGraphPanel(
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit
 ) {
     val hasAnyGraphData = remember(summary.readings) { summary.hasGraphData() }
-    val chartPoints = remember(summary.readings, selectedMetric, selectedWindow) {
-        summary.readings.graphPointsFor(
+    val chartModel = remember(summary.readings, selectedMetric, selectedWindow) {
+        buildBatterySessionChartModel(
+            summary = summary,
             metric = selectedMetric,
-            window = selectedWindow
-        ).downsamplePairs(MAX_SESSION_CHART_POINTS)
+            window = selectedWindow,
+            maxPoints = MAX_SESSION_CHART_POINTS
+        )
     }
-    val chartData = remember(chartPoints) { chartPoints.map { it.second } }
-    val chartTimestamps = remember(chartPoints) { chartPoints.map { it.first } }
 
     if (!hasAnyGraphData) return
-
-    val minVal = remember(chartData) { chartData.minOrNull() }
-    val maxVal = remember(chartData) { chartData.maxOrNull() }
-    val avgVal = remember(chartData) { if (chartData.isNotEmpty()) chartData.average().toFloat() else null }
-
-    val yLabels = remember(minVal, maxVal) {
-        if (minVal == null || maxVal == null) null
-        else buildBatteryYLabels(minVal, maxVal)
-    }
-    val xLabels = remember(chartTimestamps) {
-        if (chartTimestamps.size < 2) null
-        else buildSessionXLabels(chartTimestamps)
-    }
-    val sessionUnit = when (selectedMetric) {
-        SessionGraphMetric.CURRENT -> " mA"
-        SessionGraphMetric.POWER -> " W"
-    }
 
     BatteryPanel {
         CardSectionTitle(text = stringResource(R.string.battery_session_graph_title))
@@ -1221,7 +1255,39 @@ private fun BatterySessionGraphPanel(
             }
         }
 
-        if (chartData.size >= 2) {
+        if (chartModel.chartData.size >= 2) {
+            val chartAccessibilitySummary = rememberChartAccessibilitySummary(
+                title = stringResource(
+                    R.string.fullscreen_chart_title_session,
+                    sessionGraphMetricLabel(selectedMetric)
+                ),
+                chartData = chartModel.chartData,
+                unit = chartModel.unit,
+                decimals = chartModel.tooltipDecimals,
+                timeContext = if (selectedWindow == SessionGraphWindow.ALL) {
+                    stringResource(R.string.a11y_chart_context_session)
+                } else {
+                    stringResource(
+                        R.string.a11y_chart_context_session_window,
+                        sessionGraphWindowLabel(selectedWindow)
+                    )
+                }
+            )
+            val fullscreenSeed = remember(chartModel, selectedMetric, selectedWindow) {
+                FullscreenChartUiState.Success(
+                    chartData = chartModel.chartData,
+                    chartTimestamps = chartModel.chartTimestamps,
+                    unit = chartModel.unit,
+                    selectedMetric = selectedMetric.name,
+                    selectedPeriod = selectedWindow.name,
+                    metricOptions = SessionGraphMetric.entries.map { it.name },
+                    periodOptions = SessionGraphWindow.entries.map { it.name },
+                    yLabels = chartModel.yLabels,
+                    xLabels = chartModel.xLabels,
+                    tooltipDecimals = chartModel.tooltipDecimals,
+                    tooltipTimeSkeleton = chartModel.tooltipTimeSkeleton
+                )
+            }
             Text(
                 text = sessionGraphMetricLabel(selectedMetric),
                 style = MaterialTheme.typography.labelLarge,
@@ -1229,6 +1295,10 @@ private fun BatterySessionGraphPanel(
             )
             ExpandableChartContainer(
                 onExpand = {
+                    FullscreenChartSeedStore.prime(
+                        source = FullscreenChartSource.BATTERY_SESSION,
+                        state = fullscreenSeed
+                    )
                     onNavigateToFullscreen(
                         FullscreenChartSource.BATTERY_SESSION.name,
                         selectedMetric.name,
@@ -1237,46 +1307,38 @@ private fun BatterySessionGraphPanel(
                 }
             ) {
                 TrendChart(
-                    data = chartData,
+                    data = chartModel.chartData,
                     modifier = Modifier.fillMaxWidth(),
-                    contentDescription = stringResource(
-                        R.string.a11y_chart_trend,
-                        sessionGraphMetricLabel(selectedMetric)
-                    ),
-                    yLabels = yLabels,
-                    xLabels = xLabels,
+                    contentDescription = chartAccessibilitySummary,
+                    yLabels = chartModel.yLabels.ifEmpty { null },
+                    xLabels = chartModel.xLabels.ifEmpty { null },
                     showGrid = true,
-                    tooltipFormatter = { index ->
-                        val decimals = if (selectedMetric == SessionGraphMetric.POWER) 1 else 0
-                        val v = formatDecimal(chartData[index], decimals)
-                        val time = formatLocalizedDateTime(chartTimestamps[index], "Hm")
-                        "$v$sessionUnit · $time"
-                    }
+                    tooltipFormatter = { index -> formatChartTooltip(chartModel, index) }
                 )
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
             ) {
-                val decimals = if (selectedMetric == SessionGraphMetric.POWER) 1 else 0
-                minVal?.let {
+                val decimals = chartModel.tooltipDecimals
+                chartModel.minValue?.let {
                     MetricPill(
                         label = stringResource(R.string.chart_stat_min),
-                        value = "${formatDecimal(it, decimals)}$sessionUnit",
+                        value = "${formatDecimal(it, decimals)}${chartModel.unit}",
                         modifier = Modifier.weight(1f)
                     )
                 }
-                avgVal?.let {
+                chartModel.averageValue?.let {
                     MetricPill(
                         label = stringResource(R.string.chart_stat_avg),
-                        value = "${formatDecimal(it, decimals)}$sessionUnit",
+                        value = "${formatDecimal(it, decimals)}${chartModel.unit}",
                         modifier = Modifier.weight(1f)
                     )
                 }
-                maxVal?.let {
+                chartModel.maxValue?.let {
                     MetricPill(
                         label = stringResource(R.string.chart_stat_max),
-                        value = "${formatDecimal(it, decimals)}$sessionUnit",
+                        value = "${formatDecimal(it, decimals)}${chartModel.unit}",
                         modifier = Modifier.weight(1f)
                     )
                 }

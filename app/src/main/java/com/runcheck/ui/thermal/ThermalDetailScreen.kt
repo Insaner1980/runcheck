@@ -81,6 +81,7 @@ import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.StatusDot
 import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
+import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.theme.iconCircleColor
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroValueTextStyle
@@ -214,30 +215,32 @@ private fun ThermalContent(
             }
 
             // Info cards — throttling card only relevant on API 29+ where thermal API exists
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-                ThermalInfoCards.THROTTLING_EXPLAINER !in state.dismissedInfoCards
-            ) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 item {
                     InfoCard(
-                        id = ThermalInfoCards.THROTTLING_EXPLAINER,
-                        headline = stringResource(R.string.info_card_thermal_throttling_headline),
-                        body = stringResource(R.string.info_card_thermal_throttling_body),
+                        id = InfoCardCatalog.ThermalThrottlingExplainer.id,
+                        headline = stringResource(InfoCardCatalog.ThermalThrottlingExplainer.headlineRes),
+                        body = stringResource(InfoCardCatalog.ThermalThrottlingExplainer.bodyRes),
                         onDismiss = { onDismissInfoCard(it) },
-                        onLearnMore = { onNavigateToLearnArticle("thermal_throttling") }
+                        visible = InfoCardCatalog.ThermalThrottlingExplainer.id !in state.dismissedInfoCards,
+                        onLearnMore = {
+                            InfoCardCatalog.ThermalThrottlingExplainer.learnArticleId?.let(onNavigateToLearnArticle)
+                        }
                     )
                 }
             }
 
-            if (thermal.batteryTempC > 35f &&
-                ThermalInfoCards.HEAT_BATTERY_LOOP !in state.dismissedInfoCards
-            ) {
+            if (thermal.batteryTempC > 35f) {
                 item {
                     InfoCard(
-                        id = ThermalInfoCards.HEAT_BATTERY_LOOP,
-                        headline = stringResource(R.string.info_card_heat_battery_headline),
-                        body = stringResource(R.string.info_card_heat_battery_body),
+                        id = InfoCardCatalog.ThermalHeatBatteryLoop.id,
+                        headline = stringResource(InfoCardCatalog.ThermalHeatBatteryLoop.headlineRes),
+                        body = stringResource(InfoCardCatalog.ThermalHeatBatteryLoop.bodyRes),
                         onDismiss = { onDismissInfoCard(it) },
-                        onLearnMore = { onNavigateToLearnArticle("thermal_feedback") }
+                        visible = InfoCardCatalog.ThermalHeatBatteryLoop.id !in state.dismissedInfoCards,
+                        onLearnMore = {
+                            InfoCardCatalog.ThermalHeatBatteryLoop.learnArticleId?.let(onNavigateToLearnArticle)
+                        }
                     )
                 }
             }

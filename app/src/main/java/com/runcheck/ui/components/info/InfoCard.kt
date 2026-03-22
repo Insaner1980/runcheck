@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,15 +43,23 @@ fun InfoCard(
     body: String,
     onDismiss: (String) -> Unit,
     modifier: Modifier = Modifier,
+    visible: Boolean = true,
     onLearnMore: (() -> Unit)? = null
 ) {
     val accentColor = MaterialTheme.colorScheme.primary
-    var visible by remember { mutableStateOf(true) }
+    var dismissRequested by remember(id) { mutableStateOf(false) }
     val skipAnimation = MaterialTheme.reducedMotion
     val animDuration = if (skipAnimation) 0 else 300
+    val renderedVisible = visible && !dismissRequested
+
+    LaunchedEffect(visible) {
+        if (visible) {
+            dismissRequested = false
+        }
+    }
 
     AnimatedVisibility(
-        visible = visible,
+        visible = renderedVisible,
         exit = fadeOut(animationSpec = tween(animDuration)) +
             shrinkVertically(animationSpec = tween(animDuration)),
         modifier = modifier
@@ -108,9 +117,10 @@ fun InfoCard(
 
                 IconButton(
                     onClick = {
-                        visible = false
+                        dismissRequested = true
                         onDismiss(id)
                     },
+                    enabled = !dismissRequested,
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(

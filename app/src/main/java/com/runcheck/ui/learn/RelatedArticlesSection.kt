@@ -2,14 +2,13 @@ package com.runcheck.ui.learn
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.runcheck.R
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.theme.spacing
-import androidx.compose.material3.MaterialTheme
 
 @Composable
 fun RelatedArticlesSection(
@@ -17,9 +16,7 @@ fun RelatedArticlesSection(
     onNavigateToArticle: (articleId: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val articles = remember(topic) {
-        LearnArticleCatalog.articles.filter { it.topic == topic }
-    }
+    val articles = LearnArticleCatalog.articlesForTopic(topic)
 
     if (articles.isEmpty()) return
 

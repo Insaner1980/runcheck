@@ -10,7 +10,7 @@ import com.runcheck.domain.usecase.GetMeasuredNetworkStateUseCase
 import com.runcheck.domain.usecase.GetNetworkHistoryUseCase
 import com.runcheck.domain.usecase.GetSpeedTestHistoryUseCase
 import com.runcheck.domain.usecase.IsProUserUseCase
-import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
+import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.RunSpeedTestUseCase
 import com.runcheck.ui.MainDispatcherRule
 import com.runcheck.ui.common.UiText
@@ -45,7 +45,7 @@ class NetworkViewModelTest {
     private val finalizeSpeedTest: FinalizeSpeedTestUseCase = mockk(relaxed = true)
     private val isProUser: IsProUserUseCase = mockk()
     private val getNetworkHistory: GetNetworkHistoryUseCase = mockk()
-    private val manageUserPreferences: ManageUserPreferencesUseCase = mockk(relaxed = true)
+    private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase = mockk(relaxed = true)
     private lateinit var viewModel: NetworkViewModel
 
     private val testNetworkState = NetworkState(
@@ -61,7 +61,7 @@ class NetworkViewModelTest {
         every { isProUser() } returns false
         every { getSpeedTestHistory(any()) } returns flowOf(emptyList())
         every { getNetworkHistory(any()) } returns flowOf(emptyList())
-        every { manageUserPreferences.observeDismissedInfoCards() } returns flowOf(emptySet())
+        every { manageInfoCardDismissals.observeDismissedCardIds() } returns flowOf(emptySet())
     }
 
     @After
@@ -83,7 +83,7 @@ class NetworkViewModelTest {
             finalizeSpeedTest = finalizeSpeedTest,
             isProUser = isProUser,
             getNetworkHistory = getNetworkHistory,
-            manageUserPreferences = manageUserPreferences
+            manageInfoCardDismissals = manageInfoCardDismissals
         )
     }
 

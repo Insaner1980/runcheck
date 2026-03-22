@@ -3,7 +3,7 @@ package com.runcheck.ui.learn
 import androidx.annotation.StringRes
 import com.runcheck.R
 
-enum class LearnTopic(@StringRes val labelRes: Int) {
+enum class LearnTopic(@param:StringRes val labelRes: Int) {
     BATTERY(R.string.learn_topic_battery),
     TEMPERATURE(R.string.learn_topic_temperature),
     NETWORK(R.string.learn_topic_network),
@@ -19,4 +19,9 @@ data class LearnArticle(
     @param:StringRes val bodyRes: Int,
     val readTimeMinutes: Int,
     val crossLinkRoute: String?
+)
+
+data class LearnTopicSection(
+    val topic: LearnTopic,
+    val articles: List<LearnArticle>
 )

@@ -35,8 +35,14 @@ fun AreaChart(
     if (data.size < 2) return
 
     val reducedMotion = MaterialTheme.reducedMotion
-    var progress by remember(data) { mutableFloatStateOf(0f) }
-    LaunchedEffect(data) { progress = 1f }
+    var progress by remember(data, reducedMotion) {
+        mutableFloatStateOf(if (reducedMotion) 1f else 0f)
+    }
+    LaunchedEffect(data, reducedMotion) {
+        if (!reducedMotion) {
+            progress = 1f
+        }
+    }
 
     val animatedProgress by animateFloatAsState(
         targetValue = progress,

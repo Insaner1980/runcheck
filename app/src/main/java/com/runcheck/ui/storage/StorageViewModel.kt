@@ -3,7 +3,7 @@ package com.runcheck.ui.storage
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.runcheck.domain.usecase.GetStorageStateUseCase
-import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
+import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.common.messageOr
@@ -26,7 +26,7 @@ class StorageViewModel @Inject constructor(
     private val getStorageState: GetStorageStateUseCase,
     private val observeProAccess: ObserveProAccessUseCase,
     private val storageCleanup: StorageCleanupUseCase,
-    private val manageUserPreferences: ManageUserPreferencesUseCase
+    private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<StorageUiState>(StorageUiState.Loading)
@@ -73,7 +73,7 @@ class StorageViewModel @Inject constructor(
 
     fun dismissInfoCard(id: String) {
         viewModelScope.launch {
-            manageUserPreferences.dismissInfoCard(id)
+            manageInfoCardDismissals.dismissCard(id)
         }
     }
 
@@ -83,7 +83,7 @@ class StorageViewModel @Inject constructor(
             combine(
                 getStorageState(),
                 observeProAccess(),
-                manageUserPreferences.observeDismissedInfoCards()
+                manageInfoCardDismissals.observeDismissedCardIds()
             ) { state, isPro, dismissedCards ->
                 StorageUiState.Success(
                     storageState = state,

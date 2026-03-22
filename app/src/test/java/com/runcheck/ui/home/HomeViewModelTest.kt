@@ -1,5 +1,6 @@
 package com.runcheck.ui.home
 
+import androidx.lifecycle.SavedStateHandle
 import com.runcheck.domain.model.BatteryHealth
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.ChargingStatus
@@ -116,6 +117,7 @@ class HomeViewModelTest {
 
     private fun createViewModel(): HomeViewModel {
         return HomeViewModel(
+            savedStateHandle = SavedStateHandle(),
             getBatteryState = getBatteryState,
             getNetworkState = getNetworkState,
             getThermalState = getThermalState,

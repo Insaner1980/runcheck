@@ -91,16 +91,19 @@ import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.chart.FullscreenChartSource
 import com.runcheck.ui.chart.NetworkHistoryMetric
 import com.runcheck.ui.chart.MAX_NETWORK_HISTORY_POINTS
-import com.runcheck.ui.chart.buildNetworkXLabels
-import com.runcheck.ui.chart.buildNetworkYLabels
-import com.runcheck.ui.chart.downsamplePairs
+import com.runcheck.ui.chart.buildNetworkHistoryChartModel
+import com.runcheck.ui.chart.formatChartTooltip
 import com.runcheck.ui.chart.historyPeriodLabel
 import com.runcheck.ui.chart.networkHistoryMetricLabel
-import com.runcheck.ui.chart.networkMetricUnit
+import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.chart.signalQualityZones
-import com.runcheck.ui.common.formatLocalizedDateTime
 import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
+import com.runcheck.ui.components.info.InfoCardCatalog
+import com.runcheck.ui.fullscreen.FullscreenChartSeedStore
+import com.runcheck.ui.fullscreen.FullscreenChartUiState
+import com.runcheck.ui.fullscreen.sanitizeFullscreenMetric
+import com.runcheck.ui.fullscreen.sanitizeFullscreenPeriod
 import com.runcheck.ui.learn.LearnTopic
 import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.spacing
@@ -491,48 +494,27 @@ private fun SignalHistoryCard(
     // Apply metric override from fullscreen chart
     LaunchedEffect(overrideMetric) {
         if (overrideMetric != null) {
-            val valid = runCatching { NetworkHistoryMetric.valueOf(overrideMetric) }.isSuccess
-            if (valid) selectedMetric = overrideMetric
+            selectedMetric = sanitizeFullscreenMetric(
+                source = FullscreenChartSource.NETWORK_HISTORY,
+                rawMetric = overrideMetric
+            )
         }
     }
 
-    val metric = NetworkHistoryMetric.valueOf(selectedMetric)
+    val metric = NetworkHistoryMetric.entries.firstOrNull { it.name == selectedMetric }
+        ?: NetworkHistoryMetric.SIGNAL
 
-    // Downsample values AND timestamps together
-    val chartPoints = remember(history, metric) {
-        history.mapNotNull { reading ->
-            val value = when (metric) {
-                NetworkHistoryMetric.SIGNAL -> reading.signalDbm?.toFloat()
-                NetworkHistoryMetric.LATENCY -> reading.latencyMs?.toFloat()
-            }
-            value?.let { reading.timestamp to it }
-        }.downsamplePairs(MAX_NETWORK_HISTORY_POINTS)
-    }
-
-    val chartData = remember(chartPoints) { chartPoints.map { it.second } }
-    val chartTimestamps = remember(chartPoints) { chartPoints.map { it.first } }
-
-    // Stats
-    val minVal = remember(chartData) { chartData.minOrNull() }
-    val maxVal = remember(chartData) { chartData.maxOrNull() }
-    val avgVal = remember(chartData) { if (chartData.isNotEmpty()) chartData.average().toFloat() else null }
-
-    // Y-axis labels
-    val yLabels = remember(minVal, maxVal, metric) {
-        if (minVal == null || maxVal == null) null
-        else buildNetworkYLabels(minVal, maxVal)
-    }
-
-    // X-axis time labels
-    val xLabels = remember(chartTimestamps, selectedPeriod) {
-        if (chartTimestamps.size < 2) null
-        else buildNetworkXLabels(chartTimestamps, selectedPeriod)
+    val chartModel = remember(history, metric, selectedPeriod) {
+        buildNetworkHistoryChartModel(
+            history = history,
+            metric = metric,
+            period = selectedPeriod,
+            maxPoints = MAX_NETWORK_HISTORY_POINTS
+        )
     }
 
     // Quality zone bands (signal only — subtle background bands)
     val qualityZones = signalQualityZones(metric)
-
-    val unit = networkMetricUnit(metric)
 
     NetworkPanel {
         CardSectionTitle(text = stringResource(R.string.network_section_signal_history))
@@ -577,7 +559,37 @@ private fun SignalHistoryCard(
             )
         }
 
-        if (chartData.size >= 2) {
+        if (chartModel.chartData.size >= 2) {
+            val chartAccessibilitySummary = rememberChartAccessibilitySummary(
+                title = stringResource(
+                    R.string.fullscreen_chart_title_network,
+                    networkHistoryMetricLabel(metric)
+                ),
+                chartData = chartModel.chartData,
+                unit = chartModel.unit,
+                decimals = chartModel.tooltipDecimals,
+                timeContext = stringResource(
+                    R.string.a11y_chart_context_history,
+                    historyPeriodLabel(selectedPeriod)
+                )
+            )
+            val fullscreenSeed = remember(chartModel, metric, selectedPeriod) {
+                FullscreenChartUiState.Success(
+                    chartData = chartModel.chartData,
+                    chartTimestamps = chartModel.chartTimestamps,
+                    unit = chartModel.unit,
+                    selectedMetric = metric.name,
+                    selectedPeriod = selectedPeriod.name,
+                    metricOptions = NetworkHistoryMetric.entries.map { it.name },
+                    periodOptions = HistoryPeriod.entries
+                        .filter { it != HistoryPeriod.SINCE_UNPLUG }
+                        .map { it.name },
+                    yLabels = chartModel.yLabels,
+                    xLabels = chartModel.xLabels,
+                    tooltipDecimals = chartModel.tooltipDecimals,
+                    tooltipTimeSkeleton = chartModel.tooltipTimeSkeleton
+                )
+            }
             Text(
                 text = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${networkHistoryMetricLabel(metric)}",
                 style = MaterialTheme.typography.labelLarge,
@@ -585,6 +597,10 @@ private fun SignalHistoryCard(
             )
             ExpandableChartContainer(
                 onExpand = {
+                    FullscreenChartSeedStore.prime(
+                        source = FullscreenChartSource.NETWORK_HISTORY,
+                        state = fullscreenSeed
+                    )
                     onNavigateToFullscreen(
                         FullscreenChartSource.NETWORK_HISTORY.name,
                         metric.name,
@@ -593,21 +609,14 @@ private fun SignalHistoryCard(
                 }
             ) {
                 TrendChart(
-                    data = chartData,
+                    data = chartModel.chartData,
                     modifier = Modifier.fillMaxWidth(),
-                    contentDescription = stringResource(
-                        R.string.a11y_chart_trend,
-                        networkHistoryMetricLabel(metric)
-                    ),
-                    yLabels = yLabels,
-                    xLabels = xLabels,
+                    contentDescription = chartAccessibilitySummary,
+                    yLabels = chartModel.yLabels.ifEmpty { null },
+                    xLabels = chartModel.xLabels.ifEmpty { null },
                     showGrid = true,
                     qualityZones = qualityZones,
-                    tooltipFormatter = { index ->
-                        val value = formatDecimal(chartData[index], 0)
-                        val time = formatLocalizedDateTime(chartTimestamps[index], "HmMMMd")
-                        "$value$unit · $time"
-                    }
+                    tooltipFormatter = { index -> formatChartTooltip(chartModel, index) }
                 )
             }
 
@@ -616,24 +625,24 @@ private fun SignalHistoryCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
             ) {
-                minVal?.let {
+                chartModel.minValue?.let {
                     MetricPill(
                         label = stringResource(R.string.chart_stat_min),
-                        value = "${formatDecimal(it, 0)}$unit",
+                        value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
                         modifier = Modifier.weight(1f)
                     )
                 }
-                avgVal?.let {
+                chartModel.averageValue?.let {
                     MetricPill(
                         label = stringResource(R.string.chart_stat_avg),
-                        value = "${formatDecimal(it, 0)}$unit",
+                        value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
                         modifier = Modifier.weight(1f)
                     )
                 }
-                maxVal?.let {
+                chartModel.maxValue?.let {
                     MetricPill(
                         label = stringResource(R.string.chart_stat_max),
-                        value = "${formatDecimal(it, 0)}$unit",
+                        value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -761,7 +770,14 @@ private fun NetworkContent(
     // Apply fullscreen chart selection results when navigating back
     LaunchedEffect(fullscreenResultMetric, fullscreenResultPeriod) {
         if (fullscreenResultMetric != null && fullscreenResultPeriod != null) {
-            val period = runCatching { HistoryPeriod.valueOf(fullscreenResultPeriod) }.getOrNull()
+            val period = runCatching {
+                HistoryPeriod.valueOf(
+                    sanitizeFullscreenPeriod(
+                        source = FullscreenChartSource.NETWORK_HISTORY,
+                        rawPeriod = fullscreenResultPeriod
+                    )
+                )
+            }.getOrNull()
             if (period != null) onPeriodChange(period)
             onFullscreenResultConsumed()
         }
@@ -804,24 +820,28 @@ private fun NetworkContent(
             // Info cards
             if ((networkState.signalQuality == SignalQuality.POOR ||
                     networkState.signalQuality == SignalQuality.NO_SIGNAL) &&
-                NetworkInfoCards.WEAK_SIGNAL_DRAIN !in state.dismissedInfoCards
+                InfoCardCatalog.NetworkWeakSignalDrain.id !in state.dismissedInfoCards
             ) {
                 InfoCard(
-                    id = NetworkInfoCards.WEAK_SIGNAL_DRAIN,
-                    headline = stringResource(R.string.info_card_weak_signal_headline),
-                    body = stringResource(R.string.info_card_weak_signal_body),
+                    id = InfoCardCatalog.NetworkWeakSignalDrain.id,
+                    headline = stringResource(InfoCardCatalog.NetworkWeakSignalDrain.headlineRes),
+                    body = stringResource(InfoCardCatalog.NetworkWeakSignalDrain.bodyRes),
                     onDismiss = { onDismissInfoCard(it) },
-                    onLearnMore = { onNavigateToLearnArticle("network_signal") }
+                    onLearnMore = {
+                        InfoCardCatalog.NetworkWeakSignalDrain.learnArticleId?.let(onNavigateToLearnArticle)
+                    }
                 )
             }
 
-            if (NetworkInfoCards.SPEED_TEST_INFO !in state.dismissedInfoCards) {
+            if (InfoCardCatalog.NetworkSpeedTestScope.id !in state.dismissedInfoCards) {
                 InfoCard(
-                    id = NetworkInfoCards.SPEED_TEST_INFO,
-                    headline = stringResource(R.string.info_card_speed_test_info_headline),
-                    body = stringResource(R.string.info_card_speed_test_info_body),
+                    id = InfoCardCatalog.NetworkSpeedTestScope.id,
+                    headline = stringResource(InfoCardCatalog.NetworkSpeedTestScope.headlineRes),
+                    body = stringResource(InfoCardCatalog.NetworkSpeedTestScope.bodyRes),
                     onDismiss = { onDismissInfoCard(it) },
-                    onLearnMore = { onNavigateToLearnArticle("network_speed_tests") }
+                    onLearnMore = {
+                        InfoCardCatalog.NetworkSpeedTestScope.learnArticleId?.let(onNavigateToLearnArticle)
+                    }
                 )
             }
 

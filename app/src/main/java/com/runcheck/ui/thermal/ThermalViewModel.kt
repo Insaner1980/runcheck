@@ -7,6 +7,7 @@ import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThrottlingEvent
 import com.runcheck.domain.usecase.GetThermalStateUseCase
 import com.runcheck.domain.usecase.GetThrottlingHistoryUseCase
+import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.common.messageOr
@@ -26,7 +27,8 @@ class ThermalViewModel @Inject constructor(
     private val getThermalState: GetThermalStateUseCase,
     private val getThrottlingHistory: GetThrottlingHistoryUseCase,
     private val observeProAccess: ObserveProAccessUseCase,
-    private val manageUserPreferences: ManageUserPreferencesUseCase
+    private val manageUserPreferences: ManageUserPreferencesUseCase,
+    private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ThermalUiState>(ThermalUiState.Loading)
@@ -60,7 +62,7 @@ class ThermalViewModel @Inject constructor(
 
     fun dismissInfoCard(id: String) {
         viewModelScope.launch {
-            manageUserPreferences.dismissInfoCard(id)
+            manageInfoCardDismissals.dismissCard(id)
         }
     }
 
@@ -72,7 +74,7 @@ class ThermalViewModel @Inject constructor(
                 getThrottlingHistory(),
                 observeProAccess(),
                 manageUserPreferences.observePreferences(),
-                manageUserPreferences.observeDismissedInfoCards()
+                manageInfoCardDismissals.observeDismissedCardIds()
             ) { thermalState: ThermalState, events: List<ThrottlingEvent>, isPro: Boolean, preferences, dismissedCards: Set<String> ->
                 val currentTemp = thermalState.batteryTempC
                 sessionMinTemp = sessionMinTemp?.coerceAtMost(currentTemp) ?: currentTemp

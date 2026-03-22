@@ -6,6 +6,8 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -255,10 +257,48 @@ fun RuncheckNavHost(
                 navArgument("source") { type = NavType.StringType },
                 navArgument("metric") { type = NavType.StringType },
                 navArgument("period") { type = NavType.StringType }
-            )
+            ),
+            enterTransition = {
+                if (reducedMotion) {
+                    EnterTransition.None
+                } else {
+                    scaleIn(
+                        initialScale = 0.94f,
+                        animationSpec = tween(260)
+                    ) + fadeIn(animationSpec = tween(220))
+                }
+            },
+            exitTransition = {
+                if (reducedMotion) {
+                    ExitTransition.None
+                } else {
+                    scaleOut(
+                        targetScale = 1.02f,
+                        animationSpec = tween(180)
+                    ) + fadeOut(animationSpec = tween(180))
+                }
+            },
+            popEnterTransition = {
+                if (reducedMotion) {
+                    EnterTransition.None
+                } else {
+                    fadeIn(animationSpec = tween(180))
+                }
+            },
+            popExitTransition = {
+                if (reducedMotion) {
+                    ExitTransition.None
+                } else {
+                    scaleOut(
+                        targetScale = 0.96f,
+                        animationSpec = tween(220)
+                    ) + fadeOut(animationSpec = tween(220))
+                }
+            }
         ) {
             FullscreenChartScreen(
                 onBack = { navController.popBackStack() },
+                onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
                 onSelectionChanged = { source, metric, period ->
                     navController.previousBackStackEntry?.savedStateHandle?.apply {
                         set(FullscreenChartResult.KEY_SOURCE, source)

@@ -16,6 +16,8 @@ import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.model.UserPreferences
+import com.runcheck.domain.repository.InfoCardDismissalRepository
+import com.runcheck.domain.repository.UserPreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.Flow
@@ -29,7 +31,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 @Singleton
 class UserPreferencesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context
-) : com.runcheck.domain.repository.UserPreferencesRepository {
+) : UserPreferencesRepository, InfoCardDismissalRepository {
 
     private val preferencesFlow: Flow<Preferences> = context.dataStore.data.catch { error ->
         if (error is IOException) {
@@ -39,18 +41,19 @@ class UserPreferencesRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getDismissedInfoCards(): Flow<Set<String>> = preferencesFlow.map { prefs ->
+    // Dismissals are app-local UI state. Clearing app data or reinstalling should show cards again.
+    override fun observeDismissedCardIds(): Flow<Set<String>> = preferencesFlow.map { prefs ->
         prefs[KEY_DISMISSED_INFO_CARDS] ?: emptySet()
     }
 
-    override suspend fun dismissInfoCard(id: String) {
+    override suspend fun dismissCard(cardId: String) {
         context.dataStore.edit { prefs ->
             val current = prefs[KEY_DISMISSED_INFO_CARDS] ?: emptySet()
-            prefs[KEY_DISMISSED_INFO_CARDS] = current + id
+            prefs[KEY_DISMISSED_INFO_CARDS] = current + cardId
         }
     }
 
-    override suspend fun resetDismissedInfoCards() {
+    override suspend fun resetDismissedCards() {
         context.dataStore.edit { prefs ->
             prefs.remove(KEY_DISMISSED_INFO_CARDS)
         }

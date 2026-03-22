@@ -13,6 +13,7 @@ import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.usecase.ClearMonitoringDataUseCase
 import com.runcheck.domain.usecase.ExportDataUseCase
 import com.runcheck.domain.usecase.IsProUserUseCase
+import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveSettingsUseCase
 import com.runcheck.domain.usecase.SetCrashReportingEnabledUseCase
@@ -42,7 +43,8 @@ class SettingsViewModel @Inject constructor(
     private val setMonitoringIntervalUseCase: SetMonitoringIntervalUseCase,
     private val setNotificationsEnabledUseCase: SetNotificationsEnabledUseCase,
     private val setCrashReportingEnabledUseCase: SetCrashReportingEnabledUseCase,
-    private val manageUserPreferences: ManageUserPreferencesUseCase
+    private val manageUserPreferences: ManageUserPreferencesUseCase,
+    private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -283,7 +285,7 @@ class SettingsViewModel @Inject constructor(
 
     fun resetTips() {
         executePreferenceUpdate {
-            manageUserPreferences.resetDismissedInfoCards()
+            manageInfoCardDismissals.resetDismissedCards()
         }
     }
 

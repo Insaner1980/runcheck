@@ -5,16 +5,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,33 +15,29 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.runcheck.ui.theme.chartAxisTextStyle
 import com.runcheck.ui.theme.chartTooltipTextStyle
-import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.reducedMotion
 
 /**
@@ -76,6 +65,26 @@ data class ChartYLabel(
     val label: String
 )
 
+enum class TrendChartPresentation {
+    Embedded,
+    Fullscreen
+}
+
+private data class TrendChartStyle(
+    val chartPadding: Dp,
+    val yLabelGap: Dp,
+    val xLabelTopPadding: Dp,
+    val gestureEdgeGuard: Dp,
+    val lineStrokeWidth: Dp,
+    val gridStrokeWidth: Dp,
+    val tickLength: Dp,
+    val pointMarkerRadius: Dp,
+    val selectedPointOuterRadius: Dp,
+    val selectedPointInnerRadius: Dp,
+    val axisTextStyle: TextStyle,
+    val tooltipTextStyle: TextStyle
+)
+
 @Composable
 fun TrendChart(
     data: List<Float>,
@@ -92,13 +101,20 @@ fun TrendChart(
     // Quality zone bands
     qualityZones: List<ChartQualityZone>? = null,
     // Tooltip — called with data index when user taps/drags
-    tooltipFormatter: ((index: Int) -> String)? = null
+    tooltipFormatter: ((index: Int) -> String)? = null,
+    presentation: TrendChartPresentation = TrendChartPresentation.Embedded
 ) {
     if (data.size < 2) return
 
     val reducedMotion = MaterialTheme.reducedMotion
-    var progress by remember(data) { mutableFloatStateOf(0f) }
-    LaunchedEffect(data) { progress = 1f }
+    var progress by remember(data, reducedMotion) {
+        mutableFloatStateOf(if (reducedMotion) 1f else 0f)
+    }
+    LaunchedEffect(data, reducedMotion) {
+        if (!reducedMotion) {
+            progress = 1f
+        }
+    }
 
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
@@ -120,29 +136,75 @@ fun TrendChart(
     val hasXLabels = xLabels != null && xLabels.isNotEmpty()
 
     val textMeasurer = rememberTextMeasurer()
-    val labelStyle = MaterialTheme.chartAxisTextStyle.copy(
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-    val tooltipLabelStyle = MaterialTheme.chartTooltipTextStyle.copy(
-        color = MaterialTheme.colorScheme.onSurface
-    )
-
-    // Calculate left padding for Y-axis labels
-    val yLabelWidth = if (hasYLabels) {
-        val maxWidth = yLabels.maxOf { textMeasurer.measure(it.label, labelStyle).size.width }
-        with(LocalDensity.current) { (maxWidth + 6.dp.toPx()).toDp() }
-    } else 0.dp
-
-    val xLabelHeight = if (hasXLabels) 16.dp else 0.dp
+    val chartStyle = when (presentation) {
+        TrendChartPresentation.Embedded -> TrendChartStyle(
+            chartPadding = 8.dp,
+            yLabelGap = 6.dp,
+            xLabelTopPadding = 4.dp,
+            gestureEdgeGuard = 24.dp,
+            lineStrokeWidth = 2.dp,
+            gridStrokeWidth = 1.dp,
+            tickLength = 5.dp,
+            pointMarkerRadius = 0.dp,
+            selectedPointOuterRadius = 4.dp,
+            selectedPointInnerRadius = 2.dp,
+            axisTextStyle = MaterialTheme.chartAxisTextStyle,
+            tooltipTextStyle = MaterialTheme.chartTooltipTextStyle
+        )
+        TrendChartPresentation.Fullscreen -> TrendChartStyle(
+            chartPadding = 16.dp,
+            yLabelGap = 10.dp,
+            xLabelTopPadding = 8.dp,
+            gestureEdgeGuard = 28.dp,
+            lineStrokeWidth = 3.dp,
+            gridStrokeWidth = 1.5.dp,
+            tickLength = 8.dp,
+            pointMarkerRadius = 3.5.dp,
+            selectedPointOuterRadius = 6.dp,
+            selectedPointInnerRadius = 3.dp,
+            axisTextStyle = MaterialTheme.chartAxisTextStyle.copy(
+                fontSize = 12.sp,
+                lineHeight = 14.sp
+            ),
+            tooltipTextStyle = MaterialTheme.chartTooltipTextStyle.copy(
+                fontSize = 13.sp,
+                lineHeight = 16.sp
+            )
+        )
+    }
+    val labelStyle = chartStyle.axisTextStyle.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+    val tooltipLabelStyle = chartStyle.tooltipTextStyle.copy(color = MaterialTheme.colorScheme.onSurface)
 
     val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
     val tooltipBgColor = MaterialTheme.colorScheme.surfaceContainer
     val tooltipLineColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+    val measuredYLabels = remember(yLabels, labelStyle, textMeasurer) {
+        yLabels?.map { it to textMeasurer.measure(it.label, labelStyle) }.orEmpty()
+    }
+    val measuredXLabels = remember(xLabels, labelStyle, textMeasurer) {
+        xLabels?.map { it to textMeasurer.measure(it.label, labelStyle) }.orEmpty()
+    }
+    val density = LocalDensity.current
+    val yLabelWidth = if (hasYLabels) {
+        val maxWidth = measuredYLabels.maxOf { it.second.size.width }
+        with(density) { (maxWidth + chartStyle.yLabelGap.toPx()).toDp() }
+    } else 0.dp
+    val xLabelHeight = if (hasXLabels) {
+        val maxHeight = measuredXLabels.maxOf { it.second.size.height }
+        with(density) {
+            (
+                maxHeight.toFloat() +
+                    chartStyle.xLabelTopPadding.toPx() +
+                    chartStyle.chartPadding.toPx() / 2f
+                ).toDp()
+        }
+    } else 0.dp
+    val gestureEdgeGuardPx = with(density) { chartStyle.gestureEdgeGuard.toPx() }
 
     Canvas(
         modifier = modifier
             .fillMaxWidth()
-            .height(chartHeight + xLabelHeight)
+            .height(chartHeight)
             .then(
                 if (contentDescription == null) Modifier
                 else Modifier.semantics {
@@ -153,10 +215,13 @@ fun TrendChart(
             .then(
                 if (tooltipFormatter != null) {
                     Modifier
-                        .pointerInput(data) {
+                        .pointerInput(data, yLabelWidth, gestureEdgeGuardPx) {
                             detectTapGestures { offset ->
+                                if (offset.x <= gestureEdgeGuardPx || offset.x >= size.width - gestureEdgeGuardPx) {
+                                    return@detectTapGestures
+                                }
                                 val leftPad = yLabelWidth.toPx()
-                                val chartPad = 8.dp.toPx()
+                                val chartPad = chartStyle.chartPadding.toPx()
                                 val chartLeft = leftPad + chartPad
                                 val chartWidth = size.width - chartLeft - chartPad
                                 if (chartWidth > 0 && data.isNotEmpty()) {
@@ -168,14 +233,35 @@ fun TrendChart(
                                 }
                             }
                         }
-                        .pointerInput(data) {
+                        .pointerInput(data, yLabelWidth, gestureEdgeGuardPx) {
+                            var allowTooltipDrag = false
                             detectHorizontalDragGestures(
-                                onDragEnd = { /* keep selection visible */ },
-                                onDragCancel = { selectedIndex = -1 }
+                                onDragStart = { offset ->
+                                    allowTooltipDrag = offset.x > gestureEdgeGuardPx &&
+                                        offset.x < size.width - gestureEdgeGuardPx
+                                    if (allowTooltipDrag) {
+                                        val leftPad = yLabelWidth.toPx()
+                                        val chartPad = chartStyle.chartPadding.toPx()
+                                        val chartLeft = leftPad + chartPad
+                                        val chartWidth = size.width - chartLeft - chartPad
+                                        if (chartWidth > 0 && data.isNotEmpty()) {
+                                            val fraction =
+                                                ((offset.x - chartLeft) / chartWidth).coerceIn(0f, 1f)
+                                            selectedIndex = (fraction * (data.size - 1)).toInt()
+                                                .coerceIn(0, data.lastIndex)
+                                        }
+                                    }
+                                },
+                                onDragEnd = { allowTooltipDrag = false },
+                                onDragCancel = {
+                                    allowTooltipDrag = false
+                                    selectedIndex = -1
+                                }
                             ) { change, _ ->
+                                if (!allowTooltipDrag) return@detectHorizontalDragGestures
                                 change.consume()
                                 val leftPad = yLabelWidth.toPx()
-                                val chartPad = 8.dp.toPx()
+                                val chartPad = chartStyle.chartPadding.toPx()
                                 val chartLeft = leftPad + chartPad
                                 val chartWidth = size.width - chartLeft - chartPad
                                 if (chartWidth > 0 && data.isNotEmpty()) {
@@ -194,13 +280,17 @@ fun TrendChart(
     ) {
         val yLabelWidthPx = yLabelWidth.toPx()
         val xLabelHeightPx = xLabelHeight.toPx()
-        val chartPad = 8.dp.toPx()
+        val chartPad = chartStyle.chartPadding.toPx()
         val chartLeft = yLabelWidthPx + chartPad
         val chartTop = chartPad
         val chartWidth = size.width - chartLeft - chartPad
         val chartHeight = size.height - chartTop - chartPad - xLabelHeightPx
+        if (chartWidth <= 0f || chartHeight <= 0f) return@Canvas
         val stepX = chartWidth / (data.size - 1)
         val visibleCount = (data.size * animatedProgress).toInt().coerceAtLeast(2)
+        val tickColor = gridColor.copy(alpha = 0.75f)
+        val shouldDrawPointMarkers = chartStyle.pointMarkerRadius > 0.dp &&
+            stepX >= chartStyle.pointMarkerRadius.toPx() * 3f
 
         // ── Quality zone bands ─────────────────────────────────────────
         qualityZones?.forEach { zone ->
@@ -226,7 +316,7 @@ fun TrendChart(
                         color = gridColor,
                         start = Offset(chartLeft, y),
                         end = Offset(chartLeft + chartWidth, y),
-                        strokeWidth = 1.dp.toPx()
+                        strokeWidth = chartStyle.gridStrokeWidth.toPx()
                     )
                 }
             }
@@ -234,10 +324,9 @@ fun TrendChart(
 
         // ── Y-axis labels ──────────────────────────────────────────────
         if (yLabels != null) {
-            for (yLabel in yLabels) {
+            for ((yLabel, measured) in measuredYLabels) {
                 val y = chartTop + chartHeight - ((yLabel.value - minVal) / range * chartHeight)
                 if (y in chartTop - chartPad..chartTop + chartHeight + chartPad) {
-                    val measured = textMeasurer.measure(yLabel.label, labelStyle)
                     drawText(
                         textLayoutResult = measured,
                         topLeft = Offset(
@@ -251,14 +340,22 @@ fun TrendChart(
 
         // ── X-axis labels ──────────────────────────────────────────────
         if (xLabels != null) {
-            for (xLabel in xLabels) {
+            for ((xLabel, measured) in measuredXLabels) {
                 val x = chartLeft + xLabel.position * chartWidth
-                val measured = textMeasurer.measure(xLabel.label, labelStyle)
+                drawLine(
+                    color = tickColor,
+                    start = Offset(x, chartTop + chartHeight),
+                    end = Offset(x, chartTop + chartHeight + chartStyle.tickLength.toPx()),
+                    strokeWidth = chartStyle.gridStrokeWidth.toPx()
+                )
                 val labelX = (x - measured.size.width / 2f)
                     .coerceIn(chartLeft, chartLeft + chartWidth - measured.size.width)
                 drawText(
                     textLayoutResult = measured,
-                    topLeft = Offset(labelX, chartTop + chartHeight + 4.dp.toPx())
+                    topLeft = Offset(
+                        labelX,
+                        chartTop + chartHeight + chartStyle.xLabelTopPadding.toPx()
+                    )
                 )
             }
         }
@@ -292,8 +389,26 @@ fun TrendChart(
         drawPath(
             path = linePath,
             color = lineColor,
-            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+            style = Stroke(width = chartStyle.lineStrokeWidth.toPx(), cap = StrokeCap.Round)
         )
+
+        if (shouldDrawPointMarkers) {
+            val innerMarkerRadius = (chartStyle.pointMarkerRadius - 1.5.dp).coerceAtLeast(1.5.dp)
+            for (i in 0 until visibleCount) {
+                val x = chartLeft + i * stepX
+                val y = chartTop + chartHeight - ((data[i] - minVal) / range * chartHeight)
+                drawCircle(
+                    color = lineColor.copy(alpha = 0.95f),
+                    radius = chartStyle.pointMarkerRadius.toPx(),
+                    center = Offset(x, y)
+                )
+                drawCircle(
+                    color = tooltipBgColor,
+                    radius = innerMarkerRadius.toPx(),
+                    center = Offset(x, y)
+                )
+            }
+        }
 
         // ── Tooltip cursor ─────────────────────────────────────────────
         if (selectedIndex in 0..data.lastIndex && tooltipFormatter != null) {
@@ -309,10 +424,14 @@ fun TrendChart(
             )
 
             // Data point dot
-            drawCircle(color = lineColor, radius = 4.dp.toPx(), center = Offset(sx, sy))
+            drawCircle(
+                color = lineColor,
+                radius = chartStyle.selectedPointOuterRadius.toPx(),
+                center = Offset(sx, sy)
+            )
             drawCircle(
                 color = tooltipBgColor,
-                radius = 2.dp.toPx(),
+                radius = chartStyle.selectedPointInnerRadius.toPx(),
                 center = Offset(sx, sy)
             )
 

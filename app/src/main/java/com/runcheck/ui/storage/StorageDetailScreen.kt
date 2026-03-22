@@ -78,6 +78,7 @@ import com.runcheck.ui.storage.MediaDeleteRequestResult
 import com.runcheck.ui.storage.cleanup.categoryColor
 import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
+import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.ActionCard
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailTopBar
@@ -283,15 +284,16 @@ private fun StorageContent(
             StorageHeroCard(storage = storage, onInfoClick = { activeInfoSheet = it })
 
             // ── Info cards ─────────────────────────────────────────────
-            if (storage.usagePercent > 75f &&
-                StorageInfoCards.FULL_STORAGE_SLOW !in state.dismissedInfoCards
-            ) {
+            if (storage.usagePercent > 75f) {
                 InfoCard(
-                    id = StorageInfoCards.FULL_STORAGE_SLOW,
-                    headline = stringResource(R.string.info_card_full_storage_headline),
-                    body = stringResource(R.string.info_card_full_storage_body),
+                    id = InfoCardCatalog.StorageFullSlowsPhone.id,
+                    headline = stringResource(InfoCardCatalog.StorageFullSlowsPhone.headlineRes),
+                    body = stringResource(InfoCardCatalog.StorageFullSlowsPhone.bodyRes),
                     onDismiss = { onDismissInfoCard(it) },
-                    onLearnMore = { onNavigateToLearnArticle("storage_slowdown") }
+                    visible = InfoCardCatalog.StorageFullSlowsPhone.id !in state.dismissedInfoCards,
+                    onLearnMore = {
+                        InfoCardCatalog.StorageFullSlowsPhone.learnArticleId?.let(onNavigateToLearnArticle)
+                    }
                 )
             }
 
@@ -307,15 +309,16 @@ private fun StorageContent(
                 StorageMediaBreakdownCard(breakdown = breakdown, usedBytes = storage.usedBytes)
             }
 
-            if (hasMediaPermissions &&
-                StorageInfoCards.STORAGE_OVERVIEW !in state.dismissedInfoCards
-            ) {
+            if (hasMediaPermissions && storage.mediaBreakdown != null) {
                 InfoCard(
-                    id = StorageInfoCards.STORAGE_OVERVIEW,
-                    headline = stringResource(R.string.info_card_storage_overview_headline),
-                    body = stringResource(R.string.info_card_storage_overview_body),
+                    id = InfoCardCatalog.StorageOverview.id,
+                    headline = stringResource(InfoCardCatalog.StorageOverview.headlineRes),
+                    body = stringResource(InfoCardCatalog.StorageOverview.bodyRes),
                     onDismiss = { onDismissInfoCard(it) },
-                    onLearnMore = { onNavigateToLearnArticle("storage_breakdown") }
+                    visible = InfoCardCatalog.StorageOverview.id !in state.dismissedInfoCards,
+                    onLearnMore = {
+                        InfoCardCatalog.StorageOverview.learnArticleId?.let(onNavigateToLearnArticle)
+                    }
                 )
             }
 
