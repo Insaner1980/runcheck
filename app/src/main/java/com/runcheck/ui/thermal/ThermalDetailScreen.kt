@@ -1,5 +1,6 @@
 package com.runcheck.ui.thermal
 
+import android.os.Build
 import com.runcheck.ui.ads.DetailScreenAdBanner
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -207,8 +208,10 @@ private fun ThermalContent(
                 )
             }
 
-            // Info cards
-            if (ThermalInfoCards.THROTTLING_EXPLAINER !in state.dismissedInfoCards) {
+            // Info cards — throttling card only relevant on API 29+ where thermal API exists
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                ThermalInfoCards.THROTTLING_EXPLAINER !in state.dismissedInfoCards
+            ) {
                 item {
                     InfoCard(
                         id = ThermalInfoCards.THROTTLING_EXPLAINER,

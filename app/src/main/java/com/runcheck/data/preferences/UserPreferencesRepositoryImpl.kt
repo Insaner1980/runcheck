@@ -50,6 +50,12 @@ class UserPreferencesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun resetDismissedInfoCards() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(KEY_DISMISSED_INFO_CARDS)
+        }
+    }
+
     override fun getPreferences(): Flow<UserPreferences> = preferencesFlow.map { prefs ->
         UserPreferences(
             monitoringInterval = prefs[KEY_MONITORING_INTERVAL]

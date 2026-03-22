@@ -305,6 +305,16 @@ fun SettingsScreen(
                 SettingsDivider()
 
                 SettingsNavigationRow(
+                    label = stringResource(R.string.settings_reset_tips),
+                    onClick = {
+                        viewModel.resetTips()
+                        Toast.makeText(context, context.getString(R.string.settings_reset_tips_done), Toast.LENGTH_SHORT).show()
+                    }
+                )
+
+                SettingsDivider()
+
+                SettingsNavigationRow(
                     label = stringResource(R.string.settings_clear_all_data),
                     labelColor = MaterialTheme.colorScheme.error,
                     onClick = { showClearDialog = true }

@@ -301,7 +301,9 @@ private fun StorageContent(
                 StorageMediaBreakdownCard(breakdown = breakdown, usedBytes = storage.usedBytes)
             }
 
-            if (StorageInfoCards.STORAGE_OVERVIEW !in state.dismissedInfoCards) {
+            if (hasMediaPermissions &&
+                StorageInfoCards.STORAGE_OVERVIEW !in state.dismissedInfoCards
+            ) {
                 InfoCard(
                     id = StorageInfoCards.STORAGE_OVERVIEW,
                     headline = stringResource(R.string.info_card_storage_overview_headline),
