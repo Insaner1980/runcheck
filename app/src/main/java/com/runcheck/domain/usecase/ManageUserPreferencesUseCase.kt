@@ -19,6 +19,10 @@ class ManageUserPreferencesUseCase @Inject constructor(
         userPreferencesRepository.dismissInfoCard(id)
     }
 
+    suspend fun resetDismissedInfoCards() {
+        userPreferencesRepository.resetDismissedInfoCards()
+    }
+
     fun observeSelectedChargerId(): Flow<Long?> =
         userPreferencesRepository.observeSelectedChargerId()
 

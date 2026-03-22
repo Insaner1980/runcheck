@@ -281,6 +281,12 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun resetTips() {
+        executePreferenceUpdate {
+            manageUserPreferences.resetDismissedInfoCards()
+        }
+    }
+
     fun clearAllData() {
         viewModelScope.launch {
             try {
