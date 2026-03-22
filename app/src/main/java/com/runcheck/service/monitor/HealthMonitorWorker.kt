@@ -1,6 +1,8 @@
 package com.runcheck.service.monitor
 
+import android.app.ActivityManager
 import android.content.Context
+import android.content.Intent
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -115,7 +117,30 @@ class HealthMonitorWorker @AssistedInject constructor(
             }
         } || coreFailure
 
+        restartLiveNotificationIfNeeded(preferences.liveNotificationEnabled)
+
         return if (coreFailure) Result.retry() else Result.success()
+    }
+
+    /**
+     * Safety net: if the user has live notification enabled but the
+     * foreground service died (e.g. process death with START_NOT_STICKY),
+     * restart it on the next periodic worker run.
+     */
+    private fun restartLiveNotificationIfNeeded(liveNotificationEnabled: Boolean) {
+        if (!liveNotificationEnabled) return
+        try {
+            val am = applicationContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            @Suppress("DEPRECATION")
+            val running = am.getRunningServices(Int.MAX_VALUE)
+                .any { it.service.className == RealTimeMonitorService::class.java.name }
+            if (!running) {
+                val serviceIntent = Intent(applicationContext, RealTimeMonitorService::class.java)
+                applicationContext.startForegroundService(serviceIntent)
+            }
+        } catch (t: Throwable) {
+            ReleaseSafeLog.error(TAG, "Failed to restart live notification service", t)
+        }
     }
 
     private suspend fun collectStep(stepName: String, block: suspend () -> Unit): Boolean {
