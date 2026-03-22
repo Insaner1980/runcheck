@@ -61,12 +61,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.BuildConfig
 import com.runcheck.R
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.model.AppLanguage
+import com.runcheck.service.monitor.NotificationHelper
 import com.runcheck.service.monitor.RealTimeMonitorService
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.ui.common.findActivity
@@ -90,15 +92,45 @@ fun SettingsScreen(
     val context = LocalContext.current
     val activity = context.findActivity()
 
-    // Notification permission handling
+    // Notification permission handling — re-checked every time the screen resumes
+    // so that revoking permission in system settings is reflected immediately.
     val notificationsPermissionRequired = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-    val hasNotificationPermission = !notificationsPermissionRequired ||
-        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
+    var hasNotificationPermission by remember {
+        mutableStateOf(
+            !notificationsPermissionRequired ||
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+                    PackageManager.PERMISSION_GRANTED
+        )
+    }
+    var alertsEffectivelyEnabled by remember { mutableStateOf(true) }
+    // Track whether the permission request was triggered by the live-notification toggle
+    var permissionRequestedForLive by remember { mutableStateOf(false) }
+
+    LifecycleResumeEffect(Unit) {
+        hasNotificationPermission = !notificationsPermissionRequired ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+        val nm = context.getSystemService(android.app.NotificationManager::class.java)
+        alertsEffectivelyEnabled = nm.areNotificationsEnabled() &&
+            (nm.getNotificationChannel(NotificationHelper.CHANNEL_ALERTS)?.importance
+                != android.app.NotificationManager.IMPORTANCE_NONE)
+        onPauseOrDispose { }
+    }
+
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
-        viewModel.setNotifications(granted)
+        hasNotificationPermission = granted
+        if (permissionRequestedForLive) {
+            if (granted) {
+                viewModel.setLiveNotificationEnabled(true)
+                val serviceIntent = Intent(context, RealTimeMonitorService::class.java)
+                context.startForegroundService(serviceIntent)
+            }
+            permissionRequestedForLive = false
+        } else {
+            viewModel.setNotifications(granted)
+        }
     }
 
     // Clear data confirmation dialog
@@ -153,6 +185,7 @@ fun SettingsScreen(
                     checked = liveEnabled,
                     onCheckedChange = { enabled ->
                         if (enabled && !hasNotificationPermission && notificationsPermissionRequired) {
+                            permissionRequestedForLive = true
                             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         } else {
                             viewModel.setLiveNotificationEnabled(enabled)
@@ -261,6 +294,24 @@ fun SettingsScreen(
                         checked = uiState.preferences.notifChargeComplete,
                         enabled = masterEnabled,
                         onCheckedChange = { if (masterEnabled) viewModel.setNotifChargeComplete(it) }
+                    )
+                }
+
+                // Warning when notifications are enabled in-app but muted at the system level
+                if (uiState.preferences.notificationsEnabled && !alertsEffectivelyEnabled) {
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                    Text(
+                        text = stringResource(R.string.settings_notifications_system_muted),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier
+                            .padding(horizontal = MaterialTheme.spacing.xs)
+                            .clickable {
+                                val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                    putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                }
+                                context.startActivity(intent)
+                            }
                     )
                 }
             }

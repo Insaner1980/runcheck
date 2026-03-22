@@ -438,6 +438,7 @@
     <string name="settings_notif_low_storage_desc">Alert when storage is almost full</string>
     <string name="settings_notif_charge_complete">Charge Complete</string>
     <string name="settings_notif_charge_complete_desc">Notify when charging finishes</string>
+    <string name="settings_notifications_system_muted">Notifications are disabled in system settings. Tap to open notification settings.</string>
 
     <!-- Settings: Alert Thresholds -->
     <string name="settings_alert_thresholds">Alert Thresholds</string>

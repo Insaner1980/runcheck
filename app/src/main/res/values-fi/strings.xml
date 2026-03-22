@@ -438,6 +438,7 @@
     <string name="settings_notif_low_storage_desc">Hälytys kun tallennustila on loppumassa</string>
     <string name="settings_notif_charge_complete">Lataus valmis</string>
     <string name="settings_notif_charge_complete_desc">Ilmoitus kun lataus on valmis</string>
+    <string name="settings_notifications_system_muted">Ilmoitukset on poistettu käytöstä järjestelmäasetuksissa. Napauta avataksesi ilmoitusasetukset.</string>
 
     <!-- Settings: Alert Thresholds -->
     <string name="settings_alert_thresholds">Hälytysrajat</string>
