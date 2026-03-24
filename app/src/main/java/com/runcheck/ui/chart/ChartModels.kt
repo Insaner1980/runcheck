@@ -23,6 +23,11 @@ enum class NetworkHistoryMetric {
     LATENCY
 }
 
+enum class ThermalHistoryMetric {
+    BATTERY_TEMP,
+    CPU_TEMP
+}
+
 enum class FullscreenChartSource {
     BATTERY_HISTORY,
     BATTERY_SESSION,
@@ -47,5 +52,6 @@ data class ChargingSessionSummary(
 const val MAX_HISTORY_CHART_POINTS = 300
 const val MAX_SESSION_CHART_POINTS = 240
 const val MAX_NETWORK_HISTORY_POINTS = 300
+const val MAX_THERMAL_HISTORY_POINTS = 300
 const val MAX_FULLSCREEN_CHART_POINTS = 600
 const val MAX_FULLSCREEN_SESSION_POINTS = 480

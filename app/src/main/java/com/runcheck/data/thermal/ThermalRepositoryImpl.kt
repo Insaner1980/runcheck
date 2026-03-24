@@ -16,6 +16,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.emitAll
@@ -66,6 +67,15 @@ class ThermalRepositoryImpl @Inject constructor(
     }
 
     override fun getThermalState(): Flow<ThermalState> = thermalStateFlow
+
+    override fun getReadingsSince(since: Long, limit: Int?): Flow<List<ThermalReading>> {
+        val source = if (limit != null) {
+            thermalReadingDao.getReadingsSinceLimited(since, limit)
+        } else {
+            thermalReadingDao.getReadingsSince(since)
+        }
+        return source.map { entities -> entities.map { it.toDomain() } }
+    }
 
     override suspend fun saveReading(state: ThermalState) {
         try {

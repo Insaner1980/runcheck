@@ -411,3 +411,20 @@ fun networkHistoryMetricLabel(metric: NetworkHistoryMetric): String = when (metr
     NetworkHistoryMetric.SIGNAL -> stringResource(R.string.network_history_metric_signal)
     NetworkHistoryMetric.LATENCY -> stringResource(R.string.network_history_metric_latency)
 }
+
+@Composable
+fun thermalQualityZones(temperatureUnit: TemperatureUnit): List<ChartQualityZone> {
+    val colors = MaterialTheme.statusColors
+    fun convert(c: Float) = if (temperatureUnit == TemperatureUnit.FAHRENHEIT) c * 9f / 5f + 32f else c
+    return listOf(
+        ChartQualityZone(minValue = convert(0f), maxValue = convert(35f), color = colors.healthy.copy(alpha = 0.06f)),
+        ChartQualityZone(minValue = convert(35f), maxValue = convert(42f), color = colors.fair.copy(alpha = 0.06f)),
+        ChartQualityZone(minValue = convert(42f), maxValue = convert(60f), color = colors.critical.copy(alpha = 0.06f))
+    )
+}
+
+@Composable
+fun thermalHistoryMetricLabel(metric: ThermalHistoryMetric): String = when (metric) {
+    ThermalHistoryMetric.BATTERY_TEMP -> stringResource(R.string.thermal_metric_battery_temp)
+    ThermalHistoryMetric.CPU_TEMP -> stringResource(R.string.thermal_metric_cpu_temp)
+}

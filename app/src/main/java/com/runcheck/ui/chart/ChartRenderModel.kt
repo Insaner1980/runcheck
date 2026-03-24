@@ -4,6 +4,7 @@ import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.model.TemperatureUnit
+import com.runcheck.domain.model.ThermalReading
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.formatLocalizedDateTime
 import com.runcheck.ui.components.ChartXLabel
@@ -127,6 +128,42 @@ fun buildNetworkHistoryChartModel(
         unit = networkMetricUnit(metric),
         yLabels = if (minValue != null && maxValue != null) buildNetworkYLabels(minValue, maxValue) else emptyList(),
         xLabels = if (chartTimestamps.size >= 2) buildNetworkXLabels(chartTimestamps, period) else emptyList()
+    )
+}
+
+fun buildThermalHistoryChartModel(
+    history: List<ThermalReading>,
+    metric: ThermalHistoryMetric,
+    period: HistoryPeriod,
+    maxPoints: Int,
+    temperatureUnit: TemperatureUnit
+): ChartRenderModel {
+    val chartPoints = history.mapNotNull { reading ->
+        val value = when (metric) {
+            ThermalHistoryMetric.BATTERY_TEMP -> reading.batteryTempC
+            ThermalHistoryMetric.CPU_TEMP -> reading.cpuTempC
+        }
+        value?.let { reading.timestamp to it }
+    }.downsamplePairs(maxPoints)
+    val chartData = chartPoints.map { it.second }
+    val chartTimestamps = chartPoints.map { it.first }
+    val displayData = if (temperatureUnit == TemperatureUnit.FAHRENHEIT) {
+        chartData.map { it * 9f / 5f + 32f }
+    } else {
+        chartData
+    }
+    val unit = if (temperatureUnit == TemperatureUnit.CELSIUS) " °C" else " °F"
+    val min = displayData.minOrNull()
+    val max = displayData.maxOrNull()
+
+    return ChartRenderModel(
+        chartData = displayData,
+        chartTimestamps = chartTimestamps,
+        unit = unit,
+        yLabels = if (min != null && max != null) buildNetworkYLabels(min, max) else emptyList(),
+        xLabels = if (chartTimestamps.size >= 2) buildNetworkXLabels(chartTimestamps, period) else emptyList(),
+        tooltipDecimals = 1,
+        temperatureUnit = temperatureUnit
     )
 }
 

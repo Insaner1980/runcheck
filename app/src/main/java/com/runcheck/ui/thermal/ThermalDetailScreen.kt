@@ -17,12 +17,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -62,19 +65,34 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
+import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.TemperatureUnit
+import com.runcheck.domain.model.ThermalReading
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
 import com.runcheck.domain.model.ThrottlingEvent
+import com.runcheck.ui.chart.MAX_THERMAL_HISTORY_POINTS
+import com.runcheck.ui.chart.ThermalHistoryMetric
+import com.runcheck.ui.chart.buildThermalHistoryChartModel
+import com.runcheck.ui.chart.formatChartTooltip
+import com.runcheck.ui.chart.historyPeriodLabel
+import com.runcheck.ui.chart.thermalHistoryMetricLabel
+import com.runcheck.ui.chart.thermalQualityZones
+import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.formatDecimal
+import com.runcheck.ui.common.resolve
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.common.formatTemperatureValue
 import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.common.temperatureUnitRes
 import com.runcheck.ui.common.temperatureBandLabel
+import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.ExpandableChartContainer
 import com.runcheck.ui.components.HeatStrip
+import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.PullToRefreshWrapper
 import com.runcheck.ui.components.SectionHeader
@@ -158,7 +176,8 @@ fun ThermalDetailScreen(
                     onRefresh = { viewModel.refresh() },
                     onUpgradeToPro = onUpgradeToPro,
                     onNavigateToLearnArticle = onNavigateToLearnArticle,
-                    onDismissInfoCard = { viewModel.dismissInfoCard(it) }
+                    onDismissInfoCard = { viewModel.dismissInfoCard(it) },
+                    onPeriodChange = { viewModel.setHistoryPeriod(it) }
                 )
             }
         }
@@ -171,7 +190,8 @@ private fun ThermalContent(
     onRefresh: () -> Unit,
     onUpgradeToPro: () -> Unit,
     onNavigateToLearnArticle: (articleId: String) -> Unit,
-    onDismissInfoCard: (String) -> Unit
+    onDismissInfoCard: (String) -> Unit,
+    onPeriodChange: (HistoryPeriod) -> Unit
 ) {
     var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
     var isRefreshing by remember { mutableStateOf(false) }
@@ -222,7 +242,7 @@ private fun ThermalContent(
                         headline = stringResource(InfoCardCatalog.ThermalThrottlingExplainer.headlineRes),
                         body = stringResource(InfoCardCatalog.ThermalThrottlingExplainer.bodyRes),
                         onDismiss = { onDismissInfoCard(it) },
-                        visible = InfoCardCatalog.ThermalThrottlingExplainer.id !in state.dismissedInfoCards,
+                        visible = InfoCardCatalog.ThermalThrottlingExplainer.id !in state.dismissedInfoCards && state.showInfoCards,
                         onLearnMore = {
                             InfoCardCatalog.ThermalThrottlingExplainer.learnArticleId?.let(onNavigateToLearnArticle)
                         }
@@ -237,7 +257,7 @@ private fun ThermalContent(
                         headline = stringResource(InfoCardCatalog.ThermalHeatBatteryLoop.headlineRes),
                         body = stringResource(InfoCardCatalog.ThermalHeatBatteryLoop.bodyRes),
                         onDismiss = { onDismissInfoCard(it) },
-                        visible = InfoCardCatalog.ThermalHeatBatteryLoop.id !in state.dismissedInfoCards,
+                        visible = InfoCardCatalog.ThermalHeatBatteryLoop.id !in state.dismissedInfoCards && state.showInfoCards,
                         onLearnMore = {
                             InfoCardCatalog.ThermalHeatBatteryLoop.learnArticleId?.let(onNavigateToLearnArticle)
                         }
@@ -250,8 +270,23 @@ private fun ThermalContent(
                 ThermalMetricsCard(
                     thermal = thermal,
                     temperatureUnit = state.temperatureUnit,
+                    liveTempC = state.liveTempC,
+                    liveHeadroom = state.liveHeadroom,
                     onInfoClick = { key -> activeInfoSheet = key }
                 )
+            }
+
+            // Temperature history chart (Pro only)
+            if (state.isPro) {
+                item {
+                    ThermalHistoryCard(
+                        history = state.thermalHistory,
+                        selectedPeriod = state.selectedHistoryPeriod,
+                        historyLoadError = state.historyLoadError,
+                        temperatureUnit = state.temperatureUnit,
+                        onPeriodChange = { onPeriodChange(it) }
+                    )
+                }
             }
 
             // Throttling section
@@ -542,6 +577,8 @@ private fun ThermometerIcon(
 private fun ThermalMetricsCard(
     thermal: ThermalState,
     temperatureUnit: TemperatureUnit,
+    liveTempC: List<Float> = emptyList(),
+    liveHeadroom: List<Float> = emptyList(),
     onInfoClick: (String) -> Unit = {}
 ) {
     Card(
@@ -614,6 +651,171 @@ private fun ThermalMetricsCard(
                     },
                     onInfoClick = { onInfoClick("throttling") },
                     modifier = Modifier.weight(1f)
+                )
+            }
+
+            // Live charts
+            if (liveTempC.size >= 2) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                LiveChart(
+                    data = liveTempC,
+                    currentValueLabel = formatTemperature(thermal.batteryTempC, temperatureUnit),
+                    label = stringResource(R.string.thermal_battery_temp),
+                    lineColor = statusColorForTemperature(thermal.batteryTempC),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            if (liveHeadroom.size >= 2) {
+                LiveChart(
+                    data = liveHeadroom,
+                    currentValueLabel = thermal.thermalHeadroom?.let {
+                        stringResource(R.string.value_headroom_percent, formatDecimal((1f - it.coerceIn(0f, 1f)) * 100, 0))
+                    } ?: "—",
+                    label = stringResource(R.string.thermal_headroom),
+                    lineColor = thermal.thermalHeadroom?.let { headroomColor(it) }
+                        ?: MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
+// ── Temperature history card ──────────────────────────────────────────────────────
+
+@Composable
+private fun ThermalHistoryCard(
+    history: List<ThermalReading>,
+    selectedPeriod: HistoryPeriod,
+    historyLoadError: UiText?,
+    temperatureUnit: TemperatureUnit,
+    onPeriodChange: (HistoryPeriod) -> Unit
+) {
+    var selectedMetric by rememberSaveable { mutableStateOf(ThermalHistoryMetric.BATTERY_TEMP.name) }
+
+    val metric = ThermalHistoryMetric.entries.firstOrNull { it.name == selectedMetric }
+        ?: ThermalHistoryMetric.BATTERY_TEMP
+
+    val chartModel = remember(history, metric, selectedPeriod, temperatureUnit) {
+        buildThermalHistoryChartModel(
+            history = history,
+            metric = metric,
+            period = selectedPeriod,
+            maxPoints = MAX_THERMAL_HISTORY_POINTS,
+            temperatureUnit = temperatureUnit
+        )
+    }
+
+    val qualityZones = thermalQualityZones(temperatureUnit)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = MaterialTheme.shapes.large
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MaterialTheme.spacing.base),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+        ) {
+            CardSectionTitle(text = stringResource(R.string.thermal_history))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+            ) {
+                ThermalHistoryMetric.entries.forEach { m ->
+                    FilterChip(
+                        selected = metric == m,
+                        onClick = { selectedMetric = m.name },
+                        label = { Text(thermalHistoryMetricLabel(m)) }
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+            ) {
+                HistoryPeriod.entries
+                    .filter { it != HistoryPeriod.SINCE_UNPLUG }
+                    .forEach { period ->
+                        FilterChip(
+                            selected = selectedPeriod == period,
+                            onClick = { onPeriodChange(period) },
+                            label = { Text(historyPeriodLabel(period)) }
+                        )
+                    }
+            }
+
+            historyLoadError?.let { error ->
+                Text(
+                    text = error.resolve(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            if (chartModel.chartData.size >= 2) {
+                Text(
+                    text = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${thermalHistoryMetricLabel(metric)}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                ExpandableChartContainer(
+                    onExpand = {}
+                ) {
+                    TrendChart(
+                        data = chartModel.chartData,
+                        modifier = Modifier.fillMaxWidth(),
+                        yLabels = chartModel.yLabels.ifEmpty { null },
+                        xLabels = chartModel.xLabels.ifEmpty { null },
+                        showGrid = true,
+                        qualityZones = qualityZones,
+                        tooltipFormatter = { index -> formatChartTooltip(chartModel, index) }
+                    )
+                }
+
+                // Min / Avg / Max summary
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+                ) {
+                    chartModel.minValue?.let {
+                        MetricPill(
+                            label = stringResource(R.string.chart_stat_min),
+                            value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    chartModel.averageValue?.let {
+                        MetricPill(
+                            label = stringResource(R.string.chart_stat_avg),
+                            value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    chartModel.maxValue?.let {
+                        MetricPill(
+                            label = stringResource(R.string.chart_stat_max),
+                            value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    text = stringResource(R.string.network_history_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

@@ -15,6 +15,18 @@ interface ThermalReadingDao {
     @Query("SELECT * FROM thermal_readings WHERE timestamp >= :since ORDER BY timestamp ASC")
     fun getReadingsSince(since: Long): Flow<List<ThermalReadingEntity>>
 
+    @Query("""
+        SELECT * FROM thermal_readings
+        WHERE id IN (
+            SELECT id FROM thermal_readings
+            WHERE timestamp >= :since
+            ORDER BY timestamp DESC
+            LIMIT :limit
+        )
+        ORDER BY timestamp ASC
+    """)
+    fun getReadingsSinceLimited(since: Long, limit: Int): Flow<List<ThermalReadingEntity>>
+
     @Query("SELECT * FROM thermal_readings ORDER BY timestamp DESC LIMIT 1")
     fun getLatestReading(): Flow<ThermalReadingEntity?>
 

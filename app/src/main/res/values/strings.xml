@@ -283,6 +283,9 @@
     <string name="thermal_throttling_none">None</string>
     <string name="thermal_cpu_unavailable">N/A</string>
     <string name="thermal_headroom">Thermal Headroom</string>
+    <string name="thermal_history">History</string>
+    <string name="thermal_metric_battery_temp">Battery Temp</string>
+    <string name="thermal_metric_cpu_temp">CPU Temp</string>
     <string name="thermal_throttling_log">Throttling Log</string>
     <string name="thermal_no_events">No throttling events recorded</string>
     <string name="thermal_event_duration">Duration: %s</string>
