@@ -359,7 +359,7 @@ Detail screen top bar with back navigation.
 ### 7.5 Chart Components
 
 #### TrendChart
-Primary chart with axes, grid, tooltip, quality zones.
+Primary chart with axes, grid, tooltip, quality zones. Uses "Instrument Sweep" animation language.
 
 **Embedded mode (default):**
 
@@ -387,22 +387,74 @@ Primary chart with axes, grid, tooltip, quality zones.
 | Property | Value |
 |----------|-------|
 | Line caps | Round |
-| Fill | Primary color → transparent gradient |
-| Animation | 800ms linear tween |
-| Interaction | Tap/drag to select point, tap again to deselect |
-| Tooltip | Rounded container, positioned above/below point |
-| Quality zones | Semi-transparent background bands |
 | Max points | 300 embedded, 600 fullscreen |
+| Interaction | Tap/drag to select point, tap again to deselect (disabled during sweep) |
+| Tooltip | Rounded container, positioned above/below point |
+| Quality zones | Semi-transparent background bands (0.06–0.08f alpha) |
+
+**Animation — 3-phase entry ("Instrument Sweep"):**
+
+| Phase | Duration | Easing | Description |
+|-------|----------|--------|-------------|
+| 1. Grid materialization | 200ms | `FastOutSlowInEasing` | Grid lines, axes, quality zone bands fade in together |
+| 2. Oscilloscope sweep | 1000ms | `CubicBezier(0.25, 0.1, 0.25, 1)` | `clipRect`-based left-to-right reveal + vertical scan line (1.5dp, lineColor 50% alpha). Scan line fades out during final 30% (delay 700ms + 300ms fade) |
+| 3. Last value emphasis | 200ms | `FastOutSlowInEasing` | Glow dot (6dp, 30% alpha) + dashed horizontal line (4dp dash, 40% alpha) to Y-axis at last data point |
+
+**Animation — Data transition (period/metric change):**
+
+| Phase | Duration | Easing | Description |
+|-------|----------|--------|-------------|
+| Fade out old data | 300ms | `FastOutSlowInEasing` | Previous data line fades, reconstructed from stored data points |
+| Sweep in new data | 800ms | `CubicBezier(0.25, 0.1, 0.25, 1)` | Same oscilloscope sweep, faster than initial entry. Grid stays visible |
+| Emphasis | 200ms | `FastOutSlowInEasing` | Last value emphasis appears |
+
+200ms overlap between fade-out start and sweep start.
+
+**Status gradient line:**
+
+When `qualityZones` are provided, the data line color follows the value at each point using `Brush.horizontalGradient` with per-point color stops. Colors derived from `qualityZoneColorForValue()` at full alpha. Metrics without quality zones keep a single solid color.
+
+**Improved gradient fill:**
+
+Strip-based rendering — each vertical strip between adjacent data points gets its own `Brush.verticalGradient` where top alpha depends on data value height: `lerp(0.08f, 0.30f, normalizedY)`. Single `Path` object reused with `reset()` per strip.
+
+**Last value emphasis:**
+
+Drawn outside the sweep `clipRect`, controlled by `emphasisAlpha`:
+- Outer glow circle: 6dp radius, lineColor at 30% × emphasisAlpha
+- Inner dot: 3dp radius, lineColor at 100% × emphasisAlpha
+- Dashed line: `PathEffect.dashPathEffect(4dp, 4dp)`, 1dp stroke, 40% alpha, from last point to Y-axis
 
 #### AreaChart
-Simple area-under-curve chart (no interaction).
+Simple area-under-curve chart (no interaction). Used for blurred Pro preview states.
 
 | Property | Value |
 |----------|-------|
-| Line stroke | 1.5dp |
-| Fill | 25% alpha gradient |
-| Animation | 800ms tween |
+| Line stroke | 1.5dp, 70% alpha |
+| Fill | Strip-based gradient, alpha `lerp(0.08f, 0.25f, normalizedY)` |
+| Animation | 800ms oscilloscope sweep (`CubicBezier(0.25, 0.1, 0.25, 1)`) + scan line |
 | Vertical padding | 10% of height |
+
+#### LiveChart
+Real-time sparkline for live battery current/power monitoring.
+
+| Property | Value |
+|----------|-------|
+| Height | 80dp |
+| Line stroke | 1.5dp |
+| Fill | Vertical gradient, 20% → 2% alpha |
+| Alignment | Right-aligned (newest data at right edge) |
+| Grid | 3 horizontal lines at 25%, 50%, 75% |
+| Max points | 60 (default) |
+| Current value dot | Outer glow 5dp/30% alpha + inner 3dp solid |
+
+**Smooth scroll interpolation:**
+
+When new data arrives, entire path shifts left with 150ms `LinearEasing` animation via `Animatable` scroll offset. Previous data size tracked to detect new points.
+
+**Glow pulse on new data:**
+
+New data point triggers pulse: radius 8→5dp + alpha 0.5→0.3 over 300ms. Settles to normal glow state (5dp, 0.3 alpha).
 
 #### SegmentedBar
 Proportional stacked bar for media breakdown.
@@ -633,8 +685,16 @@ All animations respect `MaterialTheme.reducedMotion` (instant when enabled).
 | ProgressRing | 1200ms | `FastOutSlowInEasing` | Arc fill from 0 to target |
 | MiniBar | 800ms | `FastOutSlowInEasing` | Bar fill from 0 to target |
 | SegmentedBar | 800ms | `FastOutSlowInEasing` | Segments grow from 0 |
-| TrendChart draw | 800ms | Linear tween | Line draws left to right |
-| AreaChart draw | 800ms | Linear tween | Area fills left to right |
+| TrendChart grid fade | 200ms | `FastOutSlowInEasing` | Grid, axes, quality zones fade in (Phase 1) |
+| TrendChart sweep (entry) | 1000ms | `CubicBezier(0.25, 0.1, 0.25, 1)` | clipRect-based line/fill reveal + scan line (Phase 2) |
+| TrendChart sweep (transition) | 800ms | `CubicBezier(0.25, 0.1, 0.25, 1)` | Same sweep, faster for data changes |
+| TrendChart scan line fade | 300ms | Linear | Scan line fades during final 30% of sweep |
+| TrendChart emphasis | 200ms | `FastOutSlowInEasing` | Glow dot + dashed line at last value (Phase 3) |
+| TrendChart fade-out | 300ms | `FastOutSlowInEasing` | Previous data fades before new sweep |
+| AreaChart sweep | 800ms | `CubicBezier(0.25, 0.1, 0.25, 1)` | Same oscilloscope sweep as TrendChart |
+| AreaChart scan line | 240ms | Linear | Scan line fades during final 30% |
+| LiveChart scroll | 150ms | `LinearEasing` | Smooth leftward shift on new data |
+| LiveChart glow pulse | 300ms | Linear | Radius 8→5dp, alpha 0.5→0.3 on new data |
 | AnimatedNumber | 200ms | Linear tween | Count-up/down |
 | ConfidenceBadge | Spring | Damping 0.6, Medium stiffness | Pop-in on mount |
 | HeatStrip pulse | 2000ms | `LinearEasing` | Alpha 0.7–1.0 loop (critical only) |
@@ -805,8 +865,9 @@ ui/
 │   ├── AnimatedNumber.kt
 │   ├── PrimaryTopBar.kt
 │   ├── DetailTopBar.kt
-│   ├── TrendChart.kt
-│   ├── AreaChart.kt
+│   ├── TrendChart.kt       # Oscilloscope sweep, gradient line, improved fill, emphasis
+│   ├── AreaChart.kt        # Oscilloscope sweep, improved fill
+│   ├── LiveChart.kt        # Smooth scroll, glow pulse
 │   ├── SegmentedBar.kt
 │   ├── ExpandableChartContainer.kt
 │   ├── ProBadgePill.kt
@@ -824,8 +885,10 @@ ui/
 │   ├── UiText.kt         # Context-free text abstraction
 │   └── UiFormatters.kt   # Formatting utilities
 ├── chart/
-│   ├── ChartModels.kt    # Enums, data classes
-│   └── ChartHelpers.kt   # Point extraction, axis builders, quality zones
+│   ├── ChartModels.kt       # Enums, data classes, constants
+│   ├── ChartRenderModel.kt  # Pre-computed chart-ready data + builder functions
+│   ├── ChartHelpers.kt      # Point extraction, axis builders, quality zones, qualityZoneColorForValue
+│   └── ChartAccessibility.kt # Chart accessibility support
 ├── navigation/
 │   ├── Screen.kt         # Route sealed class
 │   └── NavGraph.kt       # Composition, transitions

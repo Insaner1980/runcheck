@@ -150,7 +150,7 @@ Home is the single entry point and aggregates the latest device state from batte
 
 Main sections:
 
-- Health score hero with animated `ProgressRing`
+- Health score hero with animated `ProgressRing` (1200ms arc fill)
 - Battery hero card
 - 2×2 quick status grid
   - Network
@@ -197,6 +197,8 @@ Battery-specific supporting behavior:
 - Current readings use `MeasuredValue<Int>`
 - Current stats are tracked in-memory and reset on status change
 - Session and history charts can open a fullscreen landscape chart route
+- History charts use "Instrument Sweep" animation (3-phase: grid fade → oscilloscope sweep → emphasis)
+- Live current/power charts use smooth scroll interpolation + glow pulse on new data
 - Battery screen also consumes dismissed educational/info cards
 
 ---
@@ -218,6 +220,7 @@ Historical chart behavior:
 
 - Metrics: signal strength or latency
 - Period selection is stored in ViewModel saved state
+- Signal chart uses status gradient line (quality zone colors on the data line)
 - Fullscreen chart route is available from the expandable chart container
 
 ---
@@ -280,6 +283,7 @@ Main sections:
 - Media permission card when needed
 - Media breakdown segmented bar
 - Cleanup tools section
+- Storage history chart with quality zones (0–70% healthy, 70–90% fair, 90–100% critical)
 - Storage detail metrics
 - Optional SD card section
 - Educational/info cards
@@ -371,7 +375,7 @@ Behavior:
 - Landscape-only while the route is visible
 - Supports battery history, battery session, and network history sources
 - Metric and period chip selections are stored in `SavedStateHandle`
-- Uses the same chart data model and tooltip formatting as embedded charts
+- Uses the same chart data model, tooltip formatting, and "Instrument Sweep" animation as embedded charts
 
 ---
 
