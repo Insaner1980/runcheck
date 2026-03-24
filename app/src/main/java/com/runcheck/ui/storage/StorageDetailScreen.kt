@@ -89,9 +89,12 @@ import com.runcheck.ui.chart.buildStorageHistoryChartModel
 import com.runcheck.ui.chart.formatChartTooltip
 import com.runcheck.ui.chart.historyPeriodLabel
 import com.runcheck.ui.chart.storageHistoryMetricLabel
+import com.runcheck.ui.chart.storageQualityZones
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.resolve
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import com.runcheck.ui.components.ActionCard
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailTopBar
@@ -150,6 +153,9 @@ fun StorageDetailScreen(
                 ActivityCompat.shouldShowRequestPermissionRationale(hostActivity, permission)
             }
         } == true
+
+    // Trash confirmation dialog
+    var showTrashConfirmDialog by remember { mutableStateOf(false) }
 
     // Trash delete launcher
     val trashDeleteLauncher = rememberLauncherForActivityResult(
@@ -250,12 +256,34 @@ fun StorageDetailScreen(
                     onNavigateToCleanup = onNavigateToCleanup,
                     onUpgradeToPro = onUpgradeToPro,
                     onNavigateToLearnArticle = onNavigateToLearnArticle,
-                    onEmptyTrash = { viewModel.emptyTrash() },
+                    onEmptyTrash = { showTrashConfirmDialog = true },
                     onDismissInfoCard = { viewModel.dismissInfoCard(it) },
                     onPeriodChange = { viewModel.setHistoryPeriod(it) }
                 )
             }
         }
+    }
+
+    if (showTrashConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showTrashConfirmDialog = false },
+            shape = MaterialTheme.shapes.large,
+            title = { Text(stringResource(R.string.storage_trash_confirm_title)) },
+            text = { Text(stringResource(R.string.storage_trash_confirm_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showTrashConfirmDialog = false
+                    viewModel.emptyTrash()
+                }) {
+                    Text(stringResource(R.string.storage_empty_trash))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTrashConfirmDialog = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
     }
 }
 
@@ -702,6 +730,7 @@ private fun StorageHistoryCard(
                         yLabels = chartModel.yLabels.ifEmpty { null },
                         xLabels = chartModel.xLabels.ifEmpty { null },
                         showGrid = true,
+                        qualityZones = storageQualityZones(metric),
                         tooltipFormatter = { index -> formatChartTooltip(chartModel, index) }
                     )
                 }
