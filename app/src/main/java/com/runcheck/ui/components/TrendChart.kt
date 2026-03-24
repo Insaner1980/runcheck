@@ -13,7 +13,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -122,34 +124,77 @@ fun TrendChart(
     // Scan line opacity (fades out during final 30% of sweep)
     val scanLineAlpha = remember { Animatable(if (reducedMotion) 0f else 0.5f) }
 
+    // Tooltip state: -1 means no selection (declared early for use in LaunchedEffect)
+    var selectedIndex by remember { mutableIntStateOf(-1) }
+
+    // Previous data for fade-out during data transitions
+    var previousData by remember { mutableStateOf<List<Float>>(emptyList()) }
+    var previousMinVal by remember { mutableFloatStateOf(0f) }
+    var previousRange by remember { mutableFloatStateOf(1f) }
+    val fadeOutAlpha = remember { Animatable(0f) }
+
+    // Track whether this is the first appearance or a subsequent data change
+    var isInitialEntry by remember { mutableStateOf(true) }
+
     LaunchedEffect(data, reducedMotion) {
+        // Clear tooltip from previous data set
+        selectedIndex = -1
+
         if (reducedMotion) {
             gridAlpha.snapTo(1f)
             sweepProgress.snapTo(1f)
             emphasisAlpha.snapTo(1f)
             scanLineAlpha.snapTo(0f)
+            fadeOutAlpha.snapTo(0f)
+            previousData = data
             return@LaunchedEffect
         }
-        // Reset all phases
-        gridAlpha.snapTo(0f)
-        sweepProgress.snapTo(0f)
-        emphasisAlpha.snapTo(0f)
-        scanLineAlpha.snapTo(0.5f)
 
-        // Phase 1: Grid materialization
-        gridAlpha.animateTo(1f, tween(200, easing = FastOutSlowInEasing))
-        // Phase 2: Oscilloscope sweep
-        launch {
-            // Fade scan line during final 30% of sweep
-            delay(700) // 70% of 1000ms
-            scanLineAlpha.animateTo(0f, tween(300))
+        if (isInitialEntry) {
+            // Full sequence: grid fade (200ms) → sweep (1000ms) → emphasis (200ms)
+            gridAlpha.snapTo(0f)
+            sweepProgress.snapTo(0f)
+            emphasisAlpha.snapTo(0f)
+            scanLineAlpha.snapTo(0.5f)
+
+            gridAlpha.animateTo(1f, tween(200, easing = FastOutSlowInEasing))
+            launch {
+                delay(700)
+                scanLineAlpha.animateTo(0f, tween(300))
+            }
+            sweepProgress.animateTo(
+                1f,
+                tween(1000, easing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f))
+            )
+            emphasisAlpha.animateTo(1f, tween(200, easing = FastOutSlowInEasing))
+            isInitialEntry = false
+        } else {
+            // Transition: fade out old data (300ms) → sweep new data (800ms) → emphasis (200ms)
+            // Grid stays visible (don't reset gridAlpha)
+            fadeOutAlpha.snapTo(1f)
+            sweepProgress.snapTo(0f)
+            emphasisAlpha.snapTo(0f)
+            scanLineAlpha.snapTo(0.5f)
+
+            // Fade out old data, overlapped with a small delay before sweep starts
+            launch { fadeOutAlpha.animateTo(0f, tween(300, easing = FastOutSlowInEasing)) }
+            delay(200) // Start sweep slightly before fade completes
+
+            launch {
+                delay(560) // 70% of 800ms
+                scanLineAlpha.animateTo(0f, tween(240))
+            }
+            sweepProgress.animateTo(
+                1f,
+                tween(800, easing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f))
+            )
+            emphasisAlpha.animateTo(1f, tween(200, easing = FastOutSlowInEasing))
         }
-        sweepProgress.animateTo(
-            1f,
-            tween(1000, easing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f))
-        )
-        // Phase 3: Emphasis
-        emphasisAlpha.animateTo(1f, tween(200, easing = FastOutSlowInEasing))
+
+        // Snapshot current data for next transition's fade-out
+        previousData = data
+        previousMinVal = data.min()
+        previousRange = (data.max() - data.min()).coerceAtLeast(1f)
     }
 
     val minVal = data.min()
@@ -158,9 +203,6 @@ fun TrendChart(
 
     val linePath = remember { Path() }
     val stripPath = remember { Path() }
-
-    // Tooltip state: -1 means no selection
-    var selectedIndex by remember { mutableIntStateOf(-1) }
 
     val hasYLabels = yLabels != null && yLabels.isNotEmpty()
     val hasXLabels = xLabels != null && xLabels.isNotEmpty()
@@ -403,6 +445,24 @@ fun TrendChart(
                     alpha = gridAlpha.value
                 )
             }
+        }
+
+        // ── Fading previous data (during data transitions) ──────────
+        if (previousData.isNotEmpty() && fadeOutAlpha.value > 0f) {
+            val prevStepX = if (previousData.size > 1) chartWidth / (previousData.size - 1) else chartWidth
+            val prevPath = Path()
+
+            previousData.forEachIndexed { i, value ->
+                val x = chartLeft + i * prevStepX
+                val y = chartTop + chartHeight - ((value - previousMinVal) / previousRange * chartHeight)
+                if (i == 0) prevPath.moveTo(x, y) else prevPath.lineTo(x, y)
+            }
+
+            drawPath(
+                path = prevPath,
+                color = lineColor.copy(alpha = fadeOutAlpha.value),
+                style = Stroke(width = chartStyle.lineStrokeWidth.toPx(), cap = StrokeCap.Round)
+            )
         }
 
         // ── Data line ──────────────────────────────────────────────────
