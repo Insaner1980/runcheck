@@ -14,6 +14,7 @@ import com.runcheck.domain.usecase.GetNetworkHistoryUseCase
 import com.runcheck.domain.usecase.GetSpeedTestHistoryUseCase
 import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
+import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.RunSpeedTestUseCase
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.messageOrRes
@@ -41,11 +42,14 @@ class NetworkViewModel @Inject constructor(
     private val finalizeSpeedTest: FinalizeSpeedTestUseCase,
     private val isProUser: IsProUserUseCase,
     private val getNetworkHistory: GetNetworkHistoryUseCase,
-    private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase
+    private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase,
+    private val manageUserPreferences: ManageUserPreferencesUseCase
 ) : ViewModel() {
 
     private val _networkUiState = MutableStateFlow<NetworkUiState>(NetworkUiState.Loading)
     val networkUiState: StateFlow<NetworkUiState> = _networkUiState.asStateFlow()
+
+    private val liveSignalDbm = mutableListOf<Float>()
 
     private val _speedTestState = MutableStateFlow(SpeedTestUiState())
     val speedTestState: StateFlow<SpeedTestUiState> = _speedTestState.asStateFlow()
@@ -235,15 +239,25 @@ class NetworkViewModel @Inject constructor(
     private fun collectDismissedCards() {
         dismissedCardsJob?.cancel()
         dismissedCardsJob = viewModelScope.launch {
-            manageInfoCardDismissals.observeDismissedCardIds()
-                .collect { dismissedCards ->
-                    _networkUiState.update { current ->
-                        (current as? NetworkUiState.Success)?.copy(
-                            dismissedInfoCards = dismissedCards
-                        ) ?: current
-                    }
+            kotlinx.coroutines.flow.combine(
+                manageInfoCardDismissals.observeDismissedCardIds(),
+                manageUserPreferences.observePreferences()
+            ) { dismissedCards, preferences ->
+                dismissedCards to preferences.showInfoCards
+            }.collect { (dismissedCards, showInfoCards) ->
+                _networkUiState.update { current ->
+                    (current as? NetworkUiState.Success)?.copy(
+                        dismissedInfoCards = dismissedCards,
+                        showInfoCards = showInfoCards
+                    ) ?: current
                 }
+            }
         }
+    }
+
+    private fun appendLive(buffer: MutableList<Float>, value: Float) {
+        buffer.add(value)
+        if (buffer.size > LIVE_CHART_MAX_POINTS) buffer.removeFirst()
     }
 
     private fun loadNetworkData() {
@@ -262,6 +276,7 @@ class NetworkViewModel @Inject constructor(
                     }
                 }
                 .collect { state ->
+                    state.signalDbm?.let { appendLive(liveSignalDbm, it.toFloat()) }
                     val isPro = isProUser()
                     _networkUiState.update { current ->
                         val existing = current as? NetworkUiState.Success
@@ -271,7 +286,8 @@ class NetworkViewModel @Inject constructor(
                             selectedHistoryPeriod = selectedHistoryPeriod,
                             historyLoadError = existing?.historyLoadError,
                             isPro = isPro,
-                            dismissedInfoCards = existing?.dismissedInfoCards ?: emptySet()
+                            dismissedInfoCards = existing?.dismissedInfoCards ?: emptySet(),
+                            liveSignalDbm = liveSignalDbm.toList()
                         )
                     }
                 }
@@ -333,5 +349,6 @@ class NetworkViewModel @Inject constructor(
     private companion object {
         private const val SELECTED_HISTORY_PERIOD_KEY = "network_selected_history_period"
         private const val SPEED_TEST_TIMEOUT_MS = 90_000L // 90 seconds total (ping + download + upload)
+        private const val LIVE_CHART_MAX_POINTS = 60
     }
 }

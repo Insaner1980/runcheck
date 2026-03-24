@@ -80,6 +80,7 @@ import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.common.signalQualityLabel
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.components.ProFeatureCalloutCard
@@ -228,7 +229,11 @@ private fun NetworkPanel(
 // ── Hero section ────────────────────────────────────────────────────────────────
 
 @Composable
-private fun NetworkHeroSection(networkState: NetworkState, onInfoClick: (String) -> Unit = {}) {
+private fun NetworkHeroSection(
+    networkState: NetworkState,
+    liveSignalDbm: List<Float> = emptyList(),
+    onInfoClick: (String) -> Unit = {}
+) {
     val qualityLabel = signalQualityLabel(networkState.signalQuality)
 
     NetworkPanel {
@@ -254,16 +259,32 @@ private fun NetworkHeroSection(networkState: NetworkState, onInfoClick: (String)
             )
 
             networkState.signalDbm?.let { dbm ->
+                val asuSuffix = networkState.signalAsu?.let { asu ->
+                    " · $asu ASU"
+                } ?: ""
                 Text(
                     text = stringResource(
                         R.string.value_with_unit_int,
                         dbm,
                         stringResource(R.string.unit_dbm)
-                    ),
+                    ) + asuSuffix,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+
+        if (liveSignalDbm.size >= 2) {
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            LiveChart(
+                data = liveSignalDbm,
+                currentValueLabel = networkState.signalDbm?.let {
+                    stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_dbm))
+                } ?: "—",
+                label = stringResource(R.string.network_signal_strength),
+                lineColor = statusColorForSignalQuality(networkState.signalQuality),
+                modifier = Modifier.fillMaxWidth()
+            )
         }
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
@@ -353,7 +374,8 @@ private fun ConnectionDetailsCard(networkState: NetworkState, onInfoClick: (Stri
                 ConnectionType.CELLULAR -> stringResource(R.string.connection_cellular)
                 ConnectionType.VPN -> stringResource(R.string.connection_vpn)
                 ConnectionType.NONE -> stringResource(R.string.connection_none)
-            }
+            },
+            onInfoClick = { onInfoClick("connectionType") }
         )
 
         if (networkState.connectionType == ConnectionType.WIFI) {
@@ -395,12 +417,13 @@ private fun ConnectionDetailsCard(networkState: NetworkState, onInfoClick: (Stri
                 MetricRow(label = stringResource(R.string.network_carrier), value = it)
             }
             networkState.networkSubtype?.let {
-                MetricRow(label = stringResource(R.string.network_subtype), value = it)
+                MetricRow(label = stringResource(R.string.network_subtype), value = it, onInfoClick = { onInfoClick("subtype") })
             }
             networkState.isRoaming?.let {
                 MetricRow(
                     label = stringResource(R.string.network_roaming),
-                    value = if (it) stringResource(R.string.common_yes) else stringResource(R.string.common_no)
+                    value = if (it) stringResource(R.string.common_yes) else stringResource(R.string.common_no),
+                    onInfoClick = { onInfoClick("roaming") }
                 )
             }
         }
@@ -430,7 +453,8 @@ private fun ConnectionDetailsCard(networkState: NetworkState, onInfoClick: (Stri
         networkState.isMetered?.let {
             MetricRow(
                 label = stringResource(R.string.network_metered),
-                value = if (it) stringResource(R.string.common_yes) else stringResource(R.string.common_no)
+                value = if (it) stringResource(R.string.common_yes) else stringResource(R.string.common_no),
+                onInfoClick = { onInfoClick("metered") }
             )
         }
         MetricRow(
@@ -439,7 +463,8 @@ private fun ConnectionDetailsCard(networkState: NetworkState, onInfoClick: (Stri
                 stringResource(R.string.common_on)
             } else {
                 stringResource(R.string.common_off)
-            }
+            },
+            onInfoClick = { onInfoClick("vpn") }
         )
     }
 }
@@ -815,12 +840,17 @@ private fun NetworkContent(
         ) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-            NetworkHeroSection(networkState = networkState, onInfoClick = { activeInfoSheet = it })
+            NetworkHeroSection(
+                networkState = networkState,
+                liveSignalDbm = state.liveSignalDbm,
+                onInfoClick = { activeInfoSheet = it }
+            )
 
             // Info cards
             if ((networkState.signalQuality == SignalQuality.POOR ||
                     networkState.signalQuality == SignalQuality.NO_SIGNAL) &&
-                InfoCardCatalog.NetworkWeakSignalDrain.id !in state.dismissedInfoCards
+                InfoCardCatalog.NetworkWeakSignalDrain.id !in state.dismissedInfoCards &&
+                state.showInfoCards
             ) {
                 InfoCard(
                     id = InfoCardCatalog.NetworkWeakSignalDrain.id,
@@ -833,7 +863,7 @@ private fun NetworkContent(
                 )
             }
 
-            if (InfoCardCatalog.NetworkSpeedTestScope.id !in state.dismissedInfoCards) {
+            if (state.showInfoCards && InfoCardCatalog.NetworkSpeedTestScope.id !in state.dismissedInfoCards) {
                 InfoCard(
                     id = InfoCardCatalog.NetworkSpeedTestScope.id,
                     headline = stringResource(InfoCardCatalog.NetworkSpeedTestScope.headlineRes),
@@ -920,6 +950,11 @@ private fun NetworkContent(
             "linkSpeed" -> NetworkInfoContent.linkSpeed
             "bandwidth" -> NetworkInfoContent.bandwidth
             "mtu" -> NetworkInfoContent.mtu
+            "connectionType" -> NetworkInfoContent.connectionType
+            "metered" -> NetworkInfoContent.metered
+            "roaming" -> NetworkInfoContent.roaming
+            "vpn" -> NetworkInfoContent.vpn
+            "subtype" -> NetworkInfoContent.subtype
             else -> null
         }
         content?.let {

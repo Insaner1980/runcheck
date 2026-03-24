@@ -15,7 +15,9 @@ sealed interface NetworkUiState {
         val selectedHistoryPeriod: HistoryPeriod = HistoryPeriod.DAY,
         val historyLoadError: UiText? = null,
         val isPro: Boolean = false,
-        val dismissedInfoCards: Set<String> = emptySet()
+        val dismissedInfoCards: Set<String> = emptySet(),
+        val showInfoCards: Boolean = true,
+        val liveSignalDbm: List<Float> = emptyList()
     ) : NetworkUiState
 
     data class Error(val message: UiText) : NetworkUiState

@@ -218,6 +218,7 @@
     <string name="network_carrier">Carrier</string>
     <string name="network_subtype">Network Type</string>
     <string name="network_latency">Latency</string>
+    <string name="network_signal_strength">Signal Strength</string>
     <string name="network_no_connection">No Connection</string>
 
     <!-- Network Detail Screen - Redesign -->
