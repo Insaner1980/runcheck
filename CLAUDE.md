@@ -17,7 +17,7 @@ runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device
 - **DI:** Hilt 2.59.2
 - **Charts:** Custom Compose components (TrendChart with axes/grid/tooltip/quality zones, AreaChart, HeatStrip, SegmentedBar)
 - **Build:** Gradle 9.4.0 with Kotlin DSL, AGP 9.1.0, KSP 2.3.1
-- **Localization:** English (default) + Finnish (fi)
+- **Localization:** English only (Finnish translations preserved in git history for future use)
 
 ## Project Structure
 
@@ -68,7 +68,8 @@ app/src/main/java/com/runcheck/
 │   ├── pro/           # Pro upgrade screen, trial UI, purchase flow
 │   ├── theme/         # Dark theme, color tokens, typography, spacing
 │   ├── common/        # UiText, UiFormatters (formatPercent, formatTemp, etc.)
-│   ├── chart/         # ChartHelpers, ChartModels (shared chart data/utilities)
+│   ├── chart/         # ChartHelpers (quality zones, axis labels, qualityZoneColorForValue),
+│   │                  #   ChartModels, ChartRenderModel, ChartAccessibility
 │   ├── fullscreen/    # FullscreenChartScreen + ViewModel (landscape chart route)
 │   ├── components/    # 32 shared composables (see Components below)
 │   │   └── info/      # InfoSheetContent, InfoIcon, InfoBottomSheet, InfoCard, CrossLinkButton
@@ -107,7 +108,7 @@ app/src/main/java/com/runcheck/
 - Name UseCases as verb phrases (e.g., `CalculateHealthScoreUseCase`)
 - Name composables as nouns (e.g., `ProgressRing`, `GridCard`)
 - Keep composables small and focused — extract when > ~50 lines
-- All hardcoded strings must go into `strings.xml` for localization (EN + FI)
+- All hardcoded strings must go into `strings.xml` for localization
 - Comments in English
 - No `!!` operator — use safe calls, `requireNotNull`, or sealed error types
 
@@ -125,7 +126,7 @@ app/src/main/java/com/runcheck/
 - **Core components** (32 in `ui/components/` + `ui/components/info/`):
   - Layout: GridCard, ListRow, MetricPill, MetricRow, ActionCard
   - Indicators: ProgressRing, MiniBar, StatusDot, ConfidenceBadge, SignalBars
-  - Charts: TrendChart (with optional Y/X axes, grid, quality zones, tap/drag tooltip), AreaChart, HeatStrip, SegmentedBar, SegmentedBarLegend, ExpandableChartContainer
+  - Charts: TrendChart (oscilloscope sweep, status gradient line, quality zones, tap/drag tooltip), AreaChart (oscilloscope sweep), LiveChart (smooth scroll, glow pulse), HeatStrip, SegmentedBar, SegmentedBarLegend, ExpandableChartContainer
   - Navigation: PrimaryTopBar, DetailTopBar
   - Typography: AnimatedNumber (AnimatedIntText, AnimatedFloatText), SectionHeader, CardSectionTitle, IconCircle
   - Pro: ProBadgePill, ProFeatureCalloutCard, ProFeatureLockedState
@@ -142,7 +143,11 @@ app/src/main/java/com/runcheck/
 - **Animations:**
   - ProgressRing: 1200ms ease-out (`FastOutSlowInEasing`) from 0 to target
   - MiniBar: 800ms ease-out from 0 to target
-  - Both respect `MaterialTheme.reducedMotion` (instant when true)
+  - TrendChart "Instrument Sweep": 3-phase entry (grid fade 200ms → oscilloscope sweep 1000ms with scan line → emphasis 200ms), data transitions (fade-out 300ms → sweep 800ms), `CubicBezierEasing(0.25, 0.1, 0.25, 1)` for sweep
+  - TrendChart visual: status gradient line (color follows quality zones), height-proportional fill alpha (peaks 0.30, valleys 0.08), last value emphasis (glow dot + dashed line to Y-axis)
+  - AreaChart: same oscilloscope sweep (800ms) + height-proportional fill
+  - LiveChart: smooth scroll interpolation (150ms linear) on new data + glow pulse (300ms, radius 8→5dp, alpha 0.5→0.3)
+  - All chart animations respect `MaterialTheme.reducedMotion` (instant when true)
   - No card entrance animations
 - Contrast ratio minimum: **4.5:1** body text, **3:1** large text (WCAG AA)
 - Minimum touch target: 48dp
@@ -188,7 +193,7 @@ Settings screen uses grouped card layout with these sections:
 - **Live Notification:** Opt-in persistent notification with real-time battery stats. Master toggle starts/stops `RealTimeMonitorService`. Per-metric toggles: Current (mA/W), Charging status, Temperature, Screen stats, Remaining time. Sub-toggles only visible when master is enabled. Disabled by default.
 - **Notifications:** Master toggle + per-alert toggles (Low Battery, High Temp, Low Storage, Charge Complete). Master off dims and disables sub-toggles.
 - **Alert thresholds:** Sliders for battery (5–50%, default 20), temperature (35–50°C, default 42), storage (70–99%, default 90). Value displayed in numericFontFamily with primary color.
-- **Display:** Temperature unit (°C/°F) + Language override (System/English/Finnish) — stored in DataStore
+- **Display:** Temperature unit (°C/°F) — stored in DataStore
 - **Data:** Retention (Pro), export (CSV), clear speed tests, clear all data (error-color button + AlertDialog confirmation)
 - **Pro:** Status display, purchase button, restore purchase
 - **Privacy:** Crash reporting toggle (Firebase Crashlytics)
@@ -310,6 +315,7 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 - `docs/storage-cleanup-spec.md` — Storage cleanup implementation (CleanupScreen, delete flow, thumbnails, category groups, success overlay)
 - `docs/settings-enhancements-spec.md` — Settings enhancements (per-alert notifications, alert thresholds, temperature unit, data management, grouped layout)
 - `docs/info-tooltips-spec.md` — Info tooltip system (superseded by `educational-content-system.md`)
+- `docs/superpowers/specs/2026-03-24-chart-animation-design.md` — Chart animation "Instrument Sweep" design spec (oscilloscope sweep, status gradient line, improved fill, LiveChart smooth scroll)
 - `docs/ui-consistency-audit.md` — UI consistency findings and fixes
 - `docs/ui-reference.md` — UI component reference and patterns
 - `docs/firebase-setup.md` — Firebase / Crashlytics setup guide

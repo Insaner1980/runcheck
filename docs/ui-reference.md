@@ -186,11 +186,34 @@ Horisontaalinen lämpötilagradientti.
 - Pulssi-animaatio (alpha 0.7→1.0, 2000ms) jos kriittinen
 
 ### TrendChart
-Viiva + alue -kaavio historialle.
-- Korkeus 200dp
-- Canvas-piirto: viivapolku + gradienttitäyttö
-- Animaatio: 800ms piirto vasemmalta (reduced motion: instant)
-- Auto-downsampling 300 pisteeseen
+Viiva + alue -kaavio historialle. "Instrument Sweep" -animaatiokieli.
+- Korkeus 200dp (Embedded) / fullscreen (Fullscreen)
+- Canvas-piirto: viivapolku + strip-pohjainen gradienttitäyttö
+- **Sisääntuloanimaatio (3 vaihetta):**
+  1. Grid + akselit fade-in (200ms, FastOutSlowInEasing)
+  2. Oskilloskooppi-pyyhkäisy: clipRect-pohjainen reveal + ohut skannausviiva (1000ms, CubicBezier(0.25, 0.1, 0.25, 1)), skannausviiva häipyy viimeisen 30% aikana
+  3. Viimeisen arvon korostus: glow-piste (6dp, 30% alpha) + katkoviiva Y-akselille (200ms)
+- **Datanvaihtosiirtymä** (aikavälin/metriikin vaihto): vanha data fade-out (300ms) → uusi data pyyhkäisy (800ms), grid pysyy näkyvänä
+- **Status gradient -viiva:** viivan väri muuttuu datapisteiden mukaan quality zone -väreillä (healthy→fair→critical). Käyttää `Brush.horizontalGradient` + `qualityZoneColorForValue()`. Vain metrikoille joilla on quality zones.
+- **Parannettu gradient-täyttö:** strip-pohjainen renderöinti, kunkin stripin alpha riippuu datapisteen korkeudesta (huiput 0.30, laaksot 0.08). Käyttää yhtä `Path`-objektia `reset()`-kutsulla per strip.
+- **Viimeisen arvon korostus:** hehkuva piste viimeisessä datapisteessä + katkoviiva (DashPathEffect 4dp/4dp) Y-akselille, kontrolloituna `emphasisAlpha`-animaatiolla
+- Auto-downsampling 300 pisteeseen (600 fullscreen)
+- Tooltip: tap/drag, pystyviiva + piste + pyöristetty laatikko, estetty pyyhkäisyn aikana
+
+### AreaChart
+Yksinkertainen viiva + alue -kaavio (Pro-esikatselunäkymä, blur-efekti).
+- Canvas-piirto: viivapolku + strip-pohjainen gradienttitäyttö
+- Oskilloskooppi-pyyhkäisy (800ms, CubicBezier) + skannausviiva, sama kuin TrendChart
+- Parannettu gradient-täyttö: strip-pohjainen, alpha 0.08–0.25 (hieman matalampi kuin TrendChart)
+- Ei akseleita, labeleita, tooltippia tai gestuureita
+
+### LiveChart
+Reaaliaikainen sparkline-kaavio (akun virta/teho).
+- Korkeus 80dp, oikealle tasattu (uusin data oikeassa reunassa)
+- **Pehmeä liuku:** uuden datapisteen saapuessa koko käyrä liukuu vasemmalle 150ms animaatiolla (`Animatable` scroll offset)
+- **Glow-pulssi:** uusin piste saa saapumispulssin (radius 8→5dp, alpha 0.5→0.3, 300ms), palautuu normaaliin glow-tilaan
+- Grid: 3 horisontaalista viivaa (25/50/75%)
+- Nykyarvon piste: ulompi glow (5dp, 30% alpha) + sisempi piste (3dp)
 
 ### ConfidenceBadge
 Mittauksen luotettavuusmerki.
@@ -449,7 +472,16 @@ Pull-to-refresh -kääre.
 |-------------|-------|--------|----------------|
 | ProgressRing | 1200ms | FastOutSlowInEasing | tween(0) |
 | MiniBar | 800ms | FastOutSlowInEasing | tween(0) |
-| TrendChart | 800ms | Draw left→right | Instant |
+| TrendChart grid fade | 200ms | FastOutSlowInEasing | Instant |
+| TrendChart sweep (sisääntulo) | 1000ms | CubicBezier(0.25, 0.1, 0.25, 1) | Instant |
+| TrendChart sweep (siirtymä) | 800ms | CubicBezier(0.25, 0.1, 0.25, 1) | Instant |
+| TrendChart scan line fade | 300ms (viimeinen 30%) | Linear | Ei näy |
+| TrendChart emphasis | 200ms | FastOutSlowInEasing | Instant |
+| TrendChart fade-out (vanha data) | 300ms | FastOutSlowInEasing | Instant |
+| AreaChart sweep | 800ms | CubicBezier(0.25, 0.1, 0.25, 1) | Instant |
+| AreaChart scan line | 240ms (viimeinen 30%) | Linear | Ei näy |
+| LiveChart scroll | 150ms | LinearEasing | Instant |
+| LiveChart glow pulse | 300ms | Linear | Ei pulssia |
 | ThermometerIcon | 1200ms | FastOutSlowInEasing | tween(0) |
 | HeatStrip pulse | 2000ms loop | alpha 0.7→1.0 | Ei pulssia |
 | Battery wave | 2000ms loop | LinearEasing sine | Ei aaltoa |
