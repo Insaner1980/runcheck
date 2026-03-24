@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.runcheck.ui.chart.qualityZoneColorForValue
 import com.runcheck.ui.theme.chartAxisTextStyle
 import com.runcheck.ui.theme.chartTooltipTextStyle
 import com.runcheck.ui.theme.reducedMotion
@@ -228,6 +229,18 @@ fun TrendChart(
         }
     } else 0.dp
     val gestureEdgeGuardPx = with(density) { chartStyle.gestureEdgeGuard.toPx() }
+
+    // Compute per-point gradient color stops from quality zones
+    val lineGradientColors = remember(data, qualityZones, lineColor) {
+        if (qualityZones.isNullOrEmpty() || data.isEmpty()) null
+        else {
+            data.mapIndexed { index, value ->
+                val fraction = if (data.size <= 1) 0f else index.toFloat() / (data.size - 1)
+                val color = qualityZoneColorForValue(value, qualityZones, lineColor)
+                fraction to color
+            }
+        }
+    }
 
     Canvas(
         modifier = modifier
@@ -427,11 +440,21 @@ fun TrendChart(
                 style = Fill
             )
 
-            drawPath(
-                path = linePath,
-                color = lineColor,
-                style = Stroke(width = chartStyle.lineStrokeWidth.toPx(), cap = StrokeCap.Round)
-            )
+            if (lineGradientColors != null) {
+                drawPath(
+                    path = linePath,
+                    brush = Brush.horizontalGradient(
+                        colorStops = lineGradientColors.toTypedArray()
+                    ),
+                    style = Stroke(width = chartStyle.lineStrokeWidth.toPx(), cap = StrokeCap.Round)
+                )
+            } else {
+                drawPath(
+                    path = linePath,
+                    color = lineColor,
+                    style = Stroke(width = chartStyle.lineStrokeWidth.toPx(), cap = StrokeCap.Round)
+                )
+            }
 
             if (shouldDrawPointMarkers) {
                 val innerMarkerRadius = (chartStyle.pointMarkerRadius - 1.5.dp).coerceAtLeast(1.5.dp)
