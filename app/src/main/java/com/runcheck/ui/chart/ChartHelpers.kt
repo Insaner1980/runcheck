@@ -11,6 +11,7 @@ import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.ui.common.convertTemperature
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.formatLocalizedDateTime
+import androidx.compose.ui.graphics.Color
 import com.runcheck.ui.components.ChartQualityZone
 import com.runcheck.ui.components.ChartXLabel
 import com.runcheck.ui.components.ChartYLabel
@@ -248,6 +249,7 @@ fun buildBatteryXLabels(timestamps: List<Long>, period: HistoryPeriod): List<Cha
     val span = last - first
     if (span <= 0) return emptyList()
     val (skeleton, count) = when (period) {
+        HistoryPeriod.HOUR, HistoryPeriod.SIX_HOURS, HistoryPeriod.TWELVE_HOURS -> "Hm" to 4
         HistoryPeriod.SINCE_UNPLUG, HistoryPeriod.DAY -> "Hm" to 4
         HistoryPeriod.WEEK -> "EEEHm" to 4
         HistoryPeriod.MONTH -> "MMMd" to 4
@@ -285,6 +287,7 @@ fun buildNetworkXLabels(timestamps: List<Long>, period: HistoryPeriod): List<Cha
     val span = last - first
     if (span <= 0) return emptyList()
     val (skeleton, count) = when (period) {
+        HistoryPeriod.HOUR, HistoryPeriod.SIX_HOURS, HistoryPeriod.TWELVE_HOURS -> "Hm" to 4
         HistoryPeriod.DAY, HistoryPeriod.SINCE_UNPLUG -> "Hm" to 4
         HistoryPeriod.WEEK -> "EEEHm" to 4
         HistoryPeriod.MONTH -> "MMMd" to 4
@@ -400,6 +403,9 @@ fun sessionGraphWindowLabel(window: SessionGraphWindow): String = when (window) 
 @Composable
 fun historyPeriodLabel(period: HistoryPeriod): String = when (period) {
     HistoryPeriod.SINCE_UNPLUG -> stringResource(R.string.history_period_since_unplug)
+    HistoryPeriod.HOUR -> stringResource(R.string.history_period_hour)
+    HistoryPeriod.SIX_HOURS -> stringResource(R.string.history_period_6h)
+    HistoryPeriod.TWELVE_HOURS -> stringResource(R.string.history_period_12h)
     HistoryPeriod.DAY -> stringResource(R.string.history_period_day)
     HistoryPeriod.WEEK -> stringResource(R.string.history_period_week)
     HistoryPeriod.MONTH -> stringResource(R.string.history_period_month)
@@ -421,6 +427,38 @@ fun thermalQualityZones(temperatureUnit: TemperatureUnit): List<ChartQualityZone
         ChartQualityZone(minValue = convert(35f), maxValue = convert(42f), color = colors.fair.copy(alpha = 0.06f)),
         ChartQualityZone(minValue = convert(42f), maxValue = convert(60f), color = colors.critical.copy(alpha = 0.06f))
     )
+}
+
+@Composable
+fun storageQualityZones(metric: StorageHistoryMetric): List<ChartQualityZone>? {
+    val statusColors = MaterialTheme.statusColors
+    return when (metric) {
+        StorageHistoryMetric.USED_SPACE -> listOf(
+            ChartQualityZone(0f, 70f, statusColors.healthy.copy(alpha = 0.08f)),
+            ChartQualityZone(70f, 90f, statusColors.fair.copy(alpha = 0.08f)),
+            ChartQualityZone(90f, 100f, statusColors.critical.copy(alpha = 0.08f))
+        )
+        StorageHistoryMetric.AVAILABLE_SPACE -> null
+    }
+}
+
+/**
+ * Maps a [value] to the full-alpha color of the [ChartQualityZone] it falls within.
+ * Zone colors are stored at low alpha (0.06f–0.08f) for background rendering;
+ * this helper returns the color at full alpha, suitable for the data line.
+ * Returns [defaultColor] when no zone matches.
+ */
+fun qualityZoneColorForValue(
+    value: Float,
+    zones: List<ChartQualityZone>,
+    defaultColor: Color
+): Color {
+    for (zone in zones) {
+        if (value >= zone.minValue && value < zone.maxValue) {
+            return zone.color.copy(alpha = 1f)
+        }
+    }
+    return defaultColor
 }
 
 @Composable
