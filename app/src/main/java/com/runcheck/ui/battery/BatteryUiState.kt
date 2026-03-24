@@ -28,7 +28,13 @@ sealed interface BatteryUiState {
         val sleepAnalysis: SleepAnalysis? = null,
         val temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS,
         val statistics: BatteryStatistics? = null,
-        val dismissedInfoCards: Set<String> = emptySet()
+        val dismissedInfoCards: Set<String> = emptySet(),
+        val showInfoCards: Boolean = true,
+        val liveCurrentMa: List<Float> = emptyList(),
+        val livePowerW: List<Float> = emptyList(),
+        val liveTempC: List<Float> = emptyList(),
+        val liveLevel: List<Float> = emptyList(),
+        val liveVoltage: List<Float> = emptyList()
     ) : BatteryUiState
 
     data class Error(val message: String) : BatteryUiState

@@ -171,6 +171,7 @@
     <string name="unit_percent">%</string>
     <string name="unit_milliamps">mA</string>
     <string name="unit_milliamp_hours">mAh</string>
+    <string name="unit_mv">mV</string>
     <string name="unit_celsius">°C</string>
     <string name="unit_dbm">dBm</string>
     <string name="unit_mbps">Mbps</string>
@@ -359,6 +360,10 @@
     </plurals>
     <string name="cleanup_no_files">No files found</string>
     <string name="cleanup_no_files_desc">Your storage is looking clean!</string>
+    <string name="cleanup_storage_permission_title">File access needed</string>
+    <string name="cleanup_storage_permission_message">To scan for old downloads and APK files, runcheck needs access to all files on your device.</string>
+    <string name="cleanup_storage_permission_reason">Android restricts apps from seeing files created by other apps. This permission lets runcheck find files across your entire storage so you can clean up space.</string>
+    <string name="cleanup_storage_permission_action">Open Settings</string>
     <string name="cleanup_delete_failed">Could not delete the selected files.</string>
     <string name="cleanup_delete_permission_error">Android blocked deletion for one or more files.</string>
     <plurals name="cleanup_free_action">
@@ -445,12 +450,15 @@
     <string name="settings_threshold_battery">Low Battery Warning</string>
     <string name="settings_threshold_temp">High Temperature Warning</string>
     <string name="settings_threshold_storage">Low Storage Warning</string>
+    <string name="settings_reset_thresholds">Reset to defaults</string>
 
     <!-- Settings: Display -->
     <string name="settings_display">Display</string>
     <string name="settings_temp_unit">Temperature Unit</string>
     <string name="settings_temp_celsius">Celsius (°C)</string>
     <string name="settings_temp_fahrenheit">Fahrenheit (°F)</string>
+    <string name="settings_show_info_cards">Info Cards</string>
+    <string name="settings_show_info_cards_desc">Show contextual tips and explanations on detail screens</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_system">System default</string>
 
@@ -458,6 +466,8 @@
     <string name="settings_data_section">Data</string>
     <string name="settings_reset_tips">Reset Info Tips</string>
     <string name="settings_reset_tips_done">Info tips restored</string>
+    <string name="settings_clear_speed_tests">Clear Speed Test Results</string>
+    <string name="settings_speed_tests_cleared">Speed test results cleared</string>
     <string name="settings_clear_all_data">Clear All Monitoring Data</string>
     <string name="settings_clear_confirm_title">Clear all data?</string>
     <string name="settings_clear_confirm_message">This will permanently delete all monitoring history. This cannot be undone.</string>
@@ -789,6 +799,51 @@
     <string name="info_battery_deep_sleep_range">A healthy phone should spend most of its screen-off time in deep sleep. High \'held awake\' time means something is preventing sleep.</string>
     <string name="info_battery_deep_sleep_matters">Deep sleep dramatically reduces battery drain. If your phone is held awake for extended periods, background apps or wake locks are likely the cause.</string>
 
+    <string name="info_battery_remaining_title">Remaining Time</string>
+    <string name="info_battery_remaining_explanation">An estimate of how long your battery will last based on the current drain rate. This is calculated from recent usage patterns, not a fixed value.</string>
+    <string name="info_battery_remaining_range">Depends on your usage. Light use might give 10+ hours, while heavy gaming or streaming could be 2–4 hours.</string>
+    <string name="info_battery_remaining_matters">This estimate changes as your usage changes. It\'s most accurate after 10–15 minutes of consistent use. Sudden changes in activity (like starting a game) will shift the estimate.</string>
+
+    <string name="info_battery_technology_title">Battery Technology</string>
+    <string name="info_battery_technology_explanation">The type of battery chemistry used in your phone. Almost all modern smartphones use lithium-ion (Li-ion) or lithium polymer (Li-poly) batteries.</string>
+    <string name="info_battery_technology_range">Li-ion and Li-poly are standard. Both are safe and effective for everyday use.</string>
+    <string name="info_battery_technology_matters">Battery type determines charging behavior, lifespan, and safety characteristics. Li-poly batteries are slightly lighter and can be shaped more flexibly, but both types perform similarly in practice.</string>
+
+    <string name="info_battery_plug_type_title">Charger Type</string>
+    <string name="info_battery_plug_type_explanation">The type of charger currently connected to your phone. Different charger types support different maximum charging speeds.</string>
+    <string name="info_battery_plug_type_range">USB-C is the modern standard. AC refers to a wall charger. Wireless means Qi or similar inductive charging.</string>
+    <string name="info_battery_plug_type_matters">Your charging speed is limited by the slowest link — the charger, cable, or phone. A USB-C cable on a slow adapter won\'t charge faster than the adapter allows.</string>
+
+    <string name="info_battery_current_stats_title">Current Statistics</string>
+    <string name="info_battery_current_stats_explanation">Average, minimum, and maximum current draw since your last charging status change. These reset each time you plug in or unplug.</string>
+    <string name="info_battery_current_stats_range">Idle: 50–200 mA. Screen on: 200–500 mA. Heavy use: 500–1500 mA. Charging: varies by charger.</string>
+    <string name="info_battery_current_stats_matters">These help you spot trends. A high average means your phone is working hard. A wide range between min and max suggests bursty activity like app updates or background syncs.</string>
+
+    <string name="info_battery_stats_charged_title">Total Charged</string>
+    <string name="info_battery_stats_charged_explanation" formatted="false">The total percentage points your battery has been charged over the selected time period. For example, charging from 20% to 80% adds 60% to this total.</string>
+    <string name="info_battery_stats_charged_range" formatted="false">Varies with usage. Charging once a day from 20% to 80% would total about 420% per week.</string>
+    <string name="info_battery_stats_charged_matters">Higher totals mean more charging activity. Combined with discharge totals, this shows your overall battery usage pattern and helps estimate wear over time.</string>
+
+    <string name="info_battery_stats_discharged_title">Total Discharged</string>
+    <string name="info_battery_stats_discharged_explanation">The total percentage points your battery has lost over the selected time period. This includes all battery drain from apps, screen, and background activity.</string>
+    <string name="info_battery_stats_discharged_range">Similar to charged totals — if you use roughly what you charge, these numbers will be close.</string>
+    <string name="info_battery_stats_discharged_matters">If discharged totals are much higher than charged totals, you might be running low frequently. This metric helps you understand your daily power budget.</string>
+
+    <string name="info_battery_stats_sessions_title">Charge Sessions</string>
+    <string name="info_battery_stats_sessions_explanation">How many times you\'ve plugged in to charge during the selected time period. Each time the charger is connected counts as one session.</string>
+    <string name="info_battery_stats_sessions_range">1–2 per day is typical. More frequent short charges are generally better for battery longevity than deep discharges.</string>
+    <string name="info_battery_stats_sessions_matters">Your charging pattern affects battery wear. Many small top-ups (keeping between 20–80%) is gentler than repeatedly draining to near-zero and charging to full.</string>
+
+    <string name="info_battery_stats_avg_usage_title">Average Usage</string>
+    <string name="info_battery_stats_avg_usage_explanation">Your average battery drain rate over the selected time period, measured in percent per hour. This is a long-term average, smoothing out daily variations.</string>
+    <string name="info_battery_stats_avg_usage_range" formatted="false">1–3%/h is typical for mixed use. Below 1%/h suggests light use. Above 5%/h indicates heavy or continuous use.</string>
+    <string name="info_battery_stats_avg_usage_matters">This long-term average is more reliable than the current drain rate for understanding your typical usage pattern. Compare it week over week to spot changes.</string>
+
+    <string name="info_battery_stats_full_charge_est_title">Full Charge Estimate</string>
+    <string name="info_battery_stats_full_charge_est_explanation">Based on your average drain rate, this estimates how long a full 100% charge would last. This is a theoretical maximum, not a real-time prediction.</string>
+    <string name="info_battery_stats_full_charge_est_range">8–16 hours for typical smartphone use. Can be longer with light use or shorter with constant screen-on activity.</string>
+    <string name="info_battery_stats_full_charge_est_matters">This gives you a benchmark for your battery\'s practical capacity. If this number drops significantly over months, it may indicate battery degradation.</string>
+
     <!-- Info Bottom Sheet - Thermal -->
     <string name="info_thermal_cpu_temp_title">CPU Temperature</string>
     <string name="info_thermal_cpu_temp_explanation">If your device exposes it, this is a processor-related temperature reading. Many phones do not provide a stable CPU temperature through public Android APIs.</string>
@@ -854,6 +909,31 @@
     <string name="info_network_mtu_range">1500 is standard. VPN connections often use lower values (1400–1450). Values below 1400 may indicate tunneling.</string>
     <string name="info_network_mtu_matters">Incorrect MTU can cause mysterious connection issues — pages that partially load, downloads that stall, or VPN tunnels that fail.</string>
 
+    <string name="info_network_connection_type_title">Connection Type</string>
+    <string name="info_network_connection_type_explanation">How your phone is connected to the internet right now. Wi-Fi uses your local router, Cellular uses your mobile data plan, and VPN routes traffic through a secure tunnel.</string>
+    <string name="info_network_connection_type_range">Wi-Fi is usually fastest and doesn\'t use mobile data. Cellular varies by generation (4G/5G). VPN adds security but may reduce speed.</string>
+    <string name="info_network_connection_type_matters">Your connection type affects speed, latency, data costs, and privacy. Wi-Fi is free but range-limited. Cellular works anywhere with coverage but counts against your data plan.</string>
+
+    <string name="info_network_metered_title">Metered Connection</string>
+    <string name="info_network_metered_explanation">Whether your current connection has a data limit. Metered means data usage is counted against a cap — usually mobile data. Unmetered typically means Wi-Fi with unlimited data.</string>
+    <string name="info_network_metered_range">Most Wi-Fi connections are unmetered. Mobile data is usually metered. Some public Wi-Fi hotspots may also be metered.</string>
+    <string name="info_network_metered_matters">When on a metered connection, your phone restricts background downloads and updates to save data. This affects app updates, cloud syncing, and media quality.</string>
+
+    <string name="info_network_roaming_title">Roaming</string>
+    <string name="info_network_roaming_explanation">Whether your phone is connected to a network outside your carrier\'s home network. This typically happens when traveling abroad or in areas without your carrier\'s own coverage.</string>
+    <string name="info_network_roaming_range">Off is normal at home. On when traveling in areas where your carrier doesn\'t have direct coverage.</string>
+    <string name="info_network_roaming_matters">Roaming can result in significantly higher data charges depending on your plan. Some carriers include roaming in certain plans, but it\'s important to check before heavy use abroad.</string>
+
+    <string name="info_network_vpn_title">VPN</string>
+    <string name="info_network_vpn_explanation">Whether a Virtual Private Network is active. A VPN encrypts your internet traffic and routes it through a remote server, hiding your activity from your ISP and local network.</string>
+    <string name="info_network_vpn_range">Off by default. On when you\'ve activated a VPN app or your employer requires one for work access.</string>
+    <string name="info_network_vpn_matters">VPNs improve privacy and security, especially on public Wi-Fi. However, they may slightly increase latency and reduce speeds due to the extra routing step.</string>
+
+    <string name="info_network_subtype_title">Network Generation</string>
+    <string name="info_network_subtype_explanation">The specific mobile network technology your phone is using. Each generation offers different speeds: 3G is basic, 4G LTE is fast, and 5G is the fastest available.</string>
+    <string name="info_network_subtype_range">4G LTE is the most common today. 5G NR is expanding. 3G is being phased out in many countries.</string>
+    <string name="info_network_subtype_matters">Your network generation directly determines your maximum possible speed. Even with a strong signal, a 3G connection will be much slower than 4G or 5G.</string>
+
     <!-- Info Bottom Sheet - Storage -->
     <string name="info_storage_usage_title">Storage Usage</string>
     <string name="info_storage_usage_explanation">The percentage of your phone\'s total storage that is currently occupied by apps, media, and system data.</string>
@@ -874,6 +954,16 @@
     <string name="info_storage_apps_explanation">The total storage used by all installed applications, including their data and cache.</string>
     <string name="info_storage_apps_range">Varies widely. 20–50 GB is common on a well-used phone. Games can use 2–10 GB each.</string>
     <string name="info_storage_apps_matters">Apps are often the largest storage consumers. Uninstalling unused apps is one of the most effective ways to reclaim space.</string>
+
+    <string name="info_storage_filesystem_title">File System</string>
+    <string name="info_storage_filesystem_explanation">The format used to organize files on your storage. Most modern Android phones use ext4 or f2fs. This is set by the manufacturer and cannot be changed.</string>
+    <string name="info_storage_filesystem_range">ext4 is the traditional standard. f2fs is optimized for flash memory and increasingly common on newer phones.</string>
+    <string name="info_storage_filesystem_matters">The file system affects how efficiently your phone reads and writes data. f2fs is generally faster for the type of storage used in phones, which can improve app launch times and overall responsiveness.</string>
+
+    <string name="info_storage_encryption_title">Encryption</string>
+    <string name="info_storage_encryption_explanation">Whether your phone\'s storage is encrypted. Encryption scrambles your data so it can only be read with your lock screen credentials. All modern Android phones are encrypted by default.</string>
+    <string name="info_storage_encryption_range">File-based encryption (FBE) is the modern standard. Full-disk encryption (FDE) is older. Both protect your data.</string>
+    <string name="info_storage_encryption_matters">Encryption protects your personal data if your phone is lost or stolen. Without it, anyone with physical access could read your files. It has negligible impact on performance on modern hardware.</string>
 
     <!-- Info Bottom Sheet - Speed Test -->
     <string name="info_speedtest_download_title">Download Speed</string>

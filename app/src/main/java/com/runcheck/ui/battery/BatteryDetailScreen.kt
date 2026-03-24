@@ -82,9 +82,11 @@ import com.runcheck.ui.common.temperatureBandLabel
 import com.runcheck.ui.components.AreaChart
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.ConfidenceBadge
+import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.theme.statusColorForPercent
+import com.runcheck.ui.theme.statusColorForTemperature
 import com.runcheck.ui.components.ProBadgePill
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.DetailTopBar
@@ -318,7 +320,7 @@ private fun BatteryContent(
                 headline = stringResource(InfoCardCatalog.BatteryLiveNotification.headlineRes),
                 body = stringResource(InfoCardCatalog.BatteryLiveNotification.bodyRes),
                 onDismiss = onDismissInfoCard,
-                visible = InfoCardCatalog.BatteryLiveNotification.id !in state.dismissedInfoCards
+                visible = InfoCardCatalog.BatteryLiveNotification.id !in state.dismissedInfoCards && state.showInfoCards
             )
 
             // Health degradation card - show when healthPercent < 90% and not dismissed
@@ -328,7 +330,7 @@ private fun BatteryContent(
                     headline = stringResource(InfoCardCatalog.BatteryHealthDegraded.headlineRes),
                     body = stringResource(InfoCardCatalog.BatteryHealthDegraded.bodyRes),
                     onDismiss = onDismissInfoCard,
-                    visible = InfoCardCatalog.BatteryHealthDegraded.id !in state.dismissedInfoCards,
+                    visible = InfoCardCatalog.BatteryHealthDegraded.id !in state.dismissedInfoCards && state.showInfoCards,
                     onLearnMore = {
                         InfoCardCatalog.BatteryHealthDegraded.learnArticleId?.let(onNavigateToLearnArticle)
                     }
@@ -342,7 +344,7 @@ private fun BatteryContent(
                     headline = stringResource(InfoCardCatalog.BatteryDiesBeforeZero.headlineRes),
                     body = stringResource(InfoCardCatalog.BatteryDiesBeforeZero.bodyRes),
                     onDismiss = onDismissInfoCard,
-                    visible = InfoCardCatalog.BatteryDiesBeforeZero.id !in state.dismissedInfoCards,
+                    visible = InfoCardCatalog.BatteryDiesBeforeZero.id !in state.dismissedInfoCards && state.showInfoCards,
                     onLearnMore = {
                         InfoCardCatalog.BatteryDiesBeforeZero.learnArticleId?.let(onNavigateToLearnArticle)
                     }
@@ -379,7 +381,8 @@ private fun BatteryContent(
                     label = stringResource(R.string.battery_technology),
                     value = battery.technology.takeUnless { it.equals("Unknown", ignoreCase = true) }
                         ?.takeUnless(String::isBlank)
-                        ?: stringResource(R.string.not_available)
+                        ?: stringResource(R.string.not_available),
+                    onInfoClick = { activeInfoSheet = "technology" }
                 )
                 battery.cycleCount?.let { count ->
                     MetricRow(
@@ -488,6 +491,70 @@ private fun BatteryContent(
                     )
                 }
 
+                // Live charts
+                if (state.liveCurrentMa.size >= 2) {
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                    )
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                    LiveChart(
+                        data = state.liveCurrentMa,
+                        currentValueLabel = stringResource(
+                            R.string.value_milliamps_int,
+                            kotlin.math.abs(battery.currentMa.value)
+                        ),
+                        label = stringResource(R.string.battery_current),
+                        lineColor = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                if (state.livePowerW.size >= 2) {
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                    LiveChart(
+                        data = state.livePowerW,
+                        currentValueLabel = stringResource(
+                            R.string.value_watts,
+                            state.livePowerW.last().toDouble()
+                        ),
+                        label = stringResource(R.string.battery_power),
+                        lineColor = MaterialTheme.statusColors.fair,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                if (state.liveLevel.size >= 2) {
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                    LiveChart(
+                        data = state.liveLevel,
+                        currentValueLabel = stringResource(R.string.value_percent, battery.level),
+                        label = stringResource(R.string.battery_level),
+                        lineColor = MaterialTheme.statusColors.healthy,
+                        yMin = 0f,
+                        yMax = 100f,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                if (state.liveTempC.size >= 2) {
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                    LiveChart(
+                        data = state.liveTempC,
+                        currentValueLabel = formatTemperature(battery.temperatureC, state.temperatureUnit),
+                        label = stringResource(R.string.battery_temperature),
+                        lineColor = statusColorForTemperature(battery.temperatureC),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                if (state.liveVoltage.size >= 2) {
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                    LiveChart(
+                        data = state.liveVoltage,
+                        currentValueLabel = stringResource(R.string.value_with_unit_int, battery.voltageMv, stringResource(R.string.unit_mv)),
+                        label = stringResource(R.string.battery_voltage),
+                        lineColor = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
@@ -506,7 +573,8 @@ private fun BatteryContent(
                     MetricPill(
                         label = stringResource(R.string.battery_plug_type),
                         value = plugTypeLabel(battery.plugType),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        onInfoClick = { activeInfoSheet = "plugType" }
                     )
                 }
 
@@ -519,17 +587,20 @@ private fun BatteryContent(
                         MetricPill(
                             label = stringResource(R.string.battery_current_average),
                             value = stringResource(R.string.value_milliamps_int, stats.avg),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            onInfoClick = { activeInfoSheet = "currentStats" }
                         )
                         MetricPill(
                             label = stringResource(R.string.battery_current_minimum),
                             value = stringResource(R.string.value_milliamps_int, stats.min),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            onInfoClick = { activeInfoSheet = "currentStats" }
                         )
                         MetricPill(
                             label = stringResource(R.string.battery_current_maximum),
                             value = stringResource(R.string.value_milliamps_int, stats.max),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            onInfoClick = { activeInfoSheet = "currentStats" }
                         )
                     }
                 }
@@ -542,7 +613,7 @@ private fun BatteryContent(
                     headline = stringResource(InfoCardCatalog.BatteryChargingHabits.headlineRes),
                     body = stringResource(InfoCardCatalog.BatteryChargingHabits.bodyRes),
                     onDismiss = onDismissInfoCard,
-                    visible = InfoCardCatalog.BatteryChargingHabits.id !in state.dismissedInfoCards,
+                    visible = InfoCardCatalog.BatteryChargingHabits.id !in state.dismissedInfoCards && state.showInfoCards,
                     onLearnMore = {
                         InfoCardCatalog.BatteryChargingHabits.learnArticleId?.let(onNavigateToLearnArticle)
                     }
@@ -585,7 +656,7 @@ private fun BatteryContent(
                     headline = stringResource(InfoCardCatalog.BatteryScreenOffDrain.headlineRes),
                     body = stringResource(InfoCardCatalog.BatteryScreenOffDrain.bodyRes),
                     onDismiss = onDismissInfoCard,
-                    visible = InfoCardCatalog.BatteryScreenOffDrain.id !in state.dismissedInfoCards,
+                    visible = InfoCardCatalog.BatteryScreenOffDrain.id !in state.dismissedInfoCards && state.showInfoCards,
                     onLearnMore = {
                         InfoCardCatalog.BatteryScreenOffDrain.learnArticleId?.let(onNavigateToLearnArticle)
                     }
@@ -634,7 +705,10 @@ private fun BatteryContent(
 
             // Long-term statistics (#9) — Pro feature
             if (state.isPro && state.statistics != null) {
-                BatteryStatisticsPanel(statistics = state.statistics)
+                BatteryStatisticsPanel(
+                    statistics = state.statistics,
+                    onInfoClick = { activeInfoSheet = it }
+                )
             }
 
             RelatedArticlesSection(
@@ -662,6 +736,15 @@ private fun BatteryContent(
             "confidence" -> BatteryInfoContent.confidence
             "screenOnOff" -> BatteryInfoContent.screenOnOff
             "deepSleep" -> BatteryInfoContent.deepSleep
+            "remaining" -> BatteryInfoContent.remaining
+            "technology" -> BatteryInfoContent.technology
+            "plugType" -> BatteryInfoContent.plugType
+            "currentStats" -> BatteryInfoContent.currentStats
+            "statsCharged" -> BatteryInfoContent.statsCharged
+            "statsDischarged" -> BatteryInfoContent.statsDischarged
+            "statsSessions" -> BatteryInfoContent.statsSessions
+            "statsAvgUsage" -> BatteryInfoContent.statsAvgUsage
+            "statsFullChargeEst" -> BatteryInfoContent.statsFullChargeEst
             else -> null
         }
         content?.let {
@@ -775,7 +858,8 @@ private fun BatteryHeroSection(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
+                verticalAlignment = Alignment.Bottom
             ) {
                 MetricPill(
                     label = stringResource(R.string.battery_drain_rate),
@@ -801,7 +885,8 @@ private fun BatteryHeroSection(
                         if (h > 0) stringResource(R.string.value_duration_hours_minutes, h, m)
                         else stringResource(R.string.value_duration_minutes, m)
                     } ?: stringResource(R.string.battery_estimating),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("remaining") }
                 )
             }
         }
@@ -1579,7 +1664,7 @@ private fun BatterySleepAnalysisPanel(
 // ── Long-term Statistics panel (#9) ─────────────────────────────────────────
 
 @Composable
-private fun BatteryStatisticsPanel(statistics: BatteryStatistics) {
+private fun BatteryStatisticsPanel(statistics: BatteryStatistics, onInfoClick: (String) -> Unit = {}) {
     BatteryPanel {
         CardSectionTitle(
             text = stringResource(R.string.battery_stats_section) + " · " +
@@ -1594,17 +1679,20 @@ private fun BatteryStatisticsPanel(statistics: BatteryStatistics) {
             MetricPill(
                 label = stringResource(R.string.battery_stats_charged),
                 value = stringResource(R.string.battery_stats_pct_total, statistics.totalChargedPct),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onInfoClick = { onInfoClick("statsCharged") }
             )
             MetricPill(
                 label = stringResource(R.string.battery_stats_discharged),
                 value = stringResource(R.string.battery_stats_pct_total, statistics.totalDischargedPct),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onInfoClick = { onInfoClick("statsDischarged") }
             )
             MetricPill(
                 label = stringResource(R.string.battery_stats_sessions),
                 value = statistics.chargeSessions.toString(),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onInfoClick = { onInfoClick("statsSessions") }
             )
         }
 
@@ -1622,7 +1710,8 @@ private fun BatteryStatisticsPanel(statistics: BatteryStatistics) {
                 MetricPill(
                     label = stringResource(R.string.battery_stats_avg_usage),
                     value = stringResource(R.string.value_percent_per_hour, rate.toDouble()),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("statsAvgUsage") }
                 )
                 statistics.fullChargeEstimateHours?.let { hours ->
                     val h = hours.toInt()
@@ -1634,7 +1723,8 @@ private fun BatteryStatisticsPanel(statistics: BatteryStatistics) {
                         } else {
                             stringResource(R.string.value_duration_minutes, m.toLong())
                         },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        onInfoClick = { onInfoClick("statsFullChargeEst") }
                     )
                 }
             }

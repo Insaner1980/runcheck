@@ -62,6 +62,13 @@ class BatteryViewModel @Inject constructor(
     private var lastTrackedSessionStatus: ChargingStatus? = null
     private var lastTrackedSessionAt: Long = 0L
 
+    // Live chart ring buffers (keep last 60 values ≈ ~1-5 min depending on sample rate)
+    private val liveCurrentMa = mutableListOf<Float>()
+    private val livePowerW = mutableListOf<Float>()
+    private val liveTempC = mutableListOf<Float>()
+    private val liveLevel = mutableListOf<Float>()
+    private val liveVoltage = mutableListOf<Float>()
+
     // Statistics loaded once per session
     private var cachedStatistics: com.runcheck.domain.usecase.BatteryStatistics? = null
     private var statisticsLoaded = false
@@ -159,6 +166,16 @@ class BatteryViewModel @Inject constructor(
 
                 maybeTrackChargerSession(state)
 
+                // Append to live chart ring buffers
+                if (state.currentMa.confidence != Confidence.UNAVAILABLE) {
+                    appendLive(liveCurrentMa, kotlin.math.abs(state.currentMa.value).toFloat())
+                    val powerW = kotlin.math.abs(state.currentMa.value / 1000f * state.voltageMv / 1000f)
+                    appendLive(livePowerW, powerW)
+                }
+                appendLive(liveTempC, state.temperatureC)
+                appendLive(liveLevel, state.level.toFloat())
+                appendLive(liveVoltage, state.voltageMv.toFloat())
+
                 BatteryUiState.Success(
                     batteryState = state,
                     history = history,
@@ -169,7 +186,13 @@ class BatteryViewModel @Inject constructor(
                     sleepAnalysis = if (isDischarging) batteryScreenInsights.getSleepAnalysis() else null,
                     temperatureUnit = preferences.temperatureUnit,
                     statistics = cachedStatistics,
-                    dismissedInfoCards = dismissedInfoCards
+                    dismissedInfoCards = dismissedInfoCards,
+                    showInfoCards = preferences.showInfoCards,
+                    liveCurrentMa = liveCurrentMa.toList(),
+                    livePowerW = livePowerW.toList(),
+                    liveTempC = liveTempC.toList(),
+                    liveLevel = liveLevel.toList(),
+                    liveVoltage = liveVoltage.toList()
                 )
             }.sample(333L).catch { e ->
                 ReleaseSafeLog.error("BatteryVM", "Battery data failed", e)
@@ -195,8 +218,16 @@ class BatteryViewModel @Inject constructor(
         viewModelScope.launch { manageInfoCardDismissals.dismissCard(id) }
     }
 
+    private fun appendLive(buffer: MutableList<Float>, value: Float) {
+        buffer.add(value)
+        if (buffer.size > LIVE_CHART_MAX_POINTS) {
+            buffer.removeFirst()
+        }
+    }
+
     companion object {
         private const val CHARGER_SESSION_TRACK_INTERVAL_MS = 15_000L
         private const val SELECTED_PERIOD_KEY = "battery_selected_period"
+        private const val LIVE_CHART_MAX_POINTS = 60
     }
 }
