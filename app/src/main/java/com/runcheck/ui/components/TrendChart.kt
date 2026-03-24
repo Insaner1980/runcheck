@@ -1,6 +1,8 @@
 package com.runcheck.ui.components
 
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -11,7 +13,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -36,6 +37,8 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import com.runcheck.ui.theme.chartAxisTextStyle
 import com.runcheck.ui.theme.chartTooltipTextStyle
 import com.runcheck.ui.theme.reducedMotion
@@ -107,20 +110,45 @@ fun TrendChart(
     if (data.size < 2) return
 
     val reducedMotion = MaterialTheme.reducedMotion
-    var progress by remember(data, reducedMotion) {
-        mutableFloatStateOf(if (reducedMotion) 1f else 0f)
-    }
-    LaunchedEffect(data, reducedMotion) {
-        if (!reducedMotion) {
-            progress = 1f
-        }
-    }
 
-    val animatedProgress by animateFloatAsState(
-        targetValue = progress,
-        animationSpec = tween(durationMillis = if (reducedMotion) 0 else 800),
-        label = "trend_draw"
-    )
+    // Phase 1: Grid + axes fade in (0→1 over 200ms)
+    val gridAlpha = remember { Animatable(if (reducedMotion) 1f else 0f) }
+    // Phase 2: Oscilloscope sweep progress (0→1 over 1000ms)
+    val sweepProgress = remember { Animatable(if (reducedMotion) 1f else 0f) }
+    // Phase 3: Last value emphasis fade in (0→1 over 200ms)
+    val emphasisAlpha = remember { Animatable(if (reducedMotion) 1f else 0f) }
+    // Scan line opacity (fades out during final 30% of sweep)
+    val scanLineAlpha = remember { Animatable(if (reducedMotion) 0f else 0.5f) }
+
+    LaunchedEffect(data, reducedMotion) {
+        if (reducedMotion) {
+            gridAlpha.snapTo(1f)
+            sweepProgress.snapTo(1f)
+            emphasisAlpha.snapTo(1f)
+            scanLineAlpha.snapTo(0f)
+            return@LaunchedEffect
+        }
+        // Reset all phases
+        gridAlpha.snapTo(0f)
+        sweepProgress.snapTo(0f)
+        emphasisAlpha.snapTo(0f)
+        scanLineAlpha.snapTo(0.5f)
+
+        // Phase 1: Grid materialization
+        gridAlpha.animateTo(1f, tween(200, easing = FastOutSlowInEasing))
+        // Phase 2: Oscilloscope sweep
+        launch {
+            // Fade scan line during final 30% of sweep
+            delay(700) // 70% of 1000ms
+            scanLineAlpha.animateTo(0f, tween(300))
+        }
+        sweepProgress.animateTo(
+            1f,
+            tween(1000, easing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f))
+        )
+        // Phase 3: Emphasis
+        emphasisAlpha.animateTo(1f, tween(200, easing = FastOutSlowInEasing))
+    }
 
     val minVal = data.min()
     val maxVal = data.max()
@@ -217,6 +245,7 @@ fun TrendChart(
                     Modifier
                         .pointerInput(data, yLabelWidth, gestureEdgeGuardPx) {
                             detectTapGestures { offset ->
+                                if (sweepProgress.value < 1f) return@detectTapGestures
                                 if (offset.x <= gestureEdgeGuardPx || offset.x >= size.width - gestureEdgeGuardPx) {
                                     return@detectTapGestures
                                 }
@@ -237,7 +266,8 @@ fun TrendChart(
                             var allowTooltipDrag = false
                             detectHorizontalDragGestures(
                                 onDragStart = { offset ->
-                                    allowTooltipDrag = offset.x > gestureEdgeGuardPx &&
+                                    allowTooltipDrag = sweepProgress.value >= 1f &&
+                                        offset.x > gestureEdgeGuardPx &&
                                         offset.x < size.width - gestureEdgeGuardPx
                                     if (allowTooltipDrag) {
                                         val leftPad = yLabelWidth.toPx()
@@ -287,7 +317,6 @@ fun TrendChart(
         val chartHeight = size.height - chartTop - chartPad - xLabelHeightPx
         if (chartWidth <= 0f || chartHeight <= 0f) return@Canvas
         val stepX = chartWidth / (data.size - 1)
-        val visibleCount = (data.size * animatedProgress).toInt().coerceAtLeast(2)
         val tickColor = gridColor.copy(alpha = 0.75f)
         val shouldDrawPointMarkers = chartStyle.pointMarkerRadius > 0.dp &&
             stepX >= chartStyle.pointMarkerRadius.toPx() * 3f
@@ -300,7 +329,7 @@ fun TrendChart(
             val clampedBottom = yBottom.coerceIn(chartTop, chartTop + chartHeight)
             if (clampedBottom > clampedTop) {
                 drawRect(
-                    color = zone.color,
+                    color = zone.color.copy(alpha = zone.color.alpha * gridAlpha.value),
                     topLeft = Offset(chartLeft, clampedTop),
                     size = Size(chartWidth, clampedBottom - clampedTop)
                 )
@@ -313,7 +342,7 @@ fun TrendChart(
                 val y = chartTop + chartHeight - ((yLabel.value - minVal) / range * chartHeight)
                 if (y in chartTop..chartTop + chartHeight) {
                     drawLine(
-                        color = gridColor,
+                        color = gridColor.copy(alpha = gridColor.alpha * gridAlpha.value),
                         start = Offset(chartLeft, y),
                         end = Offset(chartLeft + chartWidth, y),
                         strokeWidth = chartStyle.gridStrokeWidth.toPx()
@@ -332,7 +361,8 @@ fun TrendChart(
                         topLeft = Offset(
                             yLabelWidthPx - measured.size.width - 4.dp.toPx(),
                             y - measured.size.height / 2f
-                        )
+                        ),
+                        alpha = gridAlpha.value
                     )
                 }
             }
@@ -343,7 +373,7 @@ fun TrendChart(
             for ((xLabel, measured) in measuredXLabels) {
                 val x = chartLeft + xLabel.position * chartWidth
                 drawLine(
-                    color = tickColor,
+                    color = tickColor.copy(alpha = tickColor.alpha * gridAlpha.value),
                     start = Offset(x, chartTop + chartHeight),
                     end = Offset(x, chartTop + chartHeight + chartStyle.tickLength.toPx()),
                     strokeWidth = chartStyle.gridStrokeWidth.toPx()
@@ -355,14 +385,16 @@ fun TrendChart(
                     topLeft = Offset(
                         labelX,
                         chartTop + chartHeight + chartStyle.xLabelTopPadding.toPx()
-                    )
+                    ),
+                    alpha = gridAlpha.value
                 )
             }
         }
 
         // ── Data line ──────────────────────────────────────────────────
+        // Build full paths for all data points — sweep clip controls visibility
         linePath.reset()
-        for (i in 0 until visibleCount) {
+        for (i in data.indices) {
             val x = chartLeft + i * stepX
             val y = chartTop + chartHeight - ((data[i] - minVal) / range * chartHeight)
             if (i == 0) linePath.moveTo(x, y) else linePath.lineTo(x, y)
@@ -370,44 +402,64 @@ fun TrendChart(
 
         fillPath.reset()
         fillPath.addPath(linePath)
-        val lastX = chartLeft + (visibleCount - 1) * stepX
+        val lastX = chartLeft + (data.size - 1) * stepX
         fillPath.lineTo(lastX, chartTop + chartHeight)
         fillPath.lineTo(chartLeft, chartTop + chartHeight)
         fillPath.close()
 
-        drawPath(
-            path = fillPath,
-            brush = Brush.verticalGradient(
-                colors = listOf(fillColor, Color.Transparent),
-                startY = chartTop,
-                endY = chartTop + chartHeight
-            ),
-            style = Fill,
-            alpha = animatedProgress
-        )
+        // Calculate sweep X position
+        val sweepX = chartLeft + chartWidth * sweepProgress.value
 
-        drawPath(
-            path = linePath,
-            color = lineColor,
-            style = Stroke(width = chartStyle.lineStrokeWidth.toPx(), cap = StrokeCap.Round)
-        )
+        // Clip rect for oscilloscope sweep reveal
+        clipRect(
+            left = chartLeft,
+            top = chartTop,
+            right = sweepX,
+            bottom = chartTop + chartHeight
+        ) {
+            drawPath(
+                path = fillPath,
+                brush = Brush.verticalGradient(
+                    colors = listOf(fillColor, Color.Transparent),
+                    startY = chartTop,
+                    endY = chartTop + chartHeight
+                ),
+                style = Fill
+            )
 
-        if (shouldDrawPointMarkers) {
-            val innerMarkerRadius = (chartStyle.pointMarkerRadius - 1.5.dp).coerceAtLeast(1.5.dp)
-            for (i in 0 until visibleCount) {
-                val x = chartLeft + i * stepX
-                val y = chartTop + chartHeight - ((data[i] - minVal) / range * chartHeight)
-                drawCircle(
-                    color = lineColor.copy(alpha = 0.95f),
-                    radius = chartStyle.pointMarkerRadius.toPx(),
-                    center = Offset(x, y)
-                )
-                drawCircle(
-                    color = tooltipBgColor,
-                    radius = innerMarkerRadius.toPx(),
-                    center = Offset(x, y)
-                )
+            drawPath(
+                path = linePath,
+                color = lineColor,
+                style = Stroke(width = chartStyle.lineStrokeWidth.toPx(), cap = StrokeCap.Round)
+            )
+
+            if (shouldDrawPointMarkers) {
+                val innerMarkerRadius = (chartStyle.pointMarkerRadius - 1.5.dp).coerceAtLeast(1.5.dp)
+                for (i in data.indices) {
+                    val x = chartLeft + i * stepX
+                    val y = chartTop + chartHeight - ((data[i] - minVal) / range * chartHeight)
+                    drawCircle(
+                        color = lineColor.copy(alpha = 0.95f),
+                        radius = chartStyle.pointMarkerRadius.toPx(),
+                        center = Offset(x, y)
+                    )
+                    drawCircle(
+                        color = tooltipBgColor,
+                        radius = innerMarkerRadius.toPx(),
+                        center = Offset(x, y)
+                    )
+                }
             }
+        }
+
+        // Draw scan line
+        if (scanLineAlpha.value > 0f) {
+            drawLine(
+                color = lineColor.copy(alpha = scanLineAlpha.value),
+                start = Offset(sweepX, chartTop),
+                end = Offset(sweepX, chartTop + chartHeight),
+                strokeWidth = 1.5.dp.toPx()
+            )
         }
 
         // ── Tooltip cursor ─────────────────────────────────────────────
