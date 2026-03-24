@@ -522,39 +522,6 @@ private fun BatteryContent(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
-                if (state.liveLevel.size >= 2) {
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                    LiveChart(
-                        data = state.liveLevel,
-                        currentValueLabel = stringResource(R.string.value_percent, battery.level),
-                        label = stringResource(R.string.battery_level),
-                        lineColor = MaterialTheme.statusColors.healthy,
-                        yMin = 0f,
-                        yMax = 100f,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                if (state.liveTempC.size >= 2) {
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                    LiveChart(
-                        data = state.liveTempC,
-                        currentValueLabel = formatTemperature(battery.temperatureC, state.temperatureUnit),
-                        label = stringResource(R.string.battery_temperature),
-                        lineColor = statusColorForTemperature(battery.temperatureC),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                if (state.liveVoltage.size >= 2) {
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                    LiveChart(
-                        data = state.liveVoltage,
-                        currentValueLabel = stringResource(R.string.value_with_unit_int, battery.voltageMv, stringResource(R.string.unit_mv)),
-                        label = stringResource(R.string.battery_voltage),
-                        lineColor = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
@@ -928,6 +895,9 @@ private fun BatteryHistoryPanel(
                 HistoryPeriod.entries.forEach { period ->
                     val label = when (period) {
                         HistoryPeriod.SINCE_UNPLUG -> stringResource(R.string.history_period_since_unplug)
+                        HistoryPeriod.HOUR -> stringResource(R.string.history_period_hour)
+                        HistoryPeriod.SIX_HOURS -> stringResource(R.string.history_period_6h)
+                        HistoryPeriod.TWELVE_HOURS -> stringResource(R.string.history_period_12h)
                         HistoryPeriod.DAY -> stringResource(R.string.history_period_day)
                         HistoryPeriod.WEEK -> stringResource(R.string.history_period_week)
                         HistoryPeriod.MONTH -> stringResource(R.string.history_period_month)
