@@ -328,6 +328,11 @@
         <item quantity="other">%1$s across %2$d apps</item>
     </plurals>
 
+    <!-- Storage History -->
+    <string name="storage_history">History</string>
+    <string name="storage_metric_used">Used Space</string>
+    <string name="storage_metric_available">Available Space</string>
+
     <!-- Storage Actions -->
     <string name="storage_cleanup_tools">Cleanup Tools</string>
     <string name="storage_media_permission_title">Allow media access for storage tools</string>

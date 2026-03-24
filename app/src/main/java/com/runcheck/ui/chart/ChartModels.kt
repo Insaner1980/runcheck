@@ -28,6 +28,11 @@ enum class ThermalHistoryMetric {
     CPU_TEMP
 }
 
+enum class StorageHistoryMetric {
+    USED_SPACE,
+    AVAILABLE_SPACE
+}
+
 enum class FullscreenChartSource {
     BATTERY_HISTORY,
     BATTERY_SESSION,
@@ -53,5 +58,6 @@ const val MAX_HISTORY_CHART_POINTS = 300
 const val MAX_SESSION_CHART_POINTS = 240
 const val MAX_NETWORK_HISTORY_POINTS = 300
 const val MAX_THERMAL_HISTORY_POINTS = 300
+const val MAX_STORAGE_HISTORY_POINTS = 300
 const val MAX_FULLSCREEN_CHART_POINTS = 600
 const val MAX_FULLSCREEN_SESSION_POINTS = 480

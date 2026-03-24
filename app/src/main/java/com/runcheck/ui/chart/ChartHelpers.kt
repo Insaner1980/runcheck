@@ -428,3 +428,9 @@ fun thermalHistoryMetricLabel(metric: ThermalHistoryMetric): String = when (metr
     ThermalHistoryMetric.BATTERY_TEMP -> stringResource(R.string.thermal_metric_battery_temp)
     ThermalHistoryMetric.CPU_TEMP -> stringResource(R.string.thermal_metric_cpu_temp)
 }
+
+@Composable
+fun storageHistoryMetricLabel(metric: StorageHistoryMetric): String = when (metric) {
+    StorageHistoryMetric.USED_SPACE -> stringResource(R.string.storage_metric_used)
+    StorageHistoryMetric.AVAILABLE_SPACE -> stringResource(R.string.storage_metric_available)
+}

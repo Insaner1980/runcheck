@@ -12,6 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -79,6 +80,15 @@ class StorageRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             ReleaseSafeLog.error(TAG, "Failed to save storage reading", e)
         }
+    }
+
+    override fun getReadingsSince(since: Long, limit: Int?): Flow<List<StorageReading>> {
+        val source = if (limit != null) {
+            storageReadingDao.getReadingsSinceLimited(since, limit)
+        } else {
+            storageReadingDao.getReadingsSince(since)
+        }
+        return source.map { entities -> entities.map { it.toDomain() } }
     }
 
     override suspend fun getAllReadings(): List<StorageReading> {

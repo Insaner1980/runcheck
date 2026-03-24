@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -67,8 +69,10 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
+import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.MediaBreakdown
+import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.TrashInfo
 import com.runcheck.domain.model.StorageState
 import com.runcheck.ui.ads.DetailScreenAdBanner
@@ -79,9 +83,19 @@ import com.runcheck.ui.storage.cleanup.categoryColor
 import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
+import com.runcheck.ui.chart.MAX_STORAGE_HISTORY_POINTS
+import com.runcheck.ui.chart.StorageHistoryMetric
+import com.runcheck.ui.chart.buildStorageHistoryChartModel
+import com.runcheck.ui.chart.formatChartTooltip
+import com.runcheck.ui.chart.historyPeriodLabel
+import com.runcheck.ui.chart.storageHistoryMetricLabel
+import com.runcheck.ui.common.UiText
+import com.runcheck.ui.common.formatDecimal
+import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ActionCard
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.ExpandableChartContainer
 import com.runcheck.ui.components.ListRow
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.ProFeatureCalloutCard
@@ -92,6 +106,7 @@ import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SegmentData
 import com.runcheck.ui.components.SegmentedBar
 import com.runcheck.ui.components.SegmentedBarLegend
+import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.learn.LearnTopic
 import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.numericFontFamily
@@ -236,7 +251,8 @@ fun StorageDetailScreen(
                     onUpgradeToPro = onUpgradeToPro,
                     onNavigateToLearnArticle = onNavigateToLearnArticle,
                     onEmptyTrash = { viewModel.emptyTrash() },
-                    onDismissInfoCard = { viewModel.dismissInfoCard(it) }
+                    onDismissInfoCard = { viewModel.dismissInfoCard(it) },
+                    onPeriodChange = { viewModel.setHistoryPeriod(it) }
                 )
             }
         }
@@ -254,7 +270,8 @@ private fun StorageContent(
     onUpgradeToPro: () -> Unit = {},
     onNavigateToLearnArticle: (articleId: String) -> Unit = {},
     onEmptyTrash: () -> Unit = {},
-    onDismissInfoCard: (String) -> Unit = {}
+    onDismissInfoCard: (String) -> Unit = {},
+    onPeriodChange: (HistoryPeriod) -> Unit = {}
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
@@ -291,7 +308,7 @@ private fun StorageContent(
                     headline = stringResource(InfoCardCatalog.StorageFullSlowsPhone.headlineRes),
                     body = stringResource(InfoCardCatalog.StorageFullSlowsPhone.bodyRes),
                     onDismiss = { onDismissInfoCard(it) },
-                    visible = InfoCardCatalog.StorageFullSlowsPhone.id !in state.dismissedInfoCards,
+                    visible = InfoCardCatalog.StorageFullSlowsPhone.id !in state.dismissedInfoCards && state.showInfoCards,
                     onLearnMore = {
                         InfoCardCatalog.StorageFullSlowsPhone.learnArticleId?.let(onNavigateToLearnArticle)
                     }
@@ -316,10 +333,20 @@ private fun StorageContent(
                     headline = stringResource(InfoCardCatalog.StorageOverview.headlineRes),
                     body = stringResource(InfoCardCatalog.StorageOverview.bodyRes),
                     onDismiss = { onDismissInfoCard(it) },
-                    visible = InfoCardCatalog.StorageOverview.id !in state.dismissedInfoCards,
+                    visible = InfoCardCatalog.StorageOverview.id !in state.dismissedInfoCards && state.showInfoCards,
                     onLearnMore = {
                         InfoCardCatalog.StorageOverview.learnArticleId?.let(onNavigateToLearnArticle)
                     }
+                )
+            }
+
+            // ── History chart (Pro only) ─────────────────────────────
+            if (state.isPro) {
+                StorageHistoryCard(
+                    history = state.storageHistory,
+                    selectedPeriod = state.selectedHistoryPeriod,
+                    historyLoadError = state.historyLoadError,
+                    onPeriodChange = onPeriodChange
                 )
             }
 
@@ -366,6 +393,8 @@ private fun StorageContent(
             "fillRate" -> StorageInfoContent.fillRate
             "cache" -> StorageInfoContent.cache
             "appsTotal" -> StorageInfoContent.appsTotal
+            "filesystem" -> StorageInfoContent.filesystem
+            "encryption" -> StorageInfoContent.encryption
             else -> null
         }
         content?.let {
@@ -579,6 +608,142 @@ private fun StorageMediaBreakdownCard(breakdown: MediaBreakdown, usedBytes: Long
     }
 }
 
+// ── History chart card ─────────────────────────────────────────────────────────
+
+@Composable
+private fun StorageHistoryCard(
+    history: List<StorageReading>,
+    selectedPeriod: HistoryPeriod,
+    historyLoadError: UiText?,
+    onPeriodChange: (HistoryPeriod) -> Unit
+) {
+    var selectedMetric by rememberSaveable { mutableStateOf(StorageHistoryMetric.USED_SPACE.name) }
+
+    val metric = StorageHistoryMetric.entries.firstOrNull { it.name == selectedMetric }
+        ?: StorageHistoryMetric.USED_SPACE
+
+    val chartModel = remember(history, metric, selectedPeriod) {
+        buildStorageHistoryChartModel(
+            history = history,
+            metric = metric,
+            period = selectedPeriod,
+            maxPoints = MAX_STORAGE_HISTORY_POINTS
+        )
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = MaterialTheme.shapes.large
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MaterialTheme.spacing.base),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+        ) {
+            CardSectionTitle(text = stringResource(R.string.storage_history))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+            ) {
+                StorageHistoryMetric.entries.forEach { m ->
+                    FilterChip(
+                        selected = metric == m,
+                        onClick = { selectedMetric = m.name },
+                        label = { Text(storageHistoryMetricLabel(m)) }
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+            ) {
+                HistoryPeriod.entries
+                    .filter { it != HistoryPeriod.SINCE_UNPLUG }
+                    .forEach { period ->
+                        FilterChip(
+                            selected = selectedPeriod == period,
+                            onClick = { onPeriodChange(period) },
+                            label = { Text(historyPeriodLabel(period)) }
+                        )
+                    }
+            }
+
+            historyLoadError?.let { error ->
+                Text(
+                    text = error.resolve(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            if (chartModel.chartData.size >= 2) {
+                Text(
+                    text = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${storageHistoryMetricLabel(metric)}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                ExpandableChartContainer(
+                    onExpand = {}
+                ) {
+                    TrendChart(
+                        data = chartModel.chartData,
+                        modifier = Modifier.fillMaxWidth(),
+                        yLabels = chartModel.yLabels.ifEmpty { null },
+                        xLabels = chartModel.xLabels.ifEmpty { null },
+                        showGrid = true,
+                        tooltipFormatter = { index -> formatChartTooltip(chartModel, index) }
+                    )
+                }
+
+                // Min / Avg / Max summary
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+                ) {
+                    chartModel.minValue?.let {
+                        MetricPill(
+                            label = stringResource(R.string.chart_stat_min),
+                            value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    chartModel.averageValue?.let {
+                        MetricPill(
+                            label = stringResource(R.string.chart_stat_avg),
+                            value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    chartModel.maxValue?.let {
+                        MetricPill(
+                            label = stringResource(R.string.chart_stat_max),
+                            value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    text = stringResource(R.string.network_history_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
 // ── Cleanup Tools section ──────────────────────────────────────────────────────
 
 @Composable
@@ -701,13 +866,15 @@ private fun StorageDetailsCard(storage: StorageState, onInfoClick: (String) -> U
             storage.fileSystemType?.let { fs ->
                 MetricRow(
                     label = stringResource(R.string.storage_filesystem),
-                    value = fs.uppercase()
+                    value = fs.uppercase(),
+                    onInfoClick = { onInfoClick("filesystem") }
                 )
             }
             storage.encryptionStatus?.let { enc ->
                 MetricRow(
                     label = stringResource(R.string.storage_encryption),
-                    value = enc
+                    value = enc,
+                    onInfoClick = { onInfoClick("encryption") }
                 )
             }
             if (storage.storageVolumes > 0) {

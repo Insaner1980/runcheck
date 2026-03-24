@@ -3,6 +3,7 @@ package com.runcheck.ui.chart
 import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.NetworkReading
+import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.model.ThermalReading
 import com.runcheck.ui.common.formatDecimal
@@ -164,6 +165,36 @@ fun buildThermalHistoryChartModel(
         xLabels = if (chartTimestamps.size >= 2) buildNetworkXLabels(chartTimestamps, period) else emptyList(),
         tooltipDecimals = 1,
         temperatureUnit = temperatureUnit
+    )
+}
+
+fun buildStorageHistoryChartModel(
+    history: List<StorageReading>,
+    metric: StorageHistoryMetric,
+    period: HistoryPeriod,
+    maxPoints: Int
+): ChartRenderModel {
+    val chartPoints = history.map { reading ->
+        val value = when (metric) {
+            StorageHistoryMetric.USED_SPACE ->
+                (reading.totalBytes - reading.availableBytes).toFloat() / (1024f * 1024f * 1024f)
+            StorageHistoryMetric.AVAILABLE_SPACE ->
+                reading.availableBytes.toFloat() / (1024f * 1024f * 1024f)
+        }
+        reading.timestamp to value
+    }.downsamplePairs(maxPoints)
+    val chartData = chartPoints.map { it.second }
+    val chartTimestamps = chartPoints.map { it.first }
+    val min = chartData.minOrNull()
+    val max = chartData.maxOrNull()
+
+    return ChartRenderModel(
+        chartData = chartData,
+        chartTimestamps = chartTimestamps,
+        unit = " GB",
+        yLabels = if (min != null && max != null) buildNetworkYLabels(min, max) else emptyList(),
+        xLabels = if (chartTimestamps.size >= 2) buildNetworkXLabels(chartTimestamps, period) else emptyList(),
+        tooltipDecimals = 1
     )
 }
 
