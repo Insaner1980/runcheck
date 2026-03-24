@@ -22,6 +22,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
@@ -494,6 +495,36 @@ fun TrendChart(
                 start = Offset(sweepX, chartTop),
                 end = Offset(sweepX, chartTop + chartHeight),
                 strokeWidth = 1.5.dp.toPx()
+            )
+        }
+
+        // ── Last value emphasis ──────────────────────────────────────────
+        if (data.isNotEmpty() && emphasisAlpha.value > 0f) {
+            val lastIndex = data.size - 1
+            val lastX = chartLeft + lastIndex * stepX
+            val lastY = chartTop + chartHeight - ((data[lastIndex] - minVal) / range * chartHeight)
+
+            // Glow circle (outer)
+            drawCircle(
+                color = lineColor.copy(alpha = 0.3f * emphasisAlpha.value),
+                radius = 6.dp.toPx(),
+                center = Offset(lastX, lastY)
+            )
+            // Solid dot (inner)
+            drawCircle(
+                color = lineColor.copy(alpha = emphasisAlpha.value),
+                radius = 3.dp.toPx(),
+                center = Offset(lastX, lastY)
+            )
+            // Dashed horizontal line to Y-axis
+            drawLine(
+                color = lineColor.copy(alpha = 0.4f * emphasisAlpha.value),
+                start = Offset(lastX, lastY),
+                end = Offset(chartLeft, lastY),
+                strokeWidth = 1.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(
+                    floatArrayOf(4.dp.toPx(), 4.dp.toPx())
+                )
             )
         }
 
