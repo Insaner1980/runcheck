@@ -23,7 +23,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -37,6 +36,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.runcheck.ui.chart.qualityZoneColorForValue
@@ -156,7 +156,7 @@ fun TrendChart(
     val range = (maxVal - minVal).coerceAtLeast(1f)
 
     val linePath = remember { Path() }
-    val fillPath = remember { Path() }
+    val stripPath = remember { Path() }
 
     // Tooltip state: -1 means no selection
     var selectedIndex by remember { mutableIntStateOf(-1) }
@@ -413,13 +413,6 @@ fun TrendChart(
             if (i == 0) linePath.moveTo(x, y) else linePath.lineTo(x, y)
         }
 
-        fillPath.reset()
-        fillPath.addPath(linePath)
-        val lastX = chartLeft + (data.size - 1) * stepX
-        fillPath.lineTo(lastX, chartTop + chartHeight)
-        fillPath.lineTo(chartLeft, chartTop + chartHeight)
-        fillPath.close()
-
         // Calculate sweep X position
         val sweepX = chartLeft + chartWidth * sweepProgress.value
 
@@ -430,15 +423,34 @@ fun TrendChart(
             right = sweepX,
             bottom = chartTop + chartHeight
         ) {
-            drawPath(
-                path = fillPath,
-                brush = Brush.verticalGradient(
-                    colors = listOf(fillColor, Color.Transparent),
-                    startY = chartTop,
-                    endY = chartTop + chartHeight
-                ),
-                style = Fill
-            )
+            // Strip-based gradient fill — alpha proportional to data value height
+            for (i in 0 until data.size - 1) {
+                val x1 = chartLeft + i * stepX
+                val x2 = chartLeft + (i + 1) * stepX
+                val y1 = chartTop + chartHeight - ((data[i] - minVal) / range * chartHeight)
+                val y2 = chartTop + chartHeight - ((data[i + 1] - minVal) / range * chartHeight)
+                val avgNormalizedY = ((data[i] - minVal) / range + (data[i + 1] - minVal) / range) / 2f
+                val topAlpha = lerp(0.08f, 0.30f, avgNormalizedY)
+
+                stripPath.reset()
+                stripPath.moveTo(x1, y1)
+                stripPath.lineTo(x2, y2)
+                stripPath.lineTo(x2, chartTop + chartHeight)
+                stripPath.lineTo(x1, chartTop + chartHeight)
+                stripPath.close()
+
+                drawPath(
+                    path = stripPath,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            fillColor.copy(alpha = topAlpha),
+                            fillColor.copy(alpha = 0.02f)
+                        ),
+                        startY = minOf(y1, y2),
+                        endY = chartTop + chartHeight
+                    )
+                )
+            }
 
             if (lineGradientColors != null) {
                 drawPath(
