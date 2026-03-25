@@ -88,7 +88,7 @@ app/src/main/java/com/runcheck/
 
 ## Architecture Conventions
 
-- **Domain layer must be pure Kotlin** — no `android.*` or `androidx.*` imports in `domain/`. Use `String` instead of `android.net.Uri`, map at data/UI boundaries.
+- **Domain layer must be pure Kotlin** — no `android.*` or `androidx.*` imports in `domain/`. Use `String` instead of `android.net.Uri`, map at data/UI boundaries. **Exception:** `androidx.paging.PagingData` is allowed in domain repository interfaces and use cases — wrapping it adds complexity without benefit in a single-module app.
 - **UI layer must not import data layer** — ViewModels inject use cases or domain repository interfaces, never data sources or data-layer classes directly.
 - **Data layer must not import UI framework** — no Compose types (`ImageBitmap`, etc.) in `data/`. Return platform primitives (`Bitmap`), convert in UI layer.
 - **Inject interfaces, not concrete classes** — repositories and data-layer services use interfaces (`DeviceProfileProvider`, `ForegroundAppProvider`). Bind via `@Binds` in Hilt modules.
@@ -285,7 +285,7 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 ## Build & Release
 
 - Use a single `app` module (no multi-module until necessary)
-- **Static analysis:** ktlint (formatting) + detekt 2.0.0-alpha.2 (code quality, `ignoreFailures = true` during adoption)
+- **Static analysis:** ktlint (formatting) + detekt 2.0.0-alpha.2 with compose-rules 0.5.6 (code quality, `ignoreFailures = true` during adoption) + Android Lint (correctness/security/a11y checks)
 - ProGuard/R8 minification enabled for release builds
 - Generate signed APK/AAB for Play Store
 - Version code: auto-increment
