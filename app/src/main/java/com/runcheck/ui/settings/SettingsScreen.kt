@@ -67,11 +67,11 @@ import com.runcheck.BuildConfig
 import com.runcheck.R
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
-import com.runcheck.domain.model.AppLanguage
 import com.runcheck.service.monitor.NotificationHelper
 import com.runcheck.service.monitor.RealTimeMonitorService
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.ui.common.findActivity
+import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailTopBar
@@ -133,8 +133,11 @@ fun SettingsScreen(
         }
     }
 
-    // Clear data confirmation dialog
+    // Confirmation dialog states
     var showClearDialog by remember { mutableStateOf(false) }
+    var showClearSpeedTestsDialog by remember { mutableStateOf(false) }
+    var showResetTipsDialog by remember { mutableStateOf(false) }
+    var showResetThresholdsDialog by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
@@ -355,6 +358,19 @@ fun SettingsScreen(
                     },
                     onValueChange = { viewModel.setAlertStorageThreshold(it) }
                 )
+
+                val isDefault = uiState.preferences.alertBatteryThreshold == 20 &&
+                    uiState.preferences.alertTempThreshold == 42 &&
+                    uiState.preferences.alertStorageThreshold == 90
+                if (!isDefault) {
+                    SettingsDivider()
+                    TextButton(
+                        onClick = { showResetThresholdsDialog = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.settings_reset_thresholds))
+                    }
+                }
             }
 
             // ── DISPLAY ────────────────────────────────────────────────
@@ -381,35 +397,11 @@ fun SettingsScreen(
 
                 SettingsDivider()
 
-                Text(
-                    text = stringResource(R.string.settings_language),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                SettingsRadioRow(
-                    label = stringResource(R.string.settings_language_system),
-                    selected = uiState.preferences.appLanguage == AppLanguage.SYSTEM,
-                    onSelect = {
-                        viewModel.setAppLanguage(AppLanguage.SYSTEM)
-                        (context as? android.app.Activity)?.recreate()
-                    }
-                )
-                SettingsRadioRow(
-                    label = "English",
-                    selected = uiState.preferences.appLanguage == AppLanguage.ENGLISH,
-                    onSelect = {
-                        viewModel.setAppLanguage(AppLanguage.ENGLISH)
-                        (context as? android.app.Activity)?.recreate()
-                    }
-                )
-                SettingsRadioRow(
-                    label = "Suomi",
-                    selected = uiState.preferences.appLanguage == AppLanguage.FINNISH,
-                    onSelect = {
-                        viewModel.setAppLanguage(AppLanguage.FINNISH)
-                        (context as? android.app.Activity)?.recreate()
-                    }
+                SettingsToggle(
+                    title = stringResource(R.string.settings_show_info_cards),
+                    description = stringResource(R.string.settings_show_info_cards_desc),
+                    checked = uiState.preferences.showInfoCards,
+                    onCheckedChange = { viewModel.setShowInfoCards(it) }
                 )
             }
 
@@ -461,10 +453,14 @@ fun SettingsScreen(
 
                 SettingsNavigationRow(
                     label = stringResource(R.string.settings_reset_tips),
-                    onClick = {
-                        viewModel.resetTips()
-                        Toast.makeText(context, context.getString(R.string.settings_reset_tips_done), Toast.LENGTH_SHORT).show()
-                    }
+                    onClick = { showResetTipsDialog = true }
+                )
+
+                SettingsDivider()
+
+                SettingsNavigationRow(
+                    label = stringResource(R.string.settings_clear_speed_tests),
+                    onClick = { showClearSpeedTestsDialog = true }
                 )
 
                 SettingsDivider()
@@ -521,18 +517,6 @@ fun SettingsScreen(
                 )
             }
 
-            // ── PRIVACY ────────────────────────────────────────────────
-            SettingsCard {
-                CardSectionTitle(text = stringResource(R.string.settings_privacy))
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                SettingsToggle(
-                    title = stringResource(R.string.settings_crash_reporting),
-                    description = stringResource(R.string.settings_crash_reporting_desc),
-                    checked = uiState.preferences.crashReportingEnabled,
-                    onCheckedChange = { viewModel.setCrashReporting(it) }
-                )
-            }
-
             // ── DEVICE ─────────────────────────────────────────────────
             uiState.deviceProfile?.let { profile ->
                 SettingsCard {
@@ -550,7 +534,7 @@ fun SettingsScreen(
                     ) {
                         MetricPill(
                             label = stringResource(R.string.settings_api_level_label),
-                            value = profile.apiLevel.toString(),
+                            value = androidVersionName(profile.apiLevel),
                             modifier = Modifier.weight(1f)
                         )
                         MetricPill(
@@ -580,6 +564,21 @@ fun SettingsScreen(
                         MetricPill(
                             label = stringResource(R.string.settings_thermal_zones_label),
                             value = profile.thermalZonesAvailable.size.toString(),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+                    ) {
+                        val memoryInfo = remember {
+                            val activityManager = context.getSystemService(android.app.ActivityManager::class.java)
+                            android.app.ActivityManager.MemoryInfo().also { activityManager?.getMemoryInfo(it) }
+                        }
+                        MetricPill(
+                            label = stringResource(R.string.settings_ram_label),
+                            value = formatStorageSize(context, memoryInfo.totalMem),
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -693,7 +692,77 @@ fun SettingsScreen(
         }
     }
 
-    // Clear data confirmation dialog
+    // Reset thresholds confirmation dialog
+    if (showResetThresholdsDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetThresholdsDialog = false },
+            shape = MaterialTheme.shapes.large,
+            title = { Text(stringResource(R.string.settings_reset_thresholds_confirm_title)) },
+            text = { Text(stringResource(R.string.settings_reset_thresholds_confirm_message)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showResetThresholdsDialog = false
+                        viewModel.resetAlertThresholds()
+                    }
+                ) { Text(stringResource(R.string.settings_reset_thresholds)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetThresholdsDialog = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
+    }
+
+    // Reset tips confirmation dialog
+    if (showResetTipsDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetTipsDialog = false },
+            shape = MaterialTheme.shapes.large,
+            title = { Text(stringResource(R.string.settings_reset_tips_confirm_title)) },
+            text = { Text(stringResource(R.string.settings_reset_tips_confirm_message)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showResetTipsDialog = false
+                        viewModel.resetTips()
+                        Toast.makeText(context, context.getString(R.string.settings_reset_tips_done), Toast.LENGTH_SHORT).show()
+                    }
+                ) { Text(stringResource(R.string.settings_reset_tips)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetTipsDialog = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
+    }
+
+    // Clear speed tests confirmation dialog
+    if (showClearSpeedTestsDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearSpeedTestsDialog = false },
+            shape = MaterialTheme.shapes.large,
+            title = { Text(stringResource(R.string.settings_clear_speed_tests_confirm_title)) },
+            text = { Text(stringResource(R.string.settings_clear_speed_tests_confirm_message)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showClearSpeedTestsDialog = false
+                        viewModel.clearSpeedTests()
+                    }
+                ) { Text(stringResource(R.string.settings_clear_action)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearSpeedTestsDialog = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
+    }
+
+    // Clear all data confirmation dialog
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
@@ -705,11 +774,7 @@ fun SettingsScreen(
                     onClick = {
                         showClearDialog = false
                         viewModel.clearAllData()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
-                    )
+                    }
                 ) { Text(stringResource(R.string.settings_clear_action)) }
             },
             dismissButton = {
@@ -914,6 +979,22 @@ private fun openExternalUri(context: android.content.Context, uri: String) {
     context.startActivity(
         Intent(Intent.ACTION_VIEW, Uri.parse(uri)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     )
+}
+
+private fun androidVersionName(apiLevel: Int): String = when (apiLevel) {
+    26 -> "Android 8.0"
+    27 -> "Android 8.1"
+    28 -> "Android 9"
+    29 -> "Android 10"
+    30 -> "Android 11"
+    31 -> "Android 12"
+    32 -> "Android 12L"
+    33 -> "Android 13"
+    34 -> "Android 14"
+    35 -> "Android 15"
+    36 -> "Android 16"
+    37 -> "Android 17"
+    else -> "API $apiLevel"
 }
 
 private val LOW_BATTERY_THRESHOLD_VALUES = (5..50 step 5).toList()
