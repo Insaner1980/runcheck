@@ -73,7 +73,7 @@ Home
 
 Current runtime systems:
 
-- `RuncheckApp` initializes billing, Pro state, notification channels, crash reporting, screen-state tracking, periodic monitoring, and widget refresh hooks
+- `RuncheckApp` initializes billing, Pro state, notification channels, screen-state tracking, periodic monitoring, and widget refresh hooks
 - WorkManager runs `HealthMonitorWorker` for snapshot collection + alert evaluation
 - WorkManager runs `HealthMaintenanceWorker` for app-usage refresh, cleanup, and widget refresh
 - Widgets are backed by Room snapshots and treated as a Pro feature
