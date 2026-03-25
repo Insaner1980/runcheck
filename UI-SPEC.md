@@ -564,7 +564,7 @@ whyItMatters: @StringRes
 deeperDetail: @StringRes? (optional expandable section)
 ```
 
-Coverage: Battery 12 metrics, Thermal 4, Network 8, Storage 4, Speed Test 4 = 32 total.
+Coverage: Battery 21 metrics, Thermal 4, Network 13, Storage 6, Speed Test 4 = 48 total.
 
 #### InfoCard
 Dismissible contextual education card.
