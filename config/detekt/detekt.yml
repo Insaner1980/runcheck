@@ -1,3 +1,98 @@
+# ── Correctness: potential bugs ─────────────────────────────────────────────
+potential-bugs:
+  active: true
+  CastToNullableType:
+    active: true
+  Deprecation:
+    active: false          # already handled via @Suppress("DEPRECATION") with version guards
+  DoubleMutabilityForCollection:
+    active: true
+  ElseCaseInsteadOfExhaustiveWhen:
+    active: true
+  EqualsAlwaysReturnsTrueOrFalse:
+    active: true
+  ExitOutsideMain:
+    active: true
+  HasPlatformType:
+    active: true           # catches implicit platform types leaking from Java APIs
+  IgnoredReturnValue:
+    active: false          # too noisy with builder/dsl patterns
+  ImplicitDefaultLocale:
+    active: true           # catches String.format() without explicit Locale
+  InvalidRange:
+    active: true
+  IteratorNotThrowingNoSuchElementException:
+    active: true
+  MapGetWithNotNullAssertionOperator:
+    active: true
+  MissingPackageDeclaration:
+    active: true
+  NullCheckOnMutableProperty:
+    active: true
+  NullableToStringCall:
+    active: true
+  UnconditionalJumpStatementInLoop:
+    active: true
+  UnnecessaryNotNullCheck:
+    active: true
+  UnnecessaryNotNullOperator:
+    active: true           # catches !! — project rule: no !! operator
+  UnreachableCode:
+    active: true
+  UnsafeCallOnNullableType:
+    active: true           # catches !! — same as above, belt-and-suspenders
+  UselessPostfixExpression:
+    active: true
+
+# ── Empty blocks ───────────────────────────────────────────────────────────
+empty-blocks:
+  active: true
+  EmptyCatchBlock:
+    active: true
+    allowedExceptionNameRegex: '_|(ignore|expected).*'
+  EmptyDefaultConstructor:
+    active: true
+  EmptyElseBlock:
+    active: true
+  EmptyFinallyBlock:
+    active: true
+  EmptyForBlock:
+    active: true
+  EmptyFunctionBlock:
+    active: true
+    ignoreOverridden: true
+  EmptyIfBlock:
+    active: true
+  EmptyInitBlock:
+    active: true
+  EmptySecondaryConstructor:
+    active: true
+  EmptyTryBlock:
+    active: true
+  EmptyWhenBlock:
+    active: true
+  EmptyWhileBlock:
+    active: true
+
+# ── Coroutines ─────────────────────────────────────────────────────────────
+coroutines:
+  active: true
+  GlobalCoroutineUsage:
+    active: true           # catches GlobalScope launch — prefer viewModelScope / lifecycle
+  InjectDispatcher:
+    active: false          # would require large refactor; not worth the churn now
+  RedundantSuspendModifier:
+    active: true
+  SleepInsteadOfDelay:
+    active: true           # catches Thread.sleep() inside coroutines
+  SuspendFunSwallowedCancellation:
+    active: true           # catches missing CancellationException rethrow
+  SuspendFunWithCoroutineScopeReceiver:
+    active: true
+  SuspendFunWithFlowReturnType:
+    active: true
+
+# ── Complexity ─────────────────────────────────────────────────────────────
 complexity:
   CyclomaticComplexMethod:
     allowedComplexity: 20
@@ -14,15 +109,17 @@ complexity:
   NestedBlockDepth:
     allowedDepth: 5
 
+# ── Naming ─────────────────────────────────────────────────────────────────
 naming:
   FunctionNaming:
     functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
   TopLevelPropertyNaming:
     constantPattern: '[A-Z][A-Za-z0-9]*'
 
+# ── Style ──────────────────────────────────────────────────────────────────
 style:
   MagicNumber:
-    active: false
+    active: false          # too noisy for UI code with dp/sp/color values
   ForbiddenComment:
     active: false
   ReturnCount:
@@ -30,7 +127,29 @@ style:
   MaxLineLength:
     maxLineLength: 120
     excludeCommentStatements: true
+  DestructuringDeclarationWithTooManyEntries:
+    active: true
+    maxDestructuringEntries: 5
+  UnnecessaryAbstractClass:
+    active: true
+  UnnecessaryInheritance:
+    active: true
+  UnnecessaryLet:
+    active: true
+  UnusedImports:
+    active: true
+  UnusedParameter:
+    active: true
+    allowedNames: '_.*'
+  UnusedPrivateMember:
+    active: true
+    allowedNames: '_.*|Companion'
+  UseCheckOrError:
+    active: true
+  UseRequire:
+    active: true
 
+# ── Exceptions ─────────────────────────────────────────────────────────────
 exceptions:
   TooGenericExceptionCaught:
     allowedExceptionNameRegex: '_|(ignore|expected).*'
