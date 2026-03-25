@@ -139,7 +139,7 @@ Rules:
 - Use M-Lab NDT7 only
 - Do not hardcode a server; NDT7 chooses the nearest server
 - Show the cellular warning before the test starts when the active network is not Wi-Fi
-- Outbound network calls are allowed only for user-initiated speed tests and Crashlytics when the user has enabled crash reporting
+- Outbound network calls are allowed only for user-initiated speed tests, latency measurement, and Google Play Billing
 - Reading current connection details such as Wi-Fi, 5G, SSID, signal, IP, or DNS must stay on-device via Android APIs and must not trigger socket, HTTP, or ping-style probes
 
 ### 6. Motion and animation
@@ -189,7 +189,7 @@ Raise a review comment or fix request for any of these:
 - Touch targets smaller than 48dp
 - Sysfs-based thermal reads
 - NDT7 speed tests pinned to a fixed server
-- Any outbound network call outside the speed test flow or toggle-controlled Crashlytics
+- Any outbound network call outside the speed test flow, latency measurement, or billing
 
 ## Working Conventions
 

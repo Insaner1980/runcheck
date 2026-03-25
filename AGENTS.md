@@ -111,7 +111,7 @@ When reviewing a PR or file, check for these in order:
 - Uses M-Lab NDT7 (`ndt7-client-android` Kotlin library). No other speed test backend.
 - Never hardcode a fixed server — NDT7 auto-selects nearest global server.
 - Cellular warning dialog must appear before test starts if active network is not WiFi.
-- Outbound network calls are allowed only for user-initiated speed tests and Crashlytics when the user has enabled crash reporting.
+- Outbound network calls are allowed only for user-initiated speed tests, latency measurement, and Google Play Billing.
 - Reading current connection details (WiFi, 5G, SSID, signal, IP, DNS) must stay on-device via Android APIs and must not trigger socket, HTTP, or ping-style probes.
 
 ### 6. Animations
@@ -147,7 +147,7 @@ Raise a review comment for any of the following:
 - Touch target smaller than 48dp
 - Sysfs read for thermal data (use PowerManager API instead)
 - NDT7 speed test using a fixed server URL
-- Any outbound network call outside the speed test flow or toggle-controlled Crashlytics
+- Any outbound network call outside the speed test flow, latency measurement, or billing
 
 ---
 

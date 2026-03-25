@@ -31,7 +31,6 @@ app/src/main/java/com/runcheck/
 │   ├── billing/       # BillingManager (lifecycle-aware billing service),
 │   │                  #   ProStatusCache
 │   ├── charger/       # Charger comparison data
-│   ├── crash/         # Firebase Crashlytics integration
 │   ├── device/        # Device detection, DeviceProfile, DeviceProfileProvider,
 │   │                  #   DeviceCapabilityManager
 │   ├── db/            # Room database (RuncheckDatabase, Converters, RoomTransactionRunner)
@@ -194,9 +193,8 @@ Settings screen uses grouped card layout with these sections:
 - **Notifications:** Master toggle + per-alert toggles (Low Battery, High Temp, Low Storage, Charge Complete). Master off dims and disables sub-toggles.
 - **Alert thresholds:** Sliders for battery (5–50%, default 20), temperature (35–50°C, default 42), storage (70–99%, default 90). Value displayed in numericFontFamily with primary color.
 - **Display:** Temperature unit (°C/°F) — stored in DataStore
-- **Data:** Retention (Pro), export (CSV), clear speed tests, clear all data (error-color button + AlertDialog confirmation)
+- **Data:** Retention (Pro), export (CSV), clear speed tests, clear all data — all destructive actions require confirmation dialog
 - **Pro:** Status display, purchase button, restore purchase
-- **Privacy:** Crash reporting toggle (Firebase Crashlytics)
 - **Device:** Read-only MetricPill grid (model, API level, current reliability, cycle count, thermal zones)
 - **About:** Version, Rate on Play Store, Privacy Policy, Send Feedback
 
@@ -303,8 +301,8 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 ## Important Notes
 
 - This is an Android-only app — no iOS, no cross-platform
-- Privacy-first: no analytics, no tracking, no account system, no network calls except optional latency ping
-- Measurement and history data stay on device unless the user explicitly enables crash reporting, which sends crash diagnostics to Firebase Crashlytics
+- Privacy-first: no analytics, no tracking, no account system, no crash reporting, no network calls except latency ping and speed test
+- All measurement and history data stays on device — zero data leaves the phone
 - The roadmap and next steps are documented in `docs/plans/2026-03-10-phase1-completion-and-roadmap.md`
 
 ## Feature Specs
@@ -318,7 +316,6 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 - `docs/superpowers/specs/2026-03-24-chart-animation-design.md` — Chart animation "Instrument Sweep" design spec (oscilloscope sweep, status gradient line, improved fill, LiveChart smooth scroll)
 - `docs/ui-consistency-audit.md` — UI consistency findings and fixes
 - `docs/ui-reference.md` — UI component reference and patterns
-- `docs/firebase-setup.md` — Firebase / Crashlytics setup guide
 - `docs/release-checklist.md` — Release build and Play Store checklist
 - `docs/play-store-listing.md` — Play Store listing content
 - `docs/privacy-policy.md` — Privacy policy

@@ -9,15 +9,14 @@ import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.billing.PurchaseEvent
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
-import com.runcheck.domain.model.AppLanguage
 import com.runcheck.domain.model.TemperatureUnit
+import com.runcheck.domain.repository.SpeedTestRepository
 import com.runcheck.domain.usecase.ClearMonitoringDataUseCase
 import com.runcheck.domain.usecase.ExportDataUseCase
 import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveSettingsUseCase
-import com.runcheck.domain.usecase.SetCrashReportingEnabledUseCase
 import com.runcheck.domain.usecase.SetDataRetentionUseCase
 import com.runcheck.domain.usecase.SetMonitoringIntervalUseCase
 import com.runcheck.domain.usecase.SetNotificationsEnabledUseCase
@@ -43,9 +42,9 @@ class SettingsViewModel @Inject constructor(
     private val setDataRetentionUseCase: SetDataRetentionUseCase,
     private val setMonitoringIntervalUseCase: SetMonitoringIntervalUseCase,
     private val setNotificationsEnabledUseCase: SetNotificationsEnabledUseCase,
-    private val setCrashReportingEnabledUseCase: SetCrashReportingEnabledUseCase,
     private val manageUserPreferences: ManageUserPreferencesUseCase,
-    private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase
+    private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase,
+    private val speedTestRepository: SpeedTestRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -167,18 +166,6 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun setCrashReporting(enabled: Boolean) {
-        viewModelScope.launch {
-            try {
-                setCrashReportingEnabledUseCase(enabled)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                _uiState.update { it.copy(errorMessage = UiText.Resource(R.string.common_error_generic)) }
-            }
-        }
-    }
-
     fun exportData() {
         if (!isProUser()) {
             _uiState.update {
@@ -284,12 +271,6 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun setAppLanguage(language: AppLanguage) {
-        executePreferenceUpdate {
-            manageUserPreferences.setAppLanguage(language)
-        }
-    }
-
     fun setLiveNotificationEnabled(enabled: Boolean) {
         executePreferenceUpdate {
             manageUserPreferences.setLiveNotificationEnabled(enabled)
@@ -319,6 +300,31 @@ class SettingsViewModel @Inject constructor(
     fun resetTips() {
         executePreferenceUpdate {
             manageInfoCardDismissals.resetDismissedCards()
+        }
+    }
+
+    fun setShowInfoCards(enabled: Boolean) {
+        executePreferenceUpdate { manageUserPreferences.setShowInfoCards(enabled) }
+    }
+
+    fun resetAlertThresholds() {
+        executePreferenceUpdate {
+            manageUserPreferences.resetAlertThresholds()
+        }
+    }
+
+    fun clearSpeedTests() {
+        viewModelScope.launch {
+            try {
+                speedTestRepository.deleteAll()
+                _uiState.update {
+                    it.copy(clearDataStatus = UiText.Resource(R.string.settings_speed_tests_cleared))
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _uiState.update { it.copy(errorMessage = UiText.Resource(R.string.common_error_generic)) }
+            }
         }
     }
 

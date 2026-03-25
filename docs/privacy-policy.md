@@ -25,13 +25,13 @@ runcheck uses network access only for:
 - **Latency measurement**: A TCP connection sample to the configured latency endpoint. By default this is `locate.measurementlab.net:443`.
 - **In-app purchases**: Google Play Billing for the Pro upgrade
 - **Speed testing**: Optional M-Lab NDT7 network throughput testing initiated by the user
-- **Optional crash reporting**: If you enable crash reporting in Settings, crash diagnostics are sent to Firebase Crashlytics
+
+No analytics, crash reporting, or telemetry data is ever sent.
 
 ## Third-party services
 
 - **Google Play Billing**: Processes in-app purchases. Subject to [Google Play's terms](https://play.google.com/about/play-terms/).
 - **M-Lab**: Provides optional speed-test infrastructure and the default latency endpoint.
-- **Firebase Crashlytics**: Optional crash diagnostics, enabled only if you explicitly opt in.
 
 ## Permissions
 
@@ -44,12 +44,12 @@ runcheck uses network access only for:
 | FOREGROUND_SERVICE_SPECIAL_USE | Support the real-time monitoring foreground service while actively viewing live metrics |
 | POST_NOTIFICATIONS | Send alerts (low battery, high temp, etc.) |
 | RECEIVE_BOOT_COMPLETED | Restart monitoring after device reboot |
-| INTERNET | Latency measurement, speed testing, billing, and optional crash reporting |
+| INTERNET | Latency measurement, speed testing, and billing |
 | PACKAGE_USAGE_STATS | Per-app battery usage tracking |
 
 ## Data deletion
 
-Uninstalling runcheck removes all locally stored app data. If crash reporting is enabled, previously uploaded crash reports are stored by Firebase Crashlytics according to Google's retention policies. Free users' data is automatically deleted after 24 hours.
+Uninstalling runcheck removes all locally stored app data. Free users' data is automatically deleted after 24 hours.
 
 ## Children's privacy
 

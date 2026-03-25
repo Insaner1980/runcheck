@@ -190,8 +190,6 @@ private class FakeUserPreferencesRepository(
 
     override suspend fun setDataRetention(retention: com.runcheck.domain.model.DataRetention) = Unit
 
-    override suspend fun setCrashReportingEnabled(enabled: Boolean) = Unit
-
     override fun getPermissionEducationSeen(): Flow<Boolean> = flowOf(false)
 
     override suspend fun setPermissionEducationSeen(seen: Boolean) = Unit

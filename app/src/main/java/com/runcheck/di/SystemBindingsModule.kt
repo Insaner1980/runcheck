@@ -3,11 +3,9 @@ package com.runcheck.di
 import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.data.appusage.AppUsageDataSource
 import com.runcheck.data.billing.BillingManager
-import com.runcheck.data.crash.CrashReportingManager
 import com.runcheck.data.db.RoomTransactionRunner
 import com.runcheck.data.device.DeviceProfileProvider
 import com.runcheck.data.device.DeviceProfileRepositoryImpl
-import com.runcheck.domain.repository.CrashReportingController
 import com.runcheck.domain.repository.DatabaseTransactionRunner
 import com.runcheck.domain.repository.MonitoringScheduler
 import com.runcheck.domain.repository.ProStatusProvider
@@ -36,10 +34,6 @@ abstract class SystemBindingsModule {
     @Binds
     @Singleton
     abstract fun bindDeviceProfileProvider(impl: DeviceProfileRepositoryImpl): DeviceProfileProvider
-
-    @Binds
-    @Singleton
-    abstract fun bindCrashReportingController(impl: CrashReportingManager): CrashReportingController
 
     @Binds
     @Singleton

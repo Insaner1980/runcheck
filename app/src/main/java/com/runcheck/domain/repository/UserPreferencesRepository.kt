@@ -1,6 +1,5 @@
 package com.runcheck.domain.repository
 
-import com.runcheck.domain.model.AppLanguage
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.model.TemperatureUnit
@@ -12,7 +11,6 @@ interface UserPreferencesRepository {
     suspend fun setMonitoringInterval(interval: MonitoringInterval)
     suspend fun setNotificationsEnabled(enabled: Boolean)
     suspend fun setDataRetention(retention: DataRetention)
-    suspend fun setCrashReportingEnabled(enabled: Boolean)
     fun getPermissionEducationSeen(): Flow<Boolean>
     suspend fun setPermissionEducationSeen(seen: Boolean)
     suspend fun getAppUsageLastCollectedAt(): Long?
@@ -29,11 +27,11 @@ interface UserPreferencesRepository {
     suspend fun setAlertTempThreshold(value: Int)
     suspend fun setAlertStorageThreshold(value: Int)
     suspend fun setTemperatureUnit(unit: TemperatureUnit)
-    suspend fun setAppLanguage(language: AppLanguage)
     suspend fun setLiveNotificationEnabled(enabled: Boolean)
     suspend fun setLiveNotifCurrent(enabled: Boolean)
     suspend fun setLiveNotifDrainRate(enabled: Boolean)
     suspend fun setLiveNotifTemperature(enabled: Boolean)
     suspend fun setLiveNotifScreenStats(enabled: Boolean)
     suspend fun setLiveNotifRemainingTime(enabled: Boolean)
+    suspend fun setShowInfoCards(enabled: Boolean)
 }

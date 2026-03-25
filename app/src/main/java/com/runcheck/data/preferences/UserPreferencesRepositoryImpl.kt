@@ -12,7 +12,6 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.runcheck.domain.model.AppLanguage
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.model.TemperatureUnit
@@ -69,7 +68,6 @@ class UserPreferencesRepositoryImpl @Inject constructor(
             dataRetention = prefs[KEY_DATA_RETENTION]
                 ?.let { stored -> enumValueOrNull<DataRetention>(stored) }
                 ?: DataRetention.THREE_MONTHS,
-            crashReportingEnabled = prefs[KEY_CRASH_REPORTING] ?: false,
             notifLowBattery = prefs[KEY_NOTIF_LOW_BATTERY] ?: true,
             notifHighTemp = prefs[KEY_NOTIF_HIGH_TEMP] ?: true,
             notifLowStorage = prefs[KEY_NOTIF_LOW_STORAGE] ?: true,
@@ -80,15 +78,13 @@ class UserPreferencesRepositoryImpl @Inject constructor(
             temperatureUnit = prefs[KEY_TEMP_UNIT]
                 ?.let { stored -> enumValueOrNull<TemperatureUnit>(stored) }
                 ?: TemperatureUnit.CELSIUS,
-            appLanguage = prefs[KEY_APP_LANGUAGE]
-                ?.let { stored -> enumValueOrNull<AppLanguage>(stored) }
-                ?: AppLanguage.SYSTEM,
             liveNotificationEnabled = prefs[KEY_LIVE_NOTIF_ENABLED] ?: false,
             liveNotifCurrent = prefs[KEY_LIVE_NOTIF_CURRENT] ?: true,
             liveNotifDrainRate = prefs[KEY_LIVE_NOTIF_DRAIN_RATE] ?: true,
             liveNotifTemperature = prefs[KEY_LIVE_NOTIF_TEMPERATURE] ?: true,
             liveNotifScreenStats = prefs[KEY_LIVE_NOTIF_SCREEN_STATS] ?: false,
-            liveNotifRemainingTime = prefs[KEY_LIVE_NOTIF_REMAINING_TIME] ?: false
+            liveNotifRemainingTime = prefs[KEY_LIVE_NOTIF_REMAINING_TIME] ?: false,
+            showInfoCards = prefs[KEY_SHOW_INFO_CARDS] ?: true
         )
     }
 
@@ -102,10 +98,6 @@ class UserPreferencesRepositoryImpl @Inject constructor(
 
     override suspend fun setDataRetention(retention: DataRetention) {
         context.dataStore.edit { it[KEY_DATA_RETENTION] = retention.name }
-    }
-
-    override suspend fun setCrashReportingEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[KEY_CRASH_REPORTING] = enabled }
     }
 
     override fun getPermissionEducationSeen(): Flow<Boolean> = preferencesFlow.map { prefs ->
@@ -172,16 +164,6 @@ class UserPreferencesRepositoryImpl @Inject constructor(
         context.dataStore.edit { it[KEY_TEMP_UNIT] = unit.name }
     }
 
-    override suspend fun setAppLanguage(language: AppLanguage) {
-        context.dataStore.edit { it[KEY_APP_LANGUAGE] = language.name }
-        // Mirror to SharedPreferences so MainActivity.attachBaseContext can read it
-        // synchronously before Hilt is initialized.
-        context.getSharedPreferences("runcheck_language", android.content.Context.MODE_PRIVATE)
-            .edit()
-            .putString("language_tag", language.toLanguageTag())
-            .apply()
-    }
-
     override suspend fun setLiveNotificationEnabled(enabled: Boolean) {
         context.dataStore.edit { it[KEY_LIVE_NOTIF_ENABLED] = enabled }
     }
@@ -206,11 +188,14 @@ class UserPreferencesRepositoryImpl @Inject constructor(
         context.dataStore.edit { it[KEY_LIVE_NOTIF_REMAINING_TIME] = enabled }
     }
 
+    override suspend fun setShowInfoCards(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_SHOW_INFO_CARDS] = enabled }
+    }
+
     companion object {
         private val KEY_MONITORING_INTERVAL = stringPreferencesKey("monitoring_interval")
         private val KEY_NOTIFICATIONS = booleanPreferencesKey("notifications")
         private val KEY_DATA_RETENTION = stringPreferencesKey("data_retention")
-        private val KEY_CRASH_REPORTING = booleanPreferencesKey("crash_reporting_enabled")
         private val KEY_PERMISSION_EDUCATION_SEEN = booleanPreferencesKey("permission_education_seen")
         private val KEY_APP_USAGE_LAST_COLLECTED_AT = longPreferencesKey("app_usage_last_collected_at")
         private val KEY_SELECTED_CHARGER_ID = longPreferencesKey("selected_charger_id")
@@ -222,13 +207,13 @@ class UserPreferencesRepositoryImpl @Inject constructor(
         private val KEY_ALERT_TEMP = intPreferencesKey("alert_temp_threshold")
         private val KEY_ALERT_STORAGE = intPreferencesKey("alert_storage_threshold")
         private val KEY_TEMP_UNIT = stringPreferencesKey("temp_unit")
-        private val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
         private val KEY_LIVE_NOTIF_ENABLED = booleanPreferencesKey("live_notif_enabled")
         private val KEY_LIVE_NOTIF_CURRENT = booleanPreferencesKey("live_notif_current")
         private val KEY_LIVE_NOTIF_DRAIN_RATE = booleanPreferencesKey("live_notif_drain_rate")
         private val KEY_LIVE_NOTIF_TEMPERATURE = booleanPreferencesKey("live_notif_temperature")
         private val KEY_LIVE_NOTIF_SCREEN_STATS = booleanPreferencesKey("live_notif_screen_stats")
         private val KEY_LIVE_NOTIF_REMAINING_TIME = booleanPreferencesKey("live_notif_remaining_time")
+        private val KEY_SHOW_INFO_CARDS = booleanPreferencesKey("show_info_cards")
         private val KEY_DISMISSED_INFO_CARDS = stringSetPreferencesKey("dismissed_info_cards")
     }
 }

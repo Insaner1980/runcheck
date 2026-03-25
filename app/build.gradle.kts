@@ -5,8 +5,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.firebase.crashlytics)
+
 }
 
 val releaseSigningRequested = gradle.startParameter.taskNames.any {
@@ -22,7 +21,7 @@ android {
     compileSdk = 36
 
     androidResources {
-        localeFilters += listOf("en", "fi")
+        localeFilters += listOf("en")
     }
 
     defaultConfig {
@@ -177,9 +176,6 @@ dependencies {
     // Gson
     implementation(libs.gson)
 
-    // Firebase Crashlytics
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.crashlytics)
 
     // M-Lab NDT7 speed test
     implementation(libs.ndt7)
