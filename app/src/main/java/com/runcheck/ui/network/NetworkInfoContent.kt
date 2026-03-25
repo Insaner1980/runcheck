@@ -53,4 +53,34 @@ object NetworkInfoContent {
         normalRange = R.string.info_network_mtu_range,
         whyItMatters = R.string.info_network_mtu_matters
     )
+    val connectionType = InfoSheetContent(
+        title = R.string.info_network_connection_type_title,
+        explanation = R.string.info_network_connection_type_explanation,
+        normalRange = R.string.info_network_connection_type_range,
+        whyItMatters = R.string.info_network_connection_type_matters
+    )
+    val metered = InfoSheetContent(
+        title = R.string.info_network_metered_title,
+        explanation = R.string.info_network_metered_explanation,
+        normalRange = R.string.info_network_metered_range,
+        whyItMatters = R.string.info_network_metered_matters
+    )
+    val roaming = InfoSheetContent(
+        title = R.string.info_network_roaming_title,
+        explanation = R.string.info_network_roaming_explanation,
+        normalRange = R.string.info_network_roaming_range,
+        whyItMatters = R.string.info_network_roaming_matters
+    )
+    val vpn = InfoSheetContent(
+        title = R.string.info_network_vpn_title,
+        explanation = R.string.info_network_vpn_explanation,
+        normalRange = R.string.info_network_vpn_range,
+        whyItMatters = R.string.info_network_vpn_matters
+    )
+    val subtype = InfoSheetContent(
+        title = R.string.info_network_subtype_title,
+        explanation = R.string.info_network_subtype_explanation,
+        normalRange = R.string.info_network_subtype_range,
+        whyItMatters = R.string.info_network_subtype_matters
+    )
 }

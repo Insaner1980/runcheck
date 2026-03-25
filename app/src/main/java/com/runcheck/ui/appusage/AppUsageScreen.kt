@@ -457,7 +457,11 @@ private fun AppIcon(packageName: String, appLabel: String) {
 
 private fun loadAppIconBitmap(context: Context, packageName: String): Bitmap? {
     return try {
-        context.packageManager.getApplicationIcon(packageName).toBitmap(96, 96)
+        val appInfo = context.packageManager.getApplicationInfo(
+            packageName,
+            PackageManager.MATCH_UNINSTALLED_PACKAGES
+        )
+        context.packageManager.getApplicationIcon(appInfo).toBitmap(96, 96)
     } catch (_: PackageManager.NameNotFoundException) {
         null
     } catch (_: RuntimeException) {

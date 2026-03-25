@@ -86,7 +86,10 @@ class AppUsageDataSource @Inject constructor(
 
     private fun resolveAppLabel(packageManager: PackageManager, packageName: String): String {
         return try {
-            val applicationInfo = packageManager.getApplicationInfo(packageName, 0)
+            val applicationInfo = packageManager.getApplicationInfo(
+                packageName,
+                PackageManager.MATCH_UNINSTALLED_PACKAGES
+            )
             packageManager.getApplicationLabel(applicationInfo).toString()
         } catch (_: PackageManager.NameNotFoundException) {
             packageName

@@ -162,15 +162,19 @@ class NetworkDataSource @Inject constructor(
         // Try NetworkCapabilities first, fall back to specific sources
         val rawSignalDbm = capabilities.signalStrength
         var signalDbm: Int? = rawSignalDbm.takeUnless { it == Int.MIN_VALUE }
+        val signalAsu: Int? = if (isCellular) getCellularSignalAsu() else null
         if (signalDbm == null && isCellular) {
             signalDbm = getCellularSignalDbm()
         }
 
         val wifiInfo = if (isWifi && canReadWifiDetails) getWifiDetails(capabilities) else null
 
+        // For WiFi, get RSSI even without location permission (RSSI doesn't require it)
+        val wifiSignal = if (isWifi && wifiInfo == null) getWifiSignalOnly(capabilities) else null
+
         // For WiFi, use RSSI if NetworkCapabilities didn't provide signal
-        if (isWifi && signalDbm == null && wifiInfo != null) {
-            signalDbm = wifiInfo.rssi
+        if (isWifi && signalDbm == null) {
+            signalDbm = wifiInfo?.rssi ?: wifiSignal?.rssi
         }
         val signalQuality = classifySignal(signalDbm, connectionType)
         val cellInfo = if (isCellular) getCellularDetails() else null
@@ -215,10 +219,11 @@ class NetworkDataSource @Inject constructor(
         return NetworkInfo(
             connectionType = connectionType,
             signalDbm = signalDbm,
+            signalAsu = signalAsu,
             signalQuality = signalQuality,
             wifiSsid = wifiInfo?.ssid,
-            wifiSpeedMbps = wifiInfo?.speedMbps,
-            wifiFrequencyMhz = wifiInfo?.frequencyMhz,
+            wifiSpeedMbps = wifiInfo?.speedMbps ?: wifiSignal?.speedMbps,
+            wifiFrequencyMhz = wifiInfo?.frequencyMhz ?: wifiSignal?.frequencyMhz,
             carrier = cellInfo?.carrier,
             networkSubtype = cellInfo?.networkType,
             estimatedDownstreamKbps = estimatedDownstreamKbps,
@@ -267,6 +272,21 @@ class NetworkDataSource @Inject constructor(
                 .mapNotNull { css ->
                     val signalDbm = css.dbm
                     if (signalDbm == Int.MIN_VALUE || signalDbm == Int.MAX_VALUE) null else signalDbm
+                }
+                .maxOrNull()
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun getCellularSignalAsu(): Int? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return null
+        return try {
+            val signalStrength = telephonyManager?.signalStrength ?: return null
+            signalStrength.cellSignalStrengths
+                .mapNotNull { css ->
+                    val asu = css.asuLevel
+                    if (asu == Int.MAX_VALUE || asu < 0) null else asu
                 }
                 .maxOrNull()
         } catch (_: Exception) {
@@ -513,6 +533,7 @@ class NetworkDataSource @Inject constructor(
     data class NetworkInfo(
         val connectionType: ConnectionType,
         val signalDbm: Int?,
+        val signalAsu: Int? = null,
         val signalQuality: SignalQuality,
         val wifiSsid: String? = null,
         val wifiSpeedMbps: Int? = null,
@@ -538,6 +559,40 @@ class NetworkDataSource @Inject constructor(
             )
         }
     }
+
+    /**
+     * Get WiFi signal info (RSSI, link speed, frequency) without location permission.
+     * SSID/BSSID require location, but these metrics do not.
+     */
+    @Suppress("DEPRECATION")
+    private fun getWifiSignalOnly(capabilities: NetworkCapabilities): WifiSignalInfo? {
+        // API 31+: transportInfo has RSSI/speed/frequency without location
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val wifiInfo = capabilities.transportInfo as? WifiInfo
+            if (wifiInfo != null) {
+                val rssi = wifiInfo.rssi.takeIf { it != -127 && it != 0 }
+                return WifiSignalInfo(
+                    rssi = rssi,
+                    speedMbps = wifiInfo.linkSpeed.takeIf { it > 0 },
+                    frequencyMhz = wifiInfo.frequency.takeIf { it > 0 }
+                )
+            }
+        }
+        // Fallback: WifiManager.connectionInfo
+        val info = wifiManager?.connectionInfo ?: return null
+        val rssi = info.rssi.takeIf { it != -127 && it != 0 }
+        return WifiSignalInfo(
+            rssi = rssi,
+            speedMbps = info.linkSpeed.takeIf { it > 0 },
+            frequencyMhz = info.frequency.takeIf { it > 0 }
+        )
+    }
+
+    private data class WifiSignalInfo(
+        val rssi: Int?,
+        val speedMbps: Int?,
+        val frequencyMhz: Int?
+    )
 
     private data class WifiDetails(
         val ssid: String,

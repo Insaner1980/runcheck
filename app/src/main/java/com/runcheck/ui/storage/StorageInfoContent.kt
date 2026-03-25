@@ -28,4 +28,16 @@ object StorageInfoContent {
         normalRange = R.string.info_storage_apps_range,
         whyItMatters = R.string.info_storage_apps_matters
     )
+    val filesystem = InfoSheetContent(
+        title = R.string.info_storage_filesystem_title,
+        explanation = R.string.info_storage_filesystem_explanation,
+        normalRange = R.string.info_storage_filesystem_range,
+        whyItMatters = R.string.info_storage_filesystem_matters
+    )
+    val encryption = InfoSheetContent(
+        title = R.string.info_storage_encryption_title,
+        explanation = R.string.info_storage_encryption_explanation,
+        normalRange = R.string.info_storage_encryption_range,
+        whyItMatters = R.string.info_storage_encryption_matters
+    )
 }

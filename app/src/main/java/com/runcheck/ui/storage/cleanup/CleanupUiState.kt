@@ -23,6 +23,7 @@ sealed interface CleanupUiState {
     data class Success(val freedBytes: Long) : CleanupUiState
     data class Error(val message: UiText) : CleanupUiState
     data object Empty : CleanupUiState
+    data object NeedsStoragePermission : CleanupUiState
 }
 
 data class FileGroup(

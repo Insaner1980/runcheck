@@ -1,6 +1,5 @@
 package com.runcheck.domain.usecase
 
-import com.runcheck.domain.model.AppLanguage
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.repository.UserPreferencesRepository
@@ -52,10 +51,6 @@ class ManageUserPreferencesUseCase @Inject constructor(
         userPreferencesRepository.setTemperatureUnit(unit)
     }
 
-    suspend fun setAppLanguage(language: AppLanguage) {
-        userPreferencesRepository.setAppLanguage(language)
-    }
-
     suspend fun setLiveNotificationEnabled(enabled: Boolean) {
         userPreferencesRepository.setLiveNotificationEnabled(enabled)
     }
@@ -78,5 +73,16 @@ class ManageUserPreferencesUseCase @Inject constructor(
 
     suspend fun setLiveNotifRemainingTime(enabled: Boolean) {
         userPreferencesRepository.setLiveNotifRemainingTime(enabled)
+    }
+
+    suspend fun setShowInfoCards(enabled: Boolean) {
+        userPreferencesRepository.setShowInfoCards(enabled)
+    }
+
+    suspend fun resetAlertThresholds() {
+        val defaults = UserPreferences()
+        userPreferencesRepository.setAlertBatteryThreshold(defaults.alertBatteryThreshold)
+        userPreferencesRepository.setAlertTempThreshold(defaults.alertTempThreshold)
+        userPreferencesRepository.setAlertStorageThreshold(defaults.alertStorageThreshold)
     }
 }

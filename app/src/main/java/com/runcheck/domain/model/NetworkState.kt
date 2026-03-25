@@ -3,6 +3,7 @@ package com.runcheck.domain.model
 data class NetworkState(
     val connectionType: ConnectionType,
     val signalDbm: Int?,
+    val signalAsu: Int? = null,
     val signalQuality: SignalQuality,
     val wifiSsid: String? = null,
     val wifiSpeedMbps: Int? = null,

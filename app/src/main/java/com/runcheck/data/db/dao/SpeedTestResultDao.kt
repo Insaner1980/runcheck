@@ -24,6 +24,9 @@ interface SpeedTestResultDao {
     @Query("DELETE FROM speed_test_results WHERE timestamp < :before")
     suspend fun deleteOlderThan(before: Long)
 
+    @Query("DELETE FROM speed_test_results")
+    suspend fun deleteAll()
+
     @Query("SELECT COUNT(*) FROM speed_test_results")
     suspend fun getCount(): Int
 

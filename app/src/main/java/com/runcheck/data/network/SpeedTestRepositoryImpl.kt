@@ -56,6 +56,10 @@ class SpeedTestRepositoryImpl @Inject constructor(
         speedTestResultDao.deleteOlderThan(cutoff)
     }
 
+    override suspend fun deleteAll() {
+        speedTestResultDao.deleteAll()
+    }
+
     private fun SpeedTestResultEntity.toDomain(): SpeedTestResult = SpeedTestResult(
         id = id,
         timestamp = timestamp,

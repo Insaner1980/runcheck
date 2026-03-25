@@ -29,6 +29,7 @@ class NetworkRepositoryImpl @Inject constructor(
                 NetworkState(
                     connectionType = info.connectionType,
                     signalDbm = info.signalDbm,
+                    signalAsu = info.signalAsu,
                     signalQuality = info.signalQuality,
                     wifiSsid = info.wifiSsid,
                     wifiSpeedMbps = info.wifiSpeedMbps,
