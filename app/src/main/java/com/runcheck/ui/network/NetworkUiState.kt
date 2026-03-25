@@ -36,7 +36,7 @@ data class SpeedTestUiState(
     val phase: SpeedTestPhase = SpeedTestPhase.Idle,
     val isRunning: Boolean = false,
     val pingMs: Int = 0,
-    val jitterMs: Int = 0,
+    val jitterMs: Int? = null,
     val downloadMbps: Double = 0.0,
     val uploadMbps: Double = 0.0,
     val downloadProgress: Float = 0f,

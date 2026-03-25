@@ -25,11 +25,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.SignalCellularAlt
+import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -690,7 +694,7 @@ private fun SpeedMetricsCard(
                 )
                 MetricPill(
                     label = stringResource(R.string.speed_test_jitter),
-                    value = if (state.jitterMs > 0) {
+                    value = if (state.jitterMs != null) {
                         stringResource(
                             R.string.value_with_unit_int,
                             state.jitterMs,
@@ -806,6 +810,8 @@ private fun LatestResultCard(result: SpeedTestResult) {
                 )
             }
 
+            ConnectionTypeBadge(result = result)
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -885,12 +891,27 @@ private fun HistoryResultItem(result: SpeedTestResult) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = rememberTimestampLabel(result.timestamp),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    ConnectionTypeIcon(
+                        connectionType = result.connectionType,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        text = connectionTypeShortLabel(result),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Text(
+                    text = rememberTimestampLabel(result.timestamp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
@@ -937,6 +958,73 @@ private fun HistoryResultItem(result: SpeedTestResult) {
             }
         }
     }
+}
+
+// ── Connection type helpers ──────────────────────────────────────────────────────
+
+@Composable
+private fun ConnectionTypeBadge(result: SpeedTestResult) {
+    val label = connectionTypeShortLabel(result)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        ConnectionTypeIcon(
+            connectionType = result.connectionType,
+            modifier = Modifier.size(16.dp)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        result.signalDbm?.let { dbm ->
+            Text(
+                text = stringResource(R.string.value_with_unit_int, dbm, stringResource(R.string.unit_dbm)),
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontFamily = MaterialTheme.numericFontFamily
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun ConnectionTypeIcon(
+    connectionType: ConnectionType,
+    modifier: Modifier = Modifier
+) {
+    val icon = when (connectionType) {
+        ConnectionType.WIFI -> Icons.Outlined.Wifi
+        ConnectionType.CELLULAR -> Icons.Outlined.SignalCellularAlt
+        ConnectionType.VPN -> Icons.Outlined.Wifi
+        ConnectionType.NONE -> return
+    }
+    val description = when (connectionType) {
+        ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
+        ConnectionType.CELLULAR -> stringResource(R.string.connection_cellular)
+        ConnectionType.VPN -> stringResource(R.string.connection_vpn)
+        ConnectionType.NONE -> return
+    }
+    Icon(
+        imageVector = icon,
+        contentDescription = description,
+        modifier = modifier,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+}
+
+@Composable
+private fun connectionTypeShortLabel(result: SpeedTestResult): String {
+    val base = when (result.connectionType) {
+        ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
+        ConnectionType.CELLULAR -> stringResource(R.string.connection_cellular)
+        ConnectionType.VPN -> stringResource(R.string.connection_vpn)
+        ConnectionType.NONE -> stringResource(R.string.connection_none)
+    }
+    val subtype = result.networkSubtype
+    return if (!subtype.isNullOrBlank()) "$base · $subtype" else base
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────────

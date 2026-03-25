@@ -109,7 +109,7 @@ class NetworkViewModel @Inject constructor(
                 phase = SpeedTestPhase.Ping,
                 isRunning = true,
                 pingMs = 0,
-                jitterMs = 0,
+                jitterMs = null,
                 downloadMbps = 0.0,
                 uploadMbps = 0.0,
                 downloadProgress = 0f,
