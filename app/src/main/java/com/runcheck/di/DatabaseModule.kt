@@ -172,6 +172,16 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_8_9 = object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Drop redundant single-column index — the composite
+            // (package_name, timestamp) index covers all the same lookups.
+            db.execSQL(
+                "DROP INDEX IF EXISTS `index_app_battery_usage_package_name`"
+            )
+        }
+    }
+
     val ALL_MIGRATIONS = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -179,7 +189,8 @@ object DatabaseModule {
         MIGRATION_4_5,
         MIGRATION_5_6,
         MIGRATION_6_7,
-        MIGRATION_7_8
+        MIGRATION_7_8,
+        MIGRATION_8_9
     )
 
     @Provides
@@ -203,7 +214,7 @@ object DatabaseModule {
                         .apply()
                 }
             })
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
 
         return database

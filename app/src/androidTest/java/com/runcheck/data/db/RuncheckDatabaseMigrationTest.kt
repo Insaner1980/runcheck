@@ -38,7 +38,7 @@ class RuncheckDatabaseMigrationTest {
             close()
         }
 
-        helper.runMigrationsAndValidate(TEST_DB, 8, true, *DatabaseModule.ALL_MIGRATIONS)
+        helper.runMigrationsAndValidate(TEST_DB, 9, true, *DatabaseModule.ALL_MIGRATIONS)
     }
 
     @Test
@@ -59,6 +59,43 @@ class RuncheckDatabaseMigrationTest {
                 "Expected composite app_battery_usage index to exist after migration to version 8"
             }
         }
+    }
+
+    @Test
+    fun migrate8To9_dropsRedundantPackageNameIndex() {
+        helper.createDatabase(TEST_DB, 8).close()
+
+        val database = helper.runMigrationsAndValidate(TEST_DB, 9, true, *DatabaseModule.ALL_MIGRATIONS)
+        database.query("PRAGMA index_list(`app_battery_usage`)").use { cursor ->
+            val nameColumn = cursor.getColumnIndexOrThrow("name")
+            while (cursor.moveToNext()) {
+                val indexName = cursor.getString(nameColumn)
+                check(indexName != "index_app_battery_usage_package_name") {
+                    "Redundant single-column package_name index should have been dropped by migration 8→9"
+                }
+            }
+        }
+    }
+
+    @Test
+    fun migrate6To9_preservesDataThroughFullChain() {
+        helper.createDatabase(TEST_DB, 6).apply {
+            execSQL(
+                """
+                INSERT INTO app_battery_usage (
+                    id,
+                    timestamp,
+                    package_name,
+                    app_label,
+                    foreground_time_ms,
+                    estimated_drain_mah
+                ) VALUES (1, 1000, 'com.runcheck.test', 'runcheck', 1234, NULL)
+                """.trimIndent()
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(TEST_DB, 9, true, *DatabaseModule.ALL_MIGRATIONS)
     }
 
     private companion object {
