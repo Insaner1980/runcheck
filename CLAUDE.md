@@ -45,7 +45,7 @@ app/src/main/java/com/runcheck/
 │   └── thermal/       # ThermalManager, CPU temp sysfs readers
 ├── domain/
 │   ├── model/         # Domain models (BatteryState, NetworkState, StorageState, etc.)
-│   ├── usecase/       # Business logic (36 use cases)
+│   ├── usecase/       # Business logic (38 use cases)
 │   ├── repository/    # Repository interfaces
 │   └── scoring/       # Health score algorithm
 ├── ui/
@@ -209,7 +209,7 @@ Three-tier in-app educational system explaining technical metrics and concepts t
 - Tapping opens `InfoBottomSheet` (`ModalBottomSheet`, max 60% screen height, scrollable) with: title, plain-language explanation, "What's normal" highlight card (`surfaceContainerHigh`, 8dp corners), "Why it matters", optional expandable "Learn more" deeper detail (`AnimatedVisibility`)
 - Content defined in `*InfoContent.kt` objects per screen (e.g., `BatteryInfoContent.voltage`)
 - State: `var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }` in each detail screen content composable
-- **Coverage:** Battery (12 metrics), Thermal (4), Network (8), Storage (4), Speed Test (4) = 32 total
+- **Coverage:** Battery (21 metrics), Thermal (4), Network (13), Storage (6), Speed Test (4) = 48 total
 
 ### Tier 2 — Contextual Info Cards (per screen section)
 - `InfoCard` composable: `surfaceContainerHigh` background, 3dp left `primary` accent border (`Modifier.drawBehind`), `InfoOutlined` 20dp icon, `Close` dismiss button, 16dp corners
@@ -261,7 +261,7 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 ## Database
 
 - Room with auto-migrations
-- Tables: `battery_readings`, `storage_readings`, `network_readings`, `thermal_readings`, `throttling_events`, `charging_sessions`, `charger_profiles`, `speed_test_results`, `app_battery_usage`
+- Tables: `battery_readings`, `storage_readings`, `network_readings`, `thermal_readings`, `throttling_events`, `charging_sessions`, `charger_profiles`, `speed_test_results`, `app_battery_usage`, `devices`
 - Free tier: retain only 24 hours of readings (delete older on each write)
 - Pro tier: configurable retention (3mo / 6mo / 1yr / forever)
 - Indices on timestamp columns for efficient range queries
