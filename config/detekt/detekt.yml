@@ -149,6 +149,54 @@ style:
   UseRequire:
     active: true
 
+# ── Compose (io.nlopez.compose.rules) ──────────────────────────────────────
+Compose:
+  ComposableAnnotationNaming:
+    active: false          # project uses standard naming already
+  CompositionLocalAllowlist:
+    active: false          # no allowlist needed for this project size
+  ContentEmitterReturningValues:
+    active: true
+  DefaultsVisibility:
+    active: true
+  ModifierClickableOrder:
+    active: true           # clickable must come after size/padding modifiers
+  ModifierComposable:
+    active: true
+  ModifierMissing:
+    active: true           # composables emitting UI must accept Modifier parameter
+    checkModifiersForVisibility: public
+  ModifierNaming:
+    active: true
+  ModifierNotUsedAtRoot:
+    active: true           # passed Modifier must be used on root element
+  ModifierWithoutDefault:
+    active: true           # Modifier params must default to Modifier
+  MultipleEmitters:
+    active: true           # catches composables that emit multiple root elements
+  MutableParameters:
+    active: true           # catches mutable collections as composable params
+  MutableStateAutoboxing:
+    active: true           # catches autoboxing in mutableStateOf for primitives
+  MutableStateParam:
+    active: true           # State<T> should not be passed as parameter
+  ParameterOrder:
+    active: true           # Modifier should be last non-default parameter
+  PreviewAnnotationNaming:
+    active: false          # no custom preview annotations
+  PreviewPublic:
+    active: true           # @Preview composables should be private
+  RememberMissing:
+    active: true           # catches expensive objects not wrapped in remember {}
+  RememberContentMissing:
+    active: true
+  UnstableCollections:
+    active: false          # too noisy — requires @Immutable wrappers for List/Set/Map
+  ViewModelForwarding:
+    active: true           # ViewModel should not be forwarded to other composables
+  ViewModelInjection:
+    active: true           # viewModel() should only be called in top-level composables
+
 # ── Exceptions ─────────────────────────────────────────────────────────────
 exceptions:
   TooGenericExceptionCaught:

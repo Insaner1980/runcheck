@@ -229,6 +229,9 @@ dependencies {
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
 
+    // Detekt plugins
+    detektPlugins(libs.detekt.compose.rules)
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)

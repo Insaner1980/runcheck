@@ -27,6 +27,7 @@ androidxTestRunner = "1.7.0"
 
 ktlintGradle = "12.1.2"
 detekt = "2.0.0-alpha.2"
+detektComposeRules = "0.5.6"
 
 [libraries]
 # Compose BOM
@@ -100,6 +101,9 @@ coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
+
+# Detekt plugins
+detekt-compose-rules = { group = "io.nlopez.compose.rules", name = "detekt", version.ref = "detektComposeRules" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
