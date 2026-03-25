@@ -85,6 +85,47 @@ android {
         compose = true
         buildConfig = true
     }
+
+    lint {
+        // Abort release builds on errors, but allow warnings during adoption
+        abortOnError = true
+        warningsAsErrors = false
+        checkReleaseBuilds = true
+
+        // High-signal checks — correctness, security, performance, interop
+        enable += setOf(
+            "NewApi",                    // API calls above minSdk without guards
+            "InlinedApi",               // Inlined constants from newer APIs
+            "ObsoleteSdkInt",           // SDK_INT checks that are always true given minSdk
+            "UnusedResources",          // Dead strings, drawables, layouts
+            "MissingPermission",        // API calls missing declared permissions
+            "HardcodedText",            // Strings not in strings.xml (localization)
+            "MissingTranslation",       // Incomplete translations
+            "Recycle",                  // TypedArray/Cursor not recycled
+            "StaticFieldLeak",          // Context leaks in static fields
+            "SetTextI18n",             // Concatenated text in setText (i18n issue)
+            "RtlHardcoded",           // Left/right instead of start/end
+            "ContentDescription",      // Missing contentDescription (a11y)
+            "PrivateResource",         // Using private framework resources
+            "InvalidPackage",          // Importing packages not on Android
+            "WrongThread",             // UI operations off main thread
+        )
+
+        // Intentionally disabled — too noisy or not relevant
+        disable += setOf(
+            "OldTargetApi",            // targetSdk 35 is fine; 36 is bleeding edge
+            "GradleDependency",        // version bumps are manual decisions
+            "AndroidGradlePluginVersion",
+            "NotificationPermission",  // already handled at runtime in Settings
+        )
+
+        // Don't lint generated code
+        checkGeneratedSources = false
+
+        // Write HTML + XML reports for CI/local review
+        htmlReport = true
+        xmlReport = true
+    }
 }
 
 ksp {
