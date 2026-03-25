@@ -12,6 +12,7 @@ sealed interface StorageUiState {
         val isPro: Boolean = false,
         val dismissedInfoCards: Set<String> = emptySet(),
         val showInfoCards: Boolean = true,
+        val liveUsagePercent: List<Float> = emptyList(),
         val storageHistory: List<StorageReading> = emptyList(),
         val selectedHistoryPeriod: HistoryPeriod = HistoryPeriod.WEEK,
         val historyLoadError: UiText? = null

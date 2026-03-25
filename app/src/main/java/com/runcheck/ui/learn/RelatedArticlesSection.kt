@@ -8,15 +8,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.runcheck.R
 import com.runcheck.ui.components.SectionHeader
+import com.runcheck.ui.components.info.CrossLinkButton
 import com.runcheck.ui.theme.spacing
 
 @Composable
 fun RelatedArticlesSection(
-    topic: LearnTopic,
+    articleIds: List<String>,
     onNavigateToArticle: (articleId: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val articles = LearnArticleCatalog.articlesForTopic(topic)
+    val articles = LearnArticleCatalog.findAllByIds(articleIds)
 
     if (articles.isEmpty()) return
 
@@ -27,8 +28,8 @@ fun RelatedArticlesSection(
         SectionHeader(text = stringResource(R.string.related_articles_header))
 
         articles.forEach { article ->
-            LearnArticleCard(
-                article = article,
+            CrossLinkButton(
+                label = stringResource(article.titleRes),
                 onClick = { onNavigateToArticle(article.id) }
             )
         }

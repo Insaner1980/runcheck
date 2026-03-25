@@ -1,0 +1,60 @@
+<h2>Visuaalinen viimeistely — mitkä lisäelementit parantaisivat graafien ilmettä?</h2>
+<p class="subtitle">Näitä voi yhdistellä vapaasti. Klikkaa kaikki jotka kiinnostavat (monivalinta).</p>
+
+<div class="options" data-multiselect>
+  <!-- Option A: Gradient line -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Gradient-viiva statuksen mukaan</h3>
+      <p>Viivan väri muuttuu liukuvasti datapisteiden tilan mukaan — esim. akun taso: <span style="color:#5DE4C7">vihreä (>50%)</span> → <span style="color:#E8C44A">keltainen (20-50%)</span> → <span style="color:#F06040">punainen (&lt;20%)</span>. Sama idea lämpötilalle ja signaalille. Tieto välittyy suoraan viivasta ilman erillisiä quality zone -taustoja.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Glow effect on line -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Hienovarainen glow viivan ympärillä</h3>
+      <p>Viivan ympärillä ohut, pehmeä hehku (blur) samalla värillä — antaa "valaiseva" neon-tyyppisen tunnun tummaa taustaa vasten. Hyvin hillitty, ei SciFi-elokuva. Käytännössä piirretään leveämpi, läpikuultava viiva varsinaisen viivan alle.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Animated gradient fill -->
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Parannettu gradient-täyttö</h3>
+      <p>Nykyinen täyttö on yksinkertainen vertical gradient. Parannus: täyttö seuraa viivan muotoa tarkemmin — korkeimmissa kohdissa gradient on voimakkaampi, matalissa heikompi. Luo syvyyttä ja tekee datasta kolmiulotteisemman tuntuista.</p>
+    </div>
+  </div>
+
+  <!-- Option D: Tooltip upgrade -->
+  <div class="option" data-choice="d" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>Tooltip-parannus</h3>
+      <p>Nykyinen tooltip on pyöristetty laatikko reunuksella. Parannus: pystyviiva piirtyy animoituna (ylhäältä alas, 150ms), piste saa glow-pulssin, ja tooltip-laatikko ilmestyy fade+scale-animaatiolla. Raahattaessa pystyviiva seuraa sormea pehmeästi (ei nykien).</p>
+    </div>
+  </div>
+
+  <!-- Option E: Grid animation -->
+  <div class="option" data-choice="e" onclick="toggleSelect(this)">
+    <div class="letter">E</div>
+    <div class="content">
+      <h3>Grid ilmestyy ennen dataa</h3>
+      <p>Sisääntulossa: ensin ruudukko ja akselit piirtyvät nopeasti (200ms fade-in), sitten oskilloskooppi-pyyhkäisy piirtää datan niiden päälle. Luo "mittarin käynnistys" -tunnelman — ensin kalibroidaan, sitten mitataan.</p>
+    </div>
+  </div>
+
+  <!-- Option F: Current value emphasis -->
+  <div class="option" data-choice="f" onclick="toggleSelect(this)">
+    <div class="letter">F</div>
+    <div class="content">
+      <h3>Viimeisen arvon korostus</h3>
+      <p>Graafin oikea reuna: viimeinen datapiste saa pienen hehkuvan pisteen (kuten LiveChartissa jo on) + ohut katkoviiva pisteestä Y-akselille joka näyttää nykyarvon. Yhdistää graafin "nyt"-hetkeen.</p>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 24px; font-style: italic;">Valitse kaikki kiinnostavat — voidaan karsia myöhemmin</p>

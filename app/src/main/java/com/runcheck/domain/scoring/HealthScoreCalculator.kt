@@ -161,6 +161,7 @@ class HealthScoreCalculator @Inject constructor() {
 
         // Latency (ping): 30% weight
         val latencyScore = 100 - when {
+            speedTest.pingMs <= 0 -> 20
             speedTest.pingMs < 30 -> 0
             speedTest.pingMs < 50 -> 5
             speedTest.pingMs < 100 -> 15

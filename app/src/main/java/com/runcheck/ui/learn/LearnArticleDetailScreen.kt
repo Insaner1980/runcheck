@@ -152,7 +152,7 @@ private fun LearnArticleList(
 private fun LearnArticleDetailScreenPreview() {
     RuncheckTheme {
         LearnArticleDetailScreen(
-            articleId = "battery_health",
+            articleId = LearnArticleIds.BATTERY_HEALTH,
             onBack = {},
             onNavigateToRoute = {}
         )

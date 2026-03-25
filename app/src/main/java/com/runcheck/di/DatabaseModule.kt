@@ -197,6 +197,10 @@ object DatabaseModule {
                         TAG,
                         "Database destructive migration triggered — historical data lost"
                     )
+                    context.getSharedPreferences(DB_EVENT_PREFS, Context.MODE_PRIVATE)
+                        .edit()
+                        .putBoolean(KEY_DB_RESET, true)
+                        .apply()
                 }
             })
             .fallbackToDestructiveMigration()
@@ -206,6 +210,8 @@ object DatabaseModule {
     }
 
     private const val TAG = "DatabaseModule"
+    const val DB_EVENT_PREFS = "runcheck_db_events"
+    const val KEY_DB_RESET = "destructive_migration_occurred"
 
     @Provides
     @Singleton

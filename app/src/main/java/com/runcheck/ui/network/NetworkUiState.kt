@@ -43,5 +43,6 @@ data class SpeedTestUiState(
     val uploadProgress: Float = 0f,
     val historyLoadError: UiText? = null,
     val lastResult: SpeedTestResult? = null,
-    val recentResults: List<SpeedTestResult> = emptyList()
+    val recentResults: List<SpeedTestResult> = emptyList(),
+    val showCellularWarning: Boolean = false
 )

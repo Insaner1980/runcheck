@@ -2,8 +2,11 @@ package com.runcheck.data.network
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
 import com.runcheck.R
+import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.SpeedTestConnectionInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -25,32 +28,52 @@ import javax.inject.Singleton
 @Singleton
 class SpeedTestService @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val latencyMeasurer: LatencyMeasurer
+    private val latencyMeasurer: LatencyMeasurer,
+    private val networkDataSource: NetworkDataSource
 ) {
 
     sealed interface SpeedTestProgress {
-        data class PingPhase(val pingMs: Int, val jitterMs: Int) : SpeedTestProgress
+        data class CellularConfirmationRequired(
+            val connectionInfo: SpeedTestConnectionInfo
+        ) : SpeedTestProgress
+        data class PingPhase(val pingMs: Int, val jitterMs: Int?) : SpeedTestProgress
         data class DownloadPhase(val currentMbps: Double, val progress: Float) : SpeedTestProgress
         data class UploadPhase(val currentMbps: Double, val progress: Float) : SpeedTestProgress
         data class Completed(
             val downloadMbps: Double,
             val uploadMbps: Double,
             val pingMs: Int,
-            val jitterMs: Int,
+            val jitterMs: Int?,
             val serverName: String,
-            val serverLocation: String?
+            val serverLocation: String?,
+            val connectionInfo: SpeedTestConnectionInfo
         ) : SpeedTestProgress
         data class Failed(val error: String) : SpeedTestProgress
     }
 
-    @Volatile
+    private val testLock = Any()
     private var activeTest: NdtTest? = null
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-    fun runSpeedTest(): Flow<SpeedTestProgress> = callbackFlow {
+    fun runSpeedTest(allowCellular: Boolean = false): Flow<SpeedTestProgress> = callbackFlow {
         if (!hasValidatedConnection()) {
             trySend(SpeedTestProgress.Failed(context.getString(R.string.speed_test_error_no_internet)))
+            channel.close()
+            return@callbackFlow
+        }
+
+        val startingNetwork = networkDataSource.getCurrentNetworkInfoSnapshot()
+        if (startingNetwork.connectionType == ConnectionType.NONE) {
+            trySend(SpeedTestProgress.Failed(context.getString(R.string.speed_test_error_no_internet)))
+            channel.close()
+            return@callbackFlow
+        }
+
+        val connectionInfo = startingNetwork.toConnectionInfo()
+        val connectionKey = startingNetwork.toConnectionKey()
+        if (connectionInfo.connectionType == ConnectionType.CELLULAR && !allowCellular) {
+            trySend(SpeedTestProgress.CellularConfirmationRequired(connectionInfo))
             channel.close()
             return@callbackFlow
         }
@@ -58,15 +81,50 @@ class SpeedTestService @Inject constructor(
         var downloadMbps = 0.0
         var uploadMbps = 0.0
         var latestRttMs = 0
-        var latestRttVarMs = 0
+        var latestRttVarMs: Int? = null
         var serverName = DEFAULT_SERVER_NAME
         var serverLocation: String? = null
         val downloadStartTime = System.nanoTime()
         var uploadStartTime = 0L
+        var shouldStopOnClose = true
+        var networkCallbackRegistered = false
 
-        latencyMeasurer.measureLatency()?.let { initialLatency ->
-            latestRttMs = initialLatency
-            trySend(SpeedTestProgress.PingPhase(initialLatency, 0))
+        fun failAndClose(message: String) {
+            synchronized(testLock) {
+                activeTest?.stopTest()
+                activeTest = null
+            }
+            shouldStopOnClose = false
+            trySend(SpeedTestProgress.Failed(message))
+            channel.close()
+        }
+
+        val connectionCallback = object : ConnectivityManager.NetworkCallback() {
+            override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+                val currentNetwork = networkDataSource.getCurrentNetworkInfoSnapshot()
+                if (currentNetwork.connectionType == ConnectionType.NONE) {
+                    failAndClose(context.getString(R.string.speed_test_error_no_internet))
+                    return
+                }
+                if (currentNetwork.toConnectionKey() != connectionKey) {
+                    failAndClose(context.getString(R.string.speed_test_error_connection_changed))
+                }
+            }
+
+            override fun onLost(network: Network) {
+                failAndClose(context.getString(R.string.speed_test_error_no_internet))
+            }
+        }
+
+        runCatching {
+            connectivityManager.registerDefaultNetworkCallback(connectionCallback)
+            networkCallbackRegistered = true
+        }
+
+        latencyMeasurer.measureLatency()?.let { result ->
+            latestRttMs = result.pingMs
+            latestRttVarMs = result.jitterMs
+            trySend(SpeedTestProgress.PingPhase(result.pingMs, result.jitterMs))
         }
 
         val test = object : NdtTest() {
@@ -127,8 +185,7 @@ class SpeedTestService @Inject constructor(
                 testType: TestType
             ) {
                 if (error != null && clientResponse == null) {
-                    trySend(SpeedTestProgress.Failed(mapError(error)))
-                    channel.close()
+                    failAndClose(mapError(error))
                     return
                 }
 
@@ -152,31 +209,41 @@ class SpeedTestService @Inject constructor(
                         pingMs = latestRttMs,
                         jitterMs = latestRttVarMs,
                         serverName = serverName,
-                        serverLocation = serverLocation
+                        serverLocation = serverLocation,
+                        connectionInfo = connectionInfo
                     )
                 )
+                synchronized(testLock) { activeTest = null }
+                shouldStopOnClose = false
                 channel.close()
             }
         }
 
-        activeTest = test
+        synchronized(testLock) { activeTest = test }
         runCatching {
             test.startTest(NdtTest.TestType.DOWNLOAD_AND_UPLOAD)
         }.onFailure { error ->
-            trySend(SpeedTestProgress.Failed(mapError(error)))
-            activeTest = null
-            channel.close()
+            failAndClose(mapError(error))
         }
 
         awaitClose {
-            activeTest?.stopTest()
-            activeTest = null
+            if (networkCallbackRegistered) {
+                runCatching { connectivityManager.unregisterNetworkCallback(connectionCallback) }
+            }
+            synchronized(testLock) {
+                if (shouldStopOnClose) {
+                    activeTest?.stopTest()
+                }
+                activeTest = null
+            }
         }
     }
 
     fun stopTest() {
-        activeTest?.stopTest()
-        activeTest = null
+        synchronized(testLock) {
+            activeTest?.stopTest()
+            activeTest = null
+        }
     }
 
     private fun hasValidatedConnection(): Boolean {
@@ -231,6 +298,36 @@ class SpeedTestService @Inject constructor(
         val name: String,
         val location: String?
     )
+
+    private data class ConnectionKey(
+        val connectionType: ConnectionType,
+        val subtype: String?,
+        val wifiSsid: String?,
+        val wifiBssid: String?
+    )
+
+    private fun NetworkDataSource.NetworkInfo.toConnectionInfo(): SpeedTestConnectionInfo {
+        val subtype = when (connectionType) {
+            ConnectionType.WIFI -> wifiStandard
+            else -> networkSubtype
+        }
+        return SpeedTestConnectionInfo(
+            connectionType = connectionType,
+            networkSubtype = subtype,
+            signalDbm = signalDbm
+        )
+    }
+
+    private fun NetworkDataSource.NetworkInfo.toConnectionKey(): ConnectionKey =
+        ConnectionKey(
+            connectionType = connectionType,
+            subtype = when (connectionType) {
+                ConnectionType.WIFI -> wifiStandard
+                else -> networkSubtype
+            },
+            wifiSsid = wifiSsid,
+            wifiBssid = wifiBssid
+        )
 
     companion object {
         private const val TEST_DURATION_NS = 10_000_000_000f // ~10 seconds per phase

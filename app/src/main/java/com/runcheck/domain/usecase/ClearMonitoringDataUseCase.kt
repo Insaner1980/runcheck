@@ -4,6 +4,7 @@ import com.runcheck.domain.repository.AppBatteryUsageRepository
 import com.runcheck.domain.repository.BatteryRepository
 import com.runcheck.domain.repository.DatabaseTransactionRunner
 import com.runcheck.domain.repository.NetworkRepository
+import com.runcheck.domain.repository.SpeedTestRepository
 import com.runcheck.domain.repository.StorageRepository
 import com.runcheck.domain.repository.ThermalRepository
 import com.runcheck.domain.repository.ThrottlingRepository
@@ -16,7 +17,8 @@ class ClearMonitoringDataUseCase @Inject constructor(
     private val thermalRepository: ThermalRepository,
     private val storageRepository: StorageRepository,
     private val throttlingRepository: ThrottlingRepository,
-    private val appBatteryUsageRepository: AppBatteryUsageRepository
+    private val appBatteryUsageRepository: AppBatteryUsageRepository,
+    private val speedTestRepository: SpeedTestRepository
 ) {
     suspend operator fun invoke() {
         transactionRunner.runInTransaction {
@@ -26,6 +28,7 @@ class ClearMonitoringDataUseCase @Inject constructor(
             storageRepository.deleteAll()
             throttlingRepository.deleteAll()
             appBatteryUsageRepository.deleteAll()
+            speedTestRepository.deleteAll()
         }
     }
 }

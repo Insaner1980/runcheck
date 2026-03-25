@@ -108,7 +108,7 @@ import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
-import com.runcheck.ui.learn.LearnTopic
+import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.chart.calculateChargingSessionSummary
 import com.runcheck.ui.chart.formatChartTooltip
@@ -332,7 +332,9 @@ private fun BatteryContent(
                     onDismiss = onDismissInfoCard,
                     visible = InfoCardCatalog.BatteryHealthDegraded.id !in state.dismissedInfoCards && state.showInfoCards,
                     onLearnMore = {
-                        InfoCardCatalog.BatteryHealthDegraded.learnArticleId?.let(onNavigateToLearnArticle)
+                        InfoCardCatalog.resolveLearnArticleId(
+                            InfoCardCatalog.BatteryHealthDegraded
+                        )?.let(onNavigateToLearnArticle)
                     }
                 )
             }
@@ -346,7 +348,9 @@ private fun BatteryContent(
                     onDismiss = onDismissInfoCard,
                     visible = InfoCardCatalog.BatteryDiesBeforeZero.id !in state.dismissedInfoCards && state.showInfoCards,
                     onLearnMore = {
-                        InfoCardCatalog.BatteryDiesBeforeZero.learnArticleId?.let(onNavigateToLearnArticle)
+                        InfoCardCatalog.resolveLearnArticleId(
+                            InfoCardCatalog.BatteryDiesBeforeZero
+                        )?.let(onNavigateToLearnArticle)
                     }
                 )
             }
@@ -410,6 +414,70 @@ private fun BatteryContent(
                         ),
                         showDivider = false,
                         onInfoClick = { activeInfoSheet = "capacity" }
+                    )
+                }
+
+                val hasBatteryLiveCharts = state.liveLevel.size >= 2 ||
+                    state.liveTempC.size >= 2 ||
+                    state.liveVoltage.size >= 2
+                if (hasBatteryLiveCharts) {
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                    )
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                }
+                if (state.liveLevel.size >= 2) {
+                    LiveChart(
+                        data = state.liveLevel,
+                        currentValueLabel = stringResource(R.string.value_percent, battery.level),
+                        label = stringResource(R.string.battery_level),
+                        lineColor = MaterialTheme.colorScheme.primary,
+                        yMin = 0f,
+                        yMax = 100f,
+                        accessibilityDescription = stringResource(
+                            R.string.a11y_chart_trend,
+                            stringResource(R.string.battery_level)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                if (state.liveTempC.size >= 2) {
+                    if (state.liveLevel.size >= 2) {
+                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                    }
+                    LiveChart(
+                        data = state.liveTempC,
+                        currentValueLabel = buildTemperatureValue(
+                            temperatureC = battery.temperatureC,
+                            temperatureUnit = state.temperatureUnit
+                        ),
+                        label = stringResource(R.string.battery_temperature),
+                        lineColor = temperatureColor(battery.temperatureC),
+                        accessibilityDescription = stringResource(
+                            R.string.a11y_chart_trend,
+                            stringResource(R.string.battery_temperature)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                if (state.liveVoltage.size >= 2) {
+                    if (state.liveLevel.size >= 2 || state.liveTempC.size >= 2) {
+                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                    }
+                    LiveChart(
+                        data = state.liveVoltage,
+                        currentValueLabel = stringResource(
+                            R.string.value_voltage_volts,
+                            (battery.voltageMv / 1000f).toDouble()
+                        ),
+                        label = stringResource(R.string.battery_voltage),
+                        lineColor = MaterialTheme.statusColors.fair,
+                        accessibilityDescription = stringResource(
+                            R.string.a11y_chart_trend,
+                            stringResource(R.string.battery_voltage)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
@@ -491,37 +559,6 @@ private fun BatteryContent(
                     )
                 }
 
-                // Live charts
-                if (state.liveCurrentMa.size >= 2) {
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                    )
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                    LiveChart(
-                        data = state.liveCurrentMa,
-                        currentValueLabel = stringResource(
-                            R.string.value_milliamps_int,
-                            kotlin.math.abs(battery.currentMa.value)
-                        ),
-                        label = stringResource(R.string.battery_current),
-                        lineColor = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                if (state.livePowerW.size >= 2) {
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                    LiveChart(
-                        data = state.livePowerW,
-                        currentValueLabel = stringResource(
-                            R.string.value_watts,
-                            state.livePowerW.last().toDouble()
-                        ),
-                        label = stringResource(R.string.battery_power),
-                        lineColor = MaterialTheme.statusColors.fair,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
@@ -582,7 +619,9 @@ private fun BatteryContent(
                     onDismiss = onDismissInfoCard,
                     visible = InfoCardCatalog.BatteryChargingHabits.id !in state.dismissedInfoCards && state.showInfoCards,
                     onLearnMore = {
-                        InfoCardCatalog.BatteryChargingHabits.learnArticleId?.let(onNavigateToLearnArticle)
+                        InfoCardCatalog.resolveLearnArticleId(
+                            InfoCardCatalog.BatteryChargingHabits
+                        )?.let(onNavigateToLearnArticle)
                     }
                 )
             }
@@ -625,7 +664,9 @@ private fun BatteryContent(
                     onDismiss = onDismissInfoCard,
                     visible = InfoCardCatalog.BatteryScreenOffDrain.id !in state.dismissedInfoCards && state.showInfoCards,
                     onLearnMore = {
-                        InfoCardCatalog.BatteryScreenOffDrain.learnArticleId?.let(onNavigateToLearnArticle)
+                        InfoCardCatalog.resolveLearnArticleId(
+                            InfoCardCatalog.BatteryScreenOffDrain
+                        )?.let(onNavigateToLearnArticle)
                     }
                 )
             }
@@ -679,7 +720,12 @@ private fun BatteryContent(
             }
 
             RelatedArticlesSection(
-                topic = LearnTopic.BATTERY,
+                articleIds = listOf(
+                    LearnArticleIds.BATTERY_HEALTH,
+                    LearnArticleIds.BATTERY_DRAIN,
+                    LearnArticleIds.BATTERY_CHARGING,
+                    LearnArticleIds.BATTERY_CURRENT_POWER
+                ),
                 onNavigateToArticle = onNavigateToLearnArticle
             )
 
@@ -1123,7 +1169,8 @@ private fun BatteryHistoryPreviewPlaceholder() {
             AreaChart(
                 data = fakeData,
                 modifier = Modifier.fillMaxSize(),
-                lineColor = chartColor
+                lineColor = chartColor,
+                animate = false
             )
         }
 

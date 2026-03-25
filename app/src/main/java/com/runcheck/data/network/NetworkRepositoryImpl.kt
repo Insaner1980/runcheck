@@ -6,11 +6,14 @@ import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.repository.NetworkRepository as NetworkRepositoryContract
 import com.runcheck.util.ReleaseSafeLog
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.sample
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -55,10 +58,10 @@ class NetworkRepositoryImpl @Inject constructor(
         if (!networkDataSource.hasValidatedConnection()) {
             return null
         }
-        return latencyMeasurer.measureLatency()
+        return latencyMeasurer.measureLatency()?.pingMs
     }
 
-    override suspend fun saveReading(state: NetworkState) {
+    override suspend fun saveReading(state: NetworkState) = withContext(Dispatchers.IO) {
         try {
             val entity = NetworkReadingEntity(
                 timestamp = System.currentTimeMillis(),
@@ -76,8 +79,8 @@ class NetworkRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getAllReadings(): List<NetworkReading> {
-        return networkReadingDao.getAll().map { it.toDomain() }
+    override suspend fun getAllReadings(): List<NetworkReading> = withContext(Dispatchers.IO) {
+        networkReadingDao.getAll().map { it.toDomain() }
     }
 
     override fun getReadingsSince(since: Long, limit: Int?): Flow<List<NetworkReading>> {
@@ -88,10 +91,10 @@ class NetworkRepositoryImpl @Inject constructor(
         }
         return readingsFlow.map { entities ->
             entities.map { it.toDomain() }
-        }
+        }.flowOn(Dispatchers.IO)
     }
 
-    override suspend fun deleteOlderThan(cutoff: Long) {
+    override suspend fun deleteOlderThan(cutoff: Long) = withContext(Dispatchers.IO) {
         try {
             networkReadingDao.deleteOlderThan(cutoff)
         } catch (e: Exception) {
@@ -99,7 +102,7 @@ class NetworkRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun deleteAll() {
+    override suspend fun deleteAll() = withContext<Unit>(Dispatchers.IO) {
         networkReadingDao.deleteAll()
     }
 

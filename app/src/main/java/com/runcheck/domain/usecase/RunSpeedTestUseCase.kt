@@ -8,6 +8,6 @@ import javax.inject.Inject
 class RunSpeedTestUseCase @Inject constructor(
     private val speedTestRepository: SpeedTestRepository
 ) {
-    operator fun invoke(): Flow<SpeedTestProgress> =
-        speedTestRepository.runSpeedTest()
+    operator fun invoke(allowCellular: Boolean = false): Flow<SpeedTestProgress> =
+        speedTestRepository.runSpeedTest(allowCellular = allowCellular)
 }

@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import android.util.LruCache
+import com.runcheck.util.ReleaseSafeLog
 import android.provider.MediaStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +21,12 @@ class ThumbnailLoader @Inject constructor(
     private val cache = object : LruCache<String, Bitmap>(MAX_CACHE_SIZE_KB) {
         override fun sizeOf(key: String, value: Bitmap): Int =
             value.byteCount / 1024
+
+        override fun entryRemoved(evicted: Boolean, key: String, oldValue: Bitmap, newValue: Bitmap?) {
+            if (evicted && oldValue !== newValue && !oldValue.isRecycled) {
+                oldValue.recycle()
+            }
+        }
     }
 
     suspend fun loadThumbnail(uriString: String, sizePx: Int = 96): Bitmap? =
@@ -38,7 +45,10 @@ class ThumbnailLoader @Inject constructor(
                     loadLegacyThumbnail(uri)
                 }
                 bitmap?.also { cache.put(cacheKey, it) }
-            } catch (_: Exception) { null }
+            } catch (e: Exception) {
+                ReleaseSafeLog.warn(TAG, "Thumbnail load failed: $uriString", e)
+                null
+            }
         }
 
     @Suppress("DEPRECATION")
@@ -63,6 +73,7 @@ class ThumbnailLoader @Inject constructor(
     }
 
     private companion object {
+        private const val TAG = "ThumbnailLoader"
         private const val MAX_CACHE_SIZE_KB = 6 * 1024
     }
 }

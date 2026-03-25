@@ -10,7 +10,9 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -21,6 +23,7 @@ import com.runcheck.ui.battery.BatteryDetailScreen
 import com.runcheck.ui.charger.ChargerComparisonScreen
 import com.runcheck.ui.home.HomeScreen
 import com.runcheck.ui.network.NetworkDetailScreen
+import com.runcheck.ui.network.NetworkViewModel
 import com.runcheck.ui.network.SpeedTestScreen
 import com.runcheck.ui.pro.ProUpgradeScreen
 import com.runcheck.ui.settings.SettingsScreen
@@ -38,15 +41,17 @@ import com.runcheck.ui.theme.LocalReducedMotion
 @Composable
 fun RuncheckNavHost(
     modifier: Modifier = Modifier,
-    deepLinkRoute: String? = null
+    deepLinkRoute: String? = null,
+    onDeepLinkConsumed: () -> Unit = {}
 ) {
     val navController = rememberNavController()
     val reducedMotion = LocalReducedMotion.current
 
-    // Navigate to the deep-link screen once on initial composition
+    // Navigate to the deep-link screen and consume so it doesn't re-fire
     androidx.compose.runtime.LaunchedEffect(deepLinkRoute) {
         if (deepLinkRoute != null) {
-            navController.navigateSingleTop(deepLinkRoute)
+            navController.navigateNotificationRoute(deepLinkRoute)
+            onDeepLinkConsumed()
         }
     }
 
@@ -150,6 +155,7 @@ fun RuncheckNavHost(
             )
         }
         composable(Screen.Network.route) { entry ->
+            val networkViewModel: NetworkViewModel = hiltViewModel(entry)
             val resultSource by entry.savedStateHandle
                 .getStateFlow<String?>(FullscreenChartResult.KEY_SOURCE, null)
                 .collectAsStateWithLifecycle()
@@ -175,7 +181,8 @@ fun RuncheckNavHost(
                     entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_SOURCE)
                     entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_METRIC)
                     entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_PERIOD)
-                }
+                },
+                viewModel = networkViewModel
             )
         }
         composable(Screen.Thermal.route) {
@@ -235,7 +242,18 @@ fun RuncheckNavHost(
             SettingsScreen(onBack = { navController.popBackStack() })
         }
         composable(Screen.SpeedTest.route) {
-            SpeedTestScreen(onBack = { navController.popBackStack() })
+            val networkParentEntry = remember(navController) {
+                runCatching { navController.getBackStackEntry(Screen.Network.route) }.getOrNull()
+            }
+            val networkViewModel: NetworkViewModel = if (networkParentEntry != null) {
+                hiltViewModel(networkParentEntry)
+            } else {
+                hiltViewModel()
+            }
+            SpeedTestScreen(
+                onBack = { navController.popBackStack() },
+                viewModel = networkViewModel
+            )
         }
         composable(Screen.ProUpgrade.route) {
             ProUpgradeScreen(onBack = { navController.popBackStack() })
@@ -322,6 +340,16 @@ fun RuncheckNavHost(
 private fun NavHostController.navigateSingleTop(route: String) {
     navigate(route) {
         launchSingleTop = true
+    }
+}
+
+private fun NavHostController.navigateNotificationRoute(route: String) {
+    if (currentBackStackEntry?.destination?.route == route) {
+        return
+    }
+    navigate(route) {
+        launchSingleTop = true
+        popUpTo(graph.startDestinationId)
     }
 }
 

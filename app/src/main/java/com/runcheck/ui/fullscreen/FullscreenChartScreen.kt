@@ -94,9 +94,9 @@ fun FullscreenChartScreen(
     val title = when (val state = uiState) {
         is FullscreenChartUiState.Success -> resolveChartTitle(viewModel.source, state.selectedMetric)
         is FullscreenChartUiState.Empty -> resolveChartTitle(viewModel.source, state.selectedMetric)
+        is FullscreenChartUiState.Error -> resolveChartTitle(viewModel.source, state.selectedMetric)
         FullscreenChartUiState.Locked,
-        FullscreenChartUiState.Loading,
-        is FullscreenChartUiState.Error -> resolveSourceTitle(viewModel.source)
+        FullscreenChartUiState.Loading -> resolveSourceTitle(viewModel.source)
     }
 
     FullscreenChartScaffold(
@@ -104,47 +104,30 @@ fun FullscreenChartScreen(
         title = title,
         onClose = onBack,
         controls = when (val state = uiState) {
-            is FullscreenChartUiState.Success -> {
+            is FullscreenChartUiState.Success,
+            is FullscreenChartUiState.Empty,
+            is FullscreenChartUiState.Error -> {
+                val sel = state as FullscreenChartUiState.HasSelections
                 {
                     FullscreenChartControls(
                         source = viewModel.source,
-                        selectedMetric = state.selectedMetric,
-                        selectedPeriod = state.selectedPeriod,
-                        metricOptions = state.metricOptions,
-                        periodOptions = state.periodOptions,
+                        selectedMetric = sel.selectedMetric,
+                        selectedPeriod = sel.selectedPeriod,
+                        metricOptions = sel.metricOptions,
+                        periodOptions = sel.periodOptions,
                         onMetricChange = {
                             viewModel.setMetric(it)
-                            onSelectionChanged(viewModel.source.name, it, state.selectedPeriod)
+                            onSelectionChanged(viewModel.source.name, it, viewModel.selectedPeriod)
                         },
                         onPeriodChange = {
                             viewModel.setPeriod(it)
-                            onSelectionChanged(viewModel.source.name, state.selectedMetric, it)
-                        }
-                    )
-                }
-            }
-            is FullscreenChartUiState.Empty -> {
-                {
-                    FullscreenChartControls(
-                        source = viewModel.source,
-                        selectedMetric = state.selectedMetric,
-                        selectedPeriod = state.selectedPeriod,
-                        metricOptions = state.metricOptions,
-                        periodOptions = state.periodOptions,
-                        onMetricChange = {
-                            viewModel.setMetric(it)
-                            onSelectionChanged(viewModel.source.name, it, state.selectedPeriod)
-                        },
-                        onPeriodChange = {
-                            viewModel.setPeriod(it)
-                            onSelectionChanged(viewModel.source.name, state.selectedMetric, it)
+                            onSelectionChanged(viewModel.source.name, viewModel.selectedMetric, it)
                         }
                     )
                 }
             }
             FullscreenChartUiState.Locked,
-            FullscreenChartUiState.Loading,
-            is FullscreenChartUiState.Error -> null
+            FullscreenChartUiState.Loading -> null
         }
     ) { contentModifier ->
         when (val state = uiState) {

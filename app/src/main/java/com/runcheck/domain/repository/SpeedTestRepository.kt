@@ -5,7 +5,7 @@ import com.runcheck.domain.model.SpeedTestResult
 import kotlinx.coroutines.flow.Flow
 
 interface SpeedTestRepository {
-    fun runSpeedTest(): Flow<SpeedTestProgress>
+    fun runSpeedTest(allowCellular: Boolean = false): Flow<SpeedTestProgress>
     suspend fun saveResult(result: SpeedTestResult)
     fun getLatestResult(): Flow<SpeedTestResult?>
     fun getRecentResults(limit: Int): Flow<List<SpeedTestResult>>

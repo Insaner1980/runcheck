@@ -87,7 +87,7 @@ class SettingsViewModel @Inject constructor(
                         it.copy(billingStatus = UiText.Resource(R.string.billing_purchase_pending))
                     }
                     is PurchaseEvent.Error -> _uiState.update {
-                        it.copy(billingStatus = UiText.Resource(R.string.billing_purchase_error))
+                        it.copy(billingStatus = UiText.Dynamic(event.debugMessage))
                     }
                     is PurchaseEvent.AlreadyOwned -> _uiState.update {
                         it.copy(billingStatus = UiText.Resource(R.string.billing_already_owned))

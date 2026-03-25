@@ -456,6 +456,9 @@
     <string name="settings_notif_charge_complete">Charge Complete</string>
     <string name="settings_notif_charge_complete_desc">Notify when charging finishes</string>
     <string name="settings_notifications_system_muted">Notifications are disabled in system settings. Tap to open notification settings.</string>
+    <string name="notification_permission_denied_title">Notification Permission Required</string>
+    <string name="notification_permission_denied_message">Notification permission was denied. To enable notifications, open app settings and allow notifications manually.</string>
+    <string name="notification_permission_denied_open_settings">Open Settings</string>
 
     <!-- Settings: Alert Thresholds -->
     <string name="settings_alert_thresholds">Alert Thresholds</string>
@@ -521,12 +524,15 @@
     <string name="widget_no_data_title">No data yet</string>
     <string name="widget_no_data_message">Open runcheck to collect readings</string>
 
+    <!-- Database -->
+    <string name="database_reset_notice">History data was reset due to a database update. Monitoring will continue normally.</string>
+
     <!-- Notifications -->
     <string name="notification_channel_alerts">Device Alerts</string>
     <string name="notification_channel_status">Device Status</string>
     <string name="notification_channel_alerts_description">Alerts for battery, temperature, and storage issues</string>
     <string name="notification_channel_status_description">Device status updates</string>
-    <string name="monitor_realtime_fgs_reason">Foreground service used only while the user is actively viewing real-time device health metrics that require continuous updates.</string>
+    <string name="monitor_realtime_fgs_reason">Foreground service for real-time device health monitoring: (1) displays live battery, thermal, and network metrics while the user is actively viewing the detail screen, and (2) provides an opt-in persistent notification with continuously updated battery stats when the user explicitly enables Live Notification in Settings. The service is never started automatically — it requires direct user action.</string>
     <string name="notification_low_battery_title">Low Battery</string>
     <string name="notification_low_battery_text">Battery at %d%%</string>
     <string name="notification_high_temp_title">High Temperature</string>
@@ -630,6 +636,7 @@
     <string name="speed_test_error_no_internet">No internet connection available.</string>
     <string name="speed_test_error_server_unreachable">Could not reach the speed test server.</string>
     <string name="speed_test_error_timeout">The speed test timed out. Try again.</string>
+    <string name="speed_test_error_connection_changed">Your connection changed during the speed test. Try again.</string>
     <string name="speed_test_error_generic">Unable to complete the speed test.</string>
     <string name="speed_test_no_history">No saved speed tests yet. Run a test to start building history.</string>
     <string name="speed_test_cellular_warning">This test will use approximately 20–50 MB of mobile data</string>
@@ -743,6 +750,8 @@
     <string name="fullscreen_chart_title_battery">Battery %1$s</string>
     <string name="fullscreen_chart_title_session">Session %1$s</string>
     <string name="fullscreen_chart_title_network">Network %1$s</string>
+    <string name="fullscreen_chart_title_thermal">Thermal %1$s</string>
+    <string name="fullscreen_chart_title_storage">Storage %1$s</string>
 
     <!-- Info System - Common -->
     <string name="a11y_info_button">More info</string>
@@ -909,8 +918,8 @@
 
     <string name="info_network_wifi_standard_title">Wi-Fi Standard</string>
     <string name="info_network_wifi_standard_explanation">The Wi-Fi protocol version your connection is using. Newer standards support faster speeds and better handling of multiple devices.</string>
-    <string name="info_network_wifi_standard_range">Wi-Fi 4 (802.11n) is basic. Wi-Fi 5 (802.11ac) is good. Wi-Fi 6/6E (802.11ax) is very fast. Wi-Fi 7 (802.11be) is the newest standard.</string>
-    <string name="info_network_wifi_standard_matters">Both your phone and router must support the same standard. Connecting via an older standard limits your maximum speed regardless of your internet plan.</string>
+    <string name="info_network_wifi_standard_range">Wi-Fi 4 (802.11n) is older and slower. Wi-Fi 5 (802.11ac) is common on 5 GHz. Wi-Fi 6 and 6E (802.11ax) improve efficiency, and 6E adds 6 GHz. Wi-Fi 7 (802.11be) adds features like 320 MHz channels and multi-link operation when both devices support them.</string>
+    <string name="info_network_wifi_standard_matters">Both your phone and router must support the same standard and channel width. Older standards cap your maximum real-world speed, while newer ones handle crowded networks more efficiently.</string>
 
     <string name="info_network_link_speed_title">Link Speed</string>
     <string name="info_network_link_speed_explanation">The theoretical maximum speed of your current Wi-Fi connection, negotiated between your phone and router.</string>
@@ -1082,7 +1091,7 @@
 
     <string name="learn_network_wifi_bands_title">Wi-Fi Bands &amp; Standards</string>
     <string name="learn_network_wifi_bands_preview">2.4 GHz vs 5 GHz vs 6 GHz, Wi-Fi generations, and choosing the right connection.</string>
-    <string name="learn_network_wifi_bands_body">## Frequency bands\n\n2.4 GHz travels farther and penetrates walls better, but is slower and more congested. 5 GHz is faster with less interference but shorter range. 6 GHz (Wi-Fi 6E) offers the best speeds and least congestion but requires newer devices and has the shortest range.\n\n## Wi-Fi standards\n\nWi-Fi 4 (802.11n): up to 600 Mbps, introduced in 2009. Wi-Fi 5 (802.11ac): up to 3.5 Gbps, 5 GHz only. Wi-Fi 6 (802.11ax): up to 9.6 Gbps, both bands, better in crowded environments. Wi-Fi 6E: same as Wi-Fi 6 plus 6 GHz band. Wi-Fi 7 (802.11be): up to 46 Gbps, multi-link operation across bands simultaneously.\n\n## Practical tips\n\nConnect to 5 GHz when near your router for fastest speeds. Use 2.4 GHz when you need range through walls. Your phone usually auto-selects the best band, but you can separate network names in your router settings for manual control.</string>
+    <string name="learn_network_wifi_bands_body">## Frequency bands\n\n2.4 GHz travels farther and penetrates walls better, but it is slower and more congested. 5 GHz is usually faster with less interference but shorter range. 6 GHz is available on Wi-Fi 6E and Wi-Fi 7 gear, offers cleaner spectrum, and usually works best when you are close to the router.\n\n## Wi-Fi standards\n\nWi-Fi 4 (802.11n): older standard, typically far slower than modern gear. Wi-Fi 5 (802.11ac): 5 GHz only, still common and fast enough for many home connections. Wi-Fi 6 (802.11ax): better efficiency and capacity, especially in crowded spaces. Wi-Fi 6E: Wi-Fi 6 plus access to the 6 GHz band. Wi-Fi 7 (802.11be): adds wider 320 MHz channels, 4K QAM, and Multi-Link Operation. Marketing numbers can approach roughly 46 Gbps in ideal aggregate lab conditions, but real phone speeds are much lower and depend on router support, channel width, signal quality, and your internet plan.\n\n## Practical tips\n\nConnect to 5 GHz or 6 GHz when you are near your router and want the best performance. Use 2.4 GHz when you need range through walls. If your router offers separate SSIDs for each band, testing them individually can show which one is fastest in the room where you actually use your phone.</string>
 
     <string name="learn_network_speed_tests_title">How Speed Tests Work</string>
     <string name="learn_network_speed_tests_preview">What speed tests measure, their limitations, and how to get meaningful results.</string>

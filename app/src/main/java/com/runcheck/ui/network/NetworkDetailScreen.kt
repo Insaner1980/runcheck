@@ -105,7 +105,7 @@ import com.runcheck.ui.fullscreen.FullscreenChartSeedStore
 import com.runcheck.ui.fullscreen.FullscreenChartUiState
 import com.runcheck.ui.fullscreen.sanitizeFullscreenMetric
 import com.runcheck.ui.fullscreen.sanitizeFullscreenPeriod
-import com.runcheck.ui.learn.LearnTopic
+import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
@@ -283,6 +283,10 @@ private fun NetworkHeroSection(
                 } ?: "—",
                 label = stringResource(R.string.network_signal_strength),
                 lineColor = statusColorForSignalQuality(networkState.signalQuality),
+                accessibilityDescription = stringResource(
+                    R.string.a11y_chart_trend,
+                    stringResource(R.string.network_signal_strength)
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -718,11 +722,7 @@ private fun SpeedTestSummaryCard(
                 )
                 MetricPill(
                     label = stringResource(R.string.speed_test_ping),
-                    value = stringResource(
-                        R.string.value_with_unit_int,
-                        lastResult.pingMs,
-                        stringResource(R.string.unit_ms)
-                    ),
+                    value = formatPingMetric(lastResult.pingMs),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -847,33 +847,40 @@ private fun NetworkContent(
             )
 
             // Info cards
-            if ((networkState.signalQuality == SignalQuality.POOR ||
-                    networkState.signalQuality == SignalQuality.NO_SIGNAL) &&
-                InfoCardCatalog.NetworkWeakSignalDrain.id !in state.dismissedInfoCards &&
-                state.showInfoCards
-            ) {
+            val shouldShowWeakSignalInfoCard = networkState.connectionType != ConnectionType.NONE &&
+                networkState.signalDbm != null &&
+                (networkState.signalQuality == SignalQuality.POOR ||
+                    networkState.signalQuality == SignalQuality.NO_SIGNAL)
+
+            if (shouldShowWeakSignalInfoCard) {
                 InfoCard(
                     id = InfoCardCatalog.NetworkWeakSignalDrain.id,
                     headline = stringResource(InfoCardCatalog.NetworkWeakSignalDrain.headlineRes),
                     body = stringResource(InfoCardCatalog.NetworkWeakSignalDrain.bodyRes),
                     onDismiss = { onDismissInfoCard(it) },
+                    visible = InfoCardCatalog.NetworkWeakSignalDrain.id !in state.dismissedInfoCards &&
+                        state.showInfoCards,
                     onLearnMore = {
-                        InfoCardCatalog.NetworkWeakSignalDrain.learnArticleId?.let(onNavigateToLearnArticle)
+                        InfoCardCatalog.resolveLearnArticleId(
+                            InfoCardCatalog.NetworkWeakSignalDrain
+                        )?.let(onNavigateToLearnArticle)
                     }
                 )
             }
 
-            if (state.showInfoCards && InfoCardCatalog.NetworkSpeedTestScope.id !in state.dismissedInfoCards) {
-                InfoCard(
-                    id = InfoCardCatalog.NetworkSpeedTestScope.id,
-                    headline = stringResource(InfoCardCatalog.NetworkSpeedTestScope.headlineRes),
-                    body = stringResource(InfoCardCatalog.NetworkSpeedTestScope.bodyRes),
-                    onDismiss = { onDismissInfoCard(it) },
-                    onLearnMore = {
-                        InfoCardCatalog.NetworkSpeedTestScope.learnArticleId?.let(onNavigateToLearnArticle)
-                    }
-                )
-            }
+            InfoCard(
+                id = InfoCardCatalog.NetworkSpeedTestScope.id,
+                headline = stringResource(InfoCardCatalog.NetworkSpeedTestScope.headlineRes),
+                body = stringResource(InfoCardCatalog.NetworkSpeedTestScope.bodyRes),
+                onDismiss = { onDismissInfoCard(it) },
+                visible = InfoCardCatalog.NetworkSpeedTestScope.id !in state.dismissedInfoCards &&
+                    state.showInfoCards,
+                onLearnMore = {
+                    InfoCardCatalog.resolveLearnArticleId(
+                        InfoCardCatalog.NetworkSpeedTestScope
+                    )?.let(onNavigateToLearnArticle)
+                }
+            )
 
             if (networkState.connectionType == ConnectionType.WIFI && networkState.wifiSsid == null) {
                 WifiNameHelpCard(
@@ -930,7 +937,11 @@ private fun NetworkContent(
             )
 
             RelatedArticlesSection(
-                topic = LearnTopic.NETWORK,
+                articleIds = listOf(
+                    LearnArticleIds.NETWORK_SIGNAL,
+                    LearnArticleIds.NETWORK_WIFI_BANDS,
+                    LearnArticleIds.NETWORK_SPEED_TESTS
+                ),
                 onNavigateToArticle = onNavigateToLearnArticle
             )
 
@@ -1100,7 +1111,7 @@ private fun LastResultCard(result: SpeedTestResult) {
                 )
                 ResultMetric(
                     label = stringResource(R.string.speed_test_ping),
-                    value = result.pingMs.toString(),
+                    value = if (result.pingMs > 0) result.pingMs.toString() else stringResource(R.string.placeholder_dash),
                     unit = stringResource(R.string.unit_ms)
                 )
             }
@@ -1178,7 +1189,7 @@ private fun HistoryResultRow(result: SpeedTestResult) {
                 modifier = Modifier.weight(1f)
             )
             Text(
-                text = stringResource(R.string.value_with_unit_int, result.pingMs, stringResource(R.string.unit_ms)),
+                text = formatPingMetric(result.pingMs),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.End,
@@ -1221,3 +1232,15 @@ private fun CellularDataWarningDialog(
         }
     )
 }
+
+@Composable
+private fun formatPingMetric(pingMs: Int): String =
+    if (pingMs > 0) {
+        stringResource(
+            R.string.value_with_unit_int,
+            pingMs,
+            stringResource(R.string.unit_ms)
+        )
+    } else {
+        stringResource(R.string.placeholder_dash)
+    }

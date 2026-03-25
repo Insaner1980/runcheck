@@ -16,11 +16,13 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -75,9 +77,10 @@ class ThermalRepositoryImpl @Inject constructor(
             thermalReadingDao.getReadingsSince(since)
         }
         return source.map { entities -> entities.map { it.toDomain() } }
+            .flowOn(Dispatchers.IO)
     }
 
-    override suspend fun saveReading(state: ThermalState) {
+    override suspend fun saveReading(state: ThermalState) = withContext(Dispatchers.IO) {
         try {
             val entity = ThermalReadingEntity(
                 timestamp = System.currentTimeMillis(),
@@ -92,11 +95,11 @@ class ThermalRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getAllReadings(): List<ThermalReading> {
-        return thermalReadingDao.getAll().map { it.toDomain() }
+    override suspend fun getAllReadings(): List<ThermalReading> = withContext(Dispatchers.IO) {
+        thermalReadingDao.getAll().map { it.toDomain() }
     }
 
-    override suspend fun deleteOlderThan(cutoff: Long) {
+    override suspend fun deleteOlderThan(cutoff: Long) = withContext(Dispatchers.IO) {
         try {
             thermalReadingDao.deleteOlderThan(cutoff)
         } catch (e: Exception) {
@@ -104,7 +107,7 @@ class ThermalRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun deleteAll() {
+    override suspend fun deleteAll() = withContext<Unit>(Dispatchers.IO) {
         thermalReadingDao.deleteAll()
     }
 

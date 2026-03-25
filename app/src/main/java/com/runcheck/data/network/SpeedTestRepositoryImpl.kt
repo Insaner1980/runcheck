@@ -7,8 +7,11 @@ import com.runcheck.domain.model.SpeedTestProgress
 import com.runcheck.domain.model.SpeedTestResult
 import com.runcheck.domain.repository.SpeedTestRepository as SpeedTestRepositoryContract
 import com.runcheck.util.TimestampSanitizer
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,10 +21,10 @@ class SpeedTestRepositoryImpl @Inject constructor(
     private val speedTestResultDao: SpeedTestResultDao
 ) : SpeedTestRepositoryContract {
 
-    override fun runSpeedTest(): Flow<SpeedTestProgress> =
-        speedTestService.runSpeedTest().map { it.toDomain() }
+    override fun runSpeedTest(allowCellular: Boolean): Flow<SpeedTestProgress> =
+        speedTestService.runSpeedTest(allowCellular = allowCellular).map { it.toDomain() }
 
-    override suspend fun saveResult(result: SpeedTestResult) {
+    override suspend fun saveResult(result: SpeedTestResult) = withContext(Dispatchers.IO) {
         val entity = SpeedTestResultEntity(
             timestamp = TimestampSanitizer.clampToNow(result.timestamp),
             downloadMbps = result.downloadMbps,
@@ -40,23 +43,23 @@ class SpeedTestRepositoryImpl @Inject constructor(
     override fun getLatestResult(): Flow<SpeedTestResult?> =
         speedTestResultDao.getLatestResult(System.currentTimeMillis()).map { entity ->
             entity?.toDomain()?.takeIf { TimestampSanitizer.isUsable(it.timestamp) }
-        }
+        }.flowOn(Dispatchers.IO)
 
     override fun getRecentResults(limit: Int): Flow<List<SpeedTestResult>> =
         speedTestResultDao.getRecentResults(limit, System.currentTimeMillis()).map { list ->
             list.map { it.toDomain() }
                 .filter { TimestampSanitizer.isUsable(it.timestamp) }
-        }
+        }.flowOn(Dispatchers.IO)
 
-    override suspend fun trimResults(keepCount: Int) {
+    override suspend fun trimResults(keepCount: Int) = withContext<Unit>(Dispatchers.IO) {
         speedTestResultDao.deleteOldResults(keepCount)
     }
 
-    override suspend fun deleteOlderThan(cutoff: Long) {
+    override suspend fun deleteOlderThan(cutoff: Long) = withContext<Unit>(Dispatchers.IO) {
         speedTestResultDao.deleteOlderThan(cutoff)
     }
 
-    override suspend fun deleteAll() {
+    override suspend fun deleteAll() = withContext<Unit>(Dispatchers.IO) {
         speedTestResultDao.deleteAll()
     }
 
@@ -80,6 +83,8 @@ class SpeedTestRepositoryImpl @Inject constructor(
 }
 
 private fun SpeedTestService.SpeedTestProgress.toDomain(): SpeedTestProgress = when (this) {
+    is SpeedTestService.SpeedTestProgress.CellularConfirmationRequired ->
+        SpeedTestProgress.CellularConfirmationRequired(connectionInfo)
     is SpeedTestService.SpeedTestProgress.PingPhase ->
         SpeedTestProgress.PingPhase(pingMs, jitterMs)
     is SpeedTestService.SpeedTestProgress.DownloadPhase ->
@@ -93,7 +98,8 @@ private fun SpeedTestService.SpeedTestProgress.toDomain(): SpeedTestProgress = w
             pingMs,
             jitterMs,
             serverName,
-            serverLocation
+            serverLocation,
+            connectionInfo
         )
     is SpeedTestService.SpeedTestProgress.Failed ->
         SpeedTestProgress.Failed(error)

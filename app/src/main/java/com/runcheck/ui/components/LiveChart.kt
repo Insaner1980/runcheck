@@ -16,7 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -33,10 +33,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.runcheck.ui.theme.chartAxisTextStyle
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
@@ -136,10 +134,7 @@ private fun LiveChartCanvas(
         return
     }
 
-    val textMeasurer = rememberTextMeasurer()
-    val axisStyle = MaterialTheme.chartAxisTextStyle
     val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
-    val textColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     // Compute Y range
     val computedMin = yMin ?: data.min()
@@ -155,31 +150,46 @@ private fun LiveChartCanvas(
 
     // Smooth scroll animation state
     val animatedScrollOffset = remember { Animatable(0f) }
-    val previousDataSize = remember { mutableIntStateOf(data.size) }
     var canvasWidth by remember { mutableFloatStateOf(0f) }
+    var previousData by remember { mutableStateOf<List<Float>>(emptyList()) }
 
     // Glow pulse animation state
     val glowPulseAlpha = remember { Animatable(0.3f) }
     val glowPulseRadius = remember { Animatable(5f) }
 
-    LaunchedEffect(data.size) {
-        if (!reducedMotion && data.size > previousDataSize.intValue && previousDataSize.intValue > 0) {
-            // New point arrived — animate one step left
-            val stepX = if (maxPoints > 1) canvasWidth / (maxPoints - 1) else canvasWidth
-            animatedScrollOffset.snapTo(stepX)
-            animatedScrollOffset.animateTo(0f, tween(150, easing = LinearEasing))
-        }
-        previousDataSize.intValue = data.size
-    }
+    LaunchedEffect(data, canvasWidth, reducedMotion, maxPoints) {
+        val hadVisibleChart = previousData.size >= 2
+        val hasVisibleChart = data.size >= 2
+        val dataChanged = previousData != data
+        val newPointCount = appendedPointCount(previousData, data)
 
-    LaunchedEffect(data.size) {
-        if (!reducedMotion && data.size > 1) {
-            // Pulse: briefly expand and brighten
-            glowPulseAlpha.snapTo(0.5f)
-            glowPulseRadius.snapTo(8f)
-            launch { glowPulseAlpha.animateTo(0.3f, tween(300)) }
-            glowPulseRadius.animateTo(5f, tween(300))
+        if (reducedMotion || !hadVisibleChart || !hasVisibleChart || !dataChanged) {
+            animatedScrollOffset.snapTo(0f)
+            glowPulseAlpha.snapTo(0.3f)
+            glowPulseRadius.snapTo(5f)
+            previousData = data.toList()
+            return@LaunchedEffect
         }
+
+        if (newPointCount > 0 && canvasWidth > 0f) {
+            val stepX = if (maxPoints > 1) canvasWidth / (maxPoints - 1) else canvasWidth
+            animatedScrollOffset.stop()
+            animatedScrollOffset.snapTo(animatedScrollOffset.value + (newPointCount * stepX))
+            launch {
+                animatedScrollOffset.animateTo(0f, tween(150, easing = LinearEasing))
+            }
+        } else {
+            animatedScrollOffset.snapTo(0f)
+        }
+
+        glowPulseAlpha.stop()
+        glowPulseRadius.stop()
+        glowPulseAlpha.snapTo(0.5f)
+        glowPulseRadius.snapTo(8f)
+        launch { glowPulseAlpha.animateTo(0.3f, tween(300)) }
+        glowPulseRadius.animateTo(5f, tween(300))
+
+        previousData = data.toList()
     }
 
     Canvas(
@@ -276,4 +286,17 @@ private fun LiveChartCanvas(
             )
         }
     }
+}
+
+private fun appendedPointCount(previous: List<Float>, current: List<Float>): Int {
+    if (previous.isEmpty() || current.isEmpty() || previous == current) return 0
+
+    val maxOverlap = minOf(previous.size, current.size)
+    for (overlap in maxOverlap downTo 1) {
+        if (previous.takeLast(overlap) == current.take(overlap)) {
+            return current.size - overlap
+        }
+    }
+
+    return 0
 }

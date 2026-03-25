@@ -78,7 +78,7 @@ class ProUpgradeViewModel @Inject constructor(
                     }
                     is PurchaseEvent.Error -> _uiState.update {
                         it.copy(
-                            purchaseError = UiText.Resource(R.string.billing_purchase_error),
+                            purchaseError = UiText.Dynamic(event.debugMessage),
                             purchasePending = false
                         )
                     }

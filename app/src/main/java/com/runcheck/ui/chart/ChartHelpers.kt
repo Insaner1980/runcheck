@@ -434,9 +434,10 @@ fun storageQualityZones(metric: StorageHistoryMetric): List<ChartQualityZone>? {
     val statusColors = MaterialTheme.statusColors
     return when (metric) {
         StorageHistoryMetric.USED_SPACE -> listOf(
-            ChartQualityZone(0f, 70f, statusColors.healthy.copy(alpha = 0.08f)),
-            ChartQualityZone(70f, 90f, statusColors.fair.copy(alpha = 0.08f)),
-            ChartQualityZone(90f, 100f, statusColors.critical.copy(alpha = 0.08f))
+            ChartQualityZone(0f, 74.999f, statusColors.healthy.copy(alpha = 0.08f)),
+            ChartQualityZone(75f, 84.999f, statusColors.fair.copy(alpha = 0.08f)),
+            ChartQualityZone(85f, 94.999f, statusColors.poor.copy(alpha = 0.08f)),
+            ChartQualityZone(95f, 100f, statusColors.critical.copy(alpha = 0.08f))
         )
         StorageHistoryMetric.AVAILABLE_SPACE -> null
     }
@@ -454,7 +455,7 @@ fun qualityZoneColorForValue(
     defaultColor: Color
 ): Color {
     for (zone in zones) {
-        if (value >= zone.minValue && value < zone.maxValue) {
+        if (value >= zone.minValue && value <= zone.maxValue) {
             return zone.color.copy(alpha = 1f)
         }
     }

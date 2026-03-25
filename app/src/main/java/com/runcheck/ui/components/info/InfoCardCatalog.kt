@@ -2,6 +2,8 @@ package com.runcheck.ui.components.info
 
 import androidx.annotation.StringRes
 import com.runcheck.R
+import com.runcheck.ui.learn.LearnArticleCatalog
+import com.runcheck.ui.learn.LearnArticleIds
 
 enum class InfoCardScreen {
     BATTERY_DETAIL,
@@ -33,7 +35,7 @@ object InfoCardCatalog {
         screen = InfoCardScreen.BATTERY_DETAIL,
         headlineRes = R.string.info_card_health_80_headline,
         bodyRes = R.string.info_card_health_80_body,
-        learnArticleId = "battery_health",
+        learnArticleId = LearnArticleIds.BATTERY_HEALTH,
         purpose = "Explain that battery health below 90% reflects normal capacity loss."
     )
 
@@ -43,7 +45,7 @@ object InfoCardCatalog {
         screen = InfoCardScreen.BATTERY_DETAIL,
         headlineRes = R.string.info_card_dies_before_zero_headline,
         bodyRes = R.string.info_card_dies_before_zero_body,
-        learnArticleId = "battery_health",
+        learnArticleId = LearnArticleIds.BATTERY_HEALTH,
         purpose = "Explain why worn batteries can shut down before the gauge reaches 0%."
     )
 
@@ -53,7 +55,7 @@ object InfoCardCatalog {
         screen = InfoCardScreen.BATTERY_DETAIL,
         headlineRes = R.string.info_card_charging_habits_headline,
         bodyRes = R.string.info_card_charging_habits_body,
-        learnArticleId = "battery_charging",
+        learnArticleId = LearnArticleIds.BATTERY_CHARGING,
         purpose = "Teach healthier charging habits while the device is charging."
     )
 
@@ -63,7 +65,7 @@ object InfoCardCatalog {
         screen = InfoCardScreen.BATTERY_DETAIL,
         headlineRes = R.string.info_card_screen_off_drain_headline,
         bodyRes = R.string.info_card_screen_off_drain_body,
-        learnArticleId = "battery_drain",
+        learnArticleId = LearnArticleIds.BATTERY_DRAIN,
         purpose = "Warn that background activity is causing unusually high screen-off drain."
     )
 
@@ -73,7 +75,7 @@ object InfoCardCatalog {
         screen = InfoCardScreen.NETWORK_DETAIL,
         headlineRes = R.string.info_card_weak_signal_headline,
         bodyRes = R.string.info_card_weak_signal_body,
-        learnArticleId = "network_signal",
+        learnArticleId = LearnArticleIds.NETWORK_SIGNAL,
         purpose = "Explain that poor cellular or Wi-Fi signal increases radio power usage."
     )
 
@@ -83,7 +85,7 @@ object InfoCardCatalog {
         screen = InfoCardScreen.NETWORK_DETAIL,
         headlineRes = R.string.info_card_speed_test_info_headline,
         bodyRes = R.string.info_card_speed_test_info_body,
-        learnArticleId = "network_speed_tests",
+        learnArticleId = LearnArticleIds.NETWORK_SPEED_TESTS,
         purpose = "Clarify what a speed test measures and why results vary."
     )
 
@@ -93,7 +95,7 @@ object InfoCardCatalog {
         screen = InfoCardScreen.THERMAL_DETAIL,
         headlineRes = R.string.info_card_thermal_throttling_headline,
         bodyRes = R.string.info_card_thermal_throttling_body,
-        learnArticleId = "thermal_throttling",
+        learnArticleId = LearnArticleIds.THERMAL_THROTTLING,
         purpose = "Explain why Android throttles performance to avoid heat damage."
     )
 
@@ -103,7 +105,7 @@ object InfoCardCatalog {
         screen = InfoCardScreen.THERMAL_DETAIL,
         headlineRes = R.string.info_card_heat_battery_headline,
         bodyRes = R.string.info_card_heat_battery_body,
-        learnArticleId = "thermal_feedback",
+        learnArticleId = LearnArticleIds.THERMAL_FEEDBACK,
         purpose = "Explain the feedback loop between high heat and battery aging."
     )
 
@@ -113,7 +115,7 @@ object InfoCardCatalog {
         screen = InfoCardScreen.STORAGE_DETAIL,
         headlineRes = R.string.info_card_full_storage_headline,
         bodyRes = R.string.info_card_full_storage_body,
-        learnArticleId = "storage_slowdown",
+        learnArticleId = LearnArticleIds.STORAGE_SLOWDOWN,
         purpose = "Explain why storage above roughly 75% can make the phone feel slower."
     )
 
@@ -123,7 +125,7 @@ object InfoCardCatalog {
         screen = InfoCardScreen.STORAGE_DETAIL,
         headlineRes = R.string.info_card_storage_overview_headline,
         bodyRes = R.string.info_card_storage_overview_body,
-        learnArticleId = "storage_breakdown",
+        learnArticleId = LearnArticleIds.STORAGE_BREAKDOWN,
         purpose = "Explain how storage is typically distributed across apps, media, and system data."
     )
 
@@ -150,4 +152,21 @@ object InfoCardCatalog {
         StorageFullSlowsPhone,
         StorageOverview
     )
+
+    init {
+        val ids = mutableSetOf<String>()
+        all.forEach { definition ->
+            check(ids.add(definition.id)) {
+                "Duplicate info card id: ${definition.id}"
+            }
+            definition.learnArticleId?.let { articleId ->
+                check(LearnArticleCatalog.containsId(articleId)) {
+                    "Unknown learn article id for info card ${definition.id}: $articleId"
+                }
+            }
+        }
+    }
+
+    fun resolveLearnArticleId(definition: DismissibleInfoCardDefinition): String? =
+        definition.learnArticleId?.let(LearnArticleCatalog::resolveArticleId)
 }

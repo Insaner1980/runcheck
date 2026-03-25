@@ -77,6 +77,7 @@ import com.runcheck.ui.chart.buildThermalHistoryChartModel
 import com.runcheck.ui.chart.formatChartTooltip
 import com.runcheck.ui.chart.historyPeriodLabel
 import com.runcheck.ui.chart.thermalHistoryMetricLabel
+import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.chart.thermalQualityZones
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.formatDecimal
@@ -101,12 +102,12 @@ import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.theme.iconCircleColor
+import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroValueTextStyle
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColorForTemperature
-import com.runcheck.ui.learn.LearnTopic
 import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.statusColors
 
@@ -244,7 +245,9 @@ private fun ThermalContent(
                         onDismiss = { onDismissInfoCard(it) },
                         visible = InfoCardCatalog.ThermalThrottlingExplainer.id !in state.dismissedInfoCards && state.showInfoCards,
                         onLearnMore = {
-                            InfoCardCatalog.ThermalThrottlingExplainer.learnArticleId?.let(onNavigateToLearnArticle)
+                            InfoCardCatalog.resolveLearnArticleId(
+                                InfoCardCatalog.ThermalThrottlingExplainer
+                            )?.let(onNavigateToLearnArticle)
                         }
                     )
                 }
@@ -259,7 +262,9 @@ private fun ThermalContent(
                         onDismiss = { onDismissInfoCard(it) },
                         visible = InfoCardCatalog.ThermalHeatBatteryLoop.id !in state.dismissedInfoCards && state.showInfoCards,
                         onLearnMore = {
-                            InfoCardCatalog.ThermalHeatBatteryLoop.learnArticleId?.let(onNavigateToLearnArticle)
+                            InfoCardCatalog.resolveLearnArticleId(
+                                InfoCardCatalog.ThermalHeatBatteryLoop
+                            )?.let(onNavigateToLearnArticle)
                         }
                     )
                 }
@@ -323,7 +328,11 @@ private fun ThermalContent(
 
             item {
                 RelatedArticlesSection(
-                    topic = LearnTopic.TEMPERATURE,
+                    articleIds = listOf(
+                        LearnArticleIds.THERMAL_NORMAL_TEMPS,
+                        LearnArticleIds.THERMAL_THROTTLING,
+                        LearnArticleIds.THERMAL_FEEDBACK
+                    ),
                     onNavigateToArticle = onNavigateToLearnArticle
                 )
             }
@@ -662,6 +671,10 @@ private fun ThermalMetricsCard(
                     currentValueLabel = formatTemperature(thermal.batteryTempC, temperatureUnit),
                     label = stringResource(R.string.thermal_battery_temp),
                     lineColor = statusColorForTemperature(thermal.batteryTempC),
+                    accessibilityDescription = stringResource(
+                        R.string.a11y_chart_trend,
+                        stringResource(R.string.thermal_battery_temp)
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -674,6 +687,10 @@ private fun ThermalMetricsCard(
                     label = stringResource(R.string.thermal_headroom),
                     lineColor = thermal.thermalHeadroom?.let { headroomColor(it) }
                         ?: MaterialTheme.colorScheme.primary,
+                    accessibilityDescription = stringResource(
+                        R.string.a11y_chart_trend,
+                        stringResource(R.string.thermal_headroom)
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -765,6 +782,20 @@ private fun ThermalHistoryCard(
             }
 
             if (chartModel.chartData.size >= 2) {
+                val chartAccessibilitySummary = rememberChartAccessibilitySummary(
+                    title = stringResource(
+                        R.string.fullscreen_chart_title_thermal,
+                        thermalHistoryMetricLabel(metric)
+                    ),
+                    chartData = chartModel.chartData,
+                    unit = chartModel.unit,
+                    decimals = chartModel.tooltipDecimals,
+                    timeContext = stringResource(
+                        R.string.a11y_chart_context_history,
+                        historyPeriodLabel(selectedPeriod)
+                    )
+                )
+
                 Text(
                     text = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${thermalHistoryMetricLabel(metric)}",
                     style = MaterialTheme.typography.labelLarge,
@@ -776,6 +807,7 @@ private fun ThermalHistoryCard(
                     TrendChart(
                         data = chartModel.chartData,
                         modifier = Modifier.fillMaxWidth(),
+                        contentDescription = chartAccessibilitySummary,
                         yLabels = chartModel.yLabels.ifEmpty { null },
                         xLabels = chartModel.xLabels.ifEmpty { null },
                         showGrid = true,

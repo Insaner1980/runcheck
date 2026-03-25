@@ -133,6 +133,17 @@ class NetworkDataSource @Inject constructor(
 
     fun getNetworkInfo(): Flow<NetworkInfo> = networkInfoFlow
 
+    fun getCurrentNetworkInfoSnapshot(): NetworkInfo {
+        val activeNetwork = connectivityManager.activeNetwork
+        val capabilities = activeNetwork?.let(connectivityManager::getNetworkCapabilities)
+        val linkProperties = activeNetwork?.let(connectivityManager::getLinkProperties)
+        return if (capabilities != null) {
+            buildNetworkInfo(capabilities, linkProperties)
+        } else {
+            NetworkInfo.disconnected()
+        }
+    }
+
     fun hasValidatedConnection(): Boolean {
         val activeNetwork = connectivityManager.activeNetwork ?: return false
         val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
@@ -214,7 +225,14 @@ class NetworkDataSource @Inject constructor(
         } else null
 
         // WiFi standard (API 30+)
-        val wifiStandard = if (isWifi) getWifiStandard(capabilities) else null
+        val wifiStandard = if (isWifi) {
+            getWifiStandard(
+                capabilities = capabilities,
+                frequencyMhz = wifiInfo?.frequencyMhz ?: wifiSignal?.frequencyMhz
+            )
+        } else {
+            null
+        }
 
         return NetworkInfo(
             connectionType = connectionType,
@@ -240,17 +258,7 @@ class NetworkDataSource @Inject constructor(
     }
 
     private fun kotlinx.coroutines.channels.ProducerScope<NetworkInfo>.emitCurrentNetworkInfo() {
-        val activeNetwork = connectivityManager.activeNetwork
-        val capabilities = activeNetwork?.let {
-            connectivityManager.getNetworkCapabilities(it)
-        }
-        val linkProperties = activeNetwork?.let {
-            connectivityManager.getLinkProperties(it)
-        }
-        trySend(
-            if (capabilities != null) buildNetworkInfo(capabilities, linkProperties)
-            else NetworkInfo.disconnected()
-        )
+        trySend(getCurrentNetworkInfoSnapshot())
     }
 
     private fun getCellularSignalDbm(): Int? {
@@ -350,7 +358,8 @@ class NetworkDataSource @Inject constructor(
                         ssid = ssid,
                         speedMbps = wifiInfo.linkSpeed,
                         frequencyMhz = wifiInfo.frequency,
-                        rssi = if (rssi != -127 && rssi != 0) rssi else null
+                        rssi = if (rssi != -127 && rssi != 0) rssi else null,
+                        wifiStandard = wifiInfo.toWifiStandardLabel(wifiInfo.frequency)
                     )
                 }
 
@@ -460,21 +469,35 @@ class NetworkDataSource @Inject constructor(
     }
 
     @Suppress("DEPRECATION")
-    private fun getWifiStandard(capabilities: NetworkCapabilities): String? {
+    private fun getWifiStandard(
+        capabilities: NetworkCapabilities,
+        frequencyMhz: Int?
+    ): String? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
         val wifiInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            capabilities.transportInfo as? WifiInfo
+            (capabilities.transportInfo as? WifiInfo)
+                ?: wifiManager?.connectionInfo
+                ?: return cachedWifiDetails?.wifiStandard
         } else {
-            wifiManager?.connectionInfo
-        } ?: return null
-        return when (wifiInfo.wifiStandard) {
-            4 -> "WiFi 4 (n)"
-            5 -> "WiFi 5 (ac)"
-            6 -> "WiFi 6 (ax)"
-            7 -> "WiFi 6E (ax)"
-            8 -> "WiFi 7 (be)"
-            else -> null
+            wifiManager?.connectionInfo ?: return cachedWifiDetails?.wifiStandard
         }
+        return wifiInfo.toWifiStandardLabel(frequencyMhz ?: wifiInfo.frequency)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun WifiInfo.toWifiStandardLabel(frequencyMhz: Int): String? = when (wifiStandard) {
+        WIFI_STANDARD_LEGACY -> null
+        WIFI_STANDARD_11N -> "Wi-Fi 4 (802.11n)"
+        WIFI_STANDARD_11AC -> "Wi-Fi 5 (802.11ac)"
+        WIFI_STANDARD_11AX ->
+            if (frequencyMhz >= MIN_6_GHZ_FREQUENCY_MHZ) {
+                "Wi-Fi 6E (802.11ax)"
+            } else {
+                "Wi-Fi 6 (802.11ax)"
+            }
+        WIFI_STANDARD_11AD -> "WiGig (802.11ad)"
+        WIFI_STANDARD_11BE -> "Wi-Fi 7 (802.11be)"
+        else -> null
     }
 
     private fun normalizeSsid(rawSsid: String?): String? {
@@ -598,7 +621,8 @@ class NetworkDataSource @Inject constructor(
         val ssid: String,
         val speedMbps: Int,
         val frequencyMhz: Int,
-        val rssi: Int? = null
+        val rssi: Int? = null,
+        val wifiStandard: String? = null
     )
 
     private data class CellularDetails(
@@ -607,6 +631,13 @@ class NetworkDataSource @Inject constructor(
     )
 
     companion object {
+        private const val MIN_6_GHZ_FREQUENCY_MHZ = 5925
+        private const val WIFI_STANDARD_LEGACY = 1
+        private const val WIFI_STANDARD_11N = 4
+        private const val WIFI_STANDARD_11AC = 5
+        private const val WIFI_STANDARD_11AX = 6
+        private const val WIFI_STANDARD_11AD = 7
+        private const val WIFI_STANDARD_11BE = 8
         private const val STOP_TIMEOUT_MS = 0L
         private const val TAG = "NetworkDataSource"
     }

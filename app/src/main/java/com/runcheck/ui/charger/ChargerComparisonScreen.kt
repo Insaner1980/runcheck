@@ -236,12 +236,18 @@ private fun ChargerContent(
                     items = state.chargers,
                     key = { it.chargerId }
                 ) { charger ->
+                    val onSelect = remember(charger.chargerId) {
+                        { onSelectCharger(charger.chargerId) }
+                    }
+                    val onDelete = remember(charger.chargerId) {
+                        { onDeleteRequest(charger) }
+                    }
                     ChargerCard(
                         charger = charger,
                         isSelected = charger.chargerId == state.selectedChargerId,
-                        onSelect = { onSelectCharger(charger.chargerId) },
+                        onSelect = onSelect,
                         onClearSelected = onClearSelectedCharger,
-                        onDelete = { onDeleteRequest(charger) }
+                        onDelete = onDelete
                     )
                 }
             }

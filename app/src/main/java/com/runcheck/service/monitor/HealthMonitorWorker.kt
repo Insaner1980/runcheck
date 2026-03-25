@@ -1,13 +1,12 @@
 package com.runcheck.service.monitor
 
-import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.runcheck.domain.model.BatteryState
-import com.runcheck.domain.model.ChargingStatus
+import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.repository.BatteryRepository
@@ -76,10 +75,17 @@ class HealthMonitorWorker @AssistedInject constructor(
         } || coreFailure
 
         coreFailure = collectStep("alerts") {
+            val bat = batteryState
+            val therm = thermalState
+            val stor = storageState
+            if (bat == null || therm == null || stor == null) {
+                ReleaseSafeLog.warn(TAG, "Skipping alerts — missing state data")
+                return@collectStep
+            }
             val snapshot = buildSnapshot(
-                batteryState = requireNotNull(batteryState),
-                thermalState = requireNotNull(thermalState),
-                storageState = requireNotNull(storageState)
+                batteryState = bat,
+                thermalState = therm,
+                storageState = stor
             )
             val previousSnapshot = monitoringAlertStateStore.getLastSnapshot()
             val chargeCompleteFired = monitoringAlertStateStore.wasChargeCompleteFired()
@@ -87,9 +93,10 @@ class HealthMonitorWorker @AssistedInject constructor(
                 previousSnapshot, snapshot, preferences, chargeCompleteFired
             )
 
-            // Reset charge-complete flag when phone is unplugged
-            val isUnplugged = snapshot.chargingStatus == ChargingStatus.DISCHARGING ||
-                snapshot.chargingStatus == ChargingStatus.NOT_CHARGING
+            // Reset only after the device is actually off power. Some devices
+            // bounce between CHARGING, FULL, and NOT_CHARGING while still on a
+            // charger, especially wireless pads near 99-100%.
+            val isUnplugged = bat.plugType == PlugType.NONE
             val newChargeCompleteFired = when {
                 isUnplugged -> false
                 alertDecision.chargeComplete -> true
@@ -130,11 +137,7 @@ class HealthMonitorWorker @AssistedInject constructor(
     private fun restartLiveNotificationIfNeeded(liveNotificationEnabled: Boolean) {
         if (!liveNotificationEnabled) return
         try {
-            val am = applicationContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-            @Suppress("DEPRECATION")
-            val running = am.getRunningServices(Int.MAX_VALUE)
-                .any { it.service.className == RealTimeMonitorService::class.java.name }
-            if (!running) {
+            if (!RealTimeMonitorService.isRunning) {
                 val serviceIntent = Intent(applicationContext, RealTimeMonitorService::class.java)
                 applicationContext.startForegroundService(serviceIntent)
             }

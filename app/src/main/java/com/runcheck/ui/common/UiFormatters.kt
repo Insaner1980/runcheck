@@ -1,6 +1,7 @@
 package com.runcheck.ui.common
 
 import android.content.Context
+import android.os.Build
 import android.text.format.DateFormat
 import android.text.format.Formatter
 import androidx.compose.runtime.Composable
@@ -27,8 +28,21 @@ fun Throwable.messageOrRes(@androidx.annotation.StringRes defaultRes: Int): UiTe
 fun formatStorageSize(context: Context, bytes: Long): String =
     Formatter.formatShortFileSize(context, bytes)
 
-fun formatDecimal(value: Number, fractionDigits: Int): String =
-    String.format(Locale.getDefault(), "%.${fractionDigits}f", value.toDouble())
+fun currentLocale(context: Context): Locale {
+    val configuration = context.resources.configuration
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        configuration.locales[0] ?: Locale.getDefault()
+    } else {
+        @Suppress("DEPRECATION")
+        configuration.locale ?: Locale.getDefault()
+    }
+}
+
+fun formatDecimal(
+    value: Number,
+    fractionDigits: Int,
+    locale: Locale = Locale.getDefault()
+): String = String.format(locale, "%.${fractionDigits}f", value.toDouble())
 
 fun formatLocalizedDateTime(timestamp: Long, skeleton: String): String {
     val locale = Locale.getDefault()
@@ -63,7 +77,11 @@ fun formatTemperature(
     fractionDigits: Int = 1
 ): String = context.getString(
     R.string.value_with_suffix_text,
-    formatTemperatureValue(valueCelsius, unit, fractionDigits),
+    formatDecimal(
+        convertTemperature(valueCelsius, unit),
+        fractionDigits,
+        currentLocale(context)
+    ),
     context.getString(temperatureUnitRes(unit))
 )
 

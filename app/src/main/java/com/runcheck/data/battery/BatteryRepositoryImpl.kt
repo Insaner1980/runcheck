@@ -14,7 +14,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -27,15 +30,19 @@ class BatteryRepositoryImpl @Inject constructor(
     private val batteryCapacityReader: BatteryCapacityReader
 ) : BatteryRepositoryContract {
 
+    private val sourceMutex = Mutex()
     @Volatile
     private var cachedSource: BatteryDataSource? = null
 
     private suspend fun getOrCreateSource(): BatteryDataSource {
         cachedSource?.let { return it }
-        val profile = withContext(Dispatchers.IO) {
-            deviceProfileProvider.getDeviceProfile()
+        return sourceMutex.withLock {
+            cachedSource?.let { return@withLock it }
+            val profile = withContext(Dispatchers.IO) {
+                deviceProfileProvider.getDeviceProfile()
+            }
+            batteryDataSourceFactory.create(profile).also { cachedSource = it }
         }
-        return batteryDataSourceFactory.create(profile).also { cachedSource = it }
     }
 
     override fun getBatteryState(): Flow<BatteryState> = flow {
@@ -98,10 +105,10 @@ class BatteryRepositoryImpl @Inject constructor(
         return readingsFlow.map { entities ->
             entities.map { it.toDomain() }
                 .filter { TimestampSanitizer.isUsable(it.timestamp) }
-        }
+        }.flowOn(Dispatchers.IO)
     }
 
-    override suspend fun saveReading(state: BatteryState) {
+    override suspend fun saveReading(state: BatteryState) = withContext(Dispatchers.IO) {
         try {
             val entity = BatteryReadingEntity(
                 timestamp = System.currentTimeMillis(),
@@ -124,15 +131,15 @@ class BatteryRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getAllReadings(): List<BatteryReading> {
-        return batteryReadingDao.getAll().map { it.toDomain() }
+    override suspend fun getAllReadings(): List<BatteryReading> = withContext(Dispatchers.IO) {
+        batteryReadingDao.getAll().map { it.toDomain() }
     }
 
-    override suspend fun getReadingsSinceSync(since: Long): List<BatteryReading> {
-        return batteryReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
+    override suspend fun getReadingsSinceSync(since: Long): List<BatteryReading> = withContext(Dispatchers.IO) {
+        batteryReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
     }
 
-    override suspend fun deleteOlderThan(cutoff: Long) {
+    override suspend fun deleteOlderThan(cutoff: Long) = withContext(Dispatchers.IO) {
         try {
             batteryReadingDao.deleteOlderThan(cutoff)
         } catch (e: Exception) {
@@ -140,12 +147,12 @@ class BatteryRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun deleteAll() {
+    override suspend fun deleteAll() = withContext<Unit>(Dispatchers.IO) {
         batteryReadingDao.deleteAll()
     }
 
-    override suspend fun getLastChargingTimestamp(): Long? {
-        return batteryReadingDao.getLastChargingTimestamp()
+    override suspend fun getLastChargingTimestamp(): Long? = withContext(Dispatchers.IO) {
+        batteryReadingDao.getLastChargingTimestamp()
     }
 
     private companion object {

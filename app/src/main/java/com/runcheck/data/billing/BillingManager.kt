@@ -50,7 +50,8 @@ import kotlin.coroutines.resume
 @Singleton
 @Suppress("DEPRECATION")
 class BillingManager @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    private val proStatusCache: ProStatusCache
 ) : PurchasesUpdatedListener,
     com.runcheck.domain.repository.ProStatusProvider,
     ProPurchaseManager {
@@ -94,6 +95,12 @@ class BillingManager @Inject constructor(
         if (billingClient?.isReady == true) {
             _initComplete.complete(Unit)
             return
+        }
+
+        // Restore cached Pro state so Pro users don't see free-tier flash
+        // while the async billing query runs
+        if (proStatusCache.getCachedProStatus()) {
+            updateProState(true)
         }
 
         _billingAvailable.value = false
@@ -245,8 +252,6 @@ class BillingManager @Inject constructor(
             if (result.responseCode == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) {
                 _purchaseEvents.tryEmit(PurchaseEvent.AlreadyOwned)
                 scope.launch { queryExistingPurchases() }
-            } else if (result.responseCode == BillingClient.BillingResponseCode.USER_CANCELED) {
-                _purchaseEvents.tryEmit(PurchaseEvent.Canceled)
             } else {
                 _purchaseEvents.tryEmit(
                     PurchaseEvent.Error(
@@ -373,6 +378,7 @@ class BillingManager @Inject constructor(
 
     private fun updateProState(isPro: Boolean) {
         _isProState.value = isPro
+        proStatusCache.setCachedProStatus(isPro)
     }
 
     private fun scheduleReconnect() {

@@ -329,10 +329,16 @@ private fun CleanupResultsList(
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                     )
                 }
+                val onToggleExpanded = remember(group.category) {
+                    { viewModel.toggleGroupExpanded(group.category) }
+                }
+                val onToggleGroupSelection = remember(group.category) {
+                    { viewModel.toggleGroupSelection(group.category) }
+                }
                 CategoryGroup(
                     group = group,
-                    onToggleExpanded = { viewModel.toggleGroupExpanded(group.category) },
-                    onToggleGroupSelection = { viewModel.toggleGroupSelection(group.category) }
+                    onToggleExpanded = onToggleExpanded,
+                    onToggleGroupSelection = onToggleGroupSelection
                 )
             }
 
@@ -356,6 +362,9 @@ private fun CleanupResultsList(
                         contentType = { _ -> "cleanup_file" }
                     ) { index ->
                         val file = lazyItems[index] ?: return@items
+                        val onToggle = remember(file.uri) {
+                            { viewModel.toggleSelection(file) }
+                        }
                         Column {
                             if (index > 0) {
                                 HorizontalDivider(
@@ -367,7 +376,7 @@ private fun CleanupResultsList(
                                 file = file,
                                 isSelected = viewModel.isSelected(file),
                                 maxFileSize = maxFileSize,
-                                onToggle = { viewModel.toggleSelection(file) }
+                                onToggle = onToggle
                             )
                         }
                     }

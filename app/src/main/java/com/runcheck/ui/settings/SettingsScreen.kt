@@ -49,6 +49,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +60,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -121,23 +123,35 @@ fun SettingsScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         hasNotificationPermission = granted
-        if (permissionRequestedForLive) {
-            if (granted) {
+        if (granted) {
+            if (permissionRequestedForLive) {
                 viewModel.setLiveNotificationEnabled(true)
                 val serviceIntent = Intent(context, RealTimeMonitorService::class.java)
                 context.startForegroundService(serviceIntent)
+            } else {
+                viewModel.setNotifications(true)
             }
-            permissionRequestedForLive = false
         } else {
-            viewModel.setNotifications(granted)
+            // Detect permanent denial: shouldShowRequestPermissionRationale returns
+            // false after the user selected "Don't ask again".
+            val permanentlyDenied = activity != null &&
+                !ActivityCompat.shouldShowRequestPermissionRationale(
+                    activity,
+                    Manifest.permission.POST_NOTIFICATIONS
+                )
+            if (permanentlyDenied) {
+                showNotifPermissionDeniedDialog = true
+            }
         }
+        permissionRequestedForLive = false
     }
 
     // Confirmation dialog states
-    var showClearDialog by remember { mutableStateOf(false) }
-    var showClearSpeedTestsDialog by remember { mutableStateOf(false) }
-    var showResetTipsDialog by remember { mutableStateOf(false) }
-    var showResetThresholdsDialog by remember { mutableStateOf(false) }
+    var showClearDialog by rememberSaveable { mutableStateOf(false) }
+    var showClearSpeedTestsDialog by rememberSaveable { mutableStateOf(false) }
+    var showResetTipsDialog by rememberSaveable { mutableStateOf(false) }
+    var showResetThresholdsDialog by rememberSaveable { mutableStateOf(false) }
+    var showNotifPermissionDeniedDialog by rememberSaveable { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
@@ -510,11 +524,13 @@ fun SettingsScreen(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                SettingsNavigationRow(
-                    label = stringResource(R.string.settings_restore_purchase),
-                    onClick = { viewModel.refreshPurchaseStatus() }
-                )
+                if (!uiState.isPro) {
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                    SettingsNavigationRow(
+                        label = stringResource(R.string.settings_restore_purchase),
+                        onClick = { viewModel.refreshPurchaseStatus() }
+                    )
+                }
             }
 
             // ── DEVICE ─────────────────────────────────────────────────
@@ -756,6 +772,33 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showClearSpeedTestsDialog = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
+    }
+
+    // Notification permission permanently denied dialog
+    if (showNotifPermissionDeniedDialog) {
+        AlertDialog(
+            onDismissRequest = { showNotifPermissionDeniedDialog = false },
+            shape = MaterialTheme.shapes.large,
+            title = { Text(stringResource(R.string.notification_permission_denied_title)) },
+            text = { Text(stringResource(R.string.notification_permission_denied_message)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showNotifPermissionDeniedDialog = false
+                        context.startActivity(
+                            Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                            }
+                        )
+                    }
+                ) { Text(stringResource(R.string.notification_permission_denied_open_settings)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNotifPermissionDeniedDialog = false }) {
                     Text(stringResource(R.string.common_cancel))
                 }
             }

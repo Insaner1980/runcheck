@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -65,7 +66,7 @@ class StorageRepositoryImpl @Inject constructor(
         }
     }.flowOn(Dispatchers.IO)
 
-    override suspend fun saveReading(state: StorageState) {
+    override suspend fun saveReading(state: StorageState) = withContext(Dispatchers.IO) {
         try {
             val entity = StorageReadingEntity(
                 timestamp = System.currentTimeMillis(),
@@ -89,13 +90,14 @@ class StorageRepositoryImpl @Inject constructor(
             storageReadingDao.getReadingsSince(since)
         }
         return source.map { entities -> entities.map { it.toDomain() } }
+            .flowOn(Dispatchers.IO)
     }
 
-    override suspend fun getAllReadings(): List<StorageReading> {
-        return storageReadingDao.getAll().map { it.toDomain() }
+    override suspend fun getAllReadings(): List<StorageReading> = withContext(Dispatchers.IO) {
+        storageReadingDao.getAll().map { it.toDomain() }
     }
 
-    override suspend fun deleteOlderThan(cutoff: Long) {
+    override suspend fun deleteOlderThan(cutoff: Long) = withContext(Dispatchers.IO) {
         try {
             storageReadingDao.deleteOlderThan(cutoff)
         } catch (e: Exception) {
@@ -103,7 +105,7 @@ class StorageRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun deleteAll() {
+    override suspend fun deleteAll() = withContext<Unit>(Dispatchers.IO) {
         storageReadingDao.deleteAll()
     }
 

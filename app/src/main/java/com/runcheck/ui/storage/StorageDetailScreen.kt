@@ -89,17 +89,18 @@ import com.runcheck.ui.chart.buildStorageHistoryChartModel
 import com.runcheck.ui.chart.formatChartTooltip
 import com.runcheck.ui.chart.historyPeriodLabel
 import com.runcheck.ui.chart.storageHistoryMetricLabel
+import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.chart.storageQualityZones
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.resolve
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
 import com.runcheck.ui.components.ActionCard
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.ExpandableChartContainer
 import com.runcheck.ui.components.ListRow
+import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.MetricRow
@@ -110,7 +111,7 @@ import com.runcheck.ui.components.SegmentData
 import com.runcheck.ui.components.SegmentedBar
 import com.runcheck.ui.components.SegmentedBarLegend
 import com.runcheck.ui.components.TrendChart
-import com.runcheck.ui.learn.LearnTopic
+import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericRingValueTextStyle
@@ -155,7 +156,7 @@ fun StorageDetailScreen(
         } == true
 
     // Trash confirmation dialog
-    var showTrashConfirmDialog by remember { mutableStateOf(false) }
+    var showTrashConfirmDialog by rememberSaveable { mutableStateOf(false) }
 
     // Trash delete launcher
     val trashDeleteLauncher = rememberLauncherForActivityResult(
@@ -327,7 +328,11 @@ private fun StorageContent(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
             // ── Hero card ──────────────────────────────────────────────
-            StorageHeroCard(storage = storage, onInfoClick = { activeInfoSheet = it })
+            StorageHeroCard(
+                storage = storage,
+                liveUsagePercent = state.liveUsagePercent,
+                onInfoClick = { activeInfoSheet = it }
+            )
 
             // ── Info cards ─────────────────────────────────────────────
             if (storage.usagePercent > 75f) {
@@ -338,7 +343,9 @@ private fun StorageContent(
                     onDismiss = { onDismissInfoCard(it) },
                     visible = InfoCardCatalog.StorageFullSlowsPhone.id !in state.dismissedInfoCards && state.showInfoCards,
                     onLearnMore = {
-                        InfoCardCatalog.StorageFullSlowsPhone.learnArticleId?.let(onNavigateToLearnArticle)
+                        InfoCardCatalog.resolveLearnArticleId(
+                            InfoCardCatalog.StorageFullSlowsPhone
+                        )?.let(onNavigateToLearnArticle)
                     }
                 )
             }
@@ -363,7 +370,9 @@ private fun StorageContent(
                     onDismiss = { onDismissInfoCard(it) },
                     visible = InfoCardCatalog.StorageOverview.id !in state.dismissedInfoCards && state.showInfoCards,
                     onLearnMore = {
-                        InfoCardCatalog.StorageOverview.learnArticleId?.let(onNavigateToLearnArticle)
+                        InfoCardCatalog.resolveLearnArticleId(
+                            InfoCardCatalog.StorageOverview
+                        )?.let(onNavigateToLearnArticle)
                     }
                 )
             }
@@ -406,7 +415,10 @@ private fun StorageContent(
             StorageQuickActionsCard()
 
             RelatedArticlesSection(
-                topic = LearnTopic.STORAGE,
+                articleIds = listOf(
+                    LearnArticleIds.STORAGE_SLOWDOWN,
+                    LearnArticleIds.STORAGE_BREAKDOWN
+                ),
                 onNavigateToArticle = onNavigateToLearnArticle
             )
 
@@ -478,7 +490,11 @@ private fun StorageMediaPermissionCard(
 // ── Hero card ──────────────────────────────────────────────────────────────────
 
 @Composable
-private fun StorageHeroCard(storage: StorageState, onInfoClick: (String) -> Unit = {}) {
+private fun StorageHeroCard(
+    storage: StorageState,
+    liveUsagePercent: List<Float>,
+    onInfoClick: (String) -> Unit = {}
+) {
     val context = LocalContext.current
     val usedFormatted = formatStorageSize(context, storage.usedBytes)
     val totalFormatted = formatStorageSize(context, storage.totalBytes)
@@ -546,6 +562,23 @@ private fun StorageHeroCard(storage: StorageState, onInfoClick: (String) -> Unit
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            if (liveUsagePercent.size >= 2) {
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
+                LiveChart(
+                    data = liveUsagePercent,
+                    currentValueLabel = stringResource(R.string.value_percent, usagePercent),
+                    label = stringResource(R.string.storage_used),
+                    lineColor = statusColorForStoragePercent(usagePercent),
+                    yMin = 0f,
+                    yMax = 100f,
+                    accessibilityDescription = stringResource(
+                        R.string.a11y_chart_trend,
+                        stringResource(R.string.storage_used)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
 
@@ -716,6 +749,20 @@ private fun StorageHistoryCard(
             }
 
             if (chartModel.chartData.size >= 2) {
+                val chartAccessibilitySummary = rememberChartAccessibilitySummary(
+                    title = stringResource(
+                        R.string.fullscreen_chart_title_storage,
+                        storageHistoryMetricLabel(metric)
+                    ),
+                    chartData = chartModel.chartData,
+                    unit = chartModel.unit,
+                    decimals = chartModel.tooltipDecimals,
+                    timeContext = stringResource(
+                        R.string.a11y_chart_context_history,
+                        historyPeriodLabel(selectedPeriod)
+                    )
+                )
+
                 Text(
                     text = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${storageHistoryMetricLabel(metric)}",
                     style = MaterialTheme.typography.labelLarge,
@@ -727,6 +774,7 @@ private fun StorageHistoryCard(
                     TrendChart(
                         data = chartModel.chartData,
                         modifier = Modifier.fillMaxWidth(),
+                        contentDescription = chartAccessibilitySummary,
                         yLabels = chartModel.yLabels.ifEmpty { null },
                         xLabels = chartModel.xLabels.ifEmpty { null },
                         showGrid = true,

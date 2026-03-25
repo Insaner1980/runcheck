@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.transform
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -42,14 +43,19 @@ class UserPreferencesRepositoryImpl @Inject constructor(
     }
 
     // Dismissals are app-local UI state. Clearing app data or reinstalling should show cards again.
-    override fun observeDismissedCardIds(): Flow<Set<String>> = preferencesFlow.map { prefs ->
-        prefs[KEY_DISMISSED_INFO_CARDS] ?: emptySet()
+    override fun observeDismissedCardIds(): Flow<Set<String>> = preferencesFlow.transform { prefs ->
+        val stored = prefs[KEY_DISMISSED_INFO_CARDS] ?: emptySet()
+        val normalized = normalizeDismissedCardIds(stored)
+        if (normalized != stored) {
+            context.dataStore.edit { it[KEY_DISMISSED_INFO_CARDS] = normalized }
+        }
+        emit(normalized)
     }
 
     override suspend fun dismissCard(cardId: String) {
         context.dataStore.edit { prefs ->
             val current = prefs[KEY_DISMISSED_INFO_CARDS] ?: emptySet()
-            prefs[KEY_DISMISSED_INFO_CARDS] = current + cardId
+            prefs[KEY_DISMISSED_INFO_CARDS] = normalizeDismissedCardIds(current + cardId)
         }
     }
 
@@ -215,6 +221,38 @@ class UserPreferencesRepositoryImpl @Inject constructor(
         private val KEY_LIVE_NOTIF_REMAINING_TIME = booleanPreferencesKey("live_notif_remaining_time")
         private val KEY_SHOW_INFO_CARDS = booleanPreferencesKey("show_info_cards")
         private val KEY_DISMISSED_INFO_CARDS = stringSetPreferencesKey("dismissed_info_cards")
+        private val VERSIONED_CARD_ID_REGEX = Regex("^(.*)_v(\\d+)$")
+    }
+
+    private fun normalizeDismissedCardIds(rawIds: Set<String>): Set<String> {
+        if (rawIds.isEmpty()) return emptySet()
+        return rawIds
+            .map(::parseDismissedCardId)
+            .groupBy(DismissedCardId::baseKey)
+            .values
+            .map { variants ->
+                variants.maxWithOrNull(
+                    compareBy<DismissedCardId> { it.version ?: 0 }
+                        .thenBy { it.raw }
+                )?.canonical()
+            }
+            .filterNotNull()
+            .toSet()
+    }
+
+    private fun parseDismissedCardId(rawId: String): DismissedCardId {
+        val match = VERSIONED_CARD_ID_REGEX.matchEntire(rawId)
+        val baseKey = match?.groupValues?.get(1) ?: rawId
+        val version = match?.groupValues?.get(2)?.toIntOrNull()
+        return DismissedCardId(raw = rawId, baseKey = baseKey, version = version)
+    }
+
+    private data class DismissedCardId(
+        val raw: String,
+        val baseKey: String,
+        val version: Int?
+    ) {
+        fun canonical(): String = version?.let { "${baseKey}_v$it" } ?: raw
     }
 }
 

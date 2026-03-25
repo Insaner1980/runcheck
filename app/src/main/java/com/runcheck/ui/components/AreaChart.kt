@@ -32,18 +32,20 @@ fun AreaChart(
     data: List<Float>,
     modifier: Modifier = Modifier,
     lineColor: Color = MaterialTheme.colorScheme.primary,
+    animate: Boolean = true,
     contentDescription: String? = null
 ) {
     if (data.size < 2) return
 
     val reducedMotion = MaterialTheme.reducedMotion
+    val shouldAnimate = animate && !reducedMotion
 
     // Sweep animation state
-    val sweepProgress = remember { Animatable(if (reducedMotion) 1f else 0f) }
-    val scanLineAlpha = remember { Animatable(if (reducedMotion) 0f else 0.5f) }
+    val sweepProgress = remember { Animatable(if (shouldAnimate) 0f else 1f) }
+    val scanLineAlpha = remember { Animatable(if (shouldAnimate) 0.5f else 0f) }
 
-    LaunchedEffect(data, reducedMotion) {
-        if (reducedMotion) {
+    LaunchedEffect(data, shouldAnimate) {
+        if (!shouldAnimate) {
             sweepProgress.snapTo(1f)
             scanLineAlpha.snapTo(0f)
             return@LaunchedEffect

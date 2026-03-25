@@ -30,9 +30,9 @@ sealed class Screen(val route: String) {
     }
 
     companion object {
-        // Learn article cross-links should only target routes that can be opened directly
-        // without additional arguments.
-        val learnCrossLinkRoutes: Set<String> by lazy {
+        // Routes in this set can be opened directly from external entry points such as
+        // notifications without needing additional arguments.
+        private val directRoutes: Set<String> by lazy {
             setOf(
                 Home.route,
                 Battery.route,
@@ -48,6 +48,11 @@ sealed class Screen(val route: String) {
             )
         }
 
-        fun isValidLearnCrossLinkRoute(route: String): Boolean = route in learnCrossLinkRoutes
+        val learnCrossLinkRoutes: Set<String>
+            get() = directRoutes
+
+        fun isDirectRoute(route: String): Boolean = route in directRoutes
+
+        fun isValidLearnCrossLinkRoute(route: String): Boolean = isDirectRoute(route)
     }
 }

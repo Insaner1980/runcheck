@@ -4,7 +4,6 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.runcheck.R
-import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.SpeedTestProgress
 import com.runcheck.domain.model.SpeedTestResult
@@ -21,6 +20,7 @@ import com.runcheck.ui.common.messageOrRes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,7 +64,6 @@ class NetworkViewModel @Inject constructor(
             savedStateHandle[SELECTED_HISTORY_PERIOD_KEY] = value.name
         }
     private var historyNetworkJob: Job? = null
-    private var dismissedCardsJob: Job? = null
 
     fun startObserving() {
         if (networkJob?.isActive != true) {
@@ -72,9 +71,6 @@ class NetworkViewModel @Inject constructor(
         }
         if (historyJob?.isActive != true) {
             loadSpeedTestHistory()
-        }
-        if (dismissedCardsJob?.isActive != true) {
-            collectDismissedCards()
         }
     }
 
@@ -87,8 +83,6 @@ class NetworkViewModel @Inject constructor(
         historyNetworkJob = null
         // Do NOT cancel speedTestJob here — it must survive config changes (rotation).
         // It runs in viewModelScope and will be cancelled in onCleared().
-        dismissedCardsJob?.cancel()
-        dismissedCardsJob = null
     }
 
     fun refresh() {
@@ -102,7 +96,19 @@ class NetworkViewModel @Inject constructor(
 
     fun startSpeedTest() {
         if (_speedTestState.value.isRunning) return
+        proceedWithSpeedTest(allowCellular = false)
+    }
 
+    fun confirmCellularSpeedTest() {
+        updateSpeedTestState { copy(showCellularWarning = false) }
+        proceedWithSpeedTest(allowCellular = true)
+    }
+
+    fun dismissCellularWarning() {
+        updateSpeedTestState { copy(showCellularWarning = false) }
+    }
+
+    private fun proceedWithSpeedTest(allowCellular: Boolean) {
         speedTestJob?.cancel()
         updateSpeedTestState {
             copy(
@@ -121,7 +127,7 @@ class NetworkViewModel @Inject constructor(
         speedTestJob = viewModelScope.launch {
             try {
                 withTimeout(SPEED_TEST_TIMEOUT_MS) {
-                    runSpeedTest()
+                    runSpeedTest(allowCellular = allowCellular)
                         .catch { e ->
                             updateSpeedTestState {
                                 copy(
@@ -134,6 +140,15 @@ class NetworkViewModel @Inject constructor(
                         }
                         .collect { progress ->
                             when (progress) {
+                                is SpeedTestProgress.CellularConfirmationRequired -> {
+                                    updateSpeedTestState {
+                                        copy(
+                                            phase = SpeedTestPhase.Idle,
+                                            isRunning = false,
+                                            showCellularWarning = true
+                                        )
+                                    }
+                                }
                                 is SpeedTestProgress.PingPhase -> {
                                     updateSpeedTestState {
                                         copy(
@@ -162,7 +177,6 @@ class NetworkViewModel @Inject constructor(
                                     }
                                 }
                                 is SpeedTestProgress.Completed -> {
-                                    val networkState = (_networkUiState.value as? NetworkUiState.Success)?.networkState
                                     val result = SpeedTestResult(
                                         timestamp = System.currentTimeMillis(),
                                         downloadMbps = progress.downloadMbps,
@@ -171,9 +185,9 @@ class NetworkViewModel @Inject constructor(
                                         jitterMs = progress.jitterMs,
                                         serverName = progress.serverName,
                                         serverLocation = progress.serverLocation,
-                                        connectionType = networkState?.connectionType ?: ConnectionType.NONE,
-                                        networkSubtype = networkState?.networkSubtype,
-                                        signalDbm = networkState?.signalDbm
+                                        connectionType = progress.connectionInfo.connectionType,
+                                        networkSubtype = progress.connectionInfo.networkSubtype,
+                                        signalDbm = progress.connectionInfo.signalDbm
                                     )
                                     try {
                                         finalizeSpeedTest(result, FREE_HISTORY_LIMIT)
@@ -208,7 +222,7 @@ class NetworkViewModel @Inject constructor(
                                     updateSpeedTestState {
                                         copy(
                                             phase = SpeedTestPhase.Failed(
-                                                UiText.Resource(R.string.speed_test_error_generic)
+                                                UiText.Dynamic(progress.error)
                                             ),
                                             isRunning = false
                                         )
@@ -236,25 +250,6 @@ class NetworkViewModel @Inject constructor(
         }
     }
 
-    private fun collectDismissedCards() {
-        dismissedCardsJob?.cancel()
-        dismissedCardsJob = viewModelScope.launch {
-            kotlinx.coroutines.flow.combine(
-                manageInfoCardDismissals.observeDismissedCardIds(),
-                manageUserPreferences.observePreferences()
-            ) { dismissedCards, preferences ->
-                dismissedCards to preferences.showInfoCards
-            }.collect { (dismissedCards, showInfoCards) ->
-                _networkUiState.update { current ->
-                    (current as? NetworkUiState.Success)?.copy(
-                        dismissedInfoCards = dismissedCards,
-                        showInfoCards = showInfoCards
-                    ) ?: current
-                }
-            }
-        }
-    }
-
     private fun appendLive(buffer: MutableList<Float>, value: Float) {
         buffer.add(value)
         if (buffer.size > LIVE_CHART_MAX_POINTS) buffer.removeFirst()
@@ -267,7 +262,13 @@ class NetworkViewModel @Inject constructor(
             _networkUiState.value = NetworkUiState.Loading
         }
         networkJob = viewModelScope.launch {
-            getMeasuredNetworkState()
+            combine(
+                getMeasuredNetworkState(),
+                manageInfoCardDismissals.observeDismissedCardIds(),
+                manageUserPreferences.observePreferences()
+            ) { state, dismissedCards, preferences ->
+                Triple(state, dismissedCards, preferences.showInfoCards)
+            }
                 .catch { e ->
                     if (_networkUiState.value !is NetworkUiState.Success) {
                         _networkUiState.value = NetworkUiState.Error(
@@ -275,7 +276,7 @@ class NetworkViewModel @Inject constructor(
                         )
                     }
                 }
-                .collect { state ->
+                .collect { (state, dismissedCards, showInfoCards) ->
                     state.signalDbm?.let { appendLive(liveSignalDbm, it.toFloat()) }
                     val isPro = isProUser()
                     _networkUiState.update { current ->
@@ -286,7 +287,8 @@ class NetworkViewModel @Inject constructor(
                             selectedHistoryPeriod = selectedHistoryPeriod,
                             historyLoadError = existing?.historyLoadError,
                             isPro = isPro,
-                            dismissedInfoCards = existing?.dismissedInfoCards ?: emptySet(),
+                            dismissedInfoCards = dismissedCards,
+                            showInfoCards = showInfoCards,
                             liveSignalDbm = liveSignalDbm.toList()
                         )
                     }

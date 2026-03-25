@@ -419,6 +419,12 @@ private fun AppUsageItem(app: AppBatteryUsage, maxTime: Long, totalTime: Long) {
 private val appIconCache = object : LruCache<String, Bitmap>(MAX_APP_ICON_CACHE_KB) {
     override fun sizeOf(key: String, value: Bitmap): Int =
         value.byteCount / 1024
+
+    override fun entryRemoved(evicted: Boolean, key: String, oldValue: Bitmap, newValue: Bitmap?) {
+        if (evicted && oldValue !== newValue && !oldValue.isRecycled) {
+            oldValue.recycle()
+        }
+    }
 }
 
 private const val MAX_APP_ICON_CACHE_KB = 8 * 1024

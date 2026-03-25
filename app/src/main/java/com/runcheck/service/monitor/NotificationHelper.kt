@@ -33,7 +33,12 @@ class NotificationHelper @Inject constructor(
         const val CHANNEL_STATUS = "runcheck_status"
 
         // Legacy channel IDs from the old "DevicePulse" name — deleted on upgrade
-        private val LEGACY_CHANNEL_IDS = listOf("device_pulse_alerts", "device_pulse_status")
+        private val LEGACY_CHANNEL_IDS = listOf(
+            "device_pulse",
+            "device_pulse_alerts",
+            "device_pulse_status",
+            "device_pulse_trial"
+        )
         const val CHANNEL_TRIAL = "runcheck_trial"
         const val NOTIFICATION_LOW_BATTERY = 1001
         const val NOTIFICATION_HIGH_TEMP = 1002
@@ -48,6 +53,29 @@ class NotificationHelper @Inject constructor(
         const val NAVIGATE_THERMAL = "thermal"
         const val NAVIGATE_STORAGE = "storage"
         const val NAVIGATE_PRO_UPGRADE = "pro_upgrade"
+
+        fun createContentIntent(context: Context, route: String?, requestCode: Int): PendingIntent {
+            val intent = Intent(context, MainActivity::class.java).apply {
+                action = buildNotificationAction(route)
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                if (!route.isNullOrBlank()) {
+                    putExtra(EXTRA_NAVIGATE_TO, route)
+                }
+            }
+            return PendingIntent.getActivity(
+                context,
+                requestCode,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
+
+        private fun buildNotificationAction(route: String?): String =
+            if (route.isNullOrBlank()) {
+                "com.runcheck.notification.OPEN_HOME"
+            } else {
+                "com.runcheck.notification.OPEN_$route"
+            }
     }
 
     private val notificationManager: NotificationManager
@@ -105,7 +133,7 @@ class NotificationHelper @Inject constructor(
             .setContentTitle(context.getString(R.string.notification_low_battery_title))
             .setContentText(context.getString(R.string.notification_low_battery_text, level))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(deepLinkIntent(NAVIGATE_BATTERY, NOTIFICATION_LOW_BATTERY))
+            .setContentIntent(createContentIntent(context, NAVIGATE_BATTERY, NOTIFICATION_LOW_BATTERY))
             .setAutoCancel(true)
             .build()
 
@@ -126,7 +154,7 @@ class NotificationHelper @Inject constructor(
                 )
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(deepLinkIntent(NAVIGATE_THERMAL, NOTIFICATION_HIGH_TEMP))
+            .setContentIntent(createContentIntent(context, NAVIGATE_THERMAL, NOTIFICATION_HIGH_TEMP))
             .setAutoCancel(true)
             .build()
 
@@ -142,7 +170,7 @@ class NotificationHelper @Inject constructor(
             .setContentTitle(context.getString(R.string.notification_low_storage_title))
             .setContentText(context.getString(R.string.notification_low_storage_text, percentUsed))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(deepLinkIntent(NAVIGATE_STORAGE, NOTIFICATION_LOW_STORAGE))
+            .setContentIntent(createContentIntent(context, NAVIGATE_STORAGE, NOTIFICATION_LOW_STORAGE))
             .setAutoCancel(true)
             .build()
 
@@ -158,7 +186,7 @@ class NotificationHelper @Inject constructor(
             .setContentTitle(context.getString(R.string.notification_charge_complete_title))
             .setContentText(context.getString(R.string.notification_charge_complete_text, level))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(deepLinkIntent(NAVIGATE_BATTERY, NOTIFICATION_CHARGE_COMPLETE))
+            .setContentIntent(createContentIntent(context, NAVIGATE_BATTERY, NOTIFICATION_CHARGE_COMPLETE))
             .setAutoCancel(true)
             .build()
 
@@ -173,7 +201,7 @@ class NotificationHelper @Inject constructor(
             .setContentTitle(context.getString(R.string.notification_trial_day5_title))
             .setContentText(context.getString(R.string.notification_trial_day5_text))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setContentIntent(deepLinkIntent(NAVIGATE_PRO_UPGRADE, NOTIFICATION_TRIAL_DAY5))
+            .setContentIntent(createContentIntent(context, NAVIGATE_PRO_UPGRADE, NOTIFICATION_TRIAL_DAY5))
             .setAutoCancel(true)
             .build()
         notificationManager.notify(NOTIFICATION_TRIAL_DAY5, notification)
@@ -187,27 +215,10 @@ class NotificationHelper @Inject constructor(
             .setContentTitle(context.getString(R.string.notification_trial_day7_title))
             .setContentText(context.getString(R.string.notification_trial_day7_text))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setContentIntent(deepLinkIntent(NAVIGATE_PRO_UPGRADE, NOTIFICATION_TRIAL_DAY7))
+            .setContentIntent(createContentIntent(context, NAVIGATE_PRO_UPGRADE, NOTIFICATION_TRIAL_DAY7))
             .setAutoCancel(true)
             .build()
         notificationManager.notify(NOTIFICATION_TRIAL_DAY7, notification)
-    }
-
-    /**
-     * Creates a PendingIntent that opens the app and navigates to a specific screen.
-     * Uses distinct request codes so each notification gets its own PendingIntent.
-     */
-    private fun deepLinkIntent(route: String, requestCode: Int): PendingIntent {
-        val intent = Intent(context, MainActivity::class.java).apply {
-            putExtra(EXTRA_NAVIGATE_TO, route)
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        return PendingIntent.getActivity(
-            context,
-            requestCode,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
     }
 
     /** Cancels a notification by its ID. */

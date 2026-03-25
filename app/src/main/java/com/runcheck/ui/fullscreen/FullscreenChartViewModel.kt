@@ -54,6 +54,12 @@ class FullscreenChartViewModel @Inject constructor(
     val isProLocked: Boolean
         get() = fullscreenChartRequiresPro(source) && !isProUserCached
 
+    /** Current metric selection, always up-to-date (backed by savedStateHandle). */
+    val selectedMetric: String get() = currentMetric
+
+    /** Current period selection, always up-to-date (backed by savedStateHandle). */
+    val selectedPeriod: String get() = currentPeriod
+
     private val _uiState = MutableStateFlow<FullscreenChartUiState>(FullscreenChartUiState.Loading)
     val uiState: StateFlow<FullscreenChartUiState> = _uiState.asStateFlow()
 
@@ -94,6 +100,20 @@ class FullscreenChartViewModel @Inject constructor(
         loadData()
     }
 
+    private fun metricOptionsForSource(): List<String> = when (source) {
+        FullscreenChartSource.BATTERY_HISTORY -> BatteryHistoryMetric.entries.map { it.name }
+        FullscreenChartSource.BATTERY_SESSION -> SessionGraphMetric.entries.map { it.name }
+        FullscreenChartSource.NETWORK_HISTORY -> NetworkHistoryMetric.entries.map { it.name }
+    }
+
+    private fun periodOptionsForSource(): List<String> = when (source) {
+        FullscreenChartSource.BATTERY_HISTORY -> HistoryPeriod.entries.map { it.name }
+        FullscreenChartSource.BATTERY_SESSION -> SessionGraphWindow.entries.map { it.name }
+        FullscreenChartSource.NETWORK_HISTORY -> HistoryPeriod.entries
+            .filter { it != HistoryPeriod.SINCE_UNPLUG }
+            .map { it.name }
+    }
+
     private fun observeProState() {
         if (!fullscreenChartRequiresPro(source)) return
 
@@ -132,7 +152,12 @@ class FullscreenChartViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _uiState.value = FullscreenChartUiState.Error
+                _uiState.value = FullscreenChartUiState.Error(
+                    selectedMetric = currentMetric,
+                    selectedPeriod = currentPeriod,
+                    metricOptions = metricOptionsForSource(),
+                    periodOptions = periodOptionsForSource()
+                )
             }
         }
     }
@@ -293,27 +318,40 @@ sealed interface FullscreenChartUiState {
     data object Loading : FullscreenChartUiState
     data object Locked : FullscreenChartUiState
 
-    data class Empty(
-        val selectedMetric: String,
-        val selectedPeriod: String,
-        val metricOptions: List<String>,
+    /** States that carry the user's current metric/period selection and available options. */
+    interface HasSelections {
+        val selectedMetric: String
+        val selectedPeriod: String
+        val metricOptions: List<String>
         val periodOptions: List<String>
-    ) : FullscreenChartUiState
+    }
 
-    data object Error : FullscreenChartUiState
+    data class Empty(
+        override val selectedMetric: String,
+        override val selectedPeriod: String,
+        override val metricOptions: List<String>,
+        override val periodOptions: List<String>
+    ) : FullscreenChartUiState, HasSelections
+
+    data class Error(
+        override val selectedMetric: String,
+        override val selectedPeriod: String,
+        override val metricOptions: List<String>,
+        override val periodOptions: List<String>
+    ) : FullscreenChartUiState, HasSelections
 
     data class Success(
         val chartData: List<Float>,
         val chartTimestamps: List<Long>,
         val unit: String,
-        val selectedMetric: String,
-        val selectedPeriod: String,
-        val metricOptions: List<String>,
-        val periodOptions: List<String>,
+        override val selectedMetric: String,
+        override val selectedPeriod: String,
+        override val metricOptions: List<String>,
+        override val periodOptions: List<String>,
         val yLabels: List<ChartYLabel>,
         val xLabels: List<ChartXLabel>,
         val tooltipDecimals: Int = 0,
         val tooltipTimeSkeleton: String = "HmMMMd",
         val temperatureUnit: TemperatureUnit? = null
-    ) : FullscreenChartUiState
+    ) : FullscreenChartUiState, HasSelections
 }

@@ -41,7 +41,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -160,8 +159,9 @@ fun SpeedTestScreen(
                 SpeedTestContent(
                     networkState = netState.networkState,
                     speedTestState = speedTestState,
-                    isCellular = netState.networkState.connectionType == ConnectionType.CELLULAR,
-                    onStartSpeedTest = { viewModel.startSpeedTest() }
+                    onStartSpeedTest = { viewModel.startSpeedTest() },
+                    onConfirmCellular = { viewModel.confirmCellularSpeedTest() },
+                    onDismissCellular = { viewModel.dismissCellularWarning() }
                 )
             }
         }
@@ -172,10 +172,10 @@ fun SpeedTestScreen(
 private fun SpeedTestContent(
     networkState: NetworkState,
     speedTestState: SpeedTestUiState,
-    isCellular: Boolean,
-    onStartSpeedTest: () -> Unit
+    onStartSpeedTest: () -> Unit,
+    onConfirmCellular: () -> Unit,
+    onDismissCellular: () -> Unit
 ) {
-    var showCellularWarning by remember { mutableStateOf(false) }
     var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
     val hasConnection = networkState.connectionType != ConnectionType.NONE
 
@@ -194,13 +194,7 @@ private fun SpeedTestContent(
         SpeedTestHero(
             state = speedTestState,
             enabled = hasConnection && !speedTestState.isRunning,
-            onStart = {
-                if (isCellular) {
-                    showCellularWarning = true
-                } else {
-                    onStartSpeedTest()
-                }
-            }
+            onStart = onStartSpeedTest
         )
 
         Text(
@@ -246,13 +240,10 @@ private fun SpeedTestContent(
         )
     }
 
-    if (showCellularWarning) {
+    if (speedTestState.showCellularWarning) {
         CellularDataWarningDialog(
-            onConfirm = {
-                showCellularWarning = false
-                onStartSpeedTest()
-            },
-            onDismiss = { showCellularWarning = false }
+            onConfirm = onConfirmCellular,
+            onDismiss = onDismissCellular
         )
     }
 
@@ -838,11 +829,7 @@ private fun LatestResultCard(result: SpeedTestResult) {
                 )
                 MetricPill(
                     label = stringResource(R.string.speed_test_ping),
-                    value = stringResource(
-                        R.string.value_with_unit_int,
-                        result.pingMs,
-                        stringResource(R.string.unit_ms)
-                    ),
+                    value = formatPingValue(result.pingMs),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -943,7 +930,7 @@ private fun HistoryResultItem(result: SpeedTestResult) {
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = result.pingMs.toString(),
+                        text = if (result.pingMs > 0) result.pingMs.toString() else stringResource(R.string.placeholder_dash),
                         style = MaterialTheme.typography.titleSmall.copy(
                             fontFamily = MaterialTheme.numericFontFamily
                         ),
@@ -1048,6 +1035,18 @@ private fun heroInstructionText(
     else -> ""
 }
 
+@Composable
+private fun formatPingValue(pingMs: Int): String =
+    if (pingMs > 0) {
+        stringResource(
+            R.string.value_with_unit_int,
+            pingMs,
+            stringResource(R.string.unit_ms)
+        )
+    } else {
+        stringResource(R.string.placeholder_dash)
+    }
+
 // ── Preview ──────────────────────────────────────────────────────────────────────
 
 @Preview(showBackground = true, widthDp = 412, heightDp = 915)
@@ -1107,8 +1106,9 @@ private fun SpeedTestContentPreview() {
                     )
                 )
             ),
-            isCellular = false,
-            onStartSpeedTest = {}
+            onStartSpeedTest = {},
+            onConfirmCellular = {},
+            onDismissCellular = {}
         )
     }
 }

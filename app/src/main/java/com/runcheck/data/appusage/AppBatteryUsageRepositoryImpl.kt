@@ -11,8 +11,11 @@ import com.runcheck.domain.model.AppBatteryUsage
 import com.runcheck.domain.model.AppUsageListSummary
 import com.runcheck.domain.repository.AppBatteryUsageRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,10 +40,11 @@ class AppBatteryUsageRepositoryImpl @Inject constructor(
 
     override fun getUsageSummarySince(since: Long): Flow<AppUsageListSummary> =
         appBatteryUsageDao.getUsageSummarySince(since).map { it.toDomain() }
+            .flowOn(Dispatchers.IO)
 
-    override suspend fun collectUsageSnapshot() {
+    override suspend fun collectUsageSnapshot() = withContext(Dispatchers.IO) {
         if (!appUsageDataSource.hasUsageStatsPermission()) {
-            return
+            return@withContext
         }
 
         val endTime = System.currentTimeMillis()
@@ -65,11 +69,11 @@ class AppBatteryUsageRepositoryImpl @Inject constructor(
         userPreferencesRepository.setAppUsageLastCollectedAt(endTime)
     }
 
-    override suspend fun deleteOlderThan(cutoff: Long) {
+    override suspend fun deleteOlderThan(cutoff: Long) = withContext<Unit>(Dispatchers.IO) {
         appBatteryUsageDao.deleteOlderThan(cutoff)
     }
 
-    override suspend fun deleteAll() {
+    override suspend fun deleteAll() = withContext<Unit>(Dispatchers.IO) {
         appBatteryUsageDao.deleteAll()
     }
 

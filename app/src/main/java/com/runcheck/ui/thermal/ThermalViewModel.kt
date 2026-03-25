@@ -55,6 +55,7 @@ class ThermalViewModel @Inject constructor(
     // Live chart ring buffers
     private val liveTempC = mutableListOf<Float>()
     private val liveHeadroom = mutableListOf<Float>()
+    private var lastObservedThermalState: ThermalState? = null
 
     private companion object {
         const val KEY_SESSION_MIN_TEMP = "thermal_session_min_temp"
@@ -131,13 +132,14 @@ class ThermalViewModel @Inject constructor(
                 manageUserPreferences.observePreferences(),
                 manageInfoCardDismissals.observeDismissedCardIds()
             ) { thermalState: ThermalState, events: List<ThrottlingEvent>, isPro: Boolean, preferences, dismissedCards: Set<String> ->
-                val currentTemp = thermalState.batteryTempC
-                sessionMinTemp = sessionMinTemp?.coerceAtMost(currentTemp) ?: currentTemp
-                sessionMaxTemp = sessionMaxTemp?.coerceAtLeast(currentTemp) ?: currentTemp
-
-                // Append to live chart ring buffers
-                appendLive(liveTempC, currentTemp)
-                thermalState.thermalHeadroom?.let { appendLive(liveHeadroom, it) }
+                if (thermalState != lastObservedThermalState) {
+                    val currentTemp = thermalState.batteryTempC
+                    sessionMinTemp = sessionMinTemp?.coerceAtMost(currentTemp) ?: currentTemp
+                    sessionMaxTemp = sessionMaxTemp?.coerceAtLeast(currentTemp) ?: currentTemp
+                    appendLive(liveTempC, currentTemp)
+                    thermalState.thermalHeadroom?.let { appendLive(liveHeadroom, it) }
+                    lastObservedThermalState = thermalState
+                }
 
                 val currentSuccess = _uiState.value as? ThermalUiState.Success
                 ThermalUiState.Success(

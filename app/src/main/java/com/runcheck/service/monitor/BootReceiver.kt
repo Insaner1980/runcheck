@@ -3,6 +3,8 @@ package com.runcheck.service.monitor
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.UserManager
+import androidx.core.content.ContextCompat
 import com.runcheck.domain.repository.MonitoringScheduler
 import com.runcheck.domain.repository.ScreenStateRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
@@ -29,7 +31,16 @@ class BootReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
-        if (action != Intent.ACTION_BOOT_COMPLETED && action != Intent.ACTION_MY_PACKAGE_REPLACED) {
+        if (
+            action != Intent.ACTION_BOOT_COMPLETED &&
+            action != Intent.ACTION_MY_PACKAGE_REPLACED &&
+            action != Intent.ACTION_USER_UNLOCKED
+        ) {
+            return
+        }
+
+        val userManager = context.getSystemService(UserManager::class.java)
+        if (action != Intent.ACTION_USER_UNLOCKED && userManager != null && !userManager.isUserUnlocked) {
             return
         }
 
@@ -54,7 +65,7 @@ class BootReceiver : BroadcastReceiver() {
             val prefs = userPreferencesRepository.getPreferences().first()
             if (prefs.liveNotificationEnabled) {
                 val serviceIntent = Intent(context, RealTimeMonitorService::class.java)
-                context.startForegroundService(serviceIntent)
+                ContextCompat.startForegroundService(context, serviceIntent)
             }
         } catch (e: CancellationException) {
             throw e

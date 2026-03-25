@@ -28,7 +28,11 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 internal data class BatteryWidgetSnapshot(
     val level: Int,
@@ -45,45 +49,54 @@ internal object WidgetDataProvider {
 
     fun isProUnlocked(context: Context): Boolean = entryPoint(context).proStatusProvider().isPro()
 
-    suspend fun loadBatterySnapshot(context: Context): BatteryWidgetSnapshot? {
-        val latestReading = entryPoint(context).batteryReadingDao().getLatestReading().first()
-            ?: return null
+    suspend fun loadBatterySnapshot(context: Context): BatteryWidgetSnapshot? =
+        withContext(Dispatchers.IO) {
+            val latestReading = entryPoint(context).batteryReadingDao().getLatestReading().first()
+                ?: return@withContext null
 
-        return BatteryWidgetSnapshot(
-            level = latestReading.level,
-            temperatureC = latestReading.temperatureC,
-            currentMa = latestReading.currentMa
-        )
-    }
+            BatteryWidgetSnapshot(
+                level = latestReading.level,
+                temperatureC = latestReading.temperatureC,
+                currentMa = latestReading.currentMa
+            )
+        }
 
-    suspend fun loadHealthSnapshot(context: Context): HealthWidgetSnapshot? {
-        val entryPoint = entryPoint(context)
-        val battery = entryPoint.batteryReadingDao().getLatestReading().first()?.toBatteryState()
-            ?: return null
-        val network = entryPoint.networkReadingDao().getLatestReading().first()?.toNetworkState()
-            ?: DEFAULT_NETWORK
-        val thermal = entryPoint.thermalReadingDao().getLatestReading().first()?.toThermalState()
-            ?: DEFAULT_THERMAL
-        val storage = entryPoint.storageReadingDao().getLatestReading().first()?.toStorageState()
-            ?: DEFAULT_STORAGE
+    suspend fun loadHealthSnapshot(context: Context): HealthWidgetSnapshot? =
+        withContext(Dispatchers.IO) {
+            coroutineScope {
+                val ep = entryPoint(context)
+                val batteryDeferred = async { ep.batteryReadingDao().getLatestReading().first() }
+                val networkDeferred = async { ep.networkReadingDao().getLatestReading().first() }
+                val thermalDeferred = async { ep.thermalReadingDao().getLatestReading().first() }
+                val storageDeferred = async { ep.storageReadingDao().getLatestReading().first() }
 
-        val score = entryPoint.healthScoreCalculator().calculate(
-            battery = battery,
-            network = network,
-            thermal = thermal,
-            storage = storage
-        )
+                val battery = batteryDeferred.await()?.toBatteryState()
+                    ?: return@coroutineScope null
+                val network = networkDeferred.await()?.toNetworkState() ?: DEFAULT_NETWORK
+                val thermal = thermalDeferred.await()?.toThermalState() ?: DEFAULT_THERMAL
+                val storage = storageDeferred.await()?.toStorageState() ?: DEFAULT_STORAGE
 
-        return HealthWidgetSnapshot(
-            overallScore = score.overallScore,
-            batteryLevel = battery.level
-        )
-    }
+                val score = ep.healthScoreCalculator().calculate(
+                    battery = battery,
+                    network = network,
+                    thermal = thermal,
+                    storage = storage
+                )
 
+                HealthWidgetSnapshot(
+                    overallScore = score.overallScore,
+                    batteryLevel = battery.level
+                )
+            }
+        }
+
+    // Neutral defaults for when no reading exists yet — must NOT penalize
+    // the health score. ConnectionType.NONE → network score 0 which tanks
+    // the overall score even though the device may be perfectly fine.
     private val DEFAULT_NETWORK = NetworkState(
-        connectionType = ConnectionType.NONE,
+        connectionType = ConnectionType.WIFI,
         signalDbm = null,
-        signalQuality = SignalQuality.NO_SIGNAL
+        signalQuality = SignalQuality.GOOD
     )
 
     private val DEFAULT_THERMAL = ThermalState(

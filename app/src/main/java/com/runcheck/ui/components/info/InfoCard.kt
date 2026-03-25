@@ -1,6 +1,8 @@
 package com.runcheck.ui.components.info
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
@@ -8,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -60,8 +63,13 @@ fun InfoCard(
 
     AnimatedVisibility(
         visible = renderedVisible,
-        exit = fadeOut(animationSpec = tween(animDuration)) +
-            shrinkVertically(animationSpec = tween(animDuration)),
+        enter = EnterTransition.None,
+        exit = if (skipAnimation) {
+            ExitTransition.None
+        } else {
+            fadeOut(animationSpec = tween(animDuration)) +
+                shrinkVertically(animationSpec = tween(animDuration))
+        },
         modifier = modifier
     ) {
         Surface(
@@ -110,7 +118,10 @@ fun InfoCard(
                             text = stringResource(R.string.info_card_read_article),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.clickable(onClick = onLearnMore)
+                            modifier = Modifier
+                                .defaultMinSize(minHeight = 48.dp)
+                                .clickable(onClick = onLearnMore)
+                                .padding(vertical = 12.dp)
                         )
                     }
                 }

@@ -93,6 +93,42 @@ private data class TrendChartStyle(
     val tooltipTextStyle: TextStyle
 )
 
+private const val GRID_FADE_DURATION_MS = 200
+private const val INITIAL_SWEEP_DURATION_MS = 1000
+private const val TRANSITION_SWEEP_DURATION_MS = 800
+private const val SWEEP_SCAN_FADE_DELAY_MS = 700
+private const val SWEEP_SCAN_FADE_DURATION_MS = 300
+private const val TRANSITION_SCAN_FADE_DELAY_MS = 560
+private const val TRANSITION_SCAN_FADE_DURATION_MS = 240
+private const val EMPHASIS_DURATION_MS = 200
+private const val FADE_OUT_DURATION_MS = 300
+private const val TRANSITION_OVERLAP_MS = 200
+private const val SCAN_LINE_START_ALPHA = 0.5f
+
+private val SweepEasing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f)
+
+private fun buildTrendLineGradientStops(
+    data: List<Float>,
+    qualityZones: List<ChartQualityZone>?,
+    defaultColor: Color
+): Array<Pair<Float, Color>>? {
+    if (qualityZones.isNullOrEmpty() || data.isEmpty()) return null
+
+    val colors = data.map { value ->
+        qualityZoneColorForValue(value, qualityZones, defaultColor)
+    }
+    val uniqueColors = colors.distinct()
+    if (uniqueColors.size == 1) {
+        val solidColor = uniqueColors.first()
+        return arrayOf(0f to solidColor, 1f to solidColor)
+    }
+
+    val lastIndex = data.lastIndex.coerceAtLeast(1)
+    return Array(data.size) { index ->
+        (index.toFloat() / lastIndex).coerceIn(0f, 1f) to colors[index]
+    }
+}
+
 @Composable
 fun TrendChart(
     data: List<Float>,
@@ -112,8 +148,6 @@ fun TrendChart(
     tooltipFormatter: ((index: Int) -> String)? = null,
     presentation: TrendChartPresentation = TrendChartPresentation.Embedded
 ) {
-    if (data.size < 2) return
-
     val reducedMotion = MaterialTheme.reducedMotion
 
     // Phase 1: Grid + axes fade in (0→1 over 200ms)
@@ -134,75 +168,120 @@ fun TrendChart(
     var previousRange by remember { mutableFloatStateOf(1f) }
     val fadeOutAlpha = remember { Animatable(0f) }
 
-    // Track whether this is the first appearance or a subsequent data change
-    var isInitialEntry by remember { mutableStateOf(true) }
+    var settledData by remember { mutableStateOf<List<Float>>(emptyList()) }
+    var emphasisData by remember { mutableStateOf<List<Float>>(emptyList()) }
+
+    // Tracks whether the initial chart entry has started at least once.
+    var hasStartedEntry by remember { mutableStateOf(false) }
 
     LaunchedEffect(data, reducedMotion) {
-        // Clear tooltip from previous data set
         selectedIndex = -1
+        emphasisData = emptyList()
 
         if (reducedMotion) {
+            previousData = emptyList()
             gridAlpha.snapTo(1f)
             sweepProgress.snapTo(1f)
             emphasisAlpha.snapTo(1f)
             scanLineAlpha.snapTo(0f)
             fadeOutAlpha.snapTo(0f)
-            previousData = data
+            settledData = data
+            emphasisData = data
+            hasStartedEntry = true
             return@LaunchedEffect
         }
 
-        if (isInitialEntry) {
-            // Full sequence: grid fade (200ms) → sweep (1000ms) → emphasis (200ms)
+        if (!hasStartedEntry) {
+            hasStartedEntry = true
+            previousData = emptyList()
+            fadeOutAlpha.snapTo(0f)
             gridAlpha.snapTo(0f)
             sweepProgress.snapTo(0f)
             emphasisAlpha.snapTo(0f)
-            scanLineAlpha.snapTo(0.5f)
+            scanLineAlpha.snapTo(if (data.isNotEmpty()) SCAN_LINE_START_ALPHA else 0f)
 
-            gridAlpha.animateTo(1f, tween(200, easing = FastOutSlowInEasing))
-            launch {
-                delay(700)
-                scanLineAlpha.animateTo(0f, tween(300))
+            gridAlpha.animateTo(1f, tween(GRID_FADE_DURATION_MS, easing = FastOutSlowInEasing))
+            if (data.isEmpty()) {
+                sweepProgress.snapTo(1f)
+                scanLineAlpha.snapTo(0f)
+                return@LaunchedEffect
             }
-            sweepProgress.animateTo(
-                1f,
-                tween(1000, easing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f))
-            )
-            emphasisAlpha.animateTo(1f, tween(200, easing = FastOutSlowInEasing))
-            isInitialEntry = false
-        } else {
-            // Transition: fade out old data (300ms) → sweep new data (800ms) → emphasis (200ms)
-            // Grid stays visible (don't reset gridAlpha)
-            fadeOutAlpha.snapTo(1f)
-            sweepProgress.snapTo(0f)
-            emphasisAlpha.snapTo(0f)
-            scanLineAlpha.snapTo(0.5f)
-
-            // Fade out old data, overlapped with a small delay before sweep starts
-            launch { fadeOutAlpha.animateTo(0f, tween(300, easing = FastOutSlowInEasing)) }
-            delay(200) // Start sweep slightly before fade completes
 
             launch {
-                delay(560) // 70% of 800ms
-                scanLineAlpha.animateTo(0f, tween(240))
+                delay(SWEEP_SCAN_FADE_DELAY_MS.toLong())
+                scanLineAlpha.animateTo(0f, tween(SWEEP_SCAN_FADE_DURATION_MS))
             }
-            sweepProgress.animateTo(
-                1f,
-                tween(800, easing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f))
-            )
-            emphasisAlpha.animateTo(1f, tween(200, easing = FastOutSlowInEasing))
+            sweepProgress.animateTo(1f, tween(INITIAL_SWEEP_DURATION_MS, easing = SweepEasing))
+            scanLineAlpha.snapTo(0f)
+            emphasisData = data
+            emphasisAlpha.animateTo(1f, tween(EMPHASIS_DURATION_MS, easing = FastOutSlowInEasing))
+            settledData = data
+            return@LaunchedEffect
         }
 
-        // Snapshot current data for next transition's fade-out
-        previousData = data
-        previousMinVal = data.min()
-        previousRange = (data.max() - data.min()).coerceAtLeast(1f)
+        val canFadeOutSettledData = settledData.size >= 2 &&
+            sweepProgress.value >= 1f &&
+            emphasisAlpha.value > 0f
+        val fadeSource = if (canFadeOutSettledData) settledData else emptyList()
+
+        previousData = fadeSource
+        previousMinVal = fadeSource.minOrNull() ?: 0f
+        previousRange = fadeSource
+            .let { source -> (source.maxOrNull() ?: 1f) - (source.minOrNull() ?: 0f) }
+            .coerceAtLeast(1f)
+
+        gridAlpha.snapTo(1f)
+        sweepProgress.snapTo(0f)
+        emphasisAlpha.snapTo(0f)
+        scanLineAlpha.snapTo(if (data.isNotEmpty()) SCAN_LINE_START_ALPHA else 0f)
+
+        if (fadeSource.isNotEmpty()) {
+            fadeOutAlpha.snapTo(1f)
+            launch {
+                fadeOutAlpha.animateTo(
+                    0f,
+                    tween(FADE_OUT_DURATION_MS, easing = FastOutSlowInEasing)
+                )
+            }
+            delay(TRANSITION_OVERLAP_MS.toLong())
+        } else {
+            fadeOutAlpha.snapTo(0f)
+        }
+
+        if (data.isEmpty()) {
+            scanLineAlpha.snapTo(0f)
+            sweepProgress.snapTo(1f)
+            settledData = emptyList()
+            return@LaunchedEffect
+        }
+
+        launch {
+            delay(TRANSITION_SCAN_FADE_DELAY_MS.toLong())
+            scanLineAlpha.animateTo(0f, tween(TRANSITION_SCAN_FADE_DURATION_MS))
+        }
+        sweepProgress.animateTo(1f, tween(TRANSITION_SWEEP_DURATION_MS, easing = SweepEasing))
+        scanLineAlpha.snapTo(0f)
+        emphasisData = data
+        emphasisAlpha.animateTo(1f, tween(EMPHASIS_DURATION_MS, easing = FastOutSlowInEasing))
+        settledData = data
     }
 
-    val minVal = data.min()
-    val maxVal = data.max()
+    val scaleValues = remember(data, yLabels, qualityZones) {
+        buildList {
+            addAll(data)
+            yLabels?.forEach { add(it.value) }
+            qualityZones?.forEach { zone ->
+                add(zone.minValue)
+                add(zone.maxValue)
+            }
+        }
+    }
+    val minVal = scaleValues.minOrNull() ?: 0f
+    val maxVal = scaleValues.maxOrNull() ?: (minVal + 1f)
     val range = (maxVal - minVal).coerceAtLeast(1f)
 
     val linePath = remember { Path() }
+    val previousLinePath = remember { Path() }
     val stripPath = remember { Path() }
 
     val hasYLabels = yLabels != null && yLabels.isNotEmpty()
@@ -276,14 +355,7 @@ fun TrendChart(
 
     // Compute per-point gradient color stops from quality zones
     val lineGradientColors = remember(data, qualityZones, lineColor) {
-        if (qualityZones.isNullOrEmpty() || data.isEmpty()) null
-        else {
-            data.mapIndexed { index, value ->
-                val fraction = if (data.size <= 1) 0f else index.toFloat() / (data.size - 1)
-                val color = qualityZoneColorForValue(value, qualityZones, lineColor)
-                fraction to color
-            }
-        }
+        buildTrendLineGradientStops(data, qualityZones, lineColor)
     }
 
     Canvas(
@@ -373,7 +445,14 @@ fun TrendChart(
         val chartWidth = size.width - chartLeft - chartPad
         val chartHeight = size.height - chartTop - chartPad - xLabelHeightPx
         if (chartWidth <= 0f || chartHeight <= 0f) return@Canvas
-        val stepX = chartWidth / (data.size - 1)
+        val stepX = if (data.size > 1) chartWidth / (data.size - 1) else 0f
+        val dataRight = when {
+            data.isEmpty() -> chartLeft
+            data.size == 1 -> chartLeft
+            else -> chartLeft + stepX * (data.size - 1)
+        }
+        val sweepX = (chartLeft + chartWidth * sweepProgress.value).coerceIn(chartLeft, chartLeft + chartWidth)
+        val visibleSweepRight = sweepX.coerceAtMost(dataRight)
         val tickColor = gridColor.copy(alpha = 0.75f)
         val shouldDrawPointMarkers = chartStyle.pointMarkerRadius > 0.dp &&
             stepX >= chartStyle.pointMarkerRadius.toPx() * 3f
@@ -451,53 +530,74 @@ fun TrendChart(
         // ── Fading previous data (during data transitions) ──────────
         if (previousData.isNotEmpty() && fadeOutAlpha.value > 0f) {
             val prevStepX = if (previousData.size > 1) chartWidth / (previousData.size - 1) else chartWidth
-            val prevPath = Path()
+            previousLinePath.reset()
 
             previousData.forEachIndexed { i, value ->
                 val x = chartLeft + i * prevStepX
                 val y = chartTop + chartHeight - ((value - previousMinVal) / previousRange * chartHeight)
-                if (i == 0) prevPath.moveTo(x, y) else prevPath.lineTo(x, y)
+                if (i == 0) previousLinePath.moveTo(x, y) else previousLinePath.lineTo(x, y)
             }
 
             drawPath(
-                path = prevPath,
+                path = previousLinePath,
                 color = lineColor.copy(alpha = fadeOutAlpha.value),
                 style = Stroke(width = chartStyle.lineStrokeWidth.toPx(), cap = StrokeCap.Round)
             )
         }
 
         // ── Data line ──────────────────────────────────────────────────
-        // Build full paths for all data points — sweep clip controls visibility
         linePath.reset()
-        for (i in data.indices) {
-            val x = chartLeft + i * stepX
-            val y = chartTop + chartHeight - ((data[i] - minVal) / range * chartHeight)
-            if (i == 0) linePath.moveTo(x, y) else linePath.lineTo(x, y)
-        }
+        if (data.size >= 2 && visibleSweepRight > chartLeft) {
+            for (i in 0 until data.lastIndex) {
+                val x1 = chartLeft + i * stepX
+                val x2 = chartLeft + (i + 1) * stepX
+                val y1 = chartTop + chartHeight - ((data[i] - minVal) / range * chartHeight)
+                val y2 = chartTop + chartHeight - ((data[i + 1] - minVal) / range * chartHeight)
 
-        // Calculate sweep X position
-        val sweepX = chartLeft + chartWidth * sweepProgress.value
+                if (i == 0) linePath.moveTo(x1, y1)
+                if (visibleSweepRight <= x1) break
+
+                if (visibleSweepRight < x2) {
+                    val fraction = ((visibleSweepRight - x1) / (x2 - x1)).coerceIn(0f, 1f)
+                    linePath.lineTo(
+                        visibleSweepRight,
+                        lerp(y1, y2, fraction)
+                    )
+                    break
+                }
+
+                linePath.lineTo(x2, y2)
+            }
+        }
 
         // Clip rect for oscilloscope sweep reveal
         clipRect(
             left = chartLeft,
             top = chartTop,
-            right = sweepX,
+            right = visibleSweepRight,
             bottom = chartTop + chartHeight
         ) {
             // Strip-based gradient fill — alpha proportional to data value height
             for (i in 0 until data.size - 1) {
                 val x1 = chartLeft + i * stepX
                 val x2 = chartLeft + (i + 1) * stepX
+                if (visibleSweepRight <= x1) break
                 val y1 = chartTop + chartHeight - ((data[i] - minVal) / range * chartHeight)
                 val y2 = chartTop + chartHeight - ((data[i + 1] - minVal) / range * chartHeight)
+                val visibleX2 = visibleSweepRight.coerceAtMost(x2)
+                val segmentFraction = if (x2 > x1) {
+                    ((visibleX2 - x1) / (x2 - x1)).coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+                val visibleY2 = lerp(y1, y2, segmentFraction)
                 val avgNormalizedY = ((data[i] - minVal) / range + (data[i + 1] - minVal) / range) / 2f
                 val topAlpha = lerp(0.08f, 0.30f, avgNormalizedY)
 
                 stripPath.reset()
                 stripPath.moveTo(x1, y1)
-                stripPath.lineTo(x2, y2)
-                stripPath.lineTo(x2, chartTop + chartHeight)
+                stripPath.lineTo(visibleX2, visibleY2)
+                stripPath.lineTo(visibleX2, chartTop + chartHeight)
                 stripPath.lineTo(x1, chartTop + chartHeight)
                 stripPath.close()
 
@@ -518,11 +618,13 @@ fun TrendChart(
                 drawPath(
                     path = linePath,
                     brush = Brush.horizontalGradient(
-                        colorStops = lineGradientColors.toTypedArray()
+                        colorStops = lineGradientColors,
+                        startX = chartLeft,
+                        endX = dataRight.coerceAtLeast(chartLeft + 1f)
                     ),
                     style = Stroke(width = chartStyle.lineStrokeWidth.toPx(), cap = StrokeCap.Round)
                 )
-            } else {
+            } else if (!linePath.isEmpty) {
                 drawPath(
                     path = linePath,
                     color = lineColor,
@@ -534,6 +636,7 @@ fun TrendChart(
                 val innerMarkerRadius = (chartStyle.pointMarkerRadius - 1.5.dp).coerceAtLeast(1.5.dp)
                 for (i in data.indices) {
                     val x = chartLeft + i * stepX
+                    if (x > visibleSweepRight) break
                     val y = chartTop + chartHeight - ((data[i] - minVal) / range * chartHeight)
                     drawCircle(
                         color = lineColor.copy(alpha = 0.95f),
@@ -547,21 +650,31 @@ fun TrendChart(
                     )
                 }
             }
+
+        }
+
+        if (data.size == 1 && sweepProgress.value > 0f) {
+            val y = chartTop + chartHeight - ((data.first() - minVal) / range * chartHeight)
+            drawCircle(
+                color = lineColor.copy(alpha = 0.95f),
+                radius = chartStyle.selectedPointInnerRadius.toPx(),
+                center = Offset(chartLeft, y)
+            )
         }
 
         // Draw scan line
-        if (scanLineAlpha.value > 0f) {
+        if (scanLineAlpha.value > 0f && data.isNotEmpty() && sweepProgress.value < 1f) {
             drawLine(
                 color = lineColor.copy(alpha = scanLineAlpha.value),
-                start = Offset(sweepX, chartTop),
-                end = Offset(sweepX, chartTop + chartHeight),
+                start = Offset(sweepX.coerceAtMost(chartLeft + chartWidth), chartTop),
+                end = Offset(sweepX.coerceAtMost(chartLeft + chartWidth), chartTop + chartHeight),
                 strokeWidth = 1.5.dp.toPx()
             )
         }
 
         // ── Last value emphasis ──────────────────────────────────────────
-        if (data.isNotEmpty() && emphasisAlpha.value > 0f) {
-            val lastIndex = data.size - 1
+        if (emphasisData == data && data.isNotEmpty() && emphasisAlpha.value > 0f) {
+            val lastIndex = data.lastIndex
             val lastX = chartLeft + lastIndex * stepX
             val lastY = chartTop + chartHeight - ((data[lastIndex] - minVal) / range * chartHeight)
 

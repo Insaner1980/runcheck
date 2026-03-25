@@ -1,0 +1,133 @@
+<h2>Sisääntuloanimaatio — miten graafin viiva ilmestyy?</h2>
+<p class="subtitle">Nämä ovat pääanimaatio kun graafi tulee näkyviin ensimmäistä kertaa. Klikkaa suosikkiasi.</p>
+
+<div class="cards">
+  <!-- Option A: Oscilloscope sweep -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0B1E24; padding: 24px; display: flex; align-items: center; justify-content: center; height: 200px;">
+      <svg viewBox="0 0 400 160" width="100%" height="100%">
+        <defs>
+          <linearGradient id="gradA" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#4A9EDE" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#4A9EDE" stop-opacity="0.02"/>
+          </linearGradient>
+          <clipPath id="sweepClip">
+            <rect x="0" y="0" width="0" height="160">
+              <animate attributeName="width" from="0" to="400" dur="1.2s" fill="freeze" calcMode="spline" keySplines="0.25 0.1 0.25 1"/>
+            </rect>
+          </clipPath>
+        </defs>
+        <!-- Grid -->
+        <line x1="0" y1="40" x2="400" y2="40" stroke="#1A3A48" stroke-width="0.5"/>
+        <line x1="0" y1="80" x2="400" y2="80" stroke="#1A3A48" stroke-width="0.5"/>
+        <line x1="0" y1="120" x2="400" y2="120" stroke="#1A3A48" stroke-width="0.5"/>
+        <!-- Clipped content -->
+        <g clip-path="url(#sweepClip)">
+          <path d="M0,120 C40,110 80,90 120,85 C160,80 200,60 240,50 C280,40 320,55 360,45 L400,40" fill="none" stroke="#4A9EDE" stroke-width="2.5"/>
+          <path d="M0,120 C40,110 80,90 120,85 C160,80 200,60 240,50 C280,40 320,55 360,45 L400,40 L400,160 L0,160 Z" fill="url(#gradA)" opacity="0.6"/>
+          <!-- Scan line -->
+          <line x1="0" y1="0" x2="0" y2="160" stroke="#4A9EDE" stroke-width="1.5" opacity="0.6">
+            <animate attributeName="x1" from="0" to="400" dur="1.2s" fill="freeze" calcMode="spline" keySplines="0.25 0.1 0.25 1"/>
+            <animate attributeName="x2" from="0" to="400" dur="1.2s" fill="freeze" calcMode="spline" keySplines="0.25 0.1 0.25 1"/>
+            <animate attributeName="opacity" from="0.6" to="0" dur="1.2s" fill="freeze"/>
+          </line>
+        </g>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>A — Oskilloskooppi-pyyhkäisy</h3>
+      <p>Viiva piirtyy vasemmalta oikealle <strong>ohuen skannausviivan</strong> perässä, kuin oskilloskoopin säde. Skannausviiva häipyy pois kun piirto on valmis. Gradient-täyttö ilmestyy viivan perässä.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Sopii kun</h4><ul><li>Halutaan vahva "mittalaite"-tuntu</li><li>Erottuu selvästi tavallisesta piirtymisestä</li></ul></div>
+        <div class="cons"><h4>Huomioi</h4><ul><li>Skannausviiva vaatii hienosäätöä ettei ole liian huomiota herättävä</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B: Fade-up materialization -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0B1E24; padding: 24px; display: flex; align-items: center; justify-content: center; height: 200px;">
+      <svg viewBox="0 0 400 160" width="100%" height="100%">
+        <defs>
+          <linearGradient id="gradB" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#5DE4C7" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#5DE4C7" stop-opacity="0.02"/>
+          </linearGradient>
+        </defs>
+        <!-- Grid -->
+        <line x1="0" y1="40" x2="400" y2="40" stroke="#1A3A48" stroke-width="0.5"/>
+        <line x1="0" y1="80" x2="400" y2="80" stroke="#1A3A48" stroke-width="0.5"/>
+        <line x1="0" y1="120" x2="400" y2="120" stroke="#1A3A48" stroke-width="0.5"/>
+        <!-- Line starts from bottom, rises to position -->
+        <path d="M0,120 C40,110 80,90 120,85 C160,80 200,60 240,50 C280,40 320,55 360,45 L400,40" fill="none" stroke="#5DE4C7" stroke-width="2.5" opacity="0">
+          <animate attributeName="opacity" from="0" to="1" dur="0.4s" begin="0.3s" fill="freeze"/>
+        </path>
+        <path d="M0,120 C40,110 80,90 120,85 C160,80 200,60 240,50 C280,40 320,55 360,45 L400,40 L400,160 L0,160 Z" fill="url(#gradB)" opacity="0">
+          <animate attributeName="opacity" from="0" to="0.6" dur="0.6s" begin="0.5s" fill="freeze"/>
+        </path>
+        <!-- Starting flat line that morphs up -->
+        <line x1="0" y1="140" x2="400" y2="140" stroke="#5DE4C7" stroke-width="1" opacity="0.3">
+          <animate attributeName="opacity" from="0.3" to="0" dur="0.5s" begin="0.2s" fill="freeze"/>
+        </line>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>B — Materialisaatio alhaalta</h3>
+      <p>Data "nousee" pohjalta paikoilleen — ensin näkyy himmeä perusviiva, sitten varsinainen data-käyrä materialisoituu lopulliseen muotoonsa fade-in:llä. Gradient-täyttö seuraa perässä.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Sopii kun</h4><ul><li>Halutaan hienovarainen mutta selkeä siirtymä</li><li>Minimalistisempi vaihtoehto</li></ul></div>
+        <div class="cons"><h4>Huomioi</h4><ul><li>Vähemmän "wow-efektiä" kuin pyyhkäisy</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C: Point-by-point plotting -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0B1E24; padding: 24px; display: flex; align-items: center; justify-content: center; height: 200px;">
+      <svg viewBox="0 0 400 160" width="100%" height="100%">
+        <defs>
+          <linearGradient id="gradC" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#E8C44A" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#E8C44A" stop-opacity="0.02"/>
+          </linearGradient>
+        </defs>
+        <!-- Grid -->
+        <line x1="0" y1="40" x2="400" y2="40" stroke="#1A3A48" stroke-width="0.5"/>
+        <line x1="0" y1="80" x2="400" y2="80" stroke="#1A3A48" stroke-width="0.5"/>
+        <line x1="0" y1="120" x2="400" y2="120" stroke="#1A3A48" stroke-width="0.5"/>
+        <!-- Points appear one by one, lines connect -->
+        <g>
+          <circle cx="0" cy="120" r="3" fill="#E8C44A" opacity="0"><animate attributeName="opacity" from="0" to="1" dur="0.1s" begin="0.1s" fill="freeze"/></circle>
+          <circle cx="57" cy="110" r="3" fill="#E8C44A" opacity="0"><animate attributeName="opacity" from="0" to="1" dur="0.1s" begin="0.2s" fill="freeze"/></circle>
+          <circle cx="114" cy="90" r="3" fill="#E8C44A" opacity="0"><animate attributeName="opacity" from="0" to="1" dur="0.1s" begin="0.3s" fill="freeze"/></circle>
+          <circle cx="171" cy="85" r="3" fill="#E8C44A" opacity="0"><animate attributeName="opacity" from="0" to="1" dur="0.1s" begin="0.4s" fill="freeze"/></circle>
+          <circle cx="228" cy="60" r="3" fill="#E8C44A" opacity="0"><animate attributeName="opacity" from="0" to="1" dur="0.1s" begin="0.5s" fill="freeze"/></circle>
+          <circle cx="285" cy="50" r="3" fill="#E8C44A" opacity="0"><animate attributeName="opacity" from="0" to="1" dur="0.1s" begin="0.6s" fill="freeze"/></circle>
+          <circle cx="342" cy="55" r="3" fill="#E8C44A" opacity="0"><animate attributeName="opacity" from="0" to="1" dur="0.1s" begin="0.7s" fill="freeze"/></circle>
+          <circle cx="400" cy="40" r="3" fill="#E8C44A" opacity="0"><animate attributeName="opacity" from="0" to="1" dur="0.1s" begin="0.8s" fill="freeze"/></circle>
+          <!-- Connecting lines appear after points -->
+          <path d="M0,120 L57,110 L114,90 L171,85 L228,60 L285,50 L342,55 L400,40" fill="none" stroke="#E8C44A" stroke-width="2" opacity="0">
+            <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="0.9s" fill="freeze"/>
+          </path>
+          <path d="M0,120 L57,110 L114,90 L171,85 L228,60 L285,50 L342,55 L400,40 L400,160 L0,160 Z" fill="url(#gradC)" opacity="0">
+            <animate attributeName="opacity" from="0" to="0.6" dur="0.4s" begin="1.0s" fill="freeze"/>
+          </path>
+        </g>
+        <!-- Points shrink after line appears -->
+        <g>
+          <circle cx="0" cy="120" r="3" fill="#E8C44A" opacity="0"><animate attributeName="opacity" from="0" to="0.5" dur="0.1s" begin="0.1s" fill="freeze"/><animate attributeName="r" from="3" to="0" dur="0.3s" begin="1.0s" fill="freeze"/></circle>
+        </g>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>C — Mittauspiste kerrallaan</h3>
+      <p>Datapisteet ilmestyvät yksi kerrallaan kuin ne vastaanotettaisiin sensorilta. Kun kaikki pisteet ovat paikoillaan, viiva yhdistää ne ja gradient-täyttö ilmestyy. Pisteet häipyvät viivan tieltä.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Sopii kun</h4><ul><li>Vahvin "sensoridataa vastaanotetaan" -metafora</li><li>Teknisesti kiinnostava katsoa</li></ul></div>
+        <div class="cons"><h4>Huomioi</h4><ul><li>Voi tuntua hitaalta jos datapisteitä on paljon</li><li>Toteutus monimutkaisempi</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 24px; font-style: italic;">Vinkki: päivitä sivu nähdäksesi animaatiot uudelleen</p>

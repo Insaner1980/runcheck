@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.usecase.GetStorageHistoryUseCase
 import com.runcheck.domain.usecase.GetStorageStateUseCase
 import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
@@ -48,6 +49,8 @@ class StorageViewModel @Inject constructor(
             ?.let { value -> runCatching { HistoryPeriod.valueOf(value) }.getOrNull() }
             ?: HistoryPeriod.WEEK
         set(value) { savedStateHandle[SELECTED_HISTORY_PERIOD_KEY] = value.name }
+    private val liveUsagePercent = mutableListOf<Float>()
+    private var lastObservedStorageState: StorageState? = null
 
     private val _trashDeleteRequestUris = MutableSharedFlow<List<String>>(replay = 1)
     val trashDeleteRequestUris: SharedFlow<List<String>> = _trashDeleteRequestUris.asSharedFlow()
@@ -101,6 +104,13 @@ class StorageViewModel @Inject constructor(
         }
     }
 
+    private fun appendLive(buffer: MutableList<Float>, value: Float) {
+        buffer.add(value)
+        if (buffer.size > LIVE_CHART_MAX_POINTS) {
+            buffer.removeFirst()
+        }
+    }
+
     private fun loadHistory() {
         historyJob?.cancel()
         historyJob = viewModelScope.launch {
@@ -133,12 +143,17 @@ class StorageViewModel @Inject constructor(
                 manageInfoCardDismissals.observeDismissedCardIds(),
                 manageUserPreferences.observePreferences()
             ) { state, isPro, dismissedCards, preferences ->
+                if (state != lastObservedStorageState) {
+                    appendLive(liveUsagePercent, state.usagePercent)
+                    lastObservedStorageState = state
+                }
                 val currentSuccess = _uiState.value as? StorageUiState.Success
                 StorageUiState.Success(
                     storageState = state,
                     isPro = isPro,
                     dismissedInfoCards = dismissedCards,
                     showInfoCards = preferences.showInfoCards,
+                    liveUsagePercent = liveUsagePercent.toList(),
                     storageHistory = currentSuccess?.storageHistory ?: emptyList(),
                     selectedHistoryPeriod = currentSuccess?.selectedHistoryPeriod ?: selectedHistoryPeriod,
                     historyLoadError = currentSuccess?.historyLoadError
@@ -155,5 +170,6 @@ class StorageViewModel @Inject constructor(
 
     private companion object {
         const val SELECTED_HISTORY_PERIOD_KEY = "storage_selected_history_period"
+        const val LIVE_CHART_MAX_POINTS = 60
     }
 }

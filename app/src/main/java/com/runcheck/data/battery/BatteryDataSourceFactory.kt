@@ -14,6 +14,7 @@ class BatteryDataSourceFactory @Inject constructor(
     private var cachedSource: BatteryDataSource? = null
     private var cachedProfileKey: String? = null
 
+    @Synchronized
     fun create(profile: DeviceProfile): BatteryDataSource {
         val key = "${profile.manufacturer}_${profile.apiLevel}"
         cachedSource?.let { source ->
