@@ -94,7 +94,6 @@ State restoration details:
 
 - Billing and Pro state
 - Notification channels
-- Crash reporting controller
 - Screen-state tracking repository
 - Periodic monitoring scheduling
 - Widget refreshes when Pro state changes
@@ -211,10 +210,16 @@ Main sections:
 
 - Signal hero with `SignalBars`
 - Wi-Fi name permission help card when SSID is unavailable
+- Latency, link speed, frequency metrics
 - Connection details card
 - IP / DNS / MTU section
 - Pro-only signal history chart
 - Speed test summary card
+
+Latency measurement:
+
+- `GetMeasuredNetworkStateUseCase` combines the network state flow with periodic TCP latency measurements (30-second interval via `LatencyMeasurer`)
+- Latency resets to null when connection is lost and re-measures immediately when connection type changes
 
 Historical chart behavior:
 
@@ -248,6 +253,8 @@ Stored result fields include:
 - Server name/location
 - Connection type and subtype
 - Optional signal strength
+
+Connection type (WiFi/Cellular) and network subtype are shown in both the latest result card and the history list with icons and labels (e.g., "WiFi · WiFi 6", "Cellular · 5G"). Signal strength (dBm) is displayed in the latest result.
 
 Free tier stores a limited history. Pro keeps a larger history.
 
@@ -402,17 +409,18 @@ Sections:
   - low storage threshold
 - Display
   - Celsius / Fahrenheit
-  - Language override (System / English / Finnish)
+  - Show/hide info cards toggle
 - Data
   - data retention
   - CSV export
+  - reset info tips
+  - clear speed test results
   - clear all data
+  - all destructive actions require confirmation dialog
 - Pro
   - current Pro status
   - upgrade CTA
   - restore purchase
-- Privacy
-  - crash reporting toggle
 - Device
   - device model
   - API level
@@ -428,8 +436,8 @@ Sections:
 Notes:
 
 - Notification permission handling is built into Settings for Android 13+
-- Crash reporting is opt-in
 - Export shares one or more CSV files through `FileProvider`
+- All destructive actions (clear speed tests, clear all data, reset tips, reset thresholds) show a confirmation AlertDialog with primary blue confirm button
 
 ---
 

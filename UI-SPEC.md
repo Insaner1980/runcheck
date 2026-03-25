@@ -806,12 +806,10 @@ Opt-in persistent notification showing real-time battery stats via `RealTimeMoni
 
 ## 14. Localization
 
-- **Default:** English (`values/strings.xml`)
-- **Finnish:** `values-fi/strings.xml`
+- **English only** (`values/strings.xml`) — Finnish translations preserved in git history for future use
 - All user-visible strings in `strings.xml` — no hardcoded text in composables
 - Numeric formatting via `UiFormatters` (locale-aware)
 - Temperature: user-selectable °C / °F via DataStore preference
-- **Language override:** user-selectable System / English / Finnish in Settings → Display. Stored in DataStore + mirrored to SharedPreferences for `attachBaseContext` reading. Activity recreates on change.
 - Date/time: `formatLocalizedDateTime()` with `DateTimePatternGenerator`
 
 ---
