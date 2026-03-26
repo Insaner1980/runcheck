@@ -9,7 +9,6 @@ import androidx.room.PrimaryKey
     tableName = "app_battery_usage",
     indices = [
         Index(value = ["timestamp"]),
-        Index(value = ["package_name"]),
         Index(value = ["package_name", "timestamp"])
     ]
 )
