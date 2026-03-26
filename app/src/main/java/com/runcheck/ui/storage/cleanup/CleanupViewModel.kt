@@ -14,6 +14,7 @@ import com.runcheck.domain.model.CleanupScanSource
 import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.ScannedFile
 import com.runcheck.domain.model.StorageDeleteFailure
+import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.common.UiText
 import com.runcheck.util.ReleaseSafeLog
@@ -35,7 +36,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CleanupViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
-    private val storageCleanup: StorageCleanupUseCase
+    private val storageCleanup: StorageCleanupUseCase,
+    private val isProUser: IsProUserUseCase
 ) : ViewModel() {
 
     val cleanupType: CleanupType = try {
@@ -84,6 +86,12 @@ class CleanupViewModel @Inject constructor(
     fun scan() {
         scanJob?.cancel()
         scanJob = viewModelScope.launch {
+            if (!isProUser()) {
+                _uiState.value = CleanupUiState.Error(
+                    UiText.Resource(R.string.pro_feature_locked_generic)
+                )
+                return@launch
+            }
             // Old Downloads and APK Files need all-files access on Android 11+
             if (needsAllFilesAccess() && !Environment.isExternalStorageManager()) {
                 _uiState.value = CleanupUiState.NeedsStoragePermission
