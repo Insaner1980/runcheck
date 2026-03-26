@@ -56,7 +56,7 @@ class NotificationHelper @Inject constructor(
 
         fun createContentIntent(context: Context, route: String?, requestCode: Int): PendingIntent {
             val intent = Intent(context, MainActivity::class.java).apply {
-                action = buildNotificationAction(route)
+                setPackage(context.packageName)
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
                 if (!route.isNullOrBlank()) {
                     putExtra(EXTRA_NAVIGATE_TO, route)
@@ -69,13 +69,6 @@ class NotificationHelper @Inject constructor(
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
         }
-
-        private fun buildNotificationAction(route: String?): String =
-            if (route.isNullOrBlank()) {
-                "com.runcheck.notification.OPEN_HOME"
-            } else {
-                "com.runcheck.notification.OPEN_$route"
-            }
     }
 
     private val notificationManager: NotificationManager
