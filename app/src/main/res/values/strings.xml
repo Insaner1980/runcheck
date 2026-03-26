@@ -148,6 +148,7 @@
         <item quantity="one">Last %1$d day</item>
         <item quantity="other">Last %1$d days</item>
     </plurals>
+    <string name="battery_stats_section_with_period">%1$s · %2$s</string>
     <string name="battery_stats_pct_total">%1$.0f%%</string>
 
     <!-- Charging Status -->
@@ -180,6 +181,9 @@
     <string name="unit_mbps">Mbps</string>
     <string name="unit_ms">ms</string>
     <string name="unit_ghz">GHz</string>
+    <string name="unit_volts">V</string>
+    <string name="unit_watts">W</string>
+    <string name="unit_asu">ASU</string>
 
     <!-- Value Formatting -->
     <string name="value_percent">%1$d%%</string>
@@ -202,6 +206,9 @@
     <string name="value_with_suffix_text">%1$s%2$s</string>
     <string name="value_direction_down">↓ %1$s</string>
     <string name="value_direction_up">↑ %1$s</string>
+    <string name="value_two_parts_separator">%1$s · %2$s</string>
+    <string name="value_approx_prefix">~%1$s</string>
+    <string name="storage_usage_ratio">%1$s / %2$s</string>
     <string name="network_type_cellular">Cellular</string>
     <string name="fallback_unknown">Unknown</string>
     <string name="a11y_scanning_files">Scanning files</string>
@@ -223,6 +230,7 @@
     <string name="network_latency">Latency</string>
     <string name="network_signal_strength">Signal Strength</string>
     <string name="network_no_connection">No Connection</string>
+    <string name="network_signal_with_asu">%1$s · %2$d %3$s</string>
 
     <!-- Network Detail Screen - Redesign -->
     <string name="network_section_connection_details">Connection Details</string>
@@ -385,6 +393,7 @@
         <item quantity="other">Free %1$s \u00B7 %2$d items</item>
     </plurals>
     <string name="cleanup_freed">%1$s freed</string>
+    <string name="cleanup_file_subtitle">%1$s · %2$s</string>
     <string name="cleanup_filter_10mb">&gt; 10 MB</string>
     <string name="cleanup_filter_50mb">&gt; 50 MB</string>
     <string name="cleanup_filter_100mb">&gt; 100 MB</string>

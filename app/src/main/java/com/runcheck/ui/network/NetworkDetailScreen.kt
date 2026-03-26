@@ -259,15 +259,16 @@ private fun NetworkHeroSection(
             )
 
             networkState.signalDbm?.let { dbm ->
-                val asuSuffix = networkState.signalAsu?.let { asu ->
-                    " · $asu ASU"
-                } ?: ""
+                val dbmText = stringResource(
+                    R.string.value_with_unit_int,
+                    dbm,
+                    stringResource(R.string.unit_dbm)
+                )
+                val displayText = networkState.signalAsu?.let { asu ->
+                    stringResource(R.string.network_signal_with_asu, dbmText, asu, stringResource(R.string.unit_asu))
+                } ?: dbmText
                 Text(
-                    text = stringResource(
-                        R.string.value_with_unit_int,
-                        dbm,
-                        stringResource(R.string.unit_dbm)
-                    ) + asuSuffix,
+                    text = displayText,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -141,8 +141,11 @@ fun FileListItem(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = categoryLabel(context, file.category) +
-                    " \u00B7 " + formatRelativeDate(context, file.dateModified),
+                text = stringResource(
+                    R.string.cleanup_file_subtitle,
+                    categoryLabel(context, file.category),
+                    formatRelativeDate(context, file.dateModified)
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
