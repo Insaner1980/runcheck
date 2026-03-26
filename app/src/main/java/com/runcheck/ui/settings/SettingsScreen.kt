@@ -107,6 +107,7 @@ fun SettingsScreen(
     var alertsEffectivelyEnabled by remember { mutableStateOf(true) }
     // Track whether the permission request was triggered by the live-notification toggle
     var permissionRequestedForLive by remember { mutableStateOf(false) }
+    var showNotifPermissionDeniedDialog by rememberSaveable { mutableStateOf(false) }
 
     LifecycleResumeEffect(Unit) {
         hasNotificationPermission = !notificationsPermissionRequired ||
@@ -151,7 +152,6 @@ fun SettingsScreen(
     var showClearSpeedTestsDialog by rememberSaveable { mutableStateOf(false) }
     var showResetTipsDialog by rememberSaveable { mutableStateOf(false) }
     var showResetThresholdsDialog by rememberSaveable { mutableStateOf(false) }
-    var showNotifPermissionDeniedDialog by rememberSaveable { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
