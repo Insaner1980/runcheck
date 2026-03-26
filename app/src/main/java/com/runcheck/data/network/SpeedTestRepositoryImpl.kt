@@ -38,6 +38,7 @@ class SpeedTestRepositoryImpl @Inject constructor(
             signalDbm = result.signalDbm
         )
         speedTestResultDao.insert(entity)
+        Unit
     }
 
     override fun getLatestResult(): Flow<SpeedTestResult?> =
