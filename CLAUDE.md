@@ -320,3 +320,77 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 - `docs/play-store-listing.md` — Play Store listing content
 - `docs/privacy-policy.md` — Privacy policy
 - `educational-content-system.md` — Three-tier educational content system spec (info bottom sheets, contextual cards, Learn section)
+
+## Security & Quality Requirements
+
+This project is published on Google Play and handles device hardware data. All code must follow these security and quality rules. Studies show AI-generated code contains security vulnerabilities in 45% of cases, with Java/Kotlin having the highest failure rate (70%+). These rules exist to prevent the most common AI coding mistakes.
+
+### Mandatory Security Rules
+
+#### PendingIntents
+- EVERY PendingIntent MUST use an explicit Intent with a target component class: `Intent(context, TargetClass::class.java)`
+- NEVER create PendingIntents with implicit Intents (action-only, no component)
+- `setPackage()` alone is NOT sufficient — always set the component explicitly
+- ALWAYS include FLAG_IMMUTABLE unless mutability is specifically required
+
+#### Data Storage
+- NEVER store sensitive data in plain SharedPreferences — use EncryptedSharedPreferences or Android Keystore
+- NEVER store API keys, tokens, or secrets in source code, strings.xml, or BuildConfig
+- Set `android:allowBackup="false"` in AndroidManifest.xml for release builds
+- NEVER log sensitive data with Log.d/Log.i/Log.w/Log.e
+
+#### Network Security
+- ALL network calls MUST use HTTPS
+- Maintain network_security_config.xml with cleartextTrafficPermitted="false"
+- NEVER disable certificate validation or create TrustManagers that accept all certificates
+
+#### AndroidManifest
+- EVERY activity, service, receiver, and provider MUST have explicit `android:exported` attribute
+- Do NOT export components unless specifically required
+- Declare minimum necessary permissions only
+- Use foreground service types for all foreground services
+
+#### Cryptography
+- NEVER use MD5 or SHA1 for security purposes
+- NEVER use DES or ECB mode encryption
+- NEVER hardcode encryption keys or initialization vectors
+- Use Android Keystore for key storage
+
+### Mandatory Code Quality Rules
+
+#### Null Safety
+- NEVER use `!!` (force unwrap) — always use safe alternatives: `?.`, `?:`, `let`, `requireNotNull` with meaningful message
+- If you think `!!` is needed, restructure the code to eliminate the nullable type
+
+#### Lifecycle & Memory
+- NEVER store Activity or Fragment context in ViewModel, singleton, companion object, or any long-lived object — use Application context if needed
+- ALL coroutines MUST be scoped to viewModelScope or lifecycleScope — NEVER use GlobalScope
+- ALL observers, listeners, callbacks, and BroadcastReceivers MUST be unregistered in the matching lifecycle method
+- ALL Closeable resources MUST use .use {} blocks
+- NEVER load full-size bitmaps — always specify target dimensions
+
+#### Error Handling
+- NEVER leave catch blocks empty — at minimum log the exception
+- NEVER catch Exception broadly when a specific exception type is appropriate
+- ALL launch {} blocks that can fail MUST have error handling (try/catch or CoroutineExceptionHandler)
+
+#### Intent & Component Security
+- VALIDATE all Intent extras before use — never assume they exist or have the expected type
+- VALIDATE all ContentProvider query parameters
+- CHECK permissions programmatically before accessing protected resources
+
+#### Build Configuration
+- ProGuard/R8 MUST be enabled for release builds
+- `debuggable` MUST be false in release buildType
+- Target the latest stable Android SDK
+
+### Before Every PR
+
+Before creating a pull request, verify:
+1. `./gradlew assembleDebug` compiles without errors
+2. No `!!` operators added
+3. No hardcoded secrets or API keys
+4. No new exported components without justification
+5. All PendingIntents use explicit Intents with FLAG_IMMUTABLE
+6. All coroutines properly scoped to lifecycle
+7. No empty catch blocks
