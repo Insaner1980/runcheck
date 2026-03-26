@@ -122,10 +122,10 @@ import com.runcheck.ui.theme.statusColors
 @Composable
 fun StorageDetailScreen(
     onBack: () -> Unit,
+    modifier: Modifier = Modifier,
     onNavigateToCleanup: (com.runcheck.ui.storage.cleanup.CleanupType) -> Unit = {},
     onUpgradeToPro: () -> Unit = {},
     onNavigateToLearnArticle: (articleId: String) -> Unit = {},
-    modifier: Modifier = Modifier,
     viewModel: StorageViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -140,8 +140,13 @@ fun StorageDetailScreen(
                 Manifest.permission.READ_MEDIA_VIDEO,
                 Manifest.permission.READ_MEDIA_AUDIO
             )
-        } else {
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             listOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+        } else {
+            listOf(
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            )
         }
     }
     val missingMediaPermissions = requiredMediaPermissions.filter { permission ->

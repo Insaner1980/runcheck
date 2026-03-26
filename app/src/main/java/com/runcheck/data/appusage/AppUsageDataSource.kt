@@ -4,6 +4,7 @@ import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Process
 import com.runcheck.domain.usecase.TrackThrottlingEventsUseCase
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -86,10 +87,20 @@ class AppUsageDataSource @Inject constructor(
 
     private fun resolveAppLabel(packageManager: PackageManager, packageName: String): String {
         return try {
-            val applicationInfo = packageManager.getApplicationInfo(
-                packageName,
-                PackageManager.MATCH_UNINSTALLED_PACKAGES
-            )
+            val applicationInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.getApplicationInfo(
+                    packageName,
+                    PackageManager.ApplicationInfoFlags.of(
+                        PackageManager.MATCH_UNINSTALLED_PACKAGES.toLong()
+                    )
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getApplicationInfo(
+                    packageName,
+                    PackageManager.MATCH_UNINSTALLED_PACKAGES
+                )
+            }
             packageManager.getApplicationLabel(applicationInfo).toString()
         } catch (_: PackageManager.NameNotFoundException) {
             packageName

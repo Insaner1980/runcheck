@@ -74,14 +74,19 @@ object FullscreenChartResult {
 @Composable
 fun FullscreenChartScreen(
     onBack: () -> Unit,
+    modifier: Modifier = Modifier,
     onUpgradeToPro: () -> Unit = {},
     onSelectionChanged: (source: String, metric: String, period: String) -> Unit = { _, _, _ -> },
-    modifier: Modifier = Modifier,
     viewModel: FullscreenChartViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalContext.current.findActivity()
 
+    // TODO: API 37 (CinnamonBun) removes the orientation restriction opt-out
+    // on large screens (sw >= 600dp). This landscape lock will be ignored on
+    // tablets and foldables when targetSdk is raised to 37. The chart layout
+    // needs to support both orientations on large screens.
+    // See: https://developer.android.com/about/versions/16/behavior-changes-16
     DisposableEffect(activity) {
         val previousOrientation = activity?.requestedOrientation
             ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED

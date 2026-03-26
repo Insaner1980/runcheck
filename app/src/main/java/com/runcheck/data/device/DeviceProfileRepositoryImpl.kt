@@ -77,7 +77,6 @@ private fun DeviceProfile.toDomain() = DeviceProfileInfo(
     currentNowUnit = currentNowUnit,
     currentNowSignConvention = currentNowSignConvention,
     cycleCountAvailable = cycleCountAvailable,
-    batteryHealthPercentAvailable = batteryHealthPercentAvailable,
     thermalZonesAvailable = thermalZonesAvailable,
     storageHealthAvailable = storageHealthAvailable
 )

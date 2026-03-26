@@ -5,6 +5,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -73,11 +75,13 @@ import com.runcheck.service.monitor.NotificationHelper
 import com.runcheck.service.monitor.RealTimeMonitorService
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.ui.common.findActivity
+import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
@@ -88,11 +92,18 @@ import kotlin.math.roundToInt
 fun SettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onNavigateToLearnArticle: (String) -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val activity = context.findActivity()
+    val isXiaomiFamilyDevice = remember {
+        when (Build.MANUFACTURER.lowercase()) {
+            "xiaomi", "redmi", "poco" -> true
+            else -> false
+        }
+    }
 
     // Notification permission handling — re-checked every time the screen resumes
     // so that revoking permission in system settings is reflected immediately.
@@ -105,9 +116,14 @@ fun SettingsScreen(
         )
     }
     var alertsEffectivelyEnabled by remember { mutableStateOf(true) }
+    var isBatteryOptimizationExempt by remember {
+        val pm = context.getSystemService(PowerManager::class.java)
+        mutableStateOf(pm?.isIgnoringBatteryOptimizations(context.packageName) ?: true)
+    }
     // Track whether the permission request was triggered by the live-notification toggle
     var permissionRequestedForLive by remember { mutableStateOf(false) }
     var showNotifPermissionDeniedDialog by rememberSaveable { mutableStateOf(false) }
+    var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
 
     LifecycleResumeEffect(Unit) {
         hasNotificationPermission = !notificationsPermissionRequired ||
@@ -117,6 +133,8 @@ fun SettingsScreen(
         alertsEffectivelyEnabled = nm.areNotificationsEnabled() &&
             (nm.getNotificationChannel(NotificationHelper.CHANNEL_ALERTS)?.importance
                 != android.app.NotificationManager.IMPORTANCE_NONE)
+        val pm = context.getSystemService(PowerManager::class.java)
+        isBatteryOptimizationExempt = pm?.isIgnoringBatteryOptimizations(context.packageName) ?: true
         onPauseOrDispose { }
     }
 
@@ -187,6 +205,68 @@ fun SettingsScreen(
                         onSelect = { viewModel.setMonitoringInterval(interval) }
                     )
                 }
+
+                SettingsDivider()
+                CardSectionTitle(text = stringResource(R.string.settings_battery_optimization))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                if (isBatteryOptimizationExempt) {
+                    Text(
+                        text = stringResource(R.string.settings_battery_optimization_exempt),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.statusColors.healthy
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_battery_optimization_exempt_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .defaultMinSize(minHeight = 48.dp)
+                            .clickable {
+                                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                    data = Uri.parse("package:${context.packageName}")
+                                }
+                                try {
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {
+                                    try {
+                                        context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                                    } catch (_: Exception) { }
+                                }
+                            }
+                            .padding(vertical = MaterialTheme.spacing.xs),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.settings_battery_optimization_restricted),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_battery_optimization_restricted_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                SettingsDivider()
+                SettingsNavigationRow(
+                    label = stringResource(R.string.settings_monitoring_help),
+                    onClick = { onNavigateToLearnArticle(LearnArticleIds.BACKGROUND_MONITORING) }
+                )
             }
 
             // ── LIVE NOTIFICATION ─────────────────────────────────────
@@ -318,7 +398,13 @@ fun SettingsScreen(
                 if (uiState.preferences.notificationsEnabled && !alertsEffectivelyEnabled) {
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                     Text(
-                        text = stringResource(R.string.settings_notifications_system_muted),
+                        text = stringResource(
+                            if (isXiaomiFamilyDevice) {
+                                R.string.settings_notifications_system_muted_xiaomi
+                            } else {
+                                R.string.settings_notifications_system_muted
+                            }
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier
@@ -543,6 +629,18 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                    Text(
+                        text = stringResource(
+                            if (profile.currentNowReliable) {
+                                R.string.settings_current_support_summary_reliable
+                            } else {
+                                R.string.settings_current_support_summary_unreliable
+                            }
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -561,7 +659,8 @@ fun SettingsScreen(
                             ),
                             valueColor = if (profile.currentNowReliable) MaterialTheme.statusColors.healthy
                                 else MaterialTheme.colorScheme.error,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            onInfoClick = { activeInfoSheet = "currentReading" }
                         )
                     }
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
@@ -575,12 +674,14 @@ fun SettingsScreen(
                                 if (profile.cycleCountAvailable) R.string.settings_measurement_available
                                 else R.string.settings_measurement_not_available
                             ),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            onInfoClick = { activeInfoSheet = "cycleCount" }
                         )
                         MetricPill(
                             label = stringResource(R.string.settings_thermal_zones_label),
                             value = profile.thermalZonesAvailable.size.toString(),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            onInfoClick = { activeInfoSheet = "thermalZones" }
                         )
                     }
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
@@ -805,6 +906,22 @@ fun SettingsScreen(
         )
     }
 
+    // Measurement info bottom sheets
+    activeInfoSheet?.let { key ->
+        val content = when (key) {
+            "currentReading" -> SettingsInfoContent.currentReading
+            "cycleCount" -> SettingsInfoContent.cycleCount
+            "thermalZones" -> SettingsInfoContent.thermalZones
+            else -> null
+        }
+        content?.let {
+            InfoBottomSheet(
+                content = it,
+                onDismiss = { activeInfoSheet = null }
+            )
+        }
+    }
+
     // Clear all data confirmation dialog
     if (showClearDialog) {
         AlertDialog(
@@ -883,10 +1000,10 @@ private fun SettingsRadioRow(
 @Composable
 private fun SettingsToggle(
     title: String,
-    description: String? = null,
     checked: Boolean,
-    enabled: Boolean = true,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    description: String? = null,
+    enabled: Boolean = true
 ) {
     Row(
         modifier = Modifier

@@ -14,6 +14,8 @@ runcheck is an Android device health diagnostics app built with Kotlin and Jetpa
 - NDT7 is the speed test backend
 - Minimum SDK stays 26
 
+When product/runtime facts or the visual system matter, use `PROJECT.md` and `UI-SPEC.md` as the authoritative companion docs and keep them aligned with code.
+
 Legacy billing or ad-related code may still exist in the repo. Do not expand that surface unless the task is explicitly about cleanup or migration.
 
 ---
@@ -34,6 +36,7 @@ Legacy billing or ad-related code may still exist in the repo. Do not expand tha
 - Compile SDK: 36
 - Target SDK: 35
 - Min SDK: 26
+- Java target: 17
 
 High-level package layout:
 
@@ -76,8 +79,14 @@ Current runtime systems:
 - `RuncheckApp` initializes billing, Pro state, notification channels, screen-state tracking, periodic monitoring, and widget refresh hooks
 - WorkManager runs `HealthMonitorWorker` for snapshot collection + alert evaluation
 - WorkManager runs `HealthMaintenanceWorker` for app-usage refresh, cleanup, and widget refresh
+- `RealTimeMonitorService` is an opt-in live notification foreground service and must stay user-controlled from Settings
 - Widgets are backed by Room snapshots and treated as a Pro feature
 - Trial state currently counts as Pro access through `ProState.isPro`
+
+State restoration conventions:
+
+- Use `rememberSaveable` for screen-local UI state such as sheet visibility, dialogs, and metric chip selections
+- Use `SavedStateHandle` for route-backed or process-death-sensitive state such as selected history period, cleanup type, and fullscreen chart args
 
 ## Architecture Rules
 
@@ -130,7 +139,7 @@ Pro features are:
 
 Rules:
 
-- Check `ProManager.isPro()` or the injected `ProStatusProvider` equivalent before exposing the feature
+- Check `ProManager.isPro()` or the injected `ProStatusProvider` / `IsProUserUseCase` path before exposing the feature
 - Use `ProFeatureLockedState` for locked UI, not a custom replacement
 - Preserve the one-time purchase model
 
@@ -158,6 +167,7 @@ Rules:
 - Background colors:
   - `BgPage` `#0B1E24`
   - `BgCard` `#133040`
+  - `BgCardAlt` `#0F2A35`
   - `BgIconCircle` `#1A3A48`
 - Primary accent: blue `#4A9EDE`
 - Secondary/status accent: teal `#5DE4C7`
@@ -169,6 +179,7 @@ Rules:
 - Card radius: 16dp
 - Small-element radius: 8dp
 - No shadows, no elevation, no borders, except `ActionCards` with `1dp outlineVariant` at `35%` alpha
+- No dynamic colors. If a task changes visual design, follow `UI-SPEC.md` instead of inventing alternate tokens or component variants
 
 ### 8. Accessibility
 
@@ -208,6 +219,13 @@ Raise a review comment or fix request for any of these:
 - Compose uses the BOM defined in the version catalog
 - Hilt, Room, KSP, ktlint, and detekt are already wired into the build
 - No crash reporting, analytics, or tracking — do not add any telemetry
+
+## Preferred Local Skills
+
+If local Codex skills are installed, prefer:
+
+- `runcheck-deep-review` for deep reviews, large change audits, LLM-generated Android code audits, and subtle API/lifecycle regression checks
+- `runcheck-security-scan` for manifest, permission, exported-component, logging, secrets, and release-safety audits
 
 ## Low-CPU Verification
 

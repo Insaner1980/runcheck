@@ -11,7 +11,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlin.math.abs
 
 /**
  * Samsung on API 34+: inherits cycle count / health % from [Android14BatterySource]
@@ -34,7 +33,7 @@ class SamsungAndroid14BatterySource(
                 delay(POLLING_INTERVAL_MS)
                 continue
             }
-            val currentMa = normalizeCurrent(rawCurrent)
+            val currentMa = alignCurrentSignWithChargeState(normalizeCurrent(rawCurrent))
 
             stableReadingCount = if (currentMa == previousCurrentMa) {
                 stableReadingCount + 1
@@ -44,7 +43,7 @@ class SamsungAndroid14BatterySource(
             previousCurrentMa = currentMa
 
             val looksLikeMaxTheoreticalCurrent = stableReadingCount >= STABLE_READING_THRESHOLD &&
-                abs(currentMa) >= SUSPICIOUS_CONSTANT_CURRENT_MA
+                kotlin.math.abs(currentMa) >= SUSPICIOUS_CONSTANT_CURRENT_MA
 
             val confidence = when {
                 rawCurrent == 0 -> Confidence.UNAVAILABLE

@@ -23,14 +23,28 @@ class DeviceCapabilityManagerTest {
 
     @Test
     fun `inferUnit returns MILLIAMPS for readings exactly at threshold`() {
-        // Threshold is 10000; values at exactly 10000 are not above it
-        val readings = listOf(10000, -5000)
+        // Threshold is 25000; values at exactly 25000 are not above it
+        val readings = listOf(25_000, -5000)
         assertEquals(CurrentUnit.MILLIAMPS, DeviceCapabilityManager.inferUnit(readings))
     }
 
     @Test
     fun `inferUnit returns MICROAMPS when one reading just exceeds threshold`() {
-        val readings = listOf(10001, -5000)
+        val readings = listOf(25_001, -5000)
+        assertEquals(CurrentUnit.MICROAMPS, DeviceCapabilityManager.inferUnit(readings))
+    }
+
+    @Test
+    fun `inferUnit returns MILLIAMPS for 120W fast charging in mA`() {
+        // 120W at 10V = 12A = 12000 mA — must not be misclassified as µA
+        val readings = listOf(12_000, 11_500, 12_200)
+        assertEquals(CurrentUnit.MILLIAMPS, DeviceCapabilityManager.inferUnit(readings))
+    }
+
+    @Test
+    fun `inferUnit returns MICROAMPS for normal screen-on µA readings`() {
+        // ~150 mA screen-on idle = 150000 µA — well above threshold
+        val readings = listOf(150_000, -140_000, 160_000)
         assertEquals(CurrentUnit.MICROAMPS, DeviceCapabilityManager.inferUnit(readings))
     }
 

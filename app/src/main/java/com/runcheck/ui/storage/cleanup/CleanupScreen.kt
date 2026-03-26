@@ -48,6 +48,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.PagingData
+import com.runcheck.domain.model.MediaCategory
+import com.runcheck.domain.model.ScannedFile
+import kotlinx.coroutines.flow.Flow
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
@@ -238,10 +242,44 @@ fun CleanupScreen(
                         }
                     }
 
+                    is CleanupUiState.UnsupportedVersion -> {
+                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.large,
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(MaterialTheme.spacing.base),
+                                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.cleanup_not_supported_version_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = stringResource(R.string.cleanup_not_supported_version_message),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
                     is CleanupUiState.Results -> {
                         CleanupResultsList(
                             state = state,
-                            viewModel = viewModel
+                            pagerFlowFor = viewModel::pagerFlowFor,
+                            isSelected = viewModel::isSelected,
+                            onToggleGroupExpanded = viewModel::toggleGroupExpanded,
+                            onToggleGroupSelection = viewModel::toggleGroupSelection,
+                            onToggleSelection = viewModel::toggleSelection
                         )
                     }
 
@@ -294,15 +332,19 @@ fun CleanupScreen(
 @Composable
 private fun CleanupResultsList(
     state: CleanupUiState.Results,
-    viewModel: CleanupViewModel
+    pagerFlowFor: (MediaCategory) -> Flow<PagingData<ScannedFile>>,
+    isSelected: (ScannedFile) -> Boolean,
+    onToggleGroupExpanded: (MediaCategory) -> Unit,
+    onToggleGroupSelection: (MediaCategory) -> Unit,
+    onToggleSelection: (ScannedFile) -> Unit
 ) {
     val context = LocalContext.current
     val maxFileSize = state.maxFileSizeBytes.coerceAtLeast(1L)
     val pagedItemsByCategory = state.groups
         .filter { it.expanded }
         .associate { group ->
-            val pagingFlow = remember(viewModel, group.category, state.pagerGeneration) {
-                viewModel.pagerFlowFor(group.category)
+            val pagingFlow = remember(group.category, state.pagerGeneration) {
+                pagerFlowFor(group.category)
             }
             group.category to pagingFlow.collectAsLazyPagingItems()
         }
@@ -330,15 +372,15 @@ private fun CleanupResultsList(
                     )
                 }
                 val onToggleExpanded = remember(group.category) {
-                    { viewModel.toggleGroupExpanded(group.category) }
+                    { onToggleGroupExpanded(group.category) }
                 }
-                val onToggleGroupSelection = remember(group.category) {
-                    { viewModel.toggleGroupSelection(group.category) }
+                val onToggleGroupSelectionCallback = remember(group.category) {
+                    { onToggleGroupSelection(group.category) }
                 }
                 CategoryGroup(
                     group = group,
                     onToggleExpanded = onToggleExpanded,
-                    onToggleGroupSelection = onToggleGroupSelection
+                    onToggleGroupSelection = onToggleGroupSelectionCallback
                 )
             }
 
@@ -363,7 +405,7 @@ private fun CleanupResultsList(
                     ) { index ->
                         val file = lazyItems[index] ?: return@items
                         val onToggle = remember(file.uri) {
-                            { viewModel.toggleSelection(file) }
+                            { onToggleSelection(file) }
                         }
                         Column {
                             if (index > 0) {
@@ -374,7 +416,7 @@ private fun CleanupResultsList(
                             }
                             FileListItem(
                                 file = file,
-                                isSelected = viewModel.isSelected(file),
+                                isSelected = isSelected(file),
                                 maxFileSize = maxFileSize,
                                 onToggle = onToggle
                             )

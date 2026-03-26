@@ -11,7 +11,6 @@ data class DeviceProfile(
     val currentNowUnit: CurrentUnit,
     val currentNowSignConvention: SignConvention,
     val cycleCountAvailable: Boolean,
-    val batteryHealthPercentAvailable: Boolean,
     val thermalZonesAvailable: List<String>,
     val storageHealthAvailable: Boolean
 ) {

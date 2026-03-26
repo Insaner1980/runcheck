@@ -99,6 +99,8 @@ class RealTimeMonitorService : Service() {
                 serviceScope.cancel()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
+                // Don't restart after explicit stop — prevents wasteful restart cycle
+                return START_NOT_STICKY
             }
             else -> checkLiveModeAndStart()
         }

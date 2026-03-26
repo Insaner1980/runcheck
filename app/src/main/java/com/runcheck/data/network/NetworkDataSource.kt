@@ -61,23 +61,53 @@ class NetworkDataSource @Inject constructor(
 
     private val networkInfoFlow: Flow<NetworkInfo> by lazy {
         callbackFlow {
+            var currentDefaultNetwork: Network? = null
+            var currentCapabilities: NetworkCapabilities? = null
+            var currentLinkProperties: android.net.LinkProperties? = null
+
+            fun emitCurrentCallbackState() {
+                val info = currentCapabilities?.let { capabilities ->
+                    buildNetworkInfo(capabilities, currentLinkProperties)
+                } ?: NetworkInfo.disconnected()
+                trySend(info)
+            }
+
             val callback = object : ConnectivityManager.NetworkCallback(
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
                     FLAG_INCLUDE_LOCATION_INFO else 0
             ) {
                 override fun onAvailable(network: Network) {
-                    emitCurrentNetworkInfo()
+                    currentDefaultNetwork = network
                 }
 
                 override fun onCapabilitiesChanged(
                     network: Network,
                     capabilities: NetworkCapabilities
                 ) {
-                    emitCurrentNetworkInfo()
+                    if (currentDefaultNetwork != network) {
+                        currentLinkProperties = null
+                    }
+                    currentDefaultNetwork = network
+                    currentCapabilities = capabilities
+                    emitCurrentCallbackState()
+                }
+
+                override fun onLinkPropertiesChanged(
+                    network: Network,
+                    linkProperties: android.net.LinkProperties
+                ) {
+                    currentDefaultNetwork = network
+                    currentLinkProperties = linkProperties
+                    emitCurrentCallbackState()
                 }
 
                 override fun onLost(network: Network) {
-                    emitCurrentNetworkInfo()
+                    if (currentDefaultNetwork == network) {
+                        currentDefaultNetwork = null
+                        currentCapabilities = null
+                        currentLinkProperties = null
+                        emitCurrentCallbackState()
+                    }
                 }
             }
 
@@ -144,6 +174,11 @@ class NetworkDataSource @Inject constructor(
         }
     }
 
+    internal fun getNetworkInfoFromCallback(
+        capabilities: NetworkCapabilities,
+        linkProperties: android.net.LinkProperties? = null
+    ): NetworkInfo = buildNetworkInfo(capabilities, linkProperties)
+
     fun hasValidatedConnection(): Boolean {
         val activeNetwork = connectivityManager.activeNetwork ?: return false
         val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
@@ -171,7 +206,12 @@ class NetworkDataSource @Inject constructor(
         }
 
         // Try NetworkCapabilities first, fall back to specific sources
-        val rawSignalDbm = capabilities.signalStrength
+        // NetworkCapabilities.getSignalStrength() requires API 29
+        val rawSignalDbm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            capabilities.signalStrength
+        } else {
+            Int.MIN_VALUE
+        }
         var signalDbm: Int? = rawSignalDbm.takeUnless { it == Int.MIN_VALUE }
         val signalAsu: Int? = if (isCellular) getCellularSignalAsu() else null
         if (signalDbm == null && isCellular) {
@@ -262,17 +302,16 @@ class NetworkDataSource @Inject constructor(
     }
 
     private fun getCellularSignalDbm(): Int? {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return null
+        // getCellSignalStrengths() requires API 29
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
         return try {
             val signalStrength = telephonyManager?.signalStrength ?: return null
 
             // Detect 5G NR from signal strength classes (no permission needed)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val hasNr = signalStrength.cellSignalStrengths
-                    .any { it is CellSignalStrengthNr }
-                if (hasNr && !cachedNetworkTypeName.contains("5G")) {
-                    cachedNetworkTypeName = "5G"
-                }
+            val hasNr = signalStrength.cellSignalStrengths
+                .any { it is CellSignalStrengthNr }
+            if (hasNr && !cachedNetworkTypeName.contains("5G")) {
+                cachedNetworkTypeName = "5G"
             }
 
             // Get the strongest dBm from all cell technologies
@@ -288,7 +327,8 @@ class NetworkDataSource @Inject constructor(
     }
 
     private fun getCellularSignalAsu(): Int? {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return null
+        // getCellSignalStrengths() requires API 29
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
         return try {
             val signalStrength = telephonyManager?.signalStrength ?: return null
             signalStrength.cellSignalStrengths

@@ -17,13 +17,19 @@ class BillingManagerHelpersTest {
             BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
             BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
             BillingClient.BillingResponseCode.NETWORK_ERROR,
-            BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
             BillingClient.BillingResponseCode.ERROR
         )
 
         codes.forEach { code ->
             assertTrue(code in reconnectableBillingResponseCodes())
         }
+    }
+
+    @Test
+    fun `deprecated service timeout is not treated as reconnectable`() {
+        assertFalse(
+            BillingClient.BillingResponseCode.SERVICE_TIMEOUT in reconnectableBillingResponseCodes()
+        )
     }
 
     @Test

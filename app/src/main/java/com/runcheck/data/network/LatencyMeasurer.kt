@@ -1,5 +1,6 @@
 package com.runcheck.data.network
 
+import androidx.annotation.WorkerThread
 import com.runcheck.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withTimeoutOrNull
@@ -48,6 +49,7 @@ class LatencyMeasurer @Inject constructor() {
         }
     }
 
+    @WorkerThread
     private fun measureTcpConnect(): Int? {
         return try {
             Socket().use { socket ->

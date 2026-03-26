@@ -24,6 +24,7 @@ import com.runcheck.ui.chart.buildNetworkHistoryChartModel
 import com.runcheck.ui.chart.calculateChargingSessionSummary
 import com.runcheck.ui.components.ChartXLabel
 import com.runcheck.ui.components.ChartYLabel
+import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -77,8 +78,8 @@ class FullscreenChartViewModel @Inject constructor(
 
     init {
         savedStateHandle["source"] = source.name
-        currentMetric = currentMetric
-        currentPeriod = currentPeriod
+        savedStateHandle["metric"] = sanitizeFullscreenMetric(source, savedStateHandle["metric"])
+        savedStateHandle["period"] = sanitizeFullscreenPeriod(source, savedStateHandle["period"])
         FullscreenChartSeedStore.take(source, currentMetric, currentPeriod)?.let { seed ->
             _uiState.value = seed
         }
@@ -152,6 +153,7 @@ class FullscreenChartViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                ReleaseSafeLog.error("FullscreenChartVM", "Failed to load chart data", e)
                 _uiState.value = FullscreenChartUiState.Error(
                     selectedMetric = currentMetric,
                     selectedPeriod = currentPeriod,

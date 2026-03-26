@@ -5,6 +5,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 
 sealed interface LearnArticleBlock {
     data class Heading(val text: AnnotatedString) : LearnArticleBlock
@@ -17,6 +18,7 @@ sealed interface LearnArticleBlock {
 }
 
 object LearnArticleBodyFormatter {
+    const val UrlAnnotationTag = "learn_url"
     private const val HeadingPrefix = "## "
     private val bulletPrefixRegex = Regex("""^[-*]\s+(.+)$""")
     private val numberedPrefixRegex = Regex("""^\d+[.)]\s+(.+)$""")
@@ -26,6 +28,12 @@ object LearnArticleBodyFormatter {
         InlineMarker("`", SpanStyle(fontFamily = FontFamily.Monospace)),
         InlineMarker("*", SpanStyle(fontStyle = FontStyle.Italic)),
         InlineMarker("_", SpanStyle(fontStyle = FontStyle.Italic))
+    )
+    private val urlTokenRegex =
+        Regex("""(?:https?://|www\.|[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)\S*""")
+    private val linkStyle = SpanStyle(
+        fontWeight = FontWeight.Medium,
+        textDecoration = TextDecoration.Underline
     )
 
     fun parse(body: String): List<LearnArticleBlock> {
@@ -155,6 +163,16 @@ object LearnArticleBodyFormatter {
             }
 
             if (marker == null) {
+                val urlMatch = findUrlMatch(text = text, startIndex = index)
+                if (urlMatch != null) {
+                    val linkStart = builder.length
+                    builder.pushStringAnnotation(tag = UrlAnnotationTag, annotation = urlMatch.url)
+                    builder.append(urlMatch.displayText)
+                    builder.pop()
+                    builder.addStyle(linkStyle, linkStart, builder.length)
+                    index += urlMatch.displayText.length
+                    continue
+                }
                 builder.append(text[index])
                 index += 1
                 continue
@@ -201,6 +219,30 @@ object LearnArticleBodyFormatter {
         return -1
     }
 
+    private fun findUrlMatch(text: String, startIndex: Int): UrlMatch? {
+        val rawMatch = urlTokenRegex.find(text, startIndex)
+            ?.takeIf { it.range.first == startIndex }
+            ?.value
+            ?: return null
+
+        val displayText = rawMatch.trimEnd('.', ',', ';', ':', ')', ']', '}')
+        if (displayText.isBlank() || '.' !in displayText) return null
+
+        val url = if (
+            displayText.startsWith("http://", ignoreCase = true) ||
+            displayText.startsWith("https://", ignoreCase = true)
+        ) {
+            displayText
+        } else {
+            "https://$displayText"
+        }
+
+        return UrlMatch(
+            displayText = displayText,
+            url = url
+        )
+    }
+
     private fun String.isBulletListItem(): Boolean = bulletPrefixRegex.matches(trim())
 
     private fun String.isNumberedListItem(): Boolean = numberedPrefixRegex.matches(trim())
@@ -208,5 +250,10 @@ object LearnArticleBodyFormatter {
     private data class InlineMarker(
         val token: String,
         val style: SpanStyle
+    )
+
+    private data class UrlMatch(
+        val displayText: String,
+        val url: String
     )
 }

@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import androidx.core.content.ContextCompat
+import com.runcheck.data.device.DeviceCapabilityManager
 import com.runcheck.data.device.DeviceProfile
 import com.runcheck.domain.model.BatteryHealth
 import com.runcheck.domain.model.ChargingStatus
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
+import kotlin.math.abs
 
 open class GenericBatterySource(
     protected val context: Context,
@@ -72,19 +74,8 @@ open class GenericBatterySource(
                 delay(POLLING_INTERVAL_MS)
                 continue
             }
-            val normalized = normalizeCurrent(rawCurrent)
-            val isCharging = batteryManager.isCharging
-            // Sanity check: ensure sign matches actual charging state
-            val currentMa = when {
-                isCharging && normalized < 0 -> kotlin.math.abs(normalized)
-                !isCharging && normalized > 0 -> -kotlin.math.abs(normalized)
-                else -> normalized
-            }
-            val confidence = if (rawCurrent == 0 || !profile.currentNowReliable) {
-                Confidence.UNAVAILABLE
-            } else {
-                Confidence.HIGH
-            }
+            val currentMa = alignCurrentSignWithChargeState(normalizeCurrent(rawCurrent))
+            val confidence = calculateCurrentConfidence(rawCurrent)
 
             emit(MeasuredValue(currentMa, confidence))
             delay(POLLING_INTERVAL_MS)
@@ -104,13 +95,40 @@ open class GenericBatterySource(
     }
 
     protected fun normalizeCurrent(raw: Int): Int {
-        val milliamps = when (profile.currentNowUnit) {
+        val milliamps = when (resolveCurrentUnit(raw)) {
             CurrentUnit.MICROAMPS -> raw / 1000
             CurrentUnit.MILLIAMPS -> raw
         }
         return when (profile.currentNowSignConvention) {
             SignConvention.POSITIVE_CHARGING -> milliamps
             SignConvention.NEGATIVE_CHARGING -> -milliamps
+        }
+    }
+
+    protected fun alignCurrentSignWithChargeState(currentMa: Int): Int = when {
+        batteryManager.isCharging && currentMa < 0 -> abs(currentMa)
+        !batteryManager.isCharging && currentMa > 0 -> -abs(currentMa)
+        else -> currentMa
+    }
+
+    protected fun calculateCurrentConfidence(rawCurrent: Int): Confidence = when {
+        rawCurrent == 0 -> Confidence.UNAVAILABLE
+        !profile.currentNowReliable -> Confidence.LOW
+        else -> Confidence.HIGH
+    }
+
+    private fun resolveCurrentUnit(raw: Int): CurrentUnit {
+        if (profile.currentNowUnit == CurrentUnit.MICROAMPS) {
+            return CurrentUnit.MICROAMPS
+        }
+
+        // Capability detection happens once and can be ambiguous when the first
+        // samples are near zero. Re-check obviously large readings at runtime so
+        // high-current µA devices do not get stuck with 1000x inflated values.
+        return if (abs(raw) > DeviceCapabilityManager.MICROAMP_THRESHOLD) {
+            CurrentUnit.MICROAMPS
+        } else {
+            CurrentUnit.MILLIAMPS
         }
     }
 

@@ -4,12 +4,13 @@ _Auto-generated from git history. Updated on each commit._
 
 ## 2026 Week 13 (maalis 23 – maalis 29)
 
+### Added
+- feat: laaja päivitys — speed test, chart-animaatiot, UI-parannukset, palvelut (`b1290a7`)
 ### Docs
 - docs: päivitä CODEX.md ja AGENTS.md — poista crash reporting -viitteet (`aa6ef71`)
 - docs: päivitä PROJECT.md ja UI-SPEC.md vastaamaan nykytilaa (`1c53b01`)
 ### Changed
 - refactor: poista Firebase Crashlytics kokonaan (`242df67`)
-### Added
 - feat: varmistusdialogit kaikille tuhoaville toiminnoille (`f100915`)
 - feat: speed test yhteystyyppi, latenssi-mittaus ja jitter-korjaus (`e9ee1d8`)
 - feat: edellisten sessioiden muutokset — lokalisaatio, cleanup, info-sisältö (`52137ec`)

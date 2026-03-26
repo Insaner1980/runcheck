@@ -139,6 +139,15 @@ object LearnArticleCatalog {
             bodyRes = R.string.learn_sw_vs_hw_body,
             readTimeMinutes = 3,
             crossLinkRoute = null
+        ),
+        LearnArticle(
+            id = LearnArticleIds.BACKGROUND_MONITORING,
+            topic = LearnTopic.GENERAL,
+            titleRes = R.string.learn_background_monitoring_title,
+            previewRes = R.string.learn_background_monitoring_preview,
+            bodyRes = R.string.learn_background_monitoring_body,
+            readTimeMinutes = 4,
+            crossLinkRoute = Screen.Settings.route
         )
     )
 

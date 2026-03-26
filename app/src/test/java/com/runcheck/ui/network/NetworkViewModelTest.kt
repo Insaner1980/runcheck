@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SignalQuality
+import com.runcheck.domain.model.SpeedTestConnectionInfo
 import com.runcheck.domain.model.SpeedTestProgress
 import com.runcheck.domain.usecase.FinalizeSpeedTestUseCase
 import com.runcheck.domain.usecase.GetMeasuredNetworkStateUseCase
@@ -11,6 +12,7 @@ import com.runcheck.domain.usecase.GetNetworkHistoryUseCase
 import com.runcheck.domain.usecase.GetSpeedTestHistoryUseCase
 import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
+import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.RunSpeedTestUseCase
 import com.runcheck.ui.MainDispatcherRule
 import com.runcheck.ui.common.UiText
@@ -24,6 +26,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -46,6 +49,7 @@ class NetworkViewModelTest {
     private val isProUser: IsProUserUseCase = mockk()
     private val getNetworkHistory: GetNetworkHistoryUseCase = mockk()
     private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase = mockk(relaxed = true)
+    private val manageUserPreferences: ManageUserPreferencesUseCase = mockk(relaxed = true)
     private lateinit var viewModel: NetworkViewModel
 
     private val testNetworkState = NetworkState(
@@ -62,6 +66,7 @@ class NetworkViewModelTest {
         every { getSpeedTestHistory(any()) } returns flowOf(emptyList())
         every { getNetworkHistory(any()) } returns flowOf(emptyList())
         every { manageInfoCardDismissals.observeDismissedCardIds() } returns flowOf(emptySet())
+        every { manageUserPreferences.observePreferences() } returns flowOf(com.runcheck.domain.model.UserPreferences())
     }
 
     @After
@@ -83,7 +88,8 @@ class NetworkViewModelTest {
             finalizeSpeedTest = finalizeSpeedTest,
             isProUser = isProUser,
             getNetworkHistory = getNetworkHistory,
-            manageInfoCardDismissals = manageInfoCardDismissals
+            manageInfoCardDismissals = manageInfoCardDismissals,
+            manageUserPreferences = manageUserPreferences
         )
     }
 
@@ -119,7 +125,7 @@ class NetworkViewModelTest {
         every { getMeasuredNetworkState() } returns flowOf(testNetworkState)
 
         val speedTestFlow = MutableSharedFlow<SpeedTestProgress>()
-        every { runSpeedTest() } returns speedTestFlow
+        every { runSpeedTest(any()) } returns speedTestFlow
 
         viewModel = createViewModel()
         viewModel.startObserving()
@@ -127,7 +133,7 @@ class NetworkViewModelTest {
 
         // Start speed test
         viewModel.startSpeedTest()
-        advanceUntilIdle()
+        runCurrent()
 
         // Initial state after starting: Ping phase, isRunning = true
         var speedState = viewModel.speedTestState.value
@@ -136,7 +142,7 @@ class NetworkViewModelTest {
 
         // Emit ping progress
         speedTestFlow.emit(SpeedTestProgress.PingPhase(pingMs = 15, jitterMs = 3))
-        advanceUntilIdle()
+        runCurrent()
 
         speedState = viewModel.speedTestState.value
         assertEquals(SpeedTestPhase.Ping, speedState.phase)
@@ -145,7 +151,7 @@ class NetworkViewModelTest {
 
         // Emit download progress
         speedTestFlow.emit(SpeedTestProgress.DownloadPhase(currentMbps = 85.5, progress = 0.5f))
-        advanceUntilIdle()
+        runCurrent()
 
         speedState = viewModel.speedTestState.value
         assertEquals(SpeedTestPhase.Download, speedState.phase)
@@ -154,7 +160,7 @@ class NetworkViewModelTest {
 
         // Emit upload progress
         speedTestFlow.emit(SpeedTestProgress.UploadPhase(currentMbps = 30.2, progress = 0.8f))
-        advanceUntilIdle()
+        runCurrent()
 
         speedState = viewModel.speedTestState.value
         assertEquals(SpeedTestPhase.Upload, speedState.phase)
@@ -169,10 +175,15 @@ class NetworkViewModelTest {
                 pingMs = 12,
                 jitterMs = 2,
                 serverName = "Test Server",
-                serverLocation = "Helsinki"
+                serverLocation = "Helsinki",
+                connectionInfo = SpeedTestConnectionInfo(
+                    connectionType = ConnectionType.WIFI,
+                    networkSubtype = null,
+                    signalDbm = -50
+                )
             )
         )
-        advanceUntilIdle()
+        runCurrent()
 
         speedState = viewModel.speedTestState.value
         assertEquals(SpeedTestPhase.Completed, speedState.phase)
@@ -190,7 +201,7 @@ class NetworkViewModelTest {
         every { getMeasuredNetworkState() } returns flowOf(testNetworkState)
 
         val speedTestFlow = MutableSharedFlow<SpeedTestProgress>()
-        every { runSpeedTest() } returns speedTestFlow
+        every { runSpeedTest(any()) } returns speedTestFlow
 
         viewModel = createViewModel()
         viewModel.startObserving()
@@ -198,24 +209,24 @@ class NetworkViewModelTest {
 
         // Start first speed test
         viewModel.startSpeedTest()
-        advanceUntilIdle()
+        runCurrent()
 
         assertTrue("Speed test should be running", viewModel.speedTestState.value.isRunning)
 
         // Try starting a second speed test (should be ignored)
         viewModel.startSpeedTest()
-        advanceUntilIdle()
+        runCurrent()
 
         // runSpeedTest should only have been invoked once
         // The second call should be blocked by isRunning guard
-        verify(exactly = 1) { runSpeedTest() }
+        verify(exactly = 1) { runSpeedTest(any()) }
     }
 
     @Test
     fun `speed test error produces Failed phase`() = runTest(mainDispatcherRule.testDispatcher) {
         every { getMeasuredNetworkState() } returns flowOf(testNetworkState)
 
-        every { runSpeedTest() } returns flow {
+        every { runSpeedTest(any()) } returns flow {
             throw RuntimeException("Network timeout")
         }
 
@@ -246,17 +257,17 @@ class NetworkViewModelTest {
         every { getMeasuredNetworkState() } returns flowOf(testNetworkState)
 
         val speedTestFlow = MutableSharedFlow<SpeedTestProgress>()
-        every { runSpeedTest() } returns speedTestFlow
+        every { runSpeedTest(any()) } returns speedTestFlow
 
         viewModel = createViewModel()
         viewModel.startObserving()
         advanceUntilIdle()
 
         viewModel.startSpeedTest()
-        advanceUntilIdle()
+        runCurrent()
 
         speedTestFlow.emit(SpeedTestProgress.Failed("Server unavailable"))
-        advanceUntilIdle()
+        runCurrent()
 
         val speedState = viewModel.speedTestState.value
         assertTrue(speedState.phase is SpeedTestPhase.Failed)

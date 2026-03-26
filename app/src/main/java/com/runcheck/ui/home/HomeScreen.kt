@@ -29,6 +29,7 @@ import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.DataUsage
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material.icons.outlined.SignalCellularAlt
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.Star
@@ -60,6 +61,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -82,6 +86,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.runcheck.R
 import com.runcheck.domain.model.HealthScore
 import com.runcheck.domain.model.HealthStatus
+import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.common.batteryHealthLabel
 import com.runcheck.ui.common.chargingStatusLabel
 import com.runcheck.ui.common.connectionDisplayLabel
@@ -128,8 +133,9 @@ fun HomeScreen(
     onNavigateToAppUsage: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToProUpgrade: () -> Unit,
-    onNavigateToLearn: () -> Unit = {},
     modifier: Modifier = Modifier,
+    onNavigateToLearn: () -> Unit = {},
+    onNavigateToLearnArticle: (String) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -231,6 +237,7 @@ fun HomeScreen(
                     onNavigateToAppUsage = onNavigateToAppUsage,
                     onNavigateToProUpgrade = onNavigateToProUpgrade,
                     onNavigateToLearn = onNavigateToLearn,
+                    onNavigateToLearnArticle = onNavigateToLearnArticle,
                     onDismissUpgradeCard = { viewModel.dismissUpgradeCard() }
                 )
 
@@ -264,6 +271,7 @@ private fun HomeContent(
     onNavigateToAppUsage: () -> Unit,
     onNavigateToProUpgrade: () -> Unit,
     onNavigateToLearn: () -> Unit = {},
+    onNavigateToLearnArticle: (String) -> Unit = {},
     onDismissUpgradeCard: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -276,6 +284,13 @@ private fun HomeContent(
             .navigationBarsPadding()
     ) {
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+
+        if (state.monitoringStale) {
+            MonitoringStaleWarning(
+                onLearnWhy = { onNavigateToLearnArticle(LearnArticleIds.BACKGROUND_MONITORING) }
+            )
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
+        }
 
         HomeStatusSummary(state = state)
 
@@ -535,6 +550,68 @@ private fun HomeStatusSummary(state: HomeUiState.Success) {
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
+}
+
+@Composable
+private fun MonitoringStaleWarning(
+    onLearnWhy: () -> Unit
+) {
+    val context = LocalContext.current
+    Card(
+        onClick = {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:${context.packageName}")
+            }
+            try {
+                context.startActivity(intent)
+            } catch (_: Exception) {
+                // Fallback to general battery optimization settings
+                try {
+                    context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                } catch (_: Exception) { }
+            }
+        },
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.statusColors.poor.copy(alpha = 0.12f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MaterialTheme.spacing.base),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.WarningAmber,
+                contentDescription = null,
+                tint = MaterialTheme.statusColors.poor,
+                modifier = Modifier
+                    .size(20.dp)
+                    .padding(top = 2.dp)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.home_monitoring_stale_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.statusColors.poor
+                )
+                Text(
+                    text = stringResource(R.string.home_monitoring_stale_body),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                TextButton(
+                    onClick = onLearnWhy,
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Text(text = stringResource(R.string.home_monitoring_stale_learn_why))
+                }
+            }
+        }
+    }
 }
 
 @Composable

@@ -36,6 +36,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,7 +54,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -136,13 +136,13 @@ fun BatteryDetailScreen(
     onBack: () -> Unit,
     onNavigateToCharger: () -> Unit,
     onUpgradeToPro: () -> Unit,
+    modifier: Modifier = Modifier,
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit = { _, _, _ -> },
     onNavigateToLearnArticle: (articleId: String) -> Unit = {},
     fullscreenResultSource: String? = null,
     fullscreenResultMetric: String? = null,
     fullscreenResultPeriod: String? = null,
     onFullscreenResultConsumed: () -> Unit = {},
-    modifier: Modifier = Modifier,
     viewModel: BatteryViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -247,6 +247,8 @@ private fun BatteryContent(
         ?: SessionGraphWindow.ALL
 
     // Apply fullscreen chart selection results when navigating back
+    val currentOnPeriodChange by rememberUpdatedState(onPeriodChange)
+    val currentOnFullscreenResultConsumed by rememberUpdatedState(onFullscreenResultConsumed)
     LaunchedEffect(fullscreenResultSource, fullscreenResultMetric, fullscreenResultPeriod) {
         if (fullscreenResultSource != null && fullscreenResultMetric != null && fullscreenResultPeriod != null) {
             when (parseFullscreenChartSource(fullscreenResultSource)) {
@@ -263,7 +265,7 @@ private fun BatteryContent(
                             )
                         )
                     }.getOrNull()
-                    if (period != null) onPeriodChange(period)
+                    if (period != null) currentOnPeriodChange(period)
                 }
                 FullscreenChartSource.BATTERY_SESSION -> {
                     selectedSessionMetric = sanitizeFullscreenMetric(
@@ -277,7 +279,7 @@ private fun BatteryContent(
                 }
                 else -> Unit
             }
-            onFullscreenResultConsumed()
+            currentOnFullscreenResultConsumed()
         }
     }
     val chargingSessionSummary = remember(state.history, battery.level, battery.chargingStatus) {
@@ -391,7 +393,10 @@ private fun BatteryContent(
                 battery.cycleCount?.let { count ->
                     MetricRow(
                         label = stringResource(R.string.battery_cycle_count),
-                        value = count.toString(),
+                        value = stringResource(
+                            R.string.value_with_estimated_badge,
+                            count.toString()
+                        ),
                         showDivider = battery.healthPercent != null,
                         onInfoClick = { activeInfoSheet = "cycleCount" }
                     )
@@ -399,7 +404,10 @@ private fun BatteryContent(
                 battery.healthPercent?.let { pct ->
                     MetricRow(
                         label = stringResource(R.string.battery_health_percent),
-                        value = stringResource(R.string.value_percent, pct),
+                        value = stringResource(
+                            R.string.value_with_estimated_badge,
+                            stringResource(R.string.value_percent, pct)
+                        ),
                         showDivider = battery.estimatedCapacityMah != null,
                         onInfoClick = { activeInfoSheet = "healthPercent" }
                     )
@@ -775,19 +783,9 @@ private fun BatteryHeroSection(
     history: List<BatteryReading>,
     onInfoClick: (String) -> Unit = {}
 ) {
-    val view = LocalView.current
-    var lastAnnouncedChargingStatus by remember { mutableStateOf<ChargingStatus?>(null) }
     val healthLabel = batteryHealthLabel(battery.health)
     val statusLabel = chargingStatusLabel(battery.chargingStatus)
     val statusText = stringResource(R.string.battery_hero_status, healthLabel, statusLabel)
-
-    LaunchedEffect(battery.chargingStatus, statusText, view) {
-        val previousStatus = lastAnnouncedChargingStatus
-        if (previousStatus != null && previousStatus != battery.chargingStatus) {
-            view.announceForAccessibility(statusText)
-        }
-        lastAnnouncedChargingStatus = battery.chargingStatus
-    }
 
     val drainRatePctPerHour = remember(history) {
         calculateDrainRate(history)
@@ -863,6 +861,7 @@ private fun BatteryHeroSection(
                 } else {
                     statusText
                 },
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

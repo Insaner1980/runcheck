@@ -30,14 +30,14 @@ class NotificationHelper @Inject constructor(
 
     companion object {
         const val CHANNEL_ALERTS = "runcheck_alerts"
-        const val CHANNEL_STATUS = "runcheck_status"
 
-        // Legacy channel IDs from the old "DevicePulse" name — deleted on upgrade
+        // Legacy and obsolete channel IDs removed on upgrade to keep OEM settings clean.
         private val LEGACY_CHANNEL_IDS = listOf(
             "device_pulse",
             "device_pulse_alerts",
             "device_pulse_status",
-            "device_pulse_trial"
+            "device_pulse_trial",
+            "runcheck_status"
         )
         const val CHANNEL_TRIAL = "runcheck_trial"
         const val NOTIFICATION_LOW_BATTERY = 1001
@@ -75,45 +75,34 @@ class NotificationHelper @Inject constructor(
         get() = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     /**
-     * Creates both alert and status notification channels.
+     * Creates the app's alert/reminder channels.
      * Safe to call multiple times; the system ignores duplicates.
      */
     fun createChannels() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val alertChannel = NotificationChannel(
-                CHANNEL_ALERTS,
-                context.getString(R.string.notification_channel_alerts),
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = context.getString(R.string.notification_channel_alerts_description)
-                enableVibration(true)
-            }
+        val alertChannel = NotificationChannel(
+            CHANNEL_ALERTS,
+            context.getString(R.string.notification_channel_alerts),
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = context.getString(R.string.notification_channel_alerts_description)
+            enableVibration(true)
+        }
 
-            val statusChannel = NotificationChannel(
-                CHANNEL_STATUS,
-                context.getString(R.string.notification_channel_status),
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = context.getString(R.string.notification_channel_status_description)
-                setShowBadge(false)
-            }
+        val trialChannel = NotificationChannel(
+            CHANNEL_TRIAL,
+            context.getString(R.string.notification_channel_trial),
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = context.getString(R.string.notification_channel_trial_description)
+        }
 
-            val trialChannel = NotificationChannel(
-                CHANNEL_TRIAL,
-                context.getString(R.string.notification_channel_trial),
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = context.getString(R.string.notification_channel_trial_description)
-            }
+        notificationManager.createNotificationChannels(
+            listOf(alertChannel, trialChannel)
+        )
 
-            notificationManager.createNotificationChannels(
-                listOf(alertChannel, statusChannel, trialChannel)
-            )
-
-            // Remove leftover channels from the old "DevicePulse" app name
-            for (legacyId in LEGACY_CHANNEL_IDS) {
-                notificationManager.deleteNotificationChannel(legacyId)
-            }
+        // Remove leftover channels from the old "DevicePulse" app name
+        for (legacyId in LEGACY_CHANNEL_IDS) {
+            notificationManager.deleteNotificationChannel(legacyId)
         }
     }
 

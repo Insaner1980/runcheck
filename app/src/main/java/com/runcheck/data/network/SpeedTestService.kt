@@ -1,7 +1,9 @@
 package com.runcheck.data.network
 
 import android.content.Context
+import android.os.Build
 import android.net.ConnectivityManager
+import android.net.LinkProperties
 import android.net.Network
 import android.net.NetworkCapabilities
 import com.runcheck.R
@@ -72,6 +74,7 @@ class SpeedTestService @Inject constructor(
 
         val connectionInfo = startingNetwork.toConnectionInfo()
         val connectionKey = startingNetwork.toConnectionKey()
+        val startingDefaultNetwork = connectivityManager.activeNetwork
         if (connectionInfo.connectionType == ConnectionType.CELLULAR && !allowCellular) {
             trySend(SpeedTestProgress.CellularConfirmationRequired(connectionInfo))
             channel.close()
@@ -88,6 +91,7 @@ class SpeedTestService @Inject constructor(
         var uploadStartTime = 0L
         var shouldStopOnClose = true
         var networkCallbackRegistered = false
+        var latestLinkProperties: LinkProperties? = null
 
         fun failAndClose(message: String) {
             synchronized(testLock) {
@@ -99,9 +103,28 @@ class SpeedTestService @Inject constructor(
             channel.close()
         }
 
-        val connectionCallback = object : ConnectivityManager.NetworkCallback() {
+        val connectionCallback = object : ConnectivityManager.NetworkCallback(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                FLAG_INCLUDE_LOCATION_INFO
+            } else {
+                0
+            }
+        ) {
+            override fun onAvailable(network: Network) {
+                if (startingDefaultNetwork != null && network != startingDefaultNetwork) {
+                    failAndClose(context.getString(R.string.speed_test_error_connection_changed))
+                }
+            }
+
             override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
-                val currentNetwork = networkDataSource.getCurrentNetworkInfoSnapshot()
+                if (startingDefaultNetwork != null && network != startingDefaultNetwork) {
+                    failAndClose(context.getString(R.string.speed_test_error_connection_changed))
+                    return
+                }
+                val currentNetwork = networkDataSource.getNetworkInfoFromCallback(
+                    capabilities = capabilities,
+                    linkProperties = latestLinkProperties
+                )
                 if (currentNetwork.connectionType == ConnectionType.NONE) {
                     failAndClose(context.getString(R.string.speed_test_error_no_internet))
                     return
@@ -111,8 +134,18 @@ class SpeedTestService @Inject constructor(
                 }
             }
 
+            override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
+                if (startingDefaultNetwork != null && network != startingDefaultNetwork) {
+                    failAndClose(context.getString(R.string.speed_test_error_connection_changed))
+                    return
+                }
+                latestLinkProperties = linkProperties
+            }
+
             override fun onLost(network: Network) {
-                failAndClose(context.getString(R.string.speed_test_error_no_internet))
+                if (startingDefaultNetwork == null || network == startingDefaultNetwork) {
+                    failAndClose(context.getString(R.string.speed_test_error_no_internet))
+                }
             }
         }
 

@@ -33,6 +33,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -128,8 +129,9 @@ fun ChargerComparisonScreen(
             }
 
             ChargerUiState.Locked -> {
+                val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
                 LaunchedEffect(Unit) {
-                    onUpgradeToPro()
+                    currentOnUpgradeToPro()
                 }
                 DetailTopBar(
                     title = stringResource(R.string.charger_title),

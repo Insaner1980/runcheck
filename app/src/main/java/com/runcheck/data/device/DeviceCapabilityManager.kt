@@ -1,6 +1,8 @@
 package com.runcheck.data.device
 
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Build
 import androidx.annotation.VisibleForTesting
@@ -25,6 +27,7 @@ class DeviceCapabilityManager @Inject constructor(
         val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
 
         val currentValidation = validateCurrentNow(batteryManager)
+        val cycleCountAvailable = detectCycleCountAvailability(apiLevel)
 
         return DeviceProfile(
             manufacturer = manufacturer,
@@ -33,8 +36,7 @@ class DeviceCapabilityManager @Inject constructor(
             currentNowReliable = currentValidation.isReliable,
             currentNowUnit = currentValidation.unit,
             currentNowSignConvention = currentValidation.signConvention,
-            cycleCountAvailable = apiLevel >= 34,
-            batteryHealthPercentAvailable = apiLevel >= 34,
+            cycleCountAvailable = cycleCountAvailable,
             thermalZonesAvailable = emptyList(),
             storageHealthAvailable = true
         )
@@ -46,7 +48,7 @@ class DeviceCapabilityManager @Inject constructor(
         repeat(VALIDATION_SAMPLE_COUNT) {
             val current = try {
                 batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
-            } catch (_: SecurityException) {
+            } catch (_: Exception) {
                 return CurrentValidation(
                     isReliable = false,
                     unit = CurrentUnit.MILLIAMPS,
@@ -92,6 +94,13 @@ class DeviceCapabilityManager @Inject constructor(
         readings: List<Int>
     ): SignConvention = Companion.inferSignConvention(isCharging, readings)
 
+    private fun detectCycleCountAvailability(apiLevel: Int): Boolean {
+        if (apiLevel < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return false
+        val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val cycleCount = batteryIntent?.getIntExtra(BatteryManager.EXTRA_CYCLE_COUNT, -1) ?: -1
+        return cycleCount > 0
+    }
+
     private data class CurrentValidation(
         val isReliable: Boolean,
         val unit: CurrentUnit,
@@ -101,7 +110,12 @@ class DeviceCapabilityManager @Inject constructor(
     companion object {
         private const val VALIDATION_SAMPLE_COUNT = 3
         private const val VALIDATION_SAMPLE_DELAY_MS = 300L
-        internal const val MICROAMP_THRESHOLD = 10000
+        // Threshold to distinguish µA from mA reports. Must sit between the
+        // highest realistic mA value (≈15 000 mA at 150 W / 10 V fast charge)
+        // and the lowest realistic µA value during validation (≈80 000 µA,
+        // i.e. ~80 mA screen-on idle). 25 000 covers up to 250 W charging
+        // while leaving a wide margin from the µA floor.
+        internal const val MICROAMP_THRESHOLD = 25_000
         private const val MAX_PLAUSIBLE_CURRENT_MA = 10000
 
         @VisibleForTesting

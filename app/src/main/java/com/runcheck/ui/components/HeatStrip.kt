@@ -30,8 +30,8 @@ import com.runcheck.ui.theme.statusColors
 @Composable
 fun HeatStrip(
     temperatureC: Float,
-    temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS,
     modifier: Modifier = Modifier,
+    temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS,
     minTemp: Float = 15f,
     maxTemp: Float = 50f
 ) {

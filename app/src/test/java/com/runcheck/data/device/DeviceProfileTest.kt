@@ -51,15 +51,6 @@ class DeviceProfileTest {
     }
 
     @Test
-    fun `battery health percent available on API 34+`() {
-        val profile35 = createProfile(apiLevel = 35)
-        assertTrue(profile35.batteryHealthPercentAvailable)
-
-        val profile26 = createProfile(apiLevel = 26)
-        assertFalse(profile26.batteryHealthPercentAvailable)
-    }
-
-    @Test
     fun `thermal zones list stored correctly`() {
         val zones = listOf("cpu-0-0", "cpu-0-1", "battery")
         val profile = createProfile(thermalZones = zones)
@@ -98,7 +89,6 @@ class DeviceProfileTest {
         currentNowUnit = currentNowUnit,
         currentNowSignConvention = signConvention,
         cycleCountAvailable = apiLevel >= 34,
-        batteryHealthPercentAvailable = apiLevel >= 34,
         thermalZonesAvailable = thermalZones,
         storageHealthAvailable = true
     )

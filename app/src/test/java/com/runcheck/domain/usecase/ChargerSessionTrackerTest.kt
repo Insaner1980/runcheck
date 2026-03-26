@@ -177,6 +177,8 @@ private class FakeBatteryRepository(
     override suspend fun deleteAll() = Unit
 
     override suspend fun getLastChargingTimestamp(): Long? = null
+
+    override suspend fun getLatestReadingTimestamp(): Long? = null
 }
 
 private class FakeUserPreferencesRepository(
@@ -221,4 +223,18 @@ private class FakeUserPreferencesRepository(
     override suspend fun setAlertStorageThreshold(value: Int) = Unit
 
     override suspend fun setTemperatureUnit(unit: com.runcheck.domain.model.TemperatureUnit) = Unit
+
+    override suspend fun setLiveNotificationEnabled(enabled: Boolean) = Unit
+
+    override suspend fun setLiveNotifCurrent(enabled: Boolean) = Unit
+
+    override suspend fun setLiveNotifDrainRate(enabled: Boolean) = Unit
+
+    override suspend fun setLiveNotifTemperature(enabled: Boolean) = Unit
+
+    override suspend fun setLiveNotifScreenStats(enabled: Boolean) = Unit
+
+    override suspend fun setLiveNotifRemainingTime(enabled: Boolean) = Unit
+
+    override suspend fun setShowInfoCards(enabled: Boolean) = Unit
 }

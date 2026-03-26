@@ -26,6 +26,7 @@ object LearnArticleIds {
     const val STORAGE_BREAKDOWN = "storage_breakdown"
     const val HEALTH_SCORE = "health_score"
     const val SOFTWARE_VS_HARDWARE = "sw_vs_hw"
+    const val BACKGROUND_MONITORING = "background_monitoring"
 }
 
 data class LearnArticle(

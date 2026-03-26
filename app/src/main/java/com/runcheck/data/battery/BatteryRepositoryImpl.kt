@@ -155,6 +155,10 @@ class BatteryRepositoryImpl @Inject constructor(
         batteryReadingDao.getLastChargingTimestamp()
     }
 
+    override suspend fun getLatestReadingTimestamp(): Long? = withContext(Dispatchers.IO) {
+        batteryReadingDao.getLatestReadingTimestamp()
+    }
+
     private companion object {
         const val TAG = "BatteryRepository"
     }

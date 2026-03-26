@@ -42,6 +42,11 @@
     <string name="home_thermal_summary">%1$s · %2$s</string>
     <string name="home_storage_free">%1$s %2$s</string>
 
+    <!-- Stale monitoring warning -->
+    <string name="home_monitoring_stale_title">Background monitoring may have stopped</string>
+    <string name="home_monitoring_stale_body">Your phone\'s power management may be preventing runcheck from collecting data in the background. Tap to check battery optimization settings.</string>
+    <string name="home_monitoring_stale_learn_why">Learn why</string>
+
     <!-- Health Status -->
     <string name="status_healthy">Healthy</string>
     <string name="status_fair">Fair</string>
@@ -65,6 +70,7 @@
     <string name="confidence_accurate">Accurate</string>
     <string name="confidence_estimated">Estimated</string>
     <string name="confidence_unavailable">N/A</string>
+    <string name="value_with_estimated_badge">%1$s · Estimated</string>
 
     <!-- Battery Detail -->
     <string name="battery_title">Battery</string>
@@ -279,8 +285,11 @@
     <string name="location_services_open_settings">Open settings</string>
     <string name="network_wifi_name_help_title">WiFi name is unavailable</string>
     <string name="network_wifi_name_permission_needed">Allow location permission to show the current WiFi network name.</string>
+    <string name="network_wifi_name_permission_needed_samsung">Allow location permission to show the current WiFi network name. On Samsung phones, Android also requires Location to be turned on before the SSID is shared.</string>
     <string name="network_wifi_name_location_needed">Turn on device location to let Android share the current WiFi network name.</string>
+    <string name="network_wifi_name_location_needed_samsung">Turn on device location to let Android share the current WiFi network name. Samsung only exposes the SSID when both the location permission and Location are on.</string>
     <string name="network_wifi_name_unavailable">Android is not currently exposing the WiFi network name to the app.</string>
+    <string name="network_wifi_name_unavailable_samsung">Android is not currently exposing the WiFi network name to the app. On Samsung, confirm that both the location permission and Location are enabled.</string>
     <string name="network_wifi_name_open_app_settings">App settings</string>
     <string name="network_wifi_name_grant_permission">Grant permission</string>
 
@@ -292,6 +301,7 @@
     <string name="thermal_throttling">Throttling</string>
     <string name="thermal_throttling_active">Active</string>
     <string name="thermal_throttling_none">None</string>
+    <string name="thermal_throttling_not_reported">Not reported</string>
     <string name="thermal_cpu_unavailable">N/A</string>
     <string name="thermal_headroom">Thermal Headroom</string>
     <string name="thermal_history">History</string>
@@ -302,7 +312,8 @@
     <string name="thermal_event_duration">Duration: %s</string>
 
     <!-- Thermal Status Levels -->
-    <string name="thermal_status_none">Normal</string>
+    <string name="thermal_status_no_throttling">No throttling reported</string>
+    <string name="thermal_status_not_reported">Not reported</string>
     <string name="thermal_status_light">Light</string>
     <string name="thermal_status_moderate">Moderate</string>
     <string name="thermal_status_severe">Severe</string>
@@ -386,6 +397,8 @@
     <string name="cleanup_storage_permission_message">To scan for old downloads and APK files, runcheck needs access to all files on your device.</string>
     <string name="cleanup_storage_permission_reason">Android restricts apps from seeing files created by other apps. This permission lets runcheck find files across your entire storage so you can clean up space.</string>
     <string name="cleanup_storage_permission_action">Open Settings</string>
+    <string name="cleanup_not_supported_version_title">Not supported on this Android version</string>
+    <string name="cleanup_not_supported_version_message">Old Downloads and APK Files cleanup requires Android 11 or newer.</string>
     <string name="cleanup_delete_failed">Could not delete the selected files.</string>
     <string name="cleanup_delete_permission_error">Android blocked deletion for one or more files.</string>
     <plurals name="cleanup_free_action">
@@ -410,15 +423,20 @@
     <string name="settings_interval_30">30 minutes</string>
     <string name="settings_interval_60">60 minutes</string>
     <string name="settings_monitoring_interval_note">Runs approximately on this cadence. Doze and battery optimizations may delay background checks.</string>
+    <string name="settings_battery_optimization">Battery Optimization</string>
+    <string name="settings_battery_optimization_exempt">Unrestricted</string>
+    <string name="settings_battery_optimization_restricted">Restricted</string>
+    <string name="settings_battery_optimization_exempt_desc">runcheck is excluded from battery optimization.</string>
+    <string name="settings_battery_optimization_restricted_desc">runcheck may be stopped by the system. Tap to allow unrestricted background activity.</string>
     <string name="settings_notifications">Notifications</string>
     <string name="settings_notifications_desc">Alerts for low battery, high temperature, low storage</string>
-    <string name="settings_measurement_info">Measurement Info</string>
+    <string name="settings_measurement_info">Device Capabilities</string>
     <string name="settings_device_model">%1$s %2$s</string>
     <string name="settings_api_level">API Level: %1$d</string>
     <string name="settings_current_reading">Current reading: %1$s</string>
     <string name="settings_cycle_count">Cycle count: %1$s</string>
     <string name="settings_api_level_label">API Level</string>
-    <string name="settings_current_reading_label">Current Reading</string>
+    <string name="settings_current_reading_label">Battery Current</string>
     <string name="settings_cycle_count_label">Cycle Count</string>
     <string name="settings_thermal_zones_label">Thermal Zones</string>
     <string name="settings_ram_label">RAM</string>
@@ -426,6 +444,24 @@
     <string name="settings_measurement_unreliable">Unreliable</string>
     <string name="settings_measurement_available">Available</string>
     <string name="settings_measurement_not_available">Not available</string>
+    <string name="settings_current_support_summary_reliable">Battery current looks reliable on this device, so current, power, and drain-rate readings should be usable.</string>
+    <string name="settings_current_support_summary_unreliable">Battery current is limited on this device, so current, power, and drain-rate readings may stay low-confidence or unavailable.</string>
+
+    <!-- Settings - Measurement Info sheets -->
+    <string name="info_settings_current_reading_title">Current Reading Reliability</string>
+    <string name="info_settings_current_reading_explanation">Whether this device reports usable battery current data. Some phones return a fixed maximum value, always return zero, or never change in real use. runcheck samples the sensor at startup and checks whether the values change and stay plausible.</string>
+    <string name="info_settings_current_reading_range">Most Google Pixel, Samsung Galaxy, and recent OnePlus devices report reliable current. Older or budget devices are more likely to report unreliable data.</string>
+    <string name="info_settings_current_reading_matters">When current reading is unreliable, the current (mA), power (W), and drain rate displays on the Battery screen are shown with lower confidence. Battery level and temperature are not affected — those use separate, more reliable sensors.</string>
+    <string name="info_settings_current_reading_detail">Android exposes battery current through BATTERY_PROPERTY_CURRENT_NOW. Depending on the device, the raw number can be positive or negative. runcheck checks repeated samples, rejects readings that are stuck, and compares the absolute value against a plausible range before marking the sensor reliable.</string>
+    <string name="info_settings_cycle_count_title">Battery Cycle Count Availability</string>
+    <string name="info_settings_cycle_count_explanation">Whether your device reports how many full charge-discharge cycles the battery has completed. This requires Android 14 (API 34) or newer — older Android versions do not expose this data through the standard API.</string>
+    <string name="info_settings_cycle_count_range">Available on devices running Android 14 or newer. Not available on Android 13 and below.</string>
+    <string name="info_settings_cycle_count_matters">Cycle count helps you understand battery wear. A typical phone battery is designed for 500–1000 cycles before noticeable degradation. Without this data, you can still monitor battery health percentage for a similar picture.</string>
+    <string name="info_settings_thermal_zones_title">Thermal Zones</string>
+    <string name="info_settings_thermal_zones_explanation">How many temperature sensors Android exposes to apps on this device. These zones correspond to physical components like the CPU, battery, and skin temperature sensors.</string>
+    <string name="info_settings_thermal_zones_range">Most devices expose 5–30 thermal zones. Zero means the system does not share thermal sensor data with apps.</string>
+    <string name="info_settings_thermal_zones_matters">More thermal zones give runcheck more data points for temperature monitoring. If your device exposes zero zones, thermal readings rely on the battery temperature sensor alone, which is less precise for detecting CPU-related heat issues.</string>
+
     <string name="settings_about">About</string>
     <string name="settings_upgrade_pro">Upgrade to pro</string>
     <string name="settings_upgrade_pro_with_price">Upgrade to pro - %1$s</string>
@@ -465,6 +501,7 @@
     <string name="settings_notif_charge_complete">Charge Complete</string>
     <string name="settings_notif_charge_complete_desc">Notify when charging finishes</string>
     <string name="settings_notifications_system_muted">Notifications are disabled in system settings. Tap to open notification settings.</string>
+    <string name="settings_notifications_system_muted_xiaomi">Notifications are disabled in system settings. On Xiaomi or HyperOS devices, also confirm runcheck is allowed in the separate Notifications toggle. Tap to open notification settings.</string>
     <string name="notification_permission_denied_title">Notification Permission Required</string>
     <string name="notification_permission_denied_message">Notification permission was denied. To enable notifications, open app settings and allow notifications manually.</string>
     <string name="notification_permission_denied_open_settings">Open Settings</string>
@@ -538,9 +575,7 @@
 
     <!-- Notifications -->
     <string name="notification_channel_alerts">Device Alerts</string>
-    <string name="notification_channel_status">Device Status</string>
     <string name="notification_channel_alerts_description">Alerts for battery, temperature, and storage issues</string>
-    <string name="notification_channel_status_description">Device status updates</string>
     <string name="monitor_realtime_fgs_reason">Foreground service for real-time device health monitoring: (1) displays live battery, thermal, and network metrics while the user is actively viewing the detail screen, and (2) provides an opt-in persistent notification with continuously updated battery stats when the user explicitly enables Live Notification in Settings. The service is never started automatically — it requires direct user action.</string>
     <string name="notification_low_battery_title">Low Battery</string>
     <string name="notification_low_battery_text">Battery at %d%%</string>
@@ -1123,4 +1158,11 @@
     <string name="learn_sw_vs_hw_title">Software vs Hardware Problems</string>
     <string name="learn_sw_vs_hw_preview">How to tell if your phone\'s issues are from software (fixable) or hardware (needs repair).</string>
     <string name="learn_sw_vs_hw_body">## Software problems\n\nSoftware issues are usually fixable without repair: high drain from a misbehaving app, slow performance from full storage, poor network from bad settings, overheating from a stuck background process. These often appear suddenly after an app update or setting change.\n\n## Hardware problems\n\nHardware issues require physical repair or replacement: battery health staying low, a swollen battery, persistent overheating at idle even after troubleshooting, or Wi-Fi/cellular problems that follow the phone across different networks and resets.\n\n## How to tell the difference\n\nUse runcheck\'s data over time. Software problems often show sudden changes: drain rate spikes after installing an app, or temperature jumps after an OS update. Hardware problems usually show gradual trends or repeat even after resets: battery health slowly declining, thermal performance consistently worsening, or the same radio issue appearing everywhere.\n\n## What to do\n\nFor software: try safe mode to rule out apps, clear caches, and check for OS updates. For hardware: check warranty status and visit an authorized repair center. Battery replacement is usually the most cost-effective repair for an aging phone.</string>
+
+    <string name="learn_background_monitoring_title">Keeping Background Monitoring Active</string>
+    <string name="learn_background_monitoring_preview">Why some phones stop runcheck from collecting data in the background, and how to fix it.</string>
+    <string name="learn_background_monitoring_body" formatted="false">## Why monitoring stops\n\nMany Android manufacturers add aggressive battery management that goes beyond stock Android. These systems can stop runcheck from collecting data in the background, even when Android\'s own battery optimization is disabled. If you see gaps in your history charts or a stale monitoring warning on the home screen, your phone\'s power management is likely the cause.\n\n## Samsung (One UI)\n\nSamsung puts apps into "Sleeping" and "Deep sleeping" lists that severely limit background work.\n\nTo fix: Open Settings → Battery → Background usage limits. Make sure runcheck is NOT in the Sleeping apps or Deep sleeping apps lists. You can also add it to the Never sleeping apps list to prevent Samsung from restricting it in the future. Adaptive Battery can also interfere — if problems persist, try disabling it temporarily under Settings → Battery → Adaptive Battery.\n\n## Xiaomi (MIUI / HyperOS)\n\nXiaomi has some of the most aggressive background restrictions of any manufacturer. Apps need explicit autostart permission, and battery saver can still stop them.\n\nTo fix: Open Settings → Apps → Manage apps → find runcheck → enable Autostart. Then go to Settings → Battery → runcheck → set to No restrictions. On older MIUI versions, also check Settings → Battery → Battery saver → turn off or add runcheck as an exception. Without the Autostart permission, runcheck may also not start after a reboot. If alert notifications are not appearing, also check Settings → Apps → Manage apps → runcheck → Notifications and make sure notifications are enabled — Xiaomi has a separate notification toggle that is independent of Android\'s standard notification permission.\n\n## OnePlus / Oppo / Realme (OxygenOS / ColorOS)\n\nThese brands (all part of BBK Electronics) share similar aggressive battery management. They can also reset your optimization settings after firmware updates.\n\nTo fix: Open Settings → Battery → Battery optimization → find runcheck → select Don\'t optimize. After any firmware update, check that this setting is still in place — these phones are known to reset app exemptions during OTA updates.\n\n## General Android\n\nOn any Android phone, you can check the standard battery optimization setting: Settings → Battery → Battery optimization → find runcheck → select Don\'t optimize. runcheck also shows the current status in Settings → Monitoring.\n\n## Other manufacturers\n\nIf your phone brand is not listed above, visit dontkillmyapp.com for device-specific instructions. That site maintains up-to-date guides for virtually every Android manufacturer.\n\n## After making changes\n\nOnce you have adjusted the settings, open runcheck and pull down to refresh on the home screen. The stale monitoring warning should disappear after the next background check completes. If problems persist, try restarting your phone after applying the changes.</string>
+
+    <!-- Settings - monitoring help link -->
+    <string name="settings_monitoring_help">Monitoring not working?</string>
 </resources>

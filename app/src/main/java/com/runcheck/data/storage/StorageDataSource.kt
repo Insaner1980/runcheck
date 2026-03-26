@@ -4,6 +4,8 @@ import android.app.AppOpsManager
 import android.app.usage.StorageStatsManager
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Environment
 import android.os.StatFs
 import android.os.storage.StorageManager
@@ -82,9 +84,16 @@ class StorageDataSource @Inject constructor(
             val uuid = StorageManager.UUID_DEFAULT
             val user = android.os.Process.myUserHandle()
             val stats = ssm.queryStatsForUser(uuid, user)
-            val appCount = context.packageManager
-                .getInstalledApplications(0)
-                .count { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 }
+            val appCount = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager
+                    .getInstalledApplications(PackageManager.ApplicationInfoFlags.of(0L))
+                    .count { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 }
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager
+                    .getInstalledApplications(0)
+                    .count { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 }
+            }
             AppStats(
                 totalBytes = stats.appBytes + stats.dataBytes + stats.cacheBytes,
                 cacheBytes = stats.cacheBytes,
@@ -136,7 +145,6 @@ class StorageDataSource @Inject constructor(
     )
 
     private fun getDeviceStorageInfo(): DeviceStorageInfo {
-        val dataPath = Environment.getDataDirectory().path
         var fsType: String? = null
         var encrypted: String? = null
         var volumes = 1

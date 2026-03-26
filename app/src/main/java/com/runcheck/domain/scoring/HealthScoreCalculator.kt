@@ -10,12 +10,14 @@ import com.runcheck.domain.model.SpeedTestResult
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
+import androidx.annotation.CheckResult
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class HealthScoreCalculator @Inject constructor() {
 
+    @CheckResult
     fun calculate(
         battery: BatteryState,
         network: NetworkState,

@@ -1,0 +1,80 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:DeviceCapabilityManager.kt$DeviceCapabilityManager.Companion$isCharging &amp;&amp; avgReading &gt; 0 || !isCharging &amp;&amp; avgReading &lt; 0</ID>
+    <ID>ComplexCondition:ExportDataUseCase.kt$ExportDataUseCase$value.contains(',') || value.contains('"') || value.contains('\n') || value.contains('\r')</ID>
+    <ID>ComplexCondition:LiveChart.kt$reducedMotion || !hadVisibleChart || !hasVisibleChart || !dataChanged</ID>
+    <ID>CyclomaticComplexMethod:GetChargerComparisonUseCase.kt$GetChargerComparisonUseCase$operator fun invoke(): Flow&lt;List&lt;ChargerSummary&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:HealthMonitorWorker.kt$HealthMonitorWorker$override suspend fun doWork(): Result</ID>
+    <ID>CyclomaticComplexMethod:HealthScoreCalculator.kt$HealthScoreCalculator$private fun calculateBatteryScore(battery: BatteryState): Int</ID>
+    <ID>CyclomaticComplexMethod:HealthScoreCalculator.kt$HealthScoreCalculator$private fun calculateNetworkScoreWithSpeedTest( network: NetworkState, speedTest: SpeedTestResult ): Int</ID>
+    <ID>CyclomaticComplexMethod:HealthScoreCalculator.kt$HealthScoreCalculator$private fun calculateThermalScore(thermal: ThermalState): Int</ID>
+    <ID>CyclomaticComplexMethod:LearnArticleBodyFormatter.kt$LearnArticleBodyFormatter$fun parse(body: String): List&lt;LearnArticleBlock&gt;</ID>
+    <ID>CyclomaticComplexMethod:NetworkDataSource.kt$NetworkDataSource$@Suppress("DEPRECATION") private fun classifySignal(dbm: Int?, type: ConnectionType): SignalQuality</ID>
+    <ID>CyclomaticComplexMethod:NetworkDataSource.kt$NetworkDataSource$private fun buildNetworkInfo( capabilities: NetworkCapabilities, linkProperties: android.net.LinkProperties? ): NetworkInfo</ID>
+    <ID>CyclomaticComplexMethod:RealTimeMonitorService.kt$RealTimeMonitorService$private fun buildLiveNotification( battery: BatteryState, prefs: UserPreferences ): Notification</ID>
+    <ID>CyclomaticComplexMethod:StorageDataSource.kt$StorageDataSource$private fun getDeviceStorageInfo(): DeviceStorageInfo</ID>
+    <ID>CyclomaticComplexMethod:UserPreferencesRepositoryImpl.kt$UserPreferencesRepositoryImpl$override fun getPreferences(): Flow&lt;UserPreferences&gt;</ID>
+    <ID>CyclomaticComplexMethod:WidgetDataProvider.kt$private fun classifySignal(dbm: Int?, type: ConnectionType): SignalQuality</ID>
+    <ID>LargeClass:HealthScoreCalculatorTest.kt$HealthScoreCalculatorTest</ID>
+    <ID>LargeClass:MediaStoreScanner.kt$MediaStoreScanner</ID>
+    <ID>LongMethod:BatteryViewModel.kt$BatteryViewModel$@OptIn(FlowPreview::class) private fun loadBatteryData()</ID>
+    <ID>LongMethod:BatteryWidget.kt$BatteryWidget$override suspend fun provideGlance(context: Context, id: GlanceId)</ID>
+    <ID>LongMethod:CleanupViewModel.kt$CleanupViewModel$fun scan()</ID>
+    <ID>LongMethod:HealthMonitorWorker.kt$HealthMonitorWorker$override suspend fun doWork(): Result</ID>
+    <ID>LongMethod:HomeViewModel.kt$HomeViewModel$@OptIn(FlowPreview::class) private fun loadHome()</ID>
+    <ID>LongMethod:LearnArticleBodyFormatter.kt$LearnArticleBodyFormatter$fun parse(body: String): List&lt;LearnArticleBlock&gt;</ID>
+    <ID>LongMethod:NetworkDataSource.kt$NetworkDataSource$private fun buildNetworkInfo( capabilities: NetworkCapabilities, linkProperties: android.net.LinkProperties? ): NetworkInfo</ID>
+    <ID>LongMethod:NetworkViewModel.kt$NetworkViewModel$private fun proceedWithSpeedTest(allowCellular: Boolean)</ID>
+    <ID>LongMethod:RealTimeMonitorService.kt$RealTimeMonitorService$private fun buildLiveNotification( battery: BatteryState, prefs: UserPreferences ): Notification</ID>
+    <ID>LongMethod:SpeedTestService.kt$SpeedTestService$fun runSpeedTest(allowCellular: Boolean = false): Flow&lt;SpeedTestProgress&gt;</ID>
+    <ID>LoopWithTooManyJumpStatements:LearnArticleBodyFormatter.kt$LearnArticleBodyFormatter$while</ID>
+    <ID>MaxLineLength:CleanupBottomBar.kt$pluralStringResource(R.plurals.cleanup_free_action, selectedCount, formatStorageSize(context, selectedSize), selectedCount)</ID>
+    <ID>MaxLineLength:CleanupScreen.kt$.</ID>
+    <ID>MaxLineLength:CleanupScreen.kt$text = pluralStringResource(R.plurals.cleanup_found_files, state.totalCount, state.totalCount, formatStorageSize(context, state.totalSize))</ID>
+    <ID>MaxLineLength:FullscreenChartViewModelTest.kt$FullscreenChartViewModelTest$fun</ID>
+    <ID>MaxLineLength:StorageDetailScreen.kt$subtitle = pluralStringResource(R.plurals.storage_trash_summary, trash.itemCount, formatStorageSize(context, trash.totalBytes), trash.itemCount)</ID>
+    <ID>ReturnCount:MonitoringAlertStateStore.kt$MonitoringAlertStateStore$suspend fun getLastSnapshot(): MonitoringAlertSnapshot?</ID>
+    <ID>ReturnCount:NetworkDataSource.kt$NetworkDataSource$@Suppress("DEPRECATION") private fun getWifiDetails(capabilities: NetworkCapabilities): WifiDetails?</ID>
+    <ID>ReturnCount:TrialNotificationWorker.kt$TrialNotificationWorker$override suspend fun doWork(): Result</ID>
+    <ID>SpreadOperator:DatabaseModule.kt$DatabaseModule$(*ALL_MIGRATIONS)</ID>
+    <ID>TooGenericExceptionCaught:AppUsageViewModel.kt$AppUsageViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:BatteryRepositoryImpl.kt$BatteryRepositoryImpl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:BatteryViewModel.kt$BatteryViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:BootReceiver.kt$BootReceiver$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:ChargerViewModel.kt$ChargerViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:CleanupPagingSource.kt$CleanupPagingSource$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:CleanupViewModel.kt$CleanupViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:CleanupViewModel.kt$CleanupViewModel$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:FullscreenChartViewModel.kt$FullscreenChartViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:HealthMaintenanceWorker.kt$HealthMaintenanceWorker$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:HealthMonitorWorker.kt$HealthMonitorWorker$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:HealthMonitorWorker.kt$HealthMonitorWorker$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:LatencyMeasurer.kt$LatencyMeasurer$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:MediaStoreScanner.kt$MediaStoreScanner$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:NetworkRepositoryImpl.kt$NetworkRepositoryImpl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:NetworkViewModel.kt$NetworkViewModel$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:ProManager.kt$ProManager$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:RealTimeMonitorService.kt$RealTimeMonitorService$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:RuncheckApp.kt$RuncheckApp$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:ScreenStateReceiver.kt$ScreenStateReceiver$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:StorageDataSource.kt$StorageDataSource$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:StorageRepositoryImpl.kt$StorageRepositoryImpl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ThermalRepositoryImpl.kt$ThermalRepositoryImpl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ThumbnailLoader.kt$ThumbnailLoader$e: Exception</ID>
+    <ID>TooGenericExceptionThrown:NetworkViewModelTest.kt$NetworkViewModelTest$throw RuntimeException("Network timeout")</ID>
+    <ID>TooManyFunctions:BatteryDataSource.kt$BatteryDataSource</ID>
+    <ID>TooManyFunctions:BatteryDetailScreen.kt$com.runcheck.ui.battery.BatteryDetailScreen.kt</ID>
+    <ID>TooManyFunctions:BatteryReadingDao.kt$BatteryReadingDao</ID>
+    <ID>TooManyFunctions:ChartHelpers.kt$com.runcheck.ui.chart.ChartHelpers.kt</ID>
+    <ID>TooManyFunctions:CleanupViewModel.kt$CleanupViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:GenericBatterySource.kt$GenericBatterySource : BatteryDataSource</ID>
+    <ID>TooManyFunctions:MediaStoreScanner.kt$MediaStoreScanner</ID>
+    <ID>TooManyFunctions:NetworkDataSource.kt$NetworkDataSource</ID>
+    <ID>TooManyFunctions:ScreenStateTracker.kt$ScreenStateTracker : ScreenStateRepository</ID>
+    <ID>TooManyFunctions:SettingsViewModel.kt$SettingsViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:UserPreferencesRepository.kt$UserPreferencesRepository</ID>
+    <ID>TooManyFunctions:UserPreferencesRepositoryImpl.kt$UserPreferencesRepositoryImpl : UserPreferencesRepositoryInfoCardDismissalRepository</ID>
+  </CurrentIssues>
+</SmellBaseline>

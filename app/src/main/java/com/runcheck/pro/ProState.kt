@@ -28,5 +28,6 @@ data class ProState(
     val isPro: Boolean
         get() = status == ProStatus.PRO_PURCHASED || status == ProStatus.TRIAL_ACTIVE
 
+    @Suppress("UnusedParameter") // All features gated behind single Pro status; param kept for per-feature gating
     fun hasFeature(feature: ProFeature): Boolean = isPro
 }

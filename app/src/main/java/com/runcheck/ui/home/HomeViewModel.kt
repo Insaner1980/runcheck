@@ -8,6 +8,7 @@ import com.runcheck.domain.model.HealthScore
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
+import com.runcheck.domain.repository.MonitoringStatusRepository
 import com.runcheck.domain.scoring.HealthScoreCalculator
 import com.runcheck.domain.usecase.ChargerSessionTracker
 import com.runcheck.domain.usecase.GetBatteryStateUseCase
@@ -25,8 +26,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
@@ -39,6 +43,7 @@ class HomeViewModel @Inject constructor(
     private val getNetworkState: GetNetworkStateUseCase,
     private val getThermalState: GetThermalStateUseCase,
     private val getStorageState: GetStorageStateUseCase,
+    private val monitoringStatusRepository: MonitoringStatusRepository,
     private val proManager: ProManager,
     private val trialManager: TrialManager,
     private val chargerSessionTracker: ChargerSessionTracker,
@@ -105,6 +110,19 @@ class HomeViewModel @Inject constructor(
     private fun loadHome() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
+            val preferencesFlow = manageUserPreferences.observePreferences()
+            val monitoringStaleFlow = combine(
+                monitoringStatusRepository.observeLastWorkerHeartbeatAt(),
+                preferencesFlow,
+                monitoringFreshnessTicker()
+            ) { lastHeartbeatAt, preferences, now ->
+                isMonitoringStale(
+                    lastHeartbeatAt = lastHeartbeatAt,
+                    intervalMinutes = preferences.monitoringInterval.minutes,
+                    now = now
+                )
+            }.distinctUntilChanged()
+
             val dataFlow = combine(
                 getBatteryState(),
                 getNetworkState(),
@@ -128,8 +146,9 @@ class HomeViewModel @Inject constructor(
             combine(
                 dataFlow,
                 proManager.proState,
-                manageUserPreferences.observePreferences()
-            ) { data, proState, preferences ->
+                preferencesFlow,
+                monitoringStaleFlow
+            ) { data, proState, preferences, monitoringStale ->
                 val showWelcomeSheet = proState.status == ProStatus.TRIAL_ACTIVE &&
                     !trialManager.isWelcomeShown()
 
@@ -168,6 +187,7 @@ class HomeViewModel @Inject constructor(
                     thermalState = data.thermal,
                     storageState = data.storage,
                     temperatureUnit = preferences.temperatureUnit,
+                    monitoringStale = monitoringStale,
                     proState = proState,
                     showWelcomeSheet = showWelcomeSheet,
                     showDay5Banner = showDay5Banner,
@@ -182,6 +202,24 @@ class HomeViewModel @Inject constructor(
                 _uiState.value = state
             }
         }
+    }
+
+    private fun monitoringFreshnessTicker() = flow {
+        emit(System.currentTimeMillis())
+        while (true) {
+            delay(MONITORING_STALE_CHECK_INTERVAL_MS)
+            emit(System.currentTimeMillis())
+        }
+    }
+
+    private fun isMonitoringStale(
+        lastHeartbeatAt: Long?,
+        intervalMinutes: Int,
+        now: Long
+    ): Boolean {
+        if (lastHeartbeatAt == null) return false
+        val intervalMs = intervalMinutes * 60_000L
+        return now - lastHeartbeatAt > intervalMs * STALE_THRESHOLD_MULTIPLIER
     }
 
     private suspend fun maybeTrackChargerSession(state: BatteryState) {
@@ -206,6 +244,8 @@ class HomeViewModel @Inject constructor(
     companion object {
         private const val DISPLAY_UPDATE_INTERVAL_MS = 333L
         private const val CHARGER_SESSION_TRACK_INTERVAL_MS = 15_000L
+        private const val MONITORING_STALE_CHECK_INTERVAL_MS = 15_000L
+        private const val STALE_THRESHOLD_MULTIPLIER = 3
         private const val KEY_EXPIRATION_MODAL_SHOWN = "expiration_modal_shown"
     }
 }

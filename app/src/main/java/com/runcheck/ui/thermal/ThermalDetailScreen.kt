@@ -115,8 +115,8 @@ import com.runcheck.ui.theme.statusColors
 fun ThermalDetailScreen(
     onBack: () -> Unit,
     onUpgradeToPro: () -> Unit,
-    onNavigateToLearnArticle: (articleId: String) -> Unit = {},
     modifier: Modifier = Modifier,
+    onNavigateToLearnArticle: (articleId: String) -> Unit = {},
     viewModel: ThermalViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -590,6 +590,8 @@ private fun ThermalMetricsCard(
     liveHeadroom: List<Float> = emptyList(),
     onInfoClick: (String) -> Unit = {}
 ) {
+    val useNeutralThermalStatus = shouldUseNeutralThermalStatus(thermal)
+
     Card(
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
@@ -641,22 +643,30 @@ private fun ThermalMetricsCard(
             ) {
                 MetricPill(
                     label = stringResource(R.string.thermal_status),
-                    value = thermalStatusLabel(thermal.thermalStatus),
-                    valueColor = thermalStatusColor(thermal.thermalStatus),
+                    value = if (useNeutralThermalStatus) {
+                        stringResource(R.string.thermal_status_not_reported)
+                    } else {
+                        thermalStatusLabel(thermal.thermalStatus)
+                    },
+                    valueColor = if (useNeutralThermalStatus) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        thermalStatusColor(thermal.thermalStatus)
+                    },
                     onInfoClick = { onInfoClick("thermalStatus") },
                     modifier = Modifier.weight(1f)
                 )
                 MetricPill(
                     label = stringResource(R.string.thermal_throttling),
-                    value = if (thermal.isThrottling) {
-                        stringResource(R.string.thermal_throttling_active)
-                    } else {
-                        stringResource(R.string.thermal_throttling_none)
+                    value = when {
+                        thermal.isThrottling -> stringResource(R.string.thermal_throttling_active)
+                        useNeutralThermalStatus -> stringResource(R.string.thermal_throttling_not_reported)
+                        else -> stringResource(R.string.thermal_throttling_none)
                     },
-                    valueColor = if (thermal.isThrottling) {
-                        MaterialTheme.statusColors.critical
-                    } else {
-                        MaterialTheme.statusColors.healthy
+                    valueColor = when {
+                        thermal.isThrottling -> MaterialTheme.statusColors.critical
+                        useNeutralThermalStatus -> MaterialTheme.colorScheme.onSurface
+                        else -> MaterialTheme.statusColors.healthy
                     },
                     onInfoClick = { onInfoClick("throttling") },
                     modifier = Modifier.weight(1f)
@@ -979,7 +989,7 @@ private fun ThrottlingEventItem(
 
 @Composable
 private fun thermalStatusLabel(status: ThermalStatus): String = when (status) {
-    ThermalStatus.NONE -> stringResource(R.string.thermal_status_none)
+    ThermalStatus.NONE -> stringResource(R.string.thermal_status_no_throttling)
     ThermalStatus.LIGHT -> stringResource(R.string.thermal_status_light)
     ThermalStatus.MODERATE -> stringResource(R.string.thermal_status_moderate)
     ThermalStatus.SEVERE -> stringResource(R.string.thermal_status_severe)
@@ -992,7 +1002,7 @@ private fun thermalStatusLabel(status: ThermalStatus): String = when (status) {
 private fun thermalStatusColor(status: ThermalStatus): Color {
     val colors = MaterialTheme.statusColors
     return when (status) {
-        ThermalStatus.NONE -> colors.healthy
+        ThermalStatus.NONE -> MaterialTheme.colorScheme.onSurface
         ThermalStatus.LIGHT -> colors.healthy
         ThermalStatus.MODERATE -> colors.fair
         ThermalStatus.SEVERE -> colors.poor
@@ -1013,3 +1023,8 @@ private fun headroomColor(headroom: Float): Color {
         else -> colors.healthy
     }
 }
+
+internal fun shouldUseNeutralThermalStatus(thermal: ThermalState): Boolean =
+    !thermal.isThrottling &&
+        thermal.thermalStatus == ThermalStatus.NONE &&
+        thermal.thermalHeadroom == null

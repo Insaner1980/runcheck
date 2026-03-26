@@ -7,6 +7,7 @@ import com.runcheck.data.device.DeviceProfileRepositoryImpl
 import com.runcheck.data.export.FileExportRepositoryImpl
 import com.runcheck.data.network.NetworkRepositoryImpl
 import com.runcheck.data.network.SpeedTestRepositoryImpl
+import com.runcheck.data.preferences.MonitoringStatusRepositoryImpl
 import com.runcheck.data.preferences.UserPreferencesRepositoryImpl
 import com.runcheck.data.storage.StorageCleanupRepositoryImpl
 import com.runcheck.data.storage.StorageRepositoryImpl
@@ -18,6 +19,7 @@ import com.runcheck.domain.repository.ChargerRepository
 import com.runcheck.domain.repository.DeviceProfileRepository as DeviceProfileRepositoryContract
 import com.runcheck.domain.repository.FileExportRepository
 import com.runcheck.domain.repository.InfoCardDismissalRepository
+import com.runcheck.domain.repository.MonitoringStatusRepository
 import com.runcheck.domain.repository.NetworkRepository as NetworkRepositoryContract
 import com.runcheck.domain.repository.SpeedTestRepository as SpeedTestRepositoryContract
 import com.runcheck.domain.repository.StorageCleanupRepository
@@ -80,6 +82,12 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindUserPreferencesRepository(impl: UserPreferencesRepositoryImpl): UserPreferencesRepositoryContract
+
+    @Binds
+    @Singleton
+    abstract fun bindMonitoringStatusRepository(
+        impl: MonitoringStatusRepositoryImpl
+    ): MonitoringStatusRepository
 
     @Binds
     @Singleton

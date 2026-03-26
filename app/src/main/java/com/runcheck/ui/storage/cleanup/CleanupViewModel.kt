@@ -2,7 +2,6 @@ package com.runcheck.ui.storage.cleanup
 
 import android.app.RecoverableSecurityException
 import android.os.Build
-import android.os.Environment
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.lifecycle.SavedStateHandle
@@ -92,9 +91,8 @@ class CleanupViewModel @Inject constructor(
                 )
                 return@launch
             }
-            // Old Downloads and APK Files need all-files access on Android 11+
-            if (needsAllFilesAccess() && !Environment.isExternalStorageManager()) {
-                _uiState.value = CleanupUiState.NeedsStoragePermission
+            if (isVersionRestrictedCleanup() && Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                _uiState.value = CleanupUiState.UnsupportedVersion
                 return@launch
             }
             _uiState.value = CleanupUiState.Scanning()
@@ -245,8 +243,10 @@ class CleanupViewModel @Inject constructor(
                     )
                 }
             } catch (error: RecoverableSecurityException) {
+                ReleaseSafeLog.error("CleanupVM", "Delete permission denied (recoverable)", error)
                 restorePendingSelection(UiText.Resource(R.string.cleanup_delete_permission_error))
             } catch (error: SecurityException) {
+                ReleaseSafeLog.error("CleanupVM", "Delete permission denied", error)
                 restorePendingSelection(UiText.Resource(R.string.cleanup_delete_permission_error))
             } catch (error: Exception) {
                 ReleaseSafeLog.error("CleanupVM", "Delete failed", error)
@@ -400,9 +400,8 @@ class CleanupViewModel @Inject constructor(
         explicitDeselectedUris = explicitDeselectedUris
     )
 
-    private fun needsAllFilesAccess(): Boolean =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
-            cleanupType in setOf(CleanupType.OLD_DOWNLOADS, CleanupType.APK_FILES)
+    private fun isVersionRestrictedCleanup(): Boolean =
+        cleanupType in setOf(CleanupType.OLD_DOWNLOADS, CleanupType.APK_FILES)
 
     private fun defaultFilterValue(): Long = when (cleanupType) {
         CleanupType.LARGE_FILES -> 50L * 1024 * 1024

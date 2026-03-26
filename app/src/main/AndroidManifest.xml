@@ -23,6 +23,8 @@
     <!-- Fallback for Android 12 and below -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
     <!-- Optional — for per-app storage breakdown -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
@@ -43,9 +45,7 @@
         android:localeConfig="@xml/locales_config"
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Runcheck"
-        android:usesCleartextTraffic="false"
-        tools:replace="android:usesCleartextTraffic">
+        android:theme="@style/Theme.Runcheck">
 
         <activity
             android:name=".MainActivity"

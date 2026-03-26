@@ -1,6 +1,7 @@
 package com.runcheck.data.battery
 
 import android.content.Context
+import androidx.annotation.CheckResult
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -13,6 +14,7 @@ class BatteryCapacityReader @Inject constructor(
      * Returns the device's design battery capacity in mAh using Android's
      * internal PowerProfile API via reflection. Returns null if unavailable.
      */
+    @CheckResult
     fun getDesignCapacityMah(): Int? = try {
         val powerProfileClass = Class.forName("com.android.internal.os.PowerProfile")
         val constructor = powerProfileClass.getConstructor(Context::class.java)

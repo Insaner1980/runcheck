@@ -18,7 +18,7 @@ fun requiredReleaseEnv(name: String): String =
 
 android {
     namespace = "com.runcheck"
-    compileSdk = 36
+    compileSdkPreview = "CinnamonBun"
 
     androidResources {
         localeFilters += listOf("en")
@@ -27,7 +27,7 @@ android {
     defaultConfig {
         applicationId = "com.runcheck"
         minSdk = 26
-        targetSdk = 35
+        targetSdkPreview = "CinnamonBun"
         versionCode = 1
         versionName = "1.0.0"
         buildConfigField("String", "ROOM_DB_NAME", "\"runcheck.db\"")
@@ -113,7 +113,7 @@ android {
 
         // Intentionally disabled — too noisy or not relevant
         disable += setOf(
-            "OldTargetApi",            // targetSdk 35 is fine; 36 is bleeding edge
+            "OldTargetApi",            // targeting CinnamonBun preview
             "GradleDependency",        // version bumps are manual decisions
             "AndroidGradlePluginVersion",
             "NotificationPermission",  // already handled at runtime in Settings
@@ -149,8 +149,8 @@ ktlint {
 detekt {
     buildUponDefaultConfig = true
     config.setFrom("$rootDir/config/detekt/detekt.yml")
+    baseline = file("detekt-baseline.xml")
     parallel = true
-    ignoreFailures = true
 }
 
 tasks.configureEach {

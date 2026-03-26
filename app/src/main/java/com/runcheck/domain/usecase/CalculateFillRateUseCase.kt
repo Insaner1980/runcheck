@@ -1,5 +1,6 @@
 package com.runcheck.domain.usecase
 
+import androidx.annotation.CheckResult
 import com.runcheck.domain.model.StorageReading
 import javax.inject.Inject
 
@@ -9,6 +10,7 @@ class CalculateFillRateUseCase @Inject constructor() {
      * Calculates storage fill rate in bytes/day using linear regression
      * over historical readings. Returns null if insufficient data.
      */
+    @CheckResult
     operator fun invoke(readings: List<StorageReading>): Long? {
         if (readings.size < MIN_READINGS) return null
 
@@ -32,6 +34,7 @@ class CalculateFillRateUseCase @Inject constructor() {
      * Formats an estimated time until storage is full.
      * Returns null if the fill rate is zero or negative (not filling up).
      */
+    @CheckResult
     fun formatEstimate(availableBytes: Long, bytesPerDay: Long): String? {
         if (bytesPerDay <= 0 || availableBytes <= 0) return null
         val days = availableBytes / bytesPerDay

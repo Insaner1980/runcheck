@@ -19,6 +19,7 @@ sealed interface HomeUiState {
         val storageState: StorageState,
         val temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS,
         val proState: ProState = ProState(),
+        val monitoringStale: Boolean = false,
         val showWelcomeSheet: Boolean = false,
         val showDay5Banner: Boolean = false,
         val showExpirationModal: Boolean = false,

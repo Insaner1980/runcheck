@@ -49,4 +49,7 @@ interface BatteryReadingDao {
 
     @Query("SELECT timestamp FROM battery_readings WHERE status = 'CHARGING' ORDER BY timestamp DESC LIMIT 1")
     suspend fun getLastChargingTimestamp(): Long?
+
+    @Query("SELECT MAX(timestamp) FROM battery_readings")
+    suspend fun getLatestReadingTimestamp(): Long?
 }

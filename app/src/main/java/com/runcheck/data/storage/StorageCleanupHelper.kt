@@ -36,9 +36,14 @@ class StorageCleanupHelper @Inject constructor(
     /**
      * API 29 and below: Deletes files one by one without system dialog.
      * Returns the set of URIs successfully deleted.
+     *
+     * On API 29 (scoped storage without createDeleteRequest), non-owned files
+     * throw RecoverableSecurityException. These are skipped and deletion
+     * continues with remaining files — the caller handles partial results.
      */
     suspend fun deleteLegacy(uriStrings: Collection<String>): Set<String> = withContext(Dispatchers.IO) {
         val deletedUris = mutableSetOf<String>()
+        var skippedCount = 0
         uriStrings.forEach { uriString ->
             try {
                 val uri = Uri.parse(uriString)
@@ -46,18 +51,19 @@ class StorageCleanupHelper @Inject constructor(
                     deletedUris += uriString
                 }
             } catch (error: RecoverableSecurityException) {
-                ReleaseSafeLog.error(TAG, "Delete needs user confirmation on this Android version", error)
-                throw StorageDeleteFailure(
-                    deletedUris = deletedUris.toSet(),
-                    recoverable = true
-                )
+                // API 29: non-owned file needs per-URI confirmation — skip and continue
+                skippedCount++
+                ReleaseSafeLog.warn(TAG, "Skipping non-owned file (API 29 scoped storage)", error)
             } catch (error: SecurityException) {
-                ReleaseSafeLog.error(TAG, "Failed to delete legacy media item", error)
-                throw StorageDeleteFailure(
-                    deletedUris = deletedUris.toSet(),
-                    recoverable = false
-                )
+                skippedCount++
+                ReleaseSafeLog.warn(TAG, "Skipping file due to security restriction", error)
             }
+        }
+        if (deletedUris.isEmpty() && skippedCount > 0) {
+            throw StorageDeleteFailure(
+                deletedUris = emptySet(),
+                recoverable = true
+            )
         }
         deletedUris
     }

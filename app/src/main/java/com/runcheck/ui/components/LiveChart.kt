@@ -125,8 +125,8 @@ private fun LiveChartCanvas(
     yMin: Float?,
     yMax: Float?,
     accessibilityDescription: String?,
-    reducedMotion: Boolean = false,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    reducedMotion: Boolean = false
 ) {
     if (data.size < 2) {
         // Not enough data — show empty placeholder

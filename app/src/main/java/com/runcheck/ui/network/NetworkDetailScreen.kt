@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -40,6 +41,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -114,6 +116,7 @@ import com.runcheck.ui.theme.statusColorForSignalQuality
 @Composable
 fun NetworkDetailScreen(
     onNavigateToSpeedTest: () -> Unit,
+    modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
     onUpgradeToPro: () -> Unit = {},
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit = { _, _, _ -> },
@@ -121,7 +124,6 @@ fun NetworkDetailScreen(
     fullscreenResultMetric: String? = null,
     fullscreenResultPeriod: String? = null,
     onFullscreenResultConsumed: () -> Unit = {},
-    modifier: Modifier = Modifier,
     viewModel: NetworkViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -794,6 +796,8 @@ private fun NetworkContent(
     var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Apply fullscreen chart selection results when navigating back
+    val currentOnPeriodChange by rememberUpdatedState(onPeriodChange)
+    val currentOnFullscreenResultConsumed by rememberUpdatedState(onFullscreenResultConsumed)
     LaunchedEffect(fullscreenResultMetric, fullscreenResultPeriod) {
         if (fullscreenResultMetric != null && fullscreenResultPeriod != null) {
             val period = runCatching {
@@ -804,8 +808,8 @@ private fun NetworkContent(
                     )
                 )
             }.getOrNull()
-            if (period != null) onPeriodChange(period)
-            onFullscreenResultConsumed()
+            if (period != null) currentOnPeriodChange(period)
+            currentOnFullscreenResultConsumed()
         }
     }
     val context = LocalContext.current
@@ -985,6 +989,9 @@ private fun WifiNameHelpCard(
     onRequestPermission: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
+    val isSamsungDevice = remember {
+        Build.MANUFACTURER.equals("samsung", ignoreCase = true)
+    }
     val actionLabel = when {
         !hasLocationPermission && showOpenSettings ->
             stringResource(R.string.network_wifi_name_open_app_settings)
@@ -993,8 +1000,13 @@ private fun WifiNameHelpCard(
         else -> null
     }
     val message = when {
+        !hasLocationPermission && isSamsungDevice ->
+            stringResource(R.string.network_wifi_name_permission_needed_samsung)
         !hasLocationPermission -> stringResource(R.string.network_wifi_name_permission_needed)
+        !locationEnabled && isSamsungDevice ->
+            stringResource(R.string.network_wifi_name_location_needed_samsung)
         !locationEnabled -> stringResource(R.string.network_wifi_name_location_needed)
+        isSamsungDevice -> stringResource(R.string.network_wifi_name_unavailable_samsung)
         else -> stringResource(R.string.network_wifi_name_unavailable)
     }
 
@@ -1058,180 +1070,6 @@ private fun Context.isLocationEnabled(): Boolean {
     val locationManager = getSystemService(Context.LOCATION_SERVICE) as? LocationManager
         ?: return false
     return LocationManagerCompat.isLocationEnabled(locationManager)
-}
-
-// ── Composables used by SpeedTestScreen ─────────────────────────────────────────
-
-@Composable
-private fun LastResultCard(result: SpeedTestResult) {
-    val formattedTime = rememberFormattedDateTime(result.timestamp, "MMMdhm")
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = stringResource(R.string.speed_test_last_result),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = formattedTime,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                ResultMetric(
-                    label = stringResource(R.string.speed_test_download),
-                    value = formatDecimal(result.downloadMbps, 1),
-                    unit = stringResource(R.string.unit_mbps)
-                )
-                ResultMetric(
-                    label = stringResource(R.string.speed_test_upload),
-                    value = formatDecimal(result.uploadMbps, 1),
-                    unit = stringResource(R.string.unit_mbps)
-                )
-                ResultMetric(
-                    label = stringResource(R.string.speed_test_ping),
-                    value = if (result.pingMs > 0) result.pingMs.toString() else stringResource(R.string.placeholder_dash),
-                    unit = stringResource(R.string.unit_ms)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ResultMetric(
-    label: String,
-    value: String,
-    unit: String
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = unit,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun HistoryResultRow(result: SpeedTestResult) {
-    val formattedTime = rememberFormattedDateTime(result.timestamp, "MMMdhm")
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = MaterialTheme.spacing.xs),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(MaterialTheme.spacing.md),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = formattedTime,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = formatDecimal(result.downloadMbps, 1),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.End,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = formatDecimal(result.uploadMbps, 1),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.End,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = formatPingMetric(result.pingMs),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.End,
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-}
-
-@Composable
-private fun CellularDataWarningDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        shape = MaterialTheme.shapes.large,
-        icon = {
-            Icon(
-                Icons.Default.CellTower,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-        },
-        title = {
-            Text(stringResource(R.string.speed_test_title))
-        },
-        text = {
-            Text(stringResource(R.string.speed_test_cellular_warning))
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(stringResource(R.string.speed_test_cellular_proceed))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.speed_test_cellular_cancel))
-            }
-        }
-    )
 }
 
 @Composable

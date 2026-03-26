@@ -10,10 +10,11 @@ import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.repository.BatteryRepository
+import com.runcheck.domain.repository.MonitoringStatusRepository
 import com.runcheck.domain.repository.NetworkRepository
 import com.runcheck.domain.repository.StorageRepository
-import com.runcheck.domain.repository.UserPreferencesRepository
 import com.runcheck.domain.repository.ThermalRepository
+import com.runcheck.domain.repository.UserPreferencesRepository
 import com.runcheck.domain.usecase.ChargerSessionTracker
 import com.runcheck.domain.usecase.EvaluateMonitoringAlertsUseCase
 import com.runcheck.domain.usecase.MonitoringAlertSnapshot
@@ -32,6 +33,7 @@ class HealthMonitorWorker @AssistedInject constructor(
     private val thermalRepository: ThermalRepository,
     private val storageRepository: StorageRepository,
     private val userPreferencesRepository: UserPreferencesRepository,
+    private val monitoringStatusRepository: MonitoringStatusRepository,
     private val chargerSessionTracker: ChargerSessionTracker,
     private val evaluateMonitoringAlerts: EvaluateMonitoringAlertsUseCase,
     private val monitoringAlertStateStore: MonitoringAlertStateStore,
@@ -43,6 +45,8 @@ class HealthMonitorWorker @AssistedInject constructor(
         var batteryState: BatteryState? = null
         var thermalState: ThermalState? = null
         var storageState: StorageState? = null
+
+        recordWorkerHeartbeat()
 
         val preferences = try {
             userPreferencesRepository.getPreferences().first()
@@ -127,6 +131,16 @@ class HealthMonitorWorker @AssistedInject constructor(
         restartLiveNotificationIfNeeded(preferences.liveNotificationEnabled)
 
         return if (coreFailure) Result.retry() else Result.success()
+    }
+
+    private suspend fun recordWorkerHeartbeat() {
+        try {
+            monitoringStatusRepository.setLastWorkerHeartbeatAt(System.currentTimeMillis())
+        } catch (e: CancellationException) {
+            throw e
+        } catch (t: Throwable) {
+            ReleaseSafeLog.warn(TAG, "Failed to record monitoring heartbeat", t)
+        }
     }
 
     /**

@@ -111,6 +111,25 @@ app/src/main/java/com/runcheck/
 - Comments in English
 - No `!!` operator — use safe calls, `requireNotNull`, or sealed error types
 
+## AndroidX Annotations
+
+All new code must use AndroidX annotations where applicable:
+
+- `@RequiresApi(Build.VERSION_CODES.XX)` on any function calling APIs above minSdk (26)
+- `@RequiresPermission` on functions that call permission-protected Android APIs
+- `@WorkerThread` on functions performing blocking I/O, network, or heavy computation (except Room DAOs and suspend functions)
+- `@MainThread` on functions that must run on the UI thread (except Composables)
+- `@StringRes`, `@DrawableRes`, `@ColorRes`, `@ColorInt` on Int parameters that represent resources or colors
+- `@IntRange` / `@FloatRange` on parameters with known valid ranges (battery %, health score, confidence)
+- `@CheckResult` on pure functions where ignoring the return value is a bug
+
+Do not annotate:
+- Room DAO methods (Room handles threading)
+- Composable functions (inherently main thread)
+- Suspend functions (caller controls threading via coroutine dispatcher)
+- Private functions only called from one already-annotated place (avoid redundancy)
+- Functions that internally check `Build.VERSION.SDK_INT` and handle all API levels with fallbacks — `@RequiresApi` would wrongly prevent callers from using them on lower APIs
+
 ## Design System
 
 - **Single dark theme** — no light mode, no AMOLED toggle, no dynamic colors

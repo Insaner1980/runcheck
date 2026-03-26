@@ -10,7 +10,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlin.math.abs
 
 class SamsungBatterySource(
     context: Context,
@@ -28,7 +27,7 @@ class SamsungBatterySource(
                 delay(POLLING_INTERVAL_MS)
                 continue
             }
-            val currentMa = normalizeCurrent(rawCurrent)
+            val currentMa = alignCurrentSignWithChargeState(normalizeCurrent(rawCurrent))
 
             stableReadingCount = if (currentMa == previousCurrentMa) {
                 stableReadingCount + 1
@@ -40,7 +39,7 @@ class SamsungBatterySource(
             // Samsung devices may report max theoretical current instead of actual
             // Flag long-lived constant high-current readings as LOW confidence.
             val looksLikeMaxTheoreticalCurrent = stableReadingCount >= STABLE_READING_THRESHOLD &&
-                abs(currentMa) >= SUSPICIOUS_CONSTANT_CURRENT_MA
+                kotlin.math.abs(currentMa) >= SUSPICIOUS_CONSTANT_CURRENT_MA
 
             val confidence = when {
                 rawCurrent == 0 -> Confidence.UNAVAILABLE

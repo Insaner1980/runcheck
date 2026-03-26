@@ -9,8 +9,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -48,10 +50,11 @@ fun RuncheckNavHost(
     val reducedMotion = LocalReducedMotion.current
 
     // Navigate to the deep-link screen and consume so it doesn't re-fire
-    androidx.compose.runtime.LaunchedEffect(deepLinkRoute) {
+    val currentOnDeepLinkConsumed by rememberUpdatedState(onDeepLinkConsumed)
+    LaunchedEffect(deepLinkRoute) {
         if (deepLinkRoute != null) {
             navController.navigateNotificationRoute(deepLinkRoute)
-            onDeepLinkConsumed()
+            currentOnDeepLinkConsumed()
         }
     }
 
@@ -121,7 +124,10 @@ fun RuncheckNavHost(
                 onNavigateToAppUsage = { navController.navigateSingleTop(Screen.AppUsage.route) },
                 onNavigateToSettings = { navController.navigateSingleTop(Screen.Settings.route) },
                 onNavigateToProUpgrade = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
-                onNavigateToLearn = { navController.navigateSingleTop(Screen.Learn.route) }
+                onNavigateToLearn = { navController.navigateSingleTop(Screen.Learn.route) },
+                onNavigateToLearnArticle = { articleId ->
+                    navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
+                }
             )
         }
         composable(Screen.Battery.route) { entry ->
@@ -239,7 +245,12 @@ fun RuncheckNavHost(
             )
         }
         composable(Screen.Settings.route) {
-            SettingsScreen(onBack = { navController.popBackStack() })
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToLearnArticle = { articleId ->
+                    navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
+                }
+            )
         }
         composable(Screen.SpeedTest.route) {
             val networkParentEntry = remember(navController) {

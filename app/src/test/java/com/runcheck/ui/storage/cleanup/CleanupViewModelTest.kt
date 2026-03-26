@@ -8,6 +8,7 @@ import com.runcheck.domain.model.CleanupSummary
 import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.ScannedFile
 import com.runcheck.domain.model.StorageState
+import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.MainDispatcherRule
 import com.runcheck.ui.common.UiText
@@ -35,6 +36,7 @@ class CleanupViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val storageCleanup: StorageCleanupUseCase = mockk()
+    private val isProUser: IsProUserUseCase = mockk()
 
     private val testFiles = listOf(
         ScannedFile(
@@ -93,6 +95,7 @@ class CleanupViewModelTest {
     fun setup() {
         coEvery { storageCleanup.getCurrentStorageState() } returns storageState
         coEvery { storageCleanup.findExistingUris(any()) } returns emptySet()
+        every { isProUser() } returns true
     }
 
     private fun createSummary(files: List<ScannedFile>): CleanupSummary {
@@ -135,7 +138,8 @@ class CleanupViewModelTest {
         val savedStateHandle = SavedStateHandle(savedStateValues)
         return CleanupViewModel(
             savedStateHandle = savedStateHandle,
-            storageCleanup = storageCleanup
+            storageCleanup = storageCleanup,
+            isProUser = isProUser
         )
     }
 
@@ -244,7 +248,8 @@ class CleanupViewModelTest {
         val savedStateHandle = SavedStateHandle(mapOf("type" to "LARGE_FILES"))
         val viewModel = CleanupViewModel(
             savedStateHandle = savedStateHandle,
-            storageCleanup = storageCleanup
+            storageCleanup = storageCleanup,
+            isProUser = isProUser
         )
         advanceUntilIdle()
 
@@ -280,32 +285,16 @@ class CleanupViewModelTest {
     }
 
     @Test
-    fun `APK type preselects all files`() = runTest(mainDispatcherRule.testDispatcher) {
-        val apkFiles = listOf(
-            ScannedFile(
-                uri = "content://media/10",
-                displayName = "app1.apk",
-                sizeBytes = 50_000_000L,
-                mimeType = "application/vnd.android.package-archive",
-                dateModified = System.currentTimeMillis(),
-                category = MediaCategory.APK
-            ),
-            ScannedFile(
-                uri = "content://media/11",
-                displayName = "app2.apk",
-                sizeBytes = 30_000_000L,
-                mimeType = "application/vnd.android.package-archive",
-                dateModified = System.currentTimeMillis(),
-                category = MediaCategory.APK
-            )
-        )
-
-        val viewModel = createViewModel(type = "APK_FILES", files = apkFiles)
+    fun `APK cleanup is blocked on unsupported Android versions in JVM tests`() = runTest(mainDispatcherRule.testDispatcher) {
+        val viewModel = createViewModel(type = "APK_FILES", files = emptyList())
         advanceUntilIdle()
 
-        val state = viewModel.uiState.value as CleanupUiState.Results
-        assertEquals(2, state.selectedCount)
-        assertEquals(80_000_000L, state.selectedSize)
+        assertEquals(CleanupUiState.UnsupportedVersion, viewModel.uiState.value)
+    }
+
+    @Test
+    fun `APK type keeps preselect all configuration enabled`() {
+        assertTrue(CleanupType.APK_FILES.preselectAll)
     }
 
     @Test

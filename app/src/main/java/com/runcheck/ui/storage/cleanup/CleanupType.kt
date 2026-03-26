@@ -1,5 +1,6 @@
 package com.runcheck.ui.storage.cleanup
 
+import androidx.annotation.StringRes
 import com.runcheck.R
 
 enum class CleanupType {
@@ -7,7 +8,7 @@ enum class CleanupType {
     OLD_DOWNLOADS,
     APK_FILES;
 
-    val titleRes: Int get() = when (this) {
+    @get:StringRes val titleRes: Int get() = when (this) {
         LARGE_FILES -> R.string.cleanup_large_files_title
         OLD_DOWNLOADS -> R.string.cleanup_old_downloads_title
         APK_FILES -> R.string.cleanup_apk_files_title
@@ -39,6 +40,6 @@ enum class CleanupType {
 }
 
 data class FilterOption(
-    val labelRes: Int,
+    @param:StringRes val labelRes: Int,
     val value: Long
 )

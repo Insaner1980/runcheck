@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.os.Build
 import android.os.Process
 import android.provider.Settings
 import android.util.LruCache
@@ -36,6 +37,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -58,6 +60,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
@@ -124,15 +127,17 @@ fun AppUsageScreen(
                 }
             }
             is AppUsageUiState.Success -> {
+                val appItems = viewModel.pagedApps.collectAsLazyPagingItems()
                 AppUsageContent(
                     state = state,
-                    viewModel = viewModel,
+                    appItems = appItems,
                     onRefresh = { viewModel.refresh() }
                 )
             }
             AppUsageUiState.Locked -> {
+                val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
                 LaunchedEffect(Unit) {
-                    onUpgradeToPro()
+                    currentOnUpgradeToPro()
                 }
                 ProFeatureLockedState(
                     title = stringResource(R.string.app_usage_title),
@@ -151,11 +156,11 @@ fun AppUsageScreen(
 @Composable
 private fun AppUsageContent(
     state: AppUsageUiState.Success,
-    viewModel: AppUsageViewModel,
+    appItems: LazyPagingItems<com.runcheck.domain.model.AppBatteryUsage>,
     onRefresh: () -> Unit
 ) {
     val context = LocalContext.current
-    val appItems = viewModel.pagedApps.collectAsLazyPagingItems()
+    val currentOnRefresh by rememberUpdatedState(onRefresh)
     var hasUsageAccess by remember(context) { mutableStateOf(context.hasUsageStatsAccess()) }
     val maxTime = state.maxForegroundTimeMs.coerceAtLeast(1L)
     val totalTime = state.totalForegroundTimeMs.coerceAtLeast(1L)
@@ -165,7 +170,7 @@ private fun AppUsageContent(
         val justGrantedAccess = !hasUsageAccess && currentAccess
         hasUsageAccess = currentAccess
         if (currentAccess && (justGrantedAccess || appItems.itemCount == 0)) {
-            onRefresh()
+            currentOnRefresh()
         }
         onPauseOrDispose { }
     }
@@ -357,10 +362,7 @@ private fun AppUsageItem(app: AppBatteryUsage, maxTime: Long, totalTime: Long) {
                     modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AppIcon(
-                        packageName = app.packageName,
-                        appLabel = app.appLabel
-                    )
+                    AppIcon(packageName = app.packageName)
                     Spacer(modifier = Modifier.width(MaterialTheme.spacing.sm))
                     Column(
                         modifier = Modifier.weight(1f),
@@ -430,7 +432,7 @@ private val appIconCache = object : LruCache<String, Bitmap>(MAX_APP_ICON_CACHE_
 private const val MAX_APP_ICON_CACHE_KB = 8 * 1024
 
 @Composable
-private fun AppIcon(packageName: String, appLabel: String) {
+private fun AppIcon(packageName: String) {
     val context = LocalContext.current
     val bitmapState = produceState<Bitmap?>(
         initialValue = appIconCache.get(packageName),
@@ -463,10 +465,20 @@ private fun AppIcon(packageName: String, appLabel: String) {
 
 private fun loadAppIconBitmap(context: Context, packageName: String): Bitmap? {
     return try {
-        val appInfo = context.packageManager.getApplicationInfo(
-            packageName,
-            PackageManager.MATCH_UNINSTALLED_PACKAGES
-        )
+        val appInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.packageManager.getApplicationInfo(
+                packageName,
+                PackageManager.ApplicationInfoFlags.of(
+                    PackageManager.MATCH_UNINSTALLED_PACKAGES.toLong()
+                )
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            context.packageManager.getApplicationInfo(
+                packageName,
+                PackageManager.MATCH_UNINSTALLED_PACKAGES
+            )
+        }
         context.packageManager.getApplicationIcon(appInfo).toBitmap(96, 96)
     } catch (_: PackageManager.NameNotFoundException) {
         null
