@@ -1684,8 +1684,11 @@ private fun BatterySleepAnalysisPanel(
 private fun BatteryStatisticsPanel(statistics: BatteryStatistics, onInfoClick: (String) -> Unit = {}) {
     BatteryPanel {
         CardSectionTitle(
-            text = stringResource(R.string.battery_stats_section) + " · " +
+            text = stringResource(
+                R.string.battery_stats_section_with_period,
+                stringResource(R.string.battery_stats_section),
                 pluralStringResource(R.plurals.battery_stats_last_n_days, statistics.periodDays, statistics.periodDays)
+            )
         )
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
 

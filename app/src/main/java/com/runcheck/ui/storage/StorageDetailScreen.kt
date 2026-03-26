@@ -500,11 +500,20 @@ private fun StorageHeroCard(
     val totalFormatted = formatStorageSize(context, storage.totalBytes)
     val freeFormatted = formatStorageSize(context, storage.availableBytes)
     val usagePercent = storage.usagePercent.toInt().coerceIn(0, 100)
-    val usageSummary = "$usedFormatted / $totalFormatted"
+    val usageSummary = stringResource(R.string.storage_usage_ratio, usedFormatted, totalFormatted)
     val freeSummary = stringResource(R.string.storage_free_available, freeFormatted)
-    val fillRateLabel = stringResource(R.string.storage_fill_rate)
-    val fillRateSummary = storage.fillRateEstimate?.let { "$fillRateLabel: ~$it" }
-    val statusText = listOfNotNull(freeSummary, fillRateSummary).joinToString(" · ")
+    val fillRateSummary = storage.fillRateEstimate?.let {
+        stringResource(
+            R.string.value_label_colon,
+            stringResource(R.string.storage_fill_rate),
+            stringResource(R.string.value_approx_prefix, it)
+        )
+    }
+    val statusText = if (fillRateSummary != null) {
+        stringResource(R.string.value_two_parts_separator, freeSummary, fillRateSummary)
+    } else {
+        freeSummary
+    }
 
     StoragePanel {
         Column(
