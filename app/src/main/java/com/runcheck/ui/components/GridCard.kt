@@ -112,7 +112,7 @@ fun GridCard(
                     style = MaterialTheme.typography.headlineSmall.copy(
                         fontFamily = MaterialTheme.numericFontFamily
                     ),
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = subtitleColor
                 )
                 if (statusLabel != null) {
                     Spacer(modifier = Modifier.height(2.dp))
