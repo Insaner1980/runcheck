@@ -1,7 +1,6 @@
 package com.runcheck.ui.thermal
 
 import android.os.Build
-import com.runcheck.ui.ads.DetailScreenAdBanner
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -88,6 +87,7 @@ import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.common.temperatureUnitRes
 import com.runcheck.ui.common.temperatureBandLabel
 import com.runcheck.ui.components.CardSectionTitle
+import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.ExpandableChartContainer
 import com.runcheck.ui.components.HeatStrip
@@ -147,6 +147,7 @@ fun ThermalDetailScreen(
             title = stringResource(R.string.thermal_title),
             onBack = onBack
         )
+        ContentContainer {
         when (val state = uiState) {
             is ThermalUiState.Loading -> {
                 Box(
@@ -181,6 +182,7 @@ fun ThermalDetailScreen(
                     onPeriodChange = { viewModel.setHistoryPeriod(it) }
                 )
             }
+        }
         }
     }
 }
@@ -337,7 +339,6 @@ private fun ThermalContent(
                 )
             }
 
-            item { DetailScreenAdBanner() }
             item { Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl)) }
         }
     }

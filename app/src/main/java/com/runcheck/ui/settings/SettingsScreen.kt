@@ -79,6 +79,7 @@ import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.components.CardSectionTitle
+import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.info.InfoBottomSheet
@@ -174,13 +175,14 @@ fun SettingsScreen(
     Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
-        ) {
+        ContentContainer {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = MaterialTheme.spacing.base),
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+            ) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
             // ── MONITORING ─────────────────────────────────────────────
@@ -806,6 +808,7 @@ fun SettingsScreen(
             }
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
+        }
         }
     }
 

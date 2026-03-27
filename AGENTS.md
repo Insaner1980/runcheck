@@ -88,10 +88,6 @@ State restoration conventions:
 - Use `rememberSaveable` for screen-local UI state such as sheet visibility, dialogs, and metric chip selections
 - Use `SavedStateHandle` for route-backed or process-death-sensitive state such as selected history period, cleanup type, and fullscreen chart args
 
-Legacy surface notes:
-
-- Legacy ad-related code and ad-free flags still exist in the repo, but ads are not a supported product direction. Do not expand or reintroduce ad surfaces unless the task is explicitly cleanup or migration.
-
 ---
 
 ## Code Review Priorities

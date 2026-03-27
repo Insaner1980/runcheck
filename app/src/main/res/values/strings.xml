@@ -576,7 +576,7 @@
     <!-- Notifications -->
     <string name="notification_channel_alerts">Device Alerts</string>
     <string name="notification_channel_alerts_description">Alerts for battery, temperature, and storage issues</string>
-    <string name="monitor_realtime_fgs_reason">Foreground service for real-time device health monitoring: (1) displays live battery, thermal, and network metrics while the user is actively viewing the detail screen, and (2) provides an opt-in persistent notification with continuously updated battery stats when the user explicitly enables Live Notification in Settings. The service is never started automatically — it requires direct user action.</string>
+    <string name="monitor_realtime_fgs_reason">Foreground service for runcheck&apos;s optional Live Notification feature. When the user enables Live Notification in Settings, the app shows a persistent notification with real-time battery stats and refreshes it until the user turns it off.</string>
     <string name="notification_low_battery_title">Low Battery</string>
     <string name="notification_low_battery_text">Battery at %d%%</string>
     <string name="notification_high_temp_title">High Temperature</string>
@@ -653,7 +653,7 @@
     <string name="app_usage_no_data">No usage data available for the last 24 hours</string>
     <string name="app_usage_no_data_message">This can happen on a fresh install or right after granting usage access. Give Android a moment, then retry.</string>
     <string name="app_usage_permission_title">Allow usage access</string>
-    <string name="app_usage_permission_message">Android requires Usage Access permission before runcheck can show per-app foreground time.</string>
+    <string name="app_usage_permission_message">Android requires Usage Access permission before runcheck can show per-app foreground time. If a severe thermal throttling event happens, runcheck can also label that event with the foreground app name when this access is available.</string>
     <string name="app_usage_permission_open_settings">Open usage access</string>
     <string name="app_usage_time_hours_minutes">%1$dh %2$dm</string>
     <string name="app_usage_time_minutes">%1$dm</string>
@@ -706,7 +706,6 @@
     <string name="pro_feature_widgets">Home screen widgets</string>
     <string name="pro_feature_csv_export">CSV data export</string>
     <string name="pro_feature_thermal_logs">Thermal throttling logs</string>
-    <string name="pro_feature_ad_free">Ad-free experience</string>
     <string name="pro_unlock_button">Unlock with Pro</string>
 
     <!-- Pro Thank You -->
@@ -724,7 +723,7 @@
     <string name="trial_pro_trial_label">Pro Trial</string>
     <string name="trial_day5_banner">Your battery history now has 5 days of data. Keep tracking with Pro.</string>
     <string name="trial_expired_title">Your Pro Trial Has Ended</string>
-    <string name="trial_expired_body">Extended history, charger comparison, and exports are now locked. Ads will appear on detail screens.</string>
+    <string name="trial_expired_body">Extended history, charger comparison, and exports are now locked.</string>
     <string name="trial_continue_free">Continue with Free</string>
     <string name="trial_expired_upgrade">Your Pro trial ended. Unlock Pro to keep all features.</string>
     <string name="trial_expired_upgrade_with_price">Your Pro trial ended. Unlock Pro for %1$s.</string>

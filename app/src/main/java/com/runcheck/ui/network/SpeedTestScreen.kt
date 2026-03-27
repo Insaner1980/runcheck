@@ -82,6 +82,7 @@ import com.runcheck.ui.common.connectionDisplayLabel
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.components.AnimatedFloatText
+import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.SectionHeader
@@ -130,6 +131,7 @@ fun SpeedTestScreen(
             onBack = onBack
         )
 
+        ContentContainer {
         when (val netState = networkUiState) {
             is NetworkUiState.Loading -> {
                 Box(
@@ -164,6 +166,7 @@ fun SpeedTestScreen(
                     onDismissCellular = { viewModel.dismissCellularWarning() }
                 )
             }
+        }
         }
     }
 }

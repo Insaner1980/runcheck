@@ -11,13 +11,13 @@ Monitor battery health, network, temperature & storage with real-time insights.
 runcheck gives you complete visibility into your Android device's health with real-time monitoring and smart alerts.
 
 **Battery Intelligence**
-Track battery level, voltage, temperature, charging current, and health percentage. See which apps drain your battery the most. Compare charger performance to find your fastest charger.
+Track battery level, voltage, temperature, charging current, and health percentage when your device exposes them. Pro adds charger comparison and per-app foreground-time breakdowns.
 
 **Network Monitoring**
 Monitor WiFi and cellular signal strength, connection speed, carrier info, and network latency in real time.
 
 **Thermal Tracking**
-Watch battery and CPU temperatures. Get alerts before your device overheats. Pro users can view a complete throttling log to identify which apps cause thermal issues.
+Watch battery temperature and Android thermal status. Get alerts before your device overheats. Pro users can review throttling history and, when Usage Access is granted, see which app was in the foreground during severe thermal events.
 
 **Storage Overview**
 See total, used, and available storage at a glance. Track app and media space usage with fill rate estimates.
@@ -25,18 +25,19 @@ See total, used, and available storage at a glance. Track app and media space us
 **Smart Alerts**
 Receive notifications for low battery, high temperature, low storage, and charging complete events.
 
-**Home Screen Widgets**
+**Home Screen Widgets [Pro]**
 Add battery status and health score widgets to your home screen for at-a-glance monitoring.
 
 **Pro Features**
 - Extended history (week, month, all time)
+- Per-app foreground-time breakdown
 - Charger comparison and charging session tracking
 - Thermal throttling log
 - CSV data export
 - Widgets and advanced insights
 
 **Privacy First**
-All data stays on your device. No cloud uploads, no tracking. See our privacy policy for details.
+Monitoring history stays on your device. Optional speed tests use M-Lab infrastructure, latency checks contact M-Lab, and purchases go through Google Play Billing. No analytics or tracking. See our privacy policy for details.
 
 **Measurement Confidence**
 runcheck automatically detects your device's capabilities and shows confidence indicators so you always know how reliable each measurement is.
@@ -65,13 +66,13 @@ Seuraa akun kuntoa, verkkoa, lämpötilaa ja tallennustilaa reaaliajassa.
 runcheck antaa täydellisen näkymän Android-laitteesi terveyteen reaaliaikaisella seurannalla ja älykkäillä hälytyksillä.
 
 **Akun tiedustelu**
-Seuraa akun varausta, jännitettä, lämpötilaa, latausvirtaa ja kuntoprosenttia. Katso mitkä sovellukset kuluttavat akkua eniten. Vertaa latureiden suorituskykyä.
+Seuraa akun varausta, jännitettä, lämpötilaa, latausvirtaa ja kuntoprosenttia silloin kun laitteesi raportoi ne. Pro tuo laturivertailun ja sovelluskohtaisen käyttöajan erittelyn.
 
 **Verkon seuranta**
 Seuraa WiFi- ja mobiiliverkon signaalivahvuutta, yhteysnopeutta, operaattoritietoja ja verkon viivettä reaaliajassa.
 
 **Lämpötilan seuranta**
-Tarkkaile akun ja suorittimen lämpötiloja. Saa hälytykset ennen laitteen ylikuumenemista.
+Tarkkaile akun lämpötilaa ja Androidin lämpötilatilaa. Saa hälytykset ennen laitteen ylikuumenemista. Prossa voit tarkistaa lämpökuristushistorian ja nähdä etualan sovelluksen vakavien tapahtumien yhteydessä, kun käyttötilastolupa on myönnetty.
 
 **Tallennustilan yleiskatsaus**
 Näe kokonais-, käytetty ja vapaa tallennustila yhdellä silmäyksellä.
@@ -79,15 +80,16 @@ Näe kokonais-, käytetty ja vapaa tallennustila yhdellä silmäyksellä.
 **Älykkäät hälytykset**
 Ilmoitukset matalasta akusta, korkeasta lämpötilasta, vähäisestä tallennustilasta ja latauksen valmistumisesta.
 
-**Kotinäyttöwidgetit**
+**Kotinäyttöwidgetit [Pro]**
 Lisää akun tila ja kuntopisteet kotinäytölle.
 
 **Pro-ominaisuudet**
 - Laajennettu historia (viikko, kuukausi, kaikki)
+- Sovelluskohtainen käyttöaikaerittely
 - Laturivertailu ja lataussessioiden seuranta
 - Lämpötilan rajoitusloki
 - CSV-datavienti
 - Widgetit ja laajemmat insights-näkymät
 
 **Yksityisyys ensin**
-Kaikki data pysyy laitteellasi. Ei pilvipalvelua, ei seurantaa.
+Seurantahistoria pysyy laitteellasi. Valinnaiset nopeustestit käyttävät M-Labin infrastruktuuria, viivemittaukset ottavat yhteyden M-Labiin ja ostot kulkevat Google Play Billingin kautta. Ei analytiikkaa eikä seurantaa.

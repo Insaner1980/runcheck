@@ -121,5 +121,4 @@ private fun welcomeFeatureLabel(feature: ProFeature): String = when (feature) {
     ProFeature.WIDGETS -> stringResource(R.string.pro_feature_widgets)
     ProFeature.CSV_EXPORT -> stringResource(R.string.pro_feature_csv_export)
     ProFeature.THERMAL_LOGS -> stringResource(R.string.pro_feature_thermal_logs)
-    ProFeature.AD_FREE -> stringResource(R.string.pro_feature_ad_free)
 }

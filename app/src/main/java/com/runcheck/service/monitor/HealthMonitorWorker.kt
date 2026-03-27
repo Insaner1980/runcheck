@@ -65,7 +65,8 @@ class HealthMonitorWorker @AssistedInject constructor(
 
         coreFailure = collectStep("network") {
             val networkState = networkRepository.getNetworkState().first()
-            networkRepository.saveReading(networkState)
+            val latency = try { networkRepository.measureLatency() } catch (_: Exception) { null }
+            networkRepository.saveReading(networkState.copy(latencyMs = latency))
         } || coreFailure
 
         coreFailure = collectStep("thermal") {

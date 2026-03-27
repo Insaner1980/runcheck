@@ -43,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.pro.ProFeature
 import com.runcheck.pro.ProStatus
+import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.theme.statusColors
@@ -62,6 +63,7 @@ fun ProUpgradeScreen(
             onBack = onBack
         )
 
+        ContentContainer {
         if (uiState.purchaseCompleted) {
             PurchaseThankYouContent(
                 onDismiss = {
@@ -78,6 +80,7 @@ fun ProUpgradeScreen(
                     (context as? Activity)?.let { viewModel.purchasePro(it) }
                 }
             )
+        }
         }
     }
 }
@@ -240,7 +243,6 @@ private fun featureIcon(feature: ProFeature): ImageVector = when (feature) {
     ProFeature.WIDGETS -> Icons.Outlined.Widgets
     ProFeature.CSV_EXPORT -> Icons.Outlined.FileDownload
     ProFeature.THERMAL_LOGS -> Icons.Outlined.Thermostat
-    ProFeature.AD_FREE -> Icons.Outlined.NoAccounts
 }
 
 @Composable
@@ -251,5 +253,4 @@ private fun featureLabel(feature: ProFeature): String = when (feature) {
     ProFeature.WIDGETS -> stringResource(R.string.pro_feature_widgets)
     ProFeature.CSV_EXPORT -> stringResource(R.string.pro_feature_csv_export)
     ProFeature.THERMAL_LOGS -> stringResource(R.string.pro_feature_thermal_logs)
-    ProFeature.AD_FREE -> stringResource(R.string.pro_feature_ad_free)
 }

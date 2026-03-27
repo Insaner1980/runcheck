@@ -66,6 +66,7 @@ import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import com.runcheck.R
 import com.runcheck.domain.model.AppBatteryUsage
+import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.IconCircle
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.ProFeatureLockedState
@@ -110,44 +111,46 @@ fun AppUsageScreen(
             title = stringResource(R.string.app_usage_title),
             onBack = onBack
         )
-        when (val state = uiState) {
-            is AppUsageUiState.Loading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+        ContentContainer {
+            when (val state = uiState) {
+                is AppUsageUiState.Loading -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
-            is AppUsageUiState.Error -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.common_error_generic))
-                        TextButton(onClick = { viewModel.refresh() }) {
-                            Text(stringResource(R.string.common_retry))
+                is AppUsageUiState.Error -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(stringResource(R.string.common_error_generic))
+                            TextButton(onClick = { viewModel.refresh() }) {
+                                Text(stringResource(R.string.common_retry))
+                            }
                         }
                     }
                 }
-            }
-            is AppUsageUiState.Success -> {
-                val appItems = viewModel.pagedApps.collectAsLazyPagingItems()
-                AppUsageContent(
-                    state = state,
-                    appItems = appItems,
-                    onRefresh = { viewModel.refresh() }
-                )
-            }
-            AppUsageUiState.Locked -> {
-                val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
-                LaunchedEffect(Unit) {
-                    currentOnUpgradeToPro()
+                is AppUsageUiState.Success -> {
+                    val appItems = viewModel.pagedApps.collectAsLazyPagingItems()
+                    AppUsageContent(
+                        state = state,
+                        appItems = appItems,
+                        onRefresh = { viewModel.refresh() }
+                    )
                 }
-                ProFeatureLockedState(
-                    title = stringResource(R.string.app_usage_title),
-                    message = stringResource(
-                        R.string.pro_feature_locked_message,
-                        stringResource(R.string.app_usage_title)
-                    ),
-                    actionLabel = stringResource(R.string.pro_feature_upgrade_action),
-                    onAction = onUpgradeToPro
-                )
+                AppUsageUiState.Locked -> {
+                    val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
+                    LaunchedEffect(Unit) {
+                        currentOnUpgradeToPro()
+                    }
+                    ProFeatureLockedState(
+                        title = stringResource(R.string.app_usage_title),
+                        message = stringResource(
+                            R.string.pro_feature_locked_message,
+                            stringResource(R.string.app_usage_title)
+                        ),
+                        actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+                        onAction = onUpgradeToPro
+                    )
+                }
             }
         }
     }

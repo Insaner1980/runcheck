@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
@@ -75,7 +76,6 @@ import com.runcheck.domain.model.MediaBreakdown
 import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.TrashInfo
 import com.runcheck.domain.model.StorageState
-import com.runcheck.ui.ads.DetailScreenAdBanner
 import com.runcheck.ui.common.findActivity
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.storage.MediaDeleteRequestResult
@@ -97,6 +97,7 @@ import com.runcheck.ui.common.resolve
 import androidx.compose.material3.AlertDialog
 import com.runcheck.ui.components.ActionCard
 import com.runcheck.ui.components.CardSectionTitle
+import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.ExpandableChartContainer
 import com.runcheck.ui.components.ListRow
@@ -149,8 +150,16 @@ fun StorageDetailScreen(
             )
         }
     }
-    val missingMediaPermissions = requiredMediaPermissions.filter { permission ->
-        ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED
+    var missingMediaPermissions by remember {
+        mutableStateOf(requiredMediaPermissions.filter { permission ->
+            ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED
+        })
+    }
+    LifecycleResumeEffect(context) {
+        missingMediaPermissions = requiredMediaPermissions.filter { permission ->
+            ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED
+        }
+        onPauseOrDispose { }
     }
     val shouldOpenMediaSettings = mediaPermissionRequested &&
         missingMediaPermissions.isNotEmpty() &&
@@ -220,6 +229,7 @@ fun StorageDetailScreen(
             title = "",
             onBack = onBack
         )
+        ContentContainer {
         when (val state = uiState) {
             is StorageUiState.Loading -> {
                 Box(
@@ -267,6 +277,7 @@ fun StorageDetailScreen(
                     onPeriodChange = { viewModel.setHistoryPeriod(it) }
                 )
             }
+        }
         }
     }
 
@@ -427,7 +438,6 @@ private fun StorageContent(
                 onNavigateToArticle = onNavigateToLearnArticle
             )
 
-            DetailScreenAdBanner()
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }
     }

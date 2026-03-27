@@ -61,6 +61,7 @@ import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.storage.buildMediaDeleteRequest
 import com.runcheck.ui.storage.MediaDeleteRequestResult
+import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.theme.spacing
 
@@ -130,10 +131,10 @@ fun CleanupScreen(
                 )
             }
         ) { paddingValues ->
+            ContentContainer(modifier = Modifier.padding(paddingValues)) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
                     .padding(horizontal = MaterialTheme.spacing.base)
             ) {
                 // Filter chips
@@ -317,6 +318,7 @@ fun CleanupScreen(
                         }
                     }
                 }
+            }
             }
         }
 

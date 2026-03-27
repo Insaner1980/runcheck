@@ -4,7 +4,22 @@ _Auto-generated from git history. Updated on each commit._
 
 ## 2026 Week 13 (maalis 23 – maalis 29)
 
+### Other
+- SDK 37 preview, Detekt 1.23.8 + Compose Rules, annotaatiot ja koodilaadun parannukset (`4ee4402`)
+- Move hardcoded separators and concatenated text to string resources (`dfab75f`)
 ### Added
+- Add defense-in-depth pro checks to network history and storage cleanup (`d2ca2e4`)
+- Add Security & Quality Requirements section to CLAUDE.md (`246853b`)
+### Fixed
+- Fix CodeQL implicit PendingIntent findings in notifications (`841068f`)
+- Fix two compilation errors: saveResult return type and variable ordering (`4becd48`)
+- Update CodeQL workflow: v3→v4, add build-mode: manual (`906433c`)
+- Add custom CodeQL workflow for Android/Kotlin project (`1522b5d`)
+- Remove MANAGE_EXTERNAL_STORAGE permission and dead ScreenStateReceiver intent-filters (`b6df3c4`)
+- Remove redundant package_name index and fix deprecated fallbackToDestructiveMigration (`29f0391`)
+- Add detekt Compose rules plugin and document PagingData exception (`5e44cfc`)
+- Configure static analysis: add Android Lint block and expand detekt rules (`3bbbeec`)
+- Fix outdated counts in CLAUDE.md and UI-SPEC.md (`6132566`)
 - feat: laaja päivitys — speed test, chart-animaatiot, UI-parannukset, palvelut (`b1290a7`)
 ### Docs
 - docs: päivitä CODEX.md ja AGENTS.md — poista crash reporting -viitteet (`aa6ef71`)
@@ -16,7 +31,6 @@ _Auto-generated from git history. Updated on each commit._
 - feat: edellisten sessioiden muutokset — lokalisaatio, cleanup, info-sisältö (`52137ec`)
 - docs: päivitä PROJECT.md ja UI-SPEC.md chart-animaatioilla (`7e56e0e`)
 - docs: päivitä CLAUDE.md ja ui-reference.md chart-animaatiomuutoksilla (`e8ca875`)
-### Fixed
 - fix: lisää puuttuva clipRect import ja HistoryPeriod-haarat (`abeb59a`)
 - feat: integroi chart-animaatiot kaikkiin detail-näkymiin (`433dbbc`)
 - feat: LiveChart pehmeä liuku ja glow-pulssi uusille datapisteille (`cc9f57d`)

@@ -615,7 +615,6 @@ PullToRefreshWrapper(isRefreshing, onRefresh)
     ChartSection? (Pro-gated)       // Period chips + TrendChart + Min/Avg/Max pills
     ActionSection? (if applicable)  // Cleanup tools, speed test, etc.
     RelatedArticlesSection          // CrossLinkButtons to Learn articles
-    AdBanner (free tier only)
 ```
 
 ### State Management

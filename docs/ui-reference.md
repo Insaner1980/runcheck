@@ -313,7 +313,6 @@ Pull-to-refresh -kääre.
    - Pro: FilterChip-rivi (Day/Week/Month/All) + TrendChart
 10. **DrainRatePanel** (ehdollinen, vain purkautuessa)
     - MetricPill: purkausnopeus %/h + arvioitu jäljellä oleva aika
-11. **DetailScreenAdBanner**
 
 ### 4.3 Network Detail Screen
 
@@ -349,7 +348,6 @@ Pull-to-refresh -kääre.
    - Serveri + aikaleima
    - Tai "No results" -viesti
    - "Run Speed Test" -nappi
-8. **DetailScreenAdBanner**
 
 ### 4.4 Speed Test Screen
 
@@ -387,7 +385,6 @@ Pull-to-refresh -kääre.
 7. **Throttling-lista** (Pro-lukittu)
    - Tyhjä: StatusDot (healthy) + "No throttling events"
    - Tapahtumat: ThrottlingEventItem — aikaleima, status+StatusDot, lämpötila, CPU temp, sovellus, kesto
-8. **DetailScreenAdBanner**
 
 ### 4.6 Storage Detail Screen
 

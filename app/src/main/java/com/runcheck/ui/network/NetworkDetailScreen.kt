@@ -1,6 +1,5 @@
 package com.runcheck.ui.network
 
-import com.runcheck.ui.ads.DetailScreenAdBanner
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -64,6 +63,7 @@ import androidx.core.location.LocationManagerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.runcheck.R
@@ -81,6 +81,7 @@ import com.runcheck.ui.common.isUnknownValue
 import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.common.signalQualityLabel
 import com.runcheck.ui.components.CardSectionTitle
+import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
@@ -157,6 +158,7 @@ fun NetworkDetailScreen(
             onBack = onBack
         )
 
+        ContentContainer {
         when (val state = networkUiState) {
             is NetworkUiState.Loading -> {
                 Box(
@@ -199,6 +201,7 @@ fun NetworkDetailScreen(
                     onFullscreenResultConsumed = onFullscreenResultConsumed
                 )
             }
+        }
         }
     }
 }
@@ -815,9 +818,14 @@ private fun NetworkContent(
     val context = LocalContext.current
     val activity = context.findActivity()
     val networkState = state.networkState
-    val hasLocationPermission = context.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-    val locationEnabled = context.isLocationEnabled()
-    var locationRequestAttempted by remember { mutableStateOf(false) }
+    var hasLocationPermission by remember { mutableStateOf(context.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) }
+    var locationEnabled by remember { mutableStateOf(context.isLocationEnabled()) }
+    LifecycleResumeEffect(context) {
+        hasLocationPermission = context.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+        locationEnabled = context.isLocationEnabled()
+        onPauseOrDispose { }
+    }
+    var locationRequestAttempted by rememberSaveable { mutableStateOf(false) }
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -949,8 +957,6 @@ private fun NetworkContent(
                 ),
                 onNavigateToArticle = onNavigateToLearnArticle
             )
-
-            DetailScreenAdBanner()
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }

@@ -1,6 +1,6 @@
 # runcheck Privacy Policy
 
-**Last updated:** March 10, 2026
+**Last updated:** March 27, 2026
 
 ## What data runcheck collects
 
@@ -8,15 +8,15 @@ runcheck monitors your device's hardware metrics locally on your device:
 
 - **Battery**: level, voltage, temperature, current, health, cycle count
 - **Network**: connection type, signal strength, WiFi info, latency
-- **Thermal**: battery and CPU temperature, thermal status
+- **Thermal**: battery temperature, Android thermal status, throttling history, and the foreground app label for severe throttling events when Usage Access is granted
 - **Storage**: total, used, and available space
-- **App usage**: per-app foreground time and estimated battery drain (requires PACKAGE_USAGE_STATS permission)
+- **App usage**: per-app foreground time (requires PACKAGE_USAGE_STATS permission)
 
 ## How data is stored
 
-Measurement history and settings are stored **locally on your device** using on-device Room and DataStore storage. The local database is not encrypted at the application layer.
+Measurement history, throttling events, and settings are stored **locally on your device** using on-device Room and DataStore storage. The local database is not encrypted at the application layer.
 
-Free users' data is automatically cleaned up after 24 hours. Pro users can retain data indefinitely and export it as CSV files to their device's Downloads folder.
+Free users' data is automatically cleaned up after 24 hours. Pro users can choose longer retention windows (3 months, 6 months, 1 year, or forever) and can export CSV files for sharing from the app.
 
 ## Network access
 
@@ -31,7 +31,7 @@ No analytics, crash reporting, or telemetry data is ever sent.
 ## Third-party services
 
 - **Google Play Billing**: Processes in-app purchases. Subject to [Google Play's terms](https://play.google.com/about/play-terms/).
-- **M-Lab**: Provides optional speed-test infrastructure and the default latency endpoint.
+- **M-Lab**: Provides optional speed-test infrastructure and the default latency endpoint. User-initiated speed tests may contribute measurement data to open internet research.
 
 ## Permissions
 
@@ -39,13 +39,16 @@ No analytics, crash reporting, or telemetry data is ever sent.
 |-----------|---------|
 | ACCESS_NETWORK_STATE | Monitor network connection type |
 | ACCESS_WIFI_STATE | Read WiFi signal strength and details |
-| ACCESS_FINE_LOCATION | Allow Android to expose current WiFi SSID and related network details |
-| FOREGROUND_SERVICE | Run background monitoring service |
-| FOREGROUND_SERVICE_SPECIAL_USE | Support the real-time monitoring foreground service while actively viewing live metrics |
+| ACCESS_FINE_LOCATION | Allow Android to expose the current WiFi SSID and BSSID |
+| FOREGROUND_SERVICE | Run the optional Live Notification foreground service |
+| FOREGROUND_SERVICE_SPECIAL_USE | Declare the Live Notification foreground service subtype on supported Android versions |
 | POST_NOTIFICATIONS | Send alerts (low battery, high temp, etc.) |
 | RECEIVE_BOOT_COMPLETED | Restart monitoring after device reboot |
 | INTERNET | Latency measurement, speed testing, and billing |
-| PACKAGE_USAGE_STATS | Per-app battery usage tracking |
+| READ_MEDIA_IMAGES / READ_MEDIA_VIDEO / READ_MEDIA_AUDIO | Scan media files for storage breakdown and cleanup tools (Android 13+) |
+| READ_EXTERNAL_STORAGE | Scan files for storage breakdown and cleanup tools (Android 12 and below) |
+| WRITE_EXTERNAL_STORAGE | Legacy external file access for cleanup actions on Android 9 and below |
+| PACKAGE_USAGE_STATS | Show per-app foreground time and label severe throttling events with the foreground app when available |
 
 ## Data deletion
 

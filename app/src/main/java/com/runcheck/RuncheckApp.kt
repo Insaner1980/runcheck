@@ -62,7 +62,7 @@ class RuncheckApp : Application(), Configuration.Provider {
         }
         // Update widgets when pro status changes
         launchSafely(Dispatchers.Default, "widget updates") {
-            billingManager.get().isProUser.distinctUntilChanged().collect {
+            proManager.get().isProUser.distinctUntilChanged().collect {
                 RuncheckWidgets.updateAll(this@RuncheckApp)
             }
         }

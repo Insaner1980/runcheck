@@ -14,8 +14,7 @@ enum class ProFeature {
     PER_APP_BATTERY,
     WIDGETS,
     CSV_EXPORT,
-    THERMAL_LOGS,
-    AD_FREE
+    THERMAL_LOGS
 }
 
 @Immutable

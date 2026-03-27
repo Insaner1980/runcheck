@@ -1,7 +1,6 @@
 package com.runcheck.ui.battery
 
 import android.os.Build
-import com.runcheck.ui.ads.DetailScreenAdBanner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -89,6 +88,7 @@ import com.runcheck.ui.theme.statusColorForPercent
 import com.runcheck.ui.theme.statusColorForTemperature
 import com.runcheck.ui.components.ProBadgePill
 import com.runcheck.ui.components.SectionHeader
+import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.ProgressRing
 import com.runcheck.ui.components.PullToRefreshWrapper
@@ -174,6 +174,7 @@ fun BatteryDetailScreen(
             title = "",
             onBack = onBack
         )
+        ContentContainer {
         when (val state = uiState) {
             is BatteryUiState.Loading -> {
                 Box(
@@ -214,6 +215,7 @@ fun BatteryDetailScreen(
                     onFullscreenResultConsumed = onFullscreenResultConsumed
                 )
             }
+        }
         }
     }
 }
@@ -736,8 +738,6 @@ private fun BatteryContent(
                 ),
                 onNavigateToArticle = onNavigateToLearnArticle
             )
-
-            DetailScreenAdBanner()
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }

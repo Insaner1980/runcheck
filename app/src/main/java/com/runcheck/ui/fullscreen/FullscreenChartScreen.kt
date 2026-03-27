@@ -1,6 +1,5 @@
 package com.runcheck.ui.fullscreen
 
-import android.content.pm.ActivityInfo
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,12 +30,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -58,7 +55,6 @@ import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.chart.sessionGraphMetricLabel
 import com.runcheck.ui.chart.sessionGraphWindowLabel
 import com.runcheck.ui.chart.signalQualityZones
-import com.runcheck.ui.common.findActivity
 import com.runcheck.ui.components.ProFeatureLockedState
 import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.components.TrendChartPresentation
@@ -80,21 +76,6 @@ fun FullscreenChartScreen(
     viewModel: FullscreenChartViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val activity = LocalContext.current.findActivity()
-
-    // TODO: API 37 (CinnamonBun) removes the orientation restriction opt-out
-    // on large screens (sw >= 600dp). This landscape lock will be ignored on
-    // tablets and foldables when targetSdk is raised to 37. The chart layout
-    // needs to support both orientations on large screens.
-    // See: https://developer.android.com/about/versions/16/behavior-changes-16
-    DisposableEffect(activity) {
-        val previousOrientation = activity?.requestedOrientation
-            ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE
-        onDispose {
-            activity?.requestedOrientation = previousOrientation
-        }
-    }
 
     val title = when (val state = uiState) {
         is FullscreenChartUiState.Success -> resolveChartTitle(viewModel.source, state.selectedMetric)

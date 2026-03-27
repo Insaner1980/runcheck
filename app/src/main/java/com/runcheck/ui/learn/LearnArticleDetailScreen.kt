@@ -21,6 +21,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import com.runcheck.R
+import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.info.CrossLinkButton
 import com.runcheck.ui.theme.RuncheckTheme
@@ -41,42 +42,44 @@ fun LearnArticleDetailScreen(
             onBack = onBack
         )
 
-        if (article == null) {
-            Text(
-                text = stringResource(R.string.learn_article_not_found),
-                modifier = Modifier.padding(MaterialTheme.spacing.base)
-            )
-            return
-        }
-
-        val bodyText = stringResource(article.bodyRes)
-        val bodyBlocks = remember(bodyText) { LearnArticleBodyFormatter.parse(bodyText) }
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = MaterialTheme.spacing.base,
-                top = MaterialTheme.spacing.sm,
-                end = MaterialTheme.spacing.base,
-                bottom = MaterialTheme.spacing.xl
-            ),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
-        ) {
-            itemsIndexed(
-                items = bodyBlocks,
-                key = { index, block -> "${block::class.simpleName ?: "learn_block"}_$index" },
-                contentType = { _, block -> block::class.simpleName ?: "learn_block" }
-            ) { _, block ->
-                LearnArticleBlockItem(block = block)
+        ContentContainer {
+            if (article == null) {
+                Text(
+                    text = stringResource(R.string.learn_article_not_found),
+                    modifier = Modifier.padding(MaterialTheme.spacing.base)
+                )
+                return@ContentContainer
             }
 
-            article.crossLinkRoute?.let { route ->
-                item(key = "cross_link", contentType = "learn_cross_link") {
-                    CrossLinkButton(
-                        label = stringResource(R.string.learn_cross_link_check),
-                        onClick = { onNavigateToRoute(route) }
-                    )
+            val bodyText = stringResource(article.bodyRes)
+            val bodyBlocks = remember(bodyText) { LearnArticleBodyFormatter.parse(bodyText) }
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = MaterialTheme.spacing.base,
+                    top = MaterialTheme.spacing.sm,
+                    end = MaterialTheme.spacing.base,
+                    bottom = MaterialTheme.spacing.xl
+                ),
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+            ) {
+                itemsIndexed(
+                    items = bodyBlocks,
+                    key = { index, block -> "${block::class.simpleName ?: "learn_block"}_$index" },
+                    contentType = { _, block -> block::class.simpleName ?: "learn_block" }
+                ) { _, block ->
+                    LearnArticleBlockItem(block = block)
+                }
+
+                article.crossLinkRoute?.let { route ->
+                    item(key = "cross_link", contentType = "learn_cross_link") {
+                        CrossLinkButton(
+                            label = stringResource(R.string.learn_cross_link_check),
+                            onClick = { onNavigateToRoute(route) }
+                        )
+                    }
                 }
             }
         }

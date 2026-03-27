@@ -63,13 +63,12 @@ app/src/main/java/com/runcheck/
 │   ├── appusage/      # App battery usage screen + ViewModel
 │   ├── learn/         # Learn section — article catalog, list screen, detail screen
 │   ├── settings/      # Settings screen + ViewModel
-│   ├── ads/           # Ad banner components
 │   ├── pro/           # Pro upgrade screen, trial UI, purchase flow
 │   ├── theme/         # Dark theme, color tokens, typography, spacing
 │   ├── common/        # UiText, UiFormatters (formatPercent, formatTemp, etc.)
 │   ├── chart/         # ChartHelpers (quality zones, axis labels, qualityZoneColorForValue),
 │   │                  #   ChartModels, ChartRenderModel, ChartAccessibility
-│   ├── fullscreen/    # FullscreenChartScreen + ViewModel (landscape chart route)
+│   ├── fullscreen/    # FullscreenChartScreen + ViewModel (both orientations)
 │   ├── components/    # 32 shared composables (see Components below)
 │   │   └── info/      # InfoSheetContent, InfoIcon, InfoBottomSheet, InfoCard, CrossLinkButton
 │   └── navigation/    # NavGraph + Screen sealed class (push-based from Home)
@@ -141,8 +140,8 @@ Do not annotate:
 - **Typography:** Manrope (custom, body/headers) + JetBrains Mono (numeric displays) via `MaterialTheme.typography` and `MaterialTheme.numericFontFamily`
 - **Navigation:** Push-based from single Home screen (no bottom nav bar), includes Learn section
 - **Cards:** Flat `BgCard` background, no borders, no shadows, no elevation, 16dp rounded corners
-- **Core components** (32 in `ui/components/` + `ui/components/info/`):
-  - Layout: GridCard, ListRow, MetricPill, MetricRow, ActionCard
+- **Core components** (33 in `ui/components/` + `ui/components/info/`):
+  - Layout: ContentContainer, GridCard, ListRow, MetricPill, MetricRow, ActionCard
   - Indicators: ProgressRing, MiniBar, StatusDot, ConfidenceBadge, SignalBars
   - Charts: TrendChart (oscilloscope sweep, status gradient line, quality zones, tap/drag tooltip), AreaChart (oscilloscope sweep), LiveChart (smooth scroll, glow pulse), HeatStrip, SegmentedBar, SegmentedBarLegend, ExpandableChartContainer
   - Navigation: PrimaryTopBar, DetailTopBar
@@ -170,6 +169,7 @@ Do not annotate:
 - Contrast ratio minimum: **4.5:1** body text, **3:1** large text (WCAG AA)
 - Minimum touch target: 48dp
 - Spacing based on 4dp grid: 4/8/12/16/24/32dp tokens via `MaterialTheme.spacing`
+- **Adaptive layout:** `ContentContainer` wrapper constrains content to max 600dp width, centered — applied to all detail screens. TopBar remains full-width. Home screen grid uses 1×4 row on wide screens (≥600dp), 2×2 on phones. FullscreenChartScreen works in both orientations (no forced landscape lock).
 
 ## Battery Features
 

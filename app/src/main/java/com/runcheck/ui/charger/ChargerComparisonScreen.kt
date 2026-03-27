@@ -53,6 +53,7 @@ import com.runcheck.R
 import com.runcheck.domain.model.ChargerSummary
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.rememberFormattedDateTime
+import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.ProFeatureLockedState
 import com.runcheck.ui.theme.spacing
@@ -91,61 +92,63 @@ fun ChargerComparisonScreen(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        when (val state = uiState) {
-            is ChargerUiState.Loading -> {
-                DetailTopBar(
-                    title = stringResource(R.string.charger_title),
-                    onBack = onBack
-                )
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+        ContentContainer {
+            when (val state = uiState) {
+                is ChargerUiState.Loading -> {
+                    DetailTopBar(
+                        title = stringResource(R.string.charger_title),
+                        onBack = onBack
+                    )
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
 
-            is ChargerUiState.Error -> {
-                DetailTopBar(
-                    title = stringResource(R.string.charger_title),
-                    onBack = onBack
-                )
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.common_error_generic))
-                        TextButton(onClick = { viewModel.refresh() }) {
-                            Text(stringResource(R.string.common_retry))
+                is ChargerUiState.Error -> {
+                    DetailTopBar(
+                        title = stringResource(R.string.charger_title),
+                        onBack = onBack
+                    )
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(stringResource(R.string.common_error_generic))
+                            TextButton(onClick = { viewModel.refresh() }) {
+                                Text(stringResource(R.string.common_retry))
+                            }
                         }
                     }
                 }
-            }
 
-            is ChargerUiState.Success -> {
-                ChargerContent(
-                    state = state,
-                    onBack = onBack,
-                    onAddClick = { showAddDialog = true },
-                    onSelectCharger = { viewModel.selectCharger(it) },
-                    onClearSelectedCharger = { viewModel.clearSelectedCharger() },
-                    onDeleteRequest = { pendingDeleteCharger = it }
-                )
-            }
-
-            ChargerUiState.Locked -> {
-                val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
-                LaunchedEffect(Unit) {
-                    currentOnUpgradeToPro()
+                is ChargerUiState.Success -> {
+                    ChargerContent(
+                        state = state,
+                        onBack = onBack,
+                        onAddClick = { showAddDialog = true },
+                        onSelectCharger = { viewModel.selectCharger(it) },
+                        onClearSelectedCharger = { viewModel.clearSelectedCharger() },
+                        onDeleteRequest = { pendingDeleteCharger = it }
+                    )
                 }
-                DetailTopBar(
-                    title = stringResource(R.string.charger_title),
-                    onBack = onBack
-                )
-                ProFeatureLockedState(
-                    title = stringResource(R.string.charger_title),
-                    message = stringResource(
-                        R.string.pro_feature_locked_message,
-                        stringResource(R.string.charger_title)
-                    ),
-                    actionLabel = stringResource(R.string.pro_feature_upgrade_action),
-                    onAction = onUpgradeToPro
-                )
+
+                ChargerUiState.Locked -> {
+                    val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
+                    LaunchedEffect(Unit) {
+                        currentOnUpgradeToPro()
+                    }
+                    DetailTopBar(
+                        title = stringResource(R.string.charger_title),
+                        onBack = onBack
+                    )
+                    ProFeatureLockedState(
+                        title = stringResource(R.string.charger_title),
+                        message = stringResource(
+                            R.string.pro_feature_locked_message,
+                            stringResource(R.string.charger_title)
+                        ),
+                        actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+                        onAction = onUpgradeToPro
+                    )
+                }
             }
         }
     }

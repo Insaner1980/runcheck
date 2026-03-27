@@ -1,12 +1,13 @@
 package com.runcheck.pro
 
-import com.runcheck.domain.repository.ProStatusProvider
+import com.runcheck.billing.ProPurchaseManager
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -25,7 +26,7 @@ class ProManagerTest {
     private val testDispatcher = StandardTestDispatcher()
 
     private lateinit var trialManager: TrialManager
-    private lateinit var proStatusProvider: ProStatusProvider
+    private lateinit var proPurchaseManager: ProPurchaseManager
     private lateinit var proManager: ProManager
 
     private val trialStateFlow = MutableStateFlow(TrialState())
@@ -36,12 +37,12 @@ class ProManagerTest {
         Dispatchers.setMain(testDispatcher)
 
         trialManager = mockk(relaxed = true)
-        proStatusProvider = mockk(relaxed = true)
+        proPurchaseManager = mockk(relaxed = true)
 
         every { trialManager.trialState } returns trialStateFlow
-        every { proStatusProvider.isProUser } returns isProUserFlow
+        every { proPurchaseManager.isProUser } returns isProUserFlow
 
-        proManager = ProManager(trialManager, proStatusProvider)
+        proManager = ProManager(trialManager, proPurchaseManager)
     }
 
     @After
@@ -189,6 +190,22 @@ class ProManagerTest {
     }
 
     @Test
+    fun `isProUser flow emits true for active trial users`() = runTest(testDispatcher) {
+        coEvery { trialManager.initialize() } returns true
+        trialStateFlow.value = TrialState(
+            isActive = true,
+            daysRemaining = 4,
+            startTimestamp = System.currentTimeMillis()
+        )
+        isProUserFlow.value = false
+
+        proManager.initialize()
+        advanceUntilIdle()
+
+        assertTrue(proManager.isProUser.first())
+    }
+
+    @Test
     fun `isPro returns false for TRIAL_EXPIRED`() = runTest(testDispatcher) {
         coEvery { trialManager.initialize() } returns false
         trialStateFlow.value = TrialState(
@@ -235,7 +252,6 @@ class ProManagerTest {
 
         assertTrue(proManager.hasFeature(ProFeature.EXTENDED_HISTORY))
         assertTrue(proManager.hasFeature(ProFeature.CSV_EXPORT))
-        assertTrue(proManager.hasFeature(ProFeature.AD_FREE))
         assertTrue(proManager.hasFeature(ProFeature.WIDGETS))
     }
 
@@ -254,7 +270,6 @@ class ProManagerTest {
 
         assertFalse(proManager.hasFeature(ProFeature.EXTENDED_HISTORY))
         assertFalse(proManager.hasFeature(ProFeature.CSV_EXPORT))
-        assertFalse(proManager.hasFeature(ProFeature.AD_FREE))
         assertFalse(proManager.hasFeature(ProFeature.WIDGETS))
     }
 
