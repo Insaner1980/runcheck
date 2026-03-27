@@ -1,6 +1,5 @@
 package com.runcheck.ui.home
 
-import android.util.Log
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -126,6 +125,7 @@ import com.runcheck.ui.theme.numericHeroLargeValueTextStyle
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.reducedMotion
+import com.runcheck.util.ReleaseSafeLog
 import kotlin.math.sin
 
 private const val TAG = "HomeScreen"
@@ -660,7 +660,7 @@ private fun MonitoringStaleWarning(
                 try {
                     context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
                 } catch (e: Exception) {
-                    Log.w(TAG, "Failed to open battery optimization settings", e)
+                    ReleaseSafeLog.warn(TAG, "Failed to open battery optimization settings", e)
                 }
             }
         },

@@ -1,6 +1,5 @@
 package com.runcheck.ui.settings
 
-import android.util.Log
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -87,6 +86,7 @@ import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
+import com.runcheck.util.ReleaseSafeLog
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -240,7 +240,7 @@ fun SettingsScreen(
                                     try {
                                         context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
                                     } catch (e: Exception) {
-                                        Log.w(TAG, "Failed to open battery optimization settings", e)
+                                        ReleaseSafeLog.warn(TAG, "Failed to open battery optimization settings", e)
                                     }
                                 }
                             }
@@ -761,7 +761,7 @@ fun SettingsScreen(
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             })
                         } catch (e: Exception) {
-                            Log.w(TAG, "Failed to open email client for feedback", e)
+                            ReleaseSafeLog.warn(TAG, "Failed to open email client for feedback", e)
                         }
                     }
                 )
