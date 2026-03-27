@@ -18,6 +18,11 @@ val MaterialTheme.reducedMotion: Boolean
     @ReadOnlyComposable
     get() = LocalReducedMotion.current
 
+val MaterialTheme.heroCardColor: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = BgCardDeep
+
 val MaterialTheme.iconCircleColor: Color
     @Composable
     @ReadOnlyComposable

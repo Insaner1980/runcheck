@@ -25,6 +25,27 @@ val MaterialTheme.numericFontFamily: FontFamily
     @ReadOnlyComposable
     get() = LocalNumericFontFamily.current
 
+val MaterialTheme.numericHeroDisplayTextStyle: TextStyle
+    @Composable
+    @ReadOnlyComposable
+    get() = typography.displayLarge.copy(
+        fontFamily = numericFontFamily,
+        fontSize = 64.sp,
+        fontWeight = FontWeight.Bold,
+        lineHeight = 64.sp,
+        letterSpacing = (-3).sp
+    )
+
+val MaterialTheme.numericHeroDisplayUnitTextStyle: TextStyle
+    @Composable
+    @ReadOnlyComposable
+    get() = typography.headlineLarge.copy(
+        fontFamily = numericFontFamily,
+        fontSize = 28.sp,
+        fontWeight = FontWeight.SemiBold,
+        lineHeight = 28.sp
+    )
+
 val MaterialTheme.numericHeroValueTextStyle: TextStyle
     @Composable
     @ReadOnlyComposable

@@ -23,11 +23,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.SpanStyle
 import com.runcheck.R
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
 
 @Composable
@@ -64,61 +62,68 @@ fun GridCard(
             iconBackgroundColor
         }
 
-        Box(modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (statusColor != Color.Unspecified) {
+                        Modifier.statusStrip(color = statusColor)
+                    } else {
+                        Modifier
+                    }
+                )
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
-                        horizontal = MaterialTheme.spacing.md,
-                        vertical = MaterialTheme.spacing.base
+                        start = if (statusColor != Color.Unspecified) {
+                            MaterialTheme.spacing.base
+                        } else {
+                            MaterialTheme.spacing.md
+                        },
+                        end = MaterialTheme.spacing.md,
+                        top = MaterialTheme.spacing.base,
+                        bottom = MaterialTheme.spacing.base
                     )
             ) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(36.dp)
                         .background(color = resolvedIconBg, shape = CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        modifier = Modifier.size(22.dp),
+                        modifier = Modifier.size(20.dp),
                         tint = iconTint
                     )
                 }
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontFamily = MaterialTheme.numericFontFamily
+                    ),
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                 if (statusLabel != null) {
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = buildAnnotatedString {
-                            withStyle(SpanStyle(color = subtitleColor)) {
-                                append(subtitle)
-                            }
-                            append(" \u00B7 ")
-                            withStyle(
-                                SpanStyle(
-                                    color = if (statusColor == Color.Unspecified) {
-                                        subtitleColor
-                                    } else {
-                                        statusColor
-                                    }
-                                )
-                            ) {
-                                append(statusLabel)
-                            }
-                        },
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                } else {
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = subtitleColor
+                        text = statusLabel,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (statusColor == Color.Unspecified) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            statusColor
+                        }
                     )
                 }
             }

@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -106,20 +107,21 @@ import com.runcheck.ui.components.ListRow
 import com.runcheck.ui.components.PrimaryTopBar
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.ProBadgePill
-import com.runcheck.ui.components.ProgressRing
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.StatusDot
 import com.runcheck.pro.ProStatus
 import com.runcheck.ui.pro.TrialHomeCard
 import com.runcheck.ui.pro.PostExpirationUpgradeCard
 import com.runcheck.ui.pro.TrialWelcomeSheet
+import com.runcheck.ui.theme.heroCardColor
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.statusColorForPercent
 import com.runcheck.ui.theme.statusColorForSignalQuality
 import com.runcheck.ui.theme.statusColorForStoragePercent
 import com.runcheck.ui.theme.statusColorForTemperature
+import com.runcheck.ui.theme.numericHeroDisplayTextStyle
+import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
 import com.runcheck.ui.theme.numericHeroLargeValueTextStyle
-import com.runcheck.ui.theme.numericHeroValueTextStyle
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.reducedMotion
@@ -713,15 +715,15 @@ private fun HealthScoreCard(
     val statusLabel = scoreLabel(score)
     val formattedSummary = stringResource(R.string.home_device_good_shape, statusLabel.lowercase())
     val statusWord = statusLabel.lowercase()
-    val healthyColor = MaterialTheme.statusColors.healthy
-    val annotatedSummary = remember(formattedSummary, statusWord, healthyColor) {
+    val scoreColor = statusColorForPercent(score)
+    val annotatedSummary = remember(formattedSummary, statusWord, scoreColor) {
         buildAnnotatedString {
             val startIndex = formattedSummary.indexOf(statusWord)
             if (startIndex >= 0) {
                 append(formattedSummary.substring(0, startIndex))
                 withStyle(
                     SpanStyle(
-                        color = healthyColor,
+                        color = scoreColor,
                         fontWeight = FontWeight.Bold
                     )
                 ) {
@@ -734,10 +736,15 @@ private fun HealthScoreCard(
         }
     }
 
+    val batteryLabel = stringResource(R.string.home_battery_card)
+    val thermalLabel = stringResource(R.string.home_thermal_card)
+    val networkLabel = stringResource(R.string.home_network_card)
+    val storageLabel = stringResource(R.string.home_storage_card)
+
     Card(
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = MaterialTheme.heroCardColor
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -754,29 +761,30 @@ private fun HealthScoreCard(
                 SectionHeader(stringResource(R.string.home_health_score))
             }
 
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
 
-            ProgressRing(
-                progress = score / 100f,
-                modifier = Modifier.size(152.dp),
-                strokeWidth = 10.dp,
-                progressColor = statusColorForPercent(score),
-                contentDescription = stringResource(
-                    R.string.a11y_progress_percent,
-                    stringResource(R.string.home_health_score),
-                    score
-                )
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = score.toString(),
-                        style = MaterialTheme.numericHeroValueTextStyle,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+            // Large typographic score
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                modifier = Modifier.semantics(mergeDescendants = true) {
+                    contentDescription = "$score / 100"
+                    liveRegion = LiveRegionMode.Polite
                 }
+            ) {
+                Text(
+                    text = score.toString(),
+                    style = MaterialTheme.numericHeroDisplayTextStyle,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "/100",
+                    style = MaterialTheme.numericHeroDisplayUnitTextStyle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 10.dp)
+                )
             }
 
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
             Text(
                 text = annotatedSummary,
@@ -792,31 +800,46 @@ private fun HealthScoreCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
+
+            // Category health overview bar
+            HealthCategoryBar(
+                batteryScore = healthScore.batteryScore,
+                thermalScore = healthScore.thermalScore,
+                networkScore = healthScore.networkScore,
+                storageScore = healthScore.storageScore,
+                batteryLabel = batteryLabel,
+                thermalLabel = thermalLabel,
+                networkLabel = networkLabel,
+                storageLabel = storageLabel,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
 
             HealthBreakdownRow(
-                label = stringResource(R.string.home_battery_card),
+                label = batteryLabel,
                 value = formatPercent(healthScore.batteryScore),
                 status = HealthScore.statusFromScore(healthScore.batteryScore),
                 onClick = onNavigateToBattery
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
             HealthBreakdownRow(
-                label = stringResource(R.string.home_thermal_card),
+                label = thermalLabel,
                 value = formatPercent(healthScore.thermalScore),
                 status = HealthScore.statusFromScore(healthScore.thermalScore),
                 onClick = onNavigateToThermal
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
             HealthBreakdownRow(
-                label = stringResource(R.string.home_network_card),
+                label = networkLabel,
                 value = formatPercent(healthScore.networkScore),
                 status = HealthScore.statusFromScore(healthScore.networkScore),
                 onClick = onNavigateToNetwork
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
             HealthBreakdownRow(
-                label = stringResource(R.string.home_storage_card),
+                label = storageLabel,
                 value = formatPercent(healthScore.storageScore),
                 status = HealthScore.statusFromScore(healthScore.storageScore),
                 onClick = onNavigateToStorage
@@ -1111,4 +1134,67 @@ private fun statusColor(status: HealthStatus): Color {
         HealthStatus.POOR -> colors.poor
         HealthStatus.CRITICAL -> colors.critical
     }
+}
+
+@Composable
+private fun HealthCategoryBar(
+    batteryScore: Int,
+    thermalScore: Int,
+    networkScore: Int,
+    storageScore: Int,
+    batteryLabel: String,
+    thermalLabel: String,
+    networkLabel: String,
+    storageLabel: String,
+    modifier: Modifier = Modifier
+) {
+    val statusColors = MaterialTheme.statusColors
+    val scores = listOf(
+        batteryLabel to statusColorFromScore(batteryScore, statusColors),
+        thermalLabel to statusColorFromScore(thermalScore, statusColors),
+        networkLabel to statusColorFromScore(networkScore, statusColors),
+        storageLabel to statusColorFromScore(storageScore, statusColors)
+    )
+
+    Column(modifier = modifier) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            scores.forEach { (_, color) ->
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(6.dp)
+                        .background(
+                            color = color,
+                            shape = RoundedCornerShape(3.dp)
+                        )
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            scores.forEach { (label, color) ->
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = color
+                )
+            }
+        }
+    }
+}
+
+private fun statusColorFromScore(
+    score: Int,
+    colors: com.runcheck.ui.theme.StatusColors
+): Color = when {
+    score >= 75 -> colors.healthy
+    score >= 50 -> colors.fair
+    score >= 25 -> colors.poor
+    else -> colors.critical
 }

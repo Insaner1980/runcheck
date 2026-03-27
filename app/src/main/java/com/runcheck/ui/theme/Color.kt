@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 // Backgrounds
 val BgPage = Color(0xFF0B1E24)
 val BgCard = Color(0xFF133040)
+val BgCardDeep = Color(0xFF0D2530)
 val BgCardAlt = Color(0xFF0F2A35)
 val BgIconCircle = Color(0xFF1A3A48)
 

@@ -125,7 +125,10 @@ import com.runcheck.ui.fullscreen.FullscreenChartUiState
 import com.runcheck.ui.fullscreen.parseFullscreenChartSource
 import com.runcheck.ui.fullscreen.sanitizeFullscreenMetric
 import com.runcheck.ui.fullscreen.sanitizeFullscreenPeriod
+import com.runcheck.ui.theme.heroCardColor
 import com.runcheck.ui.theme.numericFontFamily
+import com.runcheck.ui.theme.numericHeroDisplayTextStyle
+import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
 import com.runcheck.ui.theme.numericHeroLevelTextStyle
 import com.runcheck.ui.theme.numericHeroUnitTextStyle
 import com.runcheck.ui.theme.spacing
@@ -807,64 +810,73 @@ private fun BatteryHeroSection(
         } else null
     }
 
-    BatteryPanel(
-        modifier = Modifier.fillMaxWidth()
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.heroCardColor
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = MaterialTheme.shapes.large
     ) {
+      Column(
+          modifier = Modifier
+              .fillMaxWidth()
+              .padding(MaterialTheme.spacing.base),
+          verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+      ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.fillMaxWidth()
         ) {
+            SectionHeader(text = stringResource(R.string.battery_title))
+
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg)
             ) {
-                SectionHeader(text = stringResource(R.string.battery_title))
-            }
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            ProgressRing(
-                progress = battery.level / 100f,
-                modifier = Modifier.size(152.dp),
-                strokeWidth = 10.dp,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                progressColor = statusColorForPercent(battery.level),
-                contentDescription = stringResource(
-                    R.string.a11y_progress_percent,
-                    stringResource(R.string.battery_level),
-                    battery.level
-                )
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
+                // Smaller decorative ring
+                ProgressRing(
+                    progress = battery.level / 100f,
+                    modifier = Modifier.size(100.dp),
+                    strokeWidth = 6.dp,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                    progressColor = statusColorForPercent(battery.level),
+                    contentDescription = stringResource(
+                        R.string.a11y_progress_percent,
+                        stringResource(R.string.battery_level),
+                        battery.level
+                    )
+                ) {}
+
+                // Large typographic value
+                Column {
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             text = battery.level.toString(),
-                            style = MaterialTheme.numericHeroLevelTextStyle,
+                            style = MaterialTheme.numericHeroDisplayTextStyle,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = stringResource(R.string.unit_percent),
-                            style = MaterialTheme.numericHeroUnitTextStyle,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(start = 3.dp, bottom = 6.dp)
+                            style = MaterialTheme.numericHeroDisplayUnitTextStyle,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 2.dp, bottom = 10.dp)
                         )
                     }
+                    Text(
+                        text = if (battery.remainingMah != null) {
+                            stringResource(R.string.battery_remaining_mah, statusText, battery.remainingMah)
+                        } else {
+                            statusText
+                        },
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-
-            Text(
-                text = if (battery.remainingMah != null) {
-                    stringResource(R.string.battery_remaining_mah, statusText, battery.remainingMah)
-                } else {
-                    statusText
-                },
-                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
 
@@ -902,6 +914,7 @@ private fun BatteryHeroSection(
                 )
             }
         }
+      }
     }
 }
 

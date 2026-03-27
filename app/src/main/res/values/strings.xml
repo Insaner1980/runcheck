@@ -576,7 +576,7 @@
     <!-- Notifications -->
     <string name="notification_channel_alerts">Device Alerts</string>
     <string name="notification_channel_alerts_description">Alerts for battery, temperature, and storage issues</string>
-    <string name="monitor_realtime_fgs_reason">Foreground service for runcheck&apos;s optional Live Notification feature. When the user enables Live Notification in Settings, the app shows a persistent notification with real-time battery stats and refreshes it until the user turns it off.</string>
+    <string name="monitor_realtime_fgs_reason">Foreground service for runcheck\'s optional Live Notification feature. When the user enables Live Notification in Settings, the app shows a persistent notification with real-time battery stats and refreshes it until the user turns it off.</string>
     <string name="notification_low_battery_title">Low Battery</string>
     <string name="notification_low_battery_text">Battery at %d%%</string>
     <string name="notification_high_temp_title">High Temperature</string>

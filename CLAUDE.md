@@ -133,15 +133,18 @@ Do not annotate:
 
 - **Single dark theme** — no light mode, no AMOLED toggle, no dynamic colors
 - **Dark palette:**
-  - BgPage = `#0B1E24`, BgCard = `#133040`, BgCardAlt = `#0F2A35`, BgIconCircle = `#1A3A48`
+  - BgPage = `#0B1E24`, BgCard = `#133040`, BgCardDeep = `#0D2530`, BgCardAlt = `#0F2A35`, BgIconCircle = `#1A3A48`
   - Accent Blue `#4A9EDE` (primary), Accent Teal `#5DE4C7` (secondary), Accent Amber `#E8C44A`
   - Accent Orange `#F5963A`, Accent Red `#F06040`, Accent Lime `#C8E636`, Accent Yellow `#F5D03A`
   - TextPrimary `#E8E8ED`, TextSecondary `#90A8B0`, TextMuted `#7A949E`, TextOnLime `#1A2E0A`
 - **Typography:** Manrope (custom, body/headers) + JetBrains Mono (numeric displays) via `MaterialTheme.typography` and `MaterialTheme.numericFontFamily`
 - **Navigation:** Push-based from single Home screen (no bottom nav bar), includes Learn section
-- **Cards:** Flat `BgCard` background, no borders, no shadows, no elevation, 16dp rounded corners
-- **Core components** (33 in `ui/components/` + `ui/components/info/`):
-  - Layout: ContentContainer, GridCard, ListRow, MetricPill, MetricRow, ActionCard
+- **Cards:** Flat backgrounds, no borders, no shadows, no elevation, 16dp rounded corners
+- **Tonal layering:** Hero cards use `BgCardDeep` (#0D2530), data cards use `BgCard` (#133040) — creates "recessed instrument panel" depth
+- **Hero sections:** Typography-dominant — large 64sp JetBrains Mono values with smaller 28sp units, ProgressRing reduced to 100dp decorative role in Battery/Storage
+- **Core components** (35 in `ui/components/` + `ui/components/info/`):
+  - Layout: ContentContainer, GridCard (with StatusStrip), ListRow, MetricPill, MetricRow, ActionCard
+  - Status: SegmentedStatusBar, StatusStrip (Modifier extension)
   - Indicators: ProgressRing, MiniBar, StatusDot, ConfidenceBadge, SignalBars
   - Charts: TrendChart (oscilloscope sweep, status gradient line, quality zones, tap/drag tooltip), AreaChart (oscilloscope sweep), LiveChart (smooth scroll, glow pulse), HeatStrip, SegmentedBar, SegmentedBarLegend, ExpandableChartContainer
   - Navigation: PrimaryTopBar, DetailTopBar

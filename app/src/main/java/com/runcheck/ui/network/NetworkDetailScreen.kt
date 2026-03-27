@@ -110,6 +110,11 @@ import com.runcheck.ui.fullscreen.sanitizeFullscreenMetric
 import com.runcheck.ui.fullscreen.sanitizeFullscreenPeriod
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
+import androidx.compose.ui.unit.sp
+import com.runcheck.ui.theme.heroCardColor
+import com.runcheck.ui.theme.numericFontFamily
+import com.runcheck.ui.theme.numericHeroDisplayTextStyle
+import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.statusColorForSignalQuality
@@ -240,89 +245,126 @@ private fun NetworkHeroSection(
     onInfoClick: (String) -> Unit = {}
 ) {
     val qualityLabel = signalQualityLabel(networkState.signalQuality)
+    val qualityColor = statusColorForSignalQuality(networkState.signalQuality)
 
-    NetworkPanel {
-        SectionHeader(text = stringResource(R.string.network_title))
-
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.heroCardColor
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = MaterialTheme.shapes.large
+    ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MaterialTheme.spacing.base),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
         ) {
-            SignalBars(
-                signalQuality = networkState.signalQuality,
-                qualityLabel = qualityLabel,
-                modifier = Modifier.height(48.dp)
-            )
+            SectionHeader(text = stringResource(R.string.network_title))
 
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-
-            Text(
-                text = qualityLabel,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = statusColorForSignalQuality(networkState.signalQuality)
-            )
-
-            networkState.signalDbm?.let { dbm ->
-                val dbmText = stringResource(
-                    R.string.value_with_unit_int,
-                    dbm,
-                    stringResource(R.string.unit_dbm)
-                )
-                val displayText = networkState.signalAsu?.let { asu ->
-                    stringResource(R.string.network_signal_with_asu, dbmText, asu, stringResource(R.string.unit_asu))
-                } ?: dbmText
+            // Quality label + SignalBars row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Text(
-                    text = displayText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = qualityLabel,
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = qualityColor
+                )
+                SignalBars(
+                    signalQuality = networkState.signalQuality,
+                    qualityLabel = qualityLabel,
+                    modifier = Modifier.height(32.dp)
                 )
             }
-        }
 
-        if (liveSignalDbm.size >= 2) {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            LiveChart(
-                data = liveSignalDbm,
-                currentValueLabel = networkState.signalDbm?.let {
-                    stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_dbm))
-                } ?: "—",
-                label = stringResource(R.string.network_signal_strength),
-                lineColor = statusColorForSignalQuality(networkState.signalQuality),
-                accessibilityDescription = stringResource(
-                    R.string.a11y_chart_trend,
-                    stringResource(R.string.network_signal_strength)
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
+            // Large dBm + latency display
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                networkState.signalDbm?.let { dbm ->
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = dbm.toString(),
+                            style = MaterialTheme.numericHeroDisplayTextStyle.copy(
+                                fontSize = 48.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = stringResource(R.string.unit_dbm),
+                            style = MaterialTheme.numericHeroDisplayUnitTextStyle,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 2.dp, bottom = 8.dp)
+                        )
+                    }
+                }
+                networkState.latencyMs?.let { ms ->
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = ms.toString(),
+                            style = MaterialTheme.numericHeroDisplayTextStyle.copy(
+                                fontSize = 48.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = stringResource(R.string.unit_ms),
+                            style = MaterialTheme.numericHeroDisplayUnitTextStyle,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 2.dp, bottom = 8.dp)
+                        )
+                    }
+                }
+            }
 
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+            if (liveSignalDbm.size >= 2) {
+                LiveChart(
+                    data = liveSignalDbm,
+                    currentValueLabel = networkState.signalDbm?.let {
+                        stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_dbm))
+                    } ?: "—",
+                    label = stringResource(R.string.network_signal_strength),
+                    lineColor = qualityColor,
+                    accessibilityDescription = stringResource(
+                        R.string.a11y_chart_trend,
+                        stringResource(R.string.network_signal_strength)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
-        ) {
-            MetricPill(
-                label = stringResource(R.string.network_latency),
-                value = networkState.latencyMs?.let {
-                    stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_ms))
-                } ?: stringResource(R.string.placeholder_dash),
-                modifier = Modifier.weight(1f),
-                onInfoClick = { onInfoClick("latency") }
-            )
-            MetricPill(
-                label = bandwidthPillLabel(networkState),
-                value = bandwidthPillValue(networkState),
-                modifier = Modifier.weight(1f),
-                onInfoClick = { onInfoClick("bandwidth") }
-            )
-            MetricPill(
-                label = bandPillLabel(networkState),
-                value = bandPillValue(networkState),
-                modifier = Modifier.weight(1f),
-                onInfoClick = { onInfoClick(if (networkState.connectionType == ConnectionType.WIFI) "frequency" else "bandwidth") }
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+            ) {
+                MetricPill(
+                    label = stringResource(R.string.network_latency),
+                    value = networkState.latencyMs?.let {
+                        stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_ms))
+                    } ?: stringResource(R.string.placeholder_dash),
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("latency") }
+                )
+                MetricPill(
+                    label = bandwidthPillLabel(networkState),
+                    value = bandwidthPillValue(networkState),
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("bandwidth") }
+                )
+                MetricPill(
+                    label = bandPillLabel(networkState),
+                    value = bandPillValue(networkState),
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick(if (networkState.connectionType == ConnectionType.WIFI) "frequency" else "bandwidth") }
+                )
+            }
         }
     }
 }

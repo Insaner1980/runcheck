@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -97,13 +96,18 @@ import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.PullToRefreshWrapper
 import com.runcheck.ui.components.SectionHeader
+import com.runcheck.ui.components.SegmentedStatusBar
 import com.runcheck.ui.components.StatusDot
+import com.runcheck.ui.components.StatusSegment
 import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
+import com.runcheck.ui.theme.heroCardColor
 import com.runcheck.ui.theme.iconCircleColor
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.theme.numericFontFamily
+import com.runcheck.ui.theme.numericHeroDisplayTextStyle
+import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
 import com.runcheck.ui.theme.numericHeroValueTextStyle
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
@@ -371,11 +375,26 @@ private fun ThermalHeroCard(
 ) {
     val tempColor = statusColorForTemperature(thermal.batteryTempC)
     val bandLabel = temperatureBandLabel(thermal.batteryTempC)
+    val statusColors = MaterialTheme.statusColors
+
+    val optimalLabel = stringResource(R.string.thermal_cool)
+    val normalLabel = stringResource(R.string.thermal_normal)
+    val warmLabel = stringResource(R.string.thermal_warm)
+    val criticalLabel = stringResource(R.string.thermal_critical)
+
+    val thermalSegments = remember(statusColors) {
+        listOf(
+            StatusSegment(label = optimalLabel, color = statusColors.healthy, rangeStart = 0f, rangeEnd = 35f),
+            StatusSegment(label = normalLabel, color = statusColors.fair, rangeStart = 35f, rangeEnd = 40f),
+            StatusSegment(label = warmLabel, color = statusColors.poor, rangeStart = 40f, rangeEnd = 45f),
+            StatusSegment(label = criticalLabel, color = statusColors.critical, rangeStart = 45f, rangeEnd = 60f)
+        )
+    }
 
     Card(
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = MaterialTheme.heroCardColor
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -392,73 +411,65 @@ private fun ThermalHeroCard(
                 SectionHeader(stringResource(R.string.thermal_battery_temp))
             }
 
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                // Thermometer visual
-                ThermometerIcon(
-                    temperatureC = thermal.batteryTempC,
-                    temperatureUnit = temperatureUnit,
-                    color = tempColor,
-                    modifier = Modifier.size(width = 40.dp, height = 120.dp)
+            // Large typographic temperature
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = formatTemperatureValue(thermal.batteryTempC, temperatureUnit),
+                    style = MaterialTheme.numericHeroDisplayTextStyle,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-
-                Spacer(modifier = Modifier.width(MaterialTheme.spacing.lg))
-
-                // Temperature number + status
-                Column(horizontalAlignment = Alignment.Start) {
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            text = formatTemperatureValue(thermal.batteryTempC, temperatureUnit),
-                            style = MaterialTheme.numericHeroValueTextStyle,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = stringResource(temperatureUnitRes(temperatureUnit)),
-                            style = MaterialTheme.typography.headlineLarge.copy(
-                                fontFamily = MaterialTheme.numericFontFamily
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 2.dp, bottom = 10.dp)
-                        )
-                    }
-                    Text(
-                        text = bandLabel,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = tempColor
-                    )
-                    if (sessionMinTemp != null && sessionMaxTemp != null &&
-                        sessionMinTemp != sessionMaxTemp
-                    ) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = buildAnnotatedString {
-                                withStyle(SpanStyle(color = statusColorForTemperature(sessionMinTemp))) {
-                                    append(
-                                        stringResource(
-                                            R.string.value_direction_down,
-                                            formatTemperature(sessionMinTemp, temperatureUnit)
-                                        )
-                                    )
-                                }
-                                append(" · ")
-                                withStyle(SpanStyle(color = statusColorForTemperature(sessionMaxTemp))) {
-                                    append(
-                                        stringResource(
-                                            R.string.value_direction_up,
-                                            formatTemperature(sessionMaxTemp, temperatureUnit)
-                                        )
-                                    )
-                                }
-                            },
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
+                Text(
+                    text = stringResource(temperatureUnitRes(temperatureUnit)),
+                    style = MaterialTheme.numericHeroDisplayUnitTextStyle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 2.dp, bottom = 10.dp)
+                )
             }
+
+            Text(
+                text = bandLabel,
+                style = MaterialTheme.typography.titleMedium,
+                color = tempColor
+            )
+
+            if (sessionMinTemp != null && sessionMaxTemp != null &&
+                sessionMinTemp != sessionMaxTemp
+            ) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(SpanStyle(color = statusColorForTemperature(sessionMinTemp))) {
+                            append(
+                                stringResource(
+                                    R.string.value_direction_down,
+                                    formatTemperature(sessionMinTemp, temperatureUnit)
+                                )
+                            )
+                        }
+                        append(" · ")
+                        withStyle(SpanStyle(color = statusColorForTemperature(sessionMaxTemp))) {
+                            append(
+                                stringResource(
+                                    R.string.value_direction_up,
+                                    formatTemperature(sessionMaxTemp, temperatureUnit)
+                                )
+                            )
+                        }
+                    },
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
+
+            // Segmented thermal status bar
+            SegmentedStatusBar(
+                segments = thermalSegments,
+                currentValue = thermal.batteryTempC,
+                modifier = Modifier.fillMaxWidth()
+            )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
         }

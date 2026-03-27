@@ -5,6 +5,7 @@ _Auto-generated from git history. Updated on each commit._
 ## 2026 Week 13 (Mar 23 – Mar 29)
 
 ### Other
+- Update changelog after push commit (`4883c4d`)
 - Commit latest runcheck changes (`cfb12b6`)
 - SDK 37 preview, Detekt 1.23.8 + Compose Rules, annotaatiot ja koodilaadun parannukset (`4ee4402`)
 - Move hardcoded separators and concatenated text to string resources (`dfab75f`)
