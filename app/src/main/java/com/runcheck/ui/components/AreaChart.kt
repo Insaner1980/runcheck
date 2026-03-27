@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.semantics.Role
@@ -69,78 +70,94 @@ fun AreaChart(
     val linePath = remember { Path() }
     val stripPath = remember { Path() }
 
+    val semanticsModifier = if (contentDescription == null) {
+        Modifier
+    } else {
+        Modifier.semantics {
+            this.contentDescription = contentDescription
+            this.role = Role.Image
+        }
+    }
+
     Canvas(
         modifier = modifier
             .fillMaxSize()
-            .then(
-                if (contentDescription == null) Modifier
-                else Modifier.semantics {
-                    this.contentDescription = contentDescription
-                    this.role = Role.Image
-                }
-            )
+            .then(semanticsModifier)
     ) {
-        val verticalPadding = size.height * 0.1f
-        val chartHeight = size.height - verticalPadding * 2
-        val stepX = size.width / (data.size - 1)
+        drawAreaChart(data, minVal, range, lineColor, sweepProgress.value, scanLineAlpha.value, linePath, stripPath)
+    }
+}
 
-        // Build the full line path for all data points
-        linePath.reset()
-        for (i in data.indices) {
-            val x = i * stepX
-            val y = verticalPadding + chartHeight - ((data[i] - minVal) / range * chartHeight)
-            if (i == 0) linePath.moveTo(x, y) else linePath.lineTo(x, y)
-        }
+private fun DrawScope.drawAreaChart(
+    data: List<Float>,
+    minVal: Float,
+    range: Float,
+    lineColor: Color,
+    sweepProgress: Float,
+    scanLineAlpha: Float,
+    linePath: Path,
+    stripPath: Path
+) {
+    val verticalPadding = size.height * 0.1f
+    val chartHeight = size.height - verticalPadding * 2
+    val stepX = size.width / (data.size - 1)
 
-        val sweepX = sweepProgress.value * size.width
+    // Build the full line path for all data points
+    linePath.reset()
+    for (i in data.indices) {
+        val x = i * stepX
+        val y = verticalPadding + chartHeight - ((data[i] - minVal) / range * chartHeight)
+        if (i == 0) linePath.moveTo(x, y) else linePath.lineTo(x, y)
+    }
 
-        // Clip-based sweep rendering
-        clipRect(left = 0f, top = 0f, right = sweepX, bottom = size.height) {
-            // Draw strip-based gradient fill
-            for (i in 0 until data.size - 1) {
-                val x1 = i * stepX
-                val x2 = (i + 1) * stepX
-                val y1 = verticalPadding + chartHeight - ((data[i] - minVal) / range * chartHeight)
-                val y2 = verticalPadding + chartHeight - ((data[i + 1] - minVal) / range * chartHeight)
-                val avgNormalizedY = ((data[i] - minVal) / range + (data[i + 1] - minVal) / range) / 2f
-                val topAlpha = lerp(0.08f, 0.25f, avgNormalizedY) // Slightly lower max than TrendChart
+    val sweepX = sweepProgress * size.width
 
-                stripPath.reset()
-                stripPath.moveTo(x1, y1)
-                stripPath.lineTo(x2, y2)
-                stripPath.lineTo(x2, size.height)
-                stripPath.lineTo(x1, size.height)
-                stripPath.close()
+    // Clip-based sweep rendering
+    clipRect(left = 0f, top = 0f, right = sweepX, bottom = size.height) {
+        // Draw strip-based gradient fill
+        for (i in 0 until data.size - 1) {
+            val x1 = i * stepX
+            val x2 = (i + 1) * stepX
+            val y1 = verticalPadding + chartHeight - ((data[i] - minVal) / range * chartHeight)
+            val y2 = verticalPadding + chartHeight - ((data[i + 1] - minVal) / range * chartHeight)
+            val avgNormalizedY = ((data[i] - minVal) / range + (data[i + 1] - minVal) / range) / 2f
+            val topAlpha = lerp(0.08f, 0.25f, avgNormalizedY) // Slightly lower max than TrendChart
 
-                drawPath(
-                    path = stripPath,
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            lineColor.copy(alpha = topAlpha),
-                            lineColor.copy(alpha = 0.02f)
-                        ),
-                        startY = minOf(y1, y2),
-                        endY = size.height
-                    )
-                )
-            }
+            stripPath.reset()
+            stripPath.moveTo(x1, y1)
+            stripPath.lineTo(x2, y2)
+            stripPath.lineTo(x2, size.height)
+            stripPath.lineTo(x1, size.height)
+            stripPath.close()
 
-            // Draw line stroke
             drawPath(
-                path = linePath,
-                color = lineColor.copy(alpha = 0.7f),
-                style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round)
+                path = stripPath,
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        lineColor.copy(alpha = topAlpha),
+                        lineColor.copy(alpha = 0.02f)
+                    ),
+                    startY = minOf(y1, y2),
+                    endY = size.height
+                )
             )
         }
 
-        // Scan line
-        if (scanLineAlpha.value > 0f) {
-            drawLine(
-                color = lineColor.copy(alpha = scanLineAlpha.value),
-                start = Offset(sweepX, 0f),
-                end = Offset(sweepX, size.height),
-                strokeWidth = 1.5.dp.toPx()
-            )
-        }
+        // Draw line stroke
+        drawPath(
+            path = linePath,
+            color = lineColor.copy(alpha = 0.7f),
+            style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round)
+        )
+    }
+
+    // Scan line
+    if (scanLineAlpha > 0f) {
+        drawLine(
+            color = lineColor.copy(alpha = scanLineAlpha),
+            start = Offset(sweepX, 0f),
+            end = Offset(sweepX, size.height),
+            strokeWidth = 1.5.dp.toPx()
+        )
     }
 }

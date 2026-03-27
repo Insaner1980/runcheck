@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -300,37 +301,7 @@ private fun ThermalContent(
                 }
             }
 
-            // Throttling section
-            item {
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                SectionHeader(stringResource(R.string.thermal_throttling_log))
-            }
-
-            if (state.isPro) {
-                if (state.throttlingEvents.isEmpty()) {
-                    item {
-                        ThrottlingEmptyState()
-                    }
-                } else {
-                    items(
-                        items = state.throttlingEvents,
-                        key = { event -> event.id.takeIf { it != 0L } ?: event.timestamp }
-                    ) { event ->
-                        ThrottlingEventItem(
-                            event = event,
-                            temperatureUnit = state.temperatureUnit
-                        )
-                    }
-                }
-            } else {
-                item {
-                    ProFeatureCalloutCard(
-                        message = stringResource(R.string.pro_feature_thermal_log_message),
-                        actionLabel = stringResource(R.string.pro_feature_upgrade_action),
-                        onAction = onUpgradeToPro
-                    )
-                }
-            }
+            throttlingSection(state = state, onUpgradeToPro = onUpgradeToPro)
 
             item {
                 RelatedArticlesSection(
@@ -347,7 +318,54 @@ private fun ThermalContent(
         }
     }
 
-    activeInfoSheet?.let { key ->
+    ThermalInfoSheet(
+        activeKey = activeInfoSheet,
+        onDismiss = { activeInfoSheet = null }
+    )
+}
+
+private fun LazyListScope.throttlingSection(
+    state: ThermalUiState.Success,
+    onUpgradeToPro: () -> Unit
+) {
+    item {
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        SectionHeader(stringResource(R.string.thermal_throttling_log))
+    }
+
+    if (state.isPro) {
+        if (state.throttlingEvents.isEmpty()) {
+            item {
+                ThrottlingEmptyState()
+            }
+        } else {
+            items(
+                items = state.throttlingEvents,
+                key = { event -> event.id.takeIf { it != 0L } ?: event.timestamp }
+            ) { event ->
+                ThrottlingEventItem(
+                    event = event,
+                    temperatureUnit = state.temperatureUnit
+                )
+            }
+        }
+    } else {
+        item {
+            ProFeatureCalloutCard(
+                message = stringResource(R.string.pro_feature_thermal_log_message),
+                actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+                onAction = onUpgradeToPro
+            )
+        }
+    }
+}
+
+@Composable
+private fun ThermalInfoSheet(
+    activeKey: String?,
+    onDismiss: () -> Unit
+) {
+    activeKey?.let { key ->
         val content = when (key) {
             "cpuTemp" -> ThermalInfoContent.cpuTemp
             "thermalHeadroom" -> ThermalInfoContent.thermalHeadroom
@@ -358,7 +376,7 @@ private fun ThermalContent(
         content?.let {
             InfoBottomSheet(
                 content = it,
-                onDismiss = { activeInfoSheet = null }
+                onDismiss = onDismiss
             )
         }
     }
@@ -603,6 +621,49 @@ private fun ThermalMetricsCard(
     onInfoClick: (String) -> Unit = {}
 ) {
     val useNeutralThermalStatus = shouldUseNeutralThermalStatus(thermal)
+    val defaultOnSurface = MaterialTheme.colorScheme.onSurface
+    val unavailableText = stringResource(R.string.thermal_cpu_unavailable)
+
+    // Pre-compute CPU temperature pill values
+    val cpuTempValue = thermal.cpuTempC?.let {
+        formatTemperature(it, temperatureUnit)
+    } ?: unavailableText
+    val cpuTempColor = thermal.cpuTempC?.let {
+        statusColorForTemperature(it)
+    } ?: defaultOnSurface
+
+    // Pre-compute headroom pill values
+    val headroomValue = thermal.thermalHeadroom?.let {
+        stringResource(R.string.value_headroom_percent, formatDecimal((1f - it.coerceIn(0f, 1f)) * 100, 0))
+    } ?: unavailableText
+    val headroomValueColor = thermal.thermalHeadroom?.let { headroom ->
+        headroomColor(headroom)
+    } ?: defaultOnSurface
+
+    // Pre-compute thermal status pill values
+    val statusValue = if (useNeutralThermalStatus) {
+        stringResource(R.string.thermal_status_not_reported)
+    } else {
+        thermalStatusLabel(thermal.thermalStatus)
+    }
+    val statusValueColor = if (useNeutralThermalStatus) {
+        defaultOnSurface
+    } else {
+        thermalStatusColor(thermal.thermalStatus)
+    }
+
+    // Pre-compute throttling pill values
+    val statusColors = MaterialTheme.statusColors
+    val throttlingValue = when {
+        thermal.isThrottling -> stringResource(R.string.thermal_throttling_active)
+        useNeutralThermalStatus -> stringResource(R.string.thermal_throttling_not_reported)
+        else -> stringResource(R.string.thermal_throttling_none)
+    }
+    val throttlingValueColor = when {
+        thermal.isThrottling -> statusColors.critical
+        useNeutralThermalStatus -> defaultOnSurface
+        else -> statusColors.healthy
+    }
 
     Card(
         shape = MaterialTheme.shapes.large,
@@ -624,23 +685,15 @@ private fun ThermalMetricsCard(
             ) {
                 MetricPill(
                     label = stringResource(R.string.thermal_cpu_temp),
-                    value = thermal.cpuTempC?.let {
-                        formatTemperature(it, temperatureUnit)
-                    } ?: stringResource(R.string.thermal_cpu_unavailable),
-                    valueColor = thermal.cpuTempC?.let {
-                        statusColorForTemperature(it)
-                    } ?: MaterialTheme.colorScheme.onSurface,
+                    value = cpuTempValue,
+                    valueColor = cpuTempColor,
                     onInfoClick = { onInfoClick("cpuTemp") },
                     modifier = Modifier.weight(1f)
                 )
                 MetricPill(
                     label = stringResource(R.string.thermal_headroom),
-                    value = thermal.thermalHeadroom?.let {
-                        stringResource(R.string.value_headroom_percent, formatDecimal((1f - it.coerceIn(0f, 1f)) * 100, 0))
-                    } ?: stringResource(R.string.thermal_cpu_unavailable),
-                    valueColor = thermal.thermalHeadroom?.let { headroom ->
-                        headroomColor(headroom)
-                    } ?: MaterialTheme.colorScheme.onSurface,
+                    value = headroomValue,
+                    valueColor = headroomValueColor,
                     onInfoClick = { onInfoClick("thermalHeadroom") },
                     modifier = Modifier.weight(1f)
                 )
@@ -655,68 +708,66 @@ private fun ThermalMetricsCard(
             ) {
                 MetricPill(
                     label = stringResource(R.string.thermal_status),
-                    value = if (useNeutralThermalStatus) {
-                        stringResource(R.string.thermal_status_not_reported)
-                    } else {
-                        thermalStatusLabel(thermal.thermalStatus)
-                    },
-                    valueColor = if (useNeutralThermalStatus) {
-                        MaterialTheme.colorScheme.onSurface
-                    } else {
-                        thermalStatusColor(thermal.thermalStatus)
-                    },
+                    value = statusValue,
+                    valueColor = statusValueColor,
                     onInfoClick = { onInfoClick("thermalStatus") },
                     modifier = Modifier.weight(1f)
                 )
                 MetricPill(
                     label = stringResource(R.string.thermal_throttling),
-                    value = when {
-                        thermal.isThrottling -> stringResource(R.string.thermal_throttling_active)
-                        useNeutralThermalStatus -> stringResource(R.string.thermal_throttling_not_reported)
-                        else -> stringResource(R.string.thermal_throttling_none)
-                    },
-                    valueColor = when {
-                        thermal.isThrottling -> MaterialTheme.statusColors.critical
-                        useNeutralThermalStatus -> MaterialTheme.colorScheme.onSurface
-                        else -> MaterialTheme.statusColors.healthy
-                    },
+                    value = throttlingValue,
+                    valueColor = throttlingValueColor,
                     onInfoClick = { onInfoClick("throttling") },
                     modifier = Modifier.weight(1f)
                 )
             }
 
-            // Live charts
-            if (liveTempC.size >= 2) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-                LiveChart(
-                    data = liveTempC,
-                    currentValueLabel = formatTemperature(thermal.batteryTempC, temperatureUnit),
-                    label = stringResource(R.string.thermal_battery_temp),
-                    lineColor = statusColorForTemperature(thermal.batteryTempC),
-                    accessibilityDescription = stringResource(
-                        R.string.a11y_chart_trend,
-                        stringResource(R.string.thermal_battery_temp)
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            if (liveHeadroom.size >= 2) {
-                LiveChart(
-                    data = liveHeadroom,
-                    currentValueLabel = thermal.thermalHeadroom?.let {
-                        stringResource(R.string.value_headroom_percent, formatDecimal((1f - it.coerceIn(0f, 1f)) * 100, 0))
-                    } ?: "—",
-                    label = stringResource(R.string.thermal_headroom),
-                    lineColor = thermal.thermalHeadroom?.let { headroomColor(it) }
-                        ?: MaterialTheme.colorScheme.primary,
-                    accessibilityDescription = stringResource(
-                        R.string.a11y_chart_trend,
-                        stringResource(R.string.thermal_headroom)
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+            ThermalLiveCharts(
+                thermal = thermal,
+                temperatureUnit = temperatureUnit,
+                liveTempC = liveTempC,
+                liveHeadroom = liveHeadroom
+            )
         }
+    }
+}
+
+@Composable
+private fun ThermalLiveCharts(
+    thermal: ThermalState,
+    temperatureUnit: TemperatureUnit,
+    liveTempC: List<Float>,
+    liveHeadroom: List<Float>
+) {
+    if (liveTempC.size >= 2) {
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+        LiveChart(
+            data = liveTempC,
+            currentValueLabel = formatTemperature(thermal.batteryTempC, temperatureUnit),
+            label = stringResource(R.string.thermal_battery_temp),
+            lineColor = statusColorForTemperature(thermal.batteryTempC),
+            accessibilityDescription = stringResource(
+                R.string.a11y_chart_trend,
+                stringResource(R.string.thermal_battery_temp)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+    if (liveHeadroom.size >= 2) {
+        LiveChart(
+            data = liveHeadroom,
+            currentValueLabel = thermal.thermalHeadroom?.let {
+                stringResource(R.string.value_headroom_percent, formatDecimal((1f - it.coerceIn(0f, 1f)) * 100, 0))
+            } ?: "\u2014",
+            label = stringResource(R.string.thermal_headroom),
+            lineColor = thermal.thermalHeadroom?.let { headroomColor(it) }
+                ?: MaterialTheme.colorScheme.primary,
+            accessibilityDescription = stringResource(
+                R.string.a11y_chart_trend,
+                stringResource(R.string.thermal_headroom)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 

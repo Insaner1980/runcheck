@@ -123,6 +123,23 @@ import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColorForStoragePercent
 import com.runcheck.ui.theme.statusColors
 
+private fun requiredMediaPermissions(): List<String> {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        listOf(
+            Manifest.permission.READ_MEDIA_IMAGES,
+            Manifest.permission.READ_MEDIA_VIDEO,
+            Manifest.permission.READ_MEDIA_AUDIO
+        )
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        listOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+    } else {
+        listOf(
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        )
+    }
+}
+
 @Composable
 fun StorageDetailScreen(
     onBack: () -> Unit,
@@ -137,22 +154,7 @@ fun StorageDetailScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val activity = context.findActivity()
     var mediaPermissionRequested by rememberSaveable { mutableStateOf(false) }
-    val requiredMediaPermissions = remember {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            listOf(
-                Manifest.permission.READ_MEDIA_IMAGES,
-                Manifest.permission.READ_MEDIA_VIDEO,
-                Manifest.permission.READ_MEDIA_AUDIO
-            )
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            listOf(Manifest.permission.READ_EXTERNAL_STORAGE)
-        } else {
-            listOf(
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            )
-        }
-    }
+    val requiredMediaPermissions = remember { requiredMediaPermissions() }
     var missingMediaPermissions by remember {
         mutableStateOf(requiredMediaPermissions.filter { permission ->
             ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED
@@ -285,26 +287,37 @@ fun StorageDetailScreen(
     }
 
     if (showTrashConfirmDialog) {
-        AlertDialog(
-            onDismissRequest = { showTrashConfirmDialog = false },
-            shape = MaterialTheme.shapes.large,
-            title = { Text(stringResource(R.string.storage_trash_confirm_title)) },
-            text = { Text(stringResource(R.string.storage_trash_confirm_message)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showTrashConfirmDialog = false
-                    viewModel.emptyTrash()
-                }) {
-                    Text(stringResource(R.string.storage_empty_trash))
-                }
+        TrashConfirmDialog(
+            onConfirm = {
+                showTrashConfirmDialog = false
+                viewModel.emptyTrash()
             },
-            dismissButton = {
-                TextButton(onClick = { showTrashConfirmDialog = false }) {
-                    Text(stringResource(R.string.common_cancel))
-                }
-            }
+            onDismiss = { showTrashConfirmDialog = false }
         )
     }
+}
+
+@Composable
+private fun TrashConfirmDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.large,
+        title = { Text(stringResource(R.string.storage_trash_confirm_title)) },
+        text = { Text(stringResource(R.string.storage_trash_confirm_message)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(R.string.storage_empty_trash))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.common_cancel))
+            }
+        }
+    )
 }
 
 @Composable
@@ -445,7 +458,18 @@ private fun StorageContent(
         }
     }
 
-    activeInfoSheet?.let { key ->
+    StorageInfoSheet(
+        activeKey = activeInfoSheet,
+        onDismiss = { activeInfoSheet = null }
+    )
+}
+
+@Composable
+private fun StorageInfoSheet(
+    activeKey: String?,
+    onDismiss: () -> Unit
+) {
+    activeKey?.let { key ->
         val content = when (key) {
             "usagePercent" -> StorageInfoContent.usagePercent
             "fillRate" -> StorageInfoContent.fillRate
@@ -456,7 +480,7 @@ private fun StorageContent(
             else -> null
         }
         content?.let {
-            InfoBottomSheet(content = it, onDismiss = { activeInfoSheet = null })
+            InfoBottomSheet(content = it, onDismiss = onDismiss)
         }
     }
 }

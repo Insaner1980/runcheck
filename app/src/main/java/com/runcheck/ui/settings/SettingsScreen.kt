@@ -1,5 +1,6 @@
 package com.runcheck.ui.settings
 
+import android.util.Log
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -88,6 +89,8 @@ import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 import kotlin.math.abs
 import kotlin.math.roundToInt
+
+private const val TAG = "SettingsScreen"
 
 @Composable
 fun SettingsScreen(
@@ -236,7 +239,9 @@ fun SettingsScreen(
                                 } catch (_: Exception) {
                                     try {
                                         context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-                                    } catch (_: Exception) { }
+                                    } catch (e: Exception) {
+                                        Log.w(TAG, "Failed to open battery optimization settings", e)
+                                    }
                                 }
                             }
                             .padding(vertical = MaterialTheme.spacing.xs),
@@ -755,7 +760,9 @@ fun SettingsScreen(
                                 putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.feedback_email_subject))
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             })
-                        } catch (_: Exception) { }
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Failed to open email client for feedback", e)
+                        }
                     }
                 )
             }

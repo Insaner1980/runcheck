@@ -395,6 +395,25 @@ private fun ChargerCard(
     onClearSelected: () -> Unit,
     onDelete: () -> Unit
 ) {
+    // Pre-compute conditional values to reduce nesting complexity
+    val selectedLabel: String? = when {
+        charger.hasActiveSession -> stringResource(R.string.charger_selected_active)
+        isSelected -> stringResource(R.string.charger_selected)
+        else -> null
+    }
+
+    val buttonText = if (isSelected) {
+        stringResource(R.string.charger_clear_selected)
+    } else {
+        stringResource(R.string.charger_select)
+    }
+    val buttonAction = if (isSelected) onClearSelected else onSelect
+
+    val lastUsedText = charger.lastUsed?.let { timestamp ->
+        val formatted = rememberFormattedDateTime(timestamp, "yMMMdHm")
+        stringResource(R.string.charger_last_test, formatted)
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
@@ -422,13 +441,9 @@ private fun ChargerCard(
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    if (isSelected || charger.hasActiveSession) {
+                    selectedLabel?.let {
                         Text(
-                            text = if (charger.hasActiveSession) {
-                                stringResource(R.string.charger_selected_active)
-                            } else {
-                                stringResource(R.string.charger_selected)
-                            },
+                            text = it,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -463,10 +478,9 @@ private fun ChargerCard(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            charger.lastUsed?.let { timestamp ->
-                val formatted = rememberFormattedDateTime(timestamp, "yMMMdHm")
+            lastUsedText?.let {
                 Text(
-                    text = stringResource(R.string.charger_last_test, formatted),
+                    text = it,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -475,16 +489,10 @@ private fun ChargerCard(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
             OutlinedButton(
-                onClick = if (isSelected) onClearSelected else onSelect,
+                onClick = buttonAction,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = if (isSelected) {
-                        stringResource(R.string.charger_clear_selected)
-                    } else {
-                        stringResource(R.string.charger_select)
-                    }
-                )
+                Text(text = buttonText)
             }
         }
     }

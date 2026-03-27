@@ -97,63 +97,7 @@ class CleanupViewModel @Inject constructor(
             }
             _uiState.value = CleanupUiState.Scanning()
             try {
-                val storageState = storageCleanup.getCurrentStorageState()
-                currentStorageTotal = storageState.totalBytes.coerceAtLeast(1L)
-                currentStorageUsed = storageState.usedBytes
-
-                val filterValue = cleanupType.filterOptions
-                    .getOrNull(selectedFilter)?.value
-                    ?: defaultFilterValue()
-                val query = CleanupScanQuery(
-                    source = cleanupType.toScanSource(),
-                    filterValue = filterValue
-                )
-                currentQuery = query
-                val summary = storageCleanup.getCleanupSummary(query)
-
-                if (summary.totalCount == 0) {
-                    groupedFiles = emptyList()
-                    pagerFlows = emptyMap()
-                    fileSizeByUri.clear()
-                    fileCategoryByUri.clear()
-                    totalScannedSize = 0L
-                    maxFileSizeBytes = 0L
-                    selectedGroups = emptySet()
-                    explicitSelectedUris = emptySet()
-                    explicitDeselectedUris = emptySet()
-                    _uiState.value = CleanupUiState.Empty
-                    return@launch
-                }
-
-                totalScannedSize = summary.totalBytes
-                maxFileSizeBytes = summary.maxFileSizeBytes
-                groupedFiles = summary.groups
-                    .map { group ->
-                        FileGroup(
-                            category = group.category,
-                            itemCount = group.itemCount,
-                            totalBytes = group.totalBytes
-                        )
-                    }
-                    .mapIndexed { index, group ->
-                        if (index == 0) group.copy(expanded = true) else group
-                    }
-                pagerGeneration += 1
-                pagerFlows = groupedFiles.associate { group ->
-                    group.category to storageCleanup
-                        .getCleanupItems(query, group.category)
-                        .cachedIn(viewModelScope)
-                }
-
-                selectedGroups = if (cleanupType.preselectAll) {
-                    groupedFiles.map { it.category }.toSet()
-                } else {
-                    emptySet()
-                }
-                explicitSelectedUris = emptySet()
-                explicitDeselectedUris = emptySet()
-
-                emitResults()
+                performScan()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -161,6 +105,66 @@ class CleanupViewModel @Inject constructor(
                 _uiState.value = CleanupUiState.Error(UiText.Resource(R.string.common_error_generic))
             }
         }
+    }
+
+    private suspend fun performScan() {
+        val storageState = storageCleanup.getCurrentStorageState()
+        currentStorageTotal = storageState.totalBytes.coerceAtLeast(1L)
+        currentStorageUsed = storageState.usedBytes
+
+        val filterValue = cleanupType.filterOptions
+            .getOrNull(selectedFilter)?.value
+            ?: defaultFilterValue()
+        val query = CleanupScanQuery(
+            source = cleanupType.toScanSource(),
+            filterValue = filterValue
+        )
+        currentQuery = query
+        val summary = storageCleanup.getCleanupSummary(query)
+
+        if (summary.totalCount == 0) {
+            groupedFiles = emptyList()
+            pagerFlows = emptyMap()
+            fileSizeByUri.clear()
+            fileCategoryByUri.clear()
+            totalScannedSize = 0L
+            maxFileSizeBytes = 0L
+            selectedGroups = emptySet()
+            explicitSelectedUris = emptySet()
+            explicitDeselectedUris = emptySet()
+            _uiState.value = CleanupUiState.Empty
+            return
+        }
+
+        totalScannedSize = summary.totalBytes
+        maxFileSizeBytes = summary.maxFileSizeBytes
+        groupedFiles = summary.groups
+            .map { group ->
+                FileGroup(
+                    category = group.category,
+                    itemCount = group.itemCount,
+                    totalBytes = group.totalBytes
+                )
+            }
+            .mapIndexed { index, group ->
+                if (index == 0) group.copy(expanded = true) else group
+            }
+        pagerGeneration += 1
+        pagerFlows = groupedFiles.associate { group ->
+            group.category to storageCleanup
+                .getCleanupItems(query, group.category)
+                .cachedIn(viewModelScope)
+        }
+
+        selectedGroups = if (cleanupType.preselectAll) {
+            groupedFiles.map { it.category }.toSet()
+        } else {
+            emptySet()
+        }
+        explicitSelectedUris = emptySet()
+        explicitDeselectedUris = emptySet()
+
+        emitResults()
     }
 
     fun toggleSelection(file: ScannedFile) {
@@ -218,40 +222,43 @@ class CleanupViewModel @Inject constructor(
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 _deleteRequestUris.emit(uris)
-                return@launch
+            } else {
+                performLegacyDelete(uris)
             }
+        }
+    }
 
-            try {
-                val deletedUris = storageCleanup.deleteLegacy(uris)
-                if (deletedUris.isNotEmpty()) {
-                    onDeleteSuccess(freedBytesFor(deletedUris))
-                } else {
-                    restorePendingSelection(UiText.Resource(R.string.cleanup_delete_failed))
-                }
-            } catch (error: StorageDeleteFailure) {
-                if (error.deletedUris.isNotEmpty()) {
-                    onDeleteSuccess(freedBytesFor(error.deletedUris))
-                } else {
-                    restorePendingSelection(
-                        UiText.Resource(
-                            if (error.recoverable) {
-                                R.string.cleanup_delete_permission_error
-                            } else {
-                                R.string.cleanup_delete_failed
-                            }
-                        )
-                    )
-                }
-            } catch (error: RecoverableSecurityException) {
-                ReleaseSafeLog.error("CleanupVM", "Delete permission denied (recoverable)", error)
-                restorePendingSelection(UiText.Resource(R.string.cleanup_delete_permission_error))
-            } catch (error: SecurityException) {
-                ReleaseSafeLog.error("CleanupVM", "Delete permission denied", error)
-                restorePendingSelection(UiText.Resource(R.string.cleanup_delete_permission_error))
-            } catch (error: Exception) {
-                ReleaseSafeLog.error("CleanupVM", "Delete failed", error)
+    private suspend fun performLegacyDelete(uris: List<String>) {
+        try {
+            val deletedUris = storageCleanup.deleteLegacy(uris)
+            if (deletedUris.isNotEmpty()) {
+                onDeleteSuccess(freedBytesFor(deletedUris))
+            } else {
                 restorePendingSelection(UiText.Resource(R.string.cleanup_delete_failed))
             }
+        } catch (error: StorageDeleteFailure) {
+            if (error.deletedUris.isNotEmpty()) {
+                onDeleteSuccess(freedBytesFor(error.deletedUris))
+            } else {
+                restorePendingSelection(
+                    UiText.Resource(
+                        if (error.recoverable) {
+                            R.string.cleanup_delete_permission_error
+                        } else {
+                            R.string.cleanup_delete_failed
+                        }
+                    )
+                )
+            }
+        } catch (error: RecoverableSecurityException) {
+            ReleaseSafeLog.error("CleanupVM", "Delete permission denied (recoverable)", error)
+            restorePendingSelection(UiText.Resource(R.string.cleanup_delete_permission_error))
+        } catch (error: SecurityException) {
+            ReleaseSafeLog.error("CleanupVM", "Delete permission denied", error)
+            restorePendingSelection(UiText.Resource(R.string.cleanup_delete_permission_error))
+        } catch (error: Exception) {
+            ReleaseSafeLog.error("CleanupVM", "Delete failed", error)
+            restorePendingSelection(UiText.Resource(R.string.cleanup_delete_failed))
         }
     }
 

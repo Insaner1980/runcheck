@@ -188,8 +188,8 @@ private fun AppUsageContent(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
         }
 
-        if (!hasUsageAccess) {
-            item {
+        when {
+            !hasUsageAccess -> item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.large,
@@ -236,8 +236,7 @@ private fun AppUsageContent(
                     }
                 }
             }
-        } else if (appItems.loadState.refresh is LoadState.Loading && appItems.itemCount == 0) {
-            item {
+            appItems.loadState.refresh is LoadState.Loading && appItems.itemCount == 0 -> item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -247,8 +246,7 @@ private fun AppUsageContent(
                     CircularProgressIndicator()
                 }
             }
-        } else if (appItems.loadState.refresh is LoadState.Error && appItems.itemCount == 0) {
-            item {
+            appItems.loadState.refresh is LoadState.Error && appItems.itemCount == 0 -> item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.large,
@@ -274,8 +272,7 @@ private fun AppUsageContent(
                     }
                 }
             }
-        } else if (appItems.itemCount == 0) {
-            item {
+            appItems.itemCount == 0 -> item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.large,
@@ -306,8 +303,7 @@ private fun AppUsageContent(
                     }
                 }
             }
-        } else {
-            items(
+            else -> items(
                 count = appItems.itemCount,
                 key = appItems.itemKey { it.packageName },
                 contentType = appItems.itemContentType { "app_usage" }

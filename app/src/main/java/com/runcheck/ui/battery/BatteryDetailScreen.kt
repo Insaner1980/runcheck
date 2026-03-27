@@ -810,6 +810,30 @@ private fun BatteryHeroSection(
         } else null
     }
 
+    // Pre-compute display strings to reduce nesting complexity inside Card
+    val heroStatusText = if (battery.remainingMah != null) {
+        stringResource(R.string.battery_remaining_mah, statusText, battery.remainingMah)
+    } else {
+        statusText
+    }
+
+    val estimatingText = stringResource(R.string.battery_estimating)
+
+    val drainRateText = drainRatePctPerHour?.let {
+        stringResource(R.string.value_percent_per_hour, it)
+    } ?: estimatingText
+
+    val powerText = powerW?.let {
+        stringResource(R.string.value_watts, it)
+    } ?: estimatingText
+
+    val remainingText = remainingHours?.let { hours ->
+        val h = hours.toInt()
+        val m = ((hours - h) * 60).toInt()
+        if (h > 0) stringResource(R.string.value_duration_hours_minutes, h, m)
+        else stringResource(R.string.value_duration_minutes, m)
+    } ?: estimatingText
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -866,11 +890,7 @@ private fun BatteryHeroSection(
                         )
                     }
                     Text(
-                        text = if (battery.remainingMah != null) {
-                            stringResource(R.string.battery_remaining_mah, statusText, battery.remainingMah)
-                        } else {
-                            statusText
-                        },
+                        text = heroStatusText,
                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -887,28 +907,19 @@ private fun BatteryHeroSection(
             ) {
                 MetricPill(
                     label = stringResource(R.string.battery_drain_rate),
-                    value = drainRatePctPerHour?.let {
-                        stringResource(R.string.value_percent_per_hour, it)
-                    } ?: stringResource(R.string.battery_estimating),
+                    value = drainRateText,
                     modifier = Modifier.weight(1f),
                     onInfoClick = { onInfoClick("drainRate") }
                 )
                 MetricPill(
                     label = stringResource(R.string.battery_power),
-                    value = powerW?.let {
-                        stringResource(R.string.value_watts, it)
-                    } ?: stringResource(R.string.battery_estimating),
+                    value = powerText,
                     modifier = Modifier.weight(1f),
                     onInfoClick = { onInfoClick("powerW") }
                 )
                 MetricPill(
                     label = stringResource(R.string.battery_remaining),
-                    value = remainingHours?.let { hours ->
-                        val h = hours.toInt()
-                        val m = ((hours - h) * 60).toInt()
-                        if (h > 0) stringResource(R.string.value_duration_hours_minutes, h, m)
-                        else stringResource(R.string.value_duration_minutes, m)
-                    } ?: stringResource(R.string.battery_estimating),
+                    value = remainingText,
                     modifier = Modifier.weight(1f),
                     onInfoClick = { onInfoClick("remaining") }
                 )

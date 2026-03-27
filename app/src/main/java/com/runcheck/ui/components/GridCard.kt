@@ -43,6 +43,13 @@ fun GridCard(
     locked: Boolean = false
 ) {
     val lockedStateDesc = if (locked) stringResource(R.string.a11y_locked_pro_feature) else null
+    val hasStatus = statusColor != Color.Unspecified
+    val resolvedIconBg = iconBackgroundColor.takeIf { it != Color.Unspecified }
+        ?: MaterialTheme.colorScheme.surfaceContainerHighest
+    val startPadding = if (hasStatus) MaterialTheme.spacing.base else MaterialTheme.spacing.md
+    val statusStripModifier = if (hasStatus) Modifier.statusStrip(color = statusColor) else Modifier
+    val resolvedStatusLabelColor = if (hasStatus) statusColor else MaterialTheme.colorScheme.onSurfaceVariant
+
     Card(
         onClick = onClick,
         modifier = modifier.semantics(mergeDescendants = true) {
@@ -56,32 +63,16 @@ fun GridCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        val resolvedIconBg = if (iconBackgroundColor == Color.Unspecified) {
-            MaterialTheme.colorScheme.surfaceContainerHighest
-        } else {
-            iconBackgroundColor
-        }
-
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .then(
-                    if (statusColor != Color.Unspecified) {
-                        Modifier.statusStrip(color = statusColor)
-                    } else {
-                        Modifier
-                    }
-                )
+                .then(statusStripModifier)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
-                        start = if (statusColor != Color.Unspecified) {
-                            MaterialTheme.spacing.base
-                        } else {
-                            MaterialTheme.spacing.md
-                        },
+                        start = startPadding,
                         end = MaterialTheme.spacing.md,
                         top = MaterialTheme.spacing.base,
                         bottom = MaterialTheme.spacing.base
@@ -119,11 +110,7 @@ fun GridCard(
                     Text(
                         text = statusLabel,
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (statusColor == Color.Unspecified) {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        } else {
-                            statusColor
-                        }
+                        color = resolvedStatusLabelColor
                     )
                 }
             }

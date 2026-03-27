@@ -120,41 +120,42 @@ private fun DrawScope.drawSegment(
     isLast: Boolean
 ) {
     // For first and last segments, use rounded corners; middle segments are flat
-    if (isFirst && isLast) {
-        drawRoundRect(
+    when {
+        isFirst && isLast -> drawRoundRect(
             color = color,
             topLeft = Offset(x, 0f),
             size = Size(width, height),
             cornerRadius = CornerRadius(cornerPx, cornerPx)
         )
-    } else if (isFirst) {
-        // Round left corners only - draw round rect clipped
-        drawRoundRect(
-            color = color,
-            topLeft = Offset(x, 0f),
-            size = Size(width + cornerPx, height),
-            cornerRadius = CornerRadius(cornerPx, cornerPx)
-        )
-        // Cover right corners with a flat rect
-        drawRect(
-            color = color,
-            topLeft = Offset(x + width - cornerPx, 0f),
-            size = Size(cornerPx, height)
-        )
-    } else if (isLast) {
-        drawRoundRect(
-            color = color,
-            topLeft = Offset(x - cornerPx, 0f),
-            size = Size(width + cornerPx, height),
-            cornerRadius = CornerRadius(cornerPx, cornerPx)
-        )
-        drawRect(
-            color = color,
-            topLeft = Offset(x, 0f),
-            size = Size(cornerPx, height)
-        )
-    } else {
-        drawRect(
+        isFirst -> {
+            // Round left corners only - draw round rect clipped
+            drawRoundRect(
+                color = color,
+                topLeft = Offset(x, 0f),
+                size = Size(width + cornerPx, height),
+                cornerRadius = CornerRadius(cornerPx, cornerPx)
+            )
+            // Cover right corners with a flat rect
+            drawRect(
+                color = color,
+                topLeft = Offset(x + width - cornerPx, 0f),
+                size = Size(cornerPx, height)
+            )
+        }
+        isLast -> {
+            drawRoundRect(
+                color = color,
+                topLeft = Offset(x - cornerPx, 0f),
+                size = Size(width + cornerPx, height),
+                cornerRadius = CornerRadius(cornerPx, cornerPx)
+            )
+            drawRect(
+                color = color,
+                topLeft = Offset(x, 0f),
+                size = Size(cornerPx, height)
+            )
+        }
+        else -> drawRect(
             color = color,
             topLeft = Offset(x, 0f),
             size = Size(width, height)

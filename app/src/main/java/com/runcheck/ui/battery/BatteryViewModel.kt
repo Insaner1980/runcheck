@@ -3,10 +3,12 @@ package com.runcheck.ui.battery
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.usecase.BatteryScreenInsightsUseCase
 import com.runcheck.domain.usecase.ChargerSessionTracker
 import com.runcheck.domain.usecase.GetBatteryHistoryUseCase
@@ -123,65 +125,7 @@ class BatteryViewModel @Inject constructor(
                 manageUserPreferences.observePreferences(),
                 manageInfoCardDismissals.observeDismissedCardIds()
             ) { state, history, isPro, preferences, dismissedCards ->
-                if (state != lastObservedBatteryState) {
-                    if (lastChargingStatus != null && lastChargingStatus != state.chargingStatus) {
-                        resetCurrentStats()
-                    }
-                    lastChargingStatus = state.chargingStatus
-
-                    batteryScreenInsights.updateChargingStatus(state.chargingStatus)
-                    maybeTrackChargerSession(state)
-
-                    if (state.currentMa.confidence != Confidence.UNAVAILABLE) {
-                        appendLive(liveCurrentMa, kotlin.math.abs(state.currentMa.value).toFloat())
-                        val powerW = kotlin.math.abs(state.currentMa.value / 1000f * state.voltageMv / 1000f)
-                        appendLive(livePowerW, powerW)
-
-                        val currentMa = state.currentMa.value
-                        currentSum += currentMa
-                        currentCount++
-                        currentMin = minOf(currentMin, currentMa)
-                        currentMax = maxOf(currentMax, currentMa)
-                    }
-
-                    appendLive(liveTempC, state.temperatureC)
-                    appendLive(liveLevel, state.level.toFloat())
-                    appendLive(liveVoltage, state.voltageMv / 1000f)
-                    lastObservedBatteryState = state
-                }
-
-                val stats = if (state.currentMa.confidence != Confidence.UNAVAILABLE && currentCount >= 2) {
-                    CurrentStats(
-                        avg = (currentSum / currentCount).toInt(),
-                        min = currentMin,
-                        max = currentMax,
-                        sampleCount = currentCount
-                    )
-                } else {
-                    null
-                }
-
-                val isDischarging = state.chargingStatus != ChargingStatus.CHARGING &&
-                    state.chargingStatus != ChargingStatus.FULL
-
-                BatteryUiState.Success(
-                    batteryState = state,
-                    history = history,
-                    selectedPeriod = selectedPeriod,
-                    isPro = isPro,
-                    currentStats = stats,
-                    screenUsage = if (isDischarging) batteryScreenInsights.getScreenUsageStats() else null,
-                    sleepAnalysis = if (isDischarging) batteryScreenInsights.getSleepAnalysis() else null,
-                    temperatureUnit = preferences.temperatureUnit,
-                    statistics = cachedStatistics,
-                    dismissedInfoCards = dismissedCards,
-                    showInfoCards = preferences.showInfoCards,
-                    liveCurrentMa = liveCurrentMa.toList(),
-                    livePowerW = livePowerW.toList(),
-                    liveTempC = liveTempC.toList(),
-                    liveLevel = liveLevel.toList(),
-                    liveVoltage = liveVoltage.toList()
-                )
+                processBatteryUpdate(state, history, isPro, preferences, dismissedCards)
             }.sample(333L).catch { e ->
                 ReleaseSafeLog.error("BatteryVM", "Battery data failed", e)
                 _uiState.value = BatteryUiState.Error(e.messageOr("Unknown error"))
@@ -189,6 +133,74 @@ class BatteryViewModel @Inject constructor(
                 _uiState.value = state
             }
         }
+    }
+
+    private suspend fun processBatteryUpdate(
+        state: BatteryState,
+        history: List<BatteryReading>,
+        isPro: Boolean,
+        preferences: UserPreferences,
+        dismissedCards: Set<String>
+    ): BatteryUiState.Success {
+        if (state != lastObservedBatteryState) {
+            if (lastChargingStatus != null && lastChargingStatus != state.chargingStatus) {
+                resetCurrentStats()
+            }
+            lastChargingStatus = state.chargingStatus
+
+            batteryScreenInsights.updateChargingStatus(state.chargingStatus)
+            maybeTrackChargerSession(state)
+
+            if (state.currentMa.confidence != Confidence.UNAVAILABLE) {
+                appendLive(liveCurrentMa, kotlin.math.abs(state.currentMa.value).toFloat())
+                val powerW = kotlin.math.abs(state.currentMa.value / 1000f * state.voltageMv / 1000f)
+                appendLive(livePowerW, powerW)
+
+                val currentMa = state.currentMa.value
+                currentSum += currentMa
+                currentCount++
+                currentMin = minOf(currentMin, currentMa)
+                currentMax = maxOf(currentMax, currentMa)
+            }
+
+            appendLive(liveTempC, state.temperatureC)
+            appendLive(liveLevel, state.level.toFloat())
+            appendLive(liveVoltage, state.voltageMv / 1000f)
+            lastObservedBatteryState = state
+        }
+
+        val stats = if (state.currentMa.confidence != Confidence.UNAVAILABLE && currentCount >= 2) {
+            CurrentStats(
+                avg = (currentSum / currentCount).toInt(),
+                min = currentMin,
+                max = currentMax,
+                sampleCount = currentCount
+            )
+        } else {
+            null
+        }
+
+        val isDischarging = state.chargingStatus != ChargingStatus.CHARGING &&
+            state.chargingStatus != ChargingStatus.FULL
+
+        return BatteryUiState.Success(
+            batteryState = state,
+            history = history,
+            selectedPeriod = selectedPeriod,
+            isPro = isPro,
+            currentStats = stats,
+            screenUsage = if (isDischarging) batteryScreenInsights.getScreenUsageStats() else null,
+            sleepAnalysis = if (isDischarging) batteryScreenInsights.getSleepAnalysis() else null,
+            temperatureUnit = preferences.temperatureUnit,
+            statistics = cachedStatistics,
+            dismissedInfoCards = dismissedCards,
+            showInfoCards = preferences.showInfoCards,
+            liveCurrentMa = liveCurrentMa.toList(),
+            livePowerW = livePowerW.toList(),
+            liveTempC = liveTempC.toList(),
+            liveLevel = liveLevel.toList(),
+            liveVoltage = liveVoltage.toList()
+        )
     }
 
     private suspend fun maybeTrackChargerSession(state: BatteryState) {
