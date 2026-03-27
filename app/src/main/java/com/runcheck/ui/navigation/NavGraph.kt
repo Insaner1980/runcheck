@@ -162,9 +162,6 @@ fun RuncheckNavHost(
         }
         composable(Screen.Network.route) { entry ->
             val networkViewModel: NetworkViewModel = hiltViewModel(entry)
-            val resultSource by entry.savedStateHandle
-                .getStateFlow<String?>(FullscreenChartResult.KEY_SOURCE, null)
-                .collectAsStateWithLifecycle()
             val resultMetric by entry.savedStateHandle
                 .getStateFlow<String?>(FullscreenChartResult.KEY_METRIC, null)
                 .collectAsStateWithLifecycle()

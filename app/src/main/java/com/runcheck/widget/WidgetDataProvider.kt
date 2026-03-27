@@ -208,14 +208,7 @@ private fun classifySignal(dbm: Int?, type: ConnectionType): SignalQuality {
             else -> SignalQuality.NO_SIGNAL
         }
 
-        ConnectionType.CELLULAR -> when {
-            dbm > -80 -> SignalQuality.EXCELLENT
-            dbm > -90 -> SignalQuality.GOOD
-            dbm > -100 -> SignalQuality.FAIR
-            dbm > -110 -> SignalQuality.POOR
-            else -> SignalQuality.NO_SIGNAL
-        }
-
+        ConnectionType.CELLULAR,
         ConnectionType.VPN -> when {
             dbm > -80 -> SignalQuality.EXCELLENT
             dbm > -90 -> SignalQuality.GOOD

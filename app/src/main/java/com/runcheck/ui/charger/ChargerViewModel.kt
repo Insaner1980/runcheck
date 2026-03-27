@@ -21,6 +21,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val UNKNOWN_ERROR = "Unknown error"
+
 @HiltViewModel
 class ChargerViewModel @Inject constructor(
     private val getChargerComparison: GetChargerComparisonUseCase,
@@ -64,7 +66,7 @@ class ChargerViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _uiState.value = ChargerUiState.Error(e.messageOr("Unknown error"))
+                _uiState.value = ChargerUiState.Error(e.messageOr(UNKNOWN_ERROR))
             }
         }
     }
@@ -77,7 +79,7 @@ class ChargerViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _uiState.value = ChargerUiState.Error(e.messageOr("Unknown error"))
+                _uiState.value = ChargerUiState.Error(e.messageOr(UNKNOWN_ERROR))
             }
         }
     }
@@ -90,7 +92,7 @@ class ChargerViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _uiState.value = ChargerUiState.Error(e.messageOr("Unknown error"))
+                _uiState.value = ChargerUiState.Error(e.messageOr(UNKNOWN_ERROR))
             }
         }
     }
@@ -103,7 +105,7 @@ class ChargerViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _uiState.value = ChargerUiState.Error(e.messageOr("Unknown error"))
+                _uiState.value = ChargerUiState.Error(e.messageOr(UNKNOWN_ERROR))
             }
         }
     }
@@ -123,7 +125,7 @@ class ChargerViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _uiState.value = ChargerUiState.Error(e.messageOr("Unknown error"))
+                _uiState.value = ChargerUiState.Error(e.messageOr(UNKNOWN_ERROR))
             }
         }
     }
@@ -140,7 +142,7 @@ class ChargerViewModel @Inject constructor(
                     selectedChargerId = selectedChargerId
                 )
             }.catch { e ->
-                _uiState.value = ChargerUiState.Error(e.messageOr("Unknown error"))
+                _uiState.value = ChargerUiState.Error(e.messageOr(UNKNOWN_ERROR))
             }.collect { state ->
                 _uiState.value = state
             }

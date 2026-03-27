@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private const val APP_USAGE_LOOKBACK_MS = 24 * 60 * 60 * 1000L
+private const val UNKNOWN_ERROR = "Unknown error"
 
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -89,7 +90,7 @@ class AppUsageViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _uiState.value = AppUsageUiState.Error(e.messageOr("Unknown error"))
+                _uiState.value = AppUsageUiState.Error(e.messageOr(UNKNOWN_ERROR))
             }
         }
     }
@@ -103,7 +104,7 @@ class AppUsageViewModel @Inject constructor(
                 pagingEnabled.value = true
                 getAppBatteryUsageSummary(since)
                     .catch { e ->
-                        _uiState.value = AppUsageUiState.Error(e.messageOr("Unknown error"))
+                        _uiState.value = AppUsageUiState.Error(e.messageOr(UNKNOWN_ERROR))
                     }
                     .collect { summary ->
                         _uiState.value = AppUsageUiState.Success(
@@ -114,7 +115,7 @@ class AppUsageViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _uiState.value = AppUsageUiState.Error(e.messageOr("Unknown error"))
+                _uiState.value = AppUsageUiState.Error(e.messageOr(UNKNOWN_ERROR))
             }
         }
     }

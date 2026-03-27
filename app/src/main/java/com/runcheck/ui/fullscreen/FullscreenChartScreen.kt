@@ -445,16 +445,13 @@ private fun resolveMetricLabel(source: FullscreenChartSource, metric: String): S
 
 @Composable
 private fun resolvePeriodLabel(source: FullscreenChartSource, period: String): String = when (source) {
-    FullscreenChartSource.BATTERY_HISTORY -> {
+    FullscreenChartSource.BATTERY_HISTORY,
+    FullscreenChartSource.NETWORK_HISTORY -> {
         val p = runCatching { com.runcheck.domain.model.HistoryPeriod.valueOf(period) }.getOrNull()
         p?.let { historyPeriodLabel(it) } ?: period
     }
     FullscreenChartSource.BATTERY_SESSION -> {
         val w = runCatching { SessionGraphWindow.valueOf(period) }.getOrNull()
         w?.let { sessionGraphWindowLabel(it) } ?: period
-    }
-    FullscreenChartSource.NETWORK_HISTORY -> {
-        val p = runCatching { com.runcheck.domain.model.HistoryPeriod.valueOf(period) }.getOrNull()
-        p?.let { historyPeriodLabel(it) } ?: period
     }
 }

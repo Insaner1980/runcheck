@@ -41,7 +41,6 @@ class HealthMonitorWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
-        var coreFailure = false
         var batteryState: BatteryState? = null
         var thermalState: ThermalState? = null
         var storageState: StorageState? = null
@@ -57,7 +56,7 @@ class HealthMonitorWorker @AssistedInject constructor(
             return Result.retry()
         }
 
-        coreFailure = collectStep("battery") {
+        var coreFailure = collectStep("battery") {
             batteryState = batteryRepository.getBatteryState().first()
             batteryRepository.saveReading(requireNotNull(batteryState))
             chargerSessionTracker.onBatteryState(requireNotNull(batteryState))

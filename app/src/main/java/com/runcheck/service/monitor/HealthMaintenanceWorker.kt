@@ -21,9 +21,7 @@ class HealthMaintenanceWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
-        var maintenanceFailure = false
-
-        maintenanceFailure = collectStep("app_usage") {
+        var maintenanceFailure = collectStep("app_usage") {
             appBatteryUsageRepository.collectUsageSnapshot()
         }
 

@@ -281,7 +281,7 @@ class MediaStoreScanner @Inject constructor(
             // Try both filename match and MIME type match
             val queries = listOf(
                 "${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ?" to arrayOf("%.apk"),
-                "${MediaStore.MediaColumns.MIME_TYPE} = ?" to arrayOf("application/vnd.android.package-archive")
+                "${MediaStore.MediaColumns.MIME_TYPE} = ?" to arrayOf(APK_MIME_TYPE)
             )
 
             for ((selection, selectionArgs) in queries) {
@@ -305,7 +305,7 @@ class MediaStoreScanner @Inject constructor(
                                     uri = android.content.ContentUris.withAppendedId(collectionUri, id).toString(),
                                     displayName = cursor.getString(nameCol) ?: context.getString(R.string.fallback_unknown),
                                     sizeBytes = cursor.getLong(sizeCol),
-                                    mimeType = "application/vnd.android.package-archive",
+                                    mimeType = APK_MIME_TYPE,
                                     dateModified = cursor.getLong(dateCol) * 1000,
                                     category = MediaCategory.APK
                                 )
@@ -722,8 +722,9 @@ class MediaStoreScanner @Inject constructor(
 
     private companion object {
         private const val TAG = "MediaStoreScanner"
+        private const val APK_MIME_TYPE = "application/vnd.android.package-archive"
         private const val APK_SELECTION =
             "${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ? OR ${MediaStore.MediaColumns.MIME_TYPE} = ?"
-        private val APK_SELECTION_ARGS = arrayOf("%.apk", "application/vnd.android.package-archive")
+        private val APK_SELECTION_ARGS = arrayOf("%.apk", APK_MIME_TYPE)
     }
 }

@@ -383,9 +383,7 @@ private fun bandwidthPillValue(state: NetworkState): String = when (state.connec
     ConnectionType.WIFI -> state.wifiSpeedMbps?.let {
         stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_mbps))
     } ?: stringResource(R.string.placeholder_dash)
-    ConnectionType.CELLULAR -> state.estimatedDownstreamKbps?.let {
-        stringResource(R.string.value_with_unit_int, it / 1000, stringResource(R.string.unit_mbps))
-    } ?: stringResource(R.string.placeholder_dash)
+    ConnectionType.CELLULAR,
     ConnectionType.VPN -> state.estimatedDownstreamKbps?.let {
         stringResource(R.string.value_with_unit_int, it / 1000, stringResource(R.string.unit_mbps))
     } ?: stringResource(R.string.placeholder_dash)
