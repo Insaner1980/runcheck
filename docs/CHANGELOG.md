@@ -5,6 +5,7 @@ _Auto-generated from git history. Updated on each commit._
 ## 2026 Week 13 (maalis 23 – maalis 29)
 
 ### Other
+- Laaja koodilaadun refaktorointi: annotaatiot, nimeäminen, arkkitehtuuri ja kuolleen koodin poisto (`ddabc45`)
 - Log.w → ReleaseSafeLog.warn: projektin lokituskäytännön mukainen (`1effd22`)
 - SonarCloud-koodihajujen korjaus: kognitiivinen kompleksisuus, tyhjät catch-lohkot, if→when (`4abac22`)
 - trigger sonar (`b9d31ac`)
