@@ -5,6 +5,7 @@ _Auto-generated from git history. Updated on each commit._
 ## 2026 Week 13 (Mar 23 – Mar 29)
 
 ### Fixed
+- Fix monitoring regressions and migration test setup (`272d2b4`)
 - Fix dependency-analysis plugin version (`cdb9154`)
 ### Other
 - Harden release logging and latency config (`a324e77`)
