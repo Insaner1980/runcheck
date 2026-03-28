@@ -12,7 +12,7 @@ data class CurrentStats(
     val avg: Int,
     val min: Int,
     val max: Int,
-    val sampleCount: Int
+    val sampleCount: Int,
 )
 
 sealed interface BatteryUiState {
@@ -34,8 +34,10 @@ sealed interface BatteryUiState {
         val livePowerW: List<Float> = emptyList(),
         val liveTempC: List<Float> = emptyList(),
         val liveLevel: List<Float> = emptyList(),
-        val liveVoltage: List<Float> = emptyList()
+        val liveVoltage: List<Float> = emptyList(),
     ) : BatteryUiState
 
-    data class Error(val message: String) : BatteryUiState
+    data class Error(
+        val message: String,
+    ) : BatteryUiState
 }

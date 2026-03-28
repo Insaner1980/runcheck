@@ -7,19 +7,20 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ChartRenderModelTest {
-
     @Test
     fun `battery temperature chart honors fahrenheit preference`() {
-        val history = listOf(
-            batteryReading(timestamp = 1_000L, level = 80, temperatureC = 30f),
-            batteryReading(timestamp = 2_000L, level = 79, temperatureC = 31.5f),
-            batteryReading(timestamp = 3_000L, level = 78, temperatureC = 33f)
-        )
+        val history =
+            listOf(
+                batteryReading(timestamp = 1_000L, level = 80, temperatureC = 30f),
+                batteryReading(timestamp = 2_000L, level = 79, temperatureC = 31.5f),
+                batteryReading(timestamp = 3_000L, level = 78, temperatureC = 33f),
+            )
 
-        val points = history.chartPointsFor(
-            metric = BatteryHistoryMetric.TEMPERATURE,
-            temperatureUnit = TemperatureUnit.FAHRENHEIT
-        )
+        val points =
+            history.chartPointsFor(
+                metric = BatteryHistoryMetric.TEMPERATURE,
+                temperatureUnit = TemperatureUnit.FAHRENHEIT,
+            )
 
         assertEquals("°F", batteryMetricUnit(BatteryHistoryMetric.TEMPERATURE, TemperatureUnit.FAHRENHEIT))
         assertEquals(86.0f, points.first().second, 0.01f)
@@ -28,9 +29,11 @@ class ChartRenderModelTest {
 
     @Test
     fun `network history chart downsampling keeps bounded point count`() {
-        val points = (0 until 1_000).map { index ->
-            index * 60_000L to (-40 - (index % 30)).toFloat()
-        }.downsamplePairs(300)
+        val points =
+            (0 until 1_000)
+                .map { index ->
+                    index * 60_000L to (-40 - (index % 30)).toFloat()
+                }.downsamplePairs(300)
 
         assertEquals(300, points.size)
         assertEquals(0L, points.first().first)
@@ -41,7 +44,7 @@ class ChartRenderModelTest {
     private fun batteryReading(
         timestamp: Long,
         level: Int,
-        temperatureC: Float
+        temperatureC: Float,
     ) = BatteryReading(
         id = timestamp,
         timestamp = timestamp,
@@ -54,6 +57,6 @@ class ChartRenderModelTest {
         plugType = "USB",
         health = "GOOD",
         cycleCount = null,
-        healthPct = null
+        healthPct = null,
     )
 }

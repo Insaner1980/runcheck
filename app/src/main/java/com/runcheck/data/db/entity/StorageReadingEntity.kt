@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "storage_readings",
-    indices = [Index(value = ["timestamp"])]
+    indices = [Index(value = ["timestamp"])],
 )
 data class StorageReadingEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -15,5 +15,5 @@ data class StorageReadingEntity(
     @ColumnInfo(name = "total_bytes") val totalBytes: Long,
     @ColumnInfo(name = "available_bytes") val availableBytes: Long,
     @ColumnInfo(name = "apps_bytes") val appsBytes: Long,
-    @ColumnInfo(name = "media_bytes") val mediaBytes: Long
+    @ColumnInfo(name = "media_bytes") val mediaBytes: Long,
 )

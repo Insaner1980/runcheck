@@ -31,18 +31,21 @@ import com.runcheck.MainActivity
 import com.runcheck.R
 
 class BatteryWidget : GlanceAppWidget() {
-
     companion object {
         private val SMALL = DpSize(110.dp, 40.dp)
         private val MEDIUM = DpSize(180.dp, 60.dp)
         private val LARGE = DpSize(250.dp, 100.dp)
     }
 
-    override val sizeMode = SizeMode.Responsive(
-        setOf(SMALL, MEDIUM, LARGE)
-    )
+    override val sizeMode =
+        SizeMode.Responsive(
+            setOf(SMALL, MEDIUM, LARGE),
+        )
 
-    override suspend fun provideGlance(context: Context, id: GlanceId) {
+    override suspend fun provideGlance(
+        context: Context,
+        id: GlanceId,
+    ) {
         if (!WidgetDataProvider.isProUnlocked(context)) {
             provideLockedContent(context)
             return
@@ -55,49 +58,54 @@ class BatteryWidget : GlanceAppWidget() {
 
         val levelText = context.getString(R.string.widget_percent_value, snapshot.level)
         val tempText = context.getString(R.string.widget_temperature_value, snapshot.temperatureC)
-        val currentDisplay = snapshot.currentMa?.let {
-            context.getString(R.string.widget_current_value, it)
-        }
+        val currentDisplay =
+            snapshot.currentMa?.let {
+                context.getString(R.string.widget_current_value, it)
+            }
 
         provideContent {
             GlanceTheme {
                 Column(
-                    modifier = GlanceModifier
-                        .fillMaxSize()
-                        .padding(12.dp)
-                        .cornerRadius(16.dp)
-                        .background(GlanceTheme.colors.widgetBackground)
-                        .clickable(actionStartActivity<MainActivity>()),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier =
+                        GlanceModifier
+                            .fillMaxSize()
+                            .padding(12.dp)
+                            .cornerRadius(16.dp)
+                            .background(GlanceTheme.colors.widgetBackground)
+                            .clickable(actionStartActivity<MainActivity>()),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Row(
                         modifier = GlanceModifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = levelText,
-                            style = TextStyle(
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = GlanceTheme.colors.onSurface
-                            )
+                            style =
+                                TextStyle(
+                                    fontSize = 28.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = GlanceTheme.colors.onSurface,
+                                ),
                         )
                         Spacer(modifier = GlanceModifier.width(8.dp))
                         Column {
                             Text(
                                 text = tempText,
-                                style = TextStyle(
-                                    fontSize = 12.sp,
-                                    color = GlanceTheme.colors.onSurfaceVariant
-                                )
+                                style =
+                                    TextStyle(
+                                        fontSize = 12.sp,
+                                        color = GlanceTheme.colors.onSurfaceVariant,
+                                    ),
                             )
                             currentDisplay?.let {
                                 Text(
                                     text = it,
-                                    style = TextStyle(
-                                        fontSize = 12.sp,
-                                        color = GlanceTheme.colors.onSurfaceVariant
-                                    )
+                                    style =
+                                        TextStyle(
+                                            fontSize = 12.sp,
+                                            color = GlanceTheme.colors.onSurfaceVariant,
+                                        ),
                                 )
                             }
                         }
@@ -108,10 +116,11 @@ class BatteryWidget : GlanceAppWidget() {
                         Spacer(modifier = GlanceModifier.height(4.dp))
                         Text(
                             text = context.getString(R.string.widget_battery_name),
-                            style = TextStyle(
-                                fontSize = 11.sp,
-                                color = GlanceTheme.colors.onSurfaceVariant
-                            )
+                            style =
+                                TextStyle(
+                                    fontSize = 11.sp,
+                                    color = GlanceTheme.colors.onSurfaceVariant,
+                                ),
                         )
                     }
                 }
@@ -123,29 +132,32 @@ class BatteryWidget : GlanceAppWidget() {
         provideContent {
             GlanceTheme {
                 Column(
-                    modifier = GlanceModifier
-                        .fillMaxSize()
-                        .padding(12.dp)
-                        .cornerRadius(16.dp)
-                        .background(GlanceTheme.colors.widgetBackground)
-                        .clickable(actionStartActivity<MainActivity>()),
+                    modifier =
+                        GlanceModifier
+                            .fillMaxSize()
+                            .padding(12.dp)
+                            .cornerRadius(16.dp)
+                            .background(GlanceTheme.colors.widgetBackground)
+                            .clickable(actionStartActivity<MainActivity>()),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = context.getString(R.string.widget_battery_name),
-                        style = TextStyle(
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = GlanceTheme.colors.onSurface
-                        )
+                        style =
+                            TextStyle(
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = GlanceTheme.colors.onSurface,
+                            ),
                     )
                     Text(
                         text = context.getString(R.string.settings_upgrade_pro),
-                        style = TextStyle(
-                            fontSize = 12.sp,
-                            color = GlanceTheme.colors.onSurfaceVariant
-                        )
+                        style =
+                            TextStyle(
+                                fontSize = 12.sp,
+                                color = GlanceTheme.colors.onSurfaceVariant,
+                            ),
                     )
                 }
             }
@@ -156,29 +168,32 @@ class BatteryWidget : GlanceAppWidget() {
         provideContent {
             GlanceTheme {
                 Column(
-                    modifier = GlanceModifier
-                        .fillMaxSize()
-                        .padding(12.dp)
-                        .cornerRadius(16.dp)
-                        .background(GlanceTheme.colors.widgetBackground)
-                        .clickable(actionStartActivity<MainActivity>()),
+                    modifier =
+                        GlanceModifier
+                            .fillMaxSize()
+                            .padding(12.dp)
+                            .cornerRadius(16.dp)
+                            .background(GlanceTheme.colors.widgetBackground)
+                            .clickable(actionStartActivity<MainActivity>()),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = context.getString(R.string.widget_no_data_title),
-                        style = TextStyle(
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = GlanceTheme.colors.onSurface
-                        )
+                        style =
+                            TextStyle(
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = GlanceTheme.colors.onSurface,
+                            ),
                     )
                     Text(
                         text = context.getString(R.string.widget_no_data_message),
-                        style = TextStyle(
-                            fontSize = 12.sp,
-                            color = GlanceTheme.colors.onSurfaceVariant
-                        )
+                        style =
+                            TextStyle(
+                                fontSize = 12.sp,
+                                color = GlanceTheme.colors.onSurfaceVariant,
+                            ),
                     )
                 }
             }

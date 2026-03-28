@@ -9,16 +9,15 @@ import android.os.PowerManager
 import com.runcheck.domain.model.ChargingStatus
 import io.mockk.every
 import io.mockk.mockk
-import kotlin.math.abs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import kotlin.math.abs
 
 class ScreenStateTrackerTest {
-
     private val prefs = InMemorySharedPreferences()
     private val context: Context = mockk(relaxed = true)
     private val powerManager: PowerManager = mockk(relaxed = true)
@@ -42,7 +41,8 @@ class ScreenStateTrackerTest {
     @Test
     fun `persisted screen usage survives tracker recreation`() {
         val now = System.currentTimeMillis()
-        prefs.edit()
+        prefs
+            .edit()
             .putBoolean("screen_on", false)
             .putLong("last_transition_time", now)
             .putInt("last_transition_level", 60)
@@ -72,7 +72,8 @@ class ScreenStateTrackerTest {
     @Test
     fun `charging status change clears persisted usage and sleep data`() {
         val now = System.currentTimeMillis()
-        prefs.edit()
+        prefs
+            .edit()
             .putBoolean("screen_on", false)
             .putLong("last_transition_time", now)
             .putInt("last_transition_level", 60)
@@ -98,7 +99,8 @@ class ScreenStateTrackerTest {
     @Test
     fun `cold start idle reconciliation avoids backfilling unknown held awake time`() {
         val now = System.currentTimeMillis() - 60 * 60_000L
-        prefs.edit()
+        prefs
+            .edit()
             .putBoolean("screen_on", false)
             .putLong("last_transition_time", now)
             .putInt("last_transition_level", 60)
@@ -124,48 +126,86 @@ class ScreenStateTrackerTest {
 
         override fun getAll(): MutableMap<String, *> = values.toMutableMap()
 
-        override fun getString(key: String?, defValue: String?): String? =
-            values[key] as? String ?: defValue
+        override fun getString(
+            key: String?,
+            defValue: String?,
+        ): String? = values[key] as? String ?: defValue
 
-        override fun getStringSet(key: String?, defValues: MutableSet<String>?): MutableSet<String>? {
+        override fun getStringSet(
+            key: String?,
+            defValues: MutableSet<String>?,
+        ): MutableSet<String>? {
             @Suppress("UNCHECKED_CAST")
             return (values[key] as? Set<String>)?.toMutableSet() ?: defValues
         }
 
-        override fun getInt(key: String?, defValue: Int): Int = values[key] as? Int ?: defValue
+        override fun getInt(
+            key: String?,
+            defValue: Int,
+        ): Int = values[key] as? Int ?: defValue
 
-        override fun getLong(key: String?, defValue: Long): Long = values[key] as? Long ?: defValue
+        override fun getLong(
+            key: String?,
+            defValue: Long,
+        ): Long = values[key] as? Long ?: defValue
 
-        override fun getFloat(key: String?, defValue: Float): Float = values[key] as? Float ?: defValue
+        override fun getFloat(
+            key: String?,
+            defValue: Float,
+        ): Float = values[key] as? Float ?: defValue
 
-        override fun getBoolean(key: String?, defValue: Boolean): Boolean = values[key] as? Boolean ?: defValue
+        override fun getBoolean(
+            key: String?,
+            defValue: Boolean,
+        ): Boolean = values[key] as? Boolean ?: defValue
 
         override fun contains(key: String?): Boolean = values.containsKey(key)
 
         override fun edit(): SharedPreferences.Editor = Editor(values)
 
-        override fun registerOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener?) = Unit
+        override fun registerOnSharedPreferenceChangeListener(
+            listener: SharedPreferences.OnSharedPreferenceChangeListener?,
+        ) = Unit
 
-        override fun unregisterOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener?) = Unit
+        override fun unregisterOnSharedPreferenceChangeListener(
+            listener: SharedPreferences.OnSharedPreferenceChangeListener?,
+        ) = Unit
 
         private class Editor(
-            private val target: MutableMap<String, Any?>
+            private val target: MutableMap<String, Any?>,
         ) : SharedPreferences.Editor {
             private val updates = linkedMapOf<String, Any?>()
             private var clearRequested = false
 
-            override fun putString(key: String?, value: String?): SharedPreferences.Editor = applyUpdate(key, value)
+            override fun putString(
+                key: String?,
+                value: String?,
+            ): SharedPreferences.Editor = applyUpdate(key, value)
 
-            override fun putStringSet(key: String?, values: MutableSet<String>?): SharedPreferences.Editor =
-                applyUpdate(key, values?.toSet())
+            override fun putStringSet(
+                key: String?,
+                values: MutableSet<String>?,
+            ): SharedPreferences.Editor = applyUpdate(key, values?.toSet())
 
-            override fun putInt(key: String?, value: Int): SharedPreferences.Editor = applyUpdate(key, value)
+            override fun putInt(
+                key: String?,
+                value: Int,
+            ): SharedPreferences.Editor = applyUpdate(key, value)
 
-            override fun putLong(key: String?, value: Long): SharedPreferences.Editor = applyUpdate(key, value)
+            override fun putLong(
+                key: String?,
+                value: Long,
+            ): SharedPreferences.Editor = applyUpdate(key, value)
 
-            override fun putFloat(key: String?, value: Float): SharedPreferences.Editor = applyUpdate(key, value)
+            override fun putFloat(
+                key: String?,
+                value: Float,
+            ): SharedPreferences.Editor = applyUpdate(key, value)
 
-            override fun putBoolean(key: String?, value: Boolean): SharedPreferences.Editor = applyUpdate(key, value)
+            override fun putBoolean(
+                key: String?,
+                value: Boolean,
+            ): SharedPreferences.Editor = applyUpdate(key, value)
 
             override fun remove(key: String?): SharedPreferences.Editor = applyUpdate(key, null)
 
@@ -192,7 +232,10 @@ class ScreenStateTrackerTest {
                 commit()
             }
 
-            private fun applyUpdate(key: String?, value: Any?): SharedPreferences.Editor {
+            private fun applyUpdate(
+                key: String?,
+                value: Any?,
+            ): SharedPreferences.Editor {
                 requireNotNull(key)
                 updates[key] = value
                 return this

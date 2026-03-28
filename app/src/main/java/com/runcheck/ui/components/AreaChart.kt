@@ -24,6 +24,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
+import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.reducedMotion
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -34,7 +35,7 @@ fun AreaChart(
     modifier: Modifier = Modifier,
     lineColor: Color = MaterialTheme.colorScheme.primary,
     animate: Boolean = true,
-    contentDescription: String? = null
+    contentDescription: String? = null,
 ) {
     if (data.size < 2) return
 
@@ -55,11 +56,11 @@ fun AreaChart(
         scanLineAlpha.snapTo(0.5f)
         launch {
             delay(560) // 70% of 800ms
-            scanLineAlpha.animateTo(0f, tween(240))
+            scanLineAlpha.animateTo(0f, tween(MotionTokens.SHORT))
         }
         sweepProgress.animateTo(
             1f,
-            tween(800, easing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f))
+            tween(MotionTokens.SWEEP, easing = MotionTokens.SweepEasing),
         )
     }
 
@@ -70,19 +71,21 @@ fun AreaChart(
     val linePath = remember { Path() }
     val stripPath = remember { Path() }
 
-    val semanticsModifier = if (contentDescription == null) {
-        Modifier
-    } else {
-        Modifier.semantics {
-            this.contentDescription = contentDescription
-            this.role = Role.Image
+    val semanticsModifier =
+        if (contentDescription == null) {
+            Modifier
+        } else {
+            Modifier.semantics {
+                this.contentDescription = contentDescription
+                this.role = Role.Image
+            }
         }
-    }
 
     Canvas(
-        modifier = modifier
-            .fillMaxSize()
-            .then(semanticsModifier)
+        modifier =
+            modifier
+                .fillMaxSize()
+                .then(semanticsModifier),
     ) {
         drawAreaChart(data, minVal, range, lineColor, sweepProgress.value, scanLineAlpha.value, linePath, stripPath)
     }
@@ -96,7 +99,7 @@ private fun DrawScope.drawAreaChart(
     sweepProgress: Float,
     scanLineAlpha: Float,
     linePath: Path,
-    stripPath: Path
+    stripPath: Path,
 ) {
     val verticalPadding = size.height * 0.1f
     val chartHeight = size.height - verticalPadding * 2
@@ -132,14 +135,16 @@ private fun DrawScope.drawAreaChart(
 
             drawPath(
                 path = stripPath,
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        lineColor.copy(alpha = topAlpha),
-                        lineColor.copy(alpha = 0.02f)
+                brush =
+                    Brush.verticalGradient(
+                        colors =
+                            listOf(
+                                lineColor.copy(alpha = topAlpha),
+                                lineColor.copy(alpha = 0.02f),
+                            ),
+                        startY = minOf(y1, y2),
+                        endY = size.height,
                     ),
-                    startY = minOf(y1, y2),
-                    endY = size.height
-                )
             )
         }
 
@@ -147,7 +152,7 @@ private fun DrawScope.drawAreaChart(
         drawPath(
             path = linePath,
             color = lineColor.copy(alpha = 0.7f),
-            style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round)
+            style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round),
         )
     }
 
@@ -157,7 +162,7 @@ private fun DrawScope.drawAreaChart(
             color = lineColor.copy(alpha = scanLineAlpha),
             start = Offset(sweepX, 0f),
             end = Offset(sweepX, size.height),
-            strokeWidth = 1.5.dp.toPx()
+            strokeWidth = 1.5.dp.toPx(),
         )
     }
 }

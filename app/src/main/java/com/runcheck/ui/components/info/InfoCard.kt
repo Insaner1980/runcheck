@@ -38,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.ui.theme.reducedMotion
+import com.runcheck.ui.theme.spacing
 
 @Composable
 fun InfoCard(
@@ -47,7 +48,7 @@ fun InfoCard(
     onDismiss: (String) -> Unit,
     modifier: Modifier = Modifier,
     visible: Boolean = true,
-    onLearnMore: (() -> Unit)? = null
+    onLearnMore: (() -> Unit)? = null,
 ) {
     val accentColor = MaterialTheme.colorScheme.primary
     var dismissRequested by remember(id) { mutableStateOf(false) }
@@ -64,64 +65,67 @@ fun InfoCard(
     AnimatedVisibility(
         visible = renderedVisible,
         enter = EnterTransition.None,
-        exit = if (skipAnimation) {
-            ExitTransition.None
-        } else {
-            fadeOut(animationSpec = tween(animDuration)) +
-                shrinkVertically(animationSpec = tween(animDuration))
-        },
-        modifier = modifier
+        exit =
+            if (skipAnimation) {
+                ExitTransition.None
+            } else {
+                fadeOut(animationSpec = tween(animDuration)) +
+                    shrinkVertically(animationSpec = tween(animDuration))
+            },
+        modifier = modifier,
     ) {
         Surface(
             shape = MaterialTheme.shapes.large,
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            modifier = Modifier
-                .fillMaxWidth()
-                .drawBehind {
-                    val strokeWidth = 3.dp.toPx()
-                    drawLine(
-                        color = accentColor,
-                        start = Offset(strokeWidth / 2, 16.dp.toPx()),
-                        end = Offset(strokeWidth / 2, size.height - 16.dp.toPx()),
-                        strokeWidth = strokeWidth
-                    )
-                }
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .drawBehind {
+                        val strokeWidth = 3.dp.toPx()
+                        drawLine(
+                            color = accentColor,
+                            start = Offset(strokeWidth / 2, 16.dp.toPx()),
+                            end = Offset(strokeWidth / 2, size.height - 16.dp.toPx()),
+                            strokeWidth = strokeWidth,
+                        )
+                    },
         ) {
             Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.Top
+                modifier = Modifier.padding(MaterialTheme.spacing.base),
+                verticalAlignment = Alignment.Top,
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Info,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = accentColor
+                    tint = accentColor,
                 )
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(MaterialTheme.spacing.md))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = headline,
                         style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
                     Text(
                         text = body,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     if (onLearnMore != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                         Text(
                             text = stringResource(R.string.info_card_read_article),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .defaultMinSize(minHeight = 48.dp)
-                                .clickable(onClick = onLearnMore)
-                                .padding(vertical = 12.dp)
+                            modifier =
+                                Modifier
+                                    .defaultMinSize(minHeight = 48.dp)
+                                    .clickable(onClick = onLearnMore)
+                                    .padding(vertical = MaterialTheme.spacing.md),
                         )
                     }
                 }
@@ -132,13 +136,13 @@ fun InfoCard(
                         onDismiss(id)
                     },
                     enabled = !dismissRequested,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Close,
                         contentDescription = stringResource(R.string.a11y_dismiss_card),
                         modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }

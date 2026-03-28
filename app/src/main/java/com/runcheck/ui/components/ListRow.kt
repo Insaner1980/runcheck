@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.runcheck.ui.theme.spacing
 
 @Composable
 fun ListRow(
@@ -28,33 +29,36 @@ fun ListRow(
     value: String = "",
     icon: ImageVector? = null,
     onClick: (() -> Unit)? = null,
-    trailing: @Composable (() -> Unit)? = null
+    trailing: @Composable (() -> Unit)? = null,
 ) {
     Row(
-        modifier = modifier
-            .defaultMinSize(minHeight = 48.dp)
-            .then(
-                if (onClick != null) Modifier.clickable(onClick = onClick)
-                else Modifier
-            )
-            .semantics(mergeDescendants = true) {}
-            .padding(vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            modifier
+                .defaultMinSize(minHeight = 48.dp)
+                .then(
+                    if (onClick != null) {
+                        Modifier.clickable(onClick = onClick)
+                    } else {
+                        Modifier
+                    },
+                ).semantics(mergeDescendants = true) {}
+                .padding(vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(MaterialTheme.spacing.md))
         }
         Text(
             text = label,
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
         if (trailing != null) {
             trailing()
@@ -63,22 +67,23 @@ fun ListRow(
                 Text(
                     text = value,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             if (onClick != null) {
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(MaterialTheme.spacing.xs))
                 Surface(
                     shape = MaterialTheme.shapes.extraLarge,
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = null,
-                        modifier = Modifier
-                            .size(20.dp)
-                            .padding(2.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        modifier =
+                            Modifier
+                                .size(20.dp)
+                                .padding(2.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }

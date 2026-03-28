@@ -16,9 +16,9 @@ import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.SignConvention
 import com.runcheck.util.ReleaseSafeLog
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
@@ -33,89 +33,108 @@ import kotlin.math.abs
 
 open class GenericBatterySource(
     protected val context: Context,
-    protected val profile: DeviceProfile
+    protected val profile: DeviceProfile,
 ) : BatteryDataSource {
-
     protected val batteryManager: BatteryManager =
         context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
     private val sourceJob = SupervisorJob()
-    private val sourceScope = CoroutineScope(
-        sourceJob + Dispatchers.Default + CoroutineExceptionHandler { _, throwable ->
-            ReleaseSafeLog.error(TAG, "Battery source flow failed", throwable)
-        }
-    )
+    private val sourceScope =
+        CoroutineScope(
+            sourceJob + Dispatchers.Default +
+                CoroutineExceptionHandler { _, throwable ->
+                    ReleaseSafeLog.error(TAG, "Battery source flow failed", throwable)
+                },
+        )
 
     fun close() {
         sourceJob.cancel()
     }
+
     private val batteryChangedSharedFlow: Flow<Intent> by lazy {
         batteryChangedFlow().shareIn(
             scope = sourceScope,
             started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 0),
-            replay = 1
+            replay = 1,
         )
     }
 
-    protected fun batteryChangedFlow(): Flow<Intent> = callbackFlow {
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                trySend(intent)
-            }
+    protected fun batteryChangedFlow(): Flow<Intent> =
+        callbackFlow {
+            val receiver =
+                object : BroadcastReceiver() {
+                    override fun onReceive(
+                        context: Context,
+                        intent: Intent,
+                    ) {
+                        trySend(intent)
+                    }
+                }
+            ContextCompat.registerReceiver(
+                context,
+                receiver,
+                IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+                ContextCompat.RECEIVER_NOT_EXPORTED,
+            )
+            awaitClose { context.unregisterReceiver(receiver) }
         }
-        ContextCompat.registerReceiver(context, receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED), ContextCompat.RECEIVER_NOT_EXPORTED)
-        awaitClose { context.unregisterReceiver(receiver) }
-    }
 
-    override fun getCurrentNow(): Flow<MeasuredValue<Int>> = flow {
-        while (true) {
-            val rawCurrent = readCurrentNowRaw()
-            if (rawCurrent == null) {
-                emit(unavailableCurrent())
+    override fun getCurrentNow(): Flow<MeasuredValue<Int>> =
+        flow {
+            while (true) {
+                val rawCurrent = readCurrentNowRaw()
+                if (rawCurrent == null) {
+                    emit(unavailableCurrent())
+                    delay(POLLING_INTERVAL_MS)
+                    continue
+                }
+                val currentMa = alignCurrentSignWithChargeState(normalizeCurrent(rawCurrent))
+                val confidence = calculateCurrentConfidence(rawCurrent)
+
+                emit(MeasuredValue(currentMa, confidence))
                 delay(POLLING_INTERVAL_MS)
-                continue
             }
-            val currentMa = alignCurrentSignWithChargeState(normalizeCurrent(rawCurrent))
-            val confidence = calculateCurrentConfidence(rawCurrent)
+        }.flowOn(Dispatchers.IO)
 
-            emit(MeasuredValue(currentMa, confidence))
-            delay(POLLING_INTERVAL_MS)
+    protected fun unavailableCurrent(): MeasuredValue<Int> =
+        MeasuredValue(
+            value = 0,
+            confidence = Confidence.UNAVAILABLE,
+        )
+
+    protected fun readCurrentNowRaw(): Int? =
+        try {
+            batteryManager
+                .getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+                .takeUnless { it == Int.MIN_VALUE }
+        } catch (_: Exception) {
+            null
         }
-    }.flowOn(Dispatchers.IO)
-
-    protected fun unavailableCurrent(): MeasuredValue<Int> = MeasuredValue(
-        value = 0,
-        confidence = Confidence.UNAVAILABLE
-    )
-
-    protected fun readCurrentNowRaw(): Int? = try {
-        batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
-            .takeUnless { it == Int.MIN_VALUE }
-    } catch (_: Exception) {
-        null
-    }
 
     protected fun normalizeCurrent(raw: Int): Int {
-        val milliamps = when (resolveCurrentUnit(raw)) {
-            CurrentUnit.MICROAMPS -> raw / 1000
-            CurrentUnit.MILLIAMPS -> raw
-        }
+        val milliamps =
+            when (resolveCurrentUnit(raw)) {
+                CurrentUnit.MICROAMPS -> raw / 1000
+                CurrentUnit.MILLIAMPS -> raw
+            }
         return when (profile.currentNowSignConvention) {
             SignConvention.POSITIVE_CHARGING -> milliamps
             SignConvention.NEGATIVE_CHARGING -> -milliamps
         }
     }
 
-    protected fun alignCurrentSignWithChargeState(currentMa: Int): Int = when {
-        batteryManager.isCharging && currentMa < 0 -> abs(currentMa)
-        !batteryManager.isCharging && currentMa > 0 -> -abs(currentMa)
-        else -> currentMa
-    }
+    protected fun alignCurrentSignWithChargeState(currentMa: Int): Int =
+        when {
+            batteryManager.isCharging && currentMa < 0 -> abs(currentMa)
+            !batteryManager.isCharging && currentMa > 0 -> -abs(currentMa)
+            else -> currentMa
+        }
 
-    protected fun calculateCurrentConfidence(rawCurrent: Int): Confidence = when {
-        rawCurrent == 0 -> Confidence.UNAVAILABLE
-        !profile.currentNowReliable -> Confidence.LOW
-        else -> Confidence.HIGH
-    }
+    protected fun calculateCurrentConfidence(rawCurrent: Int): Confidence =
+        when {
+            rawCurrent == 0 -> Confidence.UNAVAILABLE
+            !profile.currentNowReliable -> Confidence.LOW
+            else -> Confidence.HIGH
+        }
 
     private fun resolveCurrentUnit(raw: Int): CurrentUnit {
         if (profile.currentNowUnit == CurrentUnit.MICROAMPS) {
@@ -148,13 +167,15 @@ open class GenericBatterySource(
             mapHealth(healthInt)
         }
 
-    override fun getCycleCount(): Flow<Int?> = flow {
-        emit(null)
-    }
+    override fun getCycleCount(): Flow<Int?> =
+        flow {
+            emit(null)
+        }
 
-    override fun getHealthPercent(): Flow<Int?> = flow {
-        emit(null)
-    }
+    override fun getHealthPercent(): Flow<Int?> =
+        flow {
+            emit(null)
+        }
 
     override fun getChargingStatus(): Flow<ChargingStatus> =
         batteryChangedSharedFlow.map { intent ->
@@ -180,42 +201,48 @@ open class GenericBatterySource(
             intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY).orEmpty()
         }
 
-    override fun getChargeCounter(): Flow<Int?> = flow {
-        while (true) {
-            val raw = try {
-                batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
-                    .takeUnless { it == Int.MIN_VALUE || it == 0 }
-            } catch (_: Exception) {
-                null
+    override fun getChargeCounter(): Flow<Int?> =
+        flow {
+            while (true) {
+                val raw =
+                    try {
+                        batteryManager
+                            .getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
+                            .takeUnless { it == Int.MIN_VALUE || it == 0 }
+                    } catch (_: Exception) {
+                        null
+                    }
+                emit(raw?.let { it / 1000 }) // µAh → mAh
+                delay(POLLING_INTERVAL_MS)
             }
-            emit(raw?.let { it / 1000 }) // µAh → mAh
-            delay(POLLING_INTERVAL_MS)
+        }.flowOn(Dispatchers.IO)
+
+    protected fun mapHealth(health: Int): BatteryHealth =
+        when (health) {
+            BatteryManager.BATTERY_HEALTH_GOOD -> BatteryHealth.GOOD
+            BatteryManager.BATTERY_HEALTH_OVERHEAT -> BatteryHealth.OVERHEAT
+            BatteryManager.BATTERY_HEALTH_DEAD -> BatteryHealth.DEAD
+            BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> BatteryHealth.OVER_VOLTAGE
+            BatteryManager.BATTERY_HEALTH_COLD -> BatteryHealth.COLD
+            else -> BatteryHealth.UNKNOWN
         }
-    }.flowOn(Dispatchers.IO)
 
-    protected fun mapHealth(health: Int): BatteryHealth = when (health) {
-        BatteryManager.BATTERY_HEALTH_GOOD -> BatteryHealth.GOOD
-        BatteryManager.BATTERY_HEALTH_OVERHEAT -> BatteryHealth.OVERHEAT
-        BatteryManager.BATTERY_HEALTH_DEAD -> BatteryHealth.DEAD
-        BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> BatteryHealth.OVER_VOLTAGE
-        BatteryManager.BATTERY_HEALTH_COLD -> BatteryHealth.COLD
-        else -> BatteryHealth.UNKNOWN
-    }
+    protected fun mapChargingStatus(status: Int): ChargingStatus =
+        when (status) {
+            BatteryManager.BATTERY_STATUS_CHARGING -> ChargingStatus.CHARGING
+            BatteryManager.BATTERY_STATUS_DISCHARGING -> ChargingStatus.DISCHARGING
+            BatteryManager.BATTERY_STATUS_FULL -> ChargingStatus.FULL
+            BatteryManager.BATTERY_STATUS_NOT_CHARGING -> ChargingStatus.NOT_CHARGING
+            else -> ChargingStatus.NOT_CHARGING
+        }
 
-    protected fun mapChargingStatus(status: Int): ChargingStatus = when (status) {
-        BatteryManager.BATTERY_STATUS_CHARGING -> ChargingStatus.CHARGING
-        BatteryManager.BATTERY_STATUS_DISCHARGING -> ChargingStatus.DISCHARGING
-        BatteryManager.BATTERY_STATUS_FULL -> ChargingStatus.FULL
-        BatteryManager.BATTERY_STATUS_NOT_CHARGING -> ChargingStatus.NOT_CHARGING
-        else -> ChargingStatus.NOT_CHARGING
-    }
-
-    protected fun mapPlugType(plugged: Int): PlugType = when (plugged) {
-        BatteryManager.BATTERY_PLUGGED_AC -> PlugType.AC
-        BatteryManager.BATTERY_PLUGGED_USB -> PlugType.USB
-        BatteryManager.BATTERY_PLUGGED_WIRELESS -> PlugType.WIRELESS
-        else -> PlugType.NONE
-    }
+    protected fun mapPlugType(plugged: Int): PlugType =
+        when (plugged) {
+            BatteryManager.BATTERY_PLUGGED_AC -> PlugType.AC
+            BatteryManager.BATTERY_PLUGGED_USB -> PlugType.USB
+            BatteryManager.BATTERY_PLUGGED_WIRELESS -> PlugType.WIRELESS
+            else -> PlugType.NONE
+        }
 
     companion object {
         private const val TAG = "GenericBatterySource"

@@ -7,9 +7,6 @@
     <ID>ComplexCondition:LiveChart.kt$reducedMotion || !hadVisibleChart || !hasVisibleChart || !dataChanged</ID>
     <ID>CyclomaticComplexMethod:GetChargerComparisonUseCase.kt$GetChargerComparisonUseCase$operator fun invoke(): Flow&lt;List&lt;ChargerSummary&gt;&gt;</ID>
     <ID>CyclomaticComplexMethod:HealthMonitorWorker.kt$HealthMonitorWorker$override suspend fun doWork(): Result</ID>
-    <ID>CyclomaticComplexMethod:HealthScoreCalculator.kt$HealthScoreCalculator$private fun calculateBatteryScore(battery: BatteryState): Int</ID>
-    <ID>CyclomaticComplexMethod:HealthScoreCalculator.kt$HealthScoreCalculator$private fun calculateNetworkScoreWithSpeedTest( network: NetworkState, speedTest: SpeedTestResult ): Int</ID>
-    <ID>CyclomaticComplexMethod:HealthScoreCalculator.kt$HealthScoreCalculator$private fun calculateThermalScore(thermal: ThermalState): Int</ID>
     <ID>CyclomaticComplexMethod:LearnArticleBodyFormatter.kt$LearnArticleBodyFormatter$fun parse(body: String): List&lt;LearnArticleBlock&gt;</ID>
     <ID>CyclomaticComplexMethod:NetworkDataSource.kt$NetworkDataSource$@Suppress("DEPRECATION") private fun classifySignal(dbm: Int?, type: ConnectionType): SignalQuality</ID>
     <ID>CyclomaticComplexMethod:NetworkDataSource.kt$NetworkDataSource$private fun buildNetworkInfo( capabilities: NetworkCapabilities, linkProperties: android.net.LinkProperties? ): NetworkInfo</ID>
@@ -40,9 +37,6 @@
     <ID>ReturnCount:TrialNotificationWorker.kt$TrialNotificationWorker$override suspend fun doWork(): Result</ID>
     <ID>SpreadOperator:DatabaseModule.kt$DatabaseModule$(*ALL_MIGRATIONS)</ID>
     <ID>TooGenericExceptionCaught:AppUsageViewModel.kt$AppUsageViewModel$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:BatteryRepositoryImpl.kt$BatteryRepositoryImpl$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:BatteryViewModel.kt$BatteryViewModel$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:BootReceiver.kt$BootReceiver$t: Throwable</ID>
     <ID>TooGenericExceptionCaught:ChargerViewModel.kt$ChargerViewModel$e: Exception</ID>
     <ID>TooGenericExceptionCaught:CleanupPagingSource.kt$CleanupPagingSource$t: Throwable</ID>
     <ID>TooGenericExceptionCaught:CleanupViewModel.kt$CleanupViewModel$e: Exception</ID>
@@ -50,19 +44,9 @@
     <ID>TooGenericExceptionCaught:FullscreenChartViewModel.kt$FullscreenChartViewModel$e: Exception</ID>
     <ID>TooGenericExceptionCaught:HealthMaintenanceWorker.kt$HealthMaintenanceWorker$e: Exception</ID>
     <ID>TooGenericExceptionCaught:HealthMonitorWorker.kt$HealthMonitorWorker$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:HealthMonitorWorker.kt$HealthMonitorWorker$t: Throwable</ID>
-    <ID>TooGenericExceptionCaught:LatencyMeasurer.kt$LatencyMeasurer$e: Exception</ID>
     <ID>TooGenericExceptionCaught:MediaStoreScanner.kt$MediaStoreScanner$error: Exception</ID>
-    <ID>TooGenericExceptionCaught:NetworkRepositoryImpl.kt$NetworkRepositoryImpl$e: Exception</ID>
     <ID>TooGenericExceptionCaught:NetworkViewModel.kt$NetworkViewModel$error: Exception</ID>
-    <ID>TooGenericExceptionCaught:ProManager.kt$ProManager$t: Throwable</ID>
     <ID>TooGenericExceptionCaught:RealTimeMonitorService.kt$RealTimeMonitorService$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:RuncheckApp.kt$RuncheckApp$t: Throwable</ID>
-    <ID>TooGenericExceptionCaught:ScreenStateReceiver.kt$ScreenStateReceiver$t: Throwable</ID>
-    <ID>TooGenericExceptionCaught:StorageDataSource.kt$StorageDataSource$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:StorageRepositoryImpl.kt$StorageRepositoryImpl$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:ThermalRepositoryImpl.kt$ThermalRepositoryImpl$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:ThumbnailLoader.kt$ThumbnailLoader$e: Exception</ID>
     <ID>TooGenericExceptionThrown:NetworkViewModelTest.kt$NetworkViewModelTest$throw RuntimeException("Network timeout")</ID>
     <ID>TooManyFunctions:BatteryDataSource.kt$BatteryDataSource</ID>
     <ID>TooManyFunctions:BatteryDetailScreen.kt$com.runcheck.ui.battery.BatteryDetailScreen.kt</ID>

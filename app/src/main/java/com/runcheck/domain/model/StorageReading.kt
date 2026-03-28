@@ -5,5 +5,5 @@ data class StorageReading(
     val totalBytes: Long,
     val availableBytes: Long,
     val appsBytes: Long,
-    val mediaBytes: Long
+    val mediaBytes: Long,
 )

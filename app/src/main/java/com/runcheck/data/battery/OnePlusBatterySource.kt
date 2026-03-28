@@ -11,24 +11,24 @@ import kotlinx.coroutines.flow.flowOn
 
 class OnePlusBatterySource(
     context: Context,
-    profile: DeviceProfile
+    profile: DeviceProfile,
 ) : GenericBatterySource(context, profile) {
+    override fun getCurrentNow(): Flow<MeasuredValue<Int>> =
+        flow {
+            while (true) {
+                val rawCurrent = readCurrentNowRaw()
+                if (rawCurrent == null) {
+                    emit(unavailableCurrent())
+                    delay(POLLING_INTERVAL_MS)
+                    continue
+                }
 
-    override fun getCurrentNow(): Flow<MeasuredValue<Int>> = flow {
-        while (true) {
-            val rawCurrent = readCurrentNowRaw()
-            if (rawCurrent == null) {
-                emit(unavailableCurrent())
+                val currentMa = alignCurrentSignWithChargeState(normalizeCurrent(rawCurrent))
+                val confidence = calculateCurrentConfidence(rawCurrent)
+                emit(MeasuredValue(currentMa, confidence))
                 delay(POLLING_INTERVAL_MS)
-                continue
             }
-
-            val currentMa = alignCurrentSignWithChargeState(normalizeCurrent(rawCurrent))
-            val confidence = calculateCurrentConfidence(rawCurrent)
-            emit(MeasuredValue(currentMa, confidence))
-            delay(POLLING_INTERVAL_MS)
-        }
-    }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.IO)
 
     companion object {
         private const val POLLING_INTERVAL_MS = 2000L

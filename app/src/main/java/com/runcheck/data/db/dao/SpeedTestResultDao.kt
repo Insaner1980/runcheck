@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SpeedTestResultDao {
-
     @Insert
     suspend fun insert(result: SpeedTestResultEntity): Long
 
@@ -16,9 +15,14 @@ interface SpeedTestResultDao {
     fun getLatestResult(now: Long): Flow<SpeedTestResultEntity?>
 
     @Query("SELECT * FROM speed_test_results WHERE timestamp <= :now ORDER BY timestamp DESC LIMIT :limit")
-    fun getRecentResults(limit: Int, now: Long): Flow<List<SpeedTestResultEntity>>
+    fun getRecentResults(
+        limit: Int,
+        now: Long,
+    ): Flow<List<SpeedTestResultEntity>>
 
-    @Query("DELETE FROM speed_test_results WHERE id NOT IN (SELECT id FROM speed_test_results ORDER BY timestamp DESC LIMIT :keepCount)")
+    @Query(
+        "DELETE FROM speed_test_results WHERE id NOT IN (SELECT id FROM speed_test_results ORDER BY timestamp DESC LIMIT :keepCount)",
+    )
     suspend fun deleteOldResults(keepCount: Int)
 
     @Query("DELETE FROM speed_test_results WHERE timestamp < :before")

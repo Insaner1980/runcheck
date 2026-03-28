@@ -14,5 +14,5 @@ data class BatteryReading(
     val plugType: String,
     val health: String,
     val cycleCount: Int?,
-    @param:IntRange(from = 0, to = 100) val healthPct: Int?
+    @param:IntRange(from = 0, to = 100) val healthPct: Int?,
 )

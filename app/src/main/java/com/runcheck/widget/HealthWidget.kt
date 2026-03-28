@@ -32,18 +32,21 @@ import com.runcheck.MainActivity
 import com.runcheck.R
 
 class HealthWidget : GlanceAppWidget() {
-
     companion object {
         private val SMALL = DpSize(110.dp, 110.dp)
         private val MEDIUM = DpSize(180.dp, 110.dp)
         private val LARGE = DpSize(250.dp, 150.dp)
     }
 
-    override val sizeMode = SizeMode.Responsive(
-        setOf(SMALL, MEDIUM, LARGE)
-    )
+    override val sizeMode =
+        SizeMode.Responsive(
+            setOf(SMALL, MEDIUM, LARGE),
+        )
 
-    override suspend fun provideGlance(context: Context, id: GlanceId) {
+    override suspend fun provideGlance(
+        context: Context,
+        id: GlanceId,
+    ) {
         if (!WidgetDataProvider.isProUnlocked(context)) {
             provideLockedContent(context)
             return
@@ -61,34 +64,37 @@ class HealthWidget : GlanceAppWidget() {
             GlanceTheme {
                 val size = LocalSize.current
                 Column(
-                    modifier = GlanceModifier
-                        .fillMaxSize()
-                        .padding(12.dp)
-                        .cornerRadius(16.dp)
-                        .background(GlanceTheme.colors.widgetBackground)
-                        .clickable(actionStartActivity<MainActivity>()),
+                    modifier =
+                        GlanceModifier
+                            .fillMaxSize()
+                            .padding(12.dp)
+                            .cornerRadius(16.dp)
+                            .background(GlanceTheme.colors.widgetBackground)
+                            .clickable(actionStartActivity<MainActivity>()),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = snapshot.overallScore.toString(),
-                        style = TextStyle(
-                            fontSize = if (size.width >= LARGE.width) 48.sp else 40.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = GlanceTheme.colors.onSurface
-                        )
+                        style =
+                            TextStyle(
+                                fontSize = if (size.width >= LARGE.width) 48.sp else 40.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GlanceTheme.colors.onSurface,
+                            ),
                     )
                     Text(
                         text = healthScoreLabel,
-                        style = TextStyle(
-                            fontSize = 12.sp,
-                            color = GlanceTheme.colors.onSurfaceVariant
-                        )
+                        style =
+                            TextStyle(
+                                fontSize = 12.sp,
+                                color = GlanceTheme.colors.onSurfaceVariant,
+                            ),
                     )
                     Spacer(modifier = GlanceModifier.height(8.dp))
                     Row(
                         modifier = GlanceModifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         MiniIndicator(label = batteryLabel, value = batteryValue)
                     }
@@ -101,29 +107,32 @@ class HealthWidget : GlanceAppWidget() {
         provideContent {
             GlanceTheme {
                 Column(
-                    modifier = GlanceModifier
-                        .fillMaxSize()
-                        .padding(12.dp)
-                        .cornerRadius(16.dp)
-                        .background(GlanceTheme.colors.widgetBackground)
-                        .clickable(actionStartActivity<MainActivity>()),
+                    modifier =
+                        GlanceModifier
+                            .fillMaxSize()
+                            .padding(12.dp)
+                            .cornerRadius(16.dp)
+                            .background(GlanceTheme.colors.widgetBackground)
+                            .clickable(actionStartActivity<MainActivity>()),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = context.getString(R.string.widget_health_name),
-                        style = TextStyle(
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = GlanceTheme.colors.onSurface
-                        )
+                        style =
+                            TextStyle(
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = GlanceTheme.colors.onSurface,
+                            ),
                     )
                     Text(
                         text = context.getString(R.string.settings_upgrade_pro),
-                        style = TextStyle(
-                            fontSize = 12.sp,
-                            color = GlanceTheme.colors.onSurfaceVariant
-                        )
+                        style =
+                            TextStyle(
+                                fontSize = 12.sp,
+                                color = GlanceTheme.colors.onSurfaceVariant,
+                            ),
                     )
                 }
             }
@@ -134,29 +143,32 @@ class HealthWidget : GlanceAppWidget() {
         provideContent {
             GlanceTheme {
                 Column(
-                    modifier = GlanceModifier
-                        .fillMaxSize()
-                        .padding(12.dp)
-                        .cornerRadius(16.dp)
-                        .background(GlanceTheme.colors.widgetBackground)
-                        .clickable(actionStartActivity<MainActivity>()),
+                    modifier =
+                        GlanceModifier
+                            .fillMaxSize()
+                            .padding(12.dp)
+                            .cornerRadius(16.dp)
+                            .background(GlanceTheme.colors.widgetBackground)
+                            .clickable(actionStartActivity<MainActivity>()),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = context.getString(R.string.widget_no_data_title),
-                        style = TextStyle(
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = GlanceTheme.colors.onSurface
-                        )
+                        style =
+                            TextStyle(
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = GlanceTheme.colors.onSurface,
+                            ),
                     )
                     Text(
                         text = context.getString(R.string.widget_no_data_message),
-                        style = TextStyle(
-                            fontSize = 12.sp,
-                            color = GlanceTheme.colors.onSurfaceVariant
-                        )
+                        style =
+                            TextStyle(
+                                fontSize = 12.sp,
+                                color = GlanceTheme.colors.onSurfaceVariant,
+                            ),
                     )
                 }
             }
@@ -165,25 +177,30 @@ class HealthWidget : GlanceAppWidget() {
 }
 
 @Composable
-private fun MiniIndicator(label: String, value: String) {
+private fun MiniIndicator(
+    label: String,
+    value: String,
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = GlanceModifier.padding(horizontal = 4.dp)
+        modifier = GlanceModifier.padding(horizontal = 4.dp),
     ) {
         Text(
             text = value,
-            style = TextStyle(
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-                color = GlanceTheme.colors.onSurface
-            )
+            style =
+                TextStyle(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = GlanceTheme.colors.onSurface,
+                ),
         )
         Text(
             text = label,
-            style = TextStyle(
-                fontSize = 10.sp,
-                color = GlanceTheme.colors.onSurfaceVariant
-            )
+            style =
+                TextStyle(
+                    fontSize = 10.sp,
+                    color = GlanceTheme.colors.onSurfaceVariant,
+                ),
         )
     }
 }

@@ -9,6 +9,7 @@ import com.runcheck.ui.common.UiText
 
 sealed interface ThermalUiState {
     data object Loading : ThermalUiState
+
     data class Success(
         val thermalState: ThermalState,
         val throttlingEvents: List<ThrottlingEvent> = emptyList(),
@@ -22,7 +23,10 @@ sealed interface ThermalUiState {
         val liveHeadroom: List<Float> = emptyList(),
         val thermalHistory: List<ThermalReading> = emptyList(),
         val selectedHistoryPeriod: HistoryPeriod = HistoryPeriod.DAY,
-        val historyLoadError: UiText? = null
+        val historyLoadError: UiText? = null,
     ) : ThermalUiState
-    data class Error(val message: String) : ThermalUiState
+
+    data class Error(
+        val message: String,
+    ) : ThermalUiState
 }

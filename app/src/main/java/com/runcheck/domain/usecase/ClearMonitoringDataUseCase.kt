@@ -10,25 +10,27 @@ import com.runcheck.domain.repository.ThermalRepository
 import com.runcheck.domain.repository.ThrottlingRepository
 import javax.inject.Inject
 
-class ClearMonitoringDataUseCase @Inject constructor(
-    private val transactionRunner: DatabaseTransactionRunner,
-    private val batteryRepository: BatteryRepository,
-    private val networkRepository: NetworkRepository,
-    private val thermalRepository: ThermalRepository,
-    private val storageRepository: StorageRepository,
-    private val throttlingRepository: ThrottlingRepository,
-    private val appBatteryUsageRepository: AppBatteryUsageRepository,
-    private val speedTestRepository: SpeedTestRepository
-) {
-    suspend operator fun invoke() {
-        transactionRunner.runInTransaction {
-            batteryRepository.deleteAll()
-            networkRepository.deleteAll()
-            thermalRepository.deleteAll()
-            storageRepository.deleteAll()
-            throttlingRepository.deleteAll()
-            appBatteryUsageRepository.deleteAll()
-            speedTestRepository.deleteAll()
+class ClearMonitoringDataUseCase
+    @Inject
+    constructor(
+        private val transactionRunner: DatabaseTransactionRunner,
+        private val batteryRepository: BatteryRepository,
+        private val networkRepository: NetworkRepository,
+        private val thermalRepository: ThermalRepository,
+        private val storageRepository: StorageRepository,
+        private val throttlingRepository: ThrottlingRepository,
+        private val appBatteryUsageRepository: AppBatteryUsageRepository,
+        private val speedTestRepository: SpeedTestRepository,
+    ) {
+        suspend operator fun invoke() {
+            transactionRunner.runInTransaction {
+                batteryRepository.deleteAll()
+                networkRepository.deleteAll()
+                thermalRepository.deleteAll()
+                storageRepository.deleteAll()
+                throttlingRepository.deleteAll()
+                appBatteryUsageRepository.deleteAll()
+                speedTestRepository.deleteAll()
+            }
         }
     }
-}

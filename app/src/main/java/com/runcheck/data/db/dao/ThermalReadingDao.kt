@@ -8,14 +8,14 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ThermalReadingDao {
-
     @Insert
     suspend fun insert(reading: ThermalReadingEntity)
 
     @Query("SELECT * FROM thermal_readings WHERE timestamp >= :since ORDER BY timestamp ASC")
     fun getReadingsSince(since: Long): Flow<List<ThermalReadingEntity>>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM thermal_readings
         WHERE id IN (
             SELECT id FROM thermal_readings
@@ -24,8 +24,12 @@ interface ThermalReadingDao {
             LIMIT :limit
         )
         ORDER BY timestamp ASC
-    """)
-    fun getReadingsSinceLimited(since: Long, limit: Int): Flow<List<ThermalReadingEntity>>
+    """,
+    )
+    fun getReadingsSinceLimited(
+        since: Long,
+        limit: Int,
+    ): Flow<List<ThermalReadingEntity>>
 
     @Query("SELECT * FROM thermal_readings ORDER BY timestamp DESC LIMIT 1")
     fun getLatestReading(): Flow<ThermalReadingEntity?>

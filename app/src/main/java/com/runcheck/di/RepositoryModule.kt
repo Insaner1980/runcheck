@@ -14,29 +14,28 @@ import com.runcheck.data.storage.StorageRepositoryImpl
 import com.runcheck.data.thermal.ThermalRepositoryImpl
 import com.runcheck.data.thermal.ThrottlingRepositoryImpl
 import com.runcheck.domain.repository.AppBatteryUsageRepository
-import com.runcheck.domain.repository.BatteryRepository as BatteryRepositoryContract
 import com.runcheck.domain.repository.ChargerRepository
-import com.runcheck.domain.repository.DeviceProfileRepository as DeviceProfileRepositoryContract
 import com.runcheck.domain.repository.FileExportRepository
 import com.runcheck.domain.repository.InfoCardDismissalRepository
 import com.runcheck.domain.repository.MonitoringStatusRepository
-import com.runcheck.domain.repository.NetworkRepository as NetworkRepositoryContract
-import com.runcheck.domain.repository.SpeedTestRepository as SpeedTestRepositoryContract
 import com.runcheck.domain.repository.StorageCleanupRepository
-import com.runcheck.domain.repository.StorageRepository as StorageRepositoryContract
-import com.runcheck.domain.repository.ThermalRepository as ThermalRepositoryContract
 import com.runcheck.domain.repository.ThrottlingRepository
-import com.runcheck.domain.repository.UserPreferencesRepository as UserPreferencesRepositoryContract
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import com.runcheck.domain.repository.BatteryRepository as BatteryRepositoryContract
+import com.runcheck.domain.repository.DeviceProfileRepository as DeviceProfileRepositoryContract
+import com.runcheck.domain.repository.NetworkRepository as NetworkRepositoryContract
+import com.runcheck.domain.repository.SpeedTestRepository as SpeedTestRepositoryContract
+import com.runcheck.domain.repository.StorageRepository as StorageRepositoryContract
+import com.runcheck.domain.repository.ThermalRepository as ThermalRepositoryContract
+import com.runcheck.domain.repository.UserPreferencesRepository as UserPreferencesRepositoryContract
 
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
-
     @Binds
     @Singleton
     abstract fun bindBatteryRepository(impl: BatteryRepositoryImpl): BatteryRepositoryContract
@@ -55,9 +54,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindStorageCleanupRepository(
-        impl: StorageCleanupRepositoryImpl
-    ): StorageCleanupRepository
+    abstract fun bindStorageCleanupRepository(impl: StorageCleanupRepositoryImpl): StorageCleanupRepository
 
     @Binds
     @Singleton
@@ -85,15 +82,11 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindMonitoringStatusRepository(
-        impl: MonitoringStatusRepositoryImpl
-    ): MonitoringStatusRepository
+    abstract fun bindMonitoringStatusRepository(impl: MonitoringStatusRepositoryImpl): MonitoringStatusRepository
 
     @Binds
     @Singleton
-    abstract fun bindInfoCardDismissalRepository(
-        impl: UserPreferencesRepositoryImpl
-    ): InfoCardDismissalRepository
+    abstract fun bindInfoCardDismissalRepository(impl: UserPreferencesRepositoryImpl): InfoCardDismissalRepository
 
     @Binds
     @Singleton

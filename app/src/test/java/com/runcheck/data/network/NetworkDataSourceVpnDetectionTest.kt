@@ -5,14 +5,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NetworkDataSourceVpnDetectionTest {
-
     @Test
     fun `returns true when vpn transport exists and network is not marked not-vpn`() {
         assertTrue(
             resolveVpnState(
                 hasVpnTransport = true,
-                hasNotVpnCapability = false
-            )
+                hasNotVpnCapability = false,
+            ),
         )
     }
 
@@ -21,8 +20,8 @@ class NetworkDataSourceVpnDetectionTest {
         assertFalse(
             resolveVpnState(
                 hasVpnTransport = false,
-                hasNotVpnCapability = false
-            )
+                hasNotVpnCapability = false,
+            ),
         )
     }
 
@@ -31,8 +30,8 @@ class NetworkDataSourceVpnDetectionTest {
         assertFalse(
             resolveVpnState(
                 hasVpnTransport = true,
-                hasNotVpnCapability = true
-            )
+                hasNotVpnCapability = true,
+            ),
         )
     }
 }

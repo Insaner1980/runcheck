@@ -9,8 +9,8 @@ runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device
 - **Language:** Kotlin 2.3.0 (via AGP 9.1.0 built-in Kotlin)
 - **UI:** Jetpack Compose with Material 3 / Material You (BOM 2026.03.00)
 - **Min SDK:** 26 (Android 8.0)
-- **Target SDK:** 35 (Android 15)
-- **Compile SDK:** 36
+- **Target SDK:** CinnamonBun beta (Android 17)
+- **Compile SDK:** CinnamonBun beta (Android 17)
 - **Architecture:** MVVM with Clean Architecture layers (data → domain → ui)
 - **Database:** Room 2.8.4 for local historical data
 - **Async:** Kotlin Coroutines 1.10.2 + Flow
@@ -40,12 +40,12 @@ app/src/main/java/com/runcheck/
 │   ├── network/       # ConnectivityManager, TelephonyManager, SpeedTestService,
 │   │                  #   LatencyMeasurer, NetworkRepositoryImpl, SpeedTestRepositoryImpl
 │   ├── preferences/   # DataStore preferences
-│   ├── storage/       # MediaStoreScanner, ThumbnailLoader, StorageCleanupHelper,
+│   ├── storage/       # MediaStoreScanner, StorageCleanupHelper,
 │   │                  #   CleanupPagingSource, StorageCleanupRepositoryImpl
 │   └── thermal/       # ThermalManager, CPU temp sysfs readers
 ├── domain/
 │   ├── model/         # Domain models (BatteryState, NetworkState, StorageState, etc.)
-│   ├── usecase/       # Business logic (38 use cases)
+│   ├── usecase/       # Business logic (37 use cases)
 │   ├── repository/    # Repository interfaces
 │   └── scoring/       # Health score algorithm
 ├── ui/
@@ -64,13 +64,13 @@ app/src/main/java/com/runcheck/
 │   ├── learn/         # Learn section — article catalog, list screen, detail screen
 │   ├── settings/      # Settings screen + ViewModel
 │   ├── pro/           # Pro upgrade screen, trial UI, purchase flow
-│   ├── theme/         # Dark theme, color tokens, typography, spacing
+│   ├── theme/         # Dark theme, color tokens, typography, spacing, motion tokens
 │   ├── common/        # UiText, UiFormatters (formatPercent, formatTemp, etc.)
 │   ├── chart/         # ChartHelpers (quality zones, axis labels, qualityZoneColorForValue),
 │   │                  #   ChartModels, ChartRenderModel, ChartAccessibility
-│   ├── fullscreen/    # FullscreenChartScreen + ViewModel (both orientations)
-│   ├── components/    # 32 shared composables (see Components below)
-│   │   └── info/      # InfoSheetContent, InfoIcon, InfoBottomSheet, InfoCard, CrossLinkButton
+│   ├── fullscreen/    # FullscreenChartScreen + ViewModel (landscape-only)
+│   ├── components/    # 34 shared composables (see Components below)
+│   │   └── info/      # InfoSheetContent, InfoIcon, InfoBottomSheet, InfoCard, InfoCardCatalog, CrossLinkButton
 │   └── navigation/    # NavGraph + Screen sealed class (push-based from Home)
 ├── pro/               # Pro/trial state management
 ├── billing/           # Billing state helpers
@@ -82,7 +82,7 @@ app/src/main/java/com/runcheck/
 │                      #   ScreenStateReceiver, MonitoringAlertStateStore,
 │                      #   NotificationHelper, MonitorScheduler, BootReceiver
 ├── di/                # Hilt modules
-└── util/              # Logging, timestamp sanitization
+└── util/              # Logging, timestamp sanitization, live chart buffer
 ```
 
 ## Architecture Conventions
@@ -142,11 +142,11 @@ Do not annotate:
 - **Cards:** Flat backgrounds, no borders, no shadows, no elevation, 16dp rounded corners
 - **Tonal layering:** Hero cards use `BgCardDeep` (#0D2530), data cards use `BgCard` (#133040) — creates "recessed instrument panel" depth
 - **Hero sections:** Typography-dominant — large 64sp JetBrains Mono values with smaller 28sp units, ProgressRing reduced to 100dp decorative role in Battery/Storage
-- **Core components** (35 in `ui/components/` + `ui/components/info/`):
+- **Core components** (34 in `ui/components/` + `ui/components/info/`):
   - Layout: ContentContainer, GridCard (with StatusStrip), ListRow, MetricPill, MetricRow, ActionCard
   - Status: SegmentedStatusBar, StatusStrip (Modifier extension)
   - Indicators: ProgressRing, MiniBar, StatusDot, ConfidenceBadge, SignalBars
-  - Charts: TrendChart (oscilloscope sweep, status gradient line, quality zones, tap/drag tooltip), AreaChart (oscilloscope sweep), LiveChart (smooth scroll, glow pulse), HeatStrip, SegmentedBar, SegmentedBarLegend, ExpandableChartContainer
+  - Charts: TrendChart (oscilloscope sweep, status gradient line, quality zones, tap/drag tooltip), AreaChart (oscilloscope sweep), LiveChart (smooth scroll, glow pulse), HeatStrip, SegmentedBar, SegmentedBarLegend
   - Navigation: PrimaryTopBar, DetailTopBar
   - Typography: AnimatedNumber (AnimatedIntText, AnimatedFloatText), SectionHeader, CardSectionTitle, IconCircle
   - Pro: ProBadgePill, ProFeatureCalloutCard, ProFeatureLockedState
@@ -172,7 +172,7 @@ Do not annotate:
 - Contrast ratio minimum: **4.5:1** body text, **3:1** large text (WCAG AA)
 - Minimum touch target: 48dp
 - Spacing based on 4dp grid: 4/8/12/16/24/32dp tokens via `MaterialTheme.spacing`
-- **Adaptive layout:** `ContentContainer` wrapper constrains content to max 600dp width, centered — applied to all detail screens. TopBar remains full-width. Home screen grid uses 1×4 row on wide screens (≥600dp), 2×2 on phones. FullscreenChartScreen works in both orientations (no forced landscape lock).
+- **Adaptive layout:** `ContentContainer` wrapper constrains content to max 600dp width, centered — applied to all detail screens. TopBar remains full-width. Home screen grid uses 1×4 row on wide screens (≥600dp), 2×2 on phones. FullscreenChartScreen forces landscape orientation.
 
 ## Battery Features
 
@@ -199,7 +199,7 @@ The storage detail screen provides monitoring and cleanup tools:
   - Old Downloads (age: > 30/60/90/365 days)
   - APK Files (no filter, pre-selected) — scans both Downloads + Files collections with filename + MIME type matching
   - Trash (API 30+, empty via `MediaStore.createDeleteRequest` with `getTrashedUris()` + ActivityResultLauncher)
-- **Cleanup screen:** Shared `cleanup/{type}` route, category-grouped file list with thumbnails (`ThumbnailLoader` LRU-50), `MiniBar` per file, `CleanupBottomBar` with before/after projection, `CleanupSuccessOverlay` fade animation
+- **Cleanup screen:** Shared `cleanup/{type}` route, category-grouped file list with thumbnails, `MiniBar` per file, `CleanupBottomBar` with before/after projection, `CleanupSuccessOverlay` fade animation
 - **Delete mechanism:** API 30+ `createDeleteRequest` → system dialog via `ActivityResultLauncher`; API 29 `ContentResolver.delete` fallback
 - **Fill rate:** `CalculateFillRateUseCase` — linear regression on Room history (7-day lookback)
 - **Details card:** Total/Used/Available/Apps/Cache + technical details (File System from `/proc/mounts`, Encryption from `ro.crypto.type` system property, Storage Volumes from `StorageManager`)
@@ -231,7 +231,7 @@ Three-tier in-app educational system explaining technical metrics and concepts t
 - Tapping opens `InfoBottomSheet` (`ModalBottomSheet`, max 60% screen height, scrollable) with: title, plain-language explanation, "What's normal" highlight card (`surfaceContainerHigh`, 8dp corners), "Why it matters", optional expandable "Learn more" deeper detail (`AnimatedVisibility`)
 - Content defined in `*InfoContent.kt` objects per screen (e.g., `BatteryInfoContent.voltage`)
 - State: `var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }` in each detail screen content composable
-- **Coverage:** Battery (21 metrics), Thermal (4), Network (13), Storage (6), Speed Test (4) = 48 total
+- **Coverage:** Battery (21 metrics), Thermal (4), Network (13), Storage (6), Speed Test (4), Settings (3) = 51 total
 
 ### Tier 2 — Contextual Info Cards (per screen section)
 - `InfoCard` composable: `surfaceContainerHigh` background, 3dp left `primary` accent border (`Modifier.drawBehind`), `InfoOutlined` 20dp icon, `Close` dismiss button, 16dp corners
@@ -245,7 +245,7 @@ Three-tier in-app educational system explaining technical metrics and concepts t
 - Accessible from Home screen Quick Tools card (Learn `ListRow` with `MenuBook` icon)
 - `LearnScreen`: scrollable list of `LearnArticleCard` composables grouped by `LearnTopic` (Battery, Temperature, Network, Storage, General) with `CardSectionTitle` per group
 - `LearnArticleDetailScreen`: body text parsed with `## ` headers → `titleSmall`, `\n\n` paragraph breaks → `bodyMedium`, `CrossLinkButton` for navigating to relevant detail screens
-- Article catalog: `LearnArticleCatalog` object with 14 articles (Battery 4, Temperature 3, Network 3, Storage 2, General 2)
+- Article catalog: `LearnArticleCatalog` object with 15 articles (Battery 4, Temperature 3, Network 3, Storage 2, General 3)
 - Navigation: `Screen.Learn` + `Screen.LearnArticle(articleId)` routes in NavGraph
 - **Not Pro-gated** — all educational content is free
 
@@ -307,7 +307,7 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 ## Build & Release
 
 - Use a single `app` module (no multi-module until necessary)
-- **Static analysis:** ktlint (formatting) + detekt 2.0.0-alpha.2 with compose-rules 0.5.6 (code quality, `ignoreFailures = true` during adoption) + Android Lint (correctness/security/a11y checks)
+- **Static analysis:** ktlint (formatting) + detekt 1.23.8 with compose-rules 0.4.27 (code quality, `ignoreFailures = true` during adoption) + Android Lint (correctness/security/a11y checks)
 - ProGuard/R8 minification enabled for release builds
 - Generate signed APK/AAB for Play Store
 - Version code: auto-increment

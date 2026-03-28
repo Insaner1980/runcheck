@@ -8,14 +8,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 
-class GetAppBatteryUsageUseCase @Inject constructor(
-    private val appBatteryUsageRepository: AppBatteryUsageRepository,
-    private val proStatusProvider: ProStatusProvider
-) {
-    operator fun invoke(since: Long): Flow<PagingData<AppBatteryUsage>> =
-        if (proStatusProvider.isPro()) {
-            appBatteryUsageRepository.getAggregatedUsageSince(since)
-        } else {
-            flowOf(PagingData.empty())
-        }
-}
+class GetAppBatteryUsageUseCase
+    @Inject
+    constructor(
+        private val appBatteryUsageRepository: AppBatteryUsageRepository,
+        private val proStatusProvider: ProStatusProvider,
+    ) {
+        operator fun invoke(since: Long): Flow<PagingData<AppBatteryUsage>> =
+            if (proStatusProvider.isPro()) {
+                appBatteryUsageRepository.getAggregatedUsageSince(since)
+            } else {
+                flowOf(PagingData.empty())
+            }
+    }

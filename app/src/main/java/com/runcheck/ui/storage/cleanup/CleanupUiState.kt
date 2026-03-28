@@ -5,7 +5,10 @@ import com.runcheck.ui.common.UiText
 
 sealed interface CleanupUiState {
     data object Idle : CleanupUiState
-    data class Scanning(val progress: Float = -1f) : CleanupUiState
+
+    data class Scanning(
+        val progress: Float = -1f,
+    ) : CleanupUiState
 
     data class Results(
         val groups: List<FileGroup>,
@@ -16,14 +19,25 @@ sealed interface CleanupUiState {
         val currentUsagePercent: Float,
         val projectedUsagePercent: Float,
         val maxFileSizeBytes: Long,
-        val pagerGeneration: Int
+        val pagerGeneration: Int,
     ) : CleanupUiState
 
-    data class Deleting(val count: Int) : CleanupUiState
-    data class Success(val freedBytes: Long) : CleanupUiState
-    data class Error(val message: UiText) : CleanupUiState
+    data class Deleting(
+        val count: Int,
+    ) : CleanupUiState
+
+    data class Success(
+        val freedBytes: Long,
+    ) : CleanupUiState
+
+    data class Error(
+        val message: UiText,
+    ) : CleanupUiState
+
     data object Empty : CleanupUiState
+
     data object NeedsStoragePermission : CleanupUiState
+
     data object UnsupportedVersion : CleanupUiState
 }
 
@@ -32,5 +46,5 @@ data class FileGroup(
     val itemCount: Int,
     val totalBytes: Long,
     val expanded: Boolean = false,
-    val selectedCount: Int = 0
+    val selectedCount: Int = 0,
 )

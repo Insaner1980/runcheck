@@ -12,7 +12,7 @@ fun PullToRefreshWrapper(
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
 
@@ -20,7 +20,7 @@ fun PullToRefreshWrapper(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
         modifier = modifier,
-        state = pullToRefreshState
+        state = pullToRefreshState,
     ) {
         content()
     }

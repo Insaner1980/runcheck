@@ -15,5 +15,5 @@ data class SettingsUiState(
     val exportUris: List<String>? = null,
     val exportStatus: UiText? = null,
     val clearDataStatus: UiText? = null,
-    val errorMessage: UiText? = null
+    val errorMessage: UiText? = null,
 )

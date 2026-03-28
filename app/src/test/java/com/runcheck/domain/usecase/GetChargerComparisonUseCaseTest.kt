@@ -9,8 +9,8 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -18,7 +18,6 @@ import org.junit.Before
 import org.junit.Test
 
 class GetChargerComparisonUseCaseTest {
-
     private lateinit var useCase: GetChargerComparisonUseCase
     private lateinit var chargerRepository: ChargerRepository
     private lateinit var proStatusProvider: ProStatusProvider
@@ -32,10 +31,13 @@ class GetChargerComparisonUseCaseTest {
     private fun createUseCase(): GetChargerComparisonUseCase =
         GetChargerComparisonUseCase(chargerRepository, proStatusProvider)
 
-    private fun charger(id: Long, name: String) = ChargerProfile(
+    private fun charger(
+        id: Long,
+        name: String,
+    ) = ChargerProfile(
         id = id,
         name = name,
-        created = 1_000_000L
+        created = 1_000_000L,
     )
 
     private fun session(
@@ -47,7 +49,7 @@ class GetChargerComparisonUseCaseTest {
         endLevel: Int? = null,
         avgCurrentMa: Int? = null,
         avgVoltageMv: Int? = null,
-        avgPowerMw: Int? = null
+        avgPowerMw: Int? = null,
     ) = ChargingSession(
         id = id,
         chargerId = chargerId,
@@ -59,354 +61,387 @@ class GetChargerComparisonUseCaseTest {
         maxCurrentMa = null,
         avgVoltageMv = avgVoltageMv,
         avgPowerMw = avgPowerMw,
-        plugType = "USB"
+        plugType = "USB",
     )
 
     @Test
-    fun `non-Pro user returns empty flow`() = runTest {
-        every { proStatusProvider.isPro() } returns false
+    fun `non-Pro user returns empty flow`() =
+        runTest {
+            every { proStatusProvider.isPro() } returns false
 
-        useCase = createUseCase()
-        val result = useCase().first()
+            useCase = createUseCase()
+            val result = useCase().first()
 
-        assertTrue(result.isEmpty())
-    }
+            assertTrue(result.isEmpty())
+        }
 
     @Test
-    fun `Pro user gets charger data`() = runTest {
-        every { proStatusProvider.isPro() } returns true
-        every { chargerRepository.getChargerProfiles() } returns flowOf(
-            listOf(charger(1L, "Wall Charger"))
-        )
-        every { chargerRepository.getAllSessions() } returns flowOf(
-            listOf(
-                session(
-                    chargerId = 1L,
-                    startTime = 1000L,
-                    endTime = 3_600_000L + 1000L, // 1 hour
-                    startLevel = 20,
-                    endLevel = 80,
-                    avgCurrentMa = 2000
+    fun `Pro user gets charger data`() =
+        runTest {
+            every { proStatusProvider.isPro() } returns true
+            every { chargerRepository.getChargerProfiles() } returns
+                flowOf(
+                    listOf(charger(1L, "Wall Charger")),
                 )
-            )
-        )
-
-        useCase = createUseCase()
-        val result = useCase().first()
-
-        assertEquals(1, result.size)
-        assertEquals("Wall Charger", result[0].chargerName)
-        assertEquals(1, result[0].sessionCount)
-        assertNotNull(result[0].avgChargingSpeedMa)
-        assertEquals(2000, result[0].avgChargingSpeedMa)
-        assertFalse(result[0].hasActiveSession)
-    }
-
-    @Test
-    fun `two chargers with sessions are sorted by last usage descending`() = runTest {
-        every { proStatusProvider.isPro() } returns true
-        every { chargerRepository.getChargerProfiles() } returns flowOf(
-            listOf(
-                charger(1L, "Old Charger"),
-                charger(2L, "New Charger")
-            )
-        )
-        every { chargerRepository.getAllSessions() } returns flowOf(
-            listOf(
-                session(
-                    chargerId = 1L,
-                    startTime = 1_000_000L,
-                    endTime = 4_600_000L,
-                    startLevel = 30,
-                    endLevel = 90,
-                    avgCurrentMa = 1500
-                ),
-                session(
-                    chargerId = 2L,
-                    startTime = 5_000_000L,
-                    endTime = 8_600_000L,
-                    startLevel = 10,
-                    endLevel = 85,
-                    avgCurrentMa = 2500
+            every { chargerRepository.getAllSessions() } returns
+                flowOf(
+                    listOf(
+                        session(
+                            chargerId = 1L,
+                            startTime = 1000L,
+                            endTime = 3_600_000L + 1000L, // 1 hour
+                            startLevel = 20,
+                            endLevel = 80,
+                            avgCurrentMa = 2000,
+                        ),
+                    ),
                 )
-            )
-        )
 
-        useCase = createUseCase()
-        val result = useCase().first()
+            useCase = createUseCase()
+            val result = useCase().first()
 
-        assertEquals(2, result.size)
-        // New Charger was used more recently (startTime=5_000_000)
-        assertEquals("New Charger", result[0].chargerName)
-        assertEquals("Old Charger", result[1].chargerName)
-    }
+            assertEquals(1, result.size)
+            assertEquals("Wall Charger", result[0].chargerName)
+            assertEquals(1, result[0].sessionCount)
+            assertNotNull(result[0].avgChargingSpeedMa)
+            assertEquals(2000, result[0].avgChargingSpeedMa)
+            assertFalse(result[0].hasActiveSession)
+        }
 
     @Test
-    fun `avg charging speed calculated correctly from multiple sessions`() = runTest {
-        every { proStatusProvider.isPro() } returns true
-        every { chargerRepository.getChargerProfiles() } returns flowOf(
-            listOf(charger(1L, "USB-C"))
-        )
-        every { chargerRepository.getAllSessions() } returns flowOf(
-            listOf(
-                session(
-                    chargerId = 1L,
-                    startTime = 1000L,
-                    endTime = 3_601_000L,
-                    startLevel = 20,
-                    endLevel = 80,
-                    avgCurrentMa = 2000
-                ),
-                session(
-                    chargerId = 1L,
-                    startTime = 5_000_000L,
-                    endTime = 8_600_000L,
-                    startLevel = 30,
-                    endLevel = 90,
-                    avgCurrentMa = 3000
+    fun `two chargers with sessions are sorted by last usage descending`() =
+        runTest {
+            every { proStatusProvider.isPro() } returns true
+            every { chargerRepository.getChargerProfiles() } returns
+                flowOf(
+                    listOf(
+                        charger(1L, "Old Charger"),
+                        charger(2L, "New Charger"),
+                    ),
                 )
-            )
-        )
-
-        useCase = createUseCase()
-        val result = useCase().first()
-
-        assertEquals(1, result.size)
-        assertEquals(2, result[0].sessionCount)
-        // Average of 2000 and 3000 = 2500
-        assertEquals(2500, result[0].avgChargingSpeedMa)
-    }
-
-    @Test
-    fun `session with zero percent level gain does not cause division by zero`() = runTest {
-        every { proStatusProvider.isPro() } returns true
-        every { chargerRepository.getChargerProfiles() } returns flowOf(
-            listOf(charger(1L, "Bad Charger"))
-        )
-        every { chargerRepository.getAllSessions() } returns flowOf(
-            listOf(
-                session(
-                    chargerId = 1L,
-                    startTime = 1000L,
-                    endTime = 3_601_000L,
-                    startLevel = 50,
-                    endLevel = 50, // 0% gain
-                    avgCurrentMa = 100
+            every { chargerRepository.getAllSessions() } returns
+                flowOf(
+                    listOf(
+                        session(
+                            chargerId = 1L,
+                            startTime = 1_000_000L,
+                            endTime = 4_600_000L,
+                            startLevel = 30,
+                            endLevel = 90,
+                            avgCurrentMa = 1500,
+                        ),
+                        session(
+                            chargerId = 2L,
+                            startTime = 5_000_000L,
+                            endTime = 8_600_000L,
+                            startLevel = 10,
+                            endLevel = 85,
+                            avgCurrentMa = 2500,
+                        ),
+                    ),
                 )
-            )
-        )
 
-        useCase = createUseCase()
-        val result = useCase().first()
+            useCase = createUseCase()
+            val result = useCase().first()
 
-        // Should not crash; avgTimeToFull should be null since no gain
-        assertEquals(1, result.size)
-        assertNull(result[0].avgTimeToFullMinutes)
-    }
-
-    @Test
-    fun `no sessions for a charger shows zero session count`() = runTest {
-        every { proStatusProvider.isPro() } returns true
-        every { chargerRepository.getChargerProfiles() } returns flowOf(
-            listOf(charger(1L, "Unused Charger"))
-        )
-        every { chargerRepository.getAllSessions() } returns flowOf(emptyList())
-
-        useCase = createUseCase()
-        val result = useCase().first()
-
-        assertEquals(1, result.size)
-        assertEquals(0, result[0].sessionCount)
-        assertNull(result[0].avgChargingSpeedMa)
-        assertNull(result[0].avgTimeToFullMinutes)
-        assertNull(result[0].lastUsed)
-    }
+            assertEquals(2, result.size)
+            // New Charger was used more recently (startTime=5_000_000)
+            assertEquals("New Charger", result[0].chargerName)
+            assertEquals("Old Charger", result[1].chargerName)
+        }
 
     @Test
-    fun `incomplete sessions without endTime are not used for avg calculations`() = runTest {
-        every { proStatusProvider.isPro() } returns true
-        every { chargerRepository.getChargerProfiles() } returns flowOf(
-            listOf(charger(1L, "Active Charger"))
-        )
-        every { chargerRepository.getAllSessions() } returns flowOf(
-            listOf(
-                session(
-                    chargerId = 1L,
-                    startTime = 1000L,
-                    endTime = null, // still active
-                    startLevel = 20,
-                    endLevel = null,
-                    avgCurrentMa = null
+    fun `avg charging speed calculated correctly from multiple sessions`() =
+        runTest {
+            every { proStatusProvider.isPro() } returns true
+            every { chargerRepository.getChargerProfiles() } returns
+                flowOf(
+                    listOf(charger(1L, "USB-C")),
                 )
-            )
-        )
+            every { chargerRepository.getAllSessions() } returns
+                flowOf(
+                    listOf(
+                        session(
+                            chargerId = 1L,
+                            startTime = 1000L,
+                            endTime = 3_601_000L,
+                            startLevel = 20,
+                            endLevel = 80,
+                            avgCurrentMa = 2000,
+                        ),
+                        session(
+                            chargerId = 1L,
+                            startTime = 5_000_000L,
+                            endTime = 8_600_000L,
+                            startLevel = 30,
+                            endLevel = 90,
+                            avgCurrentMa = 3000,
+                        ),
+                    ),
+                )
 
-        useCase = createUseCase()
-        val result = useCase().first()
+            useCase = createUseCase()
+            val result = useCase().first()
 
-        assertEquals(1, result.size)
-        // Session counts include incomplete ones
-        assertEquals(1, result[0].sessionCount)
-        // But speed/time averages are from completed sessions only
-        assertNull(result[0].avgChargingSpeedMa)
-        assertNull(result[0].avgTimeToFullMinutes)
-        // lastUsed should still be set (based on all sessions)
-        assertEquals(1000L, result[0].lastUsed)
-        assertTrue(result[0].hasActiveSession)
-    }
+            assertEquals(1, result.size)
+            assertEquals(2, result[0].sessionCount)
+            // Average of 2000 and 3000 = 2500
+            assertEquals(2500, result[0].avgChargingSpeedMa)
+        }
 
     @Test
-    fun `avgTimeToFull calculated correctly`() = runTest {
-        every { proStatusProvider.isPro() } returns true
-        every { chargerRepository.getChargerProfiles() } returns flowOf(
-            listOf(charger(1L, "Fast Charger"))
-        )
-        // Session: 60 minutes, 20% -> 80% = 60% gain
-        // Time to full: 60min * 100 / 60 = 100 min
-        val sixtyMinMs = 60 * 60_000L
-        every { chargerRepository.getAllSessions() } returns flowOf(
-            listOf(
-                session(
-                    chargerId = 1L,
-                    startTime = 0L,
-                    endTime = sixtyMinMs,
-                    startLevel = 20,
-                    endLevel = 80,
-                    avgCurrentMa = 2000
+    fun `session with zero percent level gain does not cause division by zero`() =
+        runTest {
+            every { proStatusProvider.isPro() } returns true
+            every { chargerRepository.getChargerProfiles() } returns
+                flowOf(
+                    listOf(charger(1L, "Bad Charger")),
                 )
-            )
-        )
+            every { chargerRepository.getAllSessions() } returns
+                flowOf(
+                    listOf(
+                        session(
+                            chargerId = 1L,
+                            startTime = 1000L,
+                            endTime = 3_601_000L,
+                            startLevel = 50,
+                            endLevel = 50, // 0% gain
+                            avgCurrentMa = 100,
+                        ),
+                    ),
+                )
 
-        useCase = createUseCase()
-        val result = useCase().first()
+            useCase = createUseCase()
+            val result = useCase().first()
 
-        assertEquals(1, result.size)
-        // durationMinutes = 60_000_000 / 60_000 = 60 (actually sixtyMinMs/60000 = 60)
-        // Wait: endTime=3600000, startTime=0, duration = 3600000ms = 60min
-        // levelGain = 80 - 20 = 60
-        // avgTimeToFull = 60 * 100 / 60 = 100
-        assertEquals(100, result[0].avgTimeToFullMinutes)
-    }
+            // Should not crash; avgTimeToFull should be null since no gain
+            assertEquals(1, result.size)
+            assertNull(result[0].avgTimeToFullMinutes)
+        }
 
     @Test
-    fun `sessions with null avgCurrentMa are excluded from speed average`() = runTest {
-        every { proStatusProvider.isPro() } returns true
-        every { chargerRepository.getChargerProfiles() } returns flowOf(
-            listOf(charger(1L, "Mixed"))
-        )
-        every { chargerRepository.getAllSessions() } returns flowOf(
-            listOf(
-                session(
-                    chargerId = 1L,
-                    startTime = 1000L,
-                    endTime = 3_601_000L,
-                    startLevel = 20,
-                    endLevel = 80,
-                    avgCurrentMa = 2000
-                ),
-                session(
-                    chargerId = 1L,
-                    startTime = 5_000_000L,
-                    endTime = 8_600_000L,
-                    startLevel = 30,
-                    endLevel = 90,
-                    avgCurrentMa = null // no data
+    fun `no sessions for a charger shows zero session count`() =
+        runTest {
+            every { proStatusProvider.isPro() } returns true
+            every { chargerRepository.getChargerProfiles() } returns
+                flowOf(
+                    listOf(charger(1L, "Unused Charger")),
                 )
-            )
-        )
+            every { chargerRepository.getAllSessions() } returns flowOf(emptyList())
 
-        useCase = createUseCase()
-        val result = useCase().first()
+            useCase = createUseCase()
+            val result = useCase().first()
 
-        assertEquals(1, result.size)
-        // Only the first session's 2000 mA contributes
-        assertEquals(2000, result[0].avgChargingSpeedMa)
-    }
+            assertEquals(1, result.size)
+            assertEquals(0, result[0].sessionCount)
+            assertNull(result[0].avgChargingSpeedMa)
+            assertNull(result[0].avgTimeToFullMinutes)
+            assertNull(result[0].lastUsed)
+        }
 
     @Test
-    fun `charger with no completed sessions but has active session`() = runTest {
-        every { proStatusProvider.isPro() } returns true
-        every { chargerRepository.getChargerProfiles() } returns flowOf(
-            listOf(charger(1L, "New Charger"))
-        )
-        every { chargerRepository.getAllSessions() } returns flowOf(
-            listOf(
-                session(
-                    chargerId = 1L,
-                    startTime = 5_000_000L,
-                    endTime = null,
-                    startLevel = 10,
-                    endLevel = null,
-                    avgCurrentMa = null
+    fun `incomplete sessions without endTime are not used for avg calculations`() =
+        runTest {
+            every { proStatusProvider.isPro() } returns true
+            every { chargerRepository.getChargerProfiles() } returns
+                flowOf(
+                    listOf(charger(1L, "Active Charger")),
                 )
-            )
-        )
+            every { chargerRepository.getAllSessions() } returns
+                flowOf(
+                    listOf(
+                        session(
+                            chargerId = 1L,
+                            startTime = 1000L,
+                            endTime = null, // still active
+                            startLevel = 20,
+                            endLevel = null,
+                            avgCurrentMa = null,
+                        ),
+                    ),
+                )
 
-        useCase = createUseCase()
-        val result = useCase().first()
+            useCase = createUseCase()
+            val result = useCase().first()
 
-        assertEquals(1, result.size)
-        val summary = result[0]
-        assertEquals(1, summary.sessionCount)
-        assertNull(summary.avgChargingSpeedMa)
-        assertNull(summary.avgTimeToFullMinutes)
-        assertEquals(5_000_000L, summary.lastUsed)
-        assertTrue(summary.hasActiveSession)
-    }
+            assertEquals(1, result.size)
+            // Session counts include incomplete ones
+            assertEquals(1, result[0].sessionCount)
+            // But speed/time averages are from completed sessions only
+            assertNull(result[0].avgChargingSpeedMa)
+            assertNull(result[0].avgTimeToFullMinutes)
+            // lastUsed should still be set (based on all sessions)
+            assertEquals(1000L, result[0].lastUsed)
+            assertTrue(result[0].hasActiveSession)
+        }
 
     @Test
-    fun `power summary uses saved power when available`() = runTest {
-        every { proStatusProvider.isPro() } returns true
-        every { chargerRepository.getChargerProfiles() } returns flowOf(
-            listOf(charger(1L, "Fast USB-C"))
-        )
-        every { chargerRepository.getAllSessions() } returns flowOf(
-            listOf(
-                session(
-                    chargerId = 1L,
-                    startTime = 1000L,
-                    endTime = 3_601_000L,
-                    startLevel = 20,
-                    endLevel = 80,
-                    avgCurrentMa = 2200,
-                    avgVoltageMv = 9000,
-                    avgPowerMw = 19_800
+    fun `avgTimeToFull calculated correctly`() =
+        runTest {
+            every { proStatusProvider.isPro() } returns true
+            every { chargerRepository.getChargerProfiles() } returns
+                flowOf(
+                    listOf(charger(1L, "Fast Charger")),
                 )
-            )
-        )
+            // Session: 60 minutes, 20% -> 80% = 60% gain
+            // Time to full: 60min * 100 / 60 = 100 min
+            val sixtyMinMs = 60 * 60_000L
+            every { chargerRepository.getAllSessions() } returns
+                flowOf(
+                    listOf(
+                        session(
+                            chargerId = 1L,
+                            startTime = 0L,
+                            endTime = sixtyMinMs,
+                            startLevel = 20,
+                            endLevel = 80,
+                            avgCurrentMa = 2000,
+                        ),
+                    ),
+                )
 
-        useCase = createUseCase()
-        val result = useCase().first()
+            useCase = createUseCase()
+            val result = useCase().first()
 
-        assertEquals(19_800, result[0].avgPowerMw)
-        assertEquals(19_800, result[0].latestPowerMw)
-    }
+            assertEquals(1, result.size)
+            // durationMinutes = 60_000_000 / 60_000 = 60 (actually sixtyMinMs/60000 = 60)
+            // Wait: endTime=3600000, startTime=0, duration = 3600000ms = 60min
+            // levelGain = 80 - 20 = 60
+            // avgTimeToFull = 60 * 100 / 60 = 100
+            assertEquals(100, result[0].avgTimeToFullMinutes)
+        }
 
     @Test
-    fun `power summary falls back to derived current times voltage`() = runTest {
-        every { proStatusProvider.isPro() } returns true
-        every { chargerRepository.getChargerProfiles() } returns flowOf(
-            listOf(charger(1L, "Derived Power"))
-        )
-        every { chargerRepository.getAllSessions() } returns flowOf(
-            listOf(
-                session(
-                    chargerId = 1L,
-                    startTime = 1000L,
-                    endTime = 3_601_000L,
-                    startLevel = 20,
-                    endLevel = 80,
-                    avgCurrentMa = 2000,
-                    avgVoltageMv = 5000,
-                    avgPowerMw = null
+    fun `sessions with null avgCurrentMa are excluded from speed average`() =
+        runTest {
+            every { proStatusProvider.isPro() } returns true
+            every { chargerRepository.getChargerProfiles() } returns
+                flowOf(
+                    listOf(charger(1L, "Mixed")),
                 )
-            )
-        )
+            every { chargerRepository.getAllSessions() } returns
+                flowOf(
+                    listOf(
+                        session(
+                            chargerId = 1L,
+                            startTime = 1000L,
+                            endTime = 3_601_000L,
+                            startLevel = 20,
+                            endLevel = 80,
+                            avgCurrentMa = 2000,
+                        ),
+                        session(
+                            chargerId = 1L,
+                            startTime = 5_000_000L,
+                            endTime = 8_600_000L,
+                            startLevel = 30,
+                            endLevel = 90,
+                            avgCurrentMa = null, // no data
+                        ),
+                    ),
+                )
 
-        useCase = createUseCase()
-        val result = useCase().first()
+            useCase = createUseCase()
+            val result = useCase().first()
 
-        assertEquals(10_000, result[0].avgPowerMw)
-        assertEquals(10_000, result[0].latestPowerMw)
-    }
+            assertEquals(1, result.size)
+            // Only the first session's 2000 mA contributes
+            assertEquals(2000, result[0].avgChargingSpeedMa)
+        }
+
+    @Test
+    fun `charger with no completed sessions but has active session`() =
+        runTest {
+            every { proStatusProvider.isPro() } returns true
+            every { chargerRepository.getChargerProfiles() } returns
+                flowOf(
+                    listOf(charger(1L, "New Charger")),
+                )
+            every { chargerRepository.getAllSessions() } returns
+                flowOf(
+                    listOf(
+                        session(
+                            chargerId = 1L,
+                            startTime = 5_000_000L,
+                            endTime = null,
+                            startLevel = 10,
+                            endLevel = null,
+                            avgCurrentMa = null,
+                        ),
+                    ),
+                )
+
+            useCase = createUseCase()
+            val result = useCase().first()
+
+            assertEquals(1, result.size)
+            val summary = result[0]
+            assertEquals(1, summary.sessionCount)
+            assertNull(summary.avgChargingSpeedMa)
+            assertNull(summary.avgTimeToFullMinutes)
+            assertEquals(5_000_000L, summary.lastUsed)
+            assertTrue(summary.hasActiveSession)
+        }
+
+    @Test
+    fun `power summary uses saved power when available`() =
+        runTest {
+            every { proStatusProvider.isPro() } returns true
+            every { chargerRepository.getChargerProfiles() } returns
+                flowOf(
+                    listOf(charger(1L, "Fast USB-C")),
+                )
+            every { chargerRepository.getAllSessions() } returns
+                flowOf(
+                    listOf(
+                        session(
+                            chargerId = 1L,
+                            startTime = 1000L,
+                            endTime = 3_601_000L,
+                            startLevel = 20,
+                            endLevel = 80,
+                            avgCurrentMa = 2200,
+                            avgVoltageMv = 9000,
+                            avgPowerMw = 19_800,
+                        ),
+                    ),
+                )
+
+            useCase = createUseCase()
+            val result = useCase().first()
+
+            assertEquals(19_800, result[0].avgPowerMw)
+            assertEquals(19_800, result[0].latestPowerMw)
+        }
+
+    @Test
+    fun `power summary falls back to derived current times voltage`() =
+        runTest {
+            every { proStatusProvider.isPro() } returns true
+            every { chargerRepository.getChargerProfiles() } returns
+                flowOf(
+                    listOf(charger(1L, "Derived Power")),
+                )
+            every { chargerRepository.getAllSessions() } returns
+                flowOf(
+                    listOf(
+                        session(
+                            chargerId = 1L,
+                            startTime = 1000L,
+                            endTime = 3_601_000L,
+                            startLevel = 20,
+                            endLevel = 80,
+                            avgCurrentMa = 2000,
+                            avgVoltageMv = 5000,
+                            avgPowerMw = null,
+                        ),
+                    ),
+                )
+
+            useCase = createUseCase()
+            val result = useCase().first()
+
+            assertEquals(10_000, result[0].avgPowerMw)
+            assertEquals(10_000, result[0].latestPowerMw)
+        }
 }

@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ChargerDao {
-
     @Insert
     suspend fun insertCharger(charger: ChargerProfileEntity): Long
 
@@ -43,7 +42,7 @@ interface ChargerDao {
                max_current_ma = :maxCurrentMa,
                avg_voltage_mv = :avgVoltageMv,
                avg_power_mw = :avgPowerMw
-           WHERE id = :id"""
+           WHERE id = :id""",
     )
     suspend fun completeSession(
         id: Long,
@@ -52,6 +51,6 @@ interface ChargerDao {
         avgCurrentMa: Int?,
         maxCurrentMa: Int?,
         avgVoltageMv: Int?,
-        avgPowerMw: Int?
+        avgPowerMw: Int?,
     )
 }

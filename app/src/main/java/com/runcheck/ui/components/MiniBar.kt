@@ -29,42 +29,46 @@ fun MiniBar(
     trackColor: Color = MaterialTheme.iconCircleColor,
     fillColor: Color = MaterialTheme.colorScheme.primary,
     animationDuration: Int = 800,
-    contentDescription: String? = null
+    contentDescription: String? = null,
 ) {
     val isReducedMotion = MaterialTheme.reducedMotion
     val pillShape = MaterialTheme.shapes.extraLarge
 
     val animatedProgress by animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
-        animationSpec = if (isReducedMotion) {
-            tween(durationMillis = 0)
-        } else {
-            tween(durationMillis = animationDuration, easing = FastOutSlowInEasing)
-        },
-        label = "miniBar"
+        animationSpec =
+            if (isReducedMotion) {
+                tween(durationMillis = 0)
+            } else {
+                tween(durationMillis = animationDuration, easing = FastOutSlowInEasing)
+            },
+        label = "miniBar",
     )
 
-    val semanticsModifier = if (contentDescription != null) {
-        Modifier.clearAndSetSemantics {
-            this.contentDescription = contentDescription
+    val semanticsModifier =
+        if (contentDescription != null) {
+            Modifier.clearAndSetSemantics {
+                this.contentDescription = contentDescription
+            }
+        } else {
+            Modifier.clearAndSetSemantics {}
         }
-    } else {
-        Modifier.clearAndSetSemantics {}
-    }
 
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(height)
-            .then(semanticsModifier)
-            .clip(pillShape)
-            .background(trackColor)
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(height)
+                .then(semanticsModifier)
+                .clip(pillShape)
+                .background(trackColor),
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxWidth(fraction = animatedProgress)
-                .height(height)
-                .background(fillColor, shape = pillShape)
+            modifier =
+                Modifier
+                    .fillMaxWidth(fraction = animatedProgress)
+                    .height(height)
+                    .background(fillColor, shape = pillShape),
         )
     }
 }

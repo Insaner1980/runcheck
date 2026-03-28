@@ -15,50 +15,54 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class MonitorScheduler @Inject constructor(
-    @param:ApplicationContext private val context: Context,
-    private val preferencesRepository: UserPreferencesRepository
-) : MonitoringScheduler {
+class MonitorScheduler
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+        private val preferencesRepository: UserPreferencesRepository,
+    ) : MonitoringScheduler {
+        override fun schedule(interval: MonitoringInterval) {
+            val alertWorkRequest =
+                PeriodicWorkRequestBuilder<HealthMonitorWorker>(
+                    interval.minutes.toLong(),
+                    TimeUnit.MINUTES,
+                ).build()
 
-    override fun schedule(interval: MonitoringInterval) {
-        val alertWorkRequest = PeriodicWorkRequestBuilder<HealthMonitorWorker>(
-            interval.minutes.toLong(),
-            TimeUnit.MINUTES
-        ).build()
-
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            HealthMonitorWorker.WORK_NAME,
-            ExistingPeriodicWorkPolicy.UPDATE,
-            alertWorkRequest
-        )
-
-        val maintenanceWorkRequest = PeriodicWorkRequestBuilder<HealthMaintenanceWorker>(
-            interval.minutes.toLong(),
-            TimeUnit.MINUTES
-        )
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiresBatteryNotLow(true)
-                    .build()
+            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                HealthMonitorWorker.WORK_NAME,
+                ExistingPeriodicWorkPolicy.UPDATE,
+                alertWorkRequest,
             )
-            .build()
 
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            HealthMaintenanceWorker.WORK_NAME,
-            ExistingPeriodicWorkPolicy.UPDATE,
-            maintenanceWorkRequest
-        )
-    }
+            val maintenanceWorkRequest =
+                PeriodicWorkRequestBuilder<HealthMaintenanceWorker>(
+                    interval.minutes.toLong(),
+                    TimeUnit.MINUTES,
+                ).setConstraints(
+                    Constraints
+                        .Builder()
+                        .setRequiresBatteryNotLow(true)
+                        .build(),
+                ).build()
 
-    override fun cancel() {
-        WorkManager.getInstance(context)
-            .cancelUniqueWork(HealthMonitorWorker.WORK_NAME)
-        WorkManager.getInstance(context)
-            .cancelUniqueWork(HealthMaintenanceWorker.WORK_NAME)
-    }
+            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                HealthMaintenanceWorker.WORK_NAME,
+                ExistingPeriodicWorkPolicy.UPDATE,
+                maintenanceWorkRequest,
+            )
+        }
 
-    override suspend fun ensureScheduled() {
-        val interval = preferencesRepository.getPreferences().first().monitoringInterval
-        schedule(interval)
+        override fun cancel() {
+            WorkManager
+                .getInstance(context)
+                .cancelUniqueWork(HealthMonitorWorker.WORK_NAME)
+            WorkManager
+                .getInstance(context)
+                .cancelUniqueWork(HealthMaintenanceWorker.WORK_NAME)
+        }
+
+        override suspend fun ensureScheduled() {
+            val interval = preferencesRepository.getPreferences().first().monitoringInterval
+            schedule(interval)
+        }
     }
-}

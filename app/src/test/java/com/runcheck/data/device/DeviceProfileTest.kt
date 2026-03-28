@@ -8,7 +8,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DeviceProfileTest {
-
     @Test
     fun `DeviceProfile deviceId is lowercase combination`() {
         val profile = createProfile(manufacturer = "Samsung", model = "Galaxy S24")
@@ -80,7 +79,7 @@ class DeviceProfileTest {
         currentNowReliable: Boolean = true,
         currentNowUnit: CurrentUnit = CurrentUnit.MICROAMPS,
         signConvention: SignConvention = SignConvention.POSITIVE_CHARGING,
-        thermalZones: List<String> = listOf("cpu-0-0", "battery")
+        thermalZones: List<String> = listOf("cpu-0-0", "battery"),
     ) = DeviceProfile(
         manufacturer = manufacturer,
         model = model,
@@ -90,6 +89,6 @@ class DeviceProfileTest {
         currentNowSignConvention = signConvention,
         cycleCountAvailable = apiLevel >= 34,
         thermalZonesAvailable = thermalZones,
-        storageHealthAvailable = true
+        storageHealthAvailable = true,
     )
 }

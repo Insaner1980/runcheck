@@ -3,12 +3,14 @@ package com.runcheck.ui.learn
 import androidx.annotation.StringRes
 import com.runcheck.R
 
-enum class LearnTopic(@param:StringRes val labelRes: Int) {
+enum class LearnTopic(
+    @param:StringRes val labelRes: Int,
+) {
     BATTERY(R.string.learn_topic_battery),
     TEMPERATURE(R.string.learn_topic_temperature),
     NETWORK(R.string.learn_topic_network),
     STORAGE(R.string.learn_topic_storage),
-    GENERAL(R.string.learn_topic_general)
+    GENERAL(R.string.learn_topic_general),
 }
 
 object LearnArticleIds {
@@ -37,10 +39,10 @@ data class LearnArticle(
     @param:StringRes val bodyRes: Int,
     val readTimeMinutes: Int,
     val crossLinkRoute: String?,
-    val legacyIds: Set<String> = emptySet()
+    val legacyIds: Set<String> = emptySet(),
 )
 
 data class LearnTopicSection(
     val topic: LearnTopic,
-    val articles: List<LearnArticle>
+    val articles: List<LearnArticle>,
 )

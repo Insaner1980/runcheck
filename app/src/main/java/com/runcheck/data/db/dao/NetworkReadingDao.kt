@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface NetworkReadingDao {
-
     @Insert
     suspend fun insert(reading: NetworkReadingEntity)
 
@@ -25,9 +24,12 @@ interface NetworkReadingDao {
                 LIMIT :limit
             )
             ORDER BY timestamp ASC
-        """
+        """,
     )
-    fun getReadingsSinceLimited(since: Long, limit: Int): Flow<List<NetworkReadingEntity>>
+    fun getReadingsSinceLimited(
+        since: Long,
+        limit: Int,
+    ): Flow<List<NetworkReadingEntity>>
 
     @Query("SELECT * FROM network_readings ORDER BY timestamp DESC LIMIT 1")
     fun getLatestReading(): Flow<NetworkReadingEntity?>

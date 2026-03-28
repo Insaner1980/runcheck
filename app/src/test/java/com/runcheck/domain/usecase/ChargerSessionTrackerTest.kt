@@ -21,69 +21,74 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class ChargerSessionTrackerTest {
-
     @Test
-    fun `starts a new session when selected charger begins charging`() = runTest {
-        val chargerRepository = FakeChargerRepository()
-        val batteryRepository = FakeBatteryRepository()
-        val preferencesRepository = FakeUserPreferencesRepository(selectedChargerId = 7L)
-        val tracker = ChargerSessionTracker(chargerRepository, batteryRepository, preferencesRepository)
+    fun `starts a new session when selected charger begins charging`() =
+        runTest {
+            val chargerRepository = FakeChargerRepository()
+            val batteryRepository = FakeBatteryRepository()
+            val preferencesRepository = FakeUserPreferencesRepository(selectedChargerId = 7L)
+            val tracker = ChargerSessionTracker(chargerRepository, batteryRepository, preferencesRepository)
 
-        tracker.onBatteryState(chargingBatteryState(level = 42), timestamp = 1_000L)
+            tracker.onBatteryState(chargingBatteryState(level = 42), timestamp = 1_000L)
 
-        val session = chargerRepository.activeSession
-        requireNotNull(session)
-        assertEquals(7L, session.chargerId)
-        assertEquals(42, session.startLevel)
-        assertNull(session.endTime)
-    }
-
-    @Test
-    fun `completes an active session using saved battery readings`() = runTest {
-        val chargerRepository = FakeChargerRepository().apply {
-            activeSession = ChargingSession(
-                id = 11L,
-                chargerId = 7L,
-                startTime = 1_000L,
-                endTime = null,
-                startLevel = 20,
-                endLevel = null,
-                avgCurrentMa = null,
-                maxCurrentMa = null,
-                avgVoltageMv = null,
-                avgPowerMw = null,
-                plugType = PlugType.USB.name
-            )
+            val session = chargerRepository.activeSession
+            requireNotNull(session)
+            assertEquals(7L, session.chargerId)
+            assertEquals(42, session.startLevel)
+            assertNull(session.endTime)
         }
-        val batteryRepository = FakeBatteryRepository(
-            readings = listOf(
-                reading(timestamp = 2_000L, currentMa = 2000, voltageMv = 5000),
-                reading(timestamp = 3_000L, currentMa = 2400, voltageMv = 5100),
-                reading(timestamp = 4_000L, currentMa = null, voltageMv = 5000)
+
+    @Test
+    fun `completes an active session using saved battery readings`() =
+        runTest {
+            val chargerRepository =
+                FakeChargerRepository().apply {
+                    activeSession =
+                        ChargingSession(
+                            id = 11L,
+                            chargerId = 7L,
+                            startTime = 1_000L,
+                            endTime = null,
+                            startLevel = 20,
+                            endLevel = null,
+                            avgCurrentMa = null,
+                            maxCurrentMa = null,
+                            avgVoltageMv = null,
+                            avgPowerMw = null,
+                            plugType = PlugType.USB.name,
+                        )
+                }
+            val batteryRepository =
+                FakeBatteryRepository(
+                    readings =
+                        listOf(
+                            reading(timestamp = 2_000L, currentMa = 2000, voltageMv = 5000),
+                            reading(timestamp = 3_000L, currentMa = 2400, voltageMv = 5100),
+                            reading(timestamp = 4_000L, currentMa = null, voltageMv = 5000),
+                        ),
+                )
+            val preferencesRepository = FakeUserPreferencesRepository(selectedChargerId = 7L)
+            val tracker = ChargerSessionTracker(chargerRepository, batteryRepository, preferencesRepository)
+
+            tracker.onBatteryState(
+                state = chargingBatteryState(level = 78, status = ChargingStatus.NOT_CHARGING),
+                timestamp = 5_000L,
             )
-        )
-        val preferencesRepository = FakeUserPreferencesRepository(selectedChargerId = 7L)
-        val tracker = ChargerSessionTracker(chargerRepository, batteryRepository, preferencesRepository)
 
-        tracker.onBatteryState(
-            state = chargingBatteryState(level = 78, status = ChargingStatus.NOT_CHARGING),
-            timestamp = 5_000L
-        )
-
-        assertNull(chargerRepository.activeSession)
-        val completed = requireNotNull(chargerRepository.completedSession)
-        assertEquals(11L, completed.id)
-        assertEquals(5_000L, completed.endTime)
-        assertEquals(78, completed.endLevel)
-        assertEquals(2200, completed.avgCurrentMa)
-        assertEquals(2400, completed.maxCurrentMa)
-        assertEquals(5033, completed.avgVoltageMv)
-        assertEquals(11_120, completed.avgPowerMw)
-    }
+            assertNull(chargerRepository.activeSession)
+            val completed = requireNotNull(chargerRepository.completedSession)
+            assertEquals(11L, completed.id)
+            assertEquals(5_000L, completed.endTime)
+            assertEquals(78, completed.endLevel)
+            assertEquals(2200, completed.avgCurrentMa)
+            assertEquals(2400, completed.maxCurrentMa)
+            assertEquals(5033, completed.avgVoltageMv)
+            assertEquals(11_120, completed.avgPowerMw)
+        }
 
     private fun chargingBatteryState(
         level: Int,
-        status: ChargingStatus = ChargingStatus.CHARGING
+        status: ChargingStatus = ChargingStatus.CHARGING,
     ) = BatteryState(
         level = level,
         voltageMv = 5000,
@@ -92,13 +97,13 @@ class ChargerSessionTrackerTest {
         chargingStatus = status,
         plugType = PlugType.USB,
         health = BatteryHealth.GOOD,
-        technology = "Li-ion"
+        technology = "Li-ion",
     )
 
     private fun reading(
         timestamp: Long,
         currentMa: Int?,
-        voltageMv: Int
+        voltageMv: Int,
     ) = BatteryReading(
         id = timestamp,
         timestamp = timestamp,
@@ -111,7 +116,7 @@ class ChargerSessionTrackerTest {
         plugType = PlugType.USB.name,
         health = BatteryHealth.GOOD.name,
         cycleCount = null,
-        healthPct = null
+        healthPct = null,
     )
 }
 
@@ -139,17 +144,18 @@ private class FakeChargerRepository : ChargerRepository {
         avgCurrentMa: Int?,
         maxCurrentMa: Int?,
         avgVoltageMv: Int?,
-        avgPowerMw: Int?
+        avgPowerMw: Int?,
     ) {
-        completedSession = requireNotNull(activeSession).copy(
-            id = id,
-            endTime = endTime,
-            endLevel = endLevel,
-            avgCurrentMa = avgCurrentMa,
-            maxCurrentMa = maxCurrentMa,
-            avgVoltageMv = avgVoltageMv,
-            avgPowerMw = avgPowerMw
-        )
+        completedSession =
+            requireNotNull(activeSession).copy(
+                id = id,
+                endTime = endTime,
+                endLevel = endLevel,
+                avgCurrentMa = avgCurrentMa,
+                maxCurrentMa = maxCurrentMa,
+                avgVoltageMv = avgVoltageMv,
+                avgPowerMw = avgPowerMw,
+            )
         activeSession = null
     }
 
@@ -159,11 +165,14 @@ private class FakeChargerRepository : ChargerRepository {
 }
 
 private class FakeBatteryRepository(
-    private val readings: List<BatteryReading> = emptyList()
+    private val readings: List<BatteryReading> = emptyList(),
 ) : BatteryRepository {
     override fun getBatteryState(): Flow<BatteryState> = emptyFlow()
 
-    override fun getReadingsSince(since: Long, limit: Int?): Flow<List<BatteryReading>> = flowOf(emptyList())
+    override fun getReadingsSince(
+        since: Long,
+        limit: Int?,
+    ): Flow<List<BatteryReading>> = flowOf(emptyList())
 
     override suspend fun saveReading(state: BatteryState) = Unit
 
@@ -182,7 +191,7 @@ private class FakeBatteryRepository(
 }
 
 private class FakeUserPreferencesRepository(
-    private var selectedChargerId: Long?
+    private var selectedChargerId: Long?,
 ) : UserPreferencesRepository {
     override fun getPreferences() = emptyFlow<com.runcheck.domain.model.UserPreferences>()
 

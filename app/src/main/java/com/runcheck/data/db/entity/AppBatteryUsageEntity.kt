@@ -9,8 +9,8 @@ import androidx.room.PrimaryKey
     tableName = "app_battery_usage",
     indices = [
         Index(value = ["timestamp"]),
-        Index(value = ["package_name", "timestamp"])
-    ]
+        Index(value = ["package_name", "timestamp"]),
+    ],
 )
 data class AppBatteryUsageEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -18,5 +18,5 @@ data class AppBatteryUsageEntity(
     @ColumnInfo(name = "package_name") val packageName: String,
     @ColumnInfo(name = "app_label") val appLabel: String,
     @ColumnInfo(name = "foreground_time_ms") val foregroundTimeMs: Long,
-    @ColumnInfo(name = "estimated_drain_mah") val estimatedDrainMah: Float?
+    @ColumnInfo(name = "estimated_drain_mah") val estimatedDrainMah: Float?,
 )

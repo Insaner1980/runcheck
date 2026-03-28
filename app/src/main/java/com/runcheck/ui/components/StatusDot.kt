@@ -15,12 +15,13 @@ import androidx.compose.ui.unit.dp
 fun StatusDot(
     color: Color,
     modifier: Modifier = Modifier,
-    size: Dp = 8.dp
+    size: Dp = 8.dp,
 ) {
     Box(
-        modifier = modifier
-            .size(size)
-            .clearAndSetSemantics {}
-            .background(color = color, shape = CircleShape)
+        modifier =
+            modifier
+                .size(size)
+                .clearAndSetSemantics {}
+                .background(color = color, shape = CircleShape),
     )
 }

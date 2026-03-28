@@ -11,14 +11,14 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class RuncheckDatabaseMigrationTest {
-
     @get:Rule
-    val helper = MigrationTestHelper(
-        InstrumentationRegistry.getInstrumentation(),
-        RuncheckDatabase::class.java,
-        emptyList(),
-        FrameworkSQLiteOpenHelperFactory()
-    )
+    val helper =
+        MigrationTestHelper(
+            InstrumentationRegistry.getInstrumentation(),
+            RuncheckDatabase::class.java,
+            emptyList(),
+            FrameworkSQLiteOpenHelperFactory(),
+        )
 
     @Test
     fun migrate6To8_preservesDataAndValidatesSchema() {
@@ -33,7 +33,7 @@ class RuncheckDatabaseMigrationTest {
                     foreground_time_ms,
                     estimated_drain_mah
                 ) VALUES (1, 1000, 'com.runcheck.test', 'runcheck', 1234, NULL)
-                """.trimIndent()
+                """.trimIndent(),
             )
             close()
         }
@@ -90,7 +90,7 @@ class RuncheckDatabaseMigrationTest {
                     foreground_time_ms,
                     estimated_drain_mah
                 ) VALUES (1, 1000, 'com.runcheck.test', 'runcheck', 1234, NULL)
-                """.trimIndent()
+                """.trimIndent(),
             )
             close()
         }

@@ -21,30 +21,30 @@ import com.runcheck.R
 @Composable
 fun ProBadgePill(
     modifier: Modifier = Modifier,
-    text: String? = null
+    text: String? = null,
 ) {
     val badgeText = text ?: stringResource(R.string.pro_feature_badge)
     val accentColor = MaterialTheme.colorScheme.primary
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.small,
-        color = accentColor.copy(alpha = 0.12f)
+        color = accentColor.copy(alpha = 0.12f),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = Icons.Outlined.Lock,
                 contentDescription = null,
                 modifier = Modifier.size(12.dp),
-                tint = accentColor
+                tint = accentColor,
             )
             Text(
                 text = badgeText,
                 style = MaterialTheme.typography.labelMedium,
-                color = accentColor
+                color = accentColor,
             )
         }
     }

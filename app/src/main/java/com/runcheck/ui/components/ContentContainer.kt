@@ -18,11 +18,11 @@ private val ContentMaxWidth = 600.dp
 @Composable
 fun ContentContainer(
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Box(
         modifier = modifier.fillMaxWidth(),
-        contentAlignment = Alignment.TopCenter
+        contentAlignment = Alignment.TopCenter,
     ) {
         Box(modifier = Modifier.widthIn(max = ContentMaxWidth)) {
             content()

@@ -8,40 +8,51 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 
 sealed interface LearnArticleBlock {
-    data class Heading(val text: AnnotatedString) : LearnArticleBlock
+    data class Heading(
+        val text: AnnotatedString,
+    ) : LearnArticleBlock
 
-    data class Paragraph(val text: AnnotatedString) : LearnArticleBlock
+    data class Paragraph(
+        val text: AnnotatedString,
+    ) : LearnArticleBlock
 
-    data class BulletList(val items: List<AnnotatedString>) : LearnArticleBlock
+    data class BulletList(
+        val items: List<AnnotatedString>,
+    ) : LearnArticleBlock
 
-    data class NumberedList(val items: List<AnnotatedString>) : LearnArticleBlock
+    data class NumberedList(
+        val items: List<AnnotatedString>,
+    ) : LearnArticleBlock
 }
 
 object LearnArticleBodyFormatter {
-    const val UrlAnnotationTag = "learn_url"
-    private const val HeadingPrefix = "## "
+    const val URL_ANNOTATION_TAG = "learn_url"
+    private const val HEADING_PREFIX = "## "
     private val bulletPrefixRegex = Regex("""^[-*]\s+(.+)$""")
     private val numberedPrefixRegex = Regex("""^\d+[.)]\s+(.+)$""")
-    private val inlineMarkers = listOf(
-        InlineMarker("**", SpanStyle(fontWeight = FontWeight.SemiBold)),
-        InlineMarker("__", SpanStyle(fontWeight = FontWeight.SemiBold)),
-        InlineMarker("`", SpanStyle(fontFamily = FontFamily.Monospace)),
-        InlineMarker("*", SpanStyle(fontStyle = FontStyle.Italic)),
-        InlineMarker("_", SpanStyle(fontStyle = FontStyle.Italic))
-    )
+    private val inlineMarkers =
+        listOf(
+            InlineMarker("**", SpanStyle(fontWeight = FontWeight.SemiBold)),
+            InlineMarker("__", SpanStyle(fontWeight = FontWeight.SemiBold)),
+            InlineMarker("`", SpanStyle(fontFamily = FontFamily.Monospace)),
+            InlineMarker("*", SpanStyle(fontStyle = FontStyle.Italic)),
+            InlineMarker("_", SpanStyle(fontStyle = FontStyle.Italic)),
+        )
     private val urlTokenRegex =
         Regex("""(?:https?://|www\.|[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)\S*""")
-    private val linkStyle = SpanStyle(
-        fontWeight = FontWeight.Medium,
-        textDecoration = TextDecoration.Underline
-    )
+    private val linkStyle =
+        SpanStyle(
+            fontWeight = FontWeight.Medium,
+            textDecoration = TextDecoration.Underline,
+        )
 
     fun parse(body: String): List<LearnArticleBlock> {
-        val lines = body
-            .replace("\r\n", "\n")
-            .replace('\r', '\n')
-            .trim()
-            .lines()
+        val lines =
+            body
+                .replace("\r\n", "\n")
+                .replace('\r', '\n')
+                .trim()
+                .lines()
 
         if (lines.isEmpty() || lines.all(String::isBlank)) {
             return emptyList()
@@ -59,29 +70,32 @@ object LearnArticleBodyFormatter {
             }
 
             when {
-                trimmedLine.startsWith(HeadingPrefix) -> {
-                    blocks += LearnArticleBlock.Heading(
-                        parseInlineMarkup(trimmedLine.removePrefix(HeadingPrefix).trim())
-                    )
+                trimmedLine.startsWith(HEADING_PREFIX) -> {
+                    blocks +=
+                        LearnArticleBlock.Heading(
+                            parseInlineMarkup(trimmedLine.removePrefix(HEADING_PREFIX).trim()),
+                        )
                     index += 1
                 }
 
                 trimmedLine.isBulletListItem() -> {
-                    val (items, nextIndex) = parseList(
-                        lines = lines,
-                        startIndex = index,
-                        itemContent = { line -> bulletPrefixRegex.matchEntire(line.trim())?.groupValues?.get(1) }
-                    )
+                    val (items, nextIndex) =
+                        parseList(
+                            lines = lines,
+                            startIndex = index,
+                            itemContent = { line -> bulletPrefixRegex.matchEntire(line.trim())?.groupValues?.get(1) },
+                        )
                     blocks += LearnArticleBlock.BulletList(items = items.map(::parseInlineMarkup))
                     index = nextIndex
                 }
 
                 trimmedLine.isNumberedListItem() -> {
-                    val (items, nextIndex) = parseList(
-                        lines = lines,
-                        startIndex = index,
-                        itemContent = { line -> numberedPrefixRegex.matchEntire(line.trim())?.groupValues?.get(1) }
-                    )
+                    val (items, nextIndex) =
+                        parseList(
+                            lines = lines,
+                            startIndex = index,
+                            itemContent = { line -> numberedPrefixRegex.matchEntire(line.trim())?.groupValues?.get(1) },
+                        )
                     blocks += LearnArticleBlock.NumberedList(items = items.map(::parseInlineMarkup))
                     index = nextIndex
                 }
@@ -96,7 +110,7 @@ object LearnArticleBodyFormatter {
                             index += 1
                             break
                         }
-                        if (nextTrimmedLine.startsWith(HeadingPrefix) ||
+                        if (nextTrimmedLine.startsWith(HEADING_PREFIX) ||
                             nextTrimmedLine.isBulletListItem() ||
                             nextTrimmedLine.isNumberedListItem()
                         ) {
@@ -107,9 +121,10 @@ object LearnArticleBodyFormatter {
                         index += 1
                     }
 
-                    blocks += LearnArticleBlock.Paragraph(
-                        parseInlineMarkup(paragraphLines.joinToString(separator = "\n"))
-                    )
+                    blocks +=
+                        LearnArticleBlock.Paragraph(
+                            parseInlineMarkup(paragraphLines.joinToString(separator = "\n")),
+                        )
                 }
             }
         }
@@ -120,7 +135,7 @@ object LearnArticleBodyFormatter {
     private fun parseList(
         lines: List<String>,
         startIndex: Int,
-        itemContent: (String) -> String?
+        itemContent: (String) -> String?,
     ): Pair<List<String>, Int> {
         val items = mutableListOf<StringBuilder>()
         var index = startIndex
@@ -133,7 +148,7 @@ object LearnArticleBodyFormatter {
                 break
             }
 
-            if (trimmedLine.startsWith(HeadingPrefix)) {
+            if (trimmedLine.startsWith(HEADING_PREFIX)) {
                 break
             }
 
@@ -157,16 +172,17 @@ object LearnArticleBodyFormatter {
         var index = 0
 
         while (index < text.length) {
-            val marker = inlineMarkers.firstOrNull { candidate ->
-                text.startsWith(candidate.token, startIndex = index) &&
-                    findClosingToken(text, index + candidate.token.length, candidate.token) != -1
-            }
+            val marker =
+                inlineMarkers.firstOrNull { candidate ->
+                    text.startsWith(candidate.token, startIndex = index) &&
+                        findClosingToken(text, index + candidate.token.length, candidate.token) != -1
+                }
 
             if (marker == null) {
                 val urlMatch = findUrlMatch(text = text, startIndex = index)
                 if (urlMatch != null) {
                     val linkStart = builder.length
-                    builder.pushStringAnnotation(tag = UrlAnnotationTag, annotation = urlMatch.url)
+                    builder.pushStringAnnotation(tag = URL_ANNOTATION_TAG, annotation = urlMatch.url)
                     builder.append(urlMatch.displayText)
                     builder.pop()
                     builder.addStyle(linkStyle, linkStart, builder.length)
@@ -202,7 +218,11 @@ object LearnArticleBodyFormatter {
         return builder.toAnnotatedString()
     }
 
-    private fun findClosingToken(text: String, fromIndex: Int, token: String): Int {
+    private fun findClosingToken(
+        text: String,
+        fromIndex: Int,
+        token: String,
+    ): Int {
         var searchFrom = fromIndex
 
         while (searchFrom < text.length) {
@@ -219,27 +239,33 @@ object LearnArticleBodyFormatter {
         return -1
     }
 
-    private fun findUrlMatch(text: String, startIndex: Int): UrlMatch? {
-        val rawMatch = urlTokenRegex.find(text, startIndex)
-            ?.takeIf { it.range.first == startIndex }
-            ?.value
-            ?: return null
+    private fun findUrlMatch(
+        text: String,
+        startIndex: Int,
+    ): UrlMatch? {
+        val rawMatch =
+            urlTokenRegex
+                .find(text, startIndex)
+                ?.takeIf { it.range.first == startIndex }
+                ?.value
+                ?: return null
 
         val displayText = rawMatch.trimEnd('.', ',', ';', ':', ')', ']', '}')
         if (displayText.isBlank() || '.' !in displayText) return null
 
-        val url = if (
-            displayText.startsWith("http://", ignoreCase = true) ||
-            displayText.startsWith("https://", ignoreCase = true)
-        ) {
-            displayText
-        } else {
-            "https://$displayText"
-        }
+        val url =
+            if (
+                displayText.startsWith("http://", ignoreCase = true) ||
+                displayText.startsWith("https://", ignoreCase = true)
+            ) {
+                displayText
+            } else {
+                "https://$displayText"
+            }
 
         return UrlMatch(
             displayText = displayText,
-            url = url
+            url = url,
         )
     }
 
@@ -249,11 +275,11 @@ object LearnArticleBodyFormatter {
 
     private data class InlineMarker(
         val token: String,
-        val style: SpanStyle
+        val style: SpanStyle,
     )
 
     private data class UrlMatch(
         val displayText: String,
-        val url: String
+        val url: String,
     )
 }

@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import com.runcheck.ui.common.formatDecimal
+import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.reducedMotion
 import kotlin.math.roundToInt
 
@@ -17,21 +18,21 @@ fun AnimatedIntText(
     value: Int,
     modifier: Modifier = Modifier,
     style: TextStyle = MaterialTheme.typography.bodyLarge,
-    suffix: String = ""
+    suffix: String = "",
 ) {
     val reducedMotion = MaterialTheme.reducedMotion
 
     val animatedValue by animateFloatAsState(
         targetValue = value.toFloat(),
-        animationSpec = tween(durationMillis = if (reducedMotion) 0 else 200),
-        label = "number_anim"
+        animationSpec = tween(durationMillis = if (reducedMotion) 0 else MotionTokens.SHORT),
+        label = "number_anim",
     )
 
     Text(
         text = "${animatedValue.roundToInt()}$suffix",
         style = style,
         color = MaterialTheme.colorScheme.onSurface,
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
@@ -41,20 +42,20 @@ fun AnimatedFloatText(
     modifier: Modifier = Modifier,
     style: TextStyle = MaterialTheme.typography.bodyLarge,
     decimalPlaces: Int = 1,
-    suffix: String = ""
+    suffix: String = "",
 ) {
     val reducedMotion = MaterialTheme.reducedMotion
 
     val animatedValue by animateFloatAsState(
         targetValue = value,
-        animationSpec = tween(durationMillis = if (reducedMotion) 0 else 200),
-        label = "float_anim"
+        animationSpec = tween(durationMillis = if (reducedMotion) 0 else MotionTokens.SHORT),
+        label = "float_anim",
     )
 
     Text(
         text = "${formatDecimal(animatedValue, decimalPlaces)}$suffix",
         style = style,
         color = MaterialTheme.colorScheme.onSurface,
-        modifier = modifier
+        modifier = modifier,
     )
 }

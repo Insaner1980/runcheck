@@ -7,5 +7,5 @@ import androidx.room.PrimaryKey
 data class ChargerProfileEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
-    val created: Long
+    val created: Long,
 )

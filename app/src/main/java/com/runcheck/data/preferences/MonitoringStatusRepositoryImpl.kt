@@ -20,29 +20,28 @@ private val Context.monitoringStatusDataStore: DataStore<Preferences>
     by preferencesDataStore(name = "monitoring_status")
 
 @Singleton
-class MonitoringStatusRepositoryImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context
-) : MonitoringStatusRepository {
+class MonitoringStatusRepositoryImpl
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+    ) : MonitoringStatusRepository {
+        override fun observeLastWorkerHeartbeatAt(): Flow<Long?> =
+            context.monitoringStatusDataStore.data
+                .catch { error ->
+                    if (error is IOException) {
+                        emit(emptyPreferences())
+                    } else {
+                        throw error
+                    }
+                }.map { prefs -> prefs[KEY_LAST_WORKER_HEARTBEAT_AT] }
 
-    override fun observeLastWorkerHeartbeatAt(): Flow<Long?> {
-        return context.monitoringStatusDataStore.data
-            .catch { error ->
-                if (error is IOException) {
-                    emit(emptyPreferences())
-                } else {
-                    throw error
-                }
+        override suspend fun setLastWorkerHeartbeatAt(timestamp: Long) {
+            context.monitoringStatusDataStore.edit { prefs ->
+                prefs[KEY_LAST_WORKER_HEARTBEAT_AT] = timestamp
             }
-            .map { prefs -> prefs[KEY_LAST_WORKER_HEARTBEAT_AT] }
-    }
+        }
 
-    override suspend fun setLastWorkerHeartbeatAt(timestamp: Long) {
-        context.monitoringStatusDataStore.edit { prefs ->
-            prefs[KEY_LAST_WORKER_HEARTBEAT_AT] = timestamp
+        private companion object {
+            val KEY_LAST_WORKER_HEARTBEAT_AT = longPreferencesKey("last_worker_heartbeat_at")
         }
     }
-
-    private companion object {
-        val KEY_LAST_WORKER_HEARTBEAT_AT = longPreferencesKey("last_worker_heartbeat_at")
-    }
-}

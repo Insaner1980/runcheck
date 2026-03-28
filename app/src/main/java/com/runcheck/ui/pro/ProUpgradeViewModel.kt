@@ -26,85 +26,96 @@ data class ProUpgradeUiState(
     val purchaseCompleted: Boolean = false,
     val purchasePending: Boolean = false,
     val purchaseError: UiText? = null,
-    val features: List<ProFeature> = ProFeature.entries
+    val features: List<ProFeature> = ProFeature.entries,
 )
 
 @HiltViewModel
-class ProUpgradeViewModel @Inject constructor(
-    private val proManager: ProManager,
-    private val proPurchaseManager: ProPurchaseManager
-) : ViewModel() {
+class ProUpgradeViewModel
+    @Inject
+    constructor(
+        private val proManager: ProManager,
+        private val proPurchaseManager: ProPurchaseManager,
+    ) : ViewModel() {
+        private val _uiState = MutableStateFlow(ProUpgradeUiState())
+        val uiState: StateFlow<ProUpgradeUiState> = _uiState.asStateFlow()
 
-    private val _uiState = MutableStateFlow(ProUpgradeUiState())
-    val uiState: StateFlow<ProUpgradeUiState> = _uiState.asStateFlow()
+        private var initialLoadDone = false
 
-    private var initialLoadDone = false
-
-    init {
-        viewModelScope.launch {
-            proManager.proState.collect { proState ->
-                val wasNotPro = !_uiState.value.proState.isPro
-                _uiState.update {
-                    it.copy(
-                        proState = proState,
-                        purchaseCompleted = initialLoadDone && wasNotPro && proState.isPro,
-                        purchasePending = false
-                    )
-                }
-                initialLoadDone = true
-            }
-        }
-        viewModelScope.launch {
-            proPurchaseManager.billingAvailable.collect { available ->
-                _uiState.update { it.copy(billingAvailable = available) }
-            }
-        }
-        viewModelScope.launch {
-            try {
-                proPurchaseManager.getFormattedPrice()?.let { price ->
-                    _uiState.update { it.copy(formattedPrice = price) }
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                // Price unavailable — button will show without price
-            }
-        }
-        viewModelScope.launch {
-            proPurchaseManager.purchaseEvents.collect { event ->
-                when (event) {
-                    is PurchaseEvent.Pending -> _uiState.update {
-                        it.copy(purchasePending = true, purchaseError = null)
-                    }
-                    is PurchaseEvent.Error -> _uiState.update {
+        init {
+            viewModelScope.launch {
+                proManager.proState.collect { proState ->
+                    val wasNotPro = !_uiState.value.proState.isPro
+                    _uiState.update {
                         it.copy(
-                            purchaseError = UiText.Dynamic(event.debugMessage),
-                            purchasePending = false
+                            proState = proState,
+                            purchaseCompleted = initialLoadDone && wasNotPro && proState.isPro,
+                            purchasePending = false,
                         )
                     }
-                    is PurchaseEvent.AlreadyOwned -> _uiState.update {
-                        it.copy(purchaseError = null, purchasePending = false)
+                    initialLoadDone = true
+                }
+            }
+            viewModelScope.launch {
+                proPurchaseManager.billingAvailable.collect { available ->
+                    _uiState.update { it.copy(billingAvailable = available) }
+                }
+            }
+            viewModelScope.launch {
+                try {
+                    proPurchaseManager.getFormattedPrice()?.let { price ->
+                        _uiState.update { it.copy(formattedPrice = price) }
                     }
-                    is PurchaseEvent.Canceled,
-                    is PurchaseEvent.Success -> {
-                        // No action needed
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Price unavailable — button will show without price
+                }
+            }
+            viewModelScope.launch {
+                proPurchaseManager.purchaseEvents.collect { event ->
+                    when (event) {
+                        is PurchaseEvent.Pending -> {
+                            _uiState.update {
+                                it.copy(purchasePending = true, purchaseError = null)
+                            }
+                        }
+
+                        is PurchaseEvent.Error -> {
+                            _uiState.update {
+                                it.copy(
+                                    purchaseError = UiText.Dynamic(event.debugMessage),
+                                    purchasePending = false,
+                                )
+                            }
+                        }
+
+                        is PurchaseEvent.AlreadyOwned -> {
+                            _uiState.update {
+                                it.copy(purchaseError = null, purchasePending = false)
+                            }
+                        }
+
+                        is PurchaseEvent.Canceled,
+                        is PurchaseEvent.Success,
+                        -> {
+                            // No action needed
+                        }
                     }
                 }
             }
         }
-    }
 
-    fun purchasePro(activity: Activity) {
-        if (!_uiState.value.billingAvailable) return
-        _uiState.update { it.copy(purchaseError = null) }
-        proPurchaseManager.launchPurchaseFlow(activity)
-    }
+        fun purchasePro(activity: Activity) {
+            if (!_uiState.value.billingAvailable) return
+            _uiState.update { it.copy(purchaseError = null) }
+            proPurchaseManager.launchPurchaseFlow(activity)
+        }
 
-    fun dismissThankYou() {
-        _uiState.update { it.copy(purchaseCompleted = false) }
-    }
+        fun dismissThankYou() {
+            _uiState.update { it.copy(purchaseCompleted = false) }
+        }
 
-    fun clearPurchaseError() {
-        _uiState.update { it.copy(purchaseError = null) }
+        fun clearPurchaseError() {
+            _uiState.update { it.copy(purchaseError = null) }
+        }
     }
-}

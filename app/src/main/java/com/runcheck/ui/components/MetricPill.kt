@@ -20,14 +20,14 @@ fun MetricPill(
     value: String,
     modifier: Modifier = Modifier,
     valueColor: Color = MaterialTheme.colorScheme.onSurface,
-    onInfoClick: (() -> Unit)? = null
+    onInfoClick: (() -> Unit)? = null,
 ) {
     Column(modifier = modifier.semantics(mergeDescendants = true) {}) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (onInfoClick != null) {
                 InfoIcon(onClick = onInfoClick)
@@ -37,7 +37,7 @@ fun MetricPill(
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,
-            color = valueColor
+            color = valueColor,
         )
     }
 }

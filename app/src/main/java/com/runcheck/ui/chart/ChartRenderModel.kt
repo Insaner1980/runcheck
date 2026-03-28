@@ -19,7 +19,7 @@ data class ChartRenderModel(
     val xLabels: List<ChartXLabel>,
     val tooltipDecimals: Int = 0,
     val tooltipTimeSkeleton: String = DEFAULT_TOOLTIP_TIME_SKELETON,
-    val temperatureUnit: TemperatureUnit? = null
+    val temperatureUnit: TemperatureUnit? = null,
 ) {
     val minValue: Float? get() = chartData.minOrNull()
     val maxValue: Float? get() = chartData.maxOrNull()
@@ -27,14 +27,17 @@ data class ChartRenderModel(
         get() = if (chartData.isNotEmpty()) chartData.average().toFloat() else null
 }
 
-fun formatChartTooltip(model: ChartRenderModel, index: Int): String =
+fun formatChartTooltip(
+    model: ChartRenderModel,
+    index: Int,
+): String =
     formatChartTooltip(
         chartData = model.chartData,
         chartTimestamps = model.chartTimestamps,
         index = index,
         unit = model.unit,
         decimals = model.tooltipDecimals,
-        timeSkeleton = model.tooltipTimeSkeleton
+        timeSkeleton = model.tooltipTimeSkeleton,
     )
 
 fun formatChartTooltip(
@@ -43,7 +46,7 @@ fun formatChartTooltip(
     index: Int,
     unit: String,
     decimals: Int,
-    timeSkeleton: String
+    timeSkeleton: String,
 ): String {
     val value = formatDecimal(chartData[index], decimals)
     val time = formatLocalizedDateTime(chartTimestamps[index], timeSkeleton)
@@ -55,11 +58,12 @@ fun buildBatteryHistoryChartModel(
     metric: BatteryHistoryMetric,
     period: HistoryPeriod,
     temperatureUnit: TemperatureUnit,
-    maxPoints: Int
+    maxPoints: Int,
 ): ChartRenderModel {
-    val chartPoints = history
-        .chartPointsFor(metric, temperatureUnit)
-        .downsamplePairs(maxPoints)
+    val chartPoints =
+        history
+            .chartPointsFor(metric, temperatureUnit)
+            .downsamplePairs(maxPoints)
     val chartData = chartPoints.map { it.second }
     val chartTimestamps = chartPoints.map { it.first }
     val minValue = chartData.minOrNull()
@@ -71,12 +75,13 @@ fun buildBatteryHistoryChartModel(
         unit = batteryMetricUnit(metric, temperatureUnit),
         yLabels = if (minValue != null && maxValue != null) buildBatteryYLabels(minValue, maxValue) else emptyList(),
         xLabels = if (chartTimestamps.size >= 2) buildBatteryXLabels(chartTimestamps, period) else emptyList(),
-        tooltipDecimals = when (metric) {
-            BatteryHistoryMetric.VOLTAGE -> 2
-            BatteryHistoryMetric.TEMPERATURE -> 1
-            else -> 0
-        },
-        temperatureUnit = temperatureUnit
+        tooltipDecimals =
+            when (metric) {
+                BatteryHistoryMetric.VOLTAGE -> 2
+                BatteryHistoryMetric.TEMPERATURE -> 1
+                else -> 0
+            },
+        temperatureUnit = temperatureUnit,
     )
 }
 
@@ -84,11 +89,12 @@ fun buildBatterySessionChartModel(
     summary: ChargingSessionSummary,
     metric: SessionGraphMetric,
     window: SessionGraphWindow,
-    maxPoints: Int
+    maxPoints: Int,
 ): ChartRenderModel {
-    val chartPoints = summary.readings
-        .graphPointsFor(metric, window)
-        .downsamplePairs(maxPoints)
+    val chartPoints =
+        summary.readings
+            .graphPointsFor(metric, window)
+            .downsamplePairs(maxPoints)
     val chartData = chartPoints.map { it.second }
     val chartTimestamps = chartPoints.map { it.first }
     val minValue = chartData.minOrNull()
@@ -101,7 +107,7 @@ fun buildBatterySessionChartModel(
         yLabels = if (minValue != null && maxValue != null) buildBatteryYLabels(minValue, maxValue) else emptyList(),
         xLabels = if (chartTimestamps.size >= 2) buildSessionXLabels(chartTimestamps) else emptyList(),
         tooltipDecimals = if (metric == SessionGraphMetric.POWER) 1 else 0,
-        tooltipTimeSkeleton = "Hm"
+        tooltipTimeSkeleton = "Hm",
     )
 }
 
@@ -109,15 +115,18 @@ fun buildNetworkHistoryChartModel(
     history: List<NetworkReading>,
     metric: NetworkHistoryMetric,
     period: HistoryPeriod,
-    maxPoints: Int
+    maxPoints: Int,
 ): ChartRenderModel {
-    val chartPoints = history.mapNotNull { reading ->
-        val value = when (metric) {
-            NetworkHistoryMetric.SIGNAL -> reading.signalDbm?.toFloat()
-            NetworkHistoryMetric.LATENCY -> reading.latencyMs?.toFloat()
-        }
-        value?.let { reading.timestamp to it }
-    }.downsamplePairs(maxPoints)
+    val chartPoints =
+        history
+            .mapNotNull { reading ->
+                val value =
+                    when (metric) {
+                        NetworkHistoryMetric.SIGNAL -> reading.signalDbm?.toFloat()
+                        NetworkHistoryMetric.LATENCY -> reading.latencyMs?.toFloat()
+                    }
+                value?.let { reading.timestamp to it }
+            }.downsamplePairs(maxPoints)
     val chartData = chartPoints.map { it.second }
     val chartTimestamps = chartPoints.map { it.first }
     val minValue = chartData.minOrNull()
@@ -128,7 +137,7 @@ fun buildNetworkHistoryChartModel(
         chartTimestamps = chartTimestamps,
         unit = networkMetricUnit(metric),
         yLabels = if (minValue != null && maxValue != null) buildNetworkYLabels(minValue, maxValue) else emptyList(),
-        xLabels = if (chartTimestamps.size >= 2) buildNetworkXLabels(chartTimestamps, period) else emptyList()
+        xLabels = if (chartTimestamps.size >= 2) buildNetworkXLabels(chartTimestamps, period) else emptyList(),
     )
 }
 
@@ -137,22 +146,26 @@ fun buildThermalHistoryChartModel(
     metric: ThermalHistoryMetric,
     period: HistoryPeriod,
     maxPoints: Int,
-    temperatureUnit: TemperatureUnit
+    temperatureUnit: TemperatureUnit,
 ): ChartRenderModel {
-    val chartPoints = history.mapNotNull { reading ->
-        val value = when (metric) {
-            ThermalHistoryMetric.BATTERY_TEMP -> reading.batteryTempC
-            ThermalHistoryMetric.CPU_TEMP -> reading.cpuTempC
-        }
-        value?.let { reading.timestamp to it }
-    }.downsamplePairs(maxPoints)
+    val chartPoints =
+        history
+            .mapNotNull { reading ->
+                val value =
+                    when (metric) {
+                        ThermalHistoryMetric.BATTERY_TEMP -> reading.batteryTempC
+                        ThermalHistoryMetric.CPU_TEMP -> reading.cpuTempC
+                    }
+                value?.let { reading.timestamp to it }
+            }.downsamplePairs(maxPoints)
     val chartData = chartPoints.map { it.second }
     val chartTimestamps = chartPoints.map { it.first }
-    val displayData = if (temperatureUnit == TemperatureUnit.FAHRENHEIT) {
-        chartData.map { it * 9f / 5f + 32f }
-    } else {
-        chartData
-    }
+    val displayData =
+        if (temperatureUnit == TemperatureUnit.FAHRENHEIT) {
+            chartData.map { it * 9f / 5f + 32f }
+        } else {
+            chartData
+        }
     val unit = if (temperatureUnit == TemperatureUnit.CELSIUS) " °C" else " °F"
     val min = displayData.minOrNull()
     val max = displayData.maxOrNull()
@@ -164,7 +177,7 @@ fun buildThermalHistoryChartModel(
         yLabels = if (min != null && max != null) buildNetworkYLabels(min, max) else emptyList(),
         xLabels = if (chartTimestamps.size >= 2) buildNetworkXLabels(chartTimestamps, period) else emptyList(),
         tooltipDecimals = 1,
-        temperatureUnit = temperatureUnit
+        temperatureUnit = temperatureUnit,
     )
 }
 
@@ -172,17 +185,23 @@ fun buildStorageHistoryChartModel(
     history: List<StorageReading>,
     metric: StorageHistoryMetric,
     period: HistoryPeriod,
-    maxPoints: Int
+    maxPoints: Int,
 ): ChartRenderModel {
-    val chartPoints = history.map { reading ->
-        val value = when (metric) {
-            StorageHistoryMetric.USED_SPACE ->
-                (reading.totalBytes - reading.availableBytes).toFloat() / (1024f * 1024f * 1024f)
-            StorageHistoryMetric.AVAILABLE_SPACE ->
-                reading.availableBytes.toFloat() / (1024f * 1024f * 1024f)
-        }
-        reading.timestamp to value
-    }.downsamplePairs(maxPoints)
+    val chartPoints =
+        history
+            .map { reading ->
+                val value =
+                    when (metric) {
+                        StorageHistoryMetric.USED_SPACE -> {
+                            (reading.totalBytes - reading.availableBytes).toFloat() / (1024f * 1024f * 1024f)
+                        }
+
+                        StorageHistoryMetric.AVAILABLE_SPACE -> {
+                            reading.availableBytes.toFloat() / (1024f * 1024f * 1024f)
+                        }
+                    }
+                reading.timestamp to value
+            }.downsamplePairs(maxPoints)
     val chartData = chartPoints.map { it.second }
     val chartTimestamps = chartPoints.map { it.first }
     val min = chartData.minOrNull()
@@ -194,7 +213,7 @@ fun buildStorageHistoryChartModel(
         unit = " GB",
         yLabels = if (min != null && max != null) buildNetworkYLabels(min, max) else emptyList(),
         xLabels = if (chartTimestamps.size >= 2) buildNetworkXLabels(chartTimestamps, period) else emptyList(),
-        tooltipDecimals = 1
+        tooltipDecimals = 1,
     )
 }
 

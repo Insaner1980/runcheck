@@ -7,14 +7,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 
-class GetAppBatteryUsageSummaryUseCase @Inject constructor(
-    private val appBatteryUsageRepository: AppBatteryUsageRepository,
-    private val proStatusProvider: ProStatusProvider
-) {
-    operator fun invoke(since: Long): Flow<AppUsageListSummary> =
-        if (proStatusProvider.isPro()) {
-            appBatteryUsageRepository.getUsageSummarySince(since)
-        } else {
-            flowOf(AppUsageListSummary(totalForegroundTimeMs = 0L, maxForegroundTimeMs = 0L))
-        }
-}
+class GetAppBatteryUsageSummaryUseCase
+    @Inject
+    constructor(
+        private val appBatteryUsageRepository: AppBatteryUsageRepository,
+        private val proStatusProvider: ProStatusProvider,
+    ) {
+        operator fun invoke(since: Long): Flow<AppUsageListSummary> =
+            if (proStatusProvider.isPro()) {
+                appBatteryUsageRepository.getUsageSummarySince(since)
+            } else {
+                flowOf(AppUsageListSummary(totalForegroundTimeMs = 0L, maxForegroundTimeMs = 0L))
+            }
+    }

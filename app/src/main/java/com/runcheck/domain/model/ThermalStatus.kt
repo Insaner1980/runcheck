@@ -7,5 +7,5 @@ enum class ThermalStatus {
     SEVERE,
     CRITICAL,
     EMERGENCY,
-    SHUTDOWN
+    SHUTDOWN,
 }

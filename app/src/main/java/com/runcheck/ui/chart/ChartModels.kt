@@ -4,39 +4,41 @@ enum class BatteryHistoryMetric {
     LEVEL,
     TEMPERATURE,
     CURRENT,
-    VOLTAGE
+    VOLTAGE,
 }
 
 enum class SessionGraphMetric {
     CURRENT,
-    POWER
+    POWER,
 }
 
-enum class SessionGraphWindow(val durationMs: Long?) {
+enum class SessionGraphWindow(
+    val durationMs: Long?,
+) {
     FIFTEEN_MINUTES(15 * 60_000L),
     THIRTY_MINUTES(30 * 60_000L),
-    ALL(null)
+    ALL(null),
 }
 
 enum class NetworkHistoryMetric {
     SIGNAL,
-    LATENCY
+    LATENCY,
 }
 
 enum class ThermalHistoryMetric {
     BATTERY_TEMP,
-    CPU_TEMP
+    CPU_TEMP,
 }
 
 enum class StorageHistoryMetric {
     USED_SPACE,
-    AVAILABLE_SPACE
+    AVAILABLE_SPACE,
 }
 
 enum class FullscreenChartSource {
     BATTERY_HISTORY,
     BATTERY_SESSION,
-    NETWORK_HISTORY
+    NETWORK_HISTORY,
 }
 
 data class ChargingSessionSummary(
@@ -51,7 +53,7 @@ data class ChargingSessionSummary(
     val recentSpeedPctPerHour: Float?,
     val remainingTo80Ms: Long?,
     val remainingTo100Ms: Long?,
-    val readings: List<com.runcheck.domain.model.BatteryReading>
+    val readings: List<com.runcheck.domain.model.BatteryReading>,
 )
 
 const val MAX_HISTORY_CHART_POINTS = 300

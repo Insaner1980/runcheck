@@ -17,34 +17,35 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.runcheck.ui.appusage.AppUsageScreen
 import com.runcheck.ui.battery.BatteryDetailScreen
 import com.runcheck.ui.charger.ChargerComparisonScreen
+import com.runcheck.ui.fullscreen.FullscreenChartResult
+import com.runcheck.ui.fullscreen.FullscreenChartScreen
 import com.runcheck.ui.home.HomeScreen
+import com.runcheck.ui.learn.LearnArticleDetailScreen
+import com.runcheck.ui.learn.LearnScreen
 import com.runcheck.ui.network.NetworkDetailScreen
 import com.runcheck.ui.network.NetworkViewModel
 import com.runcheck.ui.network.SpeedTestScreen
 import com.runcheck.ui.pro.ProUpgradeScreen
 import com.runcheck.ui.settings.SettingsScreen
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
-import com.runcheck.ui.fullscreen.FullscreenChartResult
-import com.runcheck.ui.fullscreen.FullscreenChartScreen
-import com.runcheck.ui.learn.LearnArticleDetailScreen
-import com.runcheck.ui.learn.LearnScreen
 import com.runcheck.ui.storage.StorageDetailScreen
 import com.runcheck.ui.storage.cleanup.CleanupScreen
-import com.runcheck.ui.thermal.ThermalDetailScreen
 import com.runcheck.ui.theme.LocalReducedMotion
+import com.runcheck.ui.theme.MotionTokens
+import com.runcheck.ui.thermal.ThermalDetailScreen
 
 @Composable
 fun RuncheckNavHost(
     modifier: Modifier = Modifier,
     deepLinkRoute: String? = null,
-    onDeepLinkConsumed: () -> Unit = {}
+    onDeepLinkConsumed: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     val reducedMotion = LocalReducedMotion.current
@@ -68,8 +69,8 @@ fun RuncheckNavHost(
             } else {
                 slideIntoContainer(
                     towards = AnimatedContentTransitionScope.SlideDirection.Start,
-                    animationSpec = tween(300)
-                ) + fadeIn(animationSpec = tween(300))
+                    animationSpec = tween(MotionTokens.MEDIUM),
+                ) + fadeIn(animationSpec = tween(MotionTokens.MEDIUM))
             }
         },
         exitTransition = {
@@ -78,8 +79,8 @@ fun RuncheckNavHost(
             } else {
                 slideOutOfContainer(
                     towards = AnimatedContentTransitionScope.SlideDirection.Start,
-                    animationSpec = tween(300)
-                ) + fadeOut(animationSpec = tween(300))
+                    animationSpec = tween(MotionTokens.MEDIUM),
+                ) + fadeOut(animationSpec = tween(MotionTokens.MEDIUM))
             }
         },
         popEnterTransition = {
@@ -88,8 +89,8 @@ fun RuncheckNavHost(
             } else {
                 slideIntoContainer(
                     towards = AnimatedContentTransitionScope.SlideDirection.End,
-                    animationSpec = tween(300)
-                ) + fadeIn(animationSpec = tween(300))
+                    animationSpec = tween(MotionTokens.MEDIUM),
+                ) + fadeIn(animationSpec = tween(MotionTokens.MEDIUM))
             }
         },
         popExitTransition = {
@@ -98,10 +99,10 @@ fun RuncheckNavHost(
             } else {
                 slideOutOfContainer(
                     towards = AnimatedContentTransitionScope.SlideDirection.End,
-                    animationSpec = tween(300)
-                ) + fadeOut(animationSpec = tween(300))
+                    animationSpec = tween(MotionTokens.MEDIUM),
+                ) + fadeOut(animationSpec = tween(MotionTokens.MEDIUM))
             }
-        }
+        },
     ) {
         composable(Screen.Home.route) {
             HomeScreen(
@@ -112,13 +113,13 @@ fun RuncheckNavHost(
                 onNavigateToCharger = {
                     navController.navigateNested(
                         parentRoute = Screen.Battery.route,
-                        childRoute = Screen.Charger.route
+                        childRoute = Screen.Charger.route,
                     )
                 },
                 onNavigateToSpeedTest = {
                     navController.navigateNested(
                         parentRoute = Screen.Network.route,
-                        childRoute = Screen.SpeedTest.route
+                        childRoute = Screen.SpeedTest.route,
                     )
                 },
                 onNavigateToAppUsage = { navController.navigateSingleTop(Screen.AppUsage.route) },
@@ -127,7 +128,7 @@ fun RuncheckNavHost(
                 onNavigateToLearn = { navController.navigateSingleTop(Screen.Learn.route) },
                 onNavigateToLearnArticle = { articleId ->
                     navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
-                }
+                },
             )
         }
         composable(Screen.Battery.route) { entry ->
@@ -157,7 +158,7 @@ fun RuncheckNavHost(
                     entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_SOURCE)
                     entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_METRIC)
                     entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_PERIOD)
-                }
+                },
             )
         }
         composable(Screen.Network.route) { entry ->
@@ -185,7 +186,7 @@ fun RuncheckNavHost(
                     entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_METRIC)
                     entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_PERIOD)
                 },
-                viewModel = networkViewModel
+                viewModel = networkViewModel,
             )
         }
         composable(Screen.Thermal.route) {
@@ -194,7 +195,7 @@ fun RuncheckNavHost(
                 onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
                 onNavigateToLearnArticle = { articleId ->
                     navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
-                }
+                },
             )
         }
         composable(Screen.Storage.route) {
@@ -206,12 +207,12 @@ fun RuncheckNavHost(
                 onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
                 onNavigateToLearnArticle = { articleId ->
                     navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
-                }
+                },
             )
         }
         composable(
             route = Screen.Cleanup.ROUTE,
-            arguments = listOf(navArgument("type") { type = NavType.StringType })
+            arguments = listOf(navArgument("type") { type = NavType.StringType }),
         ) {
             CleanupScreen(onBack = { navController.popBackStack() })
         }
@@ -225,7 +226,7 @@ fun RuncheckNavHost(
                             inclusive = true
                         }
                     }
-                }
+                },
             )
         }
         composable(Screen.AppUsage.route) {
@@ -238,7 +239,7 @@ fun RuncheckNavHost(
                             inclusive = true
                         }
                     }
-                }
+                },
             )
         }
         composable(Screen.Settings.route) {
@@ -246,21 +247,23 @@ fun RuncheckNavHost(
                 onBack = { navController.popBackStack() },
                 onNavigateToLearnArticle = { articleId ->
                     navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
-                }
+                },
             )
         }
         composable(Screen.SpeedTest.route) {
-            val networkParentEntry = remember(navController) {
-                runCatching { navController.getBackStackEntry(Screen.Network.route) }.getOrNull()
-            }
-            val networkViewModel: NetworkViewModel = if (networkParentEntry != null) {
-                hiltViewModel(networkParentEntry)
-            } else {
-                hiltViewModel()
-            }
+            val networkParentEntry =
+                remember(navController) {
+                    runCatching { navController.getBackStackEntry(Screen.Network.route) }.getOrNull()
+                }
+            val networkViewModel: NetworkViewModel =
+                if (networkParentEntry != null) {
+                    hiltViewModel(networkParentEntry)
+                } else {
+                    hiltViewModel()
+                }
             SpeedTestScreen(
                 onBack = { navController.popBackStack() },
-                viewModel = networkViewModel
+                viewModel = networkViewModel,
             )
         }
         composable(Screen.ProUpgrade.route) {
@@ -271,35 +274,36 @@ fun RuncheckNavHost(
                 onBack = { navController.popBackStack() },
                 onNavigateToArticle = { articleId ->
                     navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
-                }
+                },
             )
         }
         composable(
             route = Screen.LearnArticle.ROUTE,
-            arguments = listOf(navArgument("articleId") { type = NavType.StringType })
+            arguments = listOf(navArgument("articleId") { type = NavType.StringType }),
         ) {
             val articleId = it.arguments?.getString("articleId") ?: ""
             LearnArticleDetailScreen(
                 articleId = articleId,
                 onBack = { navController.popBackStack() },
-                onNavigateToRoute = { route -> navController.navigateSingleTop(route) }
+                onNavigateToRoute = { route -> navController.navigateSingleTop(route) },
             )
         }
         composable(
             route = Screen.FullscreenChart.ROUTE,
-            arguments = listOf(
-                navArgument("source") { type = NavType.StringType },
-                navArgument("metric") { type = NavType.StringType },
-                navArgument("period") { type = NavType.StringType }
-            ),
+            arguments =
+                listOf(
+                    navArgument("source") { type = NavType.StringType },
+                    navArgument("metric") { type = NavType.StringType },
+                    navArgument("period") { type = NavType.StringType },
+                ),
             enterTransition = {
                 if (reducedMotion) {
                     EnterTransition.None
                 } else {
                     scaleIn(
                         initialScale = 0.94f,
-                        animationSpec = tween(260)
-                    ) + fadeIn(animationSpec = tween(220))
+                        animationSpec = tween(MotionTokens.FULLSCREEN_ENTER_SCALE),
+                    ) + fadeIn(animationSpec = tween(MotionTokens.FULLSCREEN_ENTER_FADE))
                 }
             },
             exitTransition = {
@@ -308,15 +312,15 @@ fun RuncheckNavHost(
                 } else {
                     scaleOut(
                         targetScale = 1.02f,
-                        animationSpec = tween(180)
-                    ) + fadeOut(animationSpec = tween(180))
+                        animationSpec = tween(MotionTokens.FULLSCREEN_EXIT),
+                    ) + fadeOut(animationSpec = tween(MotionTokens.FULLSCREEN_EXIT))
                 }
             },
             popEnterTransition = {
                 if (reducedMotion) {
                     EnterTransition.None
                 } else {
-                    fadeIn(animationSpec = tween(180))
+                    fadeIn(animationSpec = tween(MotionTokens.FULLSCREEN_EXIT))
                 }
             },
             popExitTransition = {
@@ -325,10 +329,10 @@ fun RuncheckNavHost(
                 } else {
                     scaleOut(
                         targetScale = 0.96f,
-                        animationSpec = tween(220)
-                    ) + fadeOut(animationSpec = tween(220))
+                        animationSpec = tween(MotionTokens.FULLSCREEN_ENTER_FADE),
+                    ) + fadeOut(animationSpec = tween(MotionTokens.FULLSCREEN_ENTER_FADE))
                 }
-            }
+            },
         ) {
             FullscreenChartScreen(
                 onBack = { navController.popBackStack() },
@@ -339,7 +343,7 @@ fun RuncheckNavHost(
                         set(FullscreenChartResult.KEY_METRIC, metric)
                         set(FullscreenChartResult.KEY_PERIOD, period)
                     }
-                }
+                },
             )
         }
     }
@@ -361,7 +365,10 @@ private fun NavHostController.navigateNotificationRoute(route: String) {
     }
 }
 
-private fun NavHostController.navigateNested(parentRoute: String, childRoute: String) {
+private fun NavHostController.navigateNested(
+    parentRoute: String,
+    childRoute: String,
+) {
     navigateSingleTop(parentRoute)
     navigateSingleTop(childRoute)
 }

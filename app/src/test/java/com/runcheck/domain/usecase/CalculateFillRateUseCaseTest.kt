@@ -9,7 +9,6 @@ import org.junit.Before
 import org.junit.Test
 
 class CalculateFillRateUseCaseTest {
-
     private lateinit var useCase: CalculateFillRateUseCase
 
     @Before
@@ -26,15 +25,16 @@ class CalculateFillRateUseCaseTest {
         val totalBytes = 128_000_000_000L
 
         // Each day, used storage grows by 1 GB (available decreases by 1 GB)
-        val readings = (0..4).map { i ->
-            StorageReading(
-                timestamp = baseTime + i * dayMs,
-                totalBytes = totalBytes,
-                availableBytes = 64_000_000_000L - i * 1_000_000_000L,
-                appsBytes = 30_000_000_000L,
-                mediaBytes = 20_000_000_000L
-            )
-        }
+        val readings =
+            (0..4).map { i ->
+                StorageReading(
+                    timestamp = baseTime + i * dayMs,
+                    totalBytes = totalBytes,
+                    availableBytes = 64_000_000_000L - i * 1_000_000_000L,
+                    appsBytes = 30_000_000_000L,
+                    mediaBytes = 20_000_000_000L,
+                )
+            }
 
         val bytesPerDay = useCase(readings)
 
@@ -45,40 +45,42 @@ class CalculateFillRateUseCaseTest {
         val rate = requireNotNull(bytesPerDay)
         assertTrue(
             "Expected ~$expectedBytesPerDay bytes/day, got $bytesPerDay",
-            kotlin.math.abs(rate - expectedBytesPerDay) < tolerance
+            kotlin.math.abs(rate - expectedBytesPerDay) < tolerance,
         )
     }
 
     @Test
     fun `less than 3 readings returns null`() {
-        val reading = StorageReading(
-            timestamp = 1_000_000_000L,
-            totalBytes = 128_000_000_000L,
-            availableBytes = 64_000_000_000L,
-            appsBytes = 30_000_000_000L,
-            mediaBytes = 20_000_000_000L
-        )
+        val reading =
+            StorageReading(
+                timestamp = 1_000_000_000L,
+                totalBytes = 128_000_000_000L,
+                availableBytes = 64_000_000_000L,
+                appsBytes = 30_000_000_000L,
+                mediaBytes = 20_000_000_000L,
+            )
 
         assertNull("Empty list should return null", useCase(emptyList()))
         assertNull("Single reading should return null", useCase(listOf(reading)))
         assertNull(
             "Two readings should return null",
-            useCase(listOf(reading, reading.copy(timestamp = 2_000_000_000L)))
+            useCase(listOf(reading, reading.copy(timestamp = 2_000_000_000L))),
         )
     }
 
     @Test
     fun `exactly 3 readings returns non-null result`() {
         val dayMs = 24L * 60 * 60 * 1000
-        val readings = (0..2).map { i ->
-            StorageReading(
-                timestamp = 1_000_000_000L + i * dayMs,
-                totalBytes = 128_000_000_000L,
-                availableBytes = 64_000_000_000L - i * 500_000_000L,
-                appsBytes = 30_000_000_000L,
-                mediaBytes = 20_000_000_000L
-            )
-        }
+        val readings =
+            (0..2).map { i ->
+                StorageReading(
+                    timestamp = 1_000_000_000L + i * dayMs,
+                    totalBytes = 128_000_000_000L,
+                    availableBytes = 64_000_000_000L - i * 500_000_000L,
+                    appsBytes = 30_000_000_000L,
+                    mediaBytes = 20_000_000_000L,
+                )
+            }
 
         assertNotNull("3 readings should be sufficient", useCase(readings))
     }
@@ -86,15 +88,16 @@ class CalculateFillRateUseCaseTest {
     @Test
     fun `identical timestamps returns null without crash`() {
         val sameTime = 1_000_000_000L
-        val readings = (0..4).map {
-            StorageReading(
-                timestamp = sameTime,
-                totalBytes = 128_000_000_000L,
-                availableBytes = 64_000_000_000L,
-                appsBytes = 30_000_000_000L,
-                mediaBytes = 20_000_000_000L
-            )
-        }
+        val readings =
+            (0..4).map {
+                StorageReading(
+                    timestamp = sameTime,
+                    totalBytes = 128_000_000_000L,
+                    availableBytes = 64_000_000_000L,
+                    appsBytes = 30_000_000_000L,
+                    mediaBytes = 20_000_000_000L,
+                )
+            }
 
         // denominator is zero when all timestamps are identical
         val result = useCase(readings)
@@ -107,22 +110,23 @@ class CalculateFillRateUseCaseTest {
         val dayMs = 24L * 60 * 60 * 1000
 
         // Cleanup happened: available increases each day
-        val readings = (0..4).map { i ->
-            StorageReading(
-                timestamp = baseTime + i * dayMs,
-                totalBytes = 128_000_000_000L,
-                availableBytes = 50_000_000_000L + i * 2_000_000_000L,
-                appsBytes = 30_000_000_000L,
-                mediaBytes = 20_000_000_000L
-            )
-        }
+        val readings =
+            (0..4).map { i ->
+                StorageReading(
+                    timestamp = baseTime + i * dayMs,
+                    totalBytes = 128_000_000_000L,
+                    availableBytes = 50_000_000_000L + i * 2_000_000_000L,
+                    appsBytes = 30_000_000_000L,
+                    mediaBytes = 20_000_000_000L,
+                )
+            }
 
         val bytesPerDay = useCase(readings)
 
         assertNotNull(bytesPerDay)
         assertTrue(
             "Decreasing usage should yield negative rate, got $bytesPerDay",
-            requireNotNull(bytesPerDay) < 0
+            requireNotNull(bytesPerDay) < 0,
         )
     }
 
@@ -131,15 +135,16 @@ class CalculateFillRateUseCaseTest {
         val baseTime = 1_000_000_000L
         val dayMs = 24L * 60 * 60 * 1000
 
-        val readings = (0..4).map { i ->
-            StorageReading(
-                timestamp = baseTime + i * dayMs,
-                totalBytes = 128_000_000_000L,
-                availableBytes = 64_000_000_000L, // no change
-                appsBytes = 30_000_000_000L,
-                mediaBytes = 20_000_000_000L
-            )
-        }
+        val readings =
+            (0..4).map { i ->
+                StorageReading(
+                    timestamp = baseTime + i * dayMs,
+                    totalBytes = 128_000_000_000L,
+                    availableBytes = 64_000_000_000L, // no change
+                    appsBytes = 30_000_000_000L,
+                    mediaBytes = 20_000_000_000L,
+                )
+            }
 
         val bytesPerDay = useCase(readings)
 

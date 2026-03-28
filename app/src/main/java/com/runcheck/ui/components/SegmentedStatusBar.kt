@@ -20,12 +20,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-
 data class StatusSegment(
     val label: String,
     val color: Color,
     val rangeStart: Float,
-    val rangeEnd: Float
+    val rangeEnd: Float,
 )
 
 /**
@@ -40,20 +39,28 @@ fun SegmentedStatusBar(
     barHeight: Dp = 6.dp,
     gap: Dp = 3.dp,
     inactiveAlpha: Float = 0.2f,
-    accessibilityDescription: String? = null
+    accessibilityDescription: String? = null,
 ) {
-    val activeIndex = segments.indexOfLast { currentValue >= it.rangeStart }
-        .coerceAtLeast(0)
+    val activeIndex =
+        segments
+            .indexOfLast { currentValue >= it.rangeStart }
+            .coerceAtLeast(0)
 
-    Column(modifier = modifier.then(
-        if (accessibilityDescription != null) {
-            Modifier.semantics { contentDescription = accessibilityDescription }
-        } else Modifier
-    )) {
+    Column(
+        modifier =
+            modifier.then(
+                if (accessibilityDescription != null) {
+                    Modifier.semantics { contentDescription = accessibilityDescription }
+                } else {
+                    Modifier
+                },
+            ),
+    ) {
         Canvas(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(barHeight)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(barHeight),
         ) {
             val totalGap = gap.toPx() * (segments.size - 1)
             val segmentWidth = (size.width - totalGap) / segments.size
@@ -68,7 +75,7 @@ fun SegmentedStatusBar(
                     color = segment.color.copy(alpha = alpha),
                     topLeft = Offset(x, 0f),
                     size = Size(segmentWidth, size.height),
-                    cornerRadius = cornerRad
+                    cornerRadius = cornerRad,
                 )
             }
         }
@@ -77,18 +84,19 @@ fun SegmentedStatusBar(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             segments.forEachIndexed { index, segment ->
                 val isActive = index == activeIndex
                 Text(
                     text = segment.label,
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (isActive) {
-                        segment.color
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    }
+                    color =
+                        if (isActive) {
+                            segment.color
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        },
                 )
             }
         }

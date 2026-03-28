@@ -15,8 +15,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.DataUsage
 import androidx.compose.material.icons.outlined.FileDownload
@@ -43,16 +43,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.pro.ProFeature
 import com.runcheck.pro.ProStatus
+import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
-import com.runcheck.ui.common.resolve
+import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 
 @Composable
 fun ProUpgradeScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: ProUpgradeViewModel = hiltViewModel()
+    viewModel: ProUpgradeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -60,27 +61,27 @@ fun ProUpgradeScreen(
     Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(
             title = stringResource(R.string.pro_upgrade_title),
-            onBack = onBack
+            onBack = onBack,
         )
 
         ContentContainer {
-        if (uiState.purchaseCompleted) {
-            PurchaseThankYouContent(
-                onDismiss = {
-                    viewModel.dismissThankYou()
-                    onBack()
-                }
-            )
-        } else if (uiState.proState.status == ProStatus.PRO_PURCHASED) {
-            ProActiveContent()
-        } else {
-            ProUpgradeContent(
-                uiState = uiState,
-                onPurchase = {
-                    (context as? Activity)?.let { viewModel.purchasePro(it) }
-                }
-            )
-        }
+            if (uiState.purchaseCompleted) {
+                PurchaseThankYouContent(
+                    onDismiss = {
+                        viewModel.dismissThankYou()
+                        onBack()
+                    },
+                )
+            } else if (uiState.proState.status == ProStatus.PRO_PURCHASED) {
+                ProActiveContent()
+            } else {
+                ProUpgradeContent(
+                    uiState = uiState,
+                    onPurchase = {
+                        (context as? Activity)?.let { viewModel.purchasePro(it) }
+                    },
+                )
+            }
         }
     }
 }
@@ -88,79 +89,83 @@ fun ProUpgradeScreen(
 @Composable
 private fun ProUpgradeContent(
     uiState: ProUpgradeUiState,
-    onPurchase: () -> Unit
+    onPurchase: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp)
-            .navigationBarsPadding(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = MaterialTheme.spacing.lg)
+                .navigationBarsPadding(),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
 
         Text(
             text = stringResource(R.string.pro_upgrade_headline),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
         Text(
             text = stringResource(R.string.pro_upgrade_subtitle),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
 
         ProFeature.entries.forEach { feature ->
             FeatureRow(
                 icon = featureIcon(feature),
-                label = featureLabel(feature)
+                label = featureLabel(feature),
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
 
         Button(
             onClick = onPurchase,
             enabled = uiState.billingAvailable,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
             shape = MaterialTheme.shapes.large,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
-            )
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                ),
         ) {
             Text(
-                text = if (uiState.formattedPrice != null) {
-                    stringResource(R.string.pro_upgrade_buy_button, uiState.formattedPrice)
-                } else {
-                    stringResource(R.string.pro_upgrade_buy_button_no_price)
-                },
+                text =
+                    if (uiState.formattedPrice != null) {
+                        stringResource(R.string.pro_upgrade_buy_button, uiState.formattedPrice)
+                    } else {
+                        stringResource(R.string.pro_upgrade_buy_button_no_price)
+                    },
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
         if (uiState.purchasePending) {
             Text(
                 text = stringResource(R.string.billing_purchase_pending),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.statusColors.poor,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
         }
 
         uiState.purchaseError?.let { error ->
@@ -168,39 +173,42 @@ private fun ProUpgradeContent(
                 text = error.resolve(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
         }
 
         Text(
             text = stringResource(R.string.pro_upgrade_one_time),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
     }
 }
 
 @Composable
-private fun FeatureRow(icon: ImageVector, label: String) {
+private fun FeatureRow(
+    icon: ImageVector,
+    label: String,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.primary
+            tint = MaterialTheme.colorScheme.primary,
         )
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 }
@@ -208,49 +216,52 @@ private fun FeatureRow(icon: ImageVector, label: String) {
 @Composable
 private fun ProActiveContent() {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(MaterialTheme.spacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Icon(
             imageVector = Icons.Outlined.Check,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary
+            tint = MaterialTheme.colorScheme.primary,
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
         Text(
             text = stringResource(R.string.settings_pro_active),
             style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
         Text(
             text = stringResource(R.string.settings_pro_thank_you),
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
 
 @Composable
-private fun featureIcon(feature: ProFeature): ImageVector = when (feature) {
-    ProFeature.EXTENDED_HISTORY -> Icons.Outlined.BarChart
-    ProFeature.CHARGER_COMPARISON -> Icons.Outlined.BatteryChargingFull
-    ProFeature.PER_APP_BATTERY -> Icons.Outlined.DataUsage
-    ProFeature.WIDGETS -> Icons.Outlined.Widgets
-    ProFeature.CSV_EXPORT -> Icons.Outlined.FileDownload
-    ProFeature.THERMAL_LOGS -> Icons.Outlined.Thermostat
-}
+private fun featureIcon(feature: ProFeature): ImageVector =
+    when (feature) {
+        ProFeature.EXTENDED_HISTORY -> Icons.Outlined.BarChart
+        ProFeature.CHARGER_COMPARISON -> Icons.Outlined.BatteryChargingFull
+        ProFeature.PER_APP_BATTERY -> Icons.Outlined.DataUsage
+        ProFeature.WIDGETS -> Icons.Outlined.Widgets
+        ProFeature.CSV_EXPORT -> Icons.Outlined.FileDownload
+        ProFeature.THERMAL_LOGS -> Icons.Outlined.Thermostat
+    }
 
 @Composable
-private fun featureLabel(feature: ProFeature): String = when (feature) {
-    ProFeature.EXTENDED_HISTORY -> stringResource(R.string.pro_feature_extended_history)
-    ProFeature.CHARGER_COMPARISON -> stringResource(R.string.pro_feature_charger_comparison)
-    ProFeature.PER_APP_BATTERY -> stringResource(R.string.pro_feature_per_app_battery)
-    ProFeature.WIDGETS -> stringResource(R.string.pro_feature_widgets)
-    ProFeature.CSV_EXPORT -> stringResource(R.string.pro_feature_csv_export)
-    ProFeature.THERMAL_LOGS -> stringResource(R.string.pro_feature_thermal_logs)
-}
+private fun featureLabel(feature: ProFeature): String =
+    when (feature) {
+        ProFeature.EXTENDED_HISTORY -> stringResource(R.string.pro_feature_extended_history)
+        ProFeature.CHARGER_COMPARISON -> stringResource(R.string.pro_feature_charger_comparison)
+        ProFeature.PER_APP_BATTERY -> stringResource(R.string.pro_feature_per_app_battery)
+        ProFeature.WIDGETS -> stringResource(R.string.pro_feature_widgets)
+        ProFeature.CSV_EXPORT -> stringResource(R.string.pro_feature_csv_export)
+        ProFeature.THERMAL_LOGS -> stringResource(R.string.pro_feature_thermal_logs)
+    }

@@ -16,7 +16,6 @@ import org.junit.Before
 import org.junit.Test
 
 class ClearMonitoringDataUseCaseTest {
-
     private lateinit var transactionRunner: DatabaseTransactionRunner
     private lateinit var batteryRepository: BatteryRepository
     private lateinit var networkRepository: NetworkRepository
@@ -39,36 +38,38 @@ class ClearMonitoringDataUseCaseTest {
         appBatteryUsageRepository = mockk(relaxed = true)
         speedTestRepository = mockk(relaxed = true)
 
-        useCase = ClearMonitoringDataUseCase(
-            transactionRunner = transactionRunner,
-            batteryRepository = batteryRepository,
-            networkRepository = networkRepository,
-            thermalRepository = thermalRepository,
-            storageRepository = storageRepository,
-            throttlingRepository = throttlingRepository,
-            appBatteryUsageRepository = appBatteryUsageRepository,
-            speedTestRepository = speedTestRepository
-        )
+        useCase =
+            ClearMonitoringDataUseCase(
+                transactionRunner = transactionRunner,
+                batteryRepository = batteryRepository,
+                networkRepository = networkRepository,
+                thermalRepository = thermalRepository,
+                storageRepository = storageRepository,
+                throttlingRepository = throttlingRepository,
+                appBatteryUsageRepository = appBatteryUsageRepository,
+                speedTestRepository = speedTestRepository,
+            )
     }
 
     @Test
-    fun `clears all monitoring repositories in one transaction`() = runTest {
-        coEvery { batteryRepository.deleteAll() } returns Unit
-        coEvery { networkRepository.deleteAll() } returns Unit
-        coEvery { thermalRepository.deleteAll() } returns Unit
-        coEvery { storageRepository.deleteAll() } returns Unit
-        coEvery { throttlingRepository.deleteAll() } returns Unit
-        coEvery { appBatteryUsageRepository.deleteAll() } returns Unit
-        coEvery { speedTestRepository.deleteAll() } returns Unit
+    fun `clears all monitoring repositories in one transaction`() =
+        runTest {
+            coEvery { batteryRepository.deleteAll() } returns Unit
+            coEvery { networkRepository.deleteAll() } returns Unit
+            coEvery { thermalRepository.deleteAll() } returns Unit
+            coEvery { storageRepository.deleteAll() } returns Unit
+            coEvery { throttlingRepository.deleteAll() } returns Unit
+            coEvery { appBatteryUsageRepository.deleteAll() } returns Unit
+            coEvery { speedTestRepository.deleteAll() } returns Unit
 
-        useCase()
+            useCase()
 
-        coVerify(exactly = 1) { batteryRepository.deleteAll() }
-        coVerify(exactly = 1) { networkRepository.deleteAll() }
-        coVerify(exactly = 1) { thermalRepository.deleteAll() }
-        coVerify(exactly = 1) { storageRepository.deleteAll() }
-        coVerify(exactly = 1) { throttlingRepository.deleteAll() }
-        coVerify(exactly = 1) { appBatteryUsageRepository.deleteAll() }
-        coVerify(exactly = 1) { speedTestRepository.deleteAll() }
-    }
+            coVerify(exactly = 1) { batteryRepository.deleteAll() }
+            coVerify(exactly = 1) { networkRepository.deleteAll() }
+            coVerify(exactly = 1) { thermalRepository.deleteAll() }
+            coVerify(exactly = 1) { storageRepository.deleteAll() }
+            coVerify(exactly = 1) { throttlingRepository.deleteAll() }
+            coVerify(exactly = 1) { appBatteryUsageRepository.deleteAll() }
+            coVerify(exactly = 1) { speedTestRepository.deleteAll() }
+        }
 }

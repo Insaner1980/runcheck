@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "thermal_readings",
-    indices = [Index(value = ["timestamp"])]
+    indices = [Index(value = ["timestamp"])],
 )
 data class ThermalReadingEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -15,5 +15,5 @@ data class ThermalReadingEntity(
     @ColumnInfo(name = "battery_temp_c") val batteryTempC: Float,
     @ColumnInfo(name = "cpu_temp_c") val cpuTempC: Float?,
     @ColumnInfo(name = "thermal_status") val thermalStatus: Int,
-    val throttling: Boolean
+    val throttling: Boolean,
 )

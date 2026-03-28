@@ -10,12 +10,12 @@ import androidx.compose.ui.semantics.semantics
 @Composable
 fun CardSectionTitle(
     text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Text(
         text = text.uppercase(),
         modifier = modifier.semantics { heading() },
         style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }

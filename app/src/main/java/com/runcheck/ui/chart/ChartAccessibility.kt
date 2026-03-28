@@ -11,20 +11,20 @@ import kotlin.math.max
 internal enum class ChartTrendDirection {
     INCREASING,
     DECREASING,
-    STABLE
+    STABLE,
 }
 
 internal data class ChartAccessibilitySnapshot(
     val minimumValue: String,
     val maximumValue: String,
     val latestValue: String,
-    val trendDirection: ChartTrendDirection
+    val trendDirection: ChartTrendDirection,
 )
 
 internal fun buildChartAccessibilitySnapshot(
     chartData: List<Float>,
     unit: String,
-    decimals: Int
+    decimals: Int,
 ): ChartAccessibilitySnapshot? {
     if (chartData.isEmpty()) return null
 
@@ -36,11 +36,12 @@ internal fun buildChartAccessibilitySnapshot(
         minimumValue = "${formatDecimal(minValue, decimals)}$unit",
         maximumValue = "${formatDecimal(maxValue, decimals)}$unit",
         latestValue = "${formatDecimal(latestValue, decimals)}$unit",
-        trendDirection = resolveChartTrendDirection(
-            chartData = chartData,
-            minValue = minValue,
-            maxValue = maxValue
-        )
+        trendDirection =
+            resolveChartTrendDirection(
+                chartData = chartData,
+                minValue = minValue,
+                maxValue = maxValue,
+            ),
     )
 }
 
@@ -50,23 +51,25 @@ fun rememberChartAccessibilitySummary(
     chartData: List<Float>,
     unit: String,
     decimals: Int,
-    timeContext: String? = null
+    timeContext: String? = null,
 ): String {
-    val snapshot = remember(chartData, unit, decimals) {
-        buildChartAccessibilitySnapshot(
-            chartData = chartData,
-            unit = unit,
-            decimals = decimals
-        )
-    } ?: return title
+    val snapshot =
+        remember(chartData, unit, decimals) {
+            buildChartAccessibilitySnapshot(
+                chartData = chartData,
+                unit = unit,
+                decimals = decimals,
+            )
+        } ?: return title
 
-    val trendLabel = stringResource(
-        when (snapshot.trendDirection) {
-            ChartTrendDirection.INCREASING -> R.string.a11y_chart_trend_increasing
-            ChartTrendDirection.DECREASING -> R.string.a11y_chart_trend_decreasing
-            ChartTrendDirection.STABLE -> R.string.a11y_chart_trend_stable
-        }
-    )
+    val trendLabel =
+        stringResource(
+            when (snapshot.trendDirection) {
+                ChartTrendDirection.INCREASING -> R.string.a11y_chart_trend_increasing
+                ChartTrendDirection.DECREASING -> R.string.a11y_chart_trend_decreasing
+                ChartTrendDirection.STABLE -> R.string.a11y_chart_trend_stable
+            },
+        )
 
     return if (timeContext.isNullOrBlank()) {
         stringResource(
@@ -75,7 +78,7 @@ fun rememberChartAccessibilitySummary(
             snapshot.minimumValue,
             snapshot.maximumValue,
             snapshot.latestValue,
-            trendLabel
+            trendLabel,
         )
     } else {
         stringResource(
@@ -85,7 +88,7 @@ fun rememberChartAccessibilitySummary(
             snapshot.minimumValue,
             snapshot.maximumValue,
             snapshot.latestValue,
-            trendLabel
+            trendLabel,
         )
     }
 }
@@ -93,17 +96,18 @@ fun rememberChartAccessibilitySummary(
 private fun resolveChartTrendDirection(
     chartData: List<Float>,
     minValue: Float,
-    maxValue: Float
+    maxValue: Float,
 ): ChartTrendDirection {
     if (chartData.size < 2) return ChartTrendDirection.STABLE
 
     val delta = chartData.last() - chartData.first()
     val range = maxValue - minValue
-    val minimumThreshold = when {
-        range >= 10f -> 1f
-        range >= 1f -> 0.25f
-        else -> 0.05f
-    }
+    val minimumThreshold =
+        when {
+            range >= 10f -> 1f
+            range >= 1f -> 0.25f
+            else -> 0.05f
+        }
     val threshold = max(range * 0.08f, minimumThreshold)
 
     return when {

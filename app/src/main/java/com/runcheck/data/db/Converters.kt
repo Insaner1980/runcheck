@@ -3,7 +3,6 @@ package com.runcheck.data.db
 import androidx.room.TypeConverter
 
 class Converters {
-
     @TypeConverter
     fun fromBoolean(value: Boolean): Int = if (value) 1 else 0
 

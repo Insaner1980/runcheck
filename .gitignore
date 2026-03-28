@@ -16,6 +16,9 @@
 *.hprof
 *.log
 .claude/
+.remember/
+/reports/
+stitch_runcheck_home_dashboard.zip
 
 # Prevent CLAUDE.md files from breaking Android resource merger
 **/src/main/res/**/CLAUDE.md

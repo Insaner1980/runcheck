@@ -7,5 +7,5 @@ data class ThrottlingEvent(
     val batteryTempC: Float,
     val cpuTempC: Float?,
     val foregroundApp: String?,
-    val durationMs: Long?
+    val durationMs: Long?,
 )

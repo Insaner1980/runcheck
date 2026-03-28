@@ -55,9 +55,9 @@ import com.runcheck.domain.model.ScannedFile
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.components.IconCircle
 import com.runcheck.ui.components.MiniBar
+import com.runcheck.ui.theme.categoryColor
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
-import com.runcheck.ui.theme.statusColors
 import kotlin.math.roundToInt
 
 @Composable
@@ -66,17 +66,18 @@ fun FileListItem(
     isSelected: Boolean,
     maxFileSize: Long,
     onToggle: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val categoryColor = categoryColor(file.category)
     val categoryIcon = categoryIcon(file.category)
     val toggleLabel = stringResource(R.string.a11y_toggle_selection, file.displayName)
-    val relativeSizePercent = if (maxFileSize > 0) {
-        ((file.sizeBytes.toFloat() / maxFileSize) * 100f).roundToInt().coerceIn(0, 100)
-    } else {
-        0
-    }
+    val relativeSizePercent =
+        if (maxFileSize > 0) {
+            ((file.sizeBytes.toFloat() / maxFileSize) * 100f).roundToInt().coerceIn(0, 100)
+        } else {
+            0
+        }
 
     var thumbnail by remember(file.uri) { mutableStateOf<ImageBitmap?>(null) }
     val showThumbnail = file.category == MediaCategory.IMAGE || file.category == MediaCategory.VIDEO
@@ -88,30 +89,32 @@ fun FileListItem(
     }
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onToggle, role = Role.Checkbox, onClickLabel = toggleLabel)
-            .semantics(mergeDescendants = true) {
-                toggleableState = if (isSelected) ToggleableState.On else ToggleableState.Off
-            }
-            .padding(vertical = MaterialTheme.spacing.sm),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clickable(onClick = onToggle, role = Role.Checkbox, onClickLabel = toggleLabel)
+                .semantics(mergeDescendants = true) {
+                    toggleableState = if (isSelected) ToggleableState.On else ToggleableState.Off
+                }.padding(vertical = MaterialTheme.spacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(
             checked = isSelected,
             onCheckedChange = null,
-            colors = CheckboxDefaults.colors(
-                checkedColor = MaterialTheme.colorScheme.primary
-            )
+            colors =
+                CheckboxDefaults.colors(
+                    checkedColor = MaterialTheme.colorScheme.primary,
+                ),
         )
         Spacer(modifier = Modifier.width(4.dp))
 
         // Thumbnail or icon
         Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(MaterialTheme.shapes.small),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .size(48.dp)
+                    .clip(MaterialTheme.shapes.small),
+            contentAlignment = Alignment.Center,
         ) {
             val loadedThumbnail = thumbnail
             if (loadedThumbnail != null) {
@@ -119,14 +122,14 @@ fun FileListItem(
                     bitmap = loadedThumbnail,
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
                 )
             } else {
                 IconCircle(
                     icon = categoryIcon,
                     tint = categoryColor,
                     size = 48.dp,
-                    iconSize = 24.dp
+                    iconSize = 24.dp,
                 )
             }
         }
@@ -138,87 +141,106 @@ fun FileListItem(
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = stringResource(
-                    R.string.cleanup_file_subtitle,
-                    categoryLabel(context, file.category),
-                    formatRelativeDate(context, file.dateModified)
-                ),
+                text =
+                    stringResource(
+                        R.string.cleanup_file_subtitle,
+                        categoryLabel(context, file.category),
+                        formatRelativeDate(context, file.dateModified),
+                    ),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(4.dp))
             MiniBar(
-                progress = if (maxFileSize > 0) {
-                    (file.sizeBytes.toFloat() / maxFileSize).coerceIn(0f, 1f)
-                } else 0f,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(3.dp),
+                progress =
+                    if (maxFileSize > 0) {
+                        (file.sizeBytes.toFloat() / maxFileSize).coerceIn(0f, 1f)
+                    } else {
+                        0f
+                    },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(3.dp),
                 fillColor = categoryColor,
-                contentDescription = stringResource(
-                    R.string.a11y_progress_percent,
-                    file.displayName,
-                    relativeSizePercent
-                )
+                contentDescription =
+                    stringResource(
+                        R.string.a11y_progress_percent,
+                        file.displayName,
+                        relativeSizePercent,
+                    ),
             )
         }
         Spacer(modifier = Modifier.width(MaterialTheme.spacing.sm))
 
         Text(
             text = formatStorageSize(context, file.sizeBytes),
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontFamily = MaterialTheme.numericFontFamily
-            ),
-            color = MaterialTheme.colorScheme.onSurface
+            style =
+                MaterialTheme.typography.bodyMedium.copy(
+                    fontFamily = MaterialTheme.numericFontFamily,
+                ),
+            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 }
 
-@Composable
-fun categoryColor(category: MediaCategory): Color {
-    val colors = MaterialTheme.statusColors
-    return when (category) {
-        MediaCategory.VIDEO -> MaterialTheme.colorScheme.primary
-        MediaCategory.IMAGE -> colors.healthy
-        MediaCategory.AUDIO -> colors.poor
-        MediaCategory.DOCUMENT -> colors.fair
-        MediaCategory.DOWNLOAD -> MaterialTheme.colorScheme.primary
-        MediaCategory.APK -> MaterialTheme.colorScheme.onSurfaceVariant
-        MediaCategory.OTHER -> MaterialTheme.colorScheme.outline
+fun categoryIcon(category: MediaCategory): ImageVector =
+    when (category) {
+        MediaCategory.VIDEO -> Icons.Outlined.Videocam
+        MediaCategory.IMAGE -> Icons.Outlined.Image
+        MediaCategory.AUDIO -> Icons.Outlined.AudioFile
+        MediaCategory.DOCUMENT -> Icons.Outlined.Description
+        MediaCategory.DOWNLOAD -> Icons.Outlined.Download
+        MediaCategory.APK -> Icons.Outlined.Android
+        MediaCategory.OTHER -> Icons.Outlined.Description
     }
-}
 
-fun categoryIcon(category: MediaCategory): ImageVector = when (category) {
-    MediaCategory.VIDEO -> Icons.Outlined.Videocam
-    MediaCategory.IMAGE -> Icons.Outlined.Image
-    MediaCategory.AUDIO -> Icons.Outlined.AudioFile
-    MediaCategory.DOCUMENT -> Icons.Outlined.Description
-    MediaCategory.DOWNLOAD -> Icons.Outlined.Download
-    MediaCategory.APK -> Icons.Outlined.Android
-    MediaCategory.OTHER -> Icons.Outlined.Description
-}
+fun categoryLabel(
+    context: Context,
+    category: MediaCategory,
+): String =
+    when (category) {
+        MediaCategory.VIDEO -> context.getString(R.string.a11y_category_video)
+        MediaCategory.IMAGE -> context.getString(R.string.a11y_category_image)
+        MediaCategory.AUDIO -> context.getString(R.string.a11y_category_audio)
+        MediaCategory.DOCUMENT -> context.getString(R.string.a11y_category_document)
+        MediaCategory.DOWNLOAD -> context.getString(R.string.a11y_category_download)
+        MediaCategory.APK -> context.getString(R.string.a11y_category_apk)
+        MediaCategory.OTHER -> context.getString(R.string.a11y_category_other)
+    }
 
-fun categoryLabel(context: Context, category: MediaCategory): String = when (category) {
-    MediaCategory.VIDEO -> context.getString(R.string.a11y_category_video)
-    MediaCategory.IMAGE -> context.getString(R.string.a11y_category_image)
-    MediaCategory.AUDIO -> context.getString(R.string.a11y_category_audio)
-    MediaCategory.DOCUMENT -> context.getString(R.string.a11y_category_document)
-    MediaCategory.DOWNLOAD -> context.getString(R.string.a11y_category_download)
-    MediaCategory.APK -> context.getString(R.string.a11y_category_apk)
-    MediaCategory.OTHER -> context.getString(R.string.a11y_category_other)
-}
-
-fun formatRelativeDate(context: Context, timestampMs: Long): String {
+fun formatRelativeDate(
+    context: Context,
+    timestampMs: Long,
+): String {
     val now = System.currentTimeMillis()
     val diffDays = ((now - timestampMs) / 86_400_000).toInt()
     return when {
-        diffDays < 1 -> context.getString(R.string.a11y_date_today)
-        diffDays == 1 -> context.getString(R.string.a11y_date_yesterday)
-        diffDays < 30 -> context.resources.getQuantityString(R.plurals.a11y_date_days_ago, diffDays, diffDays)
-        diffDays < 365 -> context.resources.getQuantityString(R.plurals.a11y_date_months_ago, diffDays / 30, diffDays / 30)
-        else -> context.resources.getQuantityString(R.plurals.a11y_date_years_ago, diffDays / 365, diffDays / 365)
+        diffDays < 1 -> {
+            context.getString(R.string.a11y_date_today)
+        }
+
+        diffDays == 1 -> {
+            context.getString(R.string.a11y_date_yesterday)
+        }
+
+        diffDays < 30 -> {
+            context.resources.getQuantityString(R.plurals.a11y_date_days_ago, diffDays, diffDays)
+        }
+
+        diffDays < 365 -> {
+            context.resources.getQuantityString(
+                R.plurals.a11y_date_months_ago,
+                diffDays / 30,
+                diffDays / 30,
+            )
+        }
+
+        else -> {
+            context.resources.getQuantityString(R.plurals.a11y_date_years_ago, diffDays / 365, diffDays / 365)
+        }
     }
 }

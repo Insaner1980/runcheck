@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "network_readings",
-    indices = [Index(value = ["timestamp"])]
+    indices = [Index(value = ["timestamp"])],
 )
 data class NetworkReadingEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -18,5 +18,5 @@ data class NetworkReadingEntity(
     @ColumnInfo(name = "wifi_frequency") val wifiFrequency: Int?,
     val carrier: String?,
     @ColumnInfo(name = "network_subtype") val networkSubtype: String?,
-    @ColumnInfo(name = "latency_ms") val latencyMs: Int?
+    @ColumnInfo(name = "latency_ms") val latencyMs: Int?,
 )

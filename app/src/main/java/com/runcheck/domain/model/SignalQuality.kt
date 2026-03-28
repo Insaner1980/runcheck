@@ -5,5 +5,5 @@ enum class SignalQuality {
     GOOD,
     FAIR,
     POOR,
-    NO_SIGNAL
+    NO_SIGNAL,
 }

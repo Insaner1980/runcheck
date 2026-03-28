@@ -5,5 +5,5 @@ data class MediaBreakdown(
     val videosBytes: Long,
     val audioBytes: Long,
     val documentsBytes: Long,
-    val downloadsBytes: Long
+    val downloadsBytes: Long,
 )

@@ -5,9 +5,8 @@ import androidx.paging.PagingState
 import com.runcheck.domain.model.ScannedFile
 
 internal class CleanupPagingSource(
-    private val loader: suspend (offset: Int, limit: Int) -> List<ScannedFile>
+    private val loader: suspend (offset: Int, limit: Int) -> List<ScannedFile>,
 ) : PagingSource<Int, ScannedFile>() {
-
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, ScannedFile> {
         val offset = params.key ?: 0
         return try {
@@ -16,7 +15,7 @@ internal class CleanupPagingSource(
             LoadResult.Page(
                 data = items,
                 prevKey = if (offset == 0) null else (offset - params.loadSize).coerceAtLeast(0),
-                nextKey = nextKey
+                nextKey = nextKey,
             )
         } catch (t: Throwable) {
             LoadResult.Error(t)

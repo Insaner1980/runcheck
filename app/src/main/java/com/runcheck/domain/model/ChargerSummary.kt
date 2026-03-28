@@ -10,5 +10,5 @@ data class ChargerSummary(
     val latestPowerMw: Int?,
     val avgTimeToFullMinutes: Int?,
     val lastUsed: Long?,
-    val hasActiveSession: Boolean
+    val hasActiveSession: Boolean,
 )

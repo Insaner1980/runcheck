@@ -24,19 +24,20 @@ private val BAR_WIDTH = 12.dp
 private val BAR_GAP = 4.dp
 private val BAR_CORNER = 3.dp
 
-private fun activeBarsFor(quality: SignalQuality): Int = when (quality) {
-    SignalQuality.EXCELLENT -> 5
-    SignalQuality.GOOD -> 4
-    SignalQuality.FAIR -> 3
-    SignalQuality.POOR -> 2
-    SignalQuality.NO_SIGNAL -> 0
-}
+private fun activeBarsFor(quality: SignalQuality): Int =
+    when (quality) {
+        SignalQuality.EXCELLENT -> 5
+        SignalQuality.GOOD -> 4
+        SignalQuality.FAIR -> 3
+        SignalQuality.POOR -> 2
+        SignalQuality.NO_SIGNAL -> 0
+    }
 
 @Composable
 fun SignalBars(
     signalQuality: SignalQuality,
     qualityLabel: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val activeBars = activeBarsFor(signalQuality)
     val activeColor = statusColorForSignalQuality(signalQuality)
@@ -44,22 +45,24 @@ fun SignalBars(
     val a11yDesc = stringResource(R.string.a11y_signal_bars, qualityLabel, activeBars)
 
     Row(
-        modifier = modifier.semantics(mergeDescendants = true) {
-            contentDescription = a11yDesc
-        },
+        modifier =
+            modifier.semantics(mergeDescendants = true) {
+                contentDescription = a11yDesc
+            },
         horizontalArrangement = Arrangement.spacedBy(BAR_GAP),
-        verticalAlignment = Alignment.Bottom
+        verticalAlignment = Alignment.Bottom,
     ) {
         BAR_HEIGHTS.forEachIndexed { index, height ->
             val isActive = index < activeBars
             Box(
-                modifier = Modifier
-                    .width(BAR_WIDTH)
-                    .height(height)
-                    .background(
-                        color = if (isActive) activeColor else inactiveColor,
-                        shape = RoundedCornerShape(BAR_CORNER)
-                    )
+                modifier =
+                    Modifier
+                        .width(BAR_WIDTH)
+                        .height(height)
+                        .background(
+                            color = if (isActive) activeColor else inactiveColor,
+                            shape = RoundedCornerShape(BAR_CORNER),
+                        ),
             )
         }
     }

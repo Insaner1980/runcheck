@@ -4,5 +4,5 @@ enum class ChargingStatus {
     CHARGING,
     DISCHARGING,
     FULL,
-    NOT_CHARGING
+    NOT_CHARGING,
 }

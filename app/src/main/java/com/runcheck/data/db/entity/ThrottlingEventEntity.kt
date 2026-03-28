@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "throttling_events",
-    indices = [Index(value = ["timestamp"])]
+    indices = [Index(value = ["timestamp"])],
 )
 data class ThrottlingEventEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -16,5 +16,5 @@ data class ThrottlingEventEntity(
     @ColumnInfo(name = "battery_temp_c") val batteryTempC: Float,
     @ColumnInfo(name = "cpu_temp_c") val cpuTempC: Float?,
     @ColumnInfo(name = "foreground_app") val foregroundApp: String?,
-    @ColumnInfo(name = "duration_ms") val durationMs: Long?
+    @ColumnInfo(name = "duration_ms") val durationMs: Long?,
 )

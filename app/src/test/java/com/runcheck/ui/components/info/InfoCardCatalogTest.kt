@@ -5,7 +5,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class InfoCardCatalogTest {
-
     @Test
     fun `all card ids are unique and explicitly versioned`() {
         val cardIds = InfoCardCatalog.all.map { it.id }

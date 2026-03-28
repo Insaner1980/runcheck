@@ -9,8 +9,8 @@ import androidx.room.PrimaryKey
     tableName = "battery_readings",
     indices = [
         Index(value = ["timestamp"]),
-        Index(value = ["status", "timestamp"])
-    ]
+        Index(value = ["status", "timestamp"]),
+    ],
 )
 data class BatteryReadingEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -24,5 +24,5 @@ data class BatteryReadingEntity(
     @ColumnInfo(name = "plug_type") val plugType: String,
     val health: String,
     @ColumnInfo(name = "cycle_count") val cycleCount: Int?,
-    @ColumnInfo(name = "health_pct") val healthPct: Int?
+    @ColumnInfo(name = "health_pct") val healthPct: Int?,
 )

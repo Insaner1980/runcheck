@@ -6,7 +6,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class DeviceCapabilityManagerTest {
-
     // -- inferUnit tests --
 
     @Test
@@ -73,7 +72,7 @@ class DeviceCapabilityManagerTest {
         val readings = listOf(500, 600, 700)
         assertEquals(
             SignConvention.POSITIVE_CHARGING,
-            DeviceCapabilityManager.inferSignConvention(isCharging = true, readings = readings)
+            DeviceCapabilityManager.inferSignConvention(isCharging = true, readings = readings),
         )
     }
 
@@ -82,7 +81,7 @@ class DeviceCapabilityManagerTest {
         val readings = listOf(-500, -600, -700)
         assertEquals(
             SignConvention.NEGATIVE_CHARGING,
-            DeviceCapabilityManager.inferSignConvention(isCharging = true, readings = readings)
+            DeviceCapabilityManager.inferSignConvention(isCharging = true, readings = readings),
         )
     }
 
@@ -91,7 +90,7 @@ class DeviceCapabilityManagerTest {
         val readings = listOf(-500, -600, -700)
         assertEquals(
             SignConvention.POSITIVE_CHARGING,
-            DeviceCapabilityManager.inferSignConvention(isCharging = false, readings = readings)
+            DeviceCapabilityManager.inferSignConvention(isCharging = false, readings = readings),
         )
     }
 
@@ -100,7 +99,7 @@ class DeviceCapabilityManagerTest {
         val readings = listOf(500, 600, 700)
         assertEquals(
             SignConvention.NEGATIVE_CHARGING,
-            DeviceCapabilityManager.inferSignConvention(isCharging = false, readings = readings)
+            DeviceCapabilityManager.inferSignConvention(isCharging = false, readings = readings),
         )
     }
 
@@ -110,7 +109,7 @@ class DeviceCapabilityManagerTest {
         val readings = listOf(-100, 500, 600)
         assertEquals(
             SignConvention.POSITIVE_CHARGING,
-            DeviceCapabilityManager.inferSignConvention(isCharging = true, readings = readings)
+            DeviceCapabilityManager.inferSignConvention(isCharging = true, readings = readings),
         )
     }
 
@@ -120,7 +119,7 @@ class DeviceCapabilityManagerTest {
         val readings = listOf(-500, 500)
         assertEquals(
             SignConvention.NEGATIVE_CHARGING,
-            DeviceCapabilityManager.inferSignConvention(isCharging = true, readings = readings)
+            DeviceCapabilityManager.inferSignConvention(isCharging = true, readings = readings),
         )
     }
 
@@ -130,7 +129,7 @@ class DeviceCapabilityManagerTest {
         val readings = listOf(-500, 500)
         assertEquals(
             SignConvention.NEGATIVE_CHARGING,
-            DeviceCapabilityManager.inferSignConvention(isCharging = false, readings = readings)
+            DeviceCapabilityManager.inferSignConvention(isCharging = false, readings = readings),
         )
     }
 }

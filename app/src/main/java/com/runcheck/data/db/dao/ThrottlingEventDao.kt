@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ThrottlingEventDao {
-
     @Insert
     suspend fun insert(event: ThrottlingEventEntity): Long
 
@@ -23,18 +22,21 @@ interface ThrottlingEventDao {
             cpu_temp_c = :cpuTempC,
             foreground_app = COALESCE(:foregroundApp, foreground_app)
         WHERE id = :id
-        """
+        """,
     )
     suspend fun updateSnapshot(
         id: Long,
         thermalStatus: String,
         batteryTempC: Float,
         cpuTempC: Float?,
-        foregroundApp: String?
+        foregroundApp: String?,
     )
 
     @Query("UPDATE throttling_events SET duration_ms = :durationMs WHERE id = :id")
-    suspend fun updateDuration(id: Long, durationMs: Long)
+    suspend fun updateDuration(
+        id: Long,
+        durationMs: Long,
+    )
 
     @Query("DELETE FROM throttling_events WHERE timestamp < :cutoff")
     suspend fun deleteOlderThan(cutoff: Long)

@@ -5,7 +5,7 @@ import androidx.compose.runtime.Immutable
 enum class ProStatus {
     TRIAL_ACTIVE,
     TRIAL_EXPIRED,
-    PRO_PURCHASED
+    PRO_PURCHASED,
 }
 
 enum class ProFeature {
@@ -14,7 +14,7 @@ enum class ProFeature {
     PER_APP_BATTERY,
     WIDGETS,
     CSV_EXPORT,
-    THERMAL_LOGS
+    THERMAL_LOGS,
 }
 
 @Immutable
@@ -22,7 +22,7 @@ data class ProState(
     val status: ProStatus = ProStatus.TRIAL_EXPIRED,
     val trialDaysRemaining: Int = 0,
     val trialStartTimestamp: Long = 0L,
-    val purchaseTimestamp: Long = 0L
+    val purchaseTimestamp: Long = 0L,
 ) {
     val isPro: Boolean
         get() = status == ProStatus.PRO_PURCHASED || status == ProStatus.TRIAL_ACTIVE

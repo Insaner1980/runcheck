@@ -24,20 +24,21 @@ import com.runcheck.ui.theme.spacing
 fun LearnScreen(
     onBack: () -> Unit,
     onNavigateToArticle: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(
             title = stringResource(R.string.learn_screen_title),
-            onBack = onBack
+            onBack = onBack,
         )
 
         ContentContainer {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = MaterialTheme.spacing.base),
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = MaterialTheme.spacing.base),
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
             ) {
                 item(key = "top_spacing") {
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
@@ -46,7 +47,7 @@ fun LearnScreen(
                 LearnArticleCatalog.sections.forEachIndexed { index, section ->
                     item(
                         key = "header_${section.topic.name}",
-                        contentType = "learn_header"
+                        contentType = "learn_header",
                     ) {
                         CardSectionTitle(text = stringResource(section.topic.labelRes))
                     }
@@ -54,18 +55,18 @@ fun LearnScreen(
                     items(
                         items = section.articles,
                         key = { article -> article.id },
-                        contentType = { "learn_article" }
+                        contentType = { "learn_article" },
                     ) { article ->
                         LearnArticleCard(
                             article = article,
-                            onClick = { onNavigateToArticle(article.id) }
+                            onClick = { onNavigateToArticle(article.id) },
                         )
                     }
 
                     if (index != LearnArticleCatalog.sections.lastIndex) {
                         item(
                             key = "spacer_${section.topic.name}",
-                            contentType = "learn_section_spacer"
+                            contentType = "learn_section_spacer",
                         ) {
                             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
                         }
@@ -86,7 +87,7 @@ private fun LearnScreenPreview() {
     RuncheckTheme {
         LearnScreen(
             onBack = {},
-            onNavigateToArticle = {}
+            onNavigateToArticle = {},
         )
     }
 }

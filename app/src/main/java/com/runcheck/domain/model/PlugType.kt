@@ -4,5 +4,5 @@ enum class PlugType {
     AC,
     USB,
     WIRELESS,
-    NONE
+    NONE,
 }

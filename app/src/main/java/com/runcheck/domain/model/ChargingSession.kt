@@ -11,5 +11,5 @@ data class ChargingSession(
     val maxCurrentMa: Int?,
     val avgVoltageMv: Int?,
     val avgPowerMw: Int?,
-    val plugType: String
+    val plugType: String,
 )

@@ -29,85 +29,90 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.runcheck.R
+import com.runcheck.ui.theme.spacing
 
 @Composable
 fun TrialExpirationModal(
     formattedPrice: String?,
     onPurchase: () -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val dialogTitle = stringResource(R.string.a11y_trial_dialog)
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
-            modifier = modifier
-                .fillMaxSize()
-                .semantics { paneTitle = dialogTitle },
-            color = MaterialTheme.colorScheme.background
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .semantics { paneTitle = dialogTitle },
+            color = MaterialTheme.colorScheme.background,
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(MaterialTheme.spacing.lg),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Lock,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
 
                 Text(
                     text = stringResource(R.string.trial_expired_title),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
 
                 Text(
                     text = stringResource(R.string.trial_expired_body),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
 
                 Button(
                     onClick = onPurchase,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
                     shape = MaterialTheme.shapes.large,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 ) {
                     Text(
-                        text = if (formattedPrice != null) {
-                            stringResource(R.string.pro_upgrade_buy_button, formattedPrice)
-                        } else {
-                            stringResource(R.string.pro_upgrade_buy_button_no_price)
-                        },
+                        text =
+                            if (formattedPrice != null) {
+                                stringResource(R.string.pro_upgrade_buy_button, formattedPrice)
+                            } else {
+                                stringResource(R.string.pro_upgrade_buy_button_no_price)
+                            },
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
 
                 TextButton(onClick = onDismiss) {
                     Text(
                         text = stringResource(R.string.trial_continue_free),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }

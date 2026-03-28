@@ -6,16 +6,16 @@ import com.runcheck.domain.model.SleepAnalysis
 import com.runcheck.domain.repository.ScreenStateRepository
 import javax.inject.Inject
 
-class BatteryScreenInsightsUseCase @Inject constructor(
-    private val screenStateRepository: ScreenStateRepository
-) {
-    fun updateChargingStatus(chargingStatus: ChargingStatus) {
-        screenStateRepository.updateChargingStatus(chargingStatus)
+class BatteryScreenInsightsUseCase
+    @Inject
+    constructor(
+        private val screenStateRepository: ScreenStateRepository,
+    ) {
+        fun updateChargingStatus(chargingStatus: ChargingStatus) {
+            screenStateRepository.updateChargingStatus(chargingStatus)
+        }
+
+        fun getScreenUsageStats(): ScreenUsageStats? = screenStateRepository.getScreenUsageStats()
+
+        fun getSleepAnalysis(): SleepAnalysis? = screenStateRepository.getSleepAnalysis()
     }
-
-    fun getScreenUsageStats(): ScreenUsageStats? =
-        screenStateRepository.getScreenUsageStats()
-
-    fun getSleepAnalysis(): SleepAnalysis? =
-        screenStateRepository.getSleepAnalysis()
-}

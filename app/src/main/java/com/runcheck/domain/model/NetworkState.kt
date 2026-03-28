@@ -20,5 +20,5 @@ data class NetworkState(
     val dnsServers: List<String> = emptyList(),
     val mtuBytes: Int? = null,
     val wifiBssid: String? = null,
-    val wifiStandard: String? = null
+    val wifiStandard: String? = null,
 )

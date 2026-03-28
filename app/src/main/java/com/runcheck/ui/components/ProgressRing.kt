@@ -31,36 +31,39 @@ fun ProgressRing(
     progressColor: Color = MaterialTheme.colorScheme.primary,
     animationDuration: Int = 1200,
     contentDescription: String? = null,
-    content: @Composable () -> Unit = {}
+    content: @Composable () -> Unit = {},
 ) {
     val isReducedMotion = MaterialTheme.reducedMotion
 
     val animatedProgress by animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
-        animationSpec = if (isReducedMotion) {
-            tween(durationMillis = 0)
-        } else {
-            tween(durationMillis = animationDuration, easing = FastOutSlowInEasing)
-        },
-        label = "progressRing"
+        animationSpec =
+            if (isReducedMotion) {
+                tween(durationMillis = 0)
+            } else {
+                tween(durationMillis = animationDuration, easing = FastOutSlowInEasing)
+            },
+        label = "progressRing",
     )
 
     Box(
-        modifier = if (contentDescription == null) {
-            modifier
-        } else {
-            modifier.semantics(mergeDescendants = true) {
-                this.contentDescription = contentDescription
-                progressBarRangeInfo = ProgressBarRangeInfo(animatedProgress, 0f..1f)
-            }
-        },
-        contentAlignment = Alignment.Center
+        modifier =
+            if (contentDescription == null) {
+                modifier
+            } else {
+                modifier.semantics(mergeDescendants = true) {
+                    this.contentDescription = contentDescription
+                    progressBarRangeInfo = ProgressBarRangeInfo(animatedProgress, 0f..1f)
+                }
+            },
+        contentAlignment = Alignment.Center,
     ) {
         Canvas(modifier = Modifier.matchParentSize()) {
-            val stroke = Stroke(
-                width = strokeWidth.toPx(),
-                cap = StrokeCap.Round
-            )
+            val stroke =
+                Stroke(
+                    width = strokeWidth.toPx(),
+                    cap = StrokeCap.Round,
+                )
             val padding = strokeWidth.toPx() / 2f
 
             // Track (full circle)
@@ -70,11 +73,14 @@ fun ProgressRing(
                 sweepAngle = 360f,
                 useCenter = false,
                 style = stroke,
-                topLeft = androidx.compose.ui.geometry.Offset(padding, padding),
-                size = androidx.compose.ui.geometry.Size(
-                    size.width - strokeWidth.toPx(),
-                    size.height - strokeWidth.toPx()
-                )
+                topLeft =
+                    androidx.compose.ui.geometry
+                        .Offset(padding, padding),
+                size =
+                    androidx.compose.ui.geometry.Size(
+                        size.width - strokeWidth.toPx(),
+                        size.height - strokeWidth.toPx(),
+                    ),
             )
 
             // Progress arc (from top, clockwise)
@@ -84,11 +90,14 @@ fun ProgressRing(
                 sweepAngle = animatedProgress * 360f,
                 useCenter = false,
                 style = stroke,
-                topLeft = androidx.compose.ui.geometry.Offset(padding, padding),
-                size = androidx.compose.ui.geometry.Size(
-                    size.width - strokeWidth.toPx(),
-                    size.height - strokeWidth.toPx()
-                )
+                topLeft =
+                    androidx.compose.ui.geometry
+                        .Offset(padding, padding),
+                size =
+                    androidx.compose.ui.geometry.Size(
+                        size.width - strokeWidth.toPx(),
+                        size.height - strokeWidth.toPx(),
+                    ),
             )
         }
         content()

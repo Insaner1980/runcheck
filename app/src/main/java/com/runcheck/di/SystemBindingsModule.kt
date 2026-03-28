@@ -23,7 +23,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class SystemBindingsModule {
-
     @Binds
     @Singleton
     abstract fun bindProStatusProvider(impl: ProManager): ProStatusProvider
@@ -46,13 +45,9 @@ abstract class SystemBindingsModule {
 
     @Binds
     @Singleton
-    abstract fun bindForegroundAppProvider(
-        impl: AppUsageDataSource
-    ): TrackThrottlingEventsUseCase.ForegroundAppProvider
+    abstract fun bindForegroundAppProvider(impl: AppUsageDataSource): TrackThrottlingEventsUseCase.ForegroundAppProvider
 
     @Binds
     @Singleton
-    abstract fun bindDatabaseTransactionRunner(
-        impl: RoomTransactionRunner
-    ): DatabaseTransactionRunner
+    abstract fun bindDatabaseTransactionRunner(impl: RoomTransactionRunner): DatabaseTransactionRunner
 }

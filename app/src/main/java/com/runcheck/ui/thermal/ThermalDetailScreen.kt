@@ -1,10 +1,8 @@
 package com.runcheck.ui.thermal
 
 import android.os.Build
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,14 +13,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -39,13 +35,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -75,45 +65,45 @@ import com.runcheck.ui.chart.ThermalHistoryMetric
 import com.runcheck.ui.chart.buildThermalHistoryChartModel
 import com.runcheck.ui.chart.formatChartTooltip
 import com.runcheck.ui.chart.historyPeriodLabel
-import com.runcheck.ui.chart.thermalHistoryMetricLabel
 import com.runcheck.ui.chart.rememberChartAccessibilitySummary
+import com.runcheck.ui.chart.thermalHistoryMetricLabel
 import com.runcheck.ui.chart.thermalQualityZones
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.formatDecimal
-import com.runcheck.ui.common.resolve
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.common.formatTemperatureValue
 import com.runcheck.ui.common.rememberFormattedDateTime
-import com.runcheck.ui.common.temperatureUnitRes
+import com.runcheck.ui.common.resolve
 import com.runcheck.ui.common.temperatureBandLabel
+import com.runcheck.ui.common.temperatureUnitRes
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
-import com.runcheck.ui.components.ExpandableChartContainer
 import com.runcheck.ui.components.HeatStrip
 import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
-import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.PullToRefreshWrapper
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SegmentedStatusBar
 import com.runcheck.ui.components.StatusDot
 import com.runcheck.ui.components.StatusSegment
+import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
-import com.runcheck.ui.theme.heroCardColor
-import com.runcheck.ui.theme.iconCircleColor
 import com.runcheck.ui.learn.LearnArticleIds
+import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
 import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
 import com.runcheck.ui.theme.numericHeroValueTextStyle
 import com.runcheck.ui.theme.reducedMotion
+import com.runcheck.ui.theme.runcheckCardColors
+import com.runcheck.ui.theme.runcheckCardElevation
+import com.runcheck.ui.theme.runcheckHeroCardColors
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColorForTemperature
-import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.statusColors
 
 @Composable
@@ -122,20 +112,21 @@ fun ThermalDetailScreen(
     onUpgradeToPro: () -> Unit,
     modifier: Modifier = Modifier,
     onNavigateToLearnArticle: (articleId: String) -> Unit = {},
-    viewModel: ThermalViewModel = hiltViewModel()
+    viewModel: ThermalViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     DisposableEffect(lifecycleOwner, viewModel) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_START -> viewModel.startObserving()
-                Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
-                else -> Unit
+        val observer =
+            LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_START -> viewModel.startObserving()
+                    Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
+                    else -> Unit
+                }
             }
-        }
 
         lifecycleOwner.lifecycle.addObserver(observer)
         if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
@@ -150,44 +141,50 @@ fun ThermalDetailScreen(
     Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(
             title = stringResource(R.string.thermal_title),
-            onBack = onBack
+            onBack = onBack,
         )
         ContentContainer {
-        when (val state = uiState) {
-            is ThermalUiState.Loading -> {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .semantics { contentDescription = context.getString(R.string.a11y_loading); liveRegion = LiveRegionMode.Polite },
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            is ThermalUiState.Error -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+            when (val state = uiState) {
+                is ThermalUiState.Loading -> {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .semantics {
+                                contentDescription = context.getString(R.string.a11y_loading)
+                                liveRegion =
+                                    LiveRegionMode.Polite
+                            },
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Text(stringResource(R.string.common_error_generic))
-                        TextButton(onClick = { viewModel.refresh() }) {
-                            Text(stringResource(R.string.common_retry))
+                        CircularProgressIndicator()
+                    }
+                }
+
+                is ThermalUiState.Error -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                        ) {
+                            Text(stringResource(R.string.common_error_generic))
+                            TextButton(onClick = { viewModel.refresh() }) {
+                                Text(stringResource(R.string.common_retry))
+                            }
                         }
                     }
                 }
+
+                is ThermalUiState.Success -> {
+                    ThermalContent(
+                        state = state,
+                        onRefresh = { viewModel.refresh() },
+                        onUpgradeToPro = onUpgradeToPro,
+                        onNavigateToLearnArticle = onNavigateToLearnArticle,
+                        onDismissInfoCard = { viewModel.dismissInfoCard(it) },
+                        onPeriodChange = { viewModel.setHistoryPeriod(it) },
+                    )
+                }
             }
-            is ThermalUiState.Success -> {
-                ThermalContent(
-                    state = state,
-                    onRefresh = { viewModel.refresh() },
-                    onUpgradeToPro = onUpgradeToPro,
-                    onNavigateToLearnArticle = onNavigateToLearnArticle,
-                    onDismissInfoCard = { viewModel.dismissInfoCard(it) },
-                    onPeriodChange = { viewModel.setHistoryPeriod(it) }
-                )
-            }
-        }
         }
     }
 }
@@ -199,7 +196,7 @@ private fun ThermalContent(
     onUpgradeToPro: () -> Unit,
     onNavigateToLearnArticle: (articleId: String) -> Unit,
     onDismissInfoCard: (String) -> Unit,
-    onPeriodChange: (HistoryPeriod) -> Unit
+    onPeriodChange: (HistoryPeriod) -> Unit,
 ) {
     var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
     var isRefreshing by remember { mutableStateOf(false) }
@@ -214,13 +211,14 @@ private fun ThermalContent(
         onRefresh = {
             isRefreshing = true
             onRefresh()
-        }
+        },
     ) {
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = MaterialTheme.spacing.base),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
         ) {
             item { Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm)) }
 
@@ -230,7 +228,7 @@ private fun ThermalContent(
                     thermal = thermal,
                     temperatureUnit = state.temperatureUnit,
                     sessionMinTemp = state.sessionMinTemp,
-                    sessionMaxTemp = state.sessionMaxTemp
+                    sessionMaxTemp = state.sessionMaxTemp,
                 )
             }
 
@@ -238,7 +236,7 @@ private fun ThermalContent(
             item {
                 HeatStrip(
                     temperatureC = thermal.batteryTempC,
-                    temperatureUnit = state.temperatureUnit
+                    temperatureUnit = state.temperatureUnit,
                 )
             }
 
@@ -250,12 +248,15 @@ private fun ThermalContent(
                         headline = stringResource(InfoCardCatalog.ThermalThrottlingExplainer.headlineRes),
                         body = stringResource(InfoCardCatalog.ThermalThrottlingExplainer.bodyRes),
                         onDismiss = { onDismissInfoCard(it) },
-                        visible = InfoCardCatalog.ThermalThrottlingExplainer.id !in state.dismissedInfoCards && state.showInfoCards,
+                        visible =
+                            InfoCardCatalog.ThermalThrottlingExplainer.id !in state.dismissedInfoCards &&
+                                state.showInfoCards,
                         onLearnMore = {
-                            InfoCardCatalog.resolveLearnArticleId(
-                                InfoCardCatalog.ThermalThrottlingExplainer
-                            )?.let(onNavigateToLearnArticle)
-                        }
+                            InfoCardCatalog
+                                .resolveLearnArticleId(
+                                    InfoCardCatalog.ThermalThrottlingExplainer,
+                                )?.let(onNavigateToLearnArticle)
+                        },
                     )
                 }
             }
@@ -267,12 +268,15 @@ private fun ThermalContent(
                         headline = stringResource(InfoCardCatalog.ThermalHeatBatteryLoop.headlineRes),
                         body = stringResource(InfoCardCatalog.ThermalHeatBatteryLoop.bodyRes),
                         onDismiss = { onDismissInfoCard(it) },
-                        visible = InfoCardCatalog.ThermalHeatBatteryLoop.id !in state.dismissedInfoCards && state.showInfoCards,
+                        visible =
+                            InfoCardCatalog.ThermalHeatBatteryLoop.id !in state.dismissedInfoCards &&
+                                state.showInfoCards,
                         onLearnMore = {
-                            InfoCardCatalog.resolveLearnArticleId(
-                                InfoCardCatalog.ThermalHeatBatteryLoop
-                            )?.let(onNavigateToLearnArticle)
-                        }
+                            InfoCardCatalog
+                                .resolveLearnArticleId(
+                                    InfoCardCatalog.ThermalHeatBatteryLoop,
+                                )?.let(onNavigateToLearnArticle)
+                        },
                     )
                 }
             }
@@ -284,7 +288,7 @@ private fun ThermalContent(
                     temperatureUnit = state.temperatureUnit,
                     liveTempC = state.liveTempC,
                     liveHeadroom = state.liveHeadroom,
-                    onInfoClick = { key -> activeInfoSheet = key }
+                    onInfoClick = { key -> activeInfoSheet = key },
                 )
             }
 
@@ -296,7 +300,7 @@ private fun ThermalContent(
                         selectedPeriod = state.selectedHistoryPeriod,
                         historyLoadError = state.historyLoadError,
                         temperatureUnit = state.temperatureUnit,
-                        onPeriodChange = { onPeriodChange(it) }
+                        onPeriodChange = { onPeriodChange(it) },
                     )
                 }
             }
@@ -305,12 +309,13 @@ private fun ThermalContent(
 
             item {
                 RelatedArticlesSection(
-                    articleIds = listOf(
-                        LearnArticleIds.THERMAL_NORMAL_TEMPS,
-                        LearnArticleIds.THERMAL_THROTTLING,
-                        LearnArticleIds.THERMAL_FEEDBACK
-                    ),
-                    onNavigateToArticle = onNavigateToLearnArticle
+                    articleIds =
+                        listOf(
+                            LearnArticleIds.THERMAL_NORMAL_TEMPS,
+                            LearnArticleIds.THERMAL_THROTTLING,
+                            LearnArticleIds.THERMAL_FEEDBACK,
+                        ),
+                    onNavigateToArticle = onNavigateToLearnArticle,
                 )
             }
 
@@ -320,13 +325,13 @@ private fun ThermalContent(
 
     ThermalInfoSheet(
         activeKey = activeInfoSheet,
-        onDismiss = { activeInfoSheet = null }
+        onDismiss = { activeInfoSheet = null },
     )
 }
 
 private fun LazyListScope.throttlingSection(
     state: ThermalUiState.Success,
-    onUpgradeToPro: () -> Unit
+    onUpgradeToPro: () -> Unit,
 ) {
     item {
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
@@ -341,11 +346,11 @@ private fun LazyListScope.throttlingSection(
         } else {
             items(
                 items = state.throttlingEvents,
-                key = { event -> event.id.takeIf { it != 0L } ?: event.timestamp }
+                key = { event -> event.id.takeIf { it != 0L } ?: event.timestamp },
             ) { event ->
                 ThrottlingEventItem(
                     event = event,
-                    temperatureUnit = state.temperatureUnit
+                    temperatureUnit = state.temperatureUnit,
                 )
             }
         }
@@ -354,7 +359,7 @@ private fun LazyListScope.throttlingSection(
             ProFeatureCalloutCard(
                 message = stringResource(R.string.pro_feature_thermal_log_message),
                 actionLabel = stringResource(R.string.pro_feature_upgrade_action),
-                onAction = onUpgradeToPro
+                onAction = onUpgradeToPro,
             )
         }
     }
@@ -363,20 +368,21 @@ private fun LazyListScope.throttlingSection(
 @Composable
 private fun ThermalInfoSheet(
     activeKey: String?,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     activeKey?.let { key ->
-        val content = when (key) {
-            "cpuTemp" -> ThermalInfoContent.cpuTemp
-            "thermalHeadroom" -> ThermalInfoContent.thermalHeadroom
-            "thermalStatus" -> ThermalInfoContent.thermalStatus
-            "throttling" -> ThermalInfoContent.throttling
-            else -> null
-        }
+        val content =
+            when (key) {
+                "cpuTemp" -> ThermalInfoContent.cpuTemp
+                "thermalHeadroom" -> ThermalInfoContent.thermalHeadroom
+                "thermalStatus" -> ThermalInfoContent.thermalStatus
+                "throttling" -> ThermalInfoContent.throttling
+                else -> null
+            }
         content?.let {
             InfoBottomSheet(
                 content = it,
-                onDismiss = onDismiss
+                onDismiss = onDismiss,
             )
         }
     }
@@ -389,7 +395,7 @@ private fun ThermalHeroCard(
     thermal: ThermalState,
     temperatureUnit: TemperatureUnit,
     sessionMinTemp: Float? = null,
-    sessionMaxTemp: Float? = null
+    sessionMaxTemp: Float? = null,
 ) {
     val tempColor = statusColorForTemperature(thermal.batteryTempC)
     val bandLabel = temperatureBandLabel(thermal.batteryTempC)
@@ -400,31 +406,31 @@ private fun ThermalHeroCard(
     val warmLabel = stringResource(R.string.thermal_warm)
     val criticalLabel = stringResource(R.string.thermal_critical)
 
-    val thermalSegments = remember(statusColors) {
-        listOf(
-            StatusSegment(label = optimalLabel, color = statusColors.healthy, rangeStart = 0f, rangeEnd = 35f),
-            StatusSegment(label = normalLabel, color = statusColors.fair, rangeStart = 35f, rangeEnd = 40f),
-            StatusSegment(label = warmLabel, color = statusColors.poor, rangeStart = 40f, rangeEnd = 45f),
-            StatusSegment(label = criticalLabel, color = statusColors.critical, rangeStart = 45f, rangeEnd = 60f)
-        )
-    }
+    val thermalSegments =
+        remember(statusColors) {
+            listOf(
+                StatusSegment(label = optimalLabel, color = statusColors.healthy, rangeStart = 0f, rangeEnd = 35f),
+                StatusSegment(label = normalLabel, color = statusColors.fair, rangeStart = 35f, rangeEnd = 40f),
+                StatusSegment(label = warmLabel, color = statusColors.poor, rangeStart = 40f, rangeEnd = 45f),
+                StatusSegment(label = criticalLabel, color = statusColors.critical, rangeStart = 45f, rangeEnd = 60f),
+            )
+        }
 
     Card(
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.heroCardColor
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors = runcheckHeroCardColors(),
+        elevation = runcheckCardElevation(),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = MaterialTheme.spacing.lg, vertical = 22.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = MaterialTheme.spacing.lg, vertical = 22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start
+                horizontalArrangement = Arrangement.Start,
             ) {
                 SectionHeader(stringResource(R.string.thermal_battery_temp))
             }
@@ -436,20 +442,20 @@ private fun ThermalHeroCard(
                 Text(
                     text = formatTemperatureValue(thermal.batteryTempC, temperatureUnit),
                     style = MaterialTheme.numericHeroDisplayTextStyle,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = stringResource(temperatureUnitRes(temperatureUnit)),
                     style = MaterialTheme.numericHeroDisplayUnitTextStyle,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 2.dp, bottom = 10.dp)
+                    modifier = Modifier.padding(start = 2.dp, bottom = 10.dp),
                 )
             }
 
             Text(
                 text = bandLabel,
                 style = MaterialTheme.typography.titleMedium,
-                color = tempColor
+                color = tempColor,
             )
 
             if (sessionMinTemp != null && sessionMaxTemp != null &&
@@ -457,26 +463,27 @@ private fun ThermalHeroCard(
             ) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = buildAnnotatedString {
-                        withStyle(SpanStyle(color = statusColorForTemperature(sessionMinTemp))) {
-                            append(
-                                stringResource(
-                                    R.string.value_direction_down,
-                                    formatTemperature(sessionMinTemp, temperatureUnit)
+                    text =
+                        buildAnnotatedString {
+                            withStyle(SpanStyle(color = statusColorForTemperature(sessionMinTemp))) {
+                                append(
+                                    stringResource(
+                                        R.string.value_direction_down,
+                                        formatTemperature(sessionMinTemp, temperatureUnit),
+                                    ),
                                 )
-                            )
-                        }
-                        append(" · ")
-                        withStyle(SpanStyle(color = statusColorForTemperature(sessionMaxTemp))) {
-                            append(
-                                stringResource(
-                                    R.string.value_direction_up,
-                                    formatTemperature(sessionMaxTemp, temperatureUnit)
+                            }
+                            append(" · ")
+                            withStyle(SpanStyle(color = statusColorForTemperature(sessionMaxTemp))) {
+                                append(
+                                    stringResource(
+                                        R.string.value_direction_up,
+                                        formatTemperature(sessionMaxTemp, temperatureUnit),
+                                    ),
                                 )
-                            )
-                        }
-                    },
-                    style = MaterialTheme.typography.bodySmall
+                            }
+                        },
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
 
@@ -486,126 +493,10 @@ private fun ThermalHeroCard(
             SegmentedStatusBar(
                 segments = thermalSegments,
                 currentValue = thermal.batteryTempC,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-        }
-    }
-}
-
-// ── Thermometer icon (Canvas) ────────────────────────────────────────────────────
-
-@Composable
-private fun ThermometerIcon(
-    temperatureC: Float,
-    temperatureUnit: TemperatureUnit,
-    color: Color,
-    modifier: Modifier = Modifier,
-    minTemp: Float = 15f,
-    maxTemp: Float = 50f
-) {
-    val normalizedTemp = ((temperatureC - minTemp) / (maxTemp - minTemp)).coerceIn(0f, 1f)
-    val reducedMotion = MaterialTheme.reducedMotion
-
-    val animatedFill by animateFloatAsState(
-        targetValue = normalizedTemp,
-        animationSpec = if (reducedMotion) tween(0) else tween(
-            durationMillis = 1200,
-            easing = FastOutSlowInEasing
-        ),
-        label = "thermFill"
-    )
-
-    val trackColor = MaterialTheme.iconCircleColor
-    val a11yDesc = stringResource(
-        R.string.a11y_heat_strip,
-        formatTemperature(temperatureC, temperatureUnit),
-        temperatureBandLabel(temperatureC)
-    )
-
-    Canvas(
-        modifier = modifier.semantics { contentDescription = a11yDesc }
-    ) {
-        val w = size.width
-        val h = size.height
-
-        // Bulb at the bottom
-        val bulbRadius = w * 0.42f
-        val bulbCenterY = h - bulbRadius - 2.dp.toPx()
-
-        // Stem dimensions
-        val stemWidth = w * 0.30f
-        val stemLeft = (w - stemWidth) / 2f
-        val stemTop = 4.dp.toPx()
-        val stemBottom = bulbCenterY - bulbRadius * 0.5f
-        val stemHeight = stemBottom - stemTop
-        val stemCorner = stemWidth / 2f
-
-        // Track (background) — stem
-        drawRoundRect(
-            color = trackColor,
-            topLeft = Offset(stemLeft, stemTop),
-            size = Size(stemWidth, stemHeight),
-            cornerRadius = CornerRadius(stemCorner, stemCorner)
-        )
-
-        // Track (background) — bulb
-        drawCircle(
-            color = trackColor,
-            radius = bulbRadius,
-            center = Offset(w / 2f, bulbCenterY)
-        )
-
-        // Fill — bulb (always filled with status color)
-        drawCircle(
-            color = color,
-            radius = bulbRadius * 0.75f,
-            center = Offset(w / 2f, bulbCenterY)
-        )
-
-        // Fill — stem (from bottom up based on temperature)
-        val fillHeight = stemHeight * animatedFill
-        val fillTop = stemTop + stemHeight - fillHeight
-        if (fillHeight > 0f) {
-            drawRoundRect(
-                color = color,
-                topLeft = Offset(stemLeft + stemWidth * 0.15f, fillTop),
-                size = Size(stemWidth * 0.70f, stemBottom - fillTop),
-                cornerRadius = CornerRadius(stemWidth * 0.35f, stemWidth * 0.35f)
-            )
-        }
-
-        // Stem outline
-        drawRoundRect(
-            color = color.copy(alpha = 0.4f),
-            topLeft = Offset(stemLeft, stemTop),
-            size = Size(stemWidth, stemHeight),
-            cornerRadius = CornerRadius(stemCorner, stemCorner),
-            style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round)
-        )
-
-        // Bulb outline
-        drawCircle(
-            color = color.copy(alpha = 0.4f),
-            radius = bulbRadius,
-            center = Offset(w / 2f, bulbCenterY),
-            style = Stroke(width = 1.5.dp.toPx())
-        )
-
-        // Tick marks on the stem
-        val tickCount = 4
-        val tickStartX = stemLeft + stemWidth + 3.dp.toPx()
-        val tickEndX = tickStartX + 6.dp.toPx()
-        for (i in 1 until tickCount) {
-            val tickY = stemTop + stemHeight * (1f - i.toFloat() / tickCount)
-            drawLine(
-                color = color.copy(alpha = 0.3f),
-                start = Offset(tickStartX, tickY),
-                end = Offset(tickEndX, tickY),
-                strokeWidth = 1.dp.toPx(),
-                cap = StrokeCap.Round
-            )
         }
     }
 }
@@ -618,84 +509,92 @@ private fun ThermalMetricsCard(
     temperatureUnit: TemperatureUnit,
     liveTempC: List<Float> = emptyList(),
     liveHeadroom: List<Float> = emptyList(),
-    onInfoClick: (String) -> Unit = {}
+    onInfoClick: (String) -> Unit = {},
 ) {
     val useNeutralThermalStatus = shouldUseNeutralThermalStatus(thermal)
     val defaultOnSurface = MaterialTheme.colorScheme.onSurface
     val unavailableText = stringResource(R.string.thermal_cpu_unavailable)
 
     // Pre-compute CPU temperature pill values
-    val cpuTempValue = thermal.cpuTempC?.let {
-        formatTemperature(it, temperatureUnit)
-    } ?: unavailableText
-    val cpuTempColor = thermal.cpuTempC?.let {
-        statusColorForTemperature(it)
-    } ?: defaultOnSurface
+    val cpuTempValue =
+        thermal.cpuTempC?.let {
+            formatTemperature(it, temperatureUnit)
+        } ?: unavailableText
+    val cpuTempColor =
+        thermal.cpuTempC?.let {
+            statusColorForTemperature(it)
+        } ?: defaultOnSurface
 
     // Pre-compute headroom pill values
-    val headroomValue = thermal.thermalHeadroom?.let {
-        stringResource(R.string.value_headroom_percent, formatDecimal((1f - it.coerceIn(0f, 1f)) * 100, 0))
-    } ?: unavailableText
-    val headroomValueColor = thermal.thermalHeadroom?.let { headroom ->
-        headroomColor(headroom)
-    } ?: defaultOnSurface
+    val headroomValue =
+        thermal.thermalHeadroom?.let {
+            stringResource(R.string.value_headroom_percent, formatDecimal((1f - it.coerceIn(0f, 1f)) * 100, 0))
+        } ?: unavailableText
+    val headroomValueColor =
+        thermal.thermalHeadroom?.let { headroom ->
+            headroomColor(headroom)
+        } ?: defaultOnSurface
 
     // Pre-compute thermal status pill values
-    val statusValue = if (useNeutralThermalStatus) {
-        stringResource(R.string.thermal_status_not_reported)
-    } else {
-        thermalStatusLabel(thermal.thermalStatus)
-    }
-    val statusValueColor = if (useNeutralThermalStatus) {
-        defaultOnSurface
-    } else {
-        thermalStatusColor(thermal.thermalStatus)
-    }
+    val statusValue =
+        if (useNeutralThermalStatus) {
+            stringResource(R.string.thermal_status_not_reported)
+        } else {
+            thermalStatusLabel(thermal.thermalStatus)
+        }
+    val statusValueColor =
+        if (useNeutralThermalStatus) {
+            defaultOnSurface
+        } else {
+            thermalStatusColor(thermal.thermalStatus)
+        }
 
     // Pre-compute throttling pill values
     val statusColors = MaterialTheme.statusColors
-    val throttlingValue = when {
-        thermal.isThrottling -> stringResource(R.string.thermal_throttling_active)
-        useNeutralThermalStatus -> stringResource(R.string.thermal_throttling_not_reported)
-        else -> stringResource(R.string.thermal_throttling_none)
-    }
-    val throttlingValueColor = when {
-        thermal.isThrottling -> statusColors.critical
-        useNeutralThermalStatus -> defaultOnSurface
-        else -> statusColors.healthy
-    }
+    val throttlingValue =
+        when {
+            thermal.isThrottling -> stringResource(R.string.thermal_throttling_active)
+            useNeutralThermalStatus -> stringResource(R.string.thermal_throttling_not_reported)
+            else -> stringResource(R.string.thermal_throttling_none)
+        }
+    val throttlingValueColor =
+        when {
+            thermal.isThrottling -> statusColors.critical
+            useNeutralThermalStatus -> defaultOnSurface
+            else -> statusColors.healthy
+        }
 
     Card(
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors = runcheckCardColors(),
+        elevation = runcheckCardElevation(),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(MaterialTheme.spacing.base),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
         ) {
             // Row 1: CPU Temperature + Thermal Headroom
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
+                verticalAlignment = Alignment.Top,
             ) {
                 MetricPill(
                     label = stringResource(R.string.thermal_cpu_temp),
                     value = cpuTempValue,
                     valueColor = cpuTempColor,
                     onInfoClick = { onInfoClick("cpuTemp") },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 MetricPill(
                     label = stringResource(R.string.thermal_headroom),
                     value = headroomValue,
                     valueColor = headroomValueColor,
                     onInfoClick = { onInfoClick("thermalHeadroom") },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
             }
 
@@ -704,21 +603,22 @@ private fun ThermalMetricsCard(
             // Row 2: Thermal Status + Throttling
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
+                verticalAlignment = Alignment.Top,
             ) {
                 MetricPill(
                     label = stringResource(R.string.thermal_status),
                     value = statusValue,
                     valueColor = statusValueColor,
                     onInfoClick = { onInfoClick("thermalStatus") },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 MetricPill(
                     label = stringResource(R.string.thermal_throttling),
                     value = throttlingValue,
                     valueColor = throttlingValueColor,
                     onInfoClick = { onInfoClick("throttling") },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
             }
 
@@ -726,7 +626,7 @@ private fun ThermalMetricsCard(
                 thermal = thermal,
                 temperatureUnit = temperatureUnit,
                 liveTempC = liveTempC,
-                liveHeadroom = liveHeadroom
+                liveHeadroom = liveHeadroom,
             )
         }
     }
@@ -737,7 +637,7 @@ private fun ThermalLiveCharts(
     thermal: ThermalState,
     temperatureUnit: TemperatureUnit,
     liveTempC: List<Float>,
-    liveHeadroom: List<Float>
+    liveHeadroom: List<Float>,
 ) {
     if (liveTempC.size >= 2) {
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
@@ -746,27 +646,31 @@ private fun ThermalLiveCharts(
             currentValueLabel = formatTemperature(thermal.batteryTempC, temperatureUnit),
             label = stringResource(R.string.thermal_battery_temp),
             lineColor = statusColorForTemperature(thermal.batteryTempC),
-            accessibilityDescription = stringResource(
-                R.string.a11y_chart_trend,
-                stringResource(R.string.thermal_battery_temp)
-            ),
-            modifier = Modifier.fillMaxWidth()
+            accessibilityDescription =
+                stringResource(
+                    R.string.a11y_chart_trend,
+                    stringResource(R.string.thermal_battery_temp),
+                ),
+            modifier = Modifier.fillMaxWidth(),
         )
     }
     if (liveHeadroom.size >= 2) {
         LiveChart(
             data = liveHeadroom,
-            currentValueLabel = thermal.thermalHeadroom?.let {
-                stringResource(R.string.value_headroom_percent, formatDecimal((1f - it.coerceIn(0f, 1f)) * 100, 0))
-            } ?: "\u2014",
+            currentValueLabel =
+                thermal.thermalHeadroom?.let {
+                    stringResource(R.string.value_headroom_percent, formatDecimal((1f - it.coerceIn(0f, 1f)) * 100, 0))
+                } ?: "\u2014",
             label = stringResource(R.string.thermal_headroom),
-            lineColor = thermal.thermalHeadroom?.let { headroomColor(it) }
-                ?: MaterialTheme.colorScheme.primary,
-            accessibilityDescription = stringResource(
-                R.string.a11y_chart_trend,
-                stringResource(R.string.thermal_headroom)
-            ),
-            modifier = Modifier.fillMaxWidth()
+            lineColor =
+                thermal.thermalHeadroom?.let { headroomColor(it) }
+                    ?: MaterialTheme.colorScheme.primary,
+            accessibilityDescription =
+                stringResource(
+                    R.string.a11y_chart_trend,
+                    stringResource(R.string.thermal_headroom),
+                ),
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
@@ -779,61 +683,64 @@ private fun ThermalHistoryCard(
     selectedPeriod: HistoryPeriod,
     historyLoadError: UiText?,
     temperatureUnit: TemperatureUnit,
-    onPeriodChange: (HistoryPeriod) -> Unit
+    onPeriodChange: (HistoryPeriod) -> Unit,
 ) {
     var selectedMetric by rememberSaveable { mutableStateOf(ThermalHistoryMetric.BATTERY_TEMP.name) }
 
-    val metric = ThermalHistoryMetric.entries.firstOrNull { it.name == selectedMetric }
-        ?: ThermalHistoryMetric.BATTERY_TEMP
+    val metric =
+        ThermalHistoryMetric.entries.firstOrNull { it.name == selectedMetric }
+            ?: ThermalHistoryMetric.BATTERY_TEMP
 
-    val chartModel = remember(history, metric, selectedPeriod, temperatureUnit) {
-        buildThermalHistoryChartModel(
-            history = history,
-            metric = metric,
-            period = selectedPeriod,
-            maxPoints = MAX_THERMAL_HISTORY_POINTS,
-            temperatureUnit = temperatureUnit
-        )
-    }
+    val chartModel =
+        remember(history, metric, selectedPeriod, temperatureUnit) {
+            buildThermalHistoryChartModel(
+                history = history,
+                metric = metric,
+                period = selectedPeriod,
+                maxPoints = MAX_THERMAL_HISTORY_POINTS,
+                temperatureUnit = temperatureUnit,
+            )
+        }
 
     val qualityZones = thermalQualityZones(temperatureUnit)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = MaterialTheme.shapes.large
+        colors = runcheckCardColors(),
+        elevation = runcheckCardElevation(),
+        shape = MaterialTheme.shapes.large,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(MaterialTheme.spacing.base),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
         ) {
             CardSectionTitle(text = stringResource(R.string.thermal_history))
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
             ) {
                 ThermalHistoryMetric.entries.forEach { m ->
                     FilterChip(
                         selected = metric == m,
                         onClick = { selectedMetric = m.name },
-                        label = { Text(thermalHistoryMetricLabel(m)) }
+                        label = { Text(thermalHistoryMetricLabel(m)) },
                     )
                 }
             }
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
             ) {
                 HistoryPeriod.entries
                     .filter { it != HistoryPeriod.SINCE_UNPLUG }
@@ -841,7 +748,7 @@ private fun ThermalHistoryCard(
                         FilterChip(
                             selected = selectedPeriod == period,
                             onClick = { onPeriodChange(period) },
-                            label = { Text(historyPeriodLabel(period)) }
+                            label = { Text(historyPeriodLabel(period)) },
                         )
                     }
             }
@@ -850,69 +757,69 @@ private fun ThermalHistoryCard(
                 Text(
                     text = error.resolve(),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
 
             if (chartModel.chartData.size >= 2) {
-                val chartAccessibilitySummary = rememberChartAccessibilitySummary(
-                    title = stringResource(
-                        R.string.fullscreen_chart_title_thermal,
-                        thermalHistoryMetricLabel(metric)
-                    ),
-                    chartData = chartModel.chartData,
-                    unit = chartModel.unit,
-                    decimals = chartModel.tooltipDecimals,
-                    timeContext = stringResource(
-                        R.string.a11y_chart_context_history,
-                        historyPeriodLabel(selectedPeriod)
+                val chartAccessibilitySummary =
+                    rememberChartAccessibilitySummary(
+                        title =
+                            stringResource(
+                                R.string.fullscreen_chart_title_thermal,
+                                thermalHistoryMetricLabel(metric),
+                            ),
+                        chartData = chartModel.chartData,
+                        unit = chartModel.unit,
+                        decimals = chartModel.tooltipDecimals,
+                        timeContext =
+                            stringResource(
+                                R.string.a11y_chart_context_history,
+                                historyPeriodLabel(selectedPeriod),
+                            ),
                     )
-                )
 
                 Text(
                     text = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${thermalHistoryMetricLabel(metric)}",
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
-                ExpandableChartContainer(
-                    onExpand = {}
-                ) {
-                    TrendChart(
-                        data = chartModel.chartData,
-                        modifier = Modifier.fillMaxWidth(),
-                        contentDescription = chartAccessibilitySummary,
-                        yLabels = chartModel.yLabels.ifEmpty { null },
-                        xLabels = chartModel.xLabels.ifEmpty { null },
-                        showGrid = true,
-                        qualityZones = qualityZones,
-                        tooltipFormatter = { index -> formatChartTooltip(chartModel, index) }
-                    )
-                }
+                TrendChart(
+                    data = chartModel.chartData,
+                    modifier = Modifier.fillMaxWidth(),
+                    contentDescription = chartAccessibilitySummary,
+                    yLabels = chartModel.yLabels.ifEmpty { null },
+                    xLabels = chartModel.xLabels.ifEmpty { null },
+                    showGrid = true,
+                    qualityZones = qualityZones,
+                    tooltipFormatter = { index -> formatChartTooltip(chartModel, index) },
+                )
 
                 // Min / Avg / Max summary
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base)
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
+                    verticalAlignment = Alignment.Top,
                 ) {
                     chartModel.minValue?.let {
                         MetricPill(
                             label = stringResource(R.string.chart_stat_min),
                             value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
                     }
                     chartModel.averageValue?.let {
                         MetricPill(
                             label = stringResource(R.string.chart_stat_avg),
                             value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
                     }
                     chartModel.maxValue?.let {
                         MetricPill(
                             label = stringResource(R.string.chart_stat_max),
                             value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
@@ -920,7 +827,7 @@ private fun ThermalHistoryCard(
                 Text(
                     text = stringResource(R.string.network_history_empty),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -933,23 +840,22 @@ private fun ThermalHistoryCard(
 private fun ThrottlingEmptyState() {
     Card(
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors = runcheckCardColors(),
+        elevation = runcheckCardElevation(),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(MaterialTheme.spacing.base),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(MaterialTheme.spacing.base),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
         ) {
             StatusDot(color = MaterialTheme.statusColors.healthy)
             Text(
                 text = stringResource(R.string.thermal_no_events),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -958,67 +864,68 @@ private fun ThrottlingEmptyState() {
 @Composable
 private fun ThrottlingEventItem(
     event: ThrottlingEvent,
-    temperatureUnit: TemperatureUnit
+    temperatureUnit: TemperatureUnit,
 ) {
     val formattedTime = rememberFormattedDateTime(event.timestamp, "yMMMdHm")
-    val statusColor = when (event.thermalStatus.lowercase()) {
-        "severe" -> MaterialTheme.statusColors.poor
-        "critical", "emergency", "shutdown" -> MaterialTheme.statusColors.critical
-        else -> MaterialTheme.statusColors.fair
-    }
+    val statusColor =
+        when (event.thermalStatus.lowercase()) {
+            "severe" -> MaterialTheme.statusColors.poor
+            "critical", "emergency", "shutdown" -> MaterialTheme.statusColors.critical
+            else -> MaterialTheme.statusColors.fair
+        }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors = runcheckCardColors(),
+        elevation = runcheckCardElevation(),
     ) {
         Column(
             modifier = Modifier.padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
         ) {
             Text(
                 text = formattedTime,
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     StatusDot(color = statusColor)
                     Text(
                         text = event.thermalStatus,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
                 Text(
                     text = formatTemperature(event.batteryTempC, temperatureUnit),
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontFamily = MaterialTheme.numericFontFamily
-                    ),
-                    color = statusColorForTemperature(event.batteryTempC)
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = MaterialTheme.numericFontFamily,
+                        ),
+                    color = statusColorForTemperature(event.batteryTempC),
                 )
             }
 
             event.cpuTempC?.let { cpuTemp ->
                 Text(
-                    text = stringResource(
-                        R.string.value_label_colon,
-                        stringResource(R.string.thermal_cpu_temp),
-                        formatTemperature(cpuTemp, temperatureUnit)
-                    ),
+                    text =
+                        stringResource(
+                            R.string.value_label_colon,
+                            stringResource(R.string.thermal_cpu_temp),
+                            formatTemperature(cpuTemp, temperatureUnit),
+                        ),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -1026,22 +933,23 @@ private fun ThrottlingEventItem(
                 Text(
                     text = app,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             event.durationMs?.let { duration ->
                 val minutes = duration / 60_000
                 val seconds = (duration % 60_000) / 1000
-                val durationText = if (minutes > 0) {
-                    stringResource(R.string.value_duration_minutes_seconds, minutes, seconds)
-                } else {
-                    stringResource(R.string.value_duration_seconds, seconds)
-                }
+                val durationText =
+                    if (minutes > 0) {
+                        stringResource(R.string.value_duration_minutes_seconds, minutes, seconds)
+                    } else {
+                        stringResource(R.string.value_duration_seconds, seconds)
+                    }
                 Text(
                     text = stringResource(R.string.thermal_event_duration, durationText),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -1051,15 +959,16 @@ private fun ThrottlingEventItem(
 // ── Helper functions ─────────────────────────────────────────────────────────────
 
 @Composable
-private fun thermalStatusLabel(status: ThermalStatus): String = when (status) {
-    ThermalStatus.NONE -> stringResource(R.string.thermal_status_no_throttling)
-    ThermalStatus.LIGHT -> stringResource(R.string.thermal_status_light)
-    ThermalStatus.MODERATE -> stringResource(R.string.thermal_status_moderate)
-    ThermalStatus.SEVERE -> stringResource(R.string.thermal_status_severe)
-    ThermalStatus.CRITICAL -> stringResource(R.string.thermal_status_critical)
-    ThermalStatus.EMERGENCY -> stringResource(R.string.thermal_status_emergency)
-    ThermalStatus.SHUTDOWN -> stringResource(R.string.thermal_status_shutdown)
-}
+private fun thermalStatusLabel(status: ThermalStatus): String =
+    when (status) {
+        ThermalStatus.NONE -> stringResource(R.string.thermal_status_no_throttling)
+        ThermalStatus.LIGHT -> stringResource(R.string.thermal_status_light)
+        ThermalStatus.MODERATE -> stringResource(R.string.thermal_status_moderate)
+        ThermalStatus.SEVERE -> stringResource(R.string.thermal_status_severe)
+        ThermalStatus.CRITICAL -> stringResource(R.string.thermal_status_critical)
+        ThermalStatus.EMERGENCY -> stringResource(R.string.thermal_status_emergency)
+        ThermalStatus.SHUTDOWN -> stringResource(R.string.thermal_status_shutdown)
+    }
 
 @Composable
 private fun thermalStatusColor(status: ThermalStatus): Color {

@@ -6,9 +6,17 @@ import kotlinx.coroutines.flow.Flow
 
 interface ThermalRepository {
     fun getThermalState(): Flow<ThermalState>
-    fun getReadingsSince(since: Long, limit: Int? = null): Flow<List<ThermalReading>>
+
+    fun getReadingsSince(
+        since: Long,
+        limit: Int? = null,
+    ): Flow<List<ThermalReading>>
+
     suspend fun saveReading(state: ThermalState)
+
     suspend fun getAllReadings(): List<ThermalReading>
+
     suspend fun deleteOlderThan(cutoff: Long)
+
     suspend fun deleteAll()
 }

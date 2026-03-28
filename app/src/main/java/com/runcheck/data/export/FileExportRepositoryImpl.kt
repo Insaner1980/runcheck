@@ -11,33 +11,37 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class FileExportRepositoryImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context
-) : FileExportRepository {
+class FileExportRepositoryImpl
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+    ) : FileExportRepository {
+        override suspend fun prepareExportShare(files: Map<String, String>): List<String> =
+            withContext(Dispatchers.IO) {
+                val exportRoot =
+                    File(context.cacheDir, EXPORT_DIR_NAME).apply {
+                        mkdirs()
+                    }
+                exportRoot.listFiles()?.forEach(File::deleteRecursively)
 
-    override suspend fun prepareExportShare(files: Map<String, String>): List<String> =
-        withContext(Dispatchers.IO) {
-            val exportRoot = File(context.cacheDir, EXPORT_DIR_NAME).apply {
-                mkdirs()
-            }
-            exportRoot.listFiles()?.forEach(File::deleteRecursively)
+                val exportDir =
+                    File(exportRoot, "export_${System.currentTimeMillis()}").apply {
+                        mkdirs()
+                    }
 
-            val exportDir = File(exportRoot, "export_${System.currentTimeMillis()}").apply {
-                mkdirs()
+                files.map { (fileName, content) ->
+                    val file = File(exportDir, fileName)
+                    file.writeText(content, Charsets.UTF_8)
+                    FileProvider
+                        .getUriForFile(
+                            context,
+                            "${context.packageName}.fileprovider",
+                            file,
+                        ).toString()
+                }
             }
 
-            files.map { (fileName, content) ->
-                val file = File(exportDir, fileName)
-                file.writeText(content, Charsets.UTF_8)
-                FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    file
-                ).toString()
-            }
+        private companion object {
+            private const val EXPORT_DIR_NAME = "exports"
         }
-
-    private companion object {
-        private const val EXPORT_DIR_NAME = "exports"
     }
-}

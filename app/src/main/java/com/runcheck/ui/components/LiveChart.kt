@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
@@ -68,11 +69,12 @@ fun LiveChart(
     yMin: Float? = null,
     yMax: Float? = null,
     label: String? = null,
-    accessibilityDescription: String? = null
+    accessibilityDescription: String? = null,
 ) {
-    val visibleData = remember(data, maxPoints) {
-        if (data.size > maxPoints) data.takeLast(maxPoints) else data
-    }
+    val visibleData =
+        remember(data, maxPoints) {
+            if (data.size > maxPoints) data.takeLast(maxPoints) else data
+        }
 
     val reducedMotion = MaterialTheme.reducedMotion
 
@@ -80,22 +82,23 @@ fun LiveChart(
         // Header row: label + current value
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Bottom
+            verticalAlignment = Alignment.Bottom,
         ) {
             if (label != null) {
                 Text(
                     text = label,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.weight(1f))
             }
             Text(
                 text = currentValueLabel,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontFamily = MaterialTheme.numericFontFamily
-                ),
-                color = MaterialTheme.colorScheme.onSurface
+                style =
+                    MaterialTheme.typography.titleMedium.copy(
+                        fontFamily = MaterialTheme.numericFontFamily,
+                    ),
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
 
@@ -110,9 +113,10 @@ fun LiveChart(
             yMax = yMax,
             accessibilityDescription = accessibilityDescription,
             reducedMotion = reducedMotion,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(chartHeight)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(chartHeight),
         )
     }
 }
@@ -126,7 +130,7 @@ private fun LiveChartCanvas(
     yMax: Float?,
     accessibilityDescription: String?,
     modifier: Modifier = Modifier,
-    reducedMotion: Boolean = false
+    reducedMotion: Boolean = false,
 ) {
     if (data.size < 2) {
         // Not enough data — show empty placeholder
@@ -176,7 +180,7 @@ private fun LiveChartCanvas(
             animatedScrollOffset.stop()
             animatedScrollOffset.snapTo(animatedScrollOffset.value + (newPointCount * stepX))
             launch {
-                animatedScrollOffset.animateTo(0f, tween(150, easing = LinearEasing))
+                animatedScrollOffset.animateTo(0f, tween(MotionTokens.SCROLL, easing = LinearEasing))
             }
         } else {
             animatedScrollOffset.snapTo(0f)
@@ -186,22 +190,26 @@ private fun LiveChartCanvas(
         glowPulseRadius.stop()
         glowPulseAlpha.snapTo(0.5f)
         glowPulseRadius.snapTo(8f)
-        launch { glowPulseAlpha.animateTo(0.3f, tween(300)) }
-        glowPulseRadius.animateTo(5f, tween(300))
+        launch { glowPulseAlpha.animateTo(0.3f, tween(MotionTokens.MEDIUM)) }
+        glowPulseRadius.animateTo(5f, tween(MotionTokens.MEDIUM))
 
         previousData = data.toList()
     }
 
     Canvas(
-        modifier = modifier
-            .onSizeChanged { canvasWidth = it.width.toFloat() }
-            .then(
-                if (accessibilityDescription == null) Modifier
-                else Modifier.semantics {
-                    this.contentDescription = accessibilityDescription
-                    this.role = Role.Image
-                }
-            )
+        modifier =
+            modifier
+                .onSizeChanged { canvasWidth = it.width.toFloat() }
+                .then(
+                    if (accessibilityDescription == null) {
+                        Modifier
+                    } else {
+                        Modifier.semantics {
+                            this.contentDescription = accessibilityDescription
+                            this.role = Role.Image
+                        }
+                    },
+                ),
     ) {
         val chartLeft = 0f
         val chartRight = size.width
@@ -217,7 +225,7 @@ private fun LiveChartCanvas(
                 color = gridColor,
                 start = Offset(chartLeft, y),
                 end = Offset(chartRight, y),
-                strokeWidth = 0.5f.dp.toPx()
+                strokeWidth = 0.5f.dp.toPx(),
             )
         }
 
@@ -247,22 +255,24 @@ private fun LiveChartCanvas(
         // Draw gradient fill
         drawPath(
             path = fillPath,
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    lineColor.copy(alpha = 0.20f),
-                    lineColor.copy(alpha = 0.02f)
+            brush =
+                Brush.verticalGradient(
+                    colors =
+                        listOf(
+                            lineColor.copy(alpha = 0.20f),
+                            lineColor.copy(alpha = 0.02f),
+                        ),
+                    startY = chartTop,
+                    endY = chartBottom,
                 ),
-                startY = chartTop,
-                endY = chartBottom
-            ),
-            style = Fill
+            style = Fill,
         )
 
         // Draw line
         drawPath(
             path = linePath,
             color = lineColor,
-            style = Stroke(width = 1.5f.dp.toPx(), cap = StrokeCap.Round)
+            style = Stroke(width = 1.5f.dp.toPx(), cap = StrokeCap.Round),
         )
 
         // Draw current value dot at the end
@@ -276,19 +286,22 @@ private fun LiveChartCanvas(
             drawCircle(
                 color = lineColor.copy(alpha = glowPulseAlpha.value),
                 radius = glowPulseRadius.value.dp.toPx(),
-                center = Offset(dotX, dotY)
+                center = Offset(dotX, dotY),
             )
             // Inner dot
             drawCircle(
                 color = lineColor,
                 radius = 3.dp.toPx(),
-                center = Offset(dotX, dotY)
+                center = Offset(dotX, dotY),
             )
         }
     }
 }
 
-private fun appendedPointCount(previous: List<Float>, current: List<Float>): Int {
+private fun appendedPointCount(
+    previous: List<Float>,
+    current: List<Float>,
+): Int {
     if (previous.isEmpty() || current.isEmpty() || previous == current) return 0
 
     val maxOverlap = minOf(previous.size, current.size)

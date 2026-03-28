@@ -6,5 +6,5 @@ enum class BatteryHealth {
     DEAD,
     OVER_VOLTAGE,
     COLD,
-    UNKNOWN
+    UNKNOWN,
 }

@@ -6,5 +6,5 @@ data class AppBatteryUsage(
     val packageName: String,
     val appLabel: String,
     val foregroundTimeMs: Long,
-    val estimatedDrainMah: Float?
+    val estimatedDrainMah: Float?,
 )

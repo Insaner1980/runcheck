@@ -15,5 +15,5 @@ data class BatteryState(
     @param:IntRange(from = 0, to = 100) val healthPercent: Int? = null,
     val remainingMah: Int? = null,
     val designCapacityMah: Int? = null,
-    val estimatedCapacityMah: Int? = null
+    val estimatedCapacityMah: Int? = null,
 )

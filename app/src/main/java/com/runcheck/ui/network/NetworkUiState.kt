@@ -17,19 +17,28 @@ sealed interface NetworkUiState {
         val isPro: Boolean = false,
         val dismissedInfoCards: Set<String> = emptySet(),
         val showInfoCards: Boolean = true,
-        val liveSignalDbm: List<Float> = emptyList()
+        val liveSignalDbm: List<Float> = emptyList(),
     ) : NetworkUiState
 
-    data class Error(val message: UiText) : NetworkUiState
+    data class Error(
+        val message: UiText,
+    ) : NetworkUiState
 }
 
 sealed interface SpeedTestPhase {
     data object Idle : SpeedTestPhase
+
     data object Ping : SpeedTestPhase
+
     data object Download : SpeedTestPhase
+
     data object Upload : SpeedTestPhase
+
     data object Completed : SpeedTestPhase
-    data class Failed(val error: UiText) : SpeedTestPhase
+
+    data class Failed(
+        val error: UiText,
+    ) : SpeedTestPhase
 }
 
 data class SpeedTestUiState(
@@ -44,5 +53,5 @@ data class SpeedTestUiState(
     val historyLoadError: UiText? = null,
     val lastResult: SpeedTestResult? = null,
     val recentResults: List<SpeedTestResult> = emptyList(),
-    val showCellularWarning: Boolean = false
+    val showCellularWarning: Boolean = false,
 )

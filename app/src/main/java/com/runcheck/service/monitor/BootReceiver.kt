@@ -19,7 +19,6 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class BootReceiver : BroadcastReceiver() {
-
     @Inject
     lateinit var monitorScheduler: MonitoringScheduler
 
@@ -29,7 +28,10 @@ class BootReceiver : BroadcastReceiver() {
     @Inject
     lateinit var userPreferencesRepository: UserPreferencesRepository
 
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
         val action = intent.action
         if (
             action != Intent.ACTION_BOOT_COMPLETED &&
@@ -52,8 +54,8 @@ class BootReceiver : BroadcastReceiver() {
                 restartLiveNotificationIfEnabled(context)
             } catch (e: CancellationException) {
                 throw e
-            } catch (t: Throwable) {
-                ReleaseSafeLog.error(TAG, "Failed to reschedule monitoring after $action", t)
+            } catch (e: Exception) {
+                ReleaseSafeLog.error(TAG, "Failed to reschedule monitoring after $action", e)
             } finally {
                 pendingResult.finish()
             }
@@ -69,8 +71,8 @@ class BootReceiver : BroadcastReceiver() {
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (t: Throwable) {
-            ReleaseSafeLog.error(TAG, "Failed to restart live notification service", t)
+        } catch (e: Exception) {
+            ReleaseSafeLog.error(TAG, "Failed to restart live notification service", e)
         }
     }
 

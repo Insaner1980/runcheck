@@ -5,5 +5,5 @@ data class ThermalState(
     val cpuTempC: Float? = null,
     val thermalHeadroom: Float? = null,
     val thermalStatus: ThermalStatus,
-    val isThrottling: Boolean
+    val isThrottling: Boolean,
 )

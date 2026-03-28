@@ -11,15 +11,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -33,10 +32,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,6 +55,8 @@ import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.ProFeatureLockedState
+import com.runcheck.ui.theme.runcheckCardColors
+import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
 import kotlin.math.max
 
@@ -64,7 +65,7 @@ fun ChargerComparisonScreen(
     onBack: () -> Unit,
     onUpgradeToPro: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: ChargerViewModel = hiltViewModel()
+    viewModel: ChargerViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -72,13 +73,14 @@ fun ChargerComparisonScreen(
     var pendingDeleteCharger by remember { mutableStateOf<ChargerSummary?>(null) }
 
     DisposableEffect(lifecycleOwner, viewModel) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_START -> viewModel.startObserving()
-                Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
-                else -> Unit
+        val observer =
+            LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_START -> viewModel.startObserving()
+                    Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
+                    else -> Unit
+                }
             }
-        }
 
         lifecycleOwner.lifecycle.addObserver(observer)
         if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
@@ -97,7 +99,7 @@ fun ChargerComparisonScreen(
                 is ChargerUiState.Loading -> {
                     DetailTopBar(
                         title = stringResource(R.string.charger_title),
-                        onBack = onBack
+                        onBack = onBack,
                     )
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
@@ -107,7 +109,7 @@ fun ChargerComparisonScreen(
                 is ChargerUiState.Error -> {
                     DetailTopBar(
                         title = stringResource(R.string.charger_title),
-                        onBack = onBack
+                        onBack = onBack,
                     )
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -126,7 +128,7 @@ fun ChargerComparisonScreen(
                         onAddClick = { showAddDialog = true },
                         onSelectCharger = { viewModel.selectCharger(it) },
                         onClearSelectedCharger = { viewModel.clearSelectedCharger() },
-                        onDeleteRequest = { pendingDeleteCharger = it }
+                        onDeleteRequest = { pendingDeleteCharger = it },
                     )
                 }
 
@@ -137,16 +139,17 @@ fun ChargerComparisonScreen(
                     }
                     DetailTopBar(
                         title = stringResource(R.string.charger_title),
-                        onBack = onBack
+                        onBack = onBack,
                     )
                     ProFeatureLockedState(
                         title = stringResource(R.string.charger_title),
-                        message = stringResource(
-                            R.string.pro_feature_locked_message,
-                            stringResource(R.string.charger_title)
-                        ),
+                        message =
+                            stringResource(
+                                R.string.pro_feature_locked_message,
+                                stringResource(R.string.charger_title),
+                            ),
                         actionLabel = stringResource(R.string.pro_feature_upgrade_action),
-                        onAction = onUpgradeToPro
+                        onAction = onUpgradeToPro,
                     )
                 }
             }
@@ -159,7 +162,7 @@ fun ChargerComparisonScreen(
             onConfirm = { name ->
                 viewModel.addCharger(name)
                 showAddDialog = false
-            }
+            },
         )
     }
 
@@ -170,7 +173,7 @@ fun ChargerComparisonScreen(
             onConfirm = {
                 viewModel.deleteCharger(charger.chargerId)
                 pendingDeleteCharger = null
-            }
+            },
         )
     }
 }
@@ -182,7 +185,7 @@ private fun ChargerContent(
     onAddClick: () -> Unit,
     onSelectCharger: (Long) -> Unit,
     onClearSelectedCharger: () -> Unit,
-    onDeleteRequest: (ChargerSummary) -> Unit
+    onDeleteRequest: (ChargerSummary) -> Unit,
 ) {
     val selectedCharger = state.chargers.firstOrNull { it.chargerId == state.selectedChargerId }
 
@@ -190,28 +193,29 @@ private fun ChargerContent(
         topBar = {
             DetailTopBar(
                 title = stringResource(R.string.charger_title),
-                onBack = onBack
+                onBack = onBack,
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddClick,
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                contentColor = MaterialTheme.colorScheme.onPrimary,
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(R.string.charger_add)
+                    contentDescription = stringResource(R.string.charger_add),
                 )
             }
-        }
+        },
     ) { paddingValues ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = MaterialTheme.spacing.base),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
         ) {
             item {
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
@@ -221,7 +225,7 @@ private fun ChargerContent(
                 SelectedChargerCard(
                     chargerName = selectedCharger?.chargerName,
                     hasActiveSession = selectedCharger?.hasActiveSession == true,
-                    onClearSelectedCharger = onClearSelectedCharger
+                    onClearSelectedCharger = onClearSelectedCharger,
                 )
             }
 
@@ -230,7 +234,10 @@ private fun ChargerContent(
                     EmptyStateCard()
                 }
             } else {
-                val chargersWithHistory = state.chargers.filter { it.avgPowerMw != null || it.avgChargingSpeedMa != null }
+                val chargersWithHistory =
+                    state.chargers.filter {
+                        it.avgPowerMw != null || it.avgChargingSpeedMa != null
+                    }
                 if (chargersWithHistory.isNotEmpty()) {
                     item {
                         HistoricalComparisonCard(chargers = chargersWithHistory)
@@ -239,20 +246,22 @@ private fun ChargerContent(
 
                 items(
                     items = state.chargers,
-                    key = { it.chargerId }
+                    key = { it.chargerId },
                 ) { charger ->
-                    val onSelect = remember(charger.chargerId) {
-                        { onSelectCharger(charger.chargerId) }
-                    }
-                    val onDelete = remember(charger.chargerId) {
-                        { onDeleteRequest(charger) }
-                    }
+                    val onSelect =
+                        remember(charger.chargerId) {
+                            { onSelectCharger(charger.chargerId) }
+                        }
+                    val onDelete =
+                        remember(charger.chargerId) {
+                            { onDeleteRequest(charger) }
+                        }
                     ChargerCard(
                         charger = charger,
                         isSelected = charger.chargerId == state.selectedChargerId,
                         onSelect = onSelect,
                         onClearSelected = onClearSelectedCharger,
-                        onDelete = onDelete
+                        onDelete = onDelete,
                     )
                 }
             }
@@ -268,32 +277,33 @@ private fun ChargerContent(
 private fun SelectedChargerCard(
     chargerName: String?,
     hasActiveSession: Boolean,
-    onClearSelectedCharger: () -> Unit
+    onClearSelectedCharger: () -> Unit,
 ) {
     InfoCardContainer {
         Text(
             text = stringResource(R.string.charger_selection_title),
             style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
         Text(
             text = chargerName ?: stringResource(R.string.charger_selection_none),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
         )
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
         Text(
-            text = if (chargerName == null) {
-                stringResource(R.string.charger_selection_hint)
-            } else if (hasActiveSession) {
-                stringResource(R.string.charger_selection_active)
-            } else {
-                stringResource(R.string.charger_selection_ready)
-            },
+            text =
+                if (chargerName == null) {
+                    stringResource(R.string.charger_selection_hint)
+                } else if (hasActiveSession) {
+                    stringResource(R.string.charger_selection_active)
+                } else {
+                    stringResource(R.string.charger_selection_ready)
+                },
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (chargerName != null) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
@@ -310,13 +320,13 @@ private fun EmptyStateCard() {
         Text(
             text = stringResource(R.string.charger_no_chargers),
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
         Text(
             text = stringResource(R.string.charger_empty_body),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -331,54 +341,56 @@ private fun HistoricalComparisonCard(chargers: List<ChargerSummary>) {
         Text(
             text = stringResource(R.string.charger_historical_title),
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
         Text(
             text = stringResource(R.string.charger_historical_subtitle),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
         sortedChargers.forEach { charger ->
             val comparisonValue = chargerComparisonValue(charger)
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = charger.chargerName,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
                         text = comparisonLabel(charger),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            shape = MaterialTheme.shapes.extraLarge
-                        )
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(comparisonValue.toFloat() / maxValue.toFloat())
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
                             .height(8.dp)
                             .background(
-                                color = MaterialTheme.colorScheme.primary,
-                                shape = MaterialTheme.shapes.extraLarge
-                            )
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                shape = MaterialTheme.shapes.extraLarge,
+                            ),
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth(comparisonValue.toFloat() / maxValue.toFloat())
+                                .height(8.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = MaterialTheme.shapes.extraLarge,
+                                ),
                     )
                 }
             }
@@ -393,59 +405,61 @@ private fun ChargerCard(
     isSelected: Boolean,
     onSelect: () -> Unit,
     onClearSelected: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
 ) {
     // Pre-compute conditional values to reduce nesting complexity
-    val selectedLabel: String? = when {
-        charger.hasActiveSession -> stringResource(R.string.charger_selected_active)
-        isSelected -> stringResource(R.string.charger_selected)
-        else -> null
-    }
+    val selectedLabel: String? =
+        when {
+            charger.hasActiveSession -> stringResource(R.string.charger_selected_active)
+            isSelected -> stringResource(R.string.charger_selected)
+            else -> null
+        }
 
-    val buttonText = if (isSelected) {
-        stringResource(R.string.charger_clear_selected)
-    } else {
-        stringResource(R.string.charger_select)
-    }
+    val buttonText =
+        if (isSelected) {
+            stringResource(R.string.charger_clear_selected)
+        } else {
+            stringResource(R.string.charger_select)
+        }
     val buttonAction = if (isSelected) onClearSelected else onSelect
 
-    val lastUsedText = charger.lastUsed?.let { timestamp ->
-        val formatted = rememberFormattedDateTime(timestamp, "yMMMdHm")
-        stringResource(R.string.charger_last_test, formatted)
-    }
+    val lastUsedText =
+        charger.lastUsed?.let { timestamp ->
+            val formatted = rememberFormattedDateTime(timestamp, "yMMMdHm")
+            stringResource(R.string.charger_last_test, formatted)
+        }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors = runcheckCardColors(),
+        elevation = runcheckCardElevation(),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(MaterialTheme.spacing.base)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(MaterialTheme.spacing.base),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     Text(
                         text = charger.chargerName,
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     selectedLabel?.let {
                         Text(
                             text = it,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }
@@ -453,7 +467,7 @@ private fun ChargerCard(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = stringResource(R.string.charger_delete),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -461,13 +475,14 @@ private fun ChargerCard(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
 
             Text(
-                text = pluralStringResource(
-                    R.plurals.charger_sessions,
-                    charger.sessionCount,
-                    charger.sessionCount
-                ),
+                text =
+                    pluralStringResource(
+                        R.plurals.charger_sessions,
+                        charger.sessionCount,
+                        charger.sessionCount,
+                    ),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
@@ -475,14 +490,14 @@ private fun ChargerCard(
             Text(
                 text = latestResultLabel(charger),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             lastUsedText?.let {
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -490,7 +505,7 @@ private fun ChargerCard(
 
             OutlinedButton(
                 onClick = buttonAction,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(text = buttonText)
             }
@@ -501,7 +516,7 @@ private fun ChargerCard(
 @Composable
 private fun AddChargerDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (String) -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
 
@@ -515,13 +530,13 @@ private fun AddChargerDialog(
                 onValueChange = { name = it },
                 label = { Text(stringResource(R.string.charger_add_hint)) },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
         },
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(name) },
-                enabled = name.isNotBlank()
+                enabled = name.isNotBlank(),
             ) {
                 Text(stringResource(R.string.charger_add))
             }
@@ -530,7 +545,7 @@ private fun AddChargerDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(android.R.string.cancel))
             }
-        }
+        },
     )
 }
 
@@ -538,7 +553,7 @@ private fun AddChargerDialog(
 private fun DeleteChargerDialog(
     chargerName: String,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -554,7 +569,7 @@ private fun DeleteChargerDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(android.R.string.cancel))
             }
-        }
+        },
     )
 }
 
@@ -563,22 +578,20 @@ private fun InfoCardContainer(content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors = runcheckCardColors(),
+        elevation = runcheckCardElevation(),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(MaterialTheme.spacing.base),
-            content = content
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(MaterialTheme.spacing.base),
+            content = content,
         )
     }
 }
 
-private fun chargerComparisonValue(charger: ChargerSummary): Int =
-    charger.avgPowerMw ?: charger.avgChargingSpeedMa ?: 0
+private fun chargerComparisonValue(charger: ChargerSummary): Int = charger.avgPowerMw ?: charger.avgChargingSpeedMa ?: 0
 
 @Composable
 private fun comparisonLabel(charger: ChargerSummary): String =
@@ -586,7 +599,7 @@ private fun comparisonLabel(charger: ChargerSummary): String =
         stringResource(R.string.charger_average_power, formatDecimal(powerMw / 1000f, 1))
     } ?: stringResource(
         R.string.charger_average_current,
-        charger.avgChargingSpeedMa ?: 0
+        charger.avgChargingSpeedMa ?: 0,
     )
 
 @Composable

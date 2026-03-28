@@ -5,5 +5,5 @@ data class ThermalReading(
     val batteryTempC: Float,
     val cpuTempC: Float?,
     val thermalStatus: Int,
-    val throttling: Boolean
+    val throttling: Boolean,
 )

@@ -5,12 +5,12 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
-
 }
 
-val releaseSigningRequested = gradle.startParameter.taskNames.any {
-    it.contains("release", ignoreCase = true)
-}
+val releaseSigningRequested =
+    gradle.startParameter.taskNames.any {
+        it.contains("release", ignoreCase = true)
+    }
 
 fun requiredReleaseEnv(name: String): String =
     providers.environmentVariable(name).orNull?.takeIf { it.isNotBlank() }
@@ -33,9 +33,11 @@ android {
         buildConfigField("String", "ROOM_DB_NAME", "\"runcheck.db\"")
         val proProductId = providers.environmentVariable("RUNCHECK_PRO_PRODUCT_ID").getOrElse("runcheck_pro")
         val latencyHost = providers.environmentVariable("RUNCHECK_LATENCY_HOST").getOrElse("locate.measurementlab.net")
-        val latencyPort = providers.environmentVariable("RUNCHECK_LATENCY_PORT")
-            .map { it.toIntOrNull() ?: 443 }
-            .getOrElse(443)
+        val latencyPort =
+            providers
+                .environmentVariable("RUNCHECK_LATENCY_PORT")
+                .map { it.toIntOrNull() ?: 443 }
+                .getOrElse(443)
         buildConfigField("String", "PRO_PRODUCT_ID", "\"$proProductId\"")
         buildConfigField("String", "LATENCY_HOST", "\"$latencyHost\"")
         buildConfigField("int", "LATENCY_PORT", latencyPort.toString())
@@ -60,6 +62,11 @@ android {
     buildTypes {
         debug {
             buildConfigField("boolean", "ROOM_DEBUG_TOOLS_ENABLED", "true")
+            buildConfigField(
+                "String",
+                "SENTRY_DSN",
+                "\"https://34bc2ad48c87a2c7a666076de44cf0ae@o4511121418878976.ingest.de.sentry.io/4511121470193744\"",
+            )
         }
         release {
             isDebuggable = false
@@ -93,31 +100,33 @@ android {
         checkReleaseBuilds = true
 
         // High-signal checks — correctness, security, performance, interop
-        enable += setOf(
-            "NewApi",                    // API calls above minSdk without guards
-            "InlinedApi",               // Inlined constants from newer APIs
-            "ObsoleteSdkInt",           // SDK_INT checks that are always true given minSdk
-            "UnusedResources",          // Dead strings, drawables, layouts
-            "MissingPermission",        // API calls missing declared permissions
-            "HardcodedText",            // Strings not in strings.xml (localization)
-            "MissingTranslation",       // Incomplete translations
-            "Recycle",                  // TypedArray/Cursor not recycled
-            "StaticFieldLeak",          // Context leaks in static fields
-            "SetTextI18n",             // Concatenated text in setText (i18n issue)
-            "RtlHardcoded",           // Left/right instead of start/end
-            "ContentDescription",      // Missing contentDescription (a11y)
-            "PrivateResource",         // Using private framework resources
-            "InvalidPackage",          // Importing packages not on Android
-            "WrongThread",             // UI operations off main thread
-        )
+        enable +=
+            setOf(
+                "NewApi", // API calls above minSdk without guards
+                "InlinedApi", // Inlined constants from newer APIs
+                "ObsoleteSdkInt", // SDK_INT checks that are always true given minSdk
+                "UnusedResources", // Dead strings, drawables, layouts
+                "MissingPermission", // API calls missing declared permissions
+                "HardcodedText", // Strings not in strings.xml (localization)
+                "MissingTranslation", // Incomplete translations
+                "Recycle", // TypedArray/Cursor not recycled
+                "StaticFieldLeak", // Context leaks in static fields
+                "SetTextI18n", // Concatenated text in setText (i18n issue)
+                "RtlHardcoded", // Left/right instead of start/end
+                "ContentDescription", // Missing contentDescription (a11y)
+                "PrivateResource", // Using private framework resources
+                "InvalidPackage", // Importing packages not on Android
+                "WrongThread", // UI operations off main thread
+            )
 
         // Intentionally disabled — too noisy or not relevant
-        disable += setOf(
-            "OldTargetApi",            // targeting CinnamonBun preview
-            "GradleDependency",        // version bumps are manual decisions
-            "AndroidGradlePluginVersion",
-            "NotificationPermission",  // already handled at runtime in Settings
-        )
+        disable +=
+            setOf(
+                "OldTargetApi", // targeting CinnamonBun preview
+                "GradleDependency", // version bumps are manual decisions
+                "AndroidGradlePluginVersion",
+                "NotificationPermission", // already handled at runtime in Settings
+            )
 
         // Don't lint generated code
         checkGeneratedSources = false
@@ -217,7 +226,6 @@ dependencies {
     // Gson
     implementation(libs.gson)
 
-
     // M-Lab NDT7 speed test
     implementation(libs.ndt7)
     implementation(libs.okhttp)
@@ -228,6 +236,9 @@ dependencies {
     // Glance (home screen widgets)
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
+
+    // Sentry (debug builds only — not shipped in release)
+    debugImplementation(libs.sentry.android)
 
     // Detekt plugins
     detektPlugins(libs.detekt.compose.rules)

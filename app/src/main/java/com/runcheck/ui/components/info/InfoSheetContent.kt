@@ -7,5 +7,5 @@ data class InfoSheetContent(
     @param:StringRes val explanation: Int,
     @param:StringRes val normalRange: Int,
     @param:StringRes val whyItMatters: Int,
-    @param:StringRes val deeperDetail: Int? = null
+    @param:StringRes val deeperDetail: Int? = null,
 )

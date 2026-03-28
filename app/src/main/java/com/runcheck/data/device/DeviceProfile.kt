@@ -12,7 +12,7 @@ data class DeviceProfile(
     val currentNowSignConvention: SignConvention,
     val cycleCountAvailable: Boolean,
     val thermalZonesAvailable: List<String>,
-    val storageHealthAvailable: Boolean
+    val storageHealthAvailable: Boolean,
 ) {
     val deviceId: String
         get() = "${manufacturer}_${model}_$apiLevel".lowercase()

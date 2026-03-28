@@ -11,5 +11,5 @@ data class DeviceEntity(
     val model: String,
     @ColumnInfo(name = "api_level") val apiLevel: Int,
     @ColumnInfo(name = "first_seen") val firstSeen: Long,
-    @ColumnInfo(name = "profile_json") val profileJson: String
+    @ColumnInfo(name = "profile_json") val profileJson: String,
 )

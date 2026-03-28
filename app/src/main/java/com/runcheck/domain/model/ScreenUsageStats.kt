@@ -6,5 +6,5 @@ data class ScreenUsageStats(
     val screenOnDrainPct: Float,
     val screenOffDrainPct: Float,
     val screenOnDrainRate: Float?,
-    val screenOffDrainRate: Float?
+    val screenOffDrainRate: Float?,
 )

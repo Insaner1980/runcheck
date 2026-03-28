@@ -7,6 +7,7 @@ import com.runcheck.ui.common.UiText
 
 sealed interface StorageUiState {
     data object Loading : StorageUiState
+
     data class Success(
         val storageState: StorageState,
         val isPro: Boolean = false,
@@ -15,7 +16,10 @@ sealed interface StorageUiState {
         val liveUsagePercent: List<Float> = emptyList(),
         val storageHistory: List<StorageReading> = emptyList(),
         val selectedHistoryPeriod: HistoryPeriod = HistoryPeriod.WEEK,
-        val historyLoadError: UiText? = null
+        val historyLoadError: UiText? = null,
     ) : StorageUiState
-    data class Error(val message: String) : StorageUiState
+
+    data class Error(
+        val message: String,
+    ) : StorageUiState
 }

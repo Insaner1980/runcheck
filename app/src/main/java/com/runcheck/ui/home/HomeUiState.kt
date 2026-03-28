@@ -23,10 +23,12 @@ sealed interface HomeUiState {
         val showWelcomeSheet: Boolean = false,
         val showDay5Banner: Boolean = false,
         val showExpirationModal: Boolean = false,
-        val showUpgradeCard: Boolean = false
+        val showUpgradeCard: Boolean = false,
     ) : HomeUiState {
         val isPro: Boolean get() = proState.isPro
     }
 
-    data class Error(val message: String) : HomeUiState
+    data class Error(
+        val message: String,
+    ) : HomeUiState
 }

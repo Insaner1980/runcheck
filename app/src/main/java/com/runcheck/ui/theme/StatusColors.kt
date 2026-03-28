@@ -6,6 +6,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.SignalQuality
 
 @Immutable
@@ -21,23 +22,24 @@ data class StatusColors(
     val confidenceEstimatedBg: Color,
     val confidenceEstimatedText: Color,
     val confidenceUnavailableBg: Color,
-    val confidenceUnavailableText: Color
+    val confidenceUnavailableText: Color,
 )
 
-val RuncheckStatusColors = StatusColors(
-    healthy = AccentTeal,
-    fair = AccentAmber,
-    poor = AccentOrange,
-    critical = AccentRed,
-    neutral = TextSecondary,
-    unavailable = TextMuted,
-    confidenceAccurateBg = AccentBlue,
-    confidenceAccurateText = BgPage,
-    confidenceEstimatedBg = AccentAmber,
-    confidenceEstimatedText = BgPage,
-    confidenceUnavailableBg = TextMuted,
-    confidenceUnavailableText = TextPrimary
-)
+val RuncheckStatusColors =
+    StatusColors(
+        healthy = AccentTeal,
+        fair = AccentAmber,
+        poor = AccentOrange,
+        critical = AccentRed,
+        neutral = TextSecondary,
+        unavailable = TextMuted,
+        confidenceAccurateBg = AccentBlue,
+        confidenceAccurateText = BgPage,
+        confidenceEstimatedBg = AccentAmber,
+        confidenceEstimatedText = BgPage,
+        confidenceUnavailableBg = TextMuted,
+        confidenceUnavailableText = TextPrimary,
+    )
 
 val LocalStatusColors = staticCompositionLocalOf { RuncheckStatusColors }
 
@@ -89,6 +91,19 @@ fun statusColorForSignalQuality(quality: SignalQuality): Color {
         SignalQuality.NO_SIGNAL -> colors.critical
     }
 }
+
+@Composable
+@ReadOnlyComposable
+fun categoryColor(category: MediaCategory): Color =
+    when (category) {
+        MediaCategory.IMAGE -> AccentBlue
+        MediaCategory.VIDEO -> AccentLime
+        MediaCategory.AUDIO -> AccentYellow
+        MediaCategory.DOCUMENT -> MaterialTheme.colorScheme.onSurfaceVariant
+        MediaCategory.DOWNLOAD -> AccentBlue.copy(alpha = 0.6f)
+        MediaCategory.APK -> MaterialTheme.colorScheme.onSurfaceVariant
+        MediaCategory.OTHER -> MaterialTheme.colorScheme.outline
+    }
 
 val MaterialTheme.statusColors: StatusColors
     @Composable

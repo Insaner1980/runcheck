@@ -22,12 +22,14 @@ import com.runcheck.ui.theme.statusColors
 private fun ComponentStackPreview() {
     RuncheckTheme {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(all = androidx.compose.material3.MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(
-                androidx.compose.material3.MaterialTheme.spacing.base
-            )
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(all = androidx.compose.material3.MaterialTheme.spacing.base),
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    androidx.compose.material3.MaterialTheme.spacing.base,
+                ),
         ) {
             PrimaryTopBar(title = "Runcheck")
             DetailTopBar(title = "Battery", onBack = {})
@@ -36,24 +38,24 @@ private fun ComponentStackPreview() {
                 title = "Battery",
                 subtitle = "Healthy",
                 onClick = {},
-                subtitleColor = MaterialTheme.statusColors.healthy
+                subtitleColor = MaterialTheme.statusColors.healthy,
             )
             ListRow(
                 label = "Speed Test",
                 icon = Icons.Outlined.BatteryChargingFull,
-                onClick = {}
+                onClick = {},
             )
             ConfidenceBadge(confidence = Confidence.HIGH)
             ProgressRing(
                 progress = 0.72f,
                 modifier = Modifier.size(88.dp),
-                contentDescription = "Preview progress ring"
+                contentDescription = "Preview progress ring",
             )
             ProFeatureLockedState(
                 title = "Thermal Logs",
                 message = "Unlock extended logs and history.",
                 actionLabel = "Upgrade",
-                onAction = {}
+                onAction = {},
             )
         }
     }

@@ -33,10 +33,12 @@ Dependency injection: Hilt. Database: Room. UI: Jetpack Compose + Material 3.
 - Widgets: Glance
 - Speed test: M-Lab NDT7 (`ndt7-client-android`)
 - Build: Gradle Kotlin DSL
-- Compile SDK: 36
-- Target SDK: 35
+- Compile SDK: Android 17 beta (`CinnamonBun`)
+- Target SDK: Android 17 beta (`CinnamonBun`)
 - Min SDK: 26
 - Java target: 17
+- Localization: English-only (`localeFilters = ["en"]`)
+- Build variants: `app/src/debug` and `app/src/release` source sets are active
 
 High-level package layout:
 
@@ -77,6 +79,7 @@ Home
 Current runtime systems:
 
 - `RuncheckApp` initializes billing, Pro state, notification channels, screen-state tracking, periodic monitoring, and widget refresh hooks
+- `RuncheckApp` also initializes source-set-specific `SentryInit`; debug builds may report to Sentry, release builds are a no-op and must remain telemetry-free
 - WorkManager runs `HealthMonitorWorker` for snapshot collection + alert evaluation
 - WorkManager runs `HealthMaintenanceWorker` for app-usage refresh, cleanup, and widget refresh
 - `RealTimeMonitorService` is an opt-in live notification foreground service and must stay user-controlled from Settings
@@ -112,7 +115,7 @@ When reviewing a PR or file, check for these in order:
 - Minimum SDK is 26. No calls to APIs below 26 without a fallback.
 
 ### 4. Pro feature gating
-- Pro features: Charger Comparison, App Usage, Extended History, Thermal Logs, CSV Export, Widgets, Remaining Charge Time.
+- Pro features: Charger Comparison, Per-App Battery, Extended History, Thermal Logs, CSV Export, Widgets.
 - Each must check `ProManager.isPro()` or the injected `ProStatusProvider` / `IsProUserUseCase` path before showing content.
 - Locked state must use `ProFeatureLockedState` component, not custom implementations.
 
@@ -137,6 +140,7 @@ When reviewing a PR or file, check for these in order:
 - Typography: Manrope for body text, JetBrains Mono for hero numbers and gauge values.
 - Card corner radius: 16dp. Small elements: 8dp. No shadows, no elevation, no borders (except ActionCards: 1dp outlineVariant at 35% alpha).
 - No dynamic colors. If a task changes visual design, follow `UI-SPEC.md` instead of inventing alternate tokens or component variants.
+- English-only strings are intentional right now. Do not reintroduce partial localization without updating docs and string coverage together.
 
 ### 8. Accessibility
 - Minimum touch target: 48dp.
@@ -159,6 +163,7 @@ Raise a review comment for any of the following:
 - Sysfs read for thermal data (use PowerManager API instead)
 - NDT7 speed test using a fixed server URL
 - Any outbound network call outside the speed test flow, latency measurement, or billing
+- Any release-path telemetry, crash reporting, or analytics expansion beyond the current debug-only Sentry setup
 
 ---
 
@@ -168,6 +173,8 @@ Raise a review comment for any of the following:
 - Single dark theme only. No light mode, no AMOLED toggle.
 - No dynamic colors.
 - One-time Pro purchase only. No subscription, no ads.
+- English-only localization is intentional for now. Do not reintroduce partial Finnish strings ad hoc.
+- Debug-only Sentry wiring exists for local/dev diagnostics; do not ship crash reporting, analytics, or tracking in release.
 - NDT7 backend for speed tests. No alternatives.
 - Minimum SDK: 26. Do not lower.
 

@@ -28,34 +28,39 @@ import com.runcheck.R
 fun DetailTopBar(
     title: String,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(start = 4.dp, end = 4.dp, top = 2.dp, bottom = 4.dp)
-            .background(MaterialTheme.colorScheme.surface),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(start = 4.dp, end = 4.dp, top = 2.dp, bottom = 4.dp)
+                .background(MaterialTheme.colorScheme.surface),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.navigate_back)
+                contentDescription = stringResource(R.string.navigate_back),
             )
         }
         Text(
             text = title,
-            modifier = Modifier
-                .weight(1f)
-                .semantics { heading() },
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .semantics { heading() },
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
         // Spacer for symmetry with the back button
-        Spacer(modifier = Modifier
-            .width(48.dp)
-            .clearAndSetSemantics {})
+        Spacer(
+            modifier =
+                Modifier
+                    .width(48.dp)
+                    .clearAndSetSemantics {},
+        )
     }
 }

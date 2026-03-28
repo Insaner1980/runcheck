@@ -4,8 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,20 +22,21 @@ fun IconCircle(
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     size: Dp = 44.dp,
-    iconSize: Dp = 22.dp
+    iconSize: Dp = 22.dp,
 ) {
     Box(
-        modifier = modifier
-            .size(size)
-            .clearAndSetSemantics {}
-            .background(color = MaterialTheme.iconCircleColor, shape = CircleShape),
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .size(size)
+                .clearAndSetSemantics {}
+                .background(color = MaterialTheme.iconCircleColor, shape = CircleShape),
+        contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(iconSize),
-            tint = tint
+            tint = tint,
         )
     }
 }

@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AppBatteryUsageDao {
-
     @Insert
     suspend fun insert(usage: AppBatteryUsageEntity)
 
@@ -36,7 +35,7 @@ interface AppBatteryUsageDao {
         WHERE usage.timestamp >= :since
         GROUP BY usage.package_name
         ORDER BY foreground_time_ms DESC
-    """
+    """,
     )
     fun getAggregatedUsageSince(since: Long): PagingSource<Int, AppBatteryUsageEntity>
 
@@ -51,7 +50,7 @@ interface AppBatteryUsageDao {
             WHERE timestamp >= :since
             GROUP BY package_name
         )
-    """
+    """,
     )
     fun getUsageSummarySince(since: Long): Flow<AppBatteryUsageSummaryRow>
 
@@ -67,5 +66,5 @@ interface AppBatteryUsageDao {
 
 data class AppBatteryUsageSummaryRow(
     val total_foreground_time_ms: Long,
-    val max_foreground_time_ms: Long
+    val max_foreground_time_ms: Long,
 )

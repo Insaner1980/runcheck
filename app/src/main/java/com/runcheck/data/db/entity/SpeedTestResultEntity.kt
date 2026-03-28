@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "speed_test_results",
-    indices = [Index(value = ["timestamp"])]
+    indices = [Index(value = ["timestamp"])],
 )
 data class SpeedTestResultEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -20,5 +20,5 @@ data class SpeedTestResultEntity(
     @ColumnInfo(name = "server_location") val serverLocation: String?,
     @ColumnInfo(name = "connection_type") val connectionType: String,
     @ColumnInfo(name = "network_subtype") val networkSubtype: String?,
-    @ColumnInfo(name = "signal_dbm") val signalDbm: Int?
+    @ColumnInfo(name = "signal_dbm") val signalDbm: Int?,
 )

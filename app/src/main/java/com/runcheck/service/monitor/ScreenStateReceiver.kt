@@ -15,11 +15,13 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class ScreenStateReceiver : BroadcastReceiver() {
-
     @Inject
     lateinit var screenStateRepository: ScreenStateRepository
 
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
         val action = intent.action ?: return
         val pendingResult = goAsync()
 
@@ -34,8 +36,8 @@ class ScreenStateReceiver : BroadcastReceiver() {
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (t: Throwable) {
-                ReleaseSafeLog.error(TAG, "Failed to handle screen state action: $action", t)
+            } catch (e: Exception) {
+                ReleaseSafeLog.error(TAG, "Failed to handle screen state action: $action", e)
             } finally {
                 pendingResult.finish()
             }

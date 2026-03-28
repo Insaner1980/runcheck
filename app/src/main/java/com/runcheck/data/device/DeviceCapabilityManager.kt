@@ -15,126 +15,129 @@ import javax.inject.Singleton
 import kotlin.math.abs
 
 @Singleton
-class DeviceCapabilityManager @Inject constructor(
-    @param:ApplicationContext private val context: Context
-) {
+class DeviceCapabilityManager
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+    ) {
+        suspend fun detectCapabilities(): DeviceProfile {
+            val manufacturer = Build.MANUFACTURER.lowercase()
+            val model = Build.MODEL
+            val apiLevel = Build.VERSION.SDK_INT
 
-    suspend fun detectCapabilities(): DeviceProfile {
-        val manufacturer = Build.MANUFACTURER.lowercase()
-        val model = Build.MODEL
-        val apiLevel = Build.VERSION.SDK_INT
+            val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
 
-        val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+            val currentValidation = validateCurrentNow(batteryManager)
+            val cycleCountAvailable = detectCycleCountAvailability(apiLevel)
 
-        val currentValidation = validateCurrentNow(batteryManager)
-        val cycleCountAvailable = detectCycleCountAvailability(apiLevel)
-
-        return DeviceProfile(
-            manufacturer = manufacturer,
-            model = model,
-            apiLevel = apiLevel,
-            currentNowReliable = currentValidation.isReliable,
-            currentNowUnit = currentValidation.unit,
-            currentNowSignConvention = currentValidation.signConvention,
-            cycleCountAvailable = cycleCountAvailable,
-            thermalZonesAvailable = emptyList(),
-            storageHealthAvailable = true
-        )
-    }
-
-    private suspend fun validateCurrentNow(batteryManager: BatteryManager): CurrentValidation {
-        val readings = mutableListOf<Int>()
-
-        repeat(VALIDATION_SAMPLE_COUNT) {
-            val current = try {
-                batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
-            } catch (_: Exception) {
-                return CurrentValidation(
-                    isReliable = false,
-                    unit = CurrentUnit.MILLIAMPS,
-                    signConvention = SignConvention.POSITIVE_CHARGING
-                )
-            }
-            if (current == Int.MIN_VALUE) {
-                return CurrentValidation(
-                    isReliable = false,
-                    unit = CurrentUnit.MILLIAMPS,
-                    signConvention = SignConvention.POSITIVE_CHARGING
-                )
-            }
-            readings.add(current)
-            if (it < VALIDATION_SAMPLE_COUNT - 1) {
-                delay(VALIDATION_SAMPLE_DELAY_MS)
-            }
+            return DeviceProfile(
+                manufacturer = manufacturer,
+                model = model,
+                apiLevel = apiLevel,
+                currentNowReliable = currentValidation.isReliable,
+                currentNowUnit = currentValidation.unit,
+                currentNowSignConvention = currentValidation.signConvention,
+                cycleCountAvailable = cycleCountAvailable,
+                thermalZonesAvailable = emptyList(),
+                storageHealthAvailable = true,
+            )
         }
 
-        val nonZero = readings.any { it != 0 }
-        val changing = readings.distinct().size > 1
-        val unit = inferUnit(readings)
-        val plausible = readings.all { reading ->
-            val normalizedMa = if (unit == CurrentUnit.MICROAMPS) abs(reading) / 1000 else abs(reading)
-            normalizedMa in 0..MAX_PLAUSIBLE_CURRENT_MA
+        private suspend fun validateCurrentNow(batteryManager: BatteryManager): CurrentValidation {
+            val readings = mutableListOf<Int>()
+
+            repeat(VALIDATION_SAMPLE_COUNT) {
+                val current =
+                    try {
+                        batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+                    } catch (_: Exception) {
+                        return CurrentValidation(
+                            isReliable = false,
+                            unit = CurrentUnit.MILLIAMPS,
+                            signConvention = SignConvention.POSITIVE_CHARGING,
+                        )
+                    }
+                if (current == Int.MIN_VALUE) {
+                    return CurrentValidation(
+                        isReliable = false,
+                        unit = CurrentUnit.MILLIAMPS,
+                        signConvention = SignConvention.POSITIVE_CHARGING,
+                    )
+                }
+                readings.add(current)
+                if (it < VALIDATION_SAMPLE_COUNT - 1) {
+                    delay(VALIDATION_SAMPLE_DELAY_MS)
+                }
+            }
+
+            val nonZero = readings.any { it != 0 }
+            val changing = readings.distinct().size > 1
+            val unit = inferUnit(readings)
+            val plausible =
+                readings.all { reading ->
+                    val normalizedMa = if (unit == CurrentUnit.MICROAMPS) abs(reading) / 1000 else abs(reading)
+                    normalizedMa in 0..MAX_PLAUSIBLE_CURRENT_MA
+                }
+
+            val isReliable = nonZero && changing && plausible
+            val signConvention = inferSignConvention(batteryManager.isCharging, readings)
+
+            return CurrentValidation(
+                isReliable = isReliable,
+                unit = unit,
+                signConvention = signConvention,
+            )
         }
 
-        val isReliable = nonZero && changing && plausible
-        val signConvention = inferSignConvention(batteryManager.isCharging, readings)
+        private fun inferUnit(readings: List<Int>): CurrentUnit = Companion.inferUnit(readings)
 
-        return CurrentValidation(
-            isReliable = isReliable,
-            unit = unit,
-            signConvention = signConvention
-        )
-    }
-
-    private fun inferUnit(readings: List<Int>): CurrentUnit =
-        Companion.inferUnit(readings)
-
-    private fun inferSignConvention(
-        isCharging: Boolean,
-        readings: List<Int>
-    ): SignConvention = Companion.inferSignConvention(isCharging, readings)
-
-    private fun detectCycleCountAvailability(apiLevel: Int): Boolean {
-        if (apiLevel < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return false
-        val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        val cycleCount = batteryIntent?.getIntExtra(BatteryManager.EXTRA_CYCLE_COUNT, -1) ?: -1
-        return cycleCount > 0
-    }
-
-    private data class CurrentValidation(
-        val isReliable: Boolean,
-        val unit: CurrentUnit,
-        val signConvention: SignConvention
-    )
-
-    companion object {
-        private const val VALIDATION_SAMPLE_COUNT = 3
-        private const val VALIDATION_SAMPLE_DELAY_MS = 300L
-        // Threshold to distinguish µA from mA reports. Must sit between the
-        // highest realistic mA value (≈15 000 mA at 150 W / 10 V fast charge)
-        // and the lowest realistic µA value during validation (≈80 000 µA,
-        // i.e. ~80 mA screen-on idle). 25 000 covers up to 250 W charging
-        // while leaving a wide margin from the µA floor.
-        internal const val MICROAMP_THRESHOLD = 25_000
-        private const val MAX_PLAUSIBLE_CURRENT_MA = 10000
-
-        @VisibleForTesting
-        internal fun inferUnit(readings: List<Int>): CurrentUnit {
-            val maxAbs = readings.maxOfOrNull { abs(it) } ?: 0
-            return if (maxAbs > MICROAMP_THRESHOLD) CurrentUnit.MICROAMPS else CurrentUnit.MILLIAMPS
-        }
-
-        @VisibleForTesting
-        internal fun inferSignConvention(
+        private fun inferSignConvention(
             isCharging: Boolean,
-            readings: List<Int>
-        ): SignConvention {
-            val avgReading = readings.average()
-            return if (isCharging && avgReading > 0 || !isCharging && avgReading < 0) {
-                SignConvention.POSITIVE_CHARGING
-            } else {
-                SignConvention.NEGATIVE_CHARGING
+            readings: List<Int>,
+        ): SignConvention = Companion.inferSignConvention(isCharging, readings)
+
+        private fun detectCycleCountAvailability(apiLevel: Int): Boolean {
+            if (apiLevel < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return false
+            val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            val cycleCount = batteryIntent?.getIntExtra(BatteryManager.EXTRA_CYCLE_COUNT, -1) ?: -1
+            return cycleCount > 0
+        }
+
+        private data class CurrentValidation(
+            val isReliable: Boolean,
+            val unit: CurrentUnit,
+            val signConvention: SignConvention,
+        )
+
+        companion object {
+            private const val VALIDATION_SAMPLE_COUNT = 3
+            private const val VALIDATION_SAMPLE_DELAY_MS = 300L
+
+            // Threshold to distinguish µA from mA reports. Must sit between the
+            // highest realistic mA value (≈15 000 mA at 150 W / 10 V fast charge)
+            // and the lowest realistic µA value during validation (≈80 000 µA,
+            // i.e. ~80 mA screen-on idle). 25 000 covers up to 250 W charging
+            // while leaving a wide margin from the µA floor.
+            internal const val MICROAMP_THRESHOLD = 25_000
+            private const val MAX_PLAUSIBLE_CURRENT_MA = 10000
+
+            @VisibleForTesting
+            internal fun inferUnit(readings: List<Int>): CurrentUnit {
+                val maxAbs = readings.maxOfOrNull { abs(it) } ?: 0
+                return if (maxAbs > MICROAMP_THRESHOLD) CurrentUnit.MICROAMPS else CurrentUnit.MILLIAMPS
+            }
+
+            @VisibleForTesting
+            internal fun inferSignConvention(
+                isCharging: Boolean,
+                readings: List<Int>,
+            ): SignConvention {
+                val avgReading = readings.average()
+                return if ((isCharging && avgReading > 0) || (!isCharging && avgReading < 0)) {
+                    SignConvention.POSITIVE_CHARGING
+                } else {
+                    SignConvention.NEGATIVE_CHARGING
+                }
             }
         }
     }
-}

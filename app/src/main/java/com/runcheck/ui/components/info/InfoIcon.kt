@@ -15,17 +15,17 @@ import com.runcheck.R
 @Composable
 fun InfoIcon(
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     IconButton(
         onClick = onClick,
-        modifier = modifier.size(48.dp)
+        modifier = modifier.size(48.dp),
     ) {
         Icon(
             imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
             contentDescription = stringResource(R.string.a11y_info_button),
             modifier = Modifier.size(16.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

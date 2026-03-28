@@ -44,16 +44,19 @@ class RealTimeMonitorService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var updateJob: Job? = null
     private var prefCheckJob: Job? = null
-    private val idleStopRunnable = Runnable {
-        if (activeBindings.get() == 0 && !isLiveNotificationMode) {
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
+    private val idleStopRunnable =
+        Runnable {
+            if (activeBindings.get() == 0 && !isLiveNotificationMode) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+            }
         }
-    }
+
     @Volatile
     private var isLiveNotificationMode = false
 
     @Inject lateinit var batteryRepository: BatteryRepository
+
     @Inject lateinit var userPreferencesRepository: UserPreferencesRepository
 
     override fun onCreate() {
@@ -64,7 +67,7 @@ class RealTimeMonitorService : Service() {
             startForeground(
                 NOTIFICATION_ID,
                 createInitialNotification(),
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
             )
         } else {
             startForeground(NOTIFICATION_ID, createInitialNotification())
@@ -90,7 +93,11 @@ class RealTimeMonitorService : Service() {
         super.onRebind(intent)
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
         when (intent?.action) {
             ACTION_STOP -> {
                 isLiveNotificationMode = false
@@ -102,7 +109,10 @@ class RealTimeMonitorService : Service() {
                 // Don't restart after explicit stop — prevents wasteful restart cycle
                 return START_NOT_STICKY
             }
-            else -> checkLiveModeAndStart()
+
+            else -> {
+                checkLiveModeAndStart()
+            }
         }
         // START_STICKY so the system restarts the service after process death
         // when live notification is active. If not in live mode, the service
@@ -128,65 +138,68 @@ class RealTimeMonitorService : Service() {
 
     private fun checkLiveModeAndStart() {
         prefCheckJob?.cancel()
-        prefCheckJob = serviceScope.launch {
-            try {
-                val prefs = userPreferencesRepository.getPreferences().first()
-                isLiveNotificationMode = prefs.liveNotificationEnabled
-                if (isLiveNotificationMode) {
-                    startLiveUpdates()
-                } else if (activeBindings.get() == 0) {
-                    scheduleIdleStop()
+        prefCheckJob =
+            serviceScope.launch {
+                try {
+                    val prefs = userPreferencesRepository.getPreferences().first()
+                    isLiveNotificationMode = prefs.liveNotificationEnabled
+                    if (isLiveNotificationMode) {
+                        startLiveUpdates()
+                    } else if (activeBindings.get() == 0) {
+                        scheduleIdleStop()
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    ReleaseSafeLog.error(TAG, "Failed to load preferences in live mode check", e)
                 }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                ReleaseSafeLog.error(TAG, "Failed to load preferences in live mode check", e)
             }
-        }
     }
 
     private fun startLiveUpdates() {
         updateJob?.cancel()
-        updateJob = serviceScope.launch {
-            while (isActive) {
-                try {
-                    val prefs = userPreferencesRepository.getPreferences().first()
-                    if (!prefs.liveNotificationEnabled) {
-                        isLiveNotificationMode = false
-                        mainHandler.post {
-                            stopForeground(STOP_FOREGROUND_REMOVE)
-                            stopSelf()
+        updateJob =
+            serviceScope.launch {
+                while (isActive) {
+                    try {
+                        val prefs = userPreferencesRepository.getPreferences().first()
+                        if (!prefs.liveNotificationEnabled) {
+                            isLiveNotificationMode = false
+                            mainHandler.post {
+                                stopForeground(STOP_FOREGROUND_REMOVE)
+                                stopSelf()
+                            }
+                            return@launch
                         }
-                        return@launch
+                        val battery = batteryRepository.getBatteryState().first()
+                        val notification = buildLiveNotification(battery, prefs)
+                        val nm = getSystemService(NotificationManager::class.java)
+                        nm.notify(NOTIFICATION_ID, notification)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        ReleaseSafeLog.warn(TAG, "Live notification update failed", e)
                     }
-                    val battery = batteryRepository.getBatteryState().first()
-                    val notification = buildLiveNotification(battery, prefs)
-                    val nm = getSystemService(NotificationManager::class.java)
-                    nm.notify(NOTIFICATION_ID, notification)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    ReleaseSafeLog.warn(TAG, "Live notification update failed", e)
+                    delay(UPDATE_INTERVAL_MS)
                 }
-                delay(UPDATE_INTERVAL_MS)
             }
-        }
     }
 
     private fun buildLiveNotification(
         battery: BatteryState,
-        prefs: UserPreferences
+        prefs: UserPreferences,
     ): Notification {
         val titleParts = mutableListOf<String>()
         val bodyLines = mutableListOf<String>()
 
         // Title: level + status
-        val statusLabel = when (battery.chargingStatus) {
-            ChargingStatus.CHARGING -> getString(R.string.charging_status_charging)
-            ChargingStatus.FULL -> getString(R.string.charging_status_full)
-            ChargingStatus.DISCHARGING -> getString(R.string.charging_status_discharging)
-            ChargingStatus.NOT_CHARGING -> getString(R.string.charging_status_not_charging)
-        }
+        val statusLabel =
+            when (battery.chargingStatus) {
+                ChargingStatus.CHARGING -> getString(R.string.charging_status_charging)
+                ChargingStatus.FULL -> getString(R.string.charging_status_full)
+                ChargingStatus.DISCHARGING -> getString(R.string.charging_status_discharging)
+                ChargingStatus.NOT_CHARGING -> getString(R.string.charging_status_not_charging)
+            }
         titleParts.add("${battery.level}%")
         titleParts.add(statusLabel)
 
@@ -198,28 +211,31 @@ class RealTimeMonitorService : Service() {
         if (prefs.liveNotifCurrent) {
             val currentMa = battery.currentMa.value
             val voltageMv = battery.voltageMv
-            val powerW = currentMa.let { ma ->
-                val watts = kotlin.math.abs(ma) * voltageMv / 1_000_000f
-                if (watts > 0.01f) watts else null
-            }
-            val currentLine = if (powerW != null) {
-                getString(
-                    R.string.live_notif_current_with_power,
-                    currentMa,
-                    formatDecimal(powerW, 1, currentLocale(this))
-                )
-            } else {
-                getString(R.string.live_notif_current, currentMa)
-            }
+            val powerW =
+                currentMa.let { ma ->
+                    val watts = kotlin.math.abs(ma) * voltageMv / 1_000_000f
+                    if (watts > 0.01f) watts else null
+                }
+            val currentLine =
+                if (powerW != null) {
+                    getString(
+                        R.string.live_notif_current_with_power,
+                        currentMa,
+                        formatDecimal(powerW, 1, currentLocale(this)),
+                    )
+                } else {
+                    getString(R.string.live_notif_current, currentMa)
+                }
             bodyLines.add(currentLine)
         }
 
         if (prefs.liveNotifDrainRate) {
             // Drain rate from voltage trend — simplified display
-            val drainLabel = when (battery.chargingStatus) {
-                ChargingStatus.CHARGING -> getString(R.string.live_notif_charging)
-                else -> getString(R.string.live_notif_discharging)
-            }
+            val drainLabel =
+                when (battery.chargingStatus) {
+                    ChargingStatus.CHARGING -> getString(R.string.live_notif_charging)
+                    else -> getString(R.string.live_notif_discharging)
+                }
             bodyLines.add(drainLabel)
         }
 
@@ -231,16 +247,18 @@ class RealTimeMonitorService : Service() {
             bodyLines.add(getString(R.string.live_notif_remaining))
         }
 
-        val contentIntent = NotificationHelper.createContentIntent(
-            context = this,
-            route = null,
-            requestCode = NOTIFICATION_ID
-        )
+        val contentIntent =
+            NotificationHelper.createContentIntent(
+                context = this,
+                route = null,
+                requestCode = NOTIFICATION_ID,
+            )
 
         val title = titleParts.joinToString(" · ")
         val body = bodyLines.joinToString("\n").ifEmpty { getString(R.string.monitor_realtime_notification_text) }
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        return NotificationCompat
+            .Builder(this, CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(bodyLines.firstOrNull() ?: getString(R.string.monitor_realtime_notification_text))
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
@@ -253,25 +271,28 @@ class RealTimeMonitorService : Service() {
     }
 
     private fun createNotificationChannel() {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            getString(R.string.monitor_realtime_channel_name),
-            NotificationManager.IMPORTANCE_LOW
-        ).apply {
-            description = getString(R.string.monitor_realtime_channel_description)
-            setShowBadge(false)
-        }
+        val channel =
+            NotificationChannel(
+                CHANNEL_ID,
+                getString(R.string.monitor_realtime_channel_name),
+                NotificationManager.IMPORTANCE_LOW,
+            ).apply {
+                description = getString(R.string.monitor_realtime_channel_description)
+                setShowBadge(false)
+            }
         val notificationManager = getSystemService(NotificationManager::class.java)
         notificationManager.createNotificationChannel(channel)
     }
 
     private fun createInitialNotification(): Notification {
-        val contentIntent = NotificationHelper.createContentIntent(
-            context = this,
-            route = null,
-            requestCode = NOTIFICATION_ID
-        )
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val contentIntent =
+            NotificationHelper.createContentIntent(
+                context = this,
+                route = null,
+                requestCode = NOTIFICATION_ID,
+            )
+        return NotificationCompat
+            .Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(getString(R.string.monitor_realtime_notification_text))
             .setSmallIcon(R.drawable.ic_notification)

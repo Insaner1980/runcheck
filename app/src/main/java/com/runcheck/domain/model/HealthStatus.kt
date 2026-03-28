@@ -4,5 +4,5 @@ enum class HealthStatus {
     HEALTHY,
     FAIR,
     POOR,
-    CRITICAL
+    CRITICAL,
 }

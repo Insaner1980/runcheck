@@ -13,13 +13,19 @@ import androidx.compose.ui.platform.LocalContext
  */
 @Stable
 sealed interface UiText {
-    data class Resource(@param:StringRes val id: Int) : UiText
-    data class Dynamic(val value: String) : UiText
+    data class Resource(
+        @param:StringRes val id: Int,
+    ) : UiText
 
-    fun resolve(context: Context): String = when (this) {
-        is Resource -> context.getString(id)
-        is Dynamic -> value
-    }
+    data class Dynamic(
+        val value: String,
+    ) : UiText
+
+    fun resolve(context: Context): String =
+        when (this) {
+            is Resource -> context.getString(id)
+            is Dynamic -> value
+        }
 }
 
 @Composable

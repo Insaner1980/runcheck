@@ -46,62 +46,68 @@ fun CleanupBottomBar(
     currentUsagePercent: Float,
     projectedUsagePercent: Float,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val noMotion = MaterialTheme.reducedMotion
-    val projectionDesc = stringResource(
-        R.string.a11y_storage_projection,
-        currentUsagePercent.toInt(),
-        projectedUsagePercent.toInt()
-    )
+    val projectionDesc =
+        stringResource(
+            R.string.a11y_storage_projection,
+            currentUsagePercent.toInt(),
+            projectedUsagePercent.toInt(),
+        )
 
     AnimatedVisibility(
         visible = visible,
         enter = if (noMotion) EnterTransition.None else slideInVertically { it },
         exit = if (noMotion) ExitTransition.None else slideOutVertically { it },
-        modifier = modifier
+        modifier = modifier,
     ) {
         Surface(
             color = MaterialTheme.colorScheme.surfaceContainer,
-            tonalElevation = 0.dp
+            tonalElevation = 0.dp,
         ) {
             Column {
                 HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
                 )
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .windowInsetsPadding(WindowInsets.navigationBars)
-                        .padding(MaterialTheme.spacing.base)
-                        .semantics { liveRegion = LiveRegionMode.Polite }
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(WindowInsets.navigationBars)
+                            .padding(MaterialTheme.spacing.base)
+                            .semantics { liveRegion = LiveRegionMode.Polite },
                 ) {
                     // Before → after projection
                     Text(
-                        text = stringResource(
-                            R.string.storage_projection_visual,
-                            currentUsagePercent.toInt(),
-                            projectedUsagePercent.toInt()
-                        ),
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontFamily = MaterialTheme.numericFontFamily
-                        ),
+                        text =
+                            stringResource(
+                                R.string.storage_projection_visual,
+                                currentUsagePercent.toInt(),
+                                projectedUsagePercent.toInt(),
+                            ),
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(
+                                fontFamily = MaterialTheme.numericFontFamily,
+                            ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.clearAndSetSemantics {
-                            contentDescription = projectionDesc
-                        }
+                        modifier =
+                            Modifier.clearAndSetSemantics {
+                                contentDescription = projectionDesc
+                            },
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
 
                     MiniBar(
                         progress = (projectedUsagePercent / 100f).coerceIn(0f, 1f),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(4.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(4.dp),
                         fillColor = MaterialTheme.statusColors.healthy,
-                        contentDescription = projectionDesc
+                        contentDescription = projectionDesc,
                     )
 
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
@@ -109,13 +115,19 @@ fun CleanupBottomBar(
                     Button(
                         onClick = onDelete,
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                            ),
                     ) {
                         Text(
-                            pluralStringResource(R.plurals.cleanup_free_action, selectedCount, formatStorageSize(context, selectedSize), selectedCount)
+                            pluralStringResource(
+                                R.plurals.cleanup_free_action,
+                                selectedCount,
+                                formatStorageSize(context, selectedSize),
+                                selectedCount,
+                            ),
                         )
                     }
                 }

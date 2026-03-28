@@ -34,20 +34,28 @@ import com.runcheck.data.db.entity.ThrottlingEventEntity
         ChargerProfileEntity::class,
         ChargingSessionEntity::class,
         AppBatteryUsageEntity::class,
-        SpeedTestResultEntity::class
+        SpeedTestResultEntity::class,
     ],
     version = 9,
-    exportSchema = true
+    exportSchema = true,
 )
 @TypeConverters(Converters::class)
 abstract class RuncheckDatabase : RoomDatabase() {
     abstract fun batteryReadingDao(): BatteryReadingDao
+
     abstract fun networkReadingDao(): NetworkReadingDao
+
     abstract fun thermalReadingDao(): ThermalReadingDao
+
     abstract fun storageReadingDao(): StorageReadingDao
+
     abstract fun deviceDao(): DeviceDao
+
     abstract fun throttlingEventDao(): ThrottlingEventDao
+
     abstract fun chargerDao(): ChargerDao
+
     abstract fun appBatteryUsageDao(): AppBatteryUsageDao
+
     abstract fun speedTestResultDao(): SpeedTestResultDao
 }

@@ -22,8 +22,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltAndroidApp
-class RuncheckApp : Application(), Configuration.Provider {
-
+class RuncheckApp :
+    Application(),
+    Configuration.Provider {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @Inject
@@ -46,6 +47,7 @@ class RuncheckApp : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        SentryInit.init(this)
         configureDebugStrictMode()
 
         // Defer heavy initialization to after the first frame
@@ -75,22 +77,24 @@ class RuncheckApp : Application(), Configuration.Provider {
     }
 
     override val workManagerConfiguration: Configuration
-        get() = Configuration.Builder()
-            .setWorkerFactory(workerFactory)
-            .build()
+        get() =
+            Configuration
+                .Builder()
+                .setWorkerFactory(workerFactory)
+                .build()
 
     private fun launchSafely(
         dispatcher: kotlinx.coroutines.CoroutineDispatcher,
         taskName: String,
-        block: suspend () -> Unit
+        block: suspend () -> Unit,
     ) {
         applicationScope.launch(dispatcher) {
             try {
                 block()
             } catch (e: CancellationException) {
                 throw e
-            } catch (t: Throwable) {
-                ReleaseSafeLog.error(TAG, "Application coroutine failed: $taskName", t)
+            } catch (e: Exception) {
+                ReleaseSafeLog.error(TAG, "Application coroutine failed: $taskName", e)
             }
         }
     }
@@ -99,16 +103,18 @@ class RuncheckApp : Application(), Configuration.Provider {
         if (!BuildConfig.DEBUG) return
 
         StrictMode.setThreadPolicy(
-            StrictMode.ThreadPolicy.Builder()
+            StrictMode.ThreadPolicy
+                .Builder()
                 .detectAll()
                 .penaltyLog()
-                .build()
+                .build(),
         )
         StrictMode.setVmPolicy(
-            StrictMode.VmPolicy.Builder()
+            StrictMode.VmPolicy
+                .Builder()
                 .detectAll()
                 .penaltyLog()
-                .build()
+                .build(),
         )
     }
 

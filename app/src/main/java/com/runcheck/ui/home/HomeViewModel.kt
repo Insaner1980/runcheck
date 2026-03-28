@@ -23,10 +23,10 @@ import com.runcheck.ui.common.messageOr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -37,215 +37,232 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
-    private val getBatteryState: GetBatteryStateUseCase,
-    private val getNetworkState: GetNetworkStateUseCase,
-    private val getThermalState: GetThermalStateUseCase,
-    private val getStorageState: GetStorageStateUseCase,
-    private val monitoringStatusRepository: MonitoringStatusRepository,
-    private val proManager: ProManager,
-    private val trialManager: TrialManager,
-    private val chargerSessionTracker: ChargerSessionTracker,
-    private val healthScoreCalculator: HealthScoreCalculator,
-    private val manageUserPreferences: ManageUserPreferencesUseCase
-) : ViewModel() {
+class HomeViewModel
+    @Inject
+    constructor(
+        private val savedStateHandle: SavedStateHandle,
+        private val getBatteryState: GetBatteryStateUseCase,
+        private val getNetworkState: GetNetworkStateUseCase,
+        private val getThermalState: GetThermalStateUseCase,
+        private val getStorageState: GetStorageStateUseCase,
+        private val monitoringStatusRepository: MonitoringStatusRepository,
+        private val proManager: ProManager,
+        private val trialManager: TrialManager,
+        private val chargerSessionTracker: ChargerSessionTracker,
+        private val healthScoreCalculator: HealthScoreCalculator,
+        private val manageUserPreferences: ManageUserPreferencesUseCase,
+    ) : ViewModel() {
+        private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
+        val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+        private var loadJob: Job? = null
 
-    private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
-    private var loadJob: Job? = null
-
-    // Persisted across process death via SavedStateHandle
-    private var expirationModalShownThisSession: Boolean
-        get() = savedStateHandle.get<Boolean>(KEY_EXPIRATION_MODAL_SHOWN) ?: false
-        set(value) { savedStateHandle[KEY_EXPIRATION_MODAL_SHOWN] = value }
-    private var lastTrackedSessionStatus: com.runcheck.domain.model.ChargingStatus? = null
-    private var lastTrackedSessionAt: Long = 0L
-
-    fun startObserving() {
-        if (loadJob?.isActive == true) return
-        loadHome()
-    }
-
-    fun stopObserving() {
-        loadJob?.cancel()
-        loadJob = null
-    }
-
-    fun refresh() {
-        loadHome()
-    }
-
-    fun dismissWelcomeSheet() {
-        viewModelScope.launch {
-            trialManager.setWelcomeShown()
-            _uiState.value = (_uiState.value as? HomeUiState.Success)
-                ?.copy(showWelcomeSheet = false) ?: _uiState.value
-        }
-    }
-
-    fun dismissDay5Banner() {
-        viewModelScope.launch {
-            trialManager.setDay5PromptShown()
-            _uiState.value = (_uiState.value as? HomeUiState.Success)
-                ?.copy(showDay5Banner = false) ?: _uiState.value
-        }
-    }
-
-    fun dismissExpirationModal() {
-        expirationModalShownThisSession = true
-        _uiState.value = (_uiState.value as? HomeUiState.Success)
-            ?.copy(showExpirationModal = false) ?: _uiState.value
-    }
-
-    fun dismissUpgradeCard() {
-        viewModelScope.launch {
-            trialManager.incrementUpgradeCardDismiss()
-            _uiState.value = (_uiState.value as? HomeUiState.Success)
-                ?.copy(showUpgradeCard = false) ?: _uiState.value
-        }
-    }
-
-    @OptIn(FlowPreview::class)
-    private fun loadHome() {
-        loadJob?.cancel()
-        loadJob = viewModelScope.launch {
-            val preferencesFlow = manageUserPreferences.observePreferences()
-            val monitoringStaleFlow = combine(
-                monitoringStatusRepository.observeLastWorkerHeartbeatAt(),
-                preferencesFlow,
-                monitoringFreshnessTicker()
-            ) { lastHeartbeatAt, preferences, now ->
-                isMonitoringStale(
-                    lastHeartbeatAt = lastHeartbeatAt,
-                    intervalMinutes = preferences.monitoringInterval.minutes,
-                    now = now
-                )
-            }.distinctUntilChanged()
-
-            val dataFlow = combine(
-                getBatteryState(),
-                getNetworkState(),
-                getThermalState(),
-                getStorageState()
-            ) { battery, network, thermal, storage ->
-                DataSnapshot(
-                    battery = battery,
-                    network = network,
-                    thermal = thermal,
-                    storage = storage,
-                    health = healthScoreCalculator.calculate(
-                        battery = battery,
-                        network = network,
-                        thermal = thermal,
-                        storage = storage
-                    )
-                )
+        // Persisted across process death via SavedStateHandle
+        private var expirationModalShownThisSession: Boolean
+            get() = savedStateHandle.get<Boolean>(KEY_EXPIRATION_MODAL_SHOWN) ?: false
+            set(value) {
+                savedStateHandle[KEY_EXPIRATION_MODAL_SHOWN] = value
             }
+        private var lastTrackedSessionStatus: com.runcheck.domain.model.ChargingStatus? = null
+        private var lastTrackedSessionAt: Long = 0L
 
-            combine(
-                dataFlow,
-                proManager.proState,
-                preferencesFlow,
-                monitoringStaleFlow
-            ) { data, proState, preferences, monitoringStale ->
-                val showWelcomeSheet = proState.status == ProStatus.TRIAL_ACTIVE &&
-                    !trialManager.isWelcomeShown()
+        fun startObserving() {
+            if (loadJob?.isActive == true) return
+            loadHome()
+        }
 
-                val daysRemaining = proState.trialDaysRemaining
-                val trialDaysElapsed = TrialManager.TRIAL_DURATION_DAYS - daysRemaining
+        fun stopObserving() {
+            loadJob?.cancel()
+            loadJob = null
+        }
 
-                val showDay5Banner = proState.status == ProStatus.TRIAL_ACTIVE &&
-                    trialDaysElapsed >= 5 &&
-                    !trialManager.isDay5PromptShown()
+        fun refresh() {
+            loadHome()
+        }
 
-                val showExpirationModal = proState.status == ProStatus.TRIAL_EXPIRED &&
-                    proState.trialStartTimestamp > 0L &&
-                    !expirationModalShownThisSession
+        private inline fun updateSuccessState(transform: HomeUiState.Success.() -> HomeUiState.Success) {
+            val current = _uiState.value
+            if (current is HomeUiState.Success) {
+                _uiState.value = current.transform()
+            }
+        }
 
-                val showUpgradeCard = if (proState.status == ProStatus.TRIAL_EXPIRED &&
-                    proState.trialStartTimestamp > 0L
-                ) {
-                    val dismissCount = trialManager.getUpgradeCardDismissCount()
-                    val lastDismiss = trialManager.getUpgradeCardLastDismissTimestamp()
-                    val daysSinceDismiss = if (lastDismiss > 0L) {
-                        TimeUnit.MILLISECONDS.toDays(
-                            System.currentTimeMillis() - lastDismiss
-                        ).toInt()
-                    } else {
-                        Int.MAX_VALUE
-                    }
-                    dismissCount < 3 && (dismissCount == 0 || daysSinceDismiss >= 7)
-                } else {
-                    false
+        fun dismissWelcomeSheet() {
+            viewModelScope.launch {
+                trialManager.setWelcomeShown()
+                updateSuccessState { copy(showWelcomeSheet = false) }
+            }
+        }
+
+        fun dismissDay5Banner() {
+            viewModelScope.launch {
+                trialManager.setDay5PromptShown()
+                updateSuccessState { copy(showDay5Banner = false) }
+            }
+        }
+
+        fun dismissExpirationModal() {
+            expirationModalShownThisSession = true
+            updateSuccessState { copy(showExpirationModal = false) }
+        }
+
+        fun dismissUpgradeCard() {
+            viewModelScope.launch {
+                trialManager.incrementUpgradeCardDismiss()
+                updateSuccessState { copy(showUpgradeCard = false) }
+            }
+        }
+
+        @OptIn(FlowPreview::class)
+        private fun loadHome() {
+            loadJob?.cancel()
+            loadJob =
+                viewModelScope.launch {
+                    val preferencesFlow = manageUserPreferences.observePreferences()
+                    val monitoringStaleFlow =
+                        combine(
+                            monitoringStatusRepository.observeLastWorkerHeartbeatAt(),
+                            preferencesFlow,
+                            monitoringFreshnessTicker(),
+                        ) { lastHeartbeatAt, preferences, now ->
+                            isMonitoringStale(
+                                lastHeartbeatAt = lastHeartbeatAt,
+                                intervalMinutes = preferences.monitoringInterval.minutes,
+                                now = now,
+                            )
+                        }.distinctUntilChanged()
+
+                    val dataFlow =
+                        combine(
+                            getBatteryState(),
+                            getNetworkState(),
+                            getThermalState(),
+                            getStorageState(),
+                        ) { battery, network, thermal, storage ->
+                            DataSnapshot(
+                                battery = battery,
+                                network = network,
+                                thermal = thermal,
+                                storage = storage,
+                                health =
+                                    healthScoreCalculator.calculate(
+                                        battery = battery,
+                                        network = network,
+                                        thermal = thermal,
+                                        storage = storage,
+                                    ),
+                            )
+                        }
+
+                    combine(
+                        dataFlow,
+                        proManager.proState,
+                        preferencesFlow,
+                        monitoringStaleFlow,
+                    ) { data, proState, preferences, monitoringStale ->
+                        val showWelcomeSheet =
+                            proState.status == ProStatus.TRIAL_ACTIVE &&
+                                !trialManager.isWelcomeShown()
+
+                        val daysRemaining = proState.trialDaysRemaining
+                        val trialDaysElapsed = TrialManager.TRIAL_DURATION_DAYS - daysRemaining
+
+                        val showDay5Banner =
+                            proState.status == ProStatus.TRIAL_ACTIVE &&
+                                trialDaysElapsed >= 5 &&
+                                !trialManager.isDay5PromptShown()
+
+                        val showExpirationModal =
+                            proState.status == ProStatus.TRIAL_EXPIRED &&
+                                proState.trialStartTimestamp > 0L &&
+                                !expirationModalShownThisSession
+
+                        val showUpgradeCard =
+                            if (proState.status == ProStatus.TRIAL_EXPIRED &&
+                                proState.trialStartTimestamp > 0L
+                            ) {
+                                val dismissCount = trialManager.getUpgradeCardDismissCount()
+                                val lastDismiss = trialManager.getUpgradeCardLastDismissTimestamp()
+                                val daysSinceDismiss =
+                                    if (lastDismiss > 0L) {
+                                        TimeUnit.MILLISECONDS
+                                            .toDays(
+                                                System.currentTimeMillis() - lastDismiss,
+                                            ).toInt()
+                                    } else {
+                                        Int.MAX_VALUE
+                                    }
+                                dismissCount < 3 && (dismissCount == 0 || daysSinceDismiss >= 7)
+                            } else {
+                                false
+                            }
+
+                        HomeUiState.Success(
+                            healthScore = data.health,
+                            batteryState = data.battery,
+                            networkState = data.network,
+                            thermalState = data.thermal,
+                            storageState = data.storage,
+                            temperatureUnit = preferences.temperatureUnit,
+                            monitoringStale = monitoringStale,
+                            proState = proState,
+                            showWelcomeSheet = showWelcomeSheet,
+                            showDay5Banner = showDay5Banner,
+                            showExpirationModal = showExpirationModal,
+                            showUpgradeCard = showUpgradeCard,
+                        )
+                    }.sample(DISPLAY_UPDATE_INTERVAL_MS)
+                        .catch { e ->
+                            _uiState.value = HomeUiState.Error(e.messageOr("Unknown error"))
+                        }.collect { state ->
+                            maybeTrackChargerSession(state.batteryState)
+                            _uiState.value = state
+                        }
                 }
+        }
 
-                HomeUiState.Success(
-                    healthScore = data.health,
-                    batteryState = data.battery,
-                    networkState = data.network,
-                    thermalState = data.thermal,
-                    storageState = data.storage,
-                    temperatureUnit = preferences.temperatureUnit,
-                    monitoringStale = monitoringStale,
-                    proState = proState,
-                    showWelcomeSheet = showWelcomeSheet,
-                    showDay5Banner = showDay5Banner,
-                    showExpirationModal = showExpirationModal,
-                    showUpgradeCard = showUpgradeCard
-                )
-            }.sample(DISPLAY_UPDATE_INTERVAL_MS)
-                .catch { e ->
-                    _uiState.value = HomeUiState.Error(e.messageOr("Unknown error"))
-                }.collect { state ->
-                maybeTrackChargerSession(state.batteryState)
-                _uiState.value = state
+        private fun monitoringFreshnessTicker() =
+            flow {
+                emit(System.currentTimeMillis())
+                while (true) {
+                    delay(MONITORING_STALE_CHECK_INTERVAL_MS)
+                    emit(System.currentTimeMillis())
+                }
+            }
+
+        private fun isMonitoringStale(
+            lastHeartbeatAt: Long?,
+            intervalMinutes: Int,
+            now: Long,
+        ): Boolean {
+            if (lastHeartbeatAt == null) return false
+            val intervalMs = intervalMinutes * 60_000L
+            return now - lastHeartbeatAt > intervalMs * STALE_THRESHOLD_MULTIPLIER
+        }
+
+        private suspend fun maybeTrackChargerSession(state: BatteryState) {
+            val now = System.currentTimeMillis()
+            if (lastTrackedSessionStatus != state.chargingStatus ||
+                now - lastTrackedSessionAt >= CHARGER_SESSION_TRACK_INTERVAL_MS
+            ) {
+                chargerSessionTracker.onBatteryState(state, now)
+                lastTrackedSessionStatus = state.chargingStatus
+                lastTrackedSessionAt = now
             }
         }
-    }
 
-    private fun monitoringFreshnessTicker() = flow {
-        emit(System.currentTimeMillis())
-        while (true) {
-            delay(MONITORING_STALE_CHECK_INTERVAL_MS)
-            emit(System.currentTimeMillis())
+        private data class DataSnapshot(
+            val battery: BatteryState,
+            val network: NetworkState,
+            val thermal: ThermalState,
+            val storage: StorageState,
+            val health: HealthScore,
+        )
+
+        companion object {
+            private const val DISPLAY_UPDATE_INTERVAL_MS = 333L
+            private const val CHARGER_SESSION_TRACK_INTERVAL_MS = 15_000L
+            private const val MONITORING_STALE_CHECK_INTERVAL_MS = 15_000L
+            private const val STALE_THRESHOLD_MULTIPLIER = 3
+            private const val KEY_EXPIRATION_MODAL_SHOWN = "expiration_modal_shown"
         }
     }
-
-    private fun isMonitoringStale(
-        lastHeartbeatAt: Long?,
-        intervalMinutes: Int,
-        now: Long
-    ): Boolean {
-        if (lastHeartbeatAt == null) return false
-        val intervalMs = intervalMinutes * 60_000L
-        return now - lastHeartbeatAt > intervalMs * STALE_THRESHOLD_MULTIPLIER
-    }
-
-    private suspend fun maybeTrackChargerSession(state: BatteryState) {
-        val now = System.currentTimeMillis()
-        if (lastTrackedSessionStatus != state.chargingStatus ||
-            now - lastTrackedSessionAt >= CHARGER_SESSION_TRACK_INTERVAL_MS
-        ) {
-            chargerSessionTracker.onBatteryState(state, now)
-            lastTrackedSessionStatus = state.chargingStatus
-            lastTrackedSessionAt = now
-        }
-    }
-
-    private data class DataSnapshot(
-        val battery: BatteryState,
-        val network: NetworkState,
-        val thermal: ThermalState,
-        val storage: StorageState,
-        val health: HealthScore
-    )
-
-    companion object {
-        private const val DISPLAY_UPDATE_INTERVAL_MS = 333L
-        private const val CHARGER_SESSION_TRACK_INTERVAL_MS = 15_000L
-        private const val MONITORING_STALE_CHECK_INTERVAL_MS = 15_000L
-        private const val STALE_THRESHOLD_MULTIPLIER = 3
-        private const val KEY_EXPIRATION_MODAL_SHOWN = "expiration_modal_shown"
-    }
-}

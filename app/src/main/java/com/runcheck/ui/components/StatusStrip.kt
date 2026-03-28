@@ -16,14 +16,15 @@ import androidx.compose.ui.unit.dp
 fun Modifier.statusStrip(
     color: Color,
     width: Dp = 4.dp,
-    cornerRadius: Dp = 16.dp
-): Modifier = this.drawBehind {
-    val stripWidth = width.toPx()
-    val radius = cornerRadius.toPx()
-    drawRoundRect(
-        color = color,
-        topLeft = Offset.Zero,
-        size = Size(stripWidth, size.height),
-        cornerRadius = CornerRadius(radius, radius)
-    )
-}
+    cornerRadius: Dp = 16.dp,
+): Modifier =
+    this.drawBehind {
+        val stripWidth = width.toPx()
+        val radius = cornerRadius.toPx()
+        drawRoundRect(
+            color = color,
+            topLeft = Offset.Zero,
+            size = Size(stripWidth, size.height),
+            cornerRadius = CornerRadius(radius, radius),
+        )
+    }

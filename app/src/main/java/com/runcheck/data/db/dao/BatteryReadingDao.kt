@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface BatteryReadingDao {
-
     @Insert
     suspend fun insert(reading: BatteryReadingEntity)
 
@@ -25,9 +24,12 @@ interface BatteryReadingDao {
                 LIMIT :limit
             )
             ORDER BY timestamp ASC
-        """
+        """,
     )
-    fun getReadingsSinceLimited(since: Long, limit: Int): Flow<List<BatteryReadingEntity>>
+    fun getReadingsSinceLimited(
+        since: Long,
+        limit: Int,
+    ): Flow<List<BatteryReadingEntity>>
 
     @Query("SELECT * FROM battery_readings ORDER BY timestamp DESC LIMIT 1")
     fun getLatestReading(): Flow<BatteryReadingEntity?>

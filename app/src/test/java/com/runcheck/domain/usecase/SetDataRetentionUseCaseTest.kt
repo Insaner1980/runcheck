@@ -11,7 +11,6 @@ import org.junit.Before
 import org.junit.Test
 
 class SetDataRetentionUseCaseTest {
-
     private lateinit var userPreferencesRepository: UserPreferencesRepository
     private lateinit var proStatusProvider: ProStatusProvider
     private lateinit var cleanupOldReadingsUseCase: CleanupOldReadingsUseCase
@@ -23,30 +22,33 @@ class SetDataRetentionUseCaseTest {
         proStatusProvider = mockk()
         cleanupOldReadingsUseCase = mockk(relaxed = true)
 
-        useCase = SetDataRetentionUseCase(
-            userPreferencesRepository = userPreferencesRepository,
-            proStatusProvider = proStatusProvider,
-            cleanupOldReadingsUseCase = cleanupOldReadingsUseCase
-        )
+        useCase =
+            SetDataRetentionUseCase(
+                userPreferencesRepository = userPreferencesRepository,
+                proStatusProvider = proStatusProvider,
+                cleanupOldReadingsUseCase = cleanupOldReadingsUseCase,
+            )
     }
 
     @Test
-    fun `non-pro user cannot update retention or trigger cleanup`() = runTest {
-        every { proStatusProvider.isPro() } returns false
+    fun `non-pro user cannot update retention or trigger cleanup`() =
+        runTest {
+            every { proStatusProvider.isPro() } returns false
 
-        useCase(DataRetention.ONE_YEAR)
+            useCase(DataRetention.ONE_YEAR)
 
-        coVerify(exactly = 0) { userPreferencesRepository.setDataRetention(any()) }
-        coVerify(exactly = 0) { cleanupOldReadingsUseCase.invoke() }
-    }
+            coVerify(exactly = 0) { userPreferencesRepository.setDataRetention(any()) }
+            coVerify(exactly = 0) { cleanupOldReadingsUseCase.invoke() }
+        }
 
     @Test
-    fun `pro user updates retention and cleans up immediately`() = runTest {
-        every { proStatusProvider.isPro() } returns true
+    fun `pro user updates retention and cleans up immediately`() =
+        runTest {
+            every { proStatusProvider.isPro() } returns true
 
-        useCase(DataRetention.SIX_MONTHS)
+            useCase(DataRetention.SIX_MONTHS)
 
-        coVerify(exactly = 1) { userPreferencesRepository.setDataRetention(DataRetention.SIX_MONTHS) }
-        coVerify(exactly = 1) { cleanupOldReadingsUseCase.invoke() }
-    }
+            coVerify(exactly = 1) { userPreferencesRepository.setDataRetention(DataRetention.SIX_MONTHS) }
+            coVerify(exactly = 1) { cleanupOldReadingsUseCase.invoke() }
+        }
 }

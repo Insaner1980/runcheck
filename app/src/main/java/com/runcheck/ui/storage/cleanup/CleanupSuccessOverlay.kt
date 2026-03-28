@@ -38,48 +38,52 @@ import com.runcheck.ui.theme.statusColors
 fun CleanupSuccessOverlay(
     visible: Boolean,
     freedBytes: Long,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val noMotion = MaterialTheme.reducedMotion
-    val successMessage = stringResource(
-        R.string.a11y_cleanup_success,
-        formatStorageSize(context, freedBytes)
-    )
+    val successMessage =
+        stringResource(
+            R.string.a11y_cleanup_success,
+            formatStorageSize(context, freedBytes),
+        )
 
     AnimatedVisibility(
         visible = visible,
         enter = if (noMotion) EnterTransition.None else fadeIn(initialAlpha = 0f),
         exit = if (noMotion) ExitTransition.None else fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.95f))
-                .semantics { liveRegion = LiveRegionMode.Assertive },
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.95f))
+                    .semantics { liveRegion = LiveRegionMode.Assertive },
+            contentAlignment = Alignment.Center,
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
             ) {
                 Icon(
                     imageVector = Icons.Outlined.CheckCircle,
                     contentDescription = successMessage,
                     modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.statusColors.healthy
+                    tint = MaterialTheme.statusColors.healthy,
                 )
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
                 Text(
-                    text = stringResource(
-                        R.string.cleanup_freed,
-                        formatStorageSize(context, freedBytes)
-                    ),
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = MaterialTheme.numericFontFamily
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
+                    text =
+                        stringResource(
+                            R.string.cleanup_freed,
+                            formatStorageSize(context, freedBytes),
+                        ),
+                    style =
+                        MaterialTheme.typography.titleLarge.copy(
+                            fontFamily = MaterialTheme.numericFontFamily,
+                        ),
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
         }

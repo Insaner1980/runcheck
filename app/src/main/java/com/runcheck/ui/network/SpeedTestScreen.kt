@@ -57,8 +57,8 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
@@ -74,23 +74,26 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
-import com.runcheck.ui.common.resolve
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SpeedTestResult
 import com.runcheck.ui.common.connectionDisplayLabel
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.rememberFormattedDateTime
+import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.AnimatedFloatText
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.info.InfoBottomSheet
+import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.RuncheckTheme
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericSpeedHeroValueTextStyle
 import com.runcheck.ui.theme.reducedMotion
+import com.runcheck.ui.theme.runcheckCardColors
+import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
 import kotlin.math.roundToInt
 
@@ -98,7 +101,7 @@ import kotlin.math.roundToInt
 fun SpeedTestScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: NetworkViewModel = hiltViewModel()
+    viewModel: NetworkViewModel = hiltViewModel(),
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
@@ -106,13 +109,14 @@ fun SpeedTestScreen(
     val speedTestState by viewModel.speedTestState.collectAsStateWithLifecycle()
 
     DisposableEffect(lifecycleOwner, viewModel) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_START -> viewModel.startObserving()
-                Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
-                else -> Unit
+        val observer =
+            LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_START -> viewModel.startObserving()
+                    Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
+                    else -> Unit
+                }
             }
-        }
 
         lifecycleOwner.lifecycle.addObserver(observer)
         if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
@@ -128,45 +132,46 @@ fun SpeedTestScreen(
     Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(
             title = stringResource(R.string.speed_test_title),
-            onBack = onBack
+            onBack = onBack,
         )
 
         ContentContainer {
-        when (val netState = networkUiState) {
-            is NetworkUiState.Loading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .semantics {
-                            contentDescription = context.getString(R.string.a11y_loading)
-                            liveRegion = LiveRegionMode.Polite
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+            when (val netState = networkUiState) {
+                is NetworkUiState.Loading -> {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .semantics {
+                                    contentDescription = context.getString(R.string.a11y_loading)
+                                    liveRegion = LiveRegionMode.Polite
+                                },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
 
-            is NetworkUiState.Error -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = netState.message.resolve(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                is NetworkUiState.Error -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = netState.message.resolve(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+
+                is NetworkUiState.Success -> {
+                    SpeedTestContent(
+                        networkState = netState.networkState,
+                        speedTestState = speedTestState,
+                        onStartSpeedTest = { viewModel.startSpeedTest() },
+                        onConfirmCellular = { viewModel.confirmCellularSpeedTest() },
+                        onDismissCellular = { viewModel.dismissCellularWarning() },
                     )
                 }
             }
-
-            is NetworkUiState.Success -> {
-                SpeedTestContent(
-                    networkState = netState.networkState,
-                    speedTestState = speedTestState,
-                    onStartSpeedTest = { viewModel.startSpeedTest() },
-                    onConfirmCellular = { viewModel.confirmCellularSpeedTest() },
-                    onDismissCellular = { viewModel.dismissCellularWarning() }
-                )
-            }
-        }
         }
     }
 }
@@ -177,18 +182,19 @@ private fun SpeedTestContent(
     speedTestState: SpeedTestUiState,
     onStartSpeedTest: () -> Unit,
     onConfirmCellular: () -> Unit,
-    onDismissCellular: () -> Unit
+    onDismissCellular: () -> Unit,
 ) {
     var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
     val hasConnection = networkState.connectionType != ConnectionType.NONE
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = MaterialTheme.spacing.base),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = MaterialTheme.spacing.base),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
@@ -197,24 +203,25 @@ private fun SpeedTestContent(
         SpeedTestHero(
             state = speedTestState,
             enabled = hasConnection && !speedTestState.isRunning,
-            onStart = onStartSpeedTest
+            onStart = onStartSpeedTest,
         )
 
         Text(
-            text = heroInstructionText(
-                hasConnection = hasConnection,
-                phase = speedTestState.phase
-            ),
+            text =
+                heroInstructionText(
+                    hasConnection = hasConnection,
+                    phase = speedTestState.phase,
+                ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         )
 
         // Combined metrics card (Download, Upload, Ping, Jitter)
         SpeedMetricsCard(
             state = speedTestState,
-            onInfoClick = { key -> activeInfoSheet = key }
+            onInfoClick = { key -> activeInfoSheet = key },
         )
 
         if (speedTestState.phase is SpeedTestPhase.Failed) {
@@ -239,25 +246,26 @@ private fun SpeedTestContent(
             text = stringResource(R.string.speed_test_mlab_notice),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = MaterialTheme.spacing.xl)
+            modifier = Modifier.padding(bottom = MaterialTheme.spacing.xl),
         )
     }
 
     if (speedTestState.showCellularWarning) {
         CellularDataWarningDialog(
             onConfirm = onConfirmCellular,
-            onDismiss = onDismissCellular
+            onDismiss = onDismissCellular,
         )
     }
 
     activeInfoSheet?.let { key ->
-        val content = when (key) {
-            "download" -> SpeedTestInfoContent.download
-            "upload" -> SpeedTestInfoContent.upload
-            "ping" -> SpeedTestInfoContent.ping
-            "jitter" -> SpeedTestInfoContent.jitter
-            else -> null
-        }
+        val content =
+            when (key) {
+                "download" -> SpeedTestInfoContent.download
+                "upload" -> SpeedTestInfoContent.upload
+                "ping" -> SpeedTestInfoContent.ping
+                "jitter" -> SpeedTestInfoContent.jitter
+                else -> null
+            }
         content?.let {
             InfoBottomSheet(content = it, onDismiss = { activeInfoSheet = null })
         }
@@ -268,44 +276,51 @@ private fun SpeedTestContent(
 
 @Composable
 private fun NetworkContextPanel(networkState: NetworkState) {
-    val connectionLabel = when (networkState.connectionType) {
-        ConnectionType.NONE -> stringResource(R.string.network_no_connection)
-        ConnectionType.WIFI,
-        ConnectionType.CELLULAR,
-        ConnectionType.VPN -> connectionDisplayLabel(
-            connectionType = networkState.connectionType,
-            wifiSsid = networkState.wifiSsid,
-            networkSubtype = networkState.networkSubtype
-        )
-    }
+    val connectionLabel =
+        when (networkState.connectionType) {
+            ConnectionType.NONE -> {
+                stringResource(R.string.network_no_connection)
+            }
+
+            ConnectionType.WIFI,
+            ConnectionType.CELLULAR,
+            ConnectionType.VPN,
+            -> {
+                connectionDisplayLabel(
+                    connectionType = networkState.connectionType,
+                    wifiSsid = networkState.wifiSsid,
+                    networkSubtype = networkState.networkSubtype,
+                )
+            }
+        }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors = runcheckCardColors(),
+        elevation = runcheckCardElevation(),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(MaterialTheme.spacing.base),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(MaterialTheme.spacing.base),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             MetricPill(
                 label = stringResource(R.string.speed_test_connection),
-                value = connectionLabel
+                value = connectionLabel,
             )
             networkState.latencyMs?.let { latency ->
                 MetricPill(
                     label = stringResource(R.string.speed_test_ping),
-                    value = stringResource(
-                        R.string.value_with_unit_int,
-                        latency,
-                        stringResource(R.string.unit_ms)
-                    )
+                    value =
+                        stringResource(
+                            R.string.value_with_unit_int,
+                            latency,
+                            stringResource(R.string.unit_ms),
+                        ),
                 )
             }
         }
@@ -318,7 +333,7 @@ private fun NetworkContextPanel(networkState: NetworkState) {
 private fun SpeedTestHero(
     state: SpeedTestUiState,
     enabled: Boolean,
-    onStart: () -> Unit
+    onStart: () -> Unit,
 ) {
     val reducedMotion = MaterialTheme.reducedMotion
     val pulseScale: Float
@@ -330,32 +345,41 @@ private fun SpeedTestHero(
         rotation = 0f
     } else {
         val infiniteTransition = rememberInfiniteTransition(label = "speed_test_hero")
-        pulseScale = infiniteTransition.animateFloat(
-            initialValue = 0.96f,
-            targetValue = 1.04f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 1700, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "speed_test_pulse_scale"
-        ).value
-        pulseAlpha = infiniteTransition.animateFloat(
-            initialValue = 0.12f,
-            targetValue = 0.26f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 1700, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "speed_test_pulse_alpha"
-        ).value
-        rotation = infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 1800, easing = LinearEasing)
-            ),
-            label = "speed_test_rotation"
-        ).value
+        pulseScale =
+            infiniteTransition
+                .animateFloat(
+                    initialValue = 0.96f,
+                    targetValue = 1.04f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation = tween(durationMillis = MotionTokens.SPEED_GAUGE, easing = MotionTokens.EaseOut),
+                            repeatMode = RepeatMode.Reverse,
+                        ),
+                    label = "speed_test_pulse_scale",
+                ).value
+        pulseAlpha =
+            infiniteTransition
+                .animateFloat(
+                    initialValue = 0.12f,
+                    targetValue = 0.26f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation = tween(durationMillis = MotionTokens.SPEED_GAUGE, easing = MotionTokens.EaseOut),
+                            repeatMode = RepeatMode.Reverse,
+                        ),
+                    label = "speed_test_pulse_alpha",
+                ).value
+        rotation =
+            infiniteTransition
+                .animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation = tween(durationMillis = MotionTokens.SPEED_SWEEP, easing = LinearEasing),
+                        ),
+                    label = "speed_test_rotation",
+                ).value
     }
 
     val accent = MaterialTheme.colorScheme.primary
@@ -367,69 +391,76 @@ private fun SpeedTestHero(
     val surfaceTone = surfaceColor
     val surfaceContainerTone = MaterialTheme.colorScheme.surfaceContainerHigh
 
-    val targetProgress = when (state.phase) {
-        SpeedTestPhase.Idle -> 0f
-        SpeedTestPhase.Ping -> 0.18f
-        SpeedTestPhase.Download -> state.downloadProgress.coerceIn(0f, 1f)
-        SpeedTestPhase.Upload -> state.uploadProgress.coerceIn(0f, 1f)
-        SpeedTestPhase.Completed -> 1f
-        is SpeedTestPhase.Failed -> 0f
-    }
+    val targetProgress =
+        when (state.phase) {
+            SpeedTestPhase.Idle -> 0f
+            SpeedTestPhase.Ping -> 0.18f
+            SpeedTestPhase.Download -> state.downloadProgress.coerceIn(0f, 1f)
+            SpeedTestPhase.Upload -> state.uploadProgress.coerceIn(0f, 1f)
+            SpeedTestPhase.Completed -> 1f
+            is SpeedTestPhase.Failed -> 0f
+        }
 
     val progress by animateFloatAsState(
         targetValue = targetProgress,
-        animationSpec = tween(
-            durationMillis = if (reducedMotion) 0 else 700,
-            easing = FastOutSlowInEasing
-        ),
-        label = "speed_test_ring_progress"
+        animationSpec =
+            tween(
+                durationMillis = if (reducedMotion) 0 else MotionTokens.SPEED_RESULT,
+                easing = FastOutSlowInEasing,
+            ),
+        label = "speed_test_ring_progress",
     )
 
-    val centerValue = when (state.phase) {
-        SpeedTestPhase.Idle -> 0f
-        SpeedTestPhase.Ping -> 0f
-        SpeedTestPhase.Download -> state.downloadMbps.toFloat()
-        SpeedTestPhase.Upload -> state.uploadMbps.toFloat()
-        SpeedTestPhase.Completed -> state.downloadMbps.toFloat()
-        is SpeedTestPhase.Failed -> 0f
-    }
+    val centerValue =
+        when (state.phase) {
+            SpeedTestPhase.Idle -> 0f
+            SpeedTestPhase.Ping -> 0f
+            SpeedTestPhase.Download -> state.downloadMbps.toFloat()
+            SpeedTestPhase.Upload -> state.uploadMbps.toFloat()
+            SpeedTestPhase.Completed -> state.downloadMbps.toFloat()
+            is SpeedTestPhase.Failed -> 0f
+        }
 
-    val centerLabel = when (state.phase) {
-        SpeedTestPhase.Idle -> ""
-        SpeedTestPhase.Ping -> ""
-        SpeedTestPhase.Download -> stringResource(R.string.speed_test_download)
-        SpeedTestPhase.Upload -> stringResource(R.string.speed_test_upload)
-        SpeedTestPhase.Completed -> stringResource(R.string.speed_test_download)
-        is SpeedTestPhase.Failed -> ""
-    }
-    val ringActionLabel = heroInstructionText(
-        hasConnection = enabled || state.isRunning,
-        phase = state.phase
-    )
+    val centerLabel =
+        when (state.phase) {
+            SpeedTestPhase.Idle -> ""
+            SpeedTestPhase.Ping -> ""
+            SpeedTestPhase.Download -> stringResource(R.string.speed_test_download)
+            SpeedTestPhase.Upload -> stringResource(R.string.speed_test_upload)
+            SpeedTestPhase.Completed -> stringResource(R.string.speed_test_download)
+            is SpeedTestPhase.Failed -> ""
+        }
+    val ringActionLabel =
+        heroInstructionText(
+            hasConnection = enabled || state.isRunning,
+            phase = state.phase,
+        )
 
     Box(
-        modifier = Modifier
-            .padding(top = 8.dp)
-            .size(286.dp),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .padding(top = MaterialTheme.spacing.sm)
+                .size(286.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Box(
-            modifier = Modifier
-                .size(248.dp)
-                .scale(if (state.phase == SpeedTestPhase.Idle) pulseScale else 1f)
-                .clip(CircleShape)
-                .background(accent.copy(alpha = if (state.phase == SpeedTestPhase.Idle) pulseAlpha else 0.08f))
+            modifier =
+                Modifier
+                    .size(248.dp)
+                    .scale(if (state.phase == SpeedTestPhase.Idle) pulseScale else 1f)
+                    .clip(CircleShape)
+                    .background(accent.copy(alpha = if (state.phase == SpeedTestPhase.Idle) pulseAlpha else 0.08f)),
         )
 
         Canvas(
-            modifier = Modifier
-                .size(248.dp)
-                .clip(CircleShape)
-                .semantics {
-                    role = Role.Button
-                    contentDescription = ringActionLabel
-                }
-                .clickable(enabled = enabled) { onStart() }
+            modifier =
+                Modifier
+                    .size(248.dp)
+                    .clip(CircleShape)
+                    .semantics {
+                        role = Role.Button
+                        contentDescription = ringActionLabel
+                    }.clickable(enabled = enabled) { onStart() },
         ) {
             val stroke = 16.dp.toPx()
             val outerStroke = 2.dp.toPx()
@@ -437,14 +468,16 @@ private fun SpeedTestHero(
             val topLeft = Offset(stroke / 2, stroke / 2)
 
             drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        accent.copy(alpha = 0.16f),
-                        surfaceContainerTone.copy(alpha = 0.88f),
-                        surfaceTone.copy(alpha = 0.96f)
-                    )
-                ),
-                radius = this.size.minDimension / 2.3f
+                brush =
+                    Brush.radialGradient(
+                        colors =
+                            listOf(
+                                accent.copy(alpha = 0.16f),
+                                surfaceContainerTone.copy(alpha = 0.88f),
+                                surfaceTone.copy(alpha = 0.96f),
+                            ),
+                    ),
+                radius = this.size.minDimension / 2.3f,
             )
 
             drawArc(
@@ -454,46 +487,48 @@ private fun SpeedTestHero(
                 useCenter = false,
                 topLeft = topLeft,
                 size = arcSize,
-                style = Stroke(width = stroke, cap = StrokeCap.Round)
+                style = Stroke(width = stroke, cap = StrokeCap.Round),
             )
 
             when (state.phase) {
                 SpeedTestPhase.Idle -> {
                     drawArc(
-                        brush = Brush.sweepGradient(
-                            listOf(
-                                accent.copy(alpha = 0.0f),
-                                accent.copy(alpha = 0.85f),
-                                secondaryAccent.copy(alpha = 0.55f),
-                                accent.copy(alpha = 0.0f)
-                            )
-                        ),
+                        brush =
+                            Brush.sweepGradient(
+                                listOf(
+                                    accent.copy(alpha = 0.0f),
+                                    accent.copy(alpha = 0.85f),
+                                    secondaryAccent.copy(alpha = 0.55f),
+                                    accent.copy(alpha = 0.0f),
+                                ),
+                            ),
                         startAngle = 130f,
                         sweepAngle = 220f,
                         useCenter = false,
                         topLeft = topLeft,
                         size = arcSize,
-                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                        style = Stroke(width = stroke, cap = StrokeCap.Round),
                     )
                 }
 
                 SpeedTestPhase.Ping -> {
                     rotate(rotation) {
                         drawArc(
-                            brush = Brush.sweepGradient(
-                                listOf(
-                                    accent.copy(alpha = 0.0f),
-                                    secondaryAccent,
-                                    accent,
-                                    accent.copy(alpha = 0.0f)
-                                )
-                            ),
+                            brush =
+                                Brush.sweepGradient(
+                                    listOf(
+                                        accent.copy(alpha = 0.0f),
+                                        secondaryAccent,
+                                        accent,
+                                        accent.copy(alpha = 0.0f),
+                                    ),
+                                ),
                             startAngle = 145f,
                             sweepAngle = 112f,
                             useCenter = false,
                             topLeft = topLeft,
                             size = arcSize,
-                            style = Stroke(width = stroke, cap = StrokeCap.Round)
+                            style = Stroke(width = stroke, cap = StrokeCap.Round),
                         )
                     }
                 }
@@ -506,28 +541,30 @@ private fun SpeedTestHero(
                         useCenter = false,
                         topLeft = topLeft,
                         size = arcSize,
-                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                        style = Stroke(width = stroke, cap = StrokeCap.Round),
                     )
                 }
 
                 SpeedTestPhase.Download,
                 SpeedTestPhase.Upload,
-                SpeedTestPhase.Completed -> {
+                SpeedTestPhase.Completed,
+                -> {
                     drawArc(
-                        brush = Brush.sweepGradient(
-                            listOf(
-                                lerp(accent, onSurfaceColor, 0.06f),
-                                accent,
-                                lerp(accent, surfaceColor, 0.08f),
-                                lerp(accent, onSurfaceColor, 0.05f)
-                            )
-                        ),
+                        brush =
+                            Brush.sweepGradient(
+                                listOf(
+                                    lerp(accent, onSurfaceColor, 0.06f),
+                                    accent,
+                                    lerp(accent, surfaceColor, 0.08f),
+                                    lerp(accent, onSurfaceColor, 0.05f),
+                                ),
+                            ),
                         startAngle = 135f,
                         sweepAngle = 270f * progress,
                         useCenter = false,
                         topLeft = topLeft,
                         size = arcSize,
-                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                        style = Stroke(width = stroke, cap = StrokeCap.Round),
                     )
                 }
             }
@@ -539,7 +576,7 @@ private fun SpeedTestHero(
                 useCenter = false,
                 topLeft = Offset(topLeft.x + 14.dp.toPx(), topLeft.y + 14.dp.toPx()),
                 size = Size(arcSize.width - 28.dp.toPx(), arcSize.height - 28.dp.toPx()),
-                style = Stroke(width = outerStroke, cap = StrokeCap.Round)
+                style = Stroke(width = outerStroke, cap = StrokeCap.Round),
             )
         }
 
@@ -548,10 +585,11 @@ private fun SpeedTestHero(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = stringResource(R.string.speed_test_start_button),
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = accent
+                        style =
+                            MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.SemiBold,
+                            ),
+                        color = accent,
                     )
                 }
             }
@@ -561,50 +599,53 @@ private fun SpeedTestHero(
                     AnimatedFloatText(
                         value = centerValue,
                         style = MaterialTheme.numericSpeedHeroValueTextStyle,
-                        decimalPlaces = 1
+                        decimalPlaces = 1,
                     )
                     Text(
                         text = stringResource(R.string.unit_mbps),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                     Text(
                         text = stringResource(R.string.speed_test_run_again),
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = accent
+                        style =
+                            MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.SemiBold,
+                            ),
+                        color = accent,
                     )
                 }
             }
 
             state.phase !is SpeedTestPhase.Failed -> {
-                val progressPercent = when (state.phase) {
-                    SpeedTestPhase.Download -> (state.downloadProgress * 100).roundToInt()
-                    SpeedTestPhase.Upload -> (state.uploadProgress * 100).roundToInt()
-                    else -> null
-                }
+                val progressPercent =
+                    when (state.phase) {
+                        SpeedTestPhase.Download -> (state.downloadProgress * 100).roundToInt()
+                        SpeedTestPhase.Upload -> (state.uploadProgress * 100).roundToInt()
+                        else -> null
+                    }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     AnimatedFloatText(
                         value = centerValue,
                         style = MaterialTheme.numericSpeedHeroValueTextStyle,
-                        decimalPlaces = 1
+                        decimalPlaces = 1,
                     )
                     Text(
                         text = stringResource(R.string.unit_mbps),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
                     Text(
-                        text = if (progressPercent != null) {
-                            "$centerLabel  $progressPercent%"
-                        } else {
-                            centerLabel
-                        },
+                        text =
+                            if (progressPercent != null) {
+                                "$centerLabel  $progressPercent%"
+                            } else {
+                                centerLabel
+                            },
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -617,51 +658,53 @@ private fun SpeedTestHero(
 @Composable
 private fun SpeedMetricsCard(
     state: SpeedTestUiState,
-    onInfoClick: (String) -> Unit = {}
+    onInfoClick: (String) -> Unit = {},
 ) {
     val accent = MaterialTheme.colorScheme.primary
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors = runcheckCardColors(),
+        elevation = runcheckCardElevation(),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 18.dp)
-                .semantics { liveRegion = LiveRegionMode.Polite },
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 18.dp)
+                    .semantics { liveRegion = LiveRegionMode.Polite },
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // Row 1: Download + Upload
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.Top,
             ) {
                 MetricPill(
                     label = stringResource(R.string.speed_test_download),
-                    value = stringResource(
-                        R.string.value_with_unit_text,
-                        formatDecimal(state.downloadMbps, 1),
-                        stringResource(R.string.unit_mbps)
-                    ),
+                    value =
+                        stringResource(
+                            R.string.value_with_unit_text,
+                            formatDecimal(state.downloadMbps, 1),
+                            stringResource(R.string.unit_mbps),
+                        ),
                     valueColor = accent,
                     modifier = Modifier.weight(1f),
-                    onInfoClick = { onInfoClick("download") }
+                    onInfoClick = { onInfoClick("download") },
                 )
                 MetricPill(
                     label = stringResource(R.string.speed_test_upload),
-                    value = stringResource(
-                        R.string.value_with_unit_text,
-                        formatDecimal(state.uploadMbps, 1),
-                        stringResource(R.string.unit_mbps)
-                    ),
+                    value =
+                        stringResource(
+                            R.string.value_with_unit_text,
+                            formatDecimal(state.uploadMbps, 1),
+                            stringResource(R.string.unit_mbps),
+                        ),
                     valueColor = accent,
                     modifier = Modifier.weight(1f),
-                    onInfoClick = { onInfoClick("upload") }
+                    onInfoClick = { onInfoClick("upload") },
                 )
             }
 
@@ -670,35 +713,38 @@ private fun SpeedMetricsCard(
             // Row 2: Ping + Jitter
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.Top,
             ) {
                 MetricPill(
                     label = stringResource(R.string.speed_test_ping),
-                    value = if (state.pingMs > 0) {
-                        stringResource(
-                            R.string.value_with_unit_int,
-                            state.pingMs,
-                            stringResource(R.string.unit_ms)
-                        )
-                    } else {
-                        stringResource(R.string.placeholder_dash)
-                    },
+                    value =
+                        if (state.pingMs > 0) {
+                            stringResource(
+                                R.string.value_with_unit_int,
+                                state.pingMs,
+                                stringResource(R.string.unit_ms),
+                            )
+                        } else {
+                            stringResource(R.string.placeholder_dash)
+                        },
                     modifier = Modifier.weight(1f),
-                    onInfoClick = { onInfoClick("ping") }
+                    onInfoClick = { onInfoClick("ping") },
                 )
                 MetricPill(
                     label = stringResource(R.string.speed_test_jitter),
-                    value = if (state.jitterMs != null) {
-                        stringResource(
-                            R.string.value_with_unit_int,
-                            state.jitterMs,
-                            stringResource(R.string.unit_ms)
-                        )
-                    } else {
-                        stringResource(R.string.placeholder_dash)
-                    },
+                    value =
+                        if (state.jitterMs != null) {
+                            stringResource(
+                                R.string.value_with_unit_int,
+                                state.jitterMs,
+                                stringResource(R.string.unit_ms),
+                            )
+                        } else {
+                            stringResource(R.string.placeholder_dash)
+                        },
                     modifier = Modifier.weight(1f),
-                    onInfoClick = { onInfoClick("jitter") }
+                    onInfoClick = { onInfoClick("jitter") },
                 )
             }
         }
@@ -710,7 +756,7 @@ private fun SpeedMetricsCard(
 @Composable
 private fun CellularDataWarningDialog(
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -726,7 +772,7 @@ private fun CellularDataWarningDialog(
             TextButton(onClick = onDismiss) {
                 Text(text = stringResource(R.string.speed_test_cellular_cancel))
             }
-        }
+        },
     )
 }
 
@@ -737,16 +783,17 @@ private fun SpeedTestFailureCard(error: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+            ),
+        elevation = runcheckCardElevation(),
     ) {
         Text(
             text = error,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onErrorContainer,
-            modifier = Modifier.padding(MaterialTheme.spacing.base)
+            modifier = Modifier.padding(MaterialTheme.spacing.base),
         )
     }
 }
@@ -756,16 +803,14 @@ private fun EmptyHistoryCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors = runcheckCardColors(),
+        elevation = runcheckCardElevation(),
     ) {
         Text(
             text = stringResource(R.string.speed_test_no_history),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(MaterialTheme.spacing.base)
+            modifier = Modifier.padding(MaterialTheme.spacing.base),
         )
     }
 }
@@ -780,27 +825,26 @@ private fun LatestResultCard(result: SpeedTestResult) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors = runcheckCardColors(),
+        elevation = runcheckCardElevation(),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 SectionHeader(stringResource(R.string.speed_test_last_result))
                 Text(
                     text = dateLabel,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -808,32 +852,35 @@ private fun LatestResultCard(result: SpeedTestResult) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.Top,
             ) {
                 MetricPill(
                     label = stringResource(R.string.speed_test_download),
-                    value = stringResource(
-                        R.string.value_with_unit_text,
-                        formatDecimal(result.downloadMbps, 1),
-                        stringResource(R.string.unit_mbps)
-                    ),
+                    value =
+                        stringResource(
+                            R.string.value_with_unit_text,
+                            formatDecimal(result.downloadMbps, 1),
+                            stringResource(R.string.unit_mbps),
+                        ),
                     valueColor = accent,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 MetricPill(
                     label = stringResource(R.string.speed_test_upload),
-                    value = stringResource(
-                        R.string.value_with_unit_text,
-                        formatDecimal(result.uploadMbps, 1),
-                        stringResource(R.string.unit_mbps)
-                    ),
+                    value =
+                        stringResource(
+                            R.string.value_with_unit_text,
+                            formatDecimal(result.uploadMbps, 1),
+                            stringResource(R.string.unit_mbps),
+                        ),
                     valueColor = accent,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 MetricPill(
                     label = stringResource(R.string.speed_test_ping),
                     value = formatPingValue(result.pingMs),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
             }
 
@@ -841,7 +888,7 @@ private fun LatestResultCard(result: SpeedTestResult) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                 MetricPill(
                     label = stringResource(R.string.speed_test_server),
-                    value = server
+                    value = server,
                 )
             }
         }
@@ -854,7 +901,7 @@ private fun LatestResultCard(result: SpeedTestResult) {
 private fun HistorySection(results: List<SpeedTestResult>) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
         SectionHeader(stringResource(R.string.speed_test_history))
 
@@ -869,80 +916,89 @@ private fun HistoryResultItem(result: SpeedTestResult) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors = runcheckCardColors(),
+        elevation = runcheckCardElevation(),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     ConnectionTypeIcon(
                         connectionType = result.connectionType,
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier.size(14.dp),
                     )
                     Text(
                         text = connectionTypeShortLabel(result),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 Text(
                     text = rememberTimestampLabel(result.timestamp),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = formatDecimal(result.downloadMbps, 0),
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontFamily = MaterialTheme.numericFontFamily
-                        ),
-                        color = MaterialTheme.colorScheme.primary
+                        style =
+                            MaterialTheme.typography.titleSmall.copy(
+                                fontFamily = MaterialTheme.numericFontFamily,
+                            ),
+                        color = MaterialTheme.colorScheme.primary,
                     )
                     Text(
                         text = stringResource(R.string.speed_test_download),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = formatDecimal(result.uploadMbps, 0),
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontFamily = MaterialTheme.numericFontFamily
-                        ),
-                        color = MaterialTheme.colorScheme.primary
+                        style =
+                            MaterialTheme.typography.titleSmall.copy(
+                                fontFamily = MaterialTheme.numericFontFamily,
+                            ),
+                        color = MaterialTheme.colorScheme.primary,
                     )
                     Text(
                         text = stringResource(R.string.speed_test_upload),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = if (result.pingMs > 0) result.pingMs.toString() else stringResource(R.string.placeholder_dash),
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontFamily = MaterialTheme.numericFontFamily
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
+                        text =
+                            if (result.pingMs >
+                                0
+                            ) {
+                                result.pingMs.toString()
+                            } else {
+                                stringResource(R.string.placeholder_dash)
+                            },
+                        style =
+                            MaterialTheme.typography.titleSmall.copy(
+                                fontFamily = MaterialTheme.numericFontFamily,
+                            ),
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
                         text = stringResource(R.string.speed_test_ping),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -957,24 +1013,25 @@ private fun ConnectionTypeBadge(result: SpeedTestResult) {
     val label = connectionTypeShortLabel(result)
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         ConnectionTypeIcon(
             connectionType = result.connectionType,
-            modifier = Modifier.size(16.dp)
+            modifier = Modifier.size(16.dp),
         )
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
         result.signalDbm?.let { dbm ->
             Text(
                 text = stringResource(R.string.value_with_unit_int, dbm, stringResource(R.string.unit_dbm)),
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontFamily = MaterialTheme.numericFontFamily
-                ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style =
+                    MaterialTheme.typography.bodySmall.copy(
+                        fontFamily = MaterialTheme.numericFontFamily,
+                    ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -983,36 +1040,39 @@ private fun ConnectionTypeBadge(result: SpeedTestResult) {
 @Composable
 private fun ConnectionTypeIcon(
     connectionType: ConnectionType,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val icon = when (connectionType) {
-        ConnectionType.WIFI -> Icons.Outlined.Wifi
-        ConnectionType.CELLULAR -> Icons.Outlined.SignalCellularAlt
-        ConnectionType.VPN -> Icons.Outlined.Wifi
-        ConnectionType.NONE -> return
-    }
-    val description = when (connectionType) {
-        ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
-        ConnectionType.CELLULAR -> stringResource(R.string.connection_cellular)
-        ConnectionType.VPN -> stringResource(R.string.connection_vpn)
-        ConnectionType.NONE -> return
-    }
+    val icon =
+        when (connectionType) {
+            ConnectionType.WIFI -> Icons.Outlined.Wifi
+            ConnectionType.CELLULAR -> Icons.Outlined.SignalCellularAlt
+            ConnectionType.VPN -> Icons.Outlined.Wifi
+            ConnectionType.NONE -> return
+        }
+    val description =
+        when (connectionType) {
+            ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
+            ConnectionType.CELLULAR -> stringResource(R.string.connection_cellular)
+            ConnectionType.VPN -> stringResource(R.string.connection_vpn)
+            ConnectionType.NONE -> return
+        }
     Icon(
         imageVector = icon,
         contentDescription = description,
         modifier = modifier,
-        tint = MaterialTheme.colorScheme.onSurfaceVariant
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
 @Composable
 private fun connectionTypeShortLabel(result: SpeedTestResult): String {
-    val base = when (result.connectionType) {
-        ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
-        ConnectionType.CELLULAR -> stringResource(R.string.connection_cellular)
-        ConnectionType.VPN -> stringResource(R.string.connection_vpn)
-        ConnectionType.NONE -> stringResource(R.string.connection_none)
-    }
+    val base =
+        when (result.connectionType) {
+            ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
+            ConnectionType.CELLULAR -> stringResource(R.string.connection_cellular)
+            ConnectionType.VPN -> stringResource(R.string.connection_vpn)
+            ConnectionType.NONE -> stringResource(R.string.connection_none)
+        }
     val subtype = result.networkSubtype
     return if (!subtype.isNullOrBlank()) "$base · $subtype" else base
 }
@@ -1020,23 +1080,23 @@ private fun connectionTypeShortLabel(result: SpeedTestResult): String {
 // ── Helpers ──────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun rememberTimestampLabel(timestamp: Long): String =
-    rememberFormattedDateTime(timestamp, "MMMdhm")
+private fun rememberTimestampLabel(timestamp: Long): String = rememberFormattedDateTime(timestamp, "MMMdhm")
 
 @Composable
 private fun heroInstructionText(
     hasConnection: Boolean,
-    phase: SpeedTestPhase
-): String = when {
-    !hasConnection -> stringResource(R.string.speed_test_no_connection_hint)
-    phase == SpeedTestPhase.Idle -> stringResource(R.string.speed_test_tap_ring_start)
-    phase == SpeedTestPhase.Ping -> stringResource(R.string.speed_test_phase_ping)
-    phase == SpeedTestPhase.Download -> stringResource(R.string.speed_test_phase_download)
-    phase == SpeedTestPhase.Upload -> stringResource(R.string.speed_test_phase_upload)
-    phase == SpeedTestPhase.Completed -> stringResource(R.string.speed_test_tap_ring_restart)
-    phase is SpeedTestPhase.Failed -> stringResource(R.string.speed_test_tap_ring_retry)
-    else -> ""
-}
+    phase: SpeedTestPhase,
+): String =
+    when {
+        !hasConnection -> stringResource(R.string.speed_test_no_connection_hint)
+        phase == SpeedTestPhase.Idle -> stringResource(R.string.speed_test_tap_ring_start)
+        phase == SpeedTestPhase.Ping -> stringResource(R.string.speed_test_phase_ping)
+        phase == SpeedTestPhase.Download -> stringResource(R.string.speed_test_phase_download)
+        phase == SpeedTestPhase.Upload -> stringResource(R.string.speed_test_phase_upload)
+        phase == SpeedTestPhase.Completed -> stringResource(R.string.speed_test_tap_ring_restart)
+        phase is SpeedTestPhase.Failed -> stringResource(R.string.speed_test_tap_ring_retry)
+        else -> ""
+    }
 
 @Composable
 private fun formatPingValue(pingMs: Int): String =
@@ -1044,7 +1104,7 @@ private fun formatPingValue(pingMs: Int): String =
         stringResource(
             R.string.value_with_unit_int,
             pingMs,
-            stringResource(R.string.unit_ms)
+            stringResource(R.string.unit_ms),
         )
     } else {
         stringResource(R.string.placeholder_dash)
@@ -1057,61 +1117,65 @@ private fun formatPingValue(pingMs: Int): String =
 private fun SpeedTestContentPreview() {
     RuncheckTheme {
         SpeedTestContent(
-            networkState = NetworkState(
-                connectionType = ConnectionType.WIFI,
-                signalDbm = -54,
-                signalQuality = com.runcheck.domain.model.SignalQuality.EXCELLENT,
-                wifiSsid = "Lab 6E",
-                latencyMs = 16
-            ),
-            speedTestState = SpeedTestUiState(
-                phase = SpeedTestPhase.Completed,
-                downloadMbps = 542.7,
-                uploadMbps = 83.4,
-                pingMs = 17,
-                jitterMs = 3,
-                lastResult = SpeedTestResult(
-                    timestamp = 1_710_000_000_000,
+            networkState =
+                NetworkState(
+                    connectionType = ConnectionType.WIFI,
+                    signalDbm = -54,
+                    signalQuality = com.runcheck.domain.model.SignalQuality.EXCELLENT,
+                    wifiSsid = "Lab 6E",
+                    latencyMs = 16,
+                ),
+            speedTestState =
+                SpeedTestUiState(
+                    phase = SpeedTestPhase.Completed,
                     downloadMbps = 542.7,
                     uploadMbps = 83.4,
                     pingMs = 17,
                     jitterMs = 3,
-                    serverName = "M-Lab Helsinki",
-                    serverLocation = "Helsinki",
-                    connectionType = ConnectionType.WIFI,
-                    networkSubtype = null,
-                    signalDbm = -54
+                    lastResult =
+                        SpeedTestResult(
+                            timestamp = 1_710_000_000_000,
+                            downloadMbps = 542.7,
+                            uploadMbps = 83.4,
+                            pingMs = 17,
+                            jitterMs = 3,
+                            serverName = "M-Lab Helsinki",
+                            serverLocation = "Helsinki",
+                            connectionType = ConnectionType.WIFI,
+                            networkSubtype = null,
+                            signalDbm = -54,
+                        ),
+                    recentResults =
+                        listOf(
+                            SpeedTestResult(
+                                timestamp = 1_710_000_000_000,
+                                downloadMbps = 542.7,
+                                uploadMbps = 83.4,
+                                pingMs = 17,
+                                jitterMs = 3,
+                                serverName = "M-Lab Helsinki",
+                                serverLocation = "Helsinki",
+                                connectionType = ConnectionType.WIFI,
+                                networkSubtype = null,
+                                signalDbm = -54,
+                            ),
+                            SpeedTestResult(
+                                timestamp = 1_709_999_000_000,
+                                downloadMbps = 518.2,
+                                uploadMbps = 79.9,
+                                pingMs = 19,
+                                jitterMs = 4,
+                                serverName = "M-Lab Stockholm",
+                                serverLocation = "Stockholm",
+                                connectionType = ConnectionType.WIFI,
+                                networkSubtype = null,
+                                signalDbm = -57,
+                            ),
+                        ),
                 ),
-                recentResults = listOf(
-                    SpeedTestResult(
-                        timestamp = 1_710_000_000_000,
-                        downloadMbps = 542.7,
-                        uploadMbps = 83.4,
-                        pingMs = 17,
-                        jitterMs = 3,
-                        serverName = "M-Lab Helsinki",
-                        serverLocation = "Helsinki",
-                        connectionType = ConnectionType.WIFI,
-                        networkSubtype = null,
-                        signalDbm = -54
-                    ),
-                    SpeedTestResult(
-                        timestamp = 1_709_999_000_000,
-                        downloadMbps = 518.2,
-                        uploadMbps = 79.9,
-                        pingMs = 19,
-                        jitterMs = 4,
-                        serverName = "M-Lab Stockholm",
-                        serverLocation = "Stockholm",
-                        connectionType = ConnectionType.WIFI,
-                        networkSubtype = null,
-                        signalDbm = -57
-                    )
-                )
-            ),
             onStartSpeedTest = {},
             onConfirmCellular = {},
-            onDismissCellular = {}
+            onDismissCellular = {},
         )
     }
 }

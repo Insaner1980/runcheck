@@ -23,34 +23,35 @@ fun ProFeatureLockedState(
     message: String,
     actionLabel: String,
     onAction: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val accentColor = MaterialTheme.colorScheme.primary
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(MaterialTheme.spacing.lg),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(MaterialTheme.spacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
         ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             OutlinedButton(
                 onClick = onAction,
                 border = BorderStroke(1.dp, accentColor),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = accentColor)
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = accentColor),
             ) {
                 Text(actionLabel)
             }

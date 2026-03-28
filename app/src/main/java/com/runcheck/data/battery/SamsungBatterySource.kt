@@ -13,44 +13,47 @@ import kotlinx.coroutines.flow.flowOn
 
 class SamsungBatterySource(
     context: Context,
-    profile: DeviceProfile
+    profile: DeviceProfile,
 ) : GenericBatterySource(context, profile) {
+    override fun getCurrentNow(): Flow<MeasuredValue<Int>> =
+        flow {
+            var previousCurrentMa: Int? = null
+            var stableReadingCount = 0
 
-    override fun getCurrentNow(): Flow<MeasuredValue<Int>> = flow {
-        var previousCurrentMa: Int? = null
-        var stableReadingCount = 0
+            while (true) {
+                val rawCurrent = readCurrentNowRaw()
+                if (rawCurrent == null) {
+                    emit(unavailableCurrent())
+                    delay(POLLING_INTERVAL_MS)
+                    continue
+                }
+                val currentMa = alignCurrentSignWithChargeState(normalizeCurrent(rawCurrent))
 
-        while (true) {
-            val rawCurrent = readCurrentNowRaw()
-            if (rawCurrent == null) {
-                emit(unavailableCurrent())
+                stableReadingCount =
+                    if (currentMa == previousCurrentMa) {
+                        stableReadingCount + 1
+                    } else {
+                        1
+                    }
+                previousCurrentMa = currentMa
+
+                // Samsung devices may report max theoretical current instead of actual
+                // Flag long-lived constant high-current readings as LOW confidence.
+                val looksLikeMaxTheoreticalCurrent =
+                    stableReadingCount >= STABLE_READING_THRESHOLD &&
+                        kotlin.math.abs(currentMa) >= SUSPICIOUS_CONSTANT_CURRENT_MA
+
+                val confidence =
+                    when {
+                        rawCurrent == 0 -> Confidence.UNAVAILABLE
+                        !profile.currentNowReliable || looksLikeMaxTheoreticalCurrent -> Confidence.LOW
+                        else -> Confidence.HIGH
+                    }
+
+                emit(MeasuredValue(currentMa, confidence))
                 delay(POLLING_INTERVAL_MS)
-                continue
             }
-            val currentMa = alignCurrentSignWithChargeState(normalizeCurrent(rawCurrent))
-
-            stableReadingCount = if (currentMa == previousCurrentMa) {
-                stableReadingCount + 1
-            } else {
-                1
-            }
-            previousCurrentMa = currentMa
-
-            // Samsung devices may report max theoretical current instead of actual
-            // Flag long-lived constant high-current readings as LOW confidence.
-            val looksLikeMaxTheoreticalCurrent = stableReadingCount >= STABLE_READING_THRESHOLD &&
-                kotlin.math.abs(currentMa) >= SUSPICIOUS_CONSTANT_CURRENT_MA
-
-            val confidence = when {
-                rawCurrent == 0 -> Confidence.UNAVAILABLE
-                !profile.currentNowReliable || looksLikeMaxTheoreticalCurrent -> Confidence.LOW
-                else -> Confidence.HIGH
-            }
-
-            emit(MeasuredValue(currentMa, confidence))
-            delay(POLLING_INTERVAL_MS)
-        }
-    }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.IO)
 
     companion object {
         private const val POLLING_INTERVAL_MS = 2000L

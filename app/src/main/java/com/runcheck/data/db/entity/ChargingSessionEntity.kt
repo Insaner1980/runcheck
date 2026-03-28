@@ -8,17 +8,19 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "charging_sessions",
-    foreignKeys = [ForeignKey(
-        entity = ChargerProfileEntity::class,
-        parentColumns = ["id"],
-        childColumns = ["charger_id"],
-        onDelete = ForeignKey.CASCADE
-    )],
+    foreignKeys = [
+        ForeignKey(
+            entity = ChargerProfileEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["charger_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
     indices = [
         Index(value = ["charger_id"]),
         Index(value = ["start_time"]),
-        Index(value = ["end_time"])
-    ]
+        Index(value = ["end_time"]),
+    ],
 )
 data class ChargingSessionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -31,5 +33,5 @@ data class ChargingSessionEntity(
     @ColumnInfo(name = "max_current_ma") val maxCurrentMa: Int?,
     @ColumnInfo(name = "avg_voltage_mv") val avgVoltageMv: Int?,
     @ColumnInfo(name = "avg_power_mw") val avgPowerMw: Int?,
-    @ColumnInfo(name = "plug_type") val plugType: String
+    @ColumnInfo(name = "plug_type") val plugType: String,
 )

@@ -12,19 +12,21 @@ import javax.inject.Singleton
  * while the async billing query runs on cold start.
  */
 @Singleton
-class ProStatusCache @Inject constructor(
-    @param:ApplicationContext private val context: Context
-) {
-    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+class ProStatusCache
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+    ) {
+        private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun getCachedProStatus(): Boolean = prefs.getBoolean(KEY_IS_PRO, false)
+        fun getCachedProStatus(): Boolean = prefs.getBoolean(KEY_IS_PRO, false)
 
-    fun setCachedProStatus(isPro: Boolean) {
-        prefs.edit().putBoolean(KEY_IS_PRO, isPro).apply()
+        fun setCachedProStatus(isPro: Boolean) {
+            prefs.edit().putBoolean(KEY_IS_PRO, isPro).apply()
+        }
+
+        companion object {
+            private const val PREFS_NAME = "pro_status_cache"
+            private const val KEY_IS_PRO = "is_pro"
+        }
     }
-
-    companion object {
-        private const val PREFS_NAME = "pro_status_cache"
-        private const val KEY_IS_PRO = "is_pro"
-    }
-}

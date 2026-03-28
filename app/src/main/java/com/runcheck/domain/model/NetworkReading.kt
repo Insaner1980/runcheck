@@ -8,5 +8,5 @@ data class NetworkReading(
     val wifiFrequency: Int?,
     val carrier: String?,
     val networkSubtype: String?,
-    val latencyMs: Int?
+    val latencyMs: Int?,
 )

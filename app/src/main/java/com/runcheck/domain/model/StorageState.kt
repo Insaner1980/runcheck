@@ -1,6 +1,5 @@
 package com.runcheck.domain.model
 
-
 data class StorageState(
     val totalBytes: Long,
     val availableBytes: Long,
@@ -18,5 +17,5 @@ data class StorageState(
     val fillRateEstimate: String? = null,
     val fileSystemType: String? = null,
     val encryptionStatus: String? = null,
-    val storageVolumes: Int = 0
+    val storageVolumes: Int = 0,
 )

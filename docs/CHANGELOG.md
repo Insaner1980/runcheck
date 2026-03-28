@@ -2,14 +2,24 @@
 
 _Auto-generated from git history. Updated on each commit._
 
-## 2026 Week 13 (Mar 23 – Mar 29)
+## 2026 Week 13 (maalis 23 – maalis 29)
 
 ### Other
+- Log.w → ReleaseSafeLog.warn: projektin lokituskäytännön mukainen (`1effd22`)
+- SonarCloud-koodihajujen korjaus: kognitiivinen kompleksisuus, tyhjät catch-lohkot, if→when (`4abac22`)
+- trigger sonar (`b9d31ac`)
+- GridCard subtitleColor-bugikorjaus + SonarCloud-analyysi dokumentoitu (`24f56a1`)
+- SonarCloud-koodihajujen korjaus: käyttämättömät muuttujat, duplikaattiliteraalit ja -haarat (`033c98d`)
+- trigger sonar analysis after fixes (`4afb11c`)
+### Added
+- Add tools:replace for android:usesCleartextTraffic (`50e5c97`)
+- trigger build (`4186d99`)
+- Lyhennetty FGS-syyteksti yksinkertaisemmaksi (`9fff055`)
+- Silent Observer UI-redesign: typografia-dominantti hero-näkymät ja tonaalinen kerrostus (`f16db7a`)
 - Update changelog after push commit (`4883c4d`)
 - Commit latest runcheck changes (`cfb12b6`)
 - SDK 37 preview, Detekt 1.23.8 + Compose Rules, annotaatiot ja koodilaadun parannukset (`4ee4402`)
 - Move hardcoded separators and concatenated text to string resources (`dfab75f`)
-### Added
 - Add defense-in-depth pro checks to network history and storage cleanup (`d2ca2e4`)
 - Add Security & Quality Requirements section to CLAUDE.md (`246853b`)
 ### Fixed
@@ -50,7 +60,7 @@ _Auto-generated from git history. Updated on each commit._
 - feat: add live signal strength chart on network detail screen (`33dd7f0`)
 - feat: add live charts for battery level, temperature, and voltage (`5231e7d`)
 
-## 2026 Week 12 (Mar 16 – Mar 22)
+## 2026 Week 12 (maalis 16 – maalis 22)
 
 ### Fixed
 - Fix notification tap actions, deep-linking, and worker locale (`3eb095e`)
@@ -105,7 +115,7 @@ _Auto-generated from git history. Updated on each commit._
 - Add files via upload (`392645a`)
 - Laaja ominaisuuspäivitys: akku, storage, thermal, asetukset (`8980fc3`)
 
-## 2026 Week 11 (Mar 09 – Mar 15)
+## 2026 Week 11 (maalis 09 – maalis 15)
 
 ### Changed
 - Uudista NetworkDetailScreen korttipohj. layoutiin (`d36ac53`)

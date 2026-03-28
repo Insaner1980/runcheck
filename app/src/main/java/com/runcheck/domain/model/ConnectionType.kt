@@ -4,5 +4,5 @@ enum class ConnectionType {
     WIFI,
     CELLULAR,
     VPN,
-    NONE
+    NONE,
 }

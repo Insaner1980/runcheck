@@ -11,5 +11,5 @@ data class SpeedTestResult(
     val serverLocation: String?,
     val connectionType: ConnectionType,
     val networkSubtype: String?,
-    val signalDbm: Int?
+    val signalDbm: Int?,
 )

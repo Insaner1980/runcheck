@@ -7,8 +7,12 @@ import kotlinx.coroutines.flow.Flow
 
 interface AppBatteryUsageRepository {
     fun getAggregatedUsageSince(since: Long): Flow<PagingData<AppBatteryUsage>>
+
     fun getUsageSummarySince(since: Long): Flow<AppUsageListSummary>
+
     suspend fun collectUsageSnapshot()
+
     suspend fun deleteOlderThan(cutoff: Long)
+
     suspend fun deleteAll()
 }

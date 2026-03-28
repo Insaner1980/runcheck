@@ -25,168 +25,183 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 
 @HiltWorker
-class HealthMonitorWorker @AssistedInject constructor(
-    @Assisted context: Context,
-    @Assisted workerParams: WorkerParameters,
-    private val batteryRepository: BatteryRepository,
-    private val networkRepository: NetworkRepository,
-    private val thermalRepository: ThermalRepository,
-    private val storageRepository: StorageRepository,
-    private val userPreferencesRepository: UserPreferencesRepository,
-    private val monitoringStatusRepository: MonitoringStatusRepository,
-    private val chargerSessionTracker: ChargerSessionTracker,
-    private val evaluateMonitoringAlerts: EvaluateMonitoringAlertsUseCase,
-    private val monitoringAlertStateStore: MonitoringAlertStateStore,
-    private val notificationHelper: NotificationHelper
-) : CoroutineWorker(context, workerParams) {
+class HealthMonitorWorker
+    @AssistedInject
+    constructor(
+        @Assisted context: Context,
+        @Assisted workerParams: WorkerParameters,
+        private val batteryRepository: BatteryRepository,
+        private val networkRepository: NetworkRepository,
+        private val thermalRepository: ThermalRepository,
+        private val storageRepository: StorageRepository,
+        private val userPreferencesRepository: UserPreferencesRepository,
+        private val monitoringStatusRepository: MonitoringStatusRepository,
+        private val chargerSessionTracker: ChargerSessionTracker,
+        private val evaluateMonitoringAlerts: EvaluateMonitoringAlertsUseCase,
+        private val monitoringAlertStateStore: MonitoringAlertStateStore,
+        private val notificationHelper: NotificationHelper,
+    ) : CoroutineWorker(context, workerParams) {
+        override suspend fun doWork(): Result {
+            var batteryState: BatteryState? = null
+            var thermalState: ThermalState? = null
+            var storageState: StorageState? = null
 
-    override suspend fun doWork(): Result {
-        var batteryState: BatteryState? = null
-        var thermalState: ThermalState? = null
-        var storageState: StorageState? = null
+            recordWorkerHeartbeat()
 
-        recordWorkerHeartbeat()
+            val preferences =
+                try {
+                    userPreferencesRepository.getPreferences().first()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    ReleaseSafeLog.error(TAG, "Failed to load notification preferences", e)
+                    return Result.retry()
+                }
 
-        val preferences = try {
-            userPreferencesRepository.getPreferences().first()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            ReleaseSafeLog.error(TAG, "Failed to load notification preferences", e)
-            return Result.retry()
+            var coreFailure =
+                collectStep("battery") {
+                    batteryState = batteryRepository.getBatteryState().first()
+                    batteryRepository.saveReading(requireNotNull(batteryState))
+                    chargerSessionTracker.onBatteryState(requireNotNull(batteryState))
+                }
+
+            coreFailure = collectStep("network") {
+                val networkState = networkRepository.getNetworkState().first()
+                val latency =
+                    try {
+                        networkRepository.measureLatency()
+                    } catch (_: Exception) {
+                        null
+                    }
+                networkRepository.saveReading(networkState.copy(latencyMs = latency))
+            } || coreFailure
+
+            coreFailure = collectStep("thermal") {
+                thermalState = thermalRepository.getThermalState().first()
+                thermalRepository.saveReading(requireNotNull(thermalState))
+            } || coreFailure
+
+            coreFailure = collectStep("storage") {
+                storageState = storageRepository.getStorageState().first()
+                storageRepository.saveReading(requireNotNull(storageState))
+            } || coreFailure
+
+            coreFailure = collectStep("alerts") {
+                val bat = batteryState
+                val therm = thermalState
+                val stor = storageState
+                if (bat == null || therm == null || stor == null) {
+                    ReleaseSafeLog.warn(TAG, "Skipping alerts — missing state data")
+                    return@collectStep
+                }
+                val snapshot =
+                    buildSnapshot(
+                        batteryState = bat,
+                        thermalState = therm,
+                        storageState = stor,
+                    )
+                val previousSnapshot = monitoringAlertStateStore.getLastSnapshot()
+                val chargeCompleteFired = monitoringAlertStateStore.wasChargeCompleteFired()
+                val alertDecision =
+                    evaluateMonitoringAlerts(
+                        previousSnapshot,
+                        snapshot,
+                        preferences,
+                        chargeCompleteFired,
+                    )
+
+                // Reset only after the device is actually off power. Some devices
+                // bounce between CHARGING, FULL, and NOT_CHARGING while still on a
+                // charger, especially wireless pads near 99-100%.
+                val isUnplugged = bat.plugType == PlugType.NONE
+                val newChargeCompleteFired =
+                    when {
+                        isUnplugged -> false
+                        alertDecision.chargeComplete -> true
+                        else -> chargeCompleteFired
+                    }
+
+                // Persist state before posting notifications so a retry
+                // after a crash here won't re-evaluate the same transition.
+                monitoringAlertStateStore.update(snapshot, newChargeCompleteFired)
+
+                if (alertDecision.lowBattery) {
+                    notificationHelper.showLowBatteryAlert(snapshot.batteryLevel)
+                }
+                if (alertDecision.highTemp) {
+                    notificationHelper.showHighTempAlert(
+                        snapshot.batteryTempC,
+                        preferences.temperatureUnit,
+                    )
+                }
+                if (alertDecision.lowStorage) {
+                    notificationHelper.showLowStorageAlert(snapshot.storageUsagePercent)
+                }
+                if (alertDecision.chargeComplete) {
+                    notificationHelper.showChargeCompleteNotification(snapshot.batteryLevel)
+                }
+            } || coreFailure
+
+            restartLiveNotificationIfNeeded(preferences.liveNotificationEnabled)
+
+            return if (coreFailure) Result.retry() else Result.success()
         }
 
-        var coreFailure = collectStep("battery") {
-            batteryState = batteryRepository.getBatteryState().first()
-            batteryRepository.saveReading(requireNotNull(batteryState))
-            chargerSessionTracker.onBatteryState(requireNotNull(batteryState))
-        }
-
-        coreFailure = collectStep("network") {
-            val networkState = networkRepository.getNetworkState().first()
-            val latency = try { networkRepository.measureLatency() } catch (_: Exception) { null }
-            networkRepository.saveReading(networkState.copy(latencyMs = latency))
-        } || coreFailure
-
-        coreFailure = collectStep("thermal") {
-            thermalState = thermalRepository.getThermalState().first()
-            thermalRepository.saveReading(requireNotNull(thermalState))
-        } || coreFailure
-
-        coreFailure = collectStep("storage") {
-            storageState = storageRepository.getStorageState().first()
-            storageRepository.saveReading(requireNotNull(storageState))
-        } || coreFailure
-
-        coreFailure = collectStep("alerts") {
-            val bat = batteryState
-            val therm = thermalState
-            val stor = storageState
-            if (bat == null || therm == null || stor == null) {
-                ReleaseSafeLog.warn(TAG, "Skipping alerts — missing state data")
-                return@collectStep
+        private suspend fun recordWorkerHeartbeat() {
+            try {
+                monitoringStatusRepository.setLastWorkerHeartbeatAt(System.currentTimeMillis())
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                ReleaseSafeLog.warn(TAG, "Failed to record monitoring heartbeat", e)
             }
-            val snapshot = buildSnapshot(
-                batteryState = bat,
-                thermalState = therm,
-                storageState = stor
+        }
+
+        /**
+         * Safety net: if the user has live notification enabled but the
+         * foreground service died (e.g. process death with START_NOT_STICKY),
+         * restart it on the next periodic worker run.
+         */
+        private fun restartLiveNotificationIfNeeded(liveNotificationEnabled: Boolean) {
+            if (!liveNotificationEnabled) return
+            try {
+                if (!RealTimeMonitorService.isRunning) {
+                    val serviceIntent = Intent(applicationContext, RealTimeMonitorService::class.java)
+                    applicationContext.startForegroundService(serviceIntent)
+                }
+            } catch (e: Exception) {
+                ReleaseSafeLog.error(TAG, "Failed to restart live notification service", e)
+            }
+        }
+
+        private suspend fun collectStep(
+            stepName: String,
+            block: suspend () -> Unit,
+        ): Boolean =
+            try {
+                block()
+                false
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                ReleaseSafeLog.error(TAG, "Health monitor step failed: $stepName", e)
+                true
+            }
+
+        private fun buildSnapshot(
+            batteryState: BatteryState,
+            thermalState: ThermalState,
+            storageState: StorageState,
+        ): MonitoringAlertSnapshot =
+            MonitoringAlertSnapshot(
+                batteryLevel = batteryState.level,
+                batteryTempC = thermalState.batteryTempC,
+                storageUsagePercent = storageState.usagePercent,
+                chargingStatus = batteryState.chargingStatus,
             )
-            val previousSnapshot = monitoringAlertStateStore.getLastSnapshot()
-            val chargeCompleteFired = monitoringAlertStateStore.wasChargeCompleteFired()
-            val alertDecision = evaluateMonitoringAlerts(
-                previousSnapshot, snapshot, preferences, chargeCompleteFired
-            )
 
-            // Reset only after the device is actually off power. Some devices
-            // bounce between CHARGING, FULL, and NOT_CHARGING while still on a
-            // charger, especially wireless pads near 99-100%.
-            val isUnplugged = bat.plugType == PlugType.NONE
-            val newChargeCompleteFired = when {
-                isUnplugged -> false
-                alertDecision.chargeComplete -> true
-                else -> chargeCompleteFired
-            }
-
-            // Persist state before posting notifications so a retry
-            // after a crash here won't re-evaluate the same transition.
-            monitoringAlertStateStore.update(snapshot, newChargeCompleteFired)
-
-            if (alertDecision.lowBattery) {
-                notificationHelper.showLowBatteryAlert(snapshot.batteryLevel)
-            }
-            if (alertDecision.highTemp) {
-                notificationHelper.showHighTempAlert(
-                    snapshot.batteryTempC,
-                    preferences.temperatureUnit
-                )
-            }
-            if (alertDecision.lowStorage) {
-                notificationHelper.showLowStorageAlert(snapshot.storageUsagePercent)
-            }
-            if (alertDecision.chargeComplete) {
-                notificationHelper.showChargeCompleteNotification(snapshot.batteryLevel)
-            }
-        } || coreFailure
-
-        restartLiveNotificationIfNeeded(preferences.liveNotificationEnabled)
-
-        return if (coreFailure) Result.retry() else Result.success()
-    }
-
-    private suspend fun recordWorkerHeartbeat() {
-        try {
-            monitoringStatusRepository.setLastWorkerHeartbeatAt(System.currentTimeMillis())
-        } catch (e: CancellationException) {
-            throw e
-        } catch (t: Throwable) {
-            ReleaseSafeLog.warn(TAG, "Failed to record monitoring heartbeat", t)
+        companion object {
+            const val WORK_NAME = "health_monitor"
+            private const val TAG = "HealthMonitorWorker"
         }
     }
-
-    /**
-     * Safety net: if the user has live notification enabled but the
-     * foreground service died (e.g. process death with START_NOT_STICKY),
-     * restart it on the next periodic worker run.
-     */
-    private fun restartLiveNotificationIfNeeded(liveNotificationEnabled: Boolean) {
-        if (!liveNotificationEnabled) return
-        try {
-            if (!RealTimeMonitorService.isRunning) {
-                val serviceIntent = Intent(applicationContext, RealTimeMonitorService::class.java)
-                applicationContext.startForegroundService(serviceIntent)
-            }
-        } catch (t: Throwable) {
-            ReleaseSafeLog.error(TAG, "Failed to restart live notification service", t)
-        }
-    }
-
-    private suspend fun collectStep(stepName: String, block: suspend () -> Unit): Boolean {
-        return try {
-            block()
-            false
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            ReleaseSafeLog.error(TAG, "Health monitor step failed: $stepName", e)
-            true
-        }
-    }
-
-    private fun buildSnapshot(
-        batteryState: BatteryState,
-        thermalState: ThermalState,
-        storageState: StorageState
-    ): MonitoringAlertSnapshot {
-        return MonitoringAlertSnapshot(
-            batteryLevel = batteryState.level,
-            batteryTempC = thermalState.batteryTempC,
-            storageUsagePercent = storageState.usagePercent,
-            chargingStatus = batteryState.chargingStatus
-        )
-    }
-
-    companion object {
-        const val WORK_NAME = "health_monitor"
-        private const val TAG = "HealthMonitorWorker"
-    }
-}

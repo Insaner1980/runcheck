@@ -28,19 +28,20 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.reducedMotion
 
 data class SegmentData(
     val label: String,
     val value: Long,
     val formattedValue: String,
-    val color: Color
+    val color: Color,
 )
 
 @Composable
 fun SegmentedBar(
     segments: List<SegmentData>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val total = segments.sumOf { it.value }.coerceAtLeast(1L)
     val reducedMotion = MaterialTheme.reducedMotion
@@ -51,23 +52,29 @@ fun SegmentedBar(
     // Animate the overall progress from 0 to 1
     val animatedProgress by animateFloatAsState(
         targetValue = 1f,
-        animationSpec = if (reducedMotion) tween(0) else tween(
-            durationMillis = 800,
-            easing = FastOutSlowInEasing
-        ),
-        label = "segBarProgress"
+        animationSpec =
+            if (reducedMotion) {
+                tween(0)
+            } else {
+                tween(
+                    durationMillis = MotionTokens.SWEEP,
+                    easing = MotionTokens.EaseOut,
+                )
+            },
+        label = "segBarProgress",
     )
 
     val a11yDesc = segments.joinToString(", ") { "${it.label}: ${it.formattedValue}" }
 
     Canvas(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(12.dp)
-            .semantics {
-                contentDescription = a11yDesc
-                this.role = Role.Image
-            }
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(12.dp)
+                .semantics {
+                    contentDescription = a11yDesc
+                    this.role = Role.Image
+                },
     ) {
         val totalWidth = size.width
         val barHeight = size.height
@@ -76,7 +83,7 @@ fun SegmentedBar(
         drawRoundRect(
             color = bgColor,
             size = Size(totalWidth, barHeight),
-            cornerRadius = CornerRadius(cornerPx, cornerPx)
+            cornerRadius = CornerRadius(cornerPx, cornerPx),
         )
 
         // Draw segments
@@ -103,7 +110,7 @@ fun SegmentedBar(
                 height = barHeight,
                 cornerPx = cornerPx,
                 isFirst = index == 0,
-                isLast = index == finalWidths.lastIndex
+                isLast = index == finalWidths.lastIndex,
             )
             x += segWidth + gapPx
         }
@@ -117,67 +124,75 @@ private fun DrawScope.drawSegment(
     height: Float,
     cornerPx: Float,
     isFirst: Boolean,
-    isLast: Boolean
+    isLast: Boolean,
 ) {
     // For first and last segments, use rounded corners; middle segments are flat
     when {
-        isFirst && isLast -> drawRoundRect(
-            color = color,
-            topLeft = Offset(x, 0f),
-            size = Size(width, height),
-            cornerRadius = CornerRadius(cornerPx, cornerPx)
-        )
+        isFirst && isLast -> {
+            drawRoundRect(
+                color = color,
+                topLeft = Offset(x, 0f),
+                size = Size(width, height),
+                cornerRadius = CornerRadius(cornerPx, cornerPx),
+            )
+        }
+
         isFirst -> {
             // Round left corners only - draw round rect clipped
             drawRoundRect(
                 color = color,
                 topLeft = Offset(x, 0f),
                 size = Size(width + cornerPx, height),
-                cornerRadius = CornerRadius(cornerPx, cornerPx)
+                cornerRadius = CornerRadius(cornerPx, cornerPx),
             )
             // Cover right corners with a flat rect
             drawRect(
                 color = color,
                 topLeft = Offset(x + width - cornerPx, 0f),
-                size = Size(cornerPx, height)
+                size = Size(cornerPx, height),
             )
         }
+
         isLast -> {
             drawRoundRect(
                 color = color,
                 topLeft = Offset(x - cornerPx, 0f),
                 size = Size(width + cornerPx, height),
-                cornerRadius = CornerRadius(cornerPx, cornerPx)
+                cornerRadius = CornerRadius(cornerPx, cornerPx),
             )
             drawRect(
                 color = color,
                 topLeft = Offset(x, 0f),
-                size = Size(cornerPx, height)
+                size = Size(cornerPx, height),
             )
         }
-        else -> drawRect(
-            color = color,
-            topLeft = Offset(x, 0f),
-            size = Size(width, height)
-        )
+
+        else -> {
+            drawRect(
+                color = color,
+                topLeft = Offset(x, 0f),
+                size = Size(width, height),
+            )
+        }
     }
 }
 
 @Composable
 fun SegmentedBarLegend(
     segments: List<SegmentData>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         segments.filter { it.value > 0 }.forEach { segment ->
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .semantics(mergeDescendants = true) {},
-                verticalAlignment = Alignment.CenterVertically
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .semantics(mergeDescendants = true) {},
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 StatusDot(color = segment.color)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -185,12 +200,12 @@ fun SegmentedBarLegend(
                     text = segment.label,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 Text(
                     text = segment.formattedValue,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
         }

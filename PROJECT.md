@@ -16,10 +16,12 @@ Android device health diagnostics app built with Kotlin and Jetpack Compose. Sin
 - Widgets: Glance app widgets
 - Speed test backend: M-Lab NDT7
 - Build: Gradle Kotlin DSL
-- Compile SDK: 36
-- Target SDK: 35
+- Compile SDK: Android 17 beta (`CinnamonBun`)
+- Target SDK: Android 17 beta (`CinnamonBun`)
 - Min SDK: 26
 - Java target: 17
+- Localization: English-only (`localeFilters = ["en"]`)
+- Build variants: `app/src/debug` and `app/src/release` source sets are active
 
 High-level package layout:
 
@@ -97,6 +99,7 @@ State restoration details:
 - Screen-state tracking repository
 - Periodic monitoring scheduling
 - Widget refreshes when Pro state changes
+- Source-set-specific `SentryInit` initialization; debug builds may report to Sentry, release builds are a no-op
 
 ### Background Monitoring
 
@@ -226,7 +229,7 @@ Historical chart behavior:
 - Metrics: signal strength or latency
 - Period selection is stored in ViewModel saved state
 - Signal chart uses status gradient line (quality zone colors on the data line)
-- Fullscreen chart route is available from the expandable chart container
+- Fullscreen chart route is available from the chart section
 
 ---
 
@@ -488,7 +491,7 @@ Pro-gated areas currently include:
 
 ## Future Considerations
 
-- **Learn article read/unread tracking:** Currently no persistence of which Learn articles the user has read. With only 14 articles this isn't needed yet, but if the catalog grows significantly (30+), consider adding DataStore-backed read state with visual indicators (e.g., unread dot on `LearnArticleCard`).
+- **Learn article read/unread tracking:** Currently no persistence of which Learn articles the user has read. With only 15 articles this isn't needed yet, but if the catalog grows significantly (30+), consider adding DataStore-backed read state with visual indicators (e.g., unread dot on `LearnArticleCard`).
 
 ---
 

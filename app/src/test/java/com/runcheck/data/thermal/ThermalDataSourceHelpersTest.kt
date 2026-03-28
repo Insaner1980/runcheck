@@ -9,7 +9,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ThermalDataSourceHelpersTest {
-
     @Test
     fun `thermal status support starts at api 29`() {
         assertFalse(supportsThermalStatus(Build.VERSION_CODES.P))
@@ -26,7 +25,7 @@ class ThermalDataSourceHelpersTest {
     fun `thermal status mapping returns none below api 29`() {
         assertEquals(
             ThermalStatus.NONE,
-            mapThermalStatus(PowerManager.THERMAL_STATUS_SEVERE, Build.VERSION_CODES.P)
+            mapThermalStatus(PowerManager.THERMAL_STATUS_SEVERE, Build.VERSION_CODES.P),
         )
     }
 
@@ -34,11 +33,11 @@ class ThermalDataSourceHelpersTest {
     fun `thermal status mapping returns matching domain value on supported api`() {
         assertEquals(
             ThermalStatus.SEVERE,
-            mapThermalStatus(PowerManager.THERMAL_STATUS_SEVERE, Build.VERSION_CODES.Q)
+            mapThermalStatus(PowerManager.THERMAL_STATUS_SEVERE, Build.VERSION_CODES.Q),
         )
         assertEquals(
             ThermalStatus.CRITICAL,
-            mapThermalStatus(PowerManager.THERMAL_STATUS_CRITICAL, Build.VERSION_CODES.R)
+            mapThermalStatus(PowerManager.THERMAL_STATUS_CRITICAL, Build.VERSION_CODES.R),
         )
     }
 }

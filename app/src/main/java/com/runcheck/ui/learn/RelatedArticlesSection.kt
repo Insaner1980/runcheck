@@ -15,7 +15,7 @@ import com.runcheck.ui.theme.spacing
 fun RelatedArticlesSection(
     articleIds: List<String>,
     onNavigateToArticle: (articleId: String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val articles = LearnArticleCatalog.findAllByIds(articleIds)
 
@@ -23,14 +23,14 @@ fun RelatedArticlesSection(
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
         SectionHeader(text = stringResource(R.string.related_articles_header))
 
         articles.forEach { article ->
             CrossLinkButton(
                 label = stringResource(article.titleRes),
-                onClick = { onNavigateToArticle(article.id) }
+                onClick = { onNavigateToArticle(article.id) },
             )
         }
     }

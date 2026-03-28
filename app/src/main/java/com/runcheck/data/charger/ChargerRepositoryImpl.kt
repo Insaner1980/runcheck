@@ -15,88 +15,101 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ChargerRepositoryImpl @Inject constructor(
-    private val chargerDao: ChargerDao
-) : ChargerRepository {
+class ChargerRepositoryImpl
+    @Inject
+    constructor(
+        private val chargerDao: ChargerDao,
+    ) : ChargerRepository {
+        override fun getChargerProfiles(): Flow<List<ChargerProfile>> =
+            chargerDao
+                .getChargerProfiles()
+                .map { entities ->
+                    entities.map { it.toDomain() }
+                }.flowOn(Dispatchers.IO)
 
-    override fun getChargerProfiles(): Flow<List<ChargerProfile>> =
-        chargerDao.getChargerProfiles().map { entities ->
-            entities.map { it.toDomain() }
-        }.flowOn(Dispatchers.IO)
+        override fun getAllSessions(): Flow<List<ChargingSession>> =
+            chargerDao
+                .getAllSessions()
+                .map { entities ->
+                    entities.map { it.toDomain() }
+                }.flowOn(Dispatchers.IO)
 
-    override fun getAllSessions(): Flow<List<ChargingSession>> =
-        chargerDao.getAllSessions().map { entities ->
-            entities.map { it.toDomain() }
-        }.flowOn(Dispatchers.IO)
+        override suspend fun insertCharger(name: String): Long =
+            withContext(Dispatchers.IO) {
+                chargerDao.insertCharger(
+                    ChargerProfileEntity(
+                        name = name.trim(),
+                        created = System.currentTimeMillis(),
+                    ),
+                )
+            }
 
-    override suspend fun insertCharger(name: String): Long = withContext(Dispatchers.IO) {
-        chargerDao.insertCharger(
-            ChargerProfileEntity(
-                name = name.trim(),
-                created = System.currentTimeMillis()
-            )
-        )
+        override suspend fun deleteChargerById(id: Long) =
+            withContext<Unit>(Dispatchers.IO) {
+                chargerDao.deleteChargerById(id)
+            }
+
+        override suspend fun insertSession(session: ChargingSession): Long =
+            withContext(Dispatchers.IO) {
+                chargerDao.insertSession(session.toEntity())
+            }
+
+        override suspend fun completeSession(
+            id: Long,
+            endTime: Long,
+            endLevel: Int,
+            avgCurrentMa: Int?,
+            maxCurrentMa: Int?,
+            avgVoltageMv: Int?,
+            avgPowerMw: Int?,
+        ) = withContext(Dispatchers.IO) {
+            chargerDao.completeSession(id, endTime, endLevel, avgCurrentMa, maxCurrentMa, avgVoltageMv, avgPowerMw)
+        }
+
+        override suspend fun getActiveSession(): ChargingSession? =
+            withContext(Dispatchers.IO) {
+                chargerDao.getActiveSession()?.toDomain()
+            }
+
+        override suspend fun deleteSessionsOlderThan(cutoff: Long) =
+            withContext<Unit>(Dispatchers.IO) {
+                chargerDao.deleteSessionsOlderThan(cutoff)
+            }
     }
 
-    override suspend fun deleteChargerById(id: Long) = withContext<Unit>(Dispatchers.IO) {
-        chargerDao.deleteChargerById(id)
-    }
+private fun ChargerProfileEntity.toDomain() =
+    ChargerProfile(
+        id = id,
+        name = name,
+        created = created,
+    )
 
-    override suspend fun insertSession(session: ChargingSession): Long = withContext(Dispatchers.IO) {
-        chargerDao.insertSession(session.toEntity())
-    }
+private fun ChargingSessionEntity.toDomain() =
+    ChargingSession(
+        id = id,
+        chargerId = chargerId,
+        startTime = startTime,
+        endTime = endTime,
+        startLevel = startLevel,
+        endLevel = endLevel,
+        avgCurrentMa = avgCurrentMa,
+        maxCurrentMa = maxCurrentMa,
+        avgVoltageMv = avgVoltageMv,
+        avgPowerMw = avgPowerMw,
+        plugType = plugType,
+    )
 
-    override suspend fun completeSession(
-        id: Long,
-        endTime: Long,
-        endLevel: Int,
-        avgCurrentMa: Int?,
-        maxCurrentMa: Int?,
-        avgVoltageMv: Int?,
-        avgPowerMw: Int?
-    ) = withContext(Dispatchers.IO) {
-        chargerDao.completeSession(id, endTime, endLevel, avgCurrentMa, maxCurrentMa, avgVoltageMv, avgPowerMw)
-    }
-
-    override suspend fun getActiveSession(): ChargingSession? = withContext(Dispatchers.IO) {
-        chargerDao.getActiveSession()?.toDomain()
-    }
-
-    override suspend fun deleteSessionsOlderThan(cutoff: Long) = withContext<Unit>(Dispatchers.IO) {
-        chargerDao.deleteSessionsOlderThan(cutoff)
-    }
-}
-
-private fun ChargerProfileEntity.toDomain() = ChargerProfile(
-    id = id,
-    name = name,
-    created = created
-)
-
-private fun ChargingSessionEntity.toDomain() = ChargingSession(
-    id = id,
-    chargerId = chargerId,
-    startTime = startTime,
-    endTime = endTime,
-    startLevel = startLevel,
-    endLevel = endLevel,
-    avgCurrentMa = avgCurrentMa,
-    maxCurrentMa = maxCurrentMa,
-    avgVoltageMv = avgVoltageMv,
-    avgPowerMw = avgPowerMw,
-    plugType = plugType
-)
-
-private fun ChargingSession.toEntity() = ChargingSessionEntity(
-    id = id,
-    chargerId = chargerId,
-    startTime = startTime,
-    endTime = endTime,
-    startLevel = startLevel,
-    endLevel = endLevel,
-    avgCurrentMa = avgCurrentMa,
-    maxCurrentMa = maxCurrentMa,
-    avgVoltageMv = avgVoltageMv,
-    avgPowerMw = avgPowerMw,
-    plugType = plugType
-)
+private fun ChargingSession.toEntity() =
+    ChargingSessionEntity(
+        id = id,
+        chargerId = chargerId,
+        startTime = startTime,
+        endTime = endTime,
+        startLevel = startLevel,
+        endLevel = endLevel,
+        avgCurrentMa = avgCurrentMa,
+        maxCurrentMa = maxCurrentMa,
+        avgVoltageMv = avgVoltageMv,
+        avgPowerMw = avgPowerMw,
+        plugType = plugType,
+    )

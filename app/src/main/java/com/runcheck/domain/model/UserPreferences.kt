@@ -23,7 +23,7 @@ data class UserPreferences(
     val liveNotifScreenStats: Boolean = false,
     val liveNotifRemainingTime: Boolean = false,
     // Info cards
-    val showInfoCards: Boolean = true
+    val showInfoCards: Boolean = true,
 )
 
 enum class TemperatureUnit { CELSIUS, FAHRENHEIT }
