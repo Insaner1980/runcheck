@@ -59,7 +59,11 @@ class DeviceProfileRepositoryImpl
         override suspend fun getDeviceProfile(): DeviceProfile {
             val entity = deviceDao.getDeviceSync()
             val profile = entity?.let { gson.fromJson(it.profileJson, DeviceProfile::class.java) }
-            return profile ?: capabilityManager.detectCapabilities().also { detected ->
+            if (profile != null && profile.apiLevel == Build.VERSION.SDK_INT) {
+                return profile
+            }
+
+            return capabilityManager.detectCapabilities().also { detected ->
                 val existing = deviceDao.getDeviceSync()
                 val now = System.currentTimeMillis()
                 val deviceEntity =

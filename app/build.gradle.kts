@@ -20,6 +20,12 @@ android {
     namespace = "com.runcheck"
     compileSdkPreview = "CinnamonBun"
 
+    sourceSets {
+        getByName("androidTest") {
+            assets.directories.add("$projectDir/schemas")
+        }
+    }
+
     androidResources {
         localeFilters += listOf("en")
     }
@@ -171,6 +177,21 @@ tasks.configureEach {
 }
 
 dependencies {
+    constraints {
+        implementation(libs.kotlinx.serialization.core) {
+            because("Room 2.8.4 migration helpers require kotlinx.serialization 1.8.1")
+        }
+        implementation(libs.kotlinx.serialization.json) {
+            because("Room 2.8.4 migration helpers require kotlinx.serialization 1.8.1")
+        }
+        androidTestImplementation(libs.kotlinx.serialization.core) {
+            because("Room 2.8.4 migration helpers require kotlinx.serialization 1.8.1")
+        }
+        androidTestImplementation(libs.kotlinx.serialization.json) {
+            because("Room 2.8.4 migration helpers require kotlinx.serialization 1.8.1")
+        }
+    }
+
     // Compose BOM
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)

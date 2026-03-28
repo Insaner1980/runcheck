@@ -1,7 +1,9 @@
 package com.runcheck.ui.learn
 
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -26,7 +28,6 @@ sealed interface LearnArticleBlock {
 }
 
 object LearnArticleBodyFormatter {
-    const val URL_ANNOTATION_TAG = "learn_url"
     private const val HEADING_PREFIX = "## "
     private val bulletPrefixRegex = Regex("""^[-*]\s+(.+)$""")
     private val numberedPrefixRegex = Regex("""^\d+[.)]\s+(.+)$""")
@@ -181,11 +182,14 @@ object LearnArticleBodyFormatter {
             if (marker == null) {
                 val urlMatch = findUrlMatch(text = text, startIndex = index)
                 if (urlMatch != null) {
-                    val linkStart = builder.length
-                    builder.pushStringAnnotation(tag = URL_ANNOTATION_TAG, annotation = urlMatch.url)
+                    builder.pushLink(
+                        LinkAnnotation.Url(
+                            url = urlMatch.url,
+                            styles = TextLinkStyles(style = linkStyle),
+                        ),
+                    )
                     builder.append(urlMatch.displayText)
                     builder.pop()
-                    builder.addStyle(linkStyle, linkStart, builder.length)
                     index += urlMatch.displayText.length
                     continue
                 }

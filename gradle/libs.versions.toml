@@ -20,6 +20,7 @@ glance = "1.1.1"
 ndt7 = "1.0.0"
 okhttp = "4.12.0"
 gson = "2.11.0"
+kotlinxSerialization = "1.8.1"
 junit = "4.13.2"
 mockk = "1.13.16"
 androidxTestExtJunit = "1.3.0"
@@ -96,6 +97,8 @@ okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhtt
 
 # Gson for JSON serialization
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
+kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

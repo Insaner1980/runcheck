@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.runcheck.R
 import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SpeedTestProgress
 import com.runcheck.domain.model.SpeedTestResult
 import com.runcheck.domain.usecase.FinalizeSpeedTestUseCase
@@ -14,18 +15,22 @@ import com.runcheck.domain.usecase.GetSpeedTestHistoryUseCase
 import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
+import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.RunSpeedTestUseCase
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.messageOrRes
 import com.runcheck.util.appendLiveValue
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
@@ -47,6 +52,7 @@ class NetworkViewModel
         private val getNetworkHistory: GetNetworkHistoryUseCase,
         private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase,
         private val manageUserPreferences: ManageUserPreferencesUseCase,
+        private val observeProAccess: ObserveProAccessUseCase,
     ) : ViewModel() {
         private val _networkUiState = MutableStateFlow<NetworkUiState>(NetworkUiState.Loading)
         val networkUiState: StateFlow<NetworkUiState> = _networkUiState.asStateFlow()
@@ -264,6 +270,7 @@ class NetworkViewModel
             }
         }
 
+        @OptIn(ExperimentalCoroutinesApi::class)
         private fun loadNetworkData() {
             networkJob?.cancel()
             historyNetworkJob?.cancel()
@@ -276,8 +283,14 @@ class NetworkViewModel
                         getMeasuredNetworkState(),
                         manageInfoCardDismissals.observeDismissedCardIds(),
                         manageUserPreferences.observePreferences(),
-                    ) { state, dismissedCards, preferences ->
-                        Triple(state, dismissedCards, preferences.showInfoCards)
+                        observeProAccess().distinctUntilChanged(),
+                    ) { state, dismissedCards, preferences, isPro ->
+                        NetworkScreenSnapshot(
+                            state = state,
+                            dismissedCards = dismissedCards,
+                            showInfoCards = preferences.showInfoCards,
+                            isPro = isPro,
+                        )
                     }.catch { e ->
                         if (_networkUiState.value !is NetworkUiState.Success) {
                             _networkUiState.value =
@@ -285,19 +298,18 @@ class NetworkViewModel
                                     e.messageOrRes(R.string.common_error_generic),
                                 )
                         }
-                    }.collect { (state, dismissedCards, showInfoCards) ->
-                        state.signalDbm?.let { liveSignalDbm.appendLiveValue(it.toFloat()) }
-                        val isPro = isProUser()
+                    }.collect { snapshot ->
+                        snapshot.state.signalDbm?.let { liveSignalDbm.appendLiveValue(it.toFloat()) }
                         _networkUiState.update { current ->
                             val existing = current as? NetworkUiState.Success
                             NetworkUiState.Success(
-                                networkState = state,
+                                networkState = snapshot.state,
                                 signalHistory = existing?.signalHistory ?: emptyList(),
                                 selectedHistoryPeriod = selectedHistoryPeriod,
                                 historyLoadError = existing?.historyLoadError,
-                                isPro = isPro,
-                                dismissedInfoCards = dismissedCards,
-                                showInfoCards = showInfoCards,
+                                isPro = snapshot.isPro,
+                                dismissedInfoCards = snapshot.dismissedCards,
+                                showInfoCards = snapshot.showInfoCards,
                                 liveSignalDbm = liveSignalDbm.toList(),
                             )
                         }
@@ -324,12 +336,17 @@ class NetworkViewModel
                 }
         }
 
+        @OptIn(ExperimentalCoroutinesApi::class)
         private fun loadSpeedTestHistory() {
             historyJob?.cancel()
             historyJob =
                 viewModelScope.launch {
-                    val limit = if (isProUser()) PRO_HISTORY_LIMIT else FREE_HISTORY_LIMIT
-                    getSpeedTestHistory(limit)
+                    observeProAccess()
+                        .distinctUntilChanged()
+                        .flatMapLatest { isPro ->
+                            val limit = if (isPro) PRO_HISTORY_LIMIT else FREE_HISTORY_LIMIT
+                            getSpeedTestHistory(limit)
+                        }
                         .catch { e ->
                             updateSpeedTestState {
                                 copy(
@@ -351,6 +368,13 @@ class NetworkViewModel
         private fun updateSpeedTestState(transform: SpeedTestUiState.() -> SpeedTestUiState) {
             _speedTestState.update { it.transform() }
         }
+
+        private data class NetworkScreenSnapshot(
+            val state: NetworkState,
+            val dismissedCards: Set<String>,
+            val showInfoCards: Boolean,
+            val isPro: Boolean,
+        )
 
         override fun onCleared() {
             stopObserving()

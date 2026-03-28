@@ -2,9 +2,13 @@
 
 _Auto-generated from git history. Updated on each commit._
 
-## 2026 Week 13 (maalis 23 – maalis 29)
+## 2026 Week 13 (Mar 23 – Mar 29)
 
+### Fixed
+- Fix dependency-analysis plugin version (`cdb9154`)
 ### Other
+- Harden release logging and latency config (`a324e77`)
+- CHANGELOG-päivitys: viimeisin commit lisätty automaattisesti (`64d06cf`)
 - Laaja koodilaadun refaktorointi: annotaatiot, nimeäminen, arkkitehtuuri ja kuolleen koodin poisto (`ddabc45`)
 - Log.w → ReleaseSafeLog.warn: projektin lokituskäytännön mukainen (`1effd22`)
 - SonarCloud-koodihajujen korjaus: kognitiivinen kompleksisuus, tyhjät catch-lohkot, if→when (`4abac22`)
@@ -23,7 +27,6 @@ _Auto-generated from git history. Updated on each commit._
 - Move hardcoded separators and concatenated text to string resources (`dfab75f`)
 - Add defense-in-depth pro checks to network history and storage cleanup (`d2ca2e4`)
 - Add Security & Quality Requirements section to CLAUDE.md (`246853b`)
-### Fixed
 - Fix CodeQL implicit PendingIntent findings in notifications (`841068f`)
 - Fix two compilation errors: saveResult return type and variable ordering (`4becd48`)
 - Update CodeQL workflow: v3→v4, add build-mode: manual (`906433c`)
@@ -61,7 +64,7 @@ _Auto-generated from git history. Updated on each commit._
 - feat: add live signal strength chart on network detail screen (`33dd7f0`)
 - feat: add live charts for battery level, temperature, and voltage (`5231e7d`)
 
-## 2026 Week 12 (maalis 16 – maalis 22)
+## 2026 Week 12 (Mar 16 – Mar 22)
 
 ### Fixed
 - Fix notification tap actions, deep-linking, and worker locale (`3eb095e`)
@@ -116,7 +119,7 @@ _Auto-generated from git history. Updated on each commit._
 - Add files via upload (`392645a`)
 - Laaja ominaisuuspäivitys: akku, storage, thermal, asetukset (`8980fc3`)
 
-## 2026 Week 11 (maalis 09 – maalis 15)
+## 2026 Week 11 (Mar 09 – Mar 15)
 
 ### Changed
 - Uudista NetworkDetailScreen korttipohj. layoutiin (`d36ac53`)

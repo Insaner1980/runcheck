@@ -78,10 +78,6 @@
             </intent-filter>
         </receiver>
 
-        <receiver
-            android:name=".service.monitor.ScreenStateReceiver"
-            android:exported="false" />
-
         <!-- Battery Widget -->
         <receiver
             android:name=".widget.BatteryWidgetReceiver"

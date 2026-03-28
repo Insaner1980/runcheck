@@ -227,7 +227,7 @@ object DatabaseModule {
                                 .apply()
                         }
                     },
-                ).fallbackToDestructiveMigration(dropAllTables = true)
+                )
                 .build()
 
         return database

@@ -14,7 +14,7 @@ import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
 import com.runcheck.domain.model.UserPreferences
-import com.runcheck.domain.repository.BatteryRepository
+import com.runcheck.domain.repository.MonitoringStatusRepository
 import com.runcheck.domain.scoring.HealthScoreCalculator
 import com.runcheck.domain.usecase.ChargerSessionTracker
 import com.runcheck.domain.usecase.GetBatteryStateUseCase
@@ -54,7 +54,7 @@ class HomeViewModelTest {
     private val getNetworkState: GetNetworkStateUseCase = mockk()
     private val getThermalState: GetThermalStateUseCase = mockk()
     private val getStorageState: GetStorageStateUseCase = mockk()
-    private val batteryRepository: BatteryRepository = mockk(relaxed = true)
+    private val monitoringStatusRepository: MonitoringStatusRepository = mockk(relaxed = true)
     private val proManager: ProManager = mockk()
     private val trialManager: TrialManager = mockk(relaxed = true)
     private val chargerSessionTracker: ChargerSessionTracker = mockk(relaxed = true)
@@ -110,7 +110,8 @@ class HomeViewModelTest {
         every { getStorageState() } returns flowOf(testStorage)
         every { proManager.proState } returns proStateFlow
         every { manageUserPreferences.observePreferences() } returns flowOf(UserPreferences())
-        coEvery { batteryRepository.getLatestReadingTimestamp() } returns null
+        every { monitoringStatusRepository.observeLastWorkerHeartbeatAt() } returns
+            flowOf(System.currentTimeMillis())
     }
 
     @After
@@ -128,7 +129,7 @@ class HomeViewModelTest {
             getNetworkState = getNetworkState,
             getThermalState = getThermalState,
             getStorageState = getStorageState,
-            batteryRepository = batteryRepository,
+            monitoringStatusRepository = monitoringStatusRepository,
             proManager = proManager,
             trialManager = trialManager,
             chargerSessionTracker = chargerSessionTracker,

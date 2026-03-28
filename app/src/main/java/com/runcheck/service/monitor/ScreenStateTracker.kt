@@ -28,7 +28,22 @@ class ScreenStateTracker
         private val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         private val lock = Any()
+        private var stateReceiverRegistered = false
         private var idleModeReceiverRegistered = false
+        private val stateReceiver =
+            object : BroadcastReceiver() {
+                override fun onReceive(
+                    context: Context?,
+                    intent: Intent?,
+                ) {
+                    when (intent?.action) {
+                        Intent.ACTION_SCREEN_ON -> onScreenTurnedOn()
+                        Intent.ACTION_SCREEN_OFF -> onScreenTurnedOff()
+                        Intent.ACTION_POWER_CONNECTED -> onPowerConnected()
+                        Intent.ACTION_POWER_DISCONNECTED -> onPowerDisconnected()
+                    }
+                }
+            }
         private val idleModeReceiver =
             object : BroadcastReceiver() {
                 override fun onReceive(
@@ -43,6 +58,7 @@ class ScreenStateTracker
 
         override fun initialize() {
             synchronized(lock) {
+                registerStateReceiverIfNeeded()
                 registerIdleModeReceiverIfNeeded()
                 synchronizeState(now = System.currentTimeMillis(), persist = true)
             }
@@ -385,12 +401,27 @@ class ScreenStateTracker
 
         private fun getCurrentIdleState(): Boolean = powerManager.isDeviceIdleMode
 
+        private fun registerStateReceiverIfNeeded() {
+            if (stateReceiverRegistered) return
+            val filter =
+                IntentFilter().apply {
+                    STATE_RECEIVER_ACTIONS.forEach(::addAction)
+                }
+            ContextCompat.registerReceiver(
+                context,
+                stateReceiver,
+                filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED,
+            )
+            stateReceiverRegistered = true
+        }
+
         private fun registerIdleModeReceiverIfNeeded() {
             if (idleModeReceiverRegistered) return
             ContextCompat.registerReceiver(
                 context,
                 idleModeReceiver,
-                IntentFilter(PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED),
+                IntentFilter(IDLE_MODE_RECEIVER_ACTION),
                 ContextCompat.RECEIVER_NOT_EXPORTED,
             )
             idleModeReceiverRegistered = true
@@ -451,10 +482,18 @@ class ScreenStateTracker
             val heldAwakeDurationMs: Long,
         )
 
-        private companion object {
+        companion object {
             private const val MIN_SLEEP_ANALYSIS_DURATION_MS = 60_000L
             private const val PREFS_NAME = "screen_state_tracker"
             private const val INVALID_LEVEL = -1
+            internal val STATE_RECEIVER_ACTIONS =
+                listOf(
+                    Intent.ACTION_SCREEN_ON,
+                    Intent.ACTION_SCREEN_OFF,
+                    Intent.ACTION_POWER_CONNECTED,
+                    Intent.ACTION_POWER_DISCONNECTED,
+                )
+            internal const val IDLE_MODE_RECEIVER_ACTION = PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED
             private const val KEY_SCREEN_ON = "screen_on"
             private const val KEY_LAST_TRANSITION_TIME = "last_transition_time"
             private const val KEY_LAST_TRANSITION_LEVEL = "last_transition_level"

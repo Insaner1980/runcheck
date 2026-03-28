@@ -1,7 +1,6 @@
 package com.runcheck.service.monitor
 
 import android.content.Context
-import android.content.Intent
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -45,8 +44,6 @@ class HealthMonitorWorker
             var batteryState: BatteryState? = null
             var thermalState: ThermalState? = null
             var storageState: StorageState? = null
-
-            recordWorkerHeartbeat()
 
             val preferences =
                 try {
@@ -142,35 +139,20 @@ class HealthMonitorWorker
                 }
             } || coreFailure
 
-            restartLiveNotificationIfNeeded(preferences.liveNotificationEnabled)
+            if (!coreFailure) {
+                recordSuccessfulWorkerHeartbeat()
+            }
 
             return if (coreFailure) Result.retry() else Result.success()
         }
 
-        private suspend fun recordWorkerHeartbeat() {
+        private suspend fun recordSuccessfulWorkerHeartbeat() {
             try {
                 monitoringStatusRepository.setLastWorkerHeartbeatAt(System.currentTimeMillis())
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 ReleaseSafeLog.warn(TAG, "Failed to record monitoring heartbeat", e)
-            }
-        }
-
-        /**
-         * Safety net: if the user has live notification enabled but the
-         * foreground service died (e.g. process death with START_NOT_STICKY),
-         * restart it on the next periodic worker run.
-         */
-        private fun restartLiveNotificationIfNeeded(liveNotificationEnabled: Boolean) {
-            if (!liveNotificationEnabled) return
-            try {
-                if (!RealTimeMonitorService.isRunning) {
-                    val serviceIntent = Intent(applicationContext, RealTimeMonitorService::class.java)
-                    applicationContext.startForegroundService(serviceIntent)
-                }
-            } catch (e: Exception) {
-                ReleaseSafeLog.error(TAG, "Failed to restart live notification service", e)
             }
         }
 

@@ -13,6 +13,7 @@ import com.runcheck.domain.usecase.GetSpeedTestHistoryUseCase
 import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
+import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.RunSpeedTestUseCase
 import com.runcheck.ui.MainDispatcherRule
 import com.runcheck.ui.common.UiText
@@ -49,6 +50,7 @@ class NetworkViewModelTest {
     private val getNetworkHistory: GetNetworkHistoryUseCase = mockk()
     private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase = mockk(relaxed = true)
     private val manageUserPreferences: ManageUserPreferencesUseCase = mockk(relaxed = true)
+    private val observeProAccess: ObserveProAccessUseCase = mockk()
     private lateinit var viewModel: NetworkViewModel
 
     private val testNetworkState =
@@ -71,6 +73,7 @@ class NetworkViewModelTest {
                 com.runcheck.domain.model
                     .UserPreferences(),
             )
+        every { observeProAccess() } returns flowOf(false)
     }
 
     @After
@@ -92,6 +95,7 @@ class NetworkViewModelTest {
             getNetworkHistory = getNetworkHistory,
             manageInfoCardDismissals = manageInfoCardDismissals,
             manageUserPreferences = manageUserPreferences,
+            observeProAccess = observeProAccess,
         )
 
     @Test

@@ -121,6 +121,20 @@ class ScreenStateTrackerTest {
         assertNull(tracker.getSleepAnalysis())
     }
 
+    @Test
+    fun `receiver action sets cover screen power and idle transitions`() {
+        assertEquals(
+            setOf(
+                Intent.ACTION_SCREEN_ON,
+                Intent.ACTION_SCREEN_OFF,
+                Intent.ACTION_POWER_CONNECTED,
+                Intent.ACTION_POWER_DISCONNECTED,
+            ),
+            ScreenStateTracker.STATE_RECEIVER_ACTIONS.toSet(),
+        )
+        assertEquals(PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED, ScreenStateTracker.IDLE_MODE_RECEIVER_ACTION)
+    }
+
     private class InMemorySharedPreferences : SharedPreferences {
         private val values = linkedMapOf<String, Any?>()
 
