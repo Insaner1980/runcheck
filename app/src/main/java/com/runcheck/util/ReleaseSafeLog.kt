@@ -9,6 +9,7 @@ object ReleaseSafeLog {
         message: String,
         throwable: Throwable? = null,
     ) {
+        if (!BuildConfig.DEBUG) return
         runCatching {
             if (throwable != null) {
                 Log.w(tag, message, throwable)
@@ -23,6 +24,7 @@ object ReleaseSafeLog {
         message: String,
         throwable: Throwable? = null,
     ) {
+        if (!BuildConfig.DEBUG) return
         runCatching {
             if (throwable != null) {
                 Log.e(tag, message, throwable)

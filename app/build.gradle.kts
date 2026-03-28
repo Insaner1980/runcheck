@@ -32,15 +32,9 @@ android {
         versionName = "1.0.0"
         buildConfigField("String", "ROOM_DB_NAME", "\"runcheck.db\"")
         val proProductId = providers.environmentVariable("RUNCHECK_PRO_PRODUCT_ID").getOrElse("runcheck_pro")
-        val latencyHost = providers.environmentVariable("RUNCHECK_LATENCY_HOST").getOrElse("locate.measurementlab.net")
-        val latencyPort =
-            providers
-                .environmentVariable("RUNCHECK_LATENCY_PORT")
-                .map { it.toIntOrNull() ?: 443 }
-                .getOrElse(443)
         buildConfigField("String", "PRO_PRODUCT_ID", "\"$proProductId\"")
-        buildConfigField("String", "LATENCY_HOST", "\"$latencyHost\"")
-        buildConfigField("int", "LATENCY_PORT", latencyPort.toString())
+        buildConfigField("String", "LATENCY_HOST", "\"locate.measurementlab.net\"")
+        buildConfigField("int", "LATENCY_PORT", "443")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -67,6 +61,14 @@ android {
                 "SENTRY_DSN",
                 "\"https://34bc2ad48c87a2c7a666076de44cf0ae@o4511121418878976.ingest.de.sentry.io/4511121470193744\"",
             )
+            val debugLatencyHost = providers.environmentVariable("RUNCHECK_LATENCY_HOST").getOrElse("locate.measurementlab.net")
+            val debugLatencyPort =
+                providers
+                    .environmentVariable("RUNCHECK_LATENCY_PORT")
+                    .map { it.toIntOrNull() ?: 443 }
+                    .getOrElse(443)
+            buildConfigField("String", "LATENCY_HOST", "\"$debugLatencyHost\"")
+            buildConfigField("int", "LATENCY_PORT", debugLatencyPort.toString())
         }
         release {
             isDebuggable = false
