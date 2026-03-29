@@ -192,50 +192,47 @@ class SpeedTestService
                 }
             }
 
-            fun createConnectionCallback(): ConnectivityManager.NetworkCallback =
-                object : ConnectivityManager.NetworkCallback(
+            private fun isUnexpectedNetwork(network: Network): Boolean =
+                startingDefaultNetwork != null && network != startingDefaultNetwork
+
+            private fun failConnectionChanged() {
+                failAndClose(context.getString(R.string.speed_test_error_connection_changed))
+            }
+
+            private fun failNoInternet() {
+                failAndClose(context.getString(R.string.speed_test_error_no_internet))
+            }
+
+            fun createConnectionCallback(): ConnectivityManager.NetworkCallback {
+                var latestLinkProperties: LinkProperties? = null
+                val callbackFlags =
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         FLAG_INCLUDE_LOCATION_INFO
                     } else {
                         0
-                    },
-                ) {
-                    var latestLinkProperties: LinkProperties? = null
-
+                    }
+                return object : ConnectivityManager.NetworkCallback(callbackFlags) {
                     override fun onAvailable(network: Network) {
-                        if (startingDefaultNetwork != null && network != startingDefaultNetwork) {
-                            failAndClose(context.getString(R.string.speed_test_error_connection_changed))
-                        }
+                        if (isUnexpectedNetwork(network)) failConnectionChanged()
                     }
 
                     override fun onCapabilitiesChanged(
                         network: Network,
                         capabilities: NetworkCapabilities,
                     ) {
-                        if (startingDefaultNetwork != null && network != startingDefaultNetwork) {
-                            failAndClose(context.getString(R.string.speed_test_error_connection_changed))
+                        if (isUnexpectedNetwork(network)) {
+                            failConnectionChanged()
                             return
                         }
-                        val currentNetwork =
-                            networkDataSource.getNetworkInfoFromCallback(
-                                capabilities = capabilities,
-                                linkProperties = latestLinkProperties,
-                            )
-                        if (currentNetwork.connectionType == ConnectionType.NONE) {
-                            failAndClose(context.getString(R.string.speed_test_error_no_internet))
-                            return
-                        }
-                        if (currentNetwork.toConnectionKey() != connectionKey) {
-                            failAndClose(context.getString(R.string.speed_test_error_connection_changed))
-                        }
+                        validateCapabilities(capabilities, latestLinkProperties)
                     }
 
                     override fun onLinkPropertiesChanged(
                         network: Network,
                         linkProperties: LinkProperties,
                     ) {
-                        if (startingDefaultNetwork != null && network != startingDefaultNetwork) {
-                            failAndClose(context.getString(R.string.speed_test_error_connection_changed))
+                        if (isUnexpectedNetwork(network)) {
+                            failConnectionChanged()
                             return
                         }
                         latestLinkProperties = linkProperties
@@ -243,10 +240,29 @@ class SpeedTestService
 
                     override fun onLost(network: Network) {
                         if (startingDefaultNetwork == null || network == startingDefaultNetwork) {
-                            failAndClose(context.getString(R.string.speed_test_error_no_internet))
+                            failNoInternet()
                         }
                     }
                 }
+            }
+
+            private fun validateCapabilities(
+                capabilities: NetworkCapabilities,
+                linkProperties: LinkProperties?,
+            ) {
+                val currentNetwork =
+                    networkDataSource.getNetworkInfoFromCallback(
+                        capabilities = capabilities,
+                        linkProperties = linkProperties,
+                    )
+                if (currentNetwork.connectionType == ConnectionType.NONE) {
+                    failNoInternet()
+                    return
+                }
+                if (currentNetwork.toConnectionKey() != connectionKey) {
+                    failConnectionChanged()
+                }
+            }
 
             fun createNdtTest(): NdtTest =
                 object : NdtTest() {

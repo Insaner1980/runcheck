@@ -371,13 +371,12 @@ private fun ThermalInfoSheet(
     activeKey: String?,
     onDismiss: () -> Unit,
 ) {
-    activeKey?.let { key ->
-        resolveThermalInfoContent(key)?.let { sheetContent ->
-            InfoBottomSheet(
-                content = sheetContent,
-                onDismiss = onDismiss,
-            )
-        }
+    val infoContent = activeKey?.let { resolveThermalInfoContent(it) }
+    if (infoContent != null) {
+        InfoBottomSheet(
+            content = infoContent,
+            onDismiss = onDismiss,
+        )
     }
 }
 

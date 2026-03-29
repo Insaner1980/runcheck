@@ -301,13 +301,12 @@ fun StorageDetailScreen(
     }
 
     if (showTrashConfirmDialog) {
-        val dismissTrashDialog = { showTrashConfirmDialog = false }
         TrashConfirmDialog(
             onConfirm = {
-                dismissTrashDialog()
+                showTrashConfirmDialog = false
                 viewModel.emptyTrash()
             },
-            onDismiss = dismissTrashDialog,
+            onDismiss = { showTrashConfirmDialog = false },
         )
     }
 }
@@ -489,10 +488,9 @@ private fun StorageInfoSheet(
     activeKey: String?,
     onDismiss: () -> Unit,
 ) {
-    activeKey?.let { key ->
-        resolveStorageInfoContent(key)?.let { sheetContent ->
-            InfoBottomSheet(content = sheetContent, onDismiss = onDismiss)
-        }
+    val infoContent = activeKey?.let { resolveStorageInfoContent(it) }
+    if (infoContent != null) {
+        InfoBottomSheet(content = infoContent, onDismiss = onDismiss)
     }
 }
 

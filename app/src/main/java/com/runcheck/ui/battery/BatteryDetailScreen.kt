@@ -799,13 +799,12 @@ private fun BatteryContent(
         }
     }
 
-    activeInfoSheet?.let { key ->
-        resolveBatteryInfoContent(key)?.let { sheetContent ->
-            InfoBottomSheet(
-                content = sheetContent,
-                onDismiss = { activeInfoSheet = null },
-            )
-        }
+    val infoContent = activeInfoSheet?.let { resolveBatteryInfoContent(it) }
+    if (infoContent != null) {
+        InfoBottomSheet(
+            content = infoContent,
+            onDismiss = { activeInfoSheet = null },
+        )
     }
 }
 

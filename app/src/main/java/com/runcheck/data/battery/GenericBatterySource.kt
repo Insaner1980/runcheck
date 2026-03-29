@@ -217,6 +217,47 @@ open class GenericBatterySource(
             }
         }.flowOn(Dispatchers.IO)
 
+    protected fun samsungCurrentNowFlow(
+        stableReadingThreshold: Int,
+        suspiciousConstantCurrentMa: Int,
+    ): Flow<MeasuredValue<Int>> =
+        flow {
+            var previousCurrentMa: Int? = null
+            var stableReadingCount = 0
+
+            while (true) {
+                val rawCurrent = readCurrentNowRaw()
+                if (rawCurrent == null) {
+                    emit(unavailableCurrent())
+                    delay(POLLING_INTERVAL_MS)
+                    continue
+                }
+                val currentMa = alignCurrentSignWithChargeState(normalizeCurrent(rawCurrent))
+
+                stableReadingCount =
+                    if (currentMa == previousCurrentMa) {
+                        stableReadingCount + 1
+                    } else {
+                        1
+                    }
+                previousCurrentMa = currentMa
+
+                val looksLikeMaxTheoreticalCurrent =
+                    stableReadingCount >= stableReadingThreshold &&
+                        kotlin.math.abs(currentMa) >= suspiciousConstantCurrentMa
+
+                val confidence =
+                    when {
+                        rawCurrent == 0 -> Confidence.UNAVAILABLE
+                        !profile.currentNowReliable || looksLikeMaxTheoreticalCurrent -> Confidence.LOW
+                        else -> Confidence.HIGH
+                    }
+
+                emit(MeasuredValue(currentMa, confidence))
+                delay(POLLING_INTERVAL_MS)
+            }
+        }.flowOn(Dispatchers.IO)
+
     protected fun mapHealth(health: Int): BatteryHealth =
         when (health) {
             BatteryManager.BATTERY_HEALTH_GOOD -> BatteryHealth.GOOD

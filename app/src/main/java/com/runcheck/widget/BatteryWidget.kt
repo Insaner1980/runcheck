@@ -7,27 +7,20 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
-import androidx.glance.action.actionStartActivity
-import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
-import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
-import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
-import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
-import androidx.glance.layout.padding
 import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import com.runcheck.MainActivity
 import com.runcheck.R
 
 class BatteryWidget : GlanceAppWidget() {
@@ -47,12 +40,12 @@ class BatteryWidget : GlanceAppWidget() {
         id: GlanceId,
     ) {
         if (!WidgetDataProvider.isProUnlocked(context)) {
-            provideLockedContent(context)
+            provideContent { WidgetLockedContent(context, R.string.widget_battery_name) }
             return
         }
         val snapshot = WidgetDataProvider.loadBatterySnapshot(context)
         if (snapshot == null) {
-            provideEmptyContent(context)
+            provideContent { WidgetEmptyContent(context) }
             return
         }
 
@@ -66,13 +59,7 @@ class BatteryWidget : GlanceAppWidget() {
         provideContent {
             GlanceTheme {
                 Column(
-                    modifier =
-                        GlanceModifier
-                            .fillMaxSize()
-                            .padding(12.dp)
-                            .cornerRadius(16.dp)
-                            .background(GlanceTheme.colors.widgetBackground)
-                            .clickable(actionStartActivity<MainActivity>()),
+                    modifier = widgetContainerModifier(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Row(
@@ -110,7 +97,6 @@ class BatteryWidget : GlanceAppWidget() {
                             }
                         }
                     }
-                    // Show label in medium+ sizes
                     val size = androidx.glance.LocalSize.current
                     if (size.width >= MEDIUM.width) {
                         Spacer(modifier = GlanceModifier.height(4.dp))
@@ -123,78 +109,6 @@ class BatteryWidget : GlanceAppWidget() {
                                 ),
                         )
                     }
-                }
-            }
-        }
-    }
-
-    private suspend fun provideLockedContent(context: Context) {
-        provideContent {
-            GlanceTheme {
-                Column(
-                    modifier =
-                        GlanceModifier
-                            .fillMaxSize()
-                            .padding(12.dp)
-                            .cornerRadius(16.dp)
-                            .background(GlanceTheme.colors.widgetBackground)
-                            .clickable(actionStartActivity<MainActivity>()),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = context.getString(R.string.widget_battery_name),
-                        style =
-                            TextStyle(
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = GlanceTheme.colors.onSurface,
-                            ),
-                    )
-                    Text(
-                        text = context.getString(R.string.settings_upgrade_pro),
-                        style =
-                            TextStyle(
-                                fontSize = 12.sp,
-                                color = GlanceTheme.colors.onSurfaceVariant,
-                            ),
-                    )
-                }
-            }
-        }
-    }
-
-    private suspend fun provideEmptyContent(context: Context) {
-        provideContent {
-            GlanceTheme {
-                Column(
-                    modifier =
-                        GlanceModifier
-                            .fillMaxSize()
-                            .padding(12.dp)
-                            .cornerRadius(16.dp)
-                            .background(GlanceTheme.colors.widgetBackground)
-                            .clickable(actionStartActivity<MainActivity>()),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = context.getString(R.string.widget_no_data_title),
-                        style =
-                            TextStyle(
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = GlanceTheme.colors.onSurface,
-                            ),
-                    )
-                    Text(
-                        text = context.getString(R.string.widget_no_data_message),
-                        style =
-                            TextStyle(
-                                fontSize = 12.sp,
-                                color = GlanceTheme.colors.onSurfaceVariant,
-                            ),
-                    )
                 }
             }
         }

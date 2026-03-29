@@ -980,13 +980,12 @@ fun SettingsScreen(
     }
 
     // Measurement info bottom sheets
-    activeInfoSheet?.let { key ->
-        resolveSettingsInfoContent(key)?.let { sheetContent ->
-            InfoBottomSheet(
-                content = sheetContent,
-                onDismiss = { activeInfoSheet = null },
-            )
-        }
+    val infoContent = activeInfoSheet?.let { resolveSettingsInfoContent(it) }
+    if (infoContent != null) {
+        InfoBottomSheet(
+            content = infoContent,
+            onDismiss = { activeInfoSheet = null },
+        )
     }
 
     // Clear all data confirmation dialog
