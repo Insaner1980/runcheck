@@ -207,7 +207,7 @@ class SpeedTestService
                 var latestLinkProperties: LinkProperties? = null
                 val callbackFlags =
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        FLAG_INCLUDE_LOCATION_INFO
+                        ConnectivityManager.NetworkCallback.FLAG_INCLUDE_LOCATION_INFO
                     } else {
                         0
                     }
