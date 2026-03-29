@@ -622,6 +622,53 @@ Icon source files in `icons/` directory (SVG masters + 512px PNG exports).
 
 ---
 
+## CI/CD Pipeline
+
+GitHub Actions workflows in `.github/workflows/`:
+
+| Workflow | Purpose | Status |
+|----------|---------|--------|
+| `codeql.yml` | CodeQL security analysis (java-kotlin, manual build) | Active |
+| `security.yml` | Semgrep SAST + OWASP Dependency-Check (SARIF → Code Scanning) | Active |
+| `qodana.yml` | JetBrains Qodana code quality (Community for Android) | Blocked — AGP 9 not yet supported |
+
+External services:
+- **SonarCloud** — continuous code quality (`Insaner1980_runcheck`, org `insaner1980`). CI workflow in runcheck repo configured separately.
+- **Qodana Cloud** — org "Finnvek Dev", project "runcheck"
+
+Local tools:
+- `scripts/security-check.sh` — runs Semgrep + OWASP dependency-check locally, results in `reports/`
+- `lint-check` / `security-check` aliases (`lc` / `sc`)
+
+---
+
+## Project Management
+
+- **Linear:** Project "runcheck" in Finnvek team, priority High, status In Progress
+- **Linear URL:** https://linear.app/loikka1/project/runcheck-5d6d01d874c1
+- **Milestones:**
+  - v1.0 — Play Store Release (all features, tested, security audited)
+  - Insights Engine (cross-category correlation — the differentiator)
+- **GitHub:** https://github.com/Insaner1980/runcheck
+
+---
+
+## Roadmap
+
+### Next Major Feature: Insights Engine
+
+Cross-category correlation engine that analyzes Room data across all four monitoring categories (battery, thermal, network, storage) and surfaces insights, trends, and anomalies automatically. Differentiator vs AccuBattery, DevCheck, AIDA64 which show categories as separate silos. Examples:
+- Correlation between temperature rise and battery drain spike
+- Network quality degradation at specific times
+- Anomaly detection from normal usage patterns
+
+### Known Tool Limitations
+
+- **Qodana:** AGP 9.1.0 not yet supported (`AndroidArtifact.getPrivacySandboxSdkInfo()`)
+- **CodeQL:** Works with Kotlin 2.3.0 (runcheck), does NOT support 2.3.20+
+
+---
+
 ## Notes for Maintenance
 
 - `PROJECT.md` should describe the code as it exists now, not the intended roadmap only.
