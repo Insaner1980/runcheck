@@ -114,6 +114,7 @@ import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
+import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.fullscreen.FullscreenChartSeedStore
 import com.runcheck.ui.fullscreen.FullscreenChartUiState
 import com.runcheck.ui.fullscreen.parseFullscreenChartSource
@@ -799,34 +800,9 @@ private fun BatteryContent(
     }
 
     activeInfoSheet?.let { key ->
-        val content =
-            when (key) {
-                "voltage" -> BatteryInfoContent.voltage
-                "temperature" -> BatteryInfoContent.temperature
-                "healthStatus" -> BatteryInfoContent.healthStatus
-                "cycleCount" -> BatteryInfoContent.cycleCount
-                "healthPercent" -> BatteryInfoContent.healthPercent
-                "capacity" -> BatteryInfoContent.capacity
-                "currentMa" -> BatteryInfoContent.currentMa
-                "powerW" -> BatteryInfoContent.powerW
-                "drainRate" -> BatteryInfoContent.drainRate
-                "confidence" -> BatteryInfoContent.confidence
-                "screenOnOff" -> BatteryInfoContent.screenOnOff
-                "deepSleep" -> BatteryInfoContent.deepSleep
-                "remaining" -> BatteryInfoContent.remaining
-                "technology" -> BatteryInfoContent.technology
-                "plugType" -> BatteryInfoContent.plugType
-                "currentStats" -> BatteryInfoContent.currentStats
-                "statsCharged" -> BatteryInfoContent.statsCharged
-                "statsDischarged" -> BatteryInfoContent.statsDischarged
-                "statsSessions" -> BatteryInfoContent.statsSessions
-                "statsAvgUsage" -> BatteryInfoContent.statsAvgUsage
-                "statsFullChargeEst" -> BatteryInfoContent.statsFullChargeEst
-                else -> null
-            }
-        content?.let {
+        resolveBatteryInfoContent(key)?.let { sheetContent ->
             InfoBottomSheet(
-                content = it,
+                content = sheetContent,
                 onDismiss = { activeInfoSheet = null },
             )
         }
@@ -1870,3 +1846,29 @@ private fun BatteryStatisticsPanel(
         }
     }
 }
+
+private fun resolveBatteryInfoContent(key: String): InfoSheetContent? =
+    when (key) {
+        "voltage" -> BatteryInfoContent.voltage
+        "temperature" -> BatteryInfoContent.temperature
+        "healthStatus" -> BatteryInfoContent.healthStatus
+        "cycleCount" -> BatteryInfoContent.cycleCount
+        "healthPercent" -> BatteryInfoContent.healthPercent
+        "capacity" -> BatteryInfoContent.capacity
+        "currentMa" -> BatteryInfoContent.currentMa
+        "powerW" -> BatteryInfoContent.powerW
+        "drainRate" -> BatteryInfoContent.drainRate
+        "confidence" -> BatteryInfoContent.confidence
+        "screenOnOff" -> BatteryInfoContent.screenOnOff
+        "deepSleep" -> BatteryInfoContent.deepSleep
+        "remaining" -> BatteryInfoContent.remaining
+        "technology" -> BatteryInfoContent.technology
+        "plugType" -> BatteryInfoContent.plugType
+        "currentStats" -> BatteryInfoContent.currentStats
+        "statsCharged" -> BatteryInfoContent.statsCharged
+        "statsDischarged" -> BatteryInfoContent.statsDischarged
+        "statsSessions" -> BatteryInfoContent.statsSessions
+        "statsAvgUsage" -> BatteryInfoContent.statsAvgUsage
+        "statsFullChargeEst" -> BatteryInfoContent.statsFullChargeEst
+        else -> null
+    }

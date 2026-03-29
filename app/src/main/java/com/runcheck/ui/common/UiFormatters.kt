@@ -105,7 +105,7 @@ fun rememberFormattedDateTime(
         formatLocalizedDateTime(timestamp, skeleton)
     }
 
-fun isUnknownValue(value: String?): Boolean = value.isNullOrBlank() || value.equals("unknown", ignoreCase = true)
+fun isUnknownValue(value: String?): Boolean = value.isNullOrBlank() || value?.compareTo("unknown", ignoreCase = true) == 0
 
 @Composable
 fun formatPercent(value: Int): String = stringResource(R.string.value_percent, value)

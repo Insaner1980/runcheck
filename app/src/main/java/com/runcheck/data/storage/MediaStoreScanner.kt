@@ -22,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -55,35 +56,47 @@ class MediaStoreScanner
 
                 for (collection in MEDIA_COLLECTIONS) {
                     coroutineContext.ensureActive()
-                    val bundle =
-                        Bundle().apply {
-                            putInt(MediaStore.QUERY_ARG_MATCH_TRASHED, MediaStore.MATCH_ONLY)
-                            putStringArray(
-                                ContentResolver.QUERY_ARG_SORT_COLUMNS,
-                                arrayOf(MediaStore.MediaColumns.SIZE),
-                            )
-                        }
-                    try {
-                        resolver
-                            .query(collection, arrayOf(MediaStore.MediaColumns.SIZE), bundle, null)
-                            ?.use { cursor ->
-                                val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
-                                while (cursor.moveToNext()) {
-                                    coroutineContext.ensureActive()
-                                    totalSize += cursor.getLong(sizeCol)
-                                    itemCount++
-                                }
-                            }
-                    } catch (error: CancellationException) {
-                        throw error
-                    } catch (error: Exception) {
-                        ReleaseSafeLog.error(TAG, "Failed to query trashed media for $collection", error)
-                    }
+                    val result = queryTrashedCollection(collection, coroutineContext)
+                    totalSize += result.first
+                    itemCount += result.second
                 }
 
                 if (itemCount == 0) return@withContext null
                 TrashInfo(totalBytes = totalSize, itemCount = itemCount)
             }
+
+        private fun queryTrashedCollection(
+            collection: Uri,
+            coroutineContext: CoroutineContext,
+        ): Pair<Long, Int> {
+            val bundle =
+                Bundle().apply {
+                    putInt(MediaStore.QUERY_ARG_MATCH_TRASHED, MediaStore.MATCH_ONLY)
+                    putStringArray(
+                        ContentResolver.QUERY_ARG_SORT_COLUMNS,
+                        arrayOf(MediaStore.MediaColumns.SIZE),
+                    )
+                }
+            var size = 0L
+            var count = 0
+            try {
+                resolver
+                    .query(collection, arrayOf(MediaStore.MediaColumns.SIZE), bundle, null)
+                    ?.use { cursor ->
+                        val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+                        while (cursor.moveToNext()) {
+                            coroutineContext.ensureActive()
+                            size += cursor.getLong(sizeCol)
+                            count++
+                        }
+                    }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                ReleaseSafeLog.error(TAG, "Failed to query trashed media for $collection", error)
+            }
+            return size to count
+        }
 
         suspend fun getTrashedUris(): List<Uri> =
             withContext(Dispatchers.IO) {

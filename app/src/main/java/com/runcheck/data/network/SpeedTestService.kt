@@ -10,6 +10,7 @@ import com.runcheck.R
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.SpeedTestConnectionInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -77,213 +78,38 @@ class SpeedTestService
 
         fun runSpeedTest(allowCellular: Boolean = false): Flow<SpeedTestProgress> =
             callbackFlow {
-                if (!hasValidatedConnection()) {
-                    trySend(SpeedTestProgress.Failed(context.getString(R.string.speed_test_error_no_internet)))
+                val validatedNetwork = validateConnection(allowCellular)
+                if (validatedNetwork == null) {
                     channel.close()
                     return@callbackFlow
                 }
 
-                val startingNetwork = networkDataSource.getCurrentNetworkInfoSnapshot()
-                if (startingNetwork.connectionType == ConnectionType.NONE) {
-                    trySend(SpeedTestProgress.Failed(context.getString(R.string.speed_test_error_no_internet)))
-                    channel.close()
-                    return@callbackFlow
-                }
+                val session = SpeedTestSession(
+                    connectionInfo = validatedNetwork.toConnectionInfo(),
+                    connectionKey = validatedNetwork.toConnectionKey(),
+                    startingDefaultNetwork = connectivityManager.activeNetwork,
+                    scope = this,
+                )
 
-                val connectionInfo = startingNetwork.toConnectionInfo()
-                val connectionKey = startingNetwork.toConnectionKey()
-                val startingDefaultNetwork = connectivityManager.activeNetwork
-                if (connectionInfo.connectionType == ConnectionType.CELLULAR && !allowCellular) {
-                    trySend(SpeedTestProgress.CellularConfirmationRequired(connectionInfo))
-                    channel.close()
-                    return@callbackFlow
-                }
-
-                var downloadMbps = 0.0
-                var uploadMbps = 0.0
-                var latestRttMs = 0
-                var latestRttVarMs: Int? = null
-                var serverName = DEFAULT_SERVER_NAME
-                var serverLocation: String? = null
-                val downloadStartTime = System.nanoTime()
-                var uploadStartTime = 0L
-                var shouldStopOnClose = true
+                val connectionCallback = session.createConnectionCallback()
                 var networkCallbackRegistered = false
-                var latestLinkProperties: LinkProperties? = null
-
-                fun failAndClose(message: String) {
-                    synchronized(testLock) {
-                        activeTest?.stopTest()
-                        activeTest = null
-                    }
-                    shouldStopOnClose = false
-                    trySend(SpeedTestProgress.Failed(message))
-                    channel.close()
-                }
-
-                val connectionCallback =
-                    object : ConnectivityManager.NetworkCallback(
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            FLAG_INCLUDE_LOCATION_INFO
-                        } else {
-                            0
-                        },
-                    ) {
-                        override fun onAvailable(network: Network) {
-                            if (startingDefaultNetwork != null && network != startingDefaultNetwork) {
-                                failAndClose(context.getString(R.string.speed_test_error_connection_changed))
-                            }
-                        }
-
-                        override fun onCapabilitiesChanged(
-                            network: Network,
-                            capabilities: NetworkCapabilities,
-                        ) {
-                            if (startingDefaultNetwork != null && network != startingDefaultNetwork) {
-                                failAndClose(context.getString(R.string.speed_test_error_connection_changed))
-                                return
-                            }
-                            val currentNetwork =
-                                networkDataSource.getNetworkInfoFromCallback(
-                                    capabilities = capabilities,
-                                    linkProperties = latestLinkProperties,
-                                )
-                            if (currentNetwork.connectionType == ConnectionType.NONE) {
-                                failAndClose(context.getString(R.string.speed_test_error_no_internet))
-                                return
-                            }
-                            if (currentNetwork.toConnectionKey() != connectionKey) {
-                                failAndClose(context.getString(R.string.speed_test_error_connection_changed))
-                            }
-                        }
-
-                        override fun onLinkPropertiesChanged(
-                            network: Network,
-                            linkProperties: LinkProperties,
-                        ) {
-                            if (startingDefaultNetwork != null && network != startingDefaultNetwork) {
-                                failAndClose(context.getString(R.string.speed_test_error_connection_changed))
-                                return
-                            }
-                            latestLinkProperties = linkProperties
-                        }
-
-                        override fun onLost(network: Network) {
-                            if (startingDefaultNetwork == null || network == startingDefaultNetwork) {
-                                failAndClose(context.getString(R.string.speed_test_error_no_internet))
-                            }
-                        }
-                    }
-
                 runCatching {
                     connectivityManager.registerDefaultNetworkCallback(connectionCallback)
                     networkCallbackRegistered = true
                 }
 
                 latencyMeasurer.measureLatency()?.let { result ->
-                    latestRttMs = result.pingMs
-                    latestRttVarMs = result.jitterMs
+                    session.latestRttMs = result.pingMs
+                    session.latestRttVarMs = result.jitterMs
                     trySend(SpeedTestProgress.PingPhase(result.pingMs, result.jitterMs))
                 }
 
-                val test =
-                    object : NdtTest() {
-                        override fun onDownloadProgress(clientResponse: ClientResponse) {
-                            updateServerMetadata(clientResponse)?.let { metadata ->
-                                serverName = metadata.name
-                                serverLocation = metadata.location
-                            }
-                            val mbps = DataConverter.convertToMbps(clientResponse)
-                            downloadMbps = mbps
-                            val elapsed = (System.nanoTime() - downloadStartTime).toFloat()
-                            val progress = (elapsed / (TEST_DURATION_NS)).coerceAtMost(1f)
-                            trySend(SpeedTestProgress.DownloadPhase(mbps, progress))
-                        }
-
-                        override fun onMeasurementDownloadProgress(measurement: Measurement) {
-                            measurement.connectionInfo?.server?.takeIf { it.isNotBlank() }?.let { host ->
-                                serverName = host
-                            }
-                            val tcpInfo = measurement.tcpInfo
-                            if (tcpInfo != null) {
-                                val rttUs = tcpInfo.rtt
-                                val rttVarUs = tcpInfo.rttVar
-                                if (rttUs > 0) {
-                                    latestRttMs = (rttUs / 1000).toInt()
-                                    latestRttVarMs = (rttVarUs / 1000).toInt()
-                                }
-                            }
-                        }
-
-                        override fun onUploadProgress(clientResponse: ClientResponse) {
-                            updateServerMetadata(clientResponse)?.let { metadata ->
-                                serverName = metadata.name
-                                serverLocation = metadata.location
-                            }
-                            val mbps = DataConverter.convertToMbps(clientResponse)
-                            uploadMbps = mbps
-                            if (uploadStartTime == 0L) uploadStartTime = System.nanoTime()
-                            val elapsed = (System.nanoTime() - uploadStartTime).toFloat()
-                            val progress = (elapsed / (TEST_DURATION_NS)).coerceAtMost(1f)
-                            trySend(SpeedTestProgress.UploadPhase(mbps, progress))
-                        }
-
-                        override fun onMeasurementUploadProgress(measurement: Measurement) {
-                            val tcpInfo = measurement.tcpInfo
-                            if (tcpInfo != null) {
-                                val rttUs = tcpInfo.rtt
-                                if (rttUs > 0) {
-                                    latestRttMs = (rttUs / 1000).toInt()
-                                    latestRttVarMs = (tcpInfo.rttVar / 1000).toInt()
-                                }
-                            }
-                        }
-
-                        override fun onFinished(
-                            clientResponse: ClientResponse?,
-                            error: Throwable?,
-                            testType: TestType,
-                        ) {
-                            if (error != null && clientResponse == null) {
-                                failAndClose(mapError(error))
-                                return
-                            }
-
-                            if (testType == TestType.DOWNLOAD) {
-                                clientResponse?.let { downloadMbps = DataConverter.convertToMbps(it) }
-                                trySend(SpeedTestProgress.DownloadPhase(downloadMbps, 1f))
-                                return
-                            }
-
-                            clientResponse?.let { uploadMbps = DataConverter.convertToMbps(it) }
-                            updateServerMetadata(clientResponse)?.let { metadata ->
-                                serverName = metadata.name
-                                serverLocation = metadata.location
-                            }
-                            // Upload finished (or both finished) — emit final results
-                            trySend(SpeedTestProgress.UploadPhase(uploadMbps, 1f))
-                            trySend(
-                                SpeedTestProgress.Completed(
-                                    downloadMbps = downloadMbps,
-                                    uploadMbps = uploadMbps,
-                                    pingMs = latestRttMs,
-                                    jitterMs = latestRttVarMs,
-                                    serverName = serverName,
-                                    serverLocation = serverLocation,
-                                    connectionInfo = connectionInfo,
-                                ),
-                            )
-                            synchronized(testLock) { activeTest = null }
-                            shouldStopOnClose = false
-                            channel.close()
-                        }
-                    }
-
+                val test = session.createNdtTest()
                 synchronized(testLock) { activeTest = test }
                 runCatching {
                     test.startTest(NdtTest.TestType.DOWNLOAD_AND_UPLOAD)
                 }.onFailure { error ->
-                    failAndClose(mapError(error))
+                    session.failAndClose(mapError(error))
                 }
 
                 awaitClose {
@@ -291,7 +117,7 @@ class SpeedTestService
                         runCatching { connectivityManager.unregisterNetworkCallback(connectionCallback) }
                     }
                     synchronized(testLock) {
-                        if (shouldStopOnClose) {
+                        if (session.shouldStopOnClose) {
                             activeTest?.stopTest()
                         }
                         activeTest = null
@@ -304,6 +130,192 @@ class SpeedTestService
                 activeTest?.stopTest()
                 activeTest = null
             }
+        }
+
+        private fun ProducerScope<SpeedTestProgress>.validateConnection(
+            allowCellular: Boolean,
+        ): NetworkDataSource.NetworkInfo? {
+            if (!hasValidatedConnection()) {
+                trySend(SpeedTestProgress.Failed(context.getString(R.string.speed_test_error_no_internet)))
+                return null
+            }
+            val startingNetwork = networkDataSource.getCurrentNetworkInfoSnapshot()
+            if (startingNetwork.connectionType == ConnectionType.NONE) {
+                trySend(SpeedTestProgress.Failed(context.getString(R.string.speed_test_error_no_internet)))
+                return null
+            }
+            val connectionInfo = startingNetwork.toConnectionInfo()
+            if (connectionInfo.connectionType == ConnectionType.CELLULAR && !allowCellular) {
+                trySend(SpeedTestProgress.CellularConfirmationRequired(connectionInfo))
+                return null
+            }
+            return startingNetwork
+        }
+
+        private inner class SpeedTestSession(
+            val connectionInfo: SpeedTestConnectionInfo,
+            val connectionKey: ConnectionKey,
+            val startingDefaultNetwork: Network?,
+            val scope: ProducerScope<SpeedTestProgress>,
+        ) {
+            var downloadMbps = 0.0
+            var uploadMbps = 0.0
+            var latestRttMs = 0
+            var latestRttVarMs: Int? = null
+            var serverName = DEFAULT_SERVER_NAME
+            var serverLocation: String? = null
+            val downloadStartTime: Long = System.nanoTime()
+            var uploadStartTime = 0L
+            var shouldStopOnClose = true
+
+            fun failAndClose(message: String) {
+                synchronized(testLock) {
+                    activeTest?.stopTest()
+                    activeTest = null
+                }
+                shouldStopOnClose = false
+                scope.trySend(SpeedTestProgress.Failed(message))
+                scope.channel.close()
+            }
+
+            fun applyServerMetadata(clientResponse: ClientResponse?) {
+                updateServerMetadata(clientResponse)?.let { metadata ->
+                    serverName = metadata.name
+                    serverLocation = metadata.location
+                }
+            }
+
+            fun updateRttFromTcpInfo(tcpInfo: net.measurementlab.ndt7.android.models.TcpInfo?) {
+                if (tcpInfo != null && tcpInfo.rtt > 0) {
+                    latestRttMs = (tcpInfo.rtt / 1000).toInt()
+                    latestRttVarMs = (tcpInfo.rttVar / 1000).toInt()
+                }
+            }
+
+            fun createConnectionCallback(): ConnectivityManager.NetworkCallback =
+                object : ConnectivityManager.NetworkCallback(
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        FLAG_INCLUDE_LOCATION_INFO
+                    } else {
+                        0
+                    },
+                ) {
+                    var latestLinkProperties: LinkProperties? = null
+
+                    override fun onAvailable(network: Network) {
+                        if (startingDefaultNetwork != null && network != startingDefaultNetwork) {
+                            failAndClose(context.getString(R.string.speed_test_error_connection_changed))
+                        }
+                    }
+
+                    override fun onCapabilitiesChanged(
+                        network: Network,
+                        capabilities: NetworkCapabilities,
+                    ) {
+                        if (startingDefaultNetwork != null && network != startingDefaultNetwork) {
+                            failAndClose(context.getString(R.string.speed_test_error_connection_changed))
+                            return
+                        }
+                        val currentNetwork =
+                            networkDataSource.getNetworkInfoFromCallback(
+                                capabilities = capabilities,
+                                linkProperties = latestLinkProperties,
+                            )
+                        if (currentNetwork.connectionType == ConnectionType.NONE) {
+                            failAndClose(context.getString(R.string.speed_test_error_no_internet))
+                            return
+                        }
+                        if (currentNetwork.toConnectionKey() != connectionKey) {
+                            failAndClose(context.getString(R.string.speed_test_error_connection_changed))
+                        }
+                    }
+
+                    override fun onLinkPropertiesChanged(
+                        network: Network,
+                        linkProperties: LinkProperties,
+                    ) {
+                        if (startingDefaultNetwork != null && network != startingDefaultNetwork) {
+                            failAndClose(context.getString(R.string.speed_test_error_connection_changed))
+                            return
+                        }
+                        latestLinkProperties = linkProperties
+                    }
+
+                    override fun onLost(network: Network) {
+                        if (startingDefaultNetwork == null || network == startingDefaultNetwork) {
+                            failAndClose(context.getString(R.string.speed_test_error_no_internet))
+                        }
+                    }
+                }
+
+            fun createNdtTest(): NdtTest =
+                object : NdtTest() {
+                    override fun onDownloadProgress(clientResponse: ClientResponse) {
+                        applyServerMetadata(clientResponse)
+                        val mbps = DataConverter.convertToMbps(clientResponse)
+                        downloadMbps = mbps
+                        val elapsed = (System.nanoTime() - downloadStartTime).toFloat()
+                        val progress = (elapsed / (TEST_DURATION_NS)).coerceAtMost(1f)
+                        scope.trySend(SpeedTestProgress.DownloadPhase(mbps, progress))
+                    }
+
+                    override fun onMeasurementDownloadProgress(measurement: Measurement) {
+                        measurement.connectionInfo?.server?.takeIf { it.isNotBlank() }?.let { host ->
+                            serverName = host
+                        }
+                        updateRttFromTcpInfo(measurement.tcpInfo)
+                    }
+
+                    override fun onUploadProgress(clientResponse: ClientResponse) {
+                        applyServerMetadata(clientResponse)
+                        val mbps = DataConverter.convertToMbps(clientResponse)
+                        uploadMbps = mbps
+                        if (uploadStartTime == 0L) uploadStartTime = System.nanoTime()
+                        val elapsed = (System.nanoTime() - uploadStartTime).toFloat()
+                        val progress = (elapsed / (TEST_DURATION_NS)).coerceAtMost(1f)
+                        scope.trySend(SpeedTestProgress.UploadPhase(mbps, progress))
+                    }
+
+                    override fun onMeasurementUploadProgress(measurement: Measurement) {
+                        updateRttFromTcpInfo(measurement.tcpInfo)
+                    }
+
+                    override fun onFinished(
+                        clientResponse: ClientResponse?,
+                        error: Throwable?,
+                        testType: TestType,
+                    ) {
+                        if (error != null && clientResponse == null) {
+                            failAndClose(mapError(error))
+                            return
+                        }
+
+                        if (testType == TestType.DOWNLOAD) {
+                            clientResponse?.let { downloadMbps = DataConverter.convertToMbps(it) }
+                            scope.trySend(SpeedTestProgress.DownloadPhase(downloadMbps, 1f))
+                            return
+                        }
+
+                        clientResponse?.let { uploadMbps = DataConverter.convertToMbps(it) }
+                        applyServerMetadata(clientResponse)
+                        // Upload finished (or both finished) — emit final results
+                        scope.trySend(SpeedTestProgress.UploadPhase(uploadMbps, 1f))
+                        scope.trySend(
+                            SpeedTestProgress.Completed(
+                                downloadMbps = downloadMbps,
+                                uploadMbps = uploadMbps,
+                                pingMs = latestRttMs,
+                                jitterMs = latestRttVarMs,
+                                serverName = serverName,
+                                serverLocation = serverLocation,
+                                connectionInfo = connectionInfo,
+                            ),
+                        )
+                        synchronized(testLock) { activeTest = null }
+                        shouldStopOnClose = false
+                        scope.channel.close()
+                    }
+                }
         }
 
         private fun hasValidatedConnection(): Boolean {
@@ -361,7 +373,7 @@ class SpeedTestService
             left: String,
             right: String,
         ): Boolean =
-            left.equals(right, ignoreCase = true) ||
+            left.compareTo(right, ignoreCase = true) == 0 ||
                 left.contains(right, ignoreCase = true) ||
                 right.contains(left, ignoreCase = true)
 

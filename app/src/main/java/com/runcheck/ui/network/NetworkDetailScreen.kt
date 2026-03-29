@@ -475,107 +475,131 @@ private fun ConnectionDetailsCard(
         )
 
         if (networkState.connectionType == ConnectionType.WIFI) {
-            networkState.wifiSsid?.let {
-                MetricRow(label = stringResource(R.string.network_wifi_ssid), value = it)
-            }
-            networkState.wifiBssid?.let {
-                MetricRow(label = stringResource(R.string.network_bssid), value = it, copyable = true)
-            }
-            networkState.wifiStandard?.let {
-                MetricRow(label = stringResource(R.string.network_wifi_standard), value = it, onInfoClick = {
-                    onInfoClick("wifiStandard")
-                })
-            }
-            networkState.wifiFrequencyMhz?.let { freq ->
-                MetricRow(
-                    label = stringResource(R.string.network_wifi_frequency),
-                    value =
-                        stringResource(
-                            R.string.value_with_unit_int,
-                            freq,
-                            stringResource(R.string.unit_mhz),
-                        ),
-                    onInfoClick = { onInfoClick("frequency") },
-                )
-            }
-            networkState.wifiSpeedMbps?.let {
-                MetricRow(
-                    label = stringResource(R.string.network_wifi_speed),
-                    value =
-                        stringResource(
-                            R.string.value_with_unit_int,
-                            it,
-                            stringResource(R.string.unit_mbps),
-                        ),
-                    onInfoClick = { onInfoClick("linkSpeed") },
-                )
-            }
+            WifiDetailsRows(networkState = networkState, onInfoClick = onInfoClick)
         }
 
         if (networkState.connectionType == ConnectionType.CELLULAR ||
             networkState.connectionType == ConnectionType.VPN
         ) {
-            networkState.carrier?.takeUnless { isUnknownValue(it) }?.let {
-                MetricRow(label = stringResource(R.string.network_carrier), value = it)
-            }
-            networkState.networkSubtype?.let {
-                MetricRow(
-                    label = stringResource(R.string.network_subtype),
-                    value = it,
-                    onInfoClick = { onInfoClick("subtype") },
-                )
-            }
-            networkState.isRoaming?.let {
-                MetricRow(
-                    label = stringResource(R.string.network_roaming),
-                    value = if (it) stringResource(R.string.common_yes) else stringResource(R.string.common_no),
-                    onInfoClick = { onInfoClick("roaming") },
-                )
-            }
+            CellularDetailsRows(networkState = networkState, onInfoClick = onInfoClick)
         }
 
-        networkState.estimatedDownstreamKbps?.let {
-            MetricRow(
-                label = stringResource(R.string.network_est_bandwidth_down),
-                value =
-                    stringResource(
-                        R.string.value_with_unit_int,
-                        it / 1000,
-                        stringResource(R.string.unit_mbps),
-                    ),
-                onInfoClick = { onInfoClick("bandwidth") },
-            )
-        }
-        networkState.estimatedUpstreamKbps?.let {
-            MetricRow(
-                label = stringResource(R.string.network_est_bandwidth_up),
-                value =
-                    stringResource(
-                        R.string.value_with_unit_int,
-                        it / 1000,
-                        stringResource(R.string.unit_mbps),
-                    ),
-                onInfoClick = { onInfoClick("bandwidth") },
-            )
-        }
-        networkState.isMetered?.let {
-            MetricRow(
-                label = stringResource(R.string.network_metered),
-                value = if (it) stringResource(R.string.common_yes) else stringResource(R.string.common_no),
-                onInfoClick = { onInfoClick("metered") },
-            )
-        }
+        BandwidthAndGeneralRows(networkState = networkState, onInfoClick = onInfoClick)
+    }
+}
+
+@Composable
+private fun WifiDetailsRows(
+    networkState: NetworkState,
+    onInfoClick: (String) -> Unit,
+) {
+    networkState.wifiSsid?.let {
+        MetricRow(label = stringResource(R.string.network_wifi_ssid), value = it)
+    }
+    networkState.wifiBssid?.let {
+        MetricRow(label = stringResource(R.string.network_bssid), value = it, copyable = true)
+    }
+    networkState.wifiStandard?.let {
+        MetricRow(label = stringResource(R.string.network_wifi_standard), value = it, onInfoClick = {
+            onInfoClick("wifiStandard")
+        })
+    }
+    networkState.wifiFrequencyMhz?.let { freq ->
         MetricRow(
-            label = stringResource(R.string.network_vpn),
+            label = stringResource(R.string.network_wifi_frequency),
             value =
-                if (networkState.isVpn == true) {
-                    stringResource(R.string.common_on)
-                } else {
-                    stringResource(R.string.common_off)
-                },
-            onInfoClick = { onInfoClick("vpn") },
+                stringResource(
+                    R.string.value_with_unit_int,
+                    freq,
+                    stringResource(R.string.unit_mhz),
+                ),
+            onInfoClick = { onInfoClick("frequency") },
         )
     }
+    networkState.wifiSpeedMbps?.let {
+        MetricRow(
+            label = stringResource(R.string.network_wifi_speed),
+            value =
+                stringResource(
+                    R.string.value_with_unit_int,
+                    it,
+                    stringResource(R.string.unit_mbps),
+                ),
+            onInfoClick = { onInfoClick("linkSpeed") },
+        )
+    }
+}
+
+@Composable
+private fun CellularDetailsRows(
+    networkState: NetworkState,
+    onInfoClick: (String) -> Unit,
+) {
+    networkState.carrier?.takeUnless { isUnknownValue(it) }?.let {
+        MetricRow(label = stringResource(R.string.network_carrier), value = it)
+    }
+    networkState.networkSubtype?.let {
+        MetricRow(
+            label = stringResource(R.string.network_subtype),
+            value = it,
+            onInfoClick = { onInfoClick("subtype") },
+        )
+    }
+    networkState.isRoaming?.let {
+        MetricRow(
+            label = stringResource(R.string.network_roaming),
+            value = if (it) stringResource(R.string.common_yes) else stringResource(R.string.common_no),
+            onInfoClick = { onInfoClick("roaming") },
+        )
+    }
+}
+
+@Composable
+private fun BandwidthAndGeneralRows(
+    networkState: NetworkState,
+    onInfoClick: (String) -> Unit,
+) {
+    networkState.estimatedDownstreamKbps?.let {
+        MetricRow(
+            label = stringResource(R.string.network_est_bandwidth_down),
+            value =
+                stringResource(
+                    R.string.value_with_unit_int,
+                    it / 1000,
+                    stringResource(R.string.unit_mbps),
+                ),
+            onInfoClick = { onInfoClick("bandwidth") },
+        )
+    }
+    networkState.estimatedUpstreamKbps?.let {
+        MetricRow(
+            label = stringResource(R.string.network_est_bandwidth_up),
+            value =
+                stringResource(
+                    R.string.value_with_unit_int,
+                    it / 1000,
+                    stringResource(R.string.unit_mbps),
+                ),
+            onInfoClick = { onInfoClick("bandwidth") },
+        )
+    }
+    networkState.isMetered?.let {
+        MetricRow(
+            label = stringResource(R.string.network_metered),
+            value = if (it) stringResource(R.string.common_yes) else stringResource(R.string.common_no),
+            onInfoClick = { onInfoClick("metered") },
+        )
+    }
+    MetricRow(
+        label = stringResource(R.string.network_vpn),
+        value =
+            if (networkState.isVpn == true) {
+                stringResource(R.string.common_on)
+            } else {
+                stringResource(R.string.common_off)
+            },
+        onInfoClick = { onInfoClick("vpn") },
+    )
 }
 
 // ── IP & DNS card ────────────────────────────────────────────────────────────────

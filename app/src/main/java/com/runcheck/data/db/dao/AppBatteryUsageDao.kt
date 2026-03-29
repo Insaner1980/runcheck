@@ -42,8 +42,8 @@ interface AppBatteryUsageDao {
     @Query(
         """
         SELECT
-            COALESCE(SUM(package_total), 0) AS total_foreground_time_ms,
-            COALESCE(MAX(package_total), 0) AS max_foreground_time_ms
+            COALESCE(SUM(package_total), 0) AS totalForegroundTimeMs,
+            COALESCE(MAX(package_total), 0) AS maxForegroundTimeMs
         FROM (
             SELECT SUM(foreground_time_ms) AS package_total
             FROM app_battery_usage
@@ -65,6 +65,6 @@ interface AppBatteryUsageDao {
 }
 
 data class AppBatteryUsageSummaryRow(
-    val total_foreground_time_ms: Long,
-    val max_foreground_time_ms: Long,
+    val totalForegroundTimeMs: Long,
+    val maxForegroundTimeMs: Long,
 )

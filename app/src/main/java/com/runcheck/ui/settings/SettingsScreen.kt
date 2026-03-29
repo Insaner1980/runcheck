@@ -81,6 +81,7 @@ import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.info.InfoBottomSheet
+import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.runcheckCardColors
@@ -980,16 +981,9 @@ fun SettingsScreen(
 
     // Measurement info bottom sheets
     activeInfoSheet?.let { key ->
-        val content =
-            when (key) {
-                "currentReading" -> SettingsInfoContent.currentReading
-                "cycleCount" -> SettingsInfoContent.cycleCount
-                "thermalZones" -> SettingsInfoContent.thermalZones
-                else -> null
-            }
-        content?.let {
+        resolveSettingsInfoContent(key)?.let { sheetContent ->
             InfoBottomSheet(
-                content = it,
+                content = sheetContent,
                 onDismiss = { activeInfoSheet = null },
             )
         }
@@ -1242,6 +1236,14 @@ private fun androidVersionName(apiLevel: Int): String =
         36 -> "Android 16"
         37 -> "Android 17"
         else -> "API $apiLevel"
+    }
+
+private fun resolveSettingsInfoContent(key: String): InfoSheetContent? =
+    when (key) {
+        "currentReading" -> SettingsInfoContent.currentReading
+        "cycleCount" -> SettingsInfoContent.cycleCount
+        "thermalZones" -> SettingsInfoContent.thermalZones
+        else -> null
     }
 
 private val LOW_BATTERY_THRESHOLD_VALUES = (5..50 step 5).toList()

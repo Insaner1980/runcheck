@@ -104,6 +104,6 @@ private fun AppBatteryUsageEntity.toDomain() =
 
 private fun AppBatteryUsageSummaryRow.toDomain() =
     AppUsageListSummary(
-        totalForegroundTimeMs = total_foreground_time_ms,
-        maxForegroundTimeMs = max_foreground_time_ms,
+        totalForegroundTimeMs = totalForegroundTimeMs,
+        maxForegroundTimeMs = maxForegroundTimeMs,
     )

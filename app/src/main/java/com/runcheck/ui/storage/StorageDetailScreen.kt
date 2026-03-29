@@ -108,6 +108,7 @@ import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
+import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.storage.MediaDeleteRequestResult
@@ -300,12 +301,13 @@ fun StorageDetailScreen(
     }
 
     if (showTrashConfirmDialog) {
+        val dismissTrashDialog = { showTrashConfirmDialog = false }
         TrashConfirmDialog(
             onConfirm = {
-                showTrashConfirmDialog = false
+                dismissTrashDialog()
                 viewModel.emptyTrash()
             },
-            onDismiss = { showTrashConfirmDialog = false },
+            onDismiss = dismissTrashDialog,
         )
     }
 }
@@ -488,18 +490,8 @@ private fun StorageInfoSheet(
     onDismiss: () -> Unit,
 ) {
     activeKey?.let { key ->
-        val content =
-            when (key) {
-                "usagePercent" -> StorageInfoContent.usagePercent
-                "fillRate" -> StorageInfoContent.fillRate
-                "cache" -> StorageInfoContent.cache
-                "appsTotal" -> StorageInfoContent.appsTotal
-                "filesystem" -> StorageInfoContent.filesystem
-                "encryption" -> StorageInfoContent.encryption
-                else -> null
-            }
-        content?.let {
-            InfoBottomSheet(content = it, onDismiss = onDismiss)
+        resolveStorageInfoContent(key)?.let { sheetContent ->
+            InfoBottomSheet(content = sheetContent, onDismiss = onDismiss)
         }
     }
 }
@@ -1165,3 +1157,14 @@ private fun StoragePanel(
         )
     }
 }
+
+private fun resolveStorageInfoContent(key: String): InfoSheetContent? =
+    when (key) {
+        "usagePercent" -> StorageInfoContent.usagePercent
+        "fillRate" -> StorageInfoContent.fillRate
+        "cache" -> StorageInfoContent.cache
+        "appsTotal" -> StorageInfoContent.appsTotal
+        "filesystem" -> StorageInfoContent.filesystem
+        "encryption" -> StorageInfoContent.encryption
+        else -> null
+    }

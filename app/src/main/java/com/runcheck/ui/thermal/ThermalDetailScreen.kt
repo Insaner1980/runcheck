@@ -92,6 +92,7 @@ import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
+import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.numericFontFamily
@@ -371,17 +372,9 @@ private fun ThermalInfoSheet(
     onDismiss: () -> Unit,
 ) {
     activeKey?.let { key ->
-        val content =
-            when (key) {
-                "cpuTemp" -> ThermalInfoContent.cpuTemp
-                "thermalHeadroom" -> ThermalInfoContent.thermalHeadroom
-                "thermalStatus" -> ThermalInfoContent.thermalStatus
-                "throttling" -> ThermalInfoContent.throttling
-                else -> null
-            }
-        content?.let {
+        resolveThermalInfoContent(key)?.let { sheetContent ->
             InfoBottomSheet(
-                content = it,
+                content = sheetContent,
                 onDismiss = onDismiss,
             )
         }
@@ -995,6 +988,15 @@ private fun headroomColor(headroom: Float): Color {
         else -> colors.healthy
     }
 }
+
+private fun resolveThermalInfoContent(key: String): InfoSheetContent? =
+    when (key) {
+        "cpuTemp" -> ThermalInfoContent.cpuTemp
+        "thermalHeadroom" -> ThermalInfoContent.thermalHeadroom
+        "thermalStatus" -> ThermalInfoContent.thermalStatus
+        "throttling" -> ThermalInfoContent.throttling
+        else -> null
+    }
 
 internal fun shouldUseNeutralThermalStatus(thermal: ThermalState): Boolean =
     !thermal.isThrottling &&
