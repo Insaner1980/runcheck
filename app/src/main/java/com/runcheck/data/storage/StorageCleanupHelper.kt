@@ -1,7 +1,6 @@
 package com.runcheck.data.storage
 
 import android.app.PendingIntent
-import android.app.RecoverableSecurityException
 import android.content.Context
 import android.net.Uri
 import android.os.Build
@@ -53,13 +52,15 @@ class StorageCleanupHelper
                         if (context.contentResolver.delete(uri, null, null) > 0) {
                             deletedUris += uriString
                         }
-                    } catch (error: RecoverableSecurityException) {
-                        // API 29: non-owned file needs per-URI confirmation — skip and continue
-                        skippedCount++
-                        ReleaseSafeLog.warn(TAG, "Skipping non-owned file (API 29 scoped storage)", error)
                     } catch (error: SecurityException) {
                         skippedCount++
-                        ReleaseSafeLog.warn(TAG, "Skipping file due to security restriction", error)
+                        val message =
+                            if (isRecoverableDeleteSecurityException(error)) {
+                                "Skipping non-owned file (API 29 scoped storage)"
+                            } else {
+                                "Skipping file due to security restriction"
+                            }
+                        ReleaseSafeLog.warn(TAG, message, error)
                     }
                 }
                 if (deletedUris.isEmpty() && skippedCount > 0) {
@@ -73,5 +74,11 @@ class StorageCleanupHelper
 
         private companion object {
             private const val TAG = "StorageCleanupHelper"
+            private const val RECOVERABLE_SECURITY_EXCEPTION =
+                "android.app.RecoverableSecurityException"
         }
+
+        private fun isRecoverableDeleteSecurityException(error: SecurityException): Boolean =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                error.javaClass.name == RECOVERABLE_SECURITY_EXCEPTION
     }

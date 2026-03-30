@@ -20,6 +20,7 @@ import com.runcheck.pro.ProManager
 import com.runcheck.pro.ProStatus
 import com.runcheck.pro.TrialManager
 import com.runcheck.ui.common.messageOr
+import com.runcheck.util.getBooleanOrDefault
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -58,7 +59,7 @@ class HomeViewModel
 
         // Persisted across process death via SavedStateHandle
         private var expirationModalShownThisSession: Boolean
-            get() = savedStateHandle.get<Boolean>(KEY_EXPIRATION_MODAL_SHOWN) ?: false
+            get() = savedStateHandle.getBooleanOrDefault(KEY_EXPIRATION_MODAL_SHOWN, false)
             set(value) {
                 savedStateHandle[KEY_EXPIRATION_MODAL_SHOWN] = value
             }

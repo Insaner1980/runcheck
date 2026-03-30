@@ -24,6 +24,7 @@ import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
 import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.scoring.HealthScoreCalculator
+import com.runcheck.util.enumValueOrDefault
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -242,8 +243,3 @@ private fun classifySignal(
         }
     }
 }
-
-private inline fun <reified T : Enum<T>> enumValueOrDefault(
-    value: String,
-    default: T,
-): T = runCatching { enumValueOf<T>(value) }.getOrDefault(default)

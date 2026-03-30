@@ -8,10 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +25,7 @@ import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun GridCard(
@@ -43,6 +41,7 @@ fun GridCard(
     iconBackgroundColor: Color = Color.Unspecified,
     locked: Boolean = false,
 ) {
+    val tokens = MaterialTheme.uiTokens
     val lockedStateDesc = if (locked) stringResource(R.string.a11y_locked_pro_feature) else null
     val hasStatus = statusColor != Color.Unspecified
     val resolvedIconBg =
@@ -81,27 +80,20 @@ fun GridCard(
                             bottom = MaterialTheme.spacing.base,
                         ),
             ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .size(36.dp)
-                            .background(color = resolvedIconBg, shape = CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = iconTint,
-                    )
-                }
+                IconCircle(
+                    icon = icon,
+                    tint = iconTint,
+                    backgroundColor = resolvedIconBg,
+                    size = 36.dp,
+                    iconSize = tokens.iconLarge,
+                )
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xxs))
                 Text(
                     text = subtitle,
                     style =
@@ -111,7 +103,7 @@ fun GridCard(
                     color = subtitleColor,
                 )
                 if (statusLabel != null) {
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xxs))
                     Text(
                         text = statusLabel,
                         style = MaterialTheme.typography.labelMedium,
@@ -125,7 +117,7 @@ fun GridCard(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.18f)),
+                            .background(MaterialTheme.colorScheme.scrim.copy(alpha = tokens.lockScrimAlpha)),
                 )
                 ProBadgePill(
                     modifier =

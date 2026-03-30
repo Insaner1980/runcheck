@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Icon
@@ -15,8 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.runcheck.R
+import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun ProBadgePill(
@@ -25,20 +25,25 @@ fun ProBadgePill(
 ) {
     val badgeText = text ?: stringResource(R.string.pro_feature_badge)
     val accentColor = MaterialTheme.colorScheme.primary
+    val tokens = MaterialTheme.uiTokens
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.small,
-        color = accentColor.copy(alpha = 0.12f),
+        color = accentColor.copy(alpha = tokens.proBadgeBackgroundAlpha),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier =
+                Modifier.padding(
+                    horizontal = tokens.proBadgeHorizontalPadding,
+                    vertical = tokens.proBadgeVerticalPadding,
+                ),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = Icons.Outlined.Lock,
                 contentDescription = null,
-                modifier = Modifier.size(12.dp),
+                modifier = Modifier.size(tokens.iconTiny),
                 tint = accentColor,
             )
             Text(

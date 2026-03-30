@@ -7,7 +7,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,11 +23,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.domain.model.Confidence
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.statusColors
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun ConfidenceBadge(
@@ -37,6 +36,7 @@ fun ConfidenceBadge(
 ) {
     val statusColors = MaterialTheme.statusColors
     val reducedMotion = MaterialTheme.reducedMotion
+    val tokens = MaterialTheme.uiTokens
 
     val backgroundColor =
         when (confidence) {
@@ -84,7 +84,10 @@ fun ConfidenceBadge(
                     contentDescription = label
                     role = Role.Image
                 }.background(backgroundColor, MaterialTheme.shapes.extraLarge)
-                .padding(horizontal = 12.dp, vertical = 4.dp),
+                .padding(
+                    horizontal = tokens.badgeHorizontalPadding,
+                    vertical = tokens.badgeVerticalPadding,
+                ),
         contentAlignment = Alignment.Center,
     ) {
         Text(

@@ -60,15 +60,9 @@ class ThermalDataSource
 
         fun getThermalHeadroom(): Flow<Float?> =
             flow {
-                if (supportsThermalHeadroom(Build.VERSION.SDK_INT)) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     while (true) {
-                        val headroom =
-                            try {
-                                val value = powerManager.getThermalHeadroom(HEADROOM_FORECAST_SECONDS)
-                                if (value.isNaN() || value < 0f) null else value
-                            } catch (_: Exception) {
-                                null
-                            }
+                        val headroom = readThermalHeadroomSafely()
                         emit(headroom)
                         delay(POLLING_INTERVAL_MS)
                     }
@@ -79,7 +73,7 @@ class ThermalDataSource
 
         fun getThermalStatus(): Flow<ThermalStatus> =
             flow {
-                if (!supportsThermalStatus(Build.VERSION.SDK_INT)) {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                     emit(ThermalStatus.NONE)
                     return@flow
                 }
@@ -114,6 +108,15 @@ class ThermalDataSource
                 }
             }.collect { emit(it) }
         }
+
+        @RequiresApi(Build.VERSION_CODES.R)
+        private fun readThermalHeadroomSafely(): Float? =
+            try {
+                val value = powerManager.getThermalHeadroom(HEADROOM_FORECAST_SECONDS)
+                if (value.isNaN() || value < 0f) null else value
+            } catch (_: Exception) {
+                null
+            }
     }
 
 internal fun supportsThermalStatus(apiLevel: Int): Boolean = apiLevel >= Build.VERSION_CODES.Q

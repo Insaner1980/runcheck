@@ -67,7 +67,11 @@ android {
                 "SENTRY_DSN",
                 "\"https://34bc2ad48c87a2c7a666076de44cf0ae@o4511121418878976.ingest.de.sentry.io/4511121470193744\"",
             )
-            val debugLatencyHost = providers.environmentVariable("RUNCHECK_LATENCY_HOST").getOrElse("locate.measurementlab.net")
+            val debugLatencyHost =
+                providers
+                    .environmentVariable(
+                        "RUNCHECK_LATENCY_HOST",
+                    ).getOrElse("locate.measurementlab.net")
             val debugLatencyPort =
                 providers
                     .environmentVariable("RUNCHECK_LATENCY_PORT")

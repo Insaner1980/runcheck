@@ -11,8 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import com.runcheck.ui.components.info.InfoIcon
+import com.runcheck.ui.theme.spacing
 
 @Composable
 fun MetricPill(
@@ -33,7 +33,7 @@ fun MetricPill(
                 InfoIcon(onClick = onInfoClick)
             }
         }
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xxs))
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,

@@ -1,6 +1,5 @@
 package com.runcheck.ui.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,10 +21,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
 import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
+import com.runcheck.ui.theme.runcheckOutlinedCardBorder
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun ActionCard(
@@ -37,14 +37,11 @@ fun ActionCard(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
 ) {
+    val tokens = MaterialTheme.uiTokens
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = runcheckCardColors(),
-        border =
-            BorderStroke(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-            ),
+        border = runcheckOutlinedCardBorder(),
         elevation = runcheckCardElevation(),
         shape = MaterialTheme.shapes.large,
     ) {
@@ -58,12 +55,12 @@ fun ActionCard(
             IconCircle(
                 icon = icon,
                 tint = iconTint,
-                size = 40.dp,
+                size = tokens.iconCircle - MaterialTheme.spacing.xs,
             )
             Spacer(modifier = Modifier.width(MaterialTheme.spacing.sm))
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xxs),
             ) {
                 Text(
                     text = title,
@@ -83,7 +80,7 @@ fun ActionCard(
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(tokens.iconMedium),
                 )
             }
         }

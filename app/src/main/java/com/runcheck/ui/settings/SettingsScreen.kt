@@ -80,8 +80,9 @@ import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPill
-import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoSheetContent
+import com.runcheck.ui.components.info.InfoSheetHost
+import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.runcheckCardColors
@@ -130,7 +131,7 @@ fun SettingsScreen(
     // Track whether the permission request was triggered by the live-notification toggle
     var permissionRequestedForLive by remember { mutableStateOf(false) }
     var showNotifPermissionDeniedDialog by rememberSaveable { mutableStateOf(false) }
-    var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
+    var activeInfoSheet by rememberInfoSheetState()
 
     LifecycleResumeEffect(Unit) {
         hasNotificationPermission = !notificationsPermissionRequired ||
@@ -457,9 +458,7 @@ fun SettingsScreen(
                         label = stringResource(R.string.settings_threshold_battery),
                         value = uiState.preferences.alertBatteryThreshold,
                         allowedValues = LOW_BATTERY_THRESHOLD_VALUES,
-                        valueLabelFor = { current ->
-                            context.getString(R.string.value_percent, current)
-                        },
+                        valueLabelFor = { current -> "$current%" },
                         onValueChange = { viewModel.setAlertBatteryThreshold(it) },
                     )
                     SettingsDivider()
@@ -482,9 +481,7 @@ fun SettingsScreen(
                         label = stringResource(R.string.settings_threshold_storage),
                         value = uiState.preferences.alertStorageThreshold,
                         allowedValues = LOW_STORAGE_THRESHOLD_VALUES,
-                        valueLabelFor = { current ->
-                            context.getString(R.string.value_percent, current)
-                        },
+                        valueLabelFor = { current -> "$current%" },
                         onValueChange = { viewModel.setAlertStorageThreshold(it) },
                     )
 
@@ -537,6 +534,7 @@ fun SettingsScreen(
 
                 // ── DATA ───────────────────────────────────────────────────
                 SettingsCard {
+                    val exportingDescription = stringResource(R.string.a11y_exporting_data)
                     CardSectionTitle(text = stringResource(R.string.settings_data_section))
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
 
@@ -572,7 +570,7 @@ fun SettingsScreen(
                                     Modifier
                                         .size(18.dp)
                                         .semantics {
-                                            contentDescription = context.getString(R.string.a11y_exporting_data)
+                                            contentDescription = exportingDescription
                                         },
                                 strokeWidth = 2.dp,
                             )
@@ -653,358 +651,430 @@ fun SettingsScreen(
                     }
                 }
 
-                // ── DEVICE ─────────────────────────────────────────────────
-                uiState.deviceProfile?.let { profile ->
-                    SettingsCard {
-                        CardSectionTitle(text = stringResource(R.string.settings_measurement_info))
-                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                        Text(
-                            text = stringResource(R.string.settings_device_model, profile.manufacturer, profile.model),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                        Text(
-                            text =
-                                stringResource(
-                                    if (profile.currentNowReliable) {
-                                        R.string.settings_current_support_summary_reliable
-                                    } else {
-                                        R.string.settings_current_support_summary_unreliable
-                                    },
-                                ),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
-                            verticalAlignment = Alignment.Top,
-                        ) {
-                            MetricPill(
-                                label = stringResource(R.string.settings_api_level_label),
-                                value = androidVersionName(profile.apiLevel),
-                                modifier = Modifier.weight(1f),
-                            )
-                            MetricPill(
-                                label = stringResource(R.string.settings_current_reading_label),
-                                value =
-                                    stringResource(
-                                        if (profile.currentNowReliable) {
-                                            R.string.settings_measurement_reliable
-                                        } else {
-                                            R.string.settings_measurement_unreliable
-                                        },
-                                    ),
-                                valueColor =
-                                    if (profile.currentNowReliable) {
-                                        MaterialTheme.statusColors.healthy
-                                    } else {
-                                        MaterialTheme.colorScheme.error
-                                    },
-                                modifier = Modifier.weight(1f),
-                                onInfoClick = { activeInfoSheet = "currentReading" },
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
-                            verticalAlignment = Alignment.Top,
-                        ) {
-                            MetricPill(
-                                label = stringResource(R.string.settings_cycle_count_label),
-                                value =
-                                    stringResource(
-                                        if (profile.cycleCountAvailable) {
-                                            R.string.settings_measurement_available
-                                        } else {
-                                            R.string.settings_measurement_not_available
-                                        },
-                                    ),
-                                modifier = Modifier.weight(1f),
-                                onInfoClick = { activeInfoSheet = "cycleCount" },
-                            )
-                            MetricPill(
-                                label = stringResource(R.string.settings_thermal_zones_label),
-                                value = profile.thermalZonesAvailable.size.toString(),
-                                modifier = Modifier.weight(1f),
-                                onInfoClick = { activeInfoSheet = "thermalZones" },
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
-                            verticalAlignment = Alignment.Top,
-                        ) {
-                            val memoryInfo =
-                                remember {
-                                    val activityManager =
-                                        context.getSystemService(
-                                            android.app.ActivityManager::class.java,
-                                        )
-                                    android.app.ActivityManager
-                                        .MemoryInfo()
-                                        .also { activityManager?.getMemoryInfo(it) }
-                                }
-                            MetricPill(
-                                label = stringResource(R.string.settings_ram_label),
-                                value = formatStorageSize(context, memoryInfo.totalMem),
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                    }
-                }
+                SettingsMeasurementSection(
+                    uiState = uiState,
+                    context = context,
+                    onInfoClick = { activeInfoSheet = it },
+                )
 
-                // ── ABOUT ──────────────────────────────────────────────────
-                SettingsCard {
-                    CardSectionTitle(text = stringResource(R.string.settings_about))
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                    Text(
-                        text =
-                            stringResource(
-                                R.string.settings_version,
-                                "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
-                            ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    SettingsDivider()
-                    SettingsNavigationRow(
-                        label = stringResource(R.string.settings_rate),
-                        onClick = {
-                            try {
-                                context.startActivity(
-                                    Intent(
-                                        Intent.ACTION_VIEW,
-                                        Uri.parse("market://details?id=${context.packageName}"),
-                                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                                )
-                            } catch (_: Exception) {
-                                openExternalUri(
-                                    context = context,
-                                    uri = context.getString(R.string.settings_play_store_web_url),
-                                )
-                            }
-                        },
-                    )
-                    SettingsDivider()
-                    SettingsNavigationRow(
-                        label = stringResource(R.string.settings_privacy_policy),
-                        onClick = {
-                            openExternalUri(
-                                context = context,
-                                uri = context.getString(R.string.settings_privacy_policy_url),
-                            )
-                        },
-                    )
-                    SettingsDivider()
-                    SettingsNavigationRow(
-                        label = stringResource(R.string.settings_feedback),
-                        onClick = {
-                            try {
-                                context.startActivity(
-                                    Intent(Intent.ACTION_SENDTO).apply {
-                                        data = Uri.parse("mailto:")
-                                        putExtra(
-                                            Intent.EXTRA_SUBJECT,
-                                            context.getString(R.string.feedback_email_subject),
-                                        )
-                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    },
-                                )
-                            } catch (e: android.content.ActivityNotFoundException) {
-                                ReleaseSafeLog.warn(TAG, "Failed to open email client for feedback", e)
-                            }
-                        },
-                    )
-                }
+                SettingsAboutSection(context = context)
 
-                // ── Side effects ───────────────────────────────────────────
-                uiState.billingStatus?.let { status ->
-                    LaunchedEffect(status) {
-                        Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
-                        viewModel.clearBillingStatus()
-                    }
-                }
-                uiState.exportStatus?.let { status ->
-                    LaunchedEffect(status) {
-                        Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
-                        viewModel.clearExportStatus()
-                    }
-                }
-                uiState.clearDataStatus?.let { status ->
-                    LaunchedEffect(status) {
-                        Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
-                        viewModel.clearClearDataStatus()
-                    }
-                }
-                uiState.exportUris?.let { exportUriStrings ->
-                    LaunchedEffect(exportUriStrings) {
-                        val parsedUris = exportUriStrings.map { Uri.parse(it) }
-                        val shareIntent =
-                            if (parsedUris.size == 1) {
-                                Intent(Intent.ACTION_SEND).apply {
-                                    type = "text/csv"
-                                    putExtra(Intent.EXTRA_STREAM, parsedUris.first())
-                                    clipData = android.content.ClipData.newRawUri(null, parsedUris.first())
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                }
-                            } else {
-                                Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                                    type = "text/csv"
-                                    putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(parsedUris))
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                }
-                            }
-                        context.startActivity(
-                            Intent.createChooser(shareIntent, context.getString(R.string.settings_export_share_title)),
-                        )
-                        viewModel.clearExportUris()
-                    }
-                }
-                uiState.errorMessage?.let { message ->
-                    LaunchedEffect(message) {
-                        Toast.makeText(context, message.resolve(context), Toast.LENGTH_SHORT).show()
-                        viewModel.clearErrorMessage()
-                    }
-                }
+                SettingsTransientEffects(
+                    uiState = uiState,
+                    context = context,
+                    onClearBillingStatus = { viewModel.clearBillingStatus() },
+                    onClearExportStatus = { viewModel.clearExportStatus() },
+                    onClearClearDataStatus = { viewModel.clearClearDataStatus() },
+                    onClearExportUris = { viewModel.clearExportUris() },
+                    onClearErrorMessage = { viewModel.clearErrorMessage() },
+                )
 
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
             }
         }
     }
 
-    // Reset thresholds confirmation dialog
+    InfoSheetHost(
+        activeKey = activeInfoSheet,
+        onDismiss = { activeInfoSheet = null },
+        resolveContent = ::resolveSettingsInfoContent,
+    )
+    val resetTipsDoneMessage = stringResource(R.string.settings_reset_tips_done)
+
+    SettingsDialogs(
+        context = context,
+        showResetThresholdsDialog = showResetThresholdsDialog,
+        onDismissResetThresholds = { showResetThresholdsDialog = false },
+        onConfirmResetThresholds = { viewModel.resetAlertThresholds() },
+        showResetTipsDialog = showResetTipsDialog,
+        onDismissResetTips = { showResetTipsDialog = false },
+        onConfirmResetTips = {
+            viewModel.resetTips()
+            Toast
+                .makeText(
+                    context,
+                    resetTipsDoneMessage,
+                    Toast.LENGTH_SHORT,
+                ).show()
+        },
+        showClearSpeedTestsDialog = showClearSpeedTestsDialog,
+        onDismissClearSpeedTests = { showClearSpeedTestsDialog = false },
+        onConfirmClearSpeedTests = { viewModel.clearSpeedTests() },
+        showNotifPermissionDeniedDialog = showNotifPermissionDeniedDialog,
+        onDismissNotifPermissionDenied = { showNotifPermissionDeniedDialog = false },
+        onOpenNotificationSettings = {
+            context.startActivity(
+                Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                    putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                },
+            )
+        },
+        showClearDialog = showClearDialog,
+        onDismissClearDialog = { showClearDialog = false },
+        onConfirmClearDialog = { viewModel.clearAllData() },
+    )
+}
+
+@Composable
+private fun SettingsMeasurementSection(
+    uiState: SettingsUiState,
+    context: android.content.Context,
+    onInfoClick: (String) -> Unit,
+) {
+    uiState.deviceProfile?.let { profile ->
+        SettingsCard {
+            CardSectionTitle(text = stringResource(R.string.settings_measurement_info))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+            Text(
+                text = stringResource(R.string.settings_device_model, profile.manufacturer, profile.model),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+            Text(
+                text =
+                    stringResource(
+                        if (profile.currentNowReliable) {
+                            R.string.settings_current_support_summary_reliable
+                        } else {
+                            R.string.settings_current_support_summary_unreliable
+                        },
+                    ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
+                verticalAlignment = Alignment.Top,
+            ) {
+                MetricPill(
+                    label = stringResource(R.string.settings_api_level_label),
+                    value = androidVersionName(profile.apiLevel),
+                    modifier = Modifier.weight(1f),
+                )
+                MetricPill(
+                    label = stringResource(R.string.settings_current_reading_label),
+                    value =
+                        stringResource(
+                            if (profile.currentNowReliable) {
+                                R.string.settings_measurement_reliable
+                            } else {
+                                R.string.settings_measurement_unreliable
+                            },
+                        ),
+                    valueColor =
+                        if (profile.currentNowReliable) {
+                            MaterialTheme.statusColors.healthy
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("currentReading") },
+                )
+            }
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
+                verticalAlignment = Alignment.Top,
+            ) {
+                MetricPill(
+                    label = stringResource(R.string.settings_cycle_count_label),
+                    value =
+                        stringResource(
+                            if (profile.cycleCountAvailable) {
+                                R.string.settings_measurement_available
+                            } else {
+                                R.string.settings_measurement_not_available
+                            },
+                        ),
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("cycleCount") },
+                )
+                MetricPill(
+                    label = stringResource(R.string.settings_thermal_zones_label),
+                    value = profile.thermalZonesAvailable.size.toString(),
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("thermalZones") },
+                )
+            }
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
+                verticalAlignment = Alignment.Top,
+            ) {
+                val memoryInfo =
+                    remember {
+                        val activityManager =
+                            context.getSystemService(
+                                android.app.ActivityManager::class.java,
+                            )
+                        android.app.ActivityManager
+                            .MemoryInfo()
+                            .also { activityManager?.getMemoryInfo(it) }
+                    }
+                MetricPill(
+                    label = stringResource(R.string.settings_ram_label),
+                    value = formatStorageSize(context, memoryInfo.totalMem),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsAboutSection(context: android.content.Context) {
+    SettingsCard {
+        CardSectionTitle(text = stringResource(R.string.settings_about))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+        Text(
+            text =
+                stringResource(
+                    R.string.settings_version,
+                    "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        SettingsDivider()
+        SettingsNavigationRow(
+            label = stringResource(R.string.settings_rate),
+            onClick = {
+                try {
+                    context.startActivity(
+                        Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("market://details?id=${context.packageName}"),
+                        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    )
+                } catch (_: Exception) {
+                    openExternalUri(
+                        context = context,
+                        uri = context.getString(R.string.settings_play_store_web_url),
+                    )
+                }
+            },
+        )
+        SettingsDivider()
+        SettingsNavigationRow(
+            label = stringResource(R.string.settings_privacy_policy),
+            onClick = {
+                openExternalUri(
+                    context = context,
+                    uri = context.getString(R.string.settings_privacy_policy_url),
+                )
+            },
+        )
+        SettingsDivider()
+        SettingsNavigationRow(
+            label = stringResource(R.string.settings_feedback),
+            onClick = {
+                try {
+                    context.startActivity(
+                        Intent(Intent.ACTION_SENDTO).apply {
+                            data = Uri.parse("mailto:")
+                            putExtra(
+                                Intent.EXTRA_SUBJECT,
+                                context.getString(R.string.feedback_email_subject),
+                            )
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        },
+                    )
+                } catch (e: android.content.ActivityNotFoundException) {
+                    ReleaseSafeLog.warn(TAG, "Failed to open email client for feedback", e)
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun SettingsTransientEffects(
+    uiState: SettingsUiState,
+    context: android.content.Context,
+    onClearBillingStatus: () -> Unit,
+    onClearExportStatus: () -> Unit,
+    onClearClearDataStatus: () -> Unit,
+    onClearExportUris: () -> Unit,
+    onClearErrorMessage: () -> Unit,
+) {
+    uiState.billingStatus?.let { status ->
+        LaunchedEffect(status) {
+            Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
+            onClearBillingStatus()
+        }
+    }
+    uiState.exportStatus?.let { status ->
+        LaunchedEffect(status) {
+            Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
+            onClearExportStatus()
+        }
+    }
+    uiState.clearDataStatus?.let { status ->
+        LaunchedEffect(status) {
+            Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
+            onClearClearDataStatus()
+        }
+    }
+    uiState.exportUris?.let { exportUriStrings ->
+        LaunchedEffect(exportUriStrings) {
+            val parsedUris = exportUriStrings.map { Uri.parse(it) }
+            val shareIntent =
+                if (parsedUris.size == 1) {
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = "text/csv"
+                        putExtra(Intent.EXTRA_STREAM, parsedUris.first())
+                        clipData = android.content.ClipData.newRawUri(null, parsedUris.first())
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                } else {
+                    Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                        type = "text/csv"
+                        putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(parsedUris))
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                }
+            context.startActivity(
+                Intent.createChooser(shareIntent, context.getString(R.string.settings_export_share_title)),
+            )
+            onClearExportUris()
+        }
+    }
+    uiState.errorMessage?.let { message ->
+        LaunchedEffect(message) {
+            Toast.makeText(context, message.resolve(context), Toast.LENGTH_SHORT).show()
+            onClearErrorMessage()
+        }
+    }
+}
+
+@Composable
+private fun SettingsDialogs(
+    context: android.content.Context,
+    showResetThresholdsDialog: Boolean,
+    onDismissResetThresholds: () -> Unit,
+    onConfirmResetThresholds: () -> Unit,
+    showResetTipsDialog: Boolean,
+    onDismissResetTips: () -> Unit,
+    onConfirmResetTips: () -> Unit,
+    showClearSpeedTestsDialog: Boolean,
+    onDismissClearSpeedTests: () -> Unit,
+    onConfirmClearSpeedTests: () -> Unit,
+    showNotifPermissionDeniedDialog: Boolean,
+    onDismissNotifPermissionDenied: () -> Unit,
+    onOpenNotificationSettings: () -> Unit,
+    showClearDialog: Boolean,
+    onDismissClearDialog: () -> Unit,
+    onConfirmClearDialog: () -> Unit,
+) {
     if (showResetThresholdsDialog) {
         AlertDialog(
-            onDismissRequest = { showResetThresholdsDialog = false },
+            onDismissRequest = onDismissResetThresholds,
             shape = MaterialTheme.shapes.large,
             title = { Text(stringResource(R.string.settings_reset_thresholds_confirm_title)) },
             text = { Text(stringResource(R.string.settings_reset_thresholds_confirm_message)) },
             confirmButton = {
                 Button(
                     onClick = {
-                        showResetThresholdsDialog = false
-                        viewModel.resetAlertThresholds()
+                        onDismissResetThresholds()
+                        onConfirmResetThresholds()
                     },
                 ) { Text(stringResource(R.string.settings_reset_thresholds)) }
             },
             dismissButton = {
-                TextButton(onClick = { showResetThresholdsDialog = false }) {
+                TextButton(onClick = onDismissResetThresholds) {
                     Text(stringResource(R.string.common_cancel))
                 }
             },
         )
     }
 
-    // Reset tips confirmation dialog
     if (showResetTipsDialog) {
         AlertDialog(
-            onDismissRequest = { showResetTipsDialog = false },
+            onDismissRequest = onDismissResetTips,
             shape = MaterialTheme.shapes.large,
             title = { Text(stringResource(R.string.settings_reset_tips_confirm_title)) },
             text = { Text(stringResource(R.string.settings_reset_tips_confirm_message)) },
             confirmButton = {
                 Button(
                     onClick = {
-                        showResetTipsDialog = false
-                        viewModel.resetTips()
-                        Toast
-                            .makeText(
-                                context,
-                                context.getString(R.string.settings_reset_tips_done),
-                                Toast.LENGTH_SHORT,
-                            ).show()
+                        onDismissResetTips()
+                        onConfirmResetTips()
                     },
                 ) { Text(stringResource(R.string.settings_reset_tips)) }
             },
             dismissButton = {
-                TextButton(onClick = { showResetTipsDialog = false }) {
+                TextButton(onClick = onDismissResetTips) {
                     Text(stringResource(R.string.common_cancel))
                 }
             },
         )
     }
 
-    // Clear speed tests confirmation dialog
     if (showClearSpeedTestsDialog) {
         AlertDialog(
-            onDismissRequest = { showClearSpeedTestsDialog = false },
+            onDismissRequest = onDismissClearSpeedTests,
             shape = MaterialTheme.shapes.large,
             title = { Text(stringResource(R.string.settings_clear_speed_tests_confirm_title)) },
             text = { Text(stringResource(R.string.settings_clear_speed_tests_confirm_message)) },
             confirmButton = {
                 Button(
                     onClick = {
-                        showClearSpeedTestsDialog = false
-                        viewModel.clearSpeedTests()
+                        onDismissClearSpeedTests()
+                        onConfirmClearSpeedTests()
                     },
                 ) { Text(stringResource(R.string.settings_clear_action)) }
             },
             dismissButton = {
-                TextButton(onClick = { showClearSpeedTestsDialog = false }) {
+                TextButton(onClick = onDismissClearSpeedTests) {
                     Text(stringResource(R.string.common_cancel))
                 }
             },
         )
     }
 
-    // Notification permission permanently denied dialog
     if (showNotifPermissionDeniedDialog) {
         AlertDialog(
-            onDismissRequest = { showNotifPermissionDeniedDialog = false },
+            onDismissRequest = onDismissNotifPermissionDenied,
             shape = MaterialTheme.shapes.large,
             title = { Text(stringResource(R.string.notification_permission_denied_title)) },
             text = { Text(stringResource(R.string.notification_permission_denied_message)) },
             confirmButton = {
                 Button(
                     onClick = {
-                        showNotifPermissionDeniedDialog = false
-                        context.startActivity(
-                            Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
-                            },
-                        )
+                        onDismissNotifPermissionDenied()
+                        onOpenNotificationSettings()
                     },
                 ) { Text(stringResource(R.string.notification_permission_denied_open_settings)) }
             },
             dismissButton = {
-                TextButton(onClick = { showNotifPermissionDeniedDialog = false }) {
+                TextButton(onClick = onDismissNotifPermissionDenied) {
                     Text(stringResource(R.string.common_cancel))
                 }
             },
         )
     }
 
-    // Measurement info bottom sheets
-    val infoContent = activeInfoSheet?.let { resolveSettingsInfoContent(it) }
-    if (infoContent != null) {
-        InfoBottomSheet(
-            content = infoContent,
-            onDismiss = { activeInfoSheet = null },
-        )
-    }
-
-    // Clear all data confirmation dialog
     if (showClearDialog) {
         AlertDialog(
-            onDismissRequest = { showClearDialog = false },
+            onDismissRequest = onDismissClearDialog,
             shape = MaterialTheme.shapes.large,
             title = { Text(stringResource(R.string.settings_clear_confirm_title)) },
             text = { Text(stringResource(R.string.settings_clear_confirm_message)) },
             confirmButton = {
                 Button(
                     onClick = {
-                        showClearDialog = false
-                        viewModel.clearAllData()
+                        onDismissClearDialog()
+                        onConfirmClearDialog()
                     },
                 ) { Text(stringResource(R.string.settings_clear_action)) }
             },
             dismissButton = {
-                TextButton(onClick = { showClearDialog = false }) {
+                TextButton(onClick = onDismissClearDialog) {
                     Text(stringResource(R.string.common_cancel))
                 }
             },
@@ -1108,13 +1178,13 @@ private fun SettingsSlider(
     valueLabelFor: (Int) -> String,
     onValueChange: (Int) -> Unit,
 ) {
-    val context = LocalContext.current
     var sliderValue by remember(value, allowedValues) {
         mutableFloatStateOf(allowedValues.indexForValue(value).toFloat())
     }
     val currentIndex = sliderValue.roundToInt().coerceIn(0, allowedValues.lastIndex)
     val currentValue = allowedValues[currentIndex]
     val valueLabel = valueLabelFor(currentValue)
+    val sliderDescription = stringResource(R.string.value_label_colon, label, valueLabel)
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -1140,7 +1210,7 @@ private fun SettingsSlider(
             steps = (allowedValues.size - 2).coerceAtLeast(0),
             modifier =
                 Modifier.semantics {
-                    contentDescription = context.getString(R.string.value_label_colon, label, valueLabel)
+                    contentDescription = sliderDescription
                 },
             colors =
                 SliderDefaults.colors(

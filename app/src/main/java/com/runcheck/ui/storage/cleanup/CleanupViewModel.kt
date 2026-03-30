@@ -1,6 +1,5 @@
 package com.runcheck.ui.storage.cleanup
 
-import android.app.RecoverableSecurityException
 import android.os.Build
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -17,6 +16,8 @@ import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.common.UiText
 import com.runcheck.util.ReleaseSafeLog
+import com.runcheck.util.getEnumOrDefault
+import com.runcheck.util.getIntOrDefault
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -41,11 +42,7 @@ class CleanupViewModel
         private val isProUser: IsProUserUseCase,
     ) : ViewModel() {
         val cleanupType: CleanupType =
-            try {
-                CleanupType.valueOf(savedStateHandle.get<String>("type") ?: "LARGE_FILES")
-            } catch (_: Exception) {
-                CleanupType.LARGE_FILES
-            }
+            savedStateHandle.getEnumOrDefault("type", CleanupType.LARGE_FILES)
 
         private val _uiState = MutableStateFlow<CleanupUiState>(CleanupUiState.Idle)
         val uiState: StateFlow<CleanupUiState> = _uiState.asStateFlow()
@@ -54,7 +51,7 @@ class CleanupViewModel
         val deleteRequestUris: SharedFlow<List<String>> = _deleteRequestUris.asSharedFlow()
 
         private var selectedFilter: Int
-            get() = savedStateHandle.get<Int>(SELECTED_FILTER_KEY) ?: cleanupType.defaultFilterIndex
+            get() = savedStateHandle.getIntOrDefault(SELECTED_FILTER_KEY, cleanupType.defaultFilterIndex)
             set(value) {
                 savedStateHandle[SELECTED_FILTER_KEY] = value
             }
@@ -268,11 +265,14 @@ class CleanupViewModel
                         ),
                     )
                 }
-            } catch (error: RecoverableSecurityException) {
-                ReleaseSafeLog.error("CleanupVM", "Delete permission denied (recoverable)", error)
-                restorePendingSelection(UiText.Resource(R.string.cleanup_delete_permission_error))
             } catch (error: SecurityException) {
-                ReleaseSafeLog.error("CleanupVM", "Delete permission denied", error)
+                val message =
+                    if (isRecoverableDeleteSecurityException(error)) {
+                        "Delete permission denied (recoverable)"
+                    } else {
+                        "Delete permission denied"
+                    }
+                ReleaseSafeLog.error("CleanupVM", message, error)
                 restorePendingSelection(UiText.Resource(R.string.cleanup_delete_permission_error))
             } catch (error: Exception) {
                 ReleaseSafeLog.error("CleanupVM", "Delete failed", error)
@@ -300,6 +300,8 @@ class CleanupViewModel
 
         private companion object {
             private const val SELECTED_FILTER_KEY = "cleanup_selected_filter"
+            private const val RECOVERABLE_SECURITY_EXCEPTION =
+                "android.app.RecoverableSecurityException"
         }
 
         private fun onDeleteSuccess(freedBytes: Long) {
@@ -311,6 +313,10 @@ class CleanupViewModel
                 scan() // re-scan to show updated list
             }
         }
+
+        private fun isRecoverableDeleteSecurityException(error: SecurityException): Boolean =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                error.javaClass.name == RECOVERABLE_SECURITY_EXCEPTION
 
         private fun emitResults() {
             val expandedByCategory =

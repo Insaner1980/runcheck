@@ -20,6 +20,8 @@ import com.runcheck.domain.usecase.RunSpeedTestUseCase
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.messageOrRes
 import com.runcheck.util.appendLiveValue
+import com.runcheck.util.getEnumOrDefault
+import com.runcheck.util.putEnum
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -65,13 +67,9 @@ class NetworkViewModel
         private var historyJob: Job? = null
         private var speedTestJob: Job? = null
         private var selectedHistoryPeriod: HistoryPeriod
-            get() =
-                savedStateHandle
-                    .get<String>(SELECTED_HISTORY_PERIOD_KEY)
-                    ?.let { value -> runCatching { HistoryPeriod.valueOf(value) }.getOrNull() }
-                    ?: HistoryPeriod.DAY
+            get() = savedStateHandle.getEnumOrDefault(SELECTED_HISTORY_PERIOD_KEY, HistoryPeriod.DAY)
             set(value) {
-                savedStateHandle[SELECTED_HISTORY_PERIOD_KEY] = value.name
+                savedStateHandle.putEnum(SELECTED_HISTORY_PERIOD_KEY, value)
             }
         private var historyNetworkJob: Job? = null
 
@@ -346,8 +344,7 @@ class NetworkViewModel
                         .flatMapLatest { isPro ->
                             val limit = if (isPro) PRO_HISTORY_LIMIT else FREE_HISTORY_LIMIT
                             getSpeedTestHistory(limit)
-                        }
-                        .catch { e ->
+                        }.catch { e ->
                             updateSpeedTestState {
                                 copy(
                                     historyLoadError = e.messageOrRes(R.string.common_error_generic),

@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun ListRow(
@@ -31,10 +32,11 @@ fun ListRow(
     onClick: (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
+    val tokens = MaterialTheme.uiTokens
     Row(
         modifier =
             modifier
-                .defaultMinSize(minHeight = 48.dp)
+                .defaultMinSize(minHeight = tokens.touchTarget)
                 .then(
                     if (onClick != null) {
                         Modifier.clickable(onClick = onClick)
@@ -49,7 +51,7 @@ fun ListRow(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(tokens.iconLarge),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.width(MaterialTheme.spacing.md))
@@ -81,8 +83,8 @@ fun ListRow(
                         contentDescription = null,
                         modifier =
                             Modifier
-                                .size(20.dp)
-                                .padding(2.dp),
+                                .size(tokens.iconLarge)
+                                .padding(MaterialTheme.spacing.xxs),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }

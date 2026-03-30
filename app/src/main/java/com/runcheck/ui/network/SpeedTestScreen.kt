@@ -41,7 +41,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -86,7 +85,8 @@ import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.SectionHeader
-import com.runcheck.ui.components.info.InfoBottomSheet
+import com.runcheck.ui.components.info.InfoSheetHost
+import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.RuncheckTheme
 import com.runcheck.ui.theme.numericFontFamily
@@ -107,6 +107,7 @@ fun SpeedTestScreen(
     val context = LocalContext.current
     val networkUiState by viewModel.networkUiState.collectAsStateWithLifecycle()
     val speedTestState by viewModel.speedTestState.collectAsStateWithLifecycle()
+    val loadingDescription = stringResource(R.string.a11y_loading)
 
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer =
@@ -143,7 +144,7 @@ fun SpeedTestScreen(
                             Modifier
                                 .fillMaxSize()
                                 .semantics {
-                                    contentDescription = context.getString(R.string.a11y_loading)
+                                    contentDescription = loadingDescription
                                     liveRegion = LiveRegionMode.Polite
                                 },
                         contentAlignment = Alignment.Center,
@@ -184,7 +185,7 @@ private fun SpeedTestContent(
     onConfirmCellular: () -> Unit,
     onDismissCellular: () -> Unit,
 ) {
-    var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
+    var activeInfoSheet by rememberInfoSheetState()
     val hasConnection = networkState.connectionType != ConnectionType.NONE
 
     Column(
@@ -257,20 +258,21 @@ private fun SpeedTestContent(
         )
     }
 
-    activeInfoSheet?.let { key ->
-        val content =
-            when (key) {
-                "download" -> SpeedTestInfoContent.download
-                "upload" -> SpeedTestInfoContent.upload
-                "ping" -> SpeedTestInfoContent.ping
-                "jitter" -> SpeedTestInfoContent.jitter
-                else -> null
-            }
-        content?.let {
-            InfoBottomSheet(content = it, onDismiss = { activeInfoSheet = null })
-        }
-    }
+    InfoSheetHost(
+        activeKey = activeInfoSheet,
+        onDismiss = { activeInfoSheet = null },
+        resolveContent = ::resolveSpeedTestInfoContent,
+    )
 }
+
+private fun resolveSpeedTestInfoContent(key: String) =
+    when (key) {
+        "download" -> SpeedTestInfoContent.download
+        "upload" -> SpeedTestInfoContent.upload
+        "ping" -> SpeedTestInfoContent.ping
+        "jitter" -> SpeedTestInfoContent.jitter
+        else -> null
+    }
 
 // ── Network context panel ────────────────────────────────────────────────────────
 

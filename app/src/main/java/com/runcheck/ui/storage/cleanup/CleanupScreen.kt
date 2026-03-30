@@ -164,6 +164,8 @@ private fun CleanupScreenBody(
     viewModel: CleanupViewModel,
 ) {
     val context = LocalContext.current
+    val scanningDescription = stringResource(R.string.a11y_scanning_files)
+    val deletingDescription = stringResource(R.string.a11y_deleting_files)
 
     Column(
         modifier =
@@ -201,7 +203,7 @@ private fun CleanupScreenBody(
                         Modifier
                             .fillMaxSize()
                             .semantics {
-                                contentDescription = context.getString(R.string.a11y_scanning_files)
+                                contentDescription = scanningDescription
                                 liveRegion =
                                     LiveRegionMode.Polite
                             },
@@ -329,7 +331,7 @@ private fun CleanupScreenBody(
                         Modifier
                             .fillMaxSize()
                             .semantics {
-                                contentDescription = context.getString(R.string.a11y_deleting_files)
+                                contentDescription = deletingDescription
                                 liveRegion =
                                     LiveRegionMode.Polite
                             },

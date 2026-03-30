@@ -73,7 +73,13 @@ class ProReactiveHistoryUseCasesTest {
             proStatusProvider.setPro(true)
             val emissions = emissionsDeferred.await()
 
-            assertEquals(listOf(emptyList<ThrottlingEvent>(), listOf(ThrottlingEvent(1L, 1_000L, "SEVERE", 43f, null, null, null))), emissions)
+            assertEquals(
+                listOf(
+                    emptyList<ThrottlingEvent>(),
+                    listOf(ThrottlingEvent(1L, 1_000L, "SEVERE", 43f, null, null, null)),
+                ),
+                emissions,
+            )
         }
 }
 

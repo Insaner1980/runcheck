@@ -84,10 +84,12 @@ import com.runcheck.ui.chart.historyPeriodLabel
 import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.chart.storageHistoryMetricLabel
 import com.runcheck.ui.chart.storageQualityZones
+import com.runcheck.ui.common.EnumFilterChipRow
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.findActivity
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.formatStorageSize
+import com.runcheck.ui.common.rememberSaveableEnumState
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ActionCard
 import com.runcheck.ui.components.CardSectionTitle
@@ -105,10 +107,11 @@ import com.runcheck.ui.components.SegmentData
 import com.runcheck.ui.components.SegmentedBar
 import com.runcheck.ui.components.SegmentedBarLegend
 import com.runcheck.ui.components.TrendChart
-import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.info.InfoSheetContent
+import com.runcheck.ui.components.info.InfoSheetHost
+import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.storage.MediaDeleteRequestResult
@@ -152,6 +155,9 @@ fun StorageDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val loadingDescription = stringResource(R.string.a11y_loading)
+    val cleanupDeleteFailed = stringResource(R.string.cleanup_delete_failed)
+    val cleanupDeletePermissionError = stringResource(R.string.cleanup_delete_permission_error)
     val activity = context.findActivity()
     var mediaPermissionRequested by rememberSaveable { mutableStateOf(false) }
     val requiredMediaPermissions = remember { requiredMediaPermissions() }
@@ -200,7 +206,12 @@ fun StorageDetailScreen(
                 }
 
                 is MediaDeleteRequestResult.Failed -> {
-                    viewModel.onTrashDeleteRequestFailed(context.getString(requestResult.messageRes))
+                    val message =
+                        when (requestResult.messageRes) {
+                            R.string.cleanup_delete_permission_error -> cleanupDeletePermissionError
+                            else -> cleanupDeleteFailed
+                        }
+                    viewModel.onTrashDeleteRequestFailed(message)
                 }
             }
         }
@@ -249,7 +260,7 @@ fun StorageDetailScreen(
                         Modifier
                             .fillMaxSize()
                             .semantics {
-                                contentDescription = context.getString(R.string.a11y_loading)
+                                contentDescription = loadingDescription
                                 liveRegion =
                                     LiveRegionMode.Polite
                             },
@@ -349,9 +360,8 @@ private fun StorageContent(
     onPeriodChange: (HistoryPeriod) -> Unit = {},
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
-    var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
+    var activeInfoSheet by rememberInfoSheetState()
     val storage = state.storageState
-    val context = LocalContext.current
 
     LaunchedEffect(state) {
         isRefreshing = false
@@ -374,124 +384,161 @@ private fun StorageContent(
         ) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-            // ── Hero card ──────────────────────────────────────────────
-            StorageHeroCard(
+            StorageOverviewSection(
+                state = state,
                 storage = storage,
-                liveUsagePercent = state.liveUsagePercent,
+                hasMediaPermissions = hasMediaPermissions,
+                shouldOpenMediaSettings = shouldOpenMediaSettings,
+                onRequestMediaPermissions = onRequestMediaPermissions,
+                onDismissInfoCard = onDismissInfoCard,
+                onNavigateToLearnArticle = onNavigateToLearnArticle,
                 onInfoClick = { activeInfoSheet = it },
             )
 
-            // ── Info cards ─────────────────────────────────────────────
-            if (storage.usagePercent > 75f) {
-                InfoCard(
-                    id = InfoCardCatalog.StorageFullSlowsPhone.id,
-                    headline = stringResource(InfoCardCatalog.StorageFullSlowsPhone.headlineRes),
-                    body = stringResource(InfoCardCatalog.StorageFullSlowsPhone.bodyRes),
-                    onDismiss = { onDismissInfoCard(it) },
-                    visible =
-                        InfoCardCatalog.StorageFullSlowsPhone.id !in state.dismissedInfoCards && state.showInfoCards,
-                    onLearnMore = {
-                        InfoCardCatalog
-                            .resolveLearnArticleId(
-                                InfoCardCatalog.StorageFullSlowsPhone,
-                            )?.let(onNavigateToLearnArticle)
-                    },
-                )
-            }
+            StorageToolsSection(
+                state = state,
+                storage = storage,
+                onPeriodChange = onPeriodChange,
+                onNavigateToCleanup = onNavigateToCleanup,
+                onEmptyTrash = onEmptyTrash,
+                onUpgradeToPro = onUpgradeToPro,
+            )
 
-            if (!hasMediaPermissions) {
-                StorageMediaPermissionCard(
-                    shouldOpenSettings = shouldOpenMediaSettings,
-                    onAction = onRequestMediaPermissions,
-                )
-            }
-
-            // ── Media Breakdown ────────────────────────────────────────
-            storage.mediaBreakdown?.let { breakdown ->
-                StorageMediaBreakdownCard(breakdown = breakdown, usedBytes = storage.usedBytes)
-            }
-
-            if (hasMediaPermissions && storage.mediaBreakdown != null) {
-                InfoCard(
-                    id = InfoCardCatalog.StorageOverview.id,
-                    headline = stringResource(InfoCardCatalog.StorageOverview.headlineRes),
-                    body = stringResource(InfoCardCatalog.StorageOverview.bodyRes),
-                    onDismiss = { onDismissInfoCard(it) },
-                    visible = InfoCardCatalog.StorageOverview.id !in state.dismissedInfoCards && state.showInfoCards,
-                    onLearnMore = {
-                        InfoCardCatalog
-                            .resolveLearnArticleId(
-                                InfoCardCatalog.StorageOverview,
-                            )?.let(onNavigateToLearnArticle)
-                    },
-                )
-            }
-
-            // ── History chart (Pro only) ─────────────────────────────
-            if (state.isPro) {
-                StorageHistoryCard(
-                    history = state.storageHistory,
-                    selectedPeriod = state.selectedHistoryPeriod,
-                    historyLoadError = state.historyLoadError,
-                    onPeriodChange = onPeriodChange,
-                )
-            }
-
-            // ── Cleanup Tools ──────────────────────────────────────────
-            if (state.isPro) {
-                StorageCleanupToolsSection(
-                    storage = storage,
-                    onNavigateToCleanup = onNavigateToCleanup,
-                    onEmptyTrash = onEmptyTrash,
-                )
-            } else {
-                SectionHeader(text = stringResource(R.string.storage_cleanup_tools))
-                ProFeatureCalloutCard(
-                    message = stringResource(R.string.pro_feature_cleanup_message),
-                    actionLabel = stringResource(R.string.pro_feature_upgrade_action),
-                    onAction = onUpgradeToPro,
-                )
-            }
-
-            // ── Details ────────────────────────────────────────────────
-            StorageDetailsCard(storage = storage, onInfoClick = { activeInfoSheet = it })
-
-            // ── SD Card ────────────────────────────────────────────────
-            if (storage.sdCardAvailable) {
-                StorageSdCardCard(storage = storage)
-            }
-
-            // ── Quick Actions ──────────────────────────────────────────
-            StorageQuickActionsCard()
-
-            RelatedArticlesSection(
-                articleIds =
-                    listOf(
-                        LearnArticleIds.STORAGE_SLOWDOWN,
-                        LearnArticleIds.STORAGE_BREAKDOWN,
-                    ),
-                onNavigateToArticle = onNavigateToLearnArticle,
+            StorageFooterSection(
+                storage = storage,
+                onNavigateToLearnArticle = onNavigateToLearnArticle,
+                onInfoClick = { activeInfoSheet = it },
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }
     }
 
-    StorageInfoSheet(
+    InfoSheetHost(
         activeKey = activeInfoSheet,
         onDismiss = { activeInfoSheet = null },
+        resolveContent = ::resolveStorageInfoContent,
     )
 }
 
 @Composable
-private fun StorageInfoSheet(
-    activeKey: String?,
-    onDismiss: () -> Unit,
+private fun StorageOverviewSection(
+    state: StorageUiState.Success,
+    storage: StorageState,
+    hasMediaPermissions: Boolean,
+    shouldOpenMediaSettings: Boolean,
+    onRequestMediaPermissions: () -> Unit,
+    onDismissInfoCard: (String) -> Unit,
+    onNavigateToLearnArticle: (String) -> Unit,
+    onInfoClick: (String) -> Unit,
 ) {
-    val infoContent = activeKey?.let { resolveStorageInfoContent(it) }
-    if (infoContent != null) {
-        InfoBottomSheet(content = infoContent, onDismiss = onDismiss)
+    StorageHeroCard(
+        storage = storage,
+        liveUsagePercent = state.liveUsagePercent,
+        onInfoClick = onInfoClick,
+    )
+
+    if (storage.usagePercent > 75f) {
+        InfoCard(
+            id = InfoCardCatalog.StorageFullSlowsPhone.id,
+            headline = stringResource(InfoCardCatalog.StorageFullSlowsPhone.headlineRes),
+            body = stringResource(InfoCardCatalog.StorageFullSlowsPhone.bodyRes),
+            onDismiss = onDismissInfoCard,
+            visible =
+                InfoCardCatalog.StorageFullSlowsPhone.id !in state.dismissedInfoCards && state.showInfoCards,
+            onLearnMore = {
+                InfoCardCatalog
+                    .resolveLearnArticleId(
+                        InfoCardCatalog.StorageFullSlowsPhone,
+                    )?.let(onNavigateToLearnArticle)
+            },
+        )
     }
+
+    if (!hasMediaPermissions) {
+        StorageMediaPermissionCard(
+            shouldOpenSettings = shouldOpenMediaSettings,
+            onAction = onRequestMediaPermissions,
+        )
+    }
+
+    storage.mediaBreakdown?.let { breakdown ->
+        StorageMediaBreakdownCard(breakdown = breakdown, usedBytes = storage.usedBytes)
+    }
+
+    if (hasMediaPermissions && storage.mediaBreakdown != null) {
+        InfoCard(
+            id = InfoCardCatalog.StorageOverview.id,
+            headline = stringResource(InfoCardCatalog.StorageOverview.headlineRes),
+            body = stringResource(InfoCardCatalog.StorageOverview.bodyRes),
+            onDismiss = onDismissInfoCard,
+            visible = InfoCardCatalog.StorageOverview.id !in state.dismissedInfoCards && state.showInfoCards,
+            onLearnMore = {
+                InfoCardCatalog
+                    .resolveLearnArticleId(
+                        InfoCardCatalog.StorageOverview,
+                    )?.let(onNavigateToLearnArticle)
+            },
+        )
+    }
+}
+
+@Composable
+private fun StorageToolsSection(
+    state: StorageUiState.Success,
+    storage: StorageState,
+    onPeriodChange: (HistoryPeriod) -> Unit,
+    onNavigateToCleanup: (com.runcheck.ui.storage.cleanup.CleanupType) -> Unit,
+    onEmptyTrash: () -> Unit,
+    onUpgradeToPro: () -> Unit,
+) {
+    if (state.isPro) {
+        StorageHistoryCard(
+            history = state.storageHistory,
+            selectedPeriod = state.selectedHistoryPeriod,
+            historyLoadError = state.historyLoadError,
+            onPeriodChange = onPeriodChange,
+        )
+    }
+
+    if (state.isPro) {
+        StorageCleanupToolsSection(
+            storage = storage,
+            onNavigateToCleanup = onNavigateToCleanup,
+            onEmptyTrash = onEmptyTrash,
+        )
+    } else {
+        SectionHeader(text = stringResource(R.string.storage_cleanup_tools))
+        ProFeatureCalloutCard(
+            message = stringResource(R.string.pro_feature_cleanup_message),
+            actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+            onAction = onUpgradeToPro,
+        )
+    }
+}
+
+@Composable
+private fun StorageFooterSection(
+    storage: StorageState,
+    onNavigateToLearnArticle: (String) -> Unit,
+    onInfoClick: (String) -> Unit,
+) {
+    StorageDetailsCard(storage = storage, onInfoClick = onInfoClick)
+
+    if (storage.sdCardAvailable) {
+        StorageSdCardCard(storage = storage)
+    }
+
+    StorageQuickActionsCard()
+
+    RelatedArticlesSection(
+        articleIds =
+            listOf(
+                LearnArticleIds.STORAGE_SLOWDOWN,
+                LearnArticleIds.STORAGE_BREAKDOWN,
+            ),
+        onNavigateToArticle = onNavigateToLearnArticle,
+    )
 }
 
 @Composable
@@ -699,6 +746,12 @@ private fun StorageMediaBreakdownCard(
     usedBytes: Long,
 ) {
     val context = LocalContext.current
+    val imagesLabel = stringResource(R.string.storage_images)
+    val videosLabel = stringResource(R.string.storage_videos)
+    val audioLabel = stringResource(R.string.storage_audio)
+    val documentsLabel = stringResource(R.string.storage_documents)
+    val downloadsLabel = stringResource(R.string.storage_downloads)
+    val otherLabel = stringResource(R.string.storage_other)
     val knownTotal =
         breakdown.imagesBytes + breakdown.videosBytes + breakdown.audioBytes +
             breakdown.documentsBytes + breakdown.downloadsBytes
@@ -707,37 +760,37 @@ private fun StorageMediaBreakdownCard(
     val segments =
         listOf(
             SegmentData(
-                label = context.getString(R.string.storage_images),
+                label = imagesLabel,
                 value = breakdown.imagesBytes,
                 formattedValue = formatStorageSize(context, breakdown.imagesBytes),
                 color = categoryColor(MediaCategory.IMAGE),
             ),
             SegmentData(
-                label = context.getString(R.string.storage_videos),
+                label = videosLabel,
                 value = breakdown.videosBytes,
                 formattedValue = formatStorageSize(context, breakdown.videosBytes),
                 color = categoryColor(MediaCategory.VIDEO),
             ),
             SegmentData(
-                label = context.getString(R.string.storage_audio),
+                label = audioLabel,
                 value = breakdown.audioBytes,
                 formattedValue = formatStorageSize(context, breakdown.audioBytes),
                 color = categoryColor(MediaCategory.AUDIO),
             ),
             SegmentData(
-                label = context.getString(R.string.storage_documents),
+                label = documentsLabel,
                 value = breakdown.documentsBytes,
                 formattedValue = formatStorageSize(context, breakdown.documentsBytes),
                 color = categoryColor(MediaCategory.DOCUMENT),
             ),
             SegmentData(
-                label = context.getString(R.string.storage_downloads),
+                label = downloadsLabel,
                 value = breakdown.downloadsBytes,
                 formattedValue = formatStorageSize(context, breakdown.downloadsBytes),
                 color = categoryColor(MediaCategory.DOWNLOAD),
             ),
             SegmentData(
-                label = context.getString(R.string.storage_other),
+                label = otherLabel,
                 value = otherBytes,
                 formattedValue = formatStorageSize(context, otherBytes),
                 color = categoryColor(MediaCategory.OTHER),
@@ -762,11 +815,8 @@ private fun StorageHistoryCard(
     historyLoadError: UiText?,
     onPeriodChange: (HistoryPeriod) -> Unit,
 ) {
-    var selectedMetric by rememberSaveable { mutableStateOf(StorageHistoryMetric.USED_SPACE.name) }
-
-    val metric =
-        StorageHistoryMetric.entries.firstOrNull { it.name == selectedMetric }
-            ?: StorageHistoryMetric.USED_SPACE
+    var selectedMetric by rememberSaveableEnumState(StorageHistoryMetric.USED_SPACE)
+    val metric = selectedMetric
 
     val chartModel =
         remember(history, metric, selectedPeriod) {
@@ -793,39 +843,19 @@ private fun StorageHistoryCard(
         ) {
             CardSectionTitle(text = stringResource(R.string.storage_history))
 
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-            ) {
-                StorageHistoryMetric.entries.forEach { m ->
-                    FilterChip(
-                        selected = metric == m,
-                        onClick = { selectedMetric = m.name },
-                        label = { Text(storageHistoryMetricLabel(m)) },
-                    )
-                }
-            }
+            EnumFilterChipRow(
+                values = StorageHistoryMetric.entries,
+                selected = metric,
+                onSelect = { selectedMetric = it },
+                labelFor = { storageHistoryMetricLabel(it) },
+            )
 
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-            ) {
-                HistoryPeriod.entries
-                    .filter { it != HistoryPeriod.SINCE_UNPLUG }
-                    .forEach { period ->
-                        FilterChip(
-                            selected = selectedPeriod == period,
-                            onClick = { onPeriodChange(period) },
-                            label = { Text(historyPeriodLabel(period)) },
-                        )
-                    }
-            }
+            EnumFilterChipRow(
+                values = HistoryPeriod.entries.filter { it != HistoryPeriod.SINCE_UNPLUG },
+                selected = selectedPeriod,
+                onSelect = onPeriodChange,
+                labelFor = { historyPeriodLabel(it) },
+            )
 
             historyLoadError?.let { error ->
                 Text(

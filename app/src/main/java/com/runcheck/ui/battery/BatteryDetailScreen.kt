@@ -39,8 +39,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -92,11 +90,14 @@ import com.runcheck.ui.chart.historyPeriodLabel
 import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.chart.sessionGraphMetricLabel
 import com.runcheck.ui.chart.sessionGraphWindowLabel
+import com.runcheck.ui.common.ApplyFullscreenChartSelectionResult
+import com.runcheck.ui.common.EnumFilterChipRow
 import com.runcheck.ui.common.batteryHealthLabel
 import com.runcheck.ui.common.chargingStatusLabel
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.common.plugTypeLabel
+import com.runcheck.ui.common.rememberSaveableEnumState
 import com.runcheck.ui.common.temperatureBandLabel
 import com.runcheck.ui.components.AreaChart
 import com.runcheck.ui.components.CardSectionTitle
@@ -111,13 +112,13 @@ import com.runcheck.ui.components.ProgressRing
 import com.runcheck.ui.components.PullToRefreshWrapper
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.TrendChart
-import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.info.InfoSheetContent
+import com.runcheck.ui.components.info.InfoSheetHost
+import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.fullscreen.FullscreenChartSeedStore
 import com.runcheck.ui.fullscreen.FullscreenChartUiState
-import com.runcheck.ui.fullscreen.parseFullscreenChartSource
 import com.runcheck.ui.fullscreen.sanitizeFullscreenMetric
 import com.runcheck.ui.fullscreen.sanitizeFullscreenPeriod
 import com.runcheck.ui.learn.LearnArticleIds
@@ -135,6 +136,7 @@ import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColorForPercent
 import com.runcheck.ui.theme.statusColorForTemperature
 import com.runcheck.ui.theme.statusColors
+import com.runcheck.util.enumValueOrDefault
 
 @Composable
 fun BatteryDetailScreen(
@@ -153,6 +155,7 @@ fun BatteryDetailScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val loadingDescription = stringResource(R.string.a11y_loading)
 
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer =
@@ -187,7 +190,7 @@ fun BatteryDetailScreen(
                         Modifier
                             .fillMaxSize()
                             .semantics {
-                                contentDescription = context.getString(R.string.a11y_loading)
+                                contentDescription = loadingDescription
                                 liveRegion =
                                     LiveRegionMode.Polite
                             },
@@ -247,56 +250,59 @@ private fun BatteryContent(
     fullscreenResultPeriod: String? = null,
     onFullscreenResultConsumed: () -> Unit = {},
 ) {
-    var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
+    var activeInfoSheet by rememberInfoSheetState()
     var isRefreshing by remember { mutableStateOf(false) }
     val battery = state.batteryState
-    var selectedHistoryMetric by rememberSaveable { mutableStateOf(BatteryHistoryMetric.LEVEL.name) }
-    var selectedSessionMetric by rememberSaveable { mutableStateOf(SessionGraphMetric.CURRENT.name) }
-    var selectedSessionWindow by rememberSaveable { mutableStateOf(SessionGraphWindow.ALL.name) }
-    val historyMetric =
-        BatteryHistoryMetric.entries.firstOrNull { it.name == selectedHistoryMetric }
-            ?: BatteryHistoryMetric.LEVEL
-    val sessionMetric =
-        SessionGraphMetric.entries.firstOrNull { it.name == selectedSessionMetric }
-            ?: SessionGraphMetric.CURRENT
-    val sessionWindow =
-        SessionGraphWindow.entries.firstOrNull { it.name == selectedSessionWindow }
-            ?: SessionGraphWindow.ALL
+    var selectedHistoryMetric by rememberSaveableEnumState(BatteryHistoryMetric.LEVEL)
+    var selectedSessionMetric by rememberSaveableEnumState(SessionGraphMetric.CURRENT)
+    var selectedSessionWindow by rememberSaveableEnumState(SessionGraphWindow.ALL)
+    val historyMetric = selectedHistoryMetric
+    val sessionMetric = selectedSessionMetric
+    val sessionWindow = selectedSessionWindow
 
-    // Apply fullscreen chart selection results when navigating back
-    val currentOnPeriodChange by rememberUpdatedState(onPeriodChange)
-    val currentOnFullscreenResultConsumed by rememberUpdatedState(onFullscreenResultConsumed)
-    LaunchedEffect(fullscreenResultSource, fullscreenResultMetric, fullscreenResultPeriod) {
-        if (fullscreenResultSource != null && fullscreenResultMetric != null && fullscreenResultPeriod != null) {
-            when (parseFullscreenChartSource(fullscreenResultSource)) {
+    ApplyFullscreenChartSelectionResult(
+        rawSource = fullscreenResultSource,
+        rawMetric = fullscreenResultMetric,
+        rawPeriod = fullscreenResultPeriod,
+        onConsumed = onFullscreenResultConsumed,
+        applySelection = { source, metric, period ->
+            when (source) {
                 FullscreenChartSource.BATTERY_HISTORY -> {
                     selectedHistoryMetric =
-                        sanitizeFullscreenMetric(
-                            source = FullscreenChartSource.BATTERY_HISTORY,
-                            rawMetric = fullscreenResultMetric,
+                        enumValueOrDefault(
+                            sanitizeFullscreenMetric(
+                                source = FullscreenChartSource.BATTERY_HISTORY,
+                                rawMetric = metric,
+                            ),
+                            BatteryHistoryMetric.LEVEL,
                         )
-                    val period =
-                        runCatching {
-                            HistoryPeriod.valueOf(
-                                sanitizeFullscreenPeriod(
-                                    source = FullscreenChartSource.BATTERY_HISTORY,
-                                    rawPeriod = fullscreenResultPeriod,
-                                ),
-                            )
-                        }.getOrNull()
-                    if (period != null) currentOnPeriodChange(period)
+                    onPeriodChange(
+                        enumValueOrDefault(
+                            sanitizeFullscreenPeriod(
+                                source = FullscreenChartSource.BATTERY_HISTORY,
+                                rawPeriod = period,
+                            ),
+                            HistoryPeriod.DAY,
+                        ),
+                    )
                 }
 
                 FullscreenChartSource.BATTERY_SESSION -> {
                     selectedSessionMetric =
-                        sanitizeFullscreenMetric(
-                            source = FullscreenChartSource.BATTERY_SESSION,
-                            rawMetric = fullscreenResultMetric,
+                        enumValueOrDefault(
+                            sanitizeFullscreenMetric(
+                                source = FullscreenChartSource.BATTERY_SESSION,
+                                rawMetric = metric,
+                            ),
+                            SessionGraphMetric.CURRENT,
                         )
                     selectedSessionWindow =
-                        sanitizeFullscreenPeriod(
-                            source = FullscreenChartSource.BATTERY_SESSION,
-                            rawPeriod = fullscreenResultPeriod,
+                        enumValueOrDefault(
+                            sanitizeFullscreenPeriod(
+                                source = FullscreenChartSource.BATTERY_SESSION,
+                                rawPeriod = period,
+                            ),
+                            SessionGraphWindow.ALL,
                         )
                 }
 
@@ -304,9 +310,8 @@ private fun BatteryContent(
                     Unit
                 }
             }
-            currentOnFullscreenResultConsumed()
-        }
-    }
+        },
+    )
     val chargingSessionSummary =
         remember(state.history, battery.level, battery.chargingStatus) {
             calculateChargingSessionSummary(
@@ -337,475 +342,536 @@ private fun BatteryContent(
         ) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-            BatteryHeroSection(
+            BatteryOverviewSection(
+                state = state,
                 battery = battery,
-                history = state.history,
+                onDismissInfoCard = onDismissInfoCard,
+                onNavigateToLearnArticle = onNavigateToLearnArticle,
                 onInfoClick = { activeInfoSheet = it },
             )
 
-            // Live notification info card - show once to inform about the feature
-            InfoCard(
-                id = InfoCardCatalog.BatteryLiveNotification.id,
-                headline = stringResource(InfoCardCatalog.BatteryLiveNotification.headlineRes),
-                body = stringResource(InfoCardCatalog.BatteryLiveNotification.bodyRes),
-                onDismiss = onDismissInfoCard,
-                visible =
-                    InfoCardCatalog.BatteryLiveNotification.id !in state.dismissedInfoCards &&
-                        state.showInfoCards,
+            BatteryChargingSection(
+                state = state,
+                battery = battery,
+                chargingSessionSummary = chargingSessionSummary,
+                selectedSessionMetric = sessionMetric,
+                onSessionMetricChange = { selectedSessionMetric = it },
+                selectedSessionWindow = sessionWindow,
+                onSessionWindowChange = { selectedSessionWindow = it },
+                onNavigateToFullscreen = onNavigateToFullscreen,
+                onDismissInfoCard = onDismissInfoCard,
+                onNavigateToLearnArticle = onNavigateToLearnArticle,
+                onInfoClick = { activeInfoSheet = it },
             )
 
-            // Health degradation card - show when healthPercent < 90% and not dismissed
-            if (battery.healthPercent != null && battery.healthPercent < 90) {
-                InfoCard(
-                    id = InfoCardCatalog.BatteryHealthDegraded.id,
-                    headline = stringResource(InfoCardCatalog.BatteryHealthDegraded.headlineRes),
-                    body = stringResource(InfoCardCatalog.BatteryHealthDegraded.bodyRes),
-                    onDismiss = onDismissInfoCard,
-                    visible =
-                        InfoCardCatalog.BatteryHealthDegraded.id !in state.dismissedInfoCards && state.showInfoCards,
-                    onLearnMore = {
-                        InfoCardCatalog
-                            .resolveLearnArticleId(
-                                InfoCardCatalog.BatteryHealthDegraded,
-                            )?.let(onNavigateToLearnArticle)
-                    },
-                )
-            }
-
-            // Dies before zero card - show when healthPercent < 80%
-            if (battery.healthPercent != null && battery.healthPercent < 80) {
-                InfoCard(
-                    id = InfoCardCatalog.BatteryDiesBeforeZero.id,
-                    headline = stringResource(InfoCardCatalog.BatteryDiesBeforeZero.headlineRes),
-                    body = stringResource(InfoCardCatalog.BatteryDiesBeforeZero.bodyRes),
-                    onDismiss = onDismissInfoCard,
-                    visible =
-                        InfoCardCatalog.BatteryDiesBeforeZero.id !in state.dismissedInfoCards && state.showInfoCards,
-                    onLearnMore = {
-                        InfoCardCatalog
-                            .resolveLearnArticleId(
-                                InfoCardCatalog.BatteryDiesBeforeZero,
-                            )?.let(onNavigateToLearnArticle)
-                    },
-                )
-            }
-
-            BatteryPanel {
-                CardSectionTitle(text = stringResource(R.string.battery_section_details))
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                MetricRow(
-                    label = stringResource(R.string.battery_voltage),
-                    value =
-                        stringResource(
-                            R.string.value_voltage_volts,
-                            (battery.voltageMv / 1000f).toDouble(),
-                        ),
-                    onInfoClick = { activeInfoSheet = "voltage" },
-                )
-                MetricRow(
-                    label = stringResource(R.string.battery_temperature),
-                    value =
-                        buildTemperatureValue(
-                            temperatureC = battery.temperatureC,
-                            temperatureUnit = state.temperatureUnit,
-                        ),
-                    valueColor = temperatureColor(battery.temperatureC),
-                    onInfoClick = { activeInfoSheet = "temperature" },
-                )
-                MetricRow(
-                    label = stringResource(R.string.battery_health),
-                    value = batteryHealthLabel(battery.health),
-                    valueColor = healthColor(battery.health),
-                    onInfoClick = { activeInfoSheet = "healthStatus" },
-                )
-                MetricRow(
-                    label = stringResource(R.string.battery_technology),
-                    value =
-                        battery.technology
-                            .takeUnless { it.equals("Unknown", ignoreCase = true) }
-                            ?.takeUnless(String::isBlank)
-                            ?: stringResource(R.string.not_available),
-                    onInfoClick = { activeInfoSheet = "technology" },
-                )
-                battery.cycleCount?.let { count ->
-                    MetricRow(
-                        label = stringResource(R.string.battery_cycle_count),
-                        value =
-                            stringResource(
-                                R.string.value_with_estimated_badge,
-                                count.toString(),
-                            ),
-                        showDivider = battery.healthPercent != null,
-                        onInfoClick = { activeInfoSheet = "cycleCount" },
-                    )
-                }
-                battery.healthPercent?.let { pct ->
-                    MetricRow(
-                        label = stringResource(R.string.battery_health_percent),
-                        value =
-                            stringResource(
-                                R.string.value_with_estimated_badge,
-                                stringResource(R.string.value_percent, pct),
-                            ),
-                        showDivider = battery.estimatedCapacityMah != null,
-                        onInfoClick = { activeInfoSheet = "healthPercent" },
-                    )
-                }
-                if (battery.estimatedCapacityMah != null && battery.designCapacityMah != null) {
-                    MetricRow(
-                        label = stringResource(R.string.unit_milliamp_hours),
-                        value =
-                            stringResource(
-                                R.string.battery_capacity_mah,
-                                battery.estimatedCapacityMah,
-                                battery.designCapacityMah,
-                            ),
-                        showDivider = false,
-                        onInfoClick = { activeInfoSheet = "capacity" },
-                    )
-                }
-
-                val hasBatteryLiveCharts =
-                    state.liveLevel.size >= 2 ||
-                        state.liveTempC.size >= 2 ||
-                        state.liveVoltage.size >= 2
-                if (hasBatteryLiveCharts) {
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                    )
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                }
-                if (state.liveLevel.size >= 2) {
-                    LiveChart(
-                        data = state.liveLevel,
-                        currentValueLabel = stringResource(R.string.value_percent, battery.level),
-                        label = stringResource(R.string.battery_level),
-                        lineColor = MaterialTheme.colorScheme.primary,
-                        yMin = 0f,
-                        yMax = 100f,
-                        accessibilityDescription =
-                            stringResource(
-                                R.string.a11y_chart_trend,
-                                stringResource(R.string.battery_level),
-                            ),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-                if (state.liveTempC.size >= 2) {
-                    if (state.liveLevel.size >= 2) {
-                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                    }
-                    LiveChart(
-                        data = state.liveTempC,
-                        currentValueLabel =
-                            buildTemperatureValue(
-                                temperatureC = battery.temperatureC,
-                                temperatureUnit = state.temperatureUnit,
-                            ),
-                        label = stringResource(R.string.battery_temperature),
-                        lineColor = temperatureColor(battery.temperatureC),
-                        accessibilityDescription =
-                            stringResource(
-                                R.string.a11y_chart_trend,
-                                stringResource(R.string.battery_temperature),
-                            ),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-                if (state.liveVoltage.size >= 2) {
-                    if (state.liveLevel.size >= 2 || state.liveTempC.size >= 2) {
-                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                    }
-                    LiveChart(
-                        data = state.liveVoltage,
-                        currentValueLabel =
-                            stringResource(
-                                R.string.value_voltage_volts,
-                                (battery.voltageMv / 1000f).toDouble(),
-                            ),
-                        label = stringResource(R.string.battery_voltage),
-                        lineColor = MaterialTheme.statusColors.fair,
-                        accessibilityDescription =
-                            stringResource(
-                                R.string.a11y_chart_trend,
-                                stringResource(R.string.battery_voltage),
-                            ),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-
-            BatteryPanel {
-                CardSectionTitle(
-                    text =
-                        if (battery.chargingStatus == ChargingStatus.CHARGING) {
-                            stringResource(R.string.battery_charging_section)
-                        } else {
-                            stringResource(R.string.battery_current_section)
-                        },
-                )
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.battery_current),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment = Alignment.Bottom,
-                        ) {
-                            Text(
-                                text =
-                                    if (battery.currentMa.confidence != Confidence.UNAVAILABLE) {
-                                        battery.currentMa.value.toString()
-                                    } else {
-                                        stringResource(R.string.battery_not_available)
-                                    },
-                                style =
-                                    MaterialTheme.typography.displaySmall.copy(
-                                        fontFamily = MaterialTheme.numericFontFamily,
-                                    ),
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            if (battery.currentMa.confidence != Confidence.UNAVAILABLE) {
-                                Text(
-                                    text = stringResource(R.string.unit_milliamps),
-                                    style =
-                                        MaterialTheme.typography.titleMedium.copy(
-                                            fontFamily = MaterialTheme.numericFontFamily,
-                                        ),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                        if (battery.currentMa.confidence != Confidence.UNAVAILABLE) {
-                            val powerW =
-                                remember(battery.currentMa.value, battery.voltageMv) {
-                                    val currentA = battery.currentMa.value / 1000f
-                                    val voltageV = battery.voltageMv / 1000f
-                                    kotlin.math.abs(currentA * voltageV)
-                                }
-                            Text(
-                                text =
-                                    stringResource(
-                                        R.string.battery_power_voltage,
-                                        formatDecimal(powerW, 1),
-                                        battery.voltageMv,
-                                    ),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                    ConfidenceBadge(confidence = battery.currentMa.confidence)
-                }
-
-                chargingSessionSummary?.let { summary ->
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
-                    CardSectionTitle(text = stringResource(R.string.battery_session_title))
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                    BatterySessionSummary(
-                        summary = summary,
-                        temperatureUnit = state.temperatureUnit,
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                )
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-                    verticalAlignment = Alignment.Top,
-                ) {
-                    MetricPill(
-                        label = stringResource(R.string.battery_status),
-                        value = chargingStatusLabel(battery.chargingStatus),
-                        modifier = Modifier.weight(1f),
-                    )
-                    MetricPill(
-                        label = stringResource(R.string.battery_plug_type),
-                        value = plugTypeLabel(battery.plugType),
-                        modifier = Modifier.weight(1f),
-                        onInfoClick = { activeInfoSheet = "plugType" },
-                    )
-                }
-
-                state.currentStats?.let { stats ->
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-                    ) {
-                        MetricPill(
-                            label = stringResource(R.string.battery_current_average),
-                            value = stringResource(R.string.value_milliamps_int, stats.avg),
-                            modifier = Modifier.weight(1f),
-                            onInfoClick = { activeInfoSheet = "currentStats" },
-                        )
-                        MetricPill(
-                            label = stringResource(R.string.battery_current_minimum),
-                            value = stringResource(R.string.value_milliamps_int, stats.min),
-                            modifier = Modifier.weight(1f),
-                            onInfoClick = { activeInfoSheet = "currentStats" },
-                        )
-                        MetricPill(
-                            label = stringResource(R.string.battery_current_maximum),
-                            value = stringResource(R.string.value_milliamps_int, stats.max),
-                            modifier = Modifier.weight(1f),
-                            onInfoClick = { activeInfoSheet = "currentStats" },
-                        )
-                    }
-                }
-            }
-
-            // Charging habits card - show when battery is charging
-            if (battery.chargingStatus == ChargingStatus.CHARGING) {
-                InfoCard(
-                    id = InfoCardCatalog.BatteryChargingHabits.id,
-                    headline = stringResource(InfoCardCatalog.BatteryChargingHabits.headlineRes),
-                    body = stringResource(InfoCardCatalog.BatteryChargingHabits.bodyRes),
-                    onDismiss = onDismissInfoCard,
-                    visible =
-                        InfoCardCatalog.BatteryChargingHabits.id !in state.dismissedInfoCards && state.showInfoCards,
-                    onLearnMore = {
-                        InfoCardCatalog
-                            .resolveLearnArticleId(
-                                InfoCardCatalog.BatteryChargingHabits,
-                            )?.let(onNavigateToLearnArticle)
-                    },
-                )
-            }
-
-            chargingSessionSummary?.let { summary ->
-                if (summary.hasMeaningfulRemainingEstimate(currentLevel = battery.level)) {
-                    BatteryRemainingTimePanel(
-                        summary = summary,
-                        currentLevel = battery.level,
-                    )
-                }
-                if (summary.hasGraphData()) {
-                    BatterySessionGraphPanel(
-                        summary = summary,
-                        selectedMetric = sessionMetric,
-                        onMetricChange = { selectedSessionMetric = it.name },
-                        selectedWindow = sessionWindow,
-                        onWindowChange = { selectedSessionWindow = it.name },
-                        onNavigateToFullscreen = onNavigateToFullscreen,
-                    )
-                }
-            }
-
-            // Screen On/Off usage (#5) — only during discharge
-            state.screenUsage?.let { usage ->
-                BatteryScreenUsagePanel(
-                    usage = usage,
-                    onInfoClick = { activeInfoSheet = it },
-                )
-            }
-
-            // Screen-off drain card - show when screen-off drain rate > 2%/h
-            if (state.screenUsage?.screenOffDrainRate != null &&
-                state.screenUsage.screenOffDrainRate > 2f
-            ) {
-                InfoCard(
-                    id = InfoCardCatalog.BatteryScreenOffDrain.id,
-                    headline = stringResource(InfoCardCatalog.BatteryScreenOffDrain.headlineRes),
-                    body = stringResource(InfoCardCatalog.BatteryScreenOffDrain.bodyRes),
-                    onDismiss = onDismissInfoCard,
-                    visible =
-                        InfoCardCatalog.BatteryScreenOffDrain.id !in state.dismissedInfoCards && state.showInfoCards,
-                    onLearnMore = {
-                        InfoCardCatalog
-                            .resolveLearnArticleId(
-                                InfoCardCatalog.BatteryScreenOffDrain,
-                            )?.let(onNavigateToLearnArticle)
-                    },
-                )
-            }
-
-            // Sleep analysis (#8) — only during discharge
-            state.sleepAnalysis?.let { sleep ->
-                BatterySleepAnalysisPanel(
-                    sleep = sleep,
-                    onInfoClick = { activeInfoSheet = it },
-                )
-            }
-
-            BatteryPanel {
-                CardSectionTitle(text = stringResource(R.string.home_test_compare))
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                Text(
-                    text = stringResource(R.string.charger_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                Text(
-                    text = stringResource(R.string.home_chargers_desc),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                Button(
-                    onClick = onNavigateToCharger,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(R.string.charger_title))
-                }
-            }
-
-            BatteryHistoryPanel(
+            BatteryFooterSection(
                 state = state,
-                selectedMetric = historyMetric,
-                onMetricChange = { selectedHistoryMetric = it.name },
+                selectedHistoryMetric = historyMetric,
+                onHistoryMetricChange = { selectedHistoryMetric = it },
                 onPeriodChange = onPeriodChange,
                 onUpgradeToPro = onUpgradeToPro,
                 onNavigateToFullscreen = onNavigateToFullscreen,
-            )
-
-            // Long-term statistics (#9) — Pro feature
-            if (state.isPro && state.statistics != null) {
-                BatteryStatisticsPanel(
-                    statistics = state.statistics,
-                    onInfoClick = { activeInfoSheet = it },
-                )
-            }
-
-            RelatedArticlesSection(
-                articleIds =
-                    listOf(
-                        LearnArticleIds.BATTERY_HEALTH,
-                        LearnArticleIds.BATTERY_DRAIN,
-                        LearnArticleIds.BATTERY_CHARGING,
-                        LearnArticleIds.BATTERY_CURRENT_POWER,
-                    ),
-                onNavigateToArticle = onNavigateToLearnArticle,
+                onNavigateToCharger = onNavigateToCharger,
+                onNavigateToLearnArticle = onNavigateToLearnArticle,
+                onInfoClick = { activeInfoSheet = it },
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }
     }
 
-    val infoContent = activeInfoSheet?.let { resolveBatteryInfoContent(it) }
-    if (infoContent != null) {
-        InfoBottomSheet(
-            content = infoContent,
-            onDismiss = { activeInfoSheet = null },
+    InfoSheetHost(
+        activeKey = activeInfoSheet,
+        onDismiss = { activeInfoSheet = null },
+        resolveContent = ::resolveBatteryInfoContent,
+    )
+}
+
+@Composable
+private fun BatteryOverviewSection(
+    state: BatteryUiState.Success,
+    battery: BatteryState,
+    onDismissInfoCard: (String) -> Unit,
+    onNavigateToLearnArticle: (String) -> Unit,
+    onInfoClick: (String) -> Unit,
+) {
+    BatteryHeroSection(
+        battery = battery,
+        history = state.history,
+        onInfoClick = onInfoClick,
+    )
+
+    InfoCard(
+        id = InfoCardCatalog.BatteryLiveNotification.id,
+        headline = stringResource(InfoCardCatalog.BatteryLiveNotification.headlineRes),
+        body = stringResource(InfoCardCatalog.BatteryLiveNotification.bodyRes),
+        onDismiss = onDismissInfoCard,
+        visible =
+            InfoCardCatalog.BatteryLiveNotification.id !in state.dismissedInfoCards &&
+                state.showInfoCards,
+    )
+
+    if (battery.healthPercent != null && battery.healthPercent < 90) {
+        InfoCard(
+            id = InfoCardCatalog.BatteryHealthDegraded.id,
+            headline = stringResource(InfoCardCatalog.BatteryHealthDegraded.headlineRes),
+            body = stringResource(InfoCardCatalog.BatteryHealthDegraded.bodyRes),
+            onDismiss = onDismissInfoCard,
+            visible =
+                InfoCardCatalog.BatteryHealthDegraded.id !in state.dismissedInfoCards && state.showInfoCards,
+            onLearnMore = {
+                InfoCardCatalog
+                    .resolveLearnArticleId(
+                        InfoCardCatalog.BatteryHealthDegraded,
+                    )?.let(onNavigateToLearnArticle)
+            },
         )
     }
+
+    if (battery.healthPercent != null && battery.healthPercent < 80) {
+        InfoCard(
+            id = InfoCardCatalog.BatteryDiesBeforeZero.id,
+            headline = stringResource(InfoCardCatalog.BatteryDiesBeforeZero.headlineRes),
+            body = stringResource(InfoCardCatalog.BatteryDiesBeforeZero.bodyRes),
+            onDismiss = onDismissInfoCard,
+            visible =
+                InfoCardCatalog.BatteryDiesBeforeZero.id !in state.dismissedInfoCards && state.showInfoCards,
+            onLearnMore = {
+                InfoCardCatalog
+                    .resolveLearnArticleId(
+                        InfoCardCatalog.BatteryDiesBeforeZero,
+                    )?.let(onNavigateToLearnArticle)
+            },
+        )
+    }
+
+    BatteryPanel {
+        CardSectionTitle(text = stringResource(R.string.battery_section_details))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+        MetricRow(
+            label = stringResource(R.string.battery_voltage),
+            value =
+                stringResource(
+                    R.string.value_voltage_volts,
+                    (battery.voltageMv / 1000f).toDouble(),
+                ),
+            onInfoClick = { onInfoClick("voltage") },
+        )
+        MetricRow(
+            label = stringResource(R.string.battery_temperature),
+            value =
+                buildTemperatureValue(
+                    temperatureC = battery.temperatureC,
+                    temperatureUnit = state.temperatureUnit,
+                ),
+            valueColor = temperatureColor(battery.temperatureC),
+            onInfoClick = { onInfoClick("temperature") },
+        )
+        MetricRow(
+            label = stringResource(R.string.battery_health),
+            value = batteryHealthLabel(battery.health),
+            valueColor = healthColor(battery.health),
+            onInfoClick = { onInfoClick("healthStatus") },
+        )
+        MetricRow(
+            label = stringResource(R.string.battery_technology),
+            value =
+                battery.technology
+                    .takeUnless { it.equals("Unknown", ignoreCase = true) }
+                    ?.takeUnless(String::isBlank)
+                    ?: stringResource(R.string.not_available),
+            onInfoClick = { onInfoClick("technology") },
+        )
+        battery.cycleCount?.let { count ->
+            MetricRow(
+                label = stringResource(R.string.battery_cycle_count),
+                value =
+                    stringResource(
+                        R.string.value_with_estimated_badge,
+                        count.toString(),
+                    ),
+                showDivider = battery.healthPercent != null,
+                onInfoClick = { onInfoClick("cycleCount") },
+            )
+        }
+        battery.healthPercent?.let { pct ->
+            MetricRow(
+                label = stringResource(R.string.battery_health_percent),
+                value =
+                    stringResource(
+                        R.string.value_with_estimated_badge,
+                        stringResource(R.string.value_percent, pct),
+                    ),
+                showDivider = battery.estimatedCapacityMah != null,
+                onInfoClick = { onInfoClick("healthPercent") },
+            )
+        }
+        if (battery.estimatedCapacityMah != null && battery.designCapacityMah != null) {
+            MetricRow(
+                label = stringResource(R.string.unit_milliamp_hours),
+                value =
+                    stringResource(
+                        R.string.battery_capacity_mah,
+                        battery.estimatedCapacityMah,
+                        battery.designCapacityMah,
+                    ),
+                showDivider = false,
+                onInfoClick = { onInfoClick("capacity") },
+            )
+        }
+
+        val hasBatteryLiveCharts =
+            state.liveLevel.size >= 2 ||
+                state.liveTempC.size >= 2 ||
+                state.liveVoltage.size >= 2
+        if (hasBatteryLiveCharts) {
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+            )
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        }
+        if (state.liveLevel.size >= 2) {
+            LiveChart(
+                data = state.liveLevel,
+                currentValueLabel = stringResource(R.string.value_percent, battery.level),
+                label = stringResource(R.string.battery_level),
+                lineColor = MaterialTheme.colorScheme.primary,
+                yMin = 0f,
+                yMax = 100f,
+                accessibilityDescription =
+                    stringResource(
+                        R.string.a11y_chart_trend,
+                        stringResource(R.string.battery_level),
+                    ),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if (state.liveTempC.size >= 2) {
+            if (state.liveLevel.size >= 2) {
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            }
+            LiveChart(
+                data = state.liveTempC,
+                currentValueLabel =
+                    buildTemperatureValue(
+                        temperatureC = battery.temperatureC,
+                        temperatureUnit = state.temperatureUnit,
+                    ),
+                label = stringResource(R.string.battery_temperature),
+                lineColor = temperatureColor(battery.temperatureC),
+                accessibilityDescription =
+                    stringResource(
+                        R.string.a11y_chart_trend,
+                        stringResource(R.string.battery_temperature),
+                    ),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if (state.liveVoltage.size >= 2) {
+            if (state.liveLevel.size >= 2 || state.liveTempC.size >= 2) {
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            }
+            LiveChart(
+                data = state.liveVoltage,
+                currentValueLabel =
+                    stringResource(
+                        R.string.value_voltage_volts,
+                        (battery.voltageMv / 1000f).toDouble(),
+                    ),
+                label = stringResource(R.string.battery_voltage),
+                lineColor = MaterialTheme.statusColors.fair,
+                accessibilityDescription =
+                    stringResource(
+                        R.string.a11y_chart_trend,
+                        stringResource(R.string.battery_voltage),
+                    ),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun BatteryChargingSection(
+    state: BatteryUiState.Success,
+    battery: BatteryState,
+    chargingSessionSummary: ChargingSessionSummary?,
+    selectedSessionMetric: SessionGraphMetric,
+    onSessionMetricChange: (SessionGraphMetric) -> Unit,
+    selectedSessionWindow: SessionGraphWindow,
+    onSessionWindowChange: (SessionGraphWindow) -> Unit,
+    onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
+    onDismissInfoCard: (String) -> Unit,
+    onNavigateToLearnArticle: (String) -> Unit,
+    onInfoClick: (String) -> Unit,
+) {
+    BatteryPanel {
+        CardSectionTitle(
+            text =
+                if (battery.chargingStatus == ChargingStatus.CHARGING) {
+                    stringResource(R.string.battery_charging_section)
+                } else {
+                    stringResource(R.string.battery_current_section)
+                },
+        )
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
+            ) {
+                Text(
+                    text = stringResource(R.string.battery_current),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.Bottom,
+                ) {
+                    Text(
+                        text =
+                            if (battery.currentMa.confidence != Confidence.UNAVAILABLE) {
+                                battery.currentMa.value.toString()
+                            } else {
+                                stringResource(R.string.battery_not_available)
+                            },
+                        style =
+                            MaterialTheme.typography.displaySmall.copy(
+                                fontFamily = MaterialTheme.numericFontFamily,
+                            ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    if (battery.currentMa.confidence != Confidence.UNAVAILABLE) {
+                        Text(
+                            text = stringResource(R.string.unit_milliamps),
+                            style =
+                                MaterialTheme.typography.titleMedium.copy(
+                                    fontFamily = MaterialTheme.numericFontFamily,
+                                ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                if (battery.currentMa.confidence != Confidence.UNAVAILABLE) {
+                    val powerW =
+                        remember(battery.currentMa.value, battery.voltageMv) {
+                            val currentA = battery.currentMa.value / 1000f
+                            val voltageV = battery.voltageMv / 1000f
+                            kotlin.math.abs(currentA * voltageV)
+                        }
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.battery_power_voltage,
+                                formatDecimal(powerW, 1),
+                                battery.voltageMv,
+                            ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            ConfidenceBadge(confidence = battery.currentMa.confidence)
+        }
+
+        chargingSessionSummary?.let { summary ->
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
+            CardSectionTitle(text = stringResource(R.string.battery_session_title))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+            BatterySessionSummary(
+                summary = summary,
+                temperatureUnit = state.temperatureUnit,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+        )
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
+            verticalAlignment = Alignment.Top,
+        ) {
+            MetricPill(
+                label = stringResource(R.string.battery_status),
+                value = chargingStatusLabel(battery.chargingStatus),
+                modifier = Modifier.weight(1f),
+            )
+            MetricPill(
+                label = stringResource(R.string.battery_plug_type),
+                value = plugTypeLabel(battery.plugType),
+                modifier = Modifier.weight(1f),
+                onInfoClick = { onInfoClick("plugType") },
+            )
+        }
+
+        state.currentStats?.let { stats ->
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
+            ) {
+                MetricPill(
+                    label = stringResource(R.string.battery_current_average),
+                    value = stringResource(R.string.value_milliamps_int, stats.avg),
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("currentStats") },
+                )
+                MetricPill(
+                    label = stringResource(R.string.battery_current_minimum),
+                    value = stringResource(R.string.value_milliamps_int, stats.min),
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("currentStats") },
+                )
+                MetricPill(
+                    label = stringResource(R.string.battery_current_maximum),
+                    value = stringResource(R.string.value_milliamps_int, stats.max),
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("currentStats") },
+                )
+            }
+        }
+    }
+
+    if (battery.chargingStatus == ChargingStatus.CHARGING) {
+        InfoCard(
+            id = InfoCardCatalog.BatteryChargingHabits.id,
+            headline = stringResource(InfoCardCatalog.BatteryChargingHabits.headlineRes),
+            body = stringResource(InfoCardCatalog.BatteryChargingHabits.bodyRes),
+            onDismiss = onDismissInfoCard,
+            visible =
+                InfoCardCatalog.BatteryChargingHabits.id !in state.dismissedInfoCards && state.showInfoCards,
+            onLearnMore = {
+                InfoCardCatalog
+                    .resolveLearnArticleId(
+                        InfoCardCatalog.BatteryChargingHabits,
+                    )?.let(onNavigateToLearnArticle)
+            },
+        )
+    }
+
+    chargingSessionSummary?.let { summary ->
+        if (summary.hasMeaningfulRemainingEstimate(currentLevel = battery.level)) {
+            BatteryRemainingTimePanel(
+                summary = summary,
+                currentLevel = battery.level,
+            )
+        }
+        if (summary.hasGraphData()) {
+            BatterySessionGraphPanel(
+                summary = summary,
+                selectedMetric = selectedSessionMetric,
+                onMetricChange = onSessionMetricChange,
+                selectedWindow = selectedSessionWindow,
+                onWindowChange = onSessionWindowChange,
+                onNavigateToFullscreen = onNavigateToFullscreen,
+            )
+        }
+    }
+
+    state.screenUsage?.let { usage ->
+        BatteryScreenUsagePanel(
+            usage = usage,
+            onInfoClick = onInfoClick,
+        )
+    }
+
+    if (state.screenUsage?.screenOffDrainRate != null &&
+        state.screenUsage.screenOffDrainRate > 2f
+    ) {
+        InfoCard(
+            id = InfoCardCatalog.BatteryScreenOffDrain.id,
+            headline = stringResource(InfoCardCatalog.BatteryScreenOffDrain.headlineRes),
+            body = stringResource(InfoCardCatalog.BatteryScreenOffDrain.bodyRes),
+            onDismiss = onDismissInfoCard,
+            visible =
+                InfoCardCatalog.BatteryScreenOffDrain.id !in state.dismissedInfoCards && state.showInfoCards,
+            onLearnMore = {
+                InfoCardCatalog
+                    .resolveLearnArticleId(
+                        InfoCardCatalog.BatteryScreenOffDrain,
+                    )?.let(onNavigateToLearnArticle)
+            },
+        )
+    }
+
+    state.sleepAnalysis?.let { sleep ->
+        BatterySleepAnalysisPanel(
+            sleep = sleep,
+            onInfoClick = onInfoClick,
+        )
+    }
+}
+
+@Composable
+private fun BatteryFooterSection(
+    state: BatteryUiState.Success,
+    selectedHistoryMetric: BatteryHistoryMetric,
+    onHistoryMetricChange: (BatteryHistoryMetric) -> Unit,
+    onPeriodChange: (HistoryPeriod) -> Unit,
+    onUpgradeToPro: () -> Unit,
+    onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
+    onNavigateToCharger: () -> Unit,
+    onNavigateToLearnArticle: (String) -> Unit,
+    onInfoClick: (String) -> Unit,
+) {
+    BatteryPanel {
+        CardSectionTitle(text = stringResource(R.string.home_test_compare))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+        Text(
+            text = stringResource(R.string.charger_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+        Text(
+            text = stringResource(R.string.home_chargers_desc),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        Button(
+            onClick = onNavigateToCharger,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.charger_title))
+        }
+    }
+
+    BatteryHistoryPanel(
+        state = state,
+        selectedMetric = selectedHistoryMetric,
+        onMetricChange = onHistoryMetricChange,
+        onPeriodChange = onPeriodChange,
+        onUpgradeToPro = onUpgradeToPro,
+        onNavigateToFullscreen = onNavigateToFullscreen,
+    )
+
+    if (state.isPro && state.statistics != null) {
+        BatteryStatisticsPanel(
+            statistics = state.statistics,
+            onInfoClick = onInfoClick,
+        )
+    }
+
+    RelatedArticlesSection(
+        articleIds =
+            listOf(
+                LearnArticleIds.BATTERY_HEALTH,
+                LearnArticleIds.BATTERY_DRAIN,
+                LearnArticleIds.BATTERY_CHARGING,
+                LearnArticleIds.BATTERY_CURRENT_POWER,
+            ),
+        onNavigateToArticle = onNavigateToLearnArticle,
+    )
 }
 
 @Composable
@@ -997,50 +1063,32 @@ private fun BatteryHistoryPanel(
         CardSectionTitle(text = stringResource(R.string.battery_history_title))
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
         if (state.isPro) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-            ) {
-                HistoryPeriod.entries.forEach { period ->
-                    val label =
-                        when (period) {
-                            HistoryPeriod.SINCE_UNPLUG -> stringResource(R.string.history_period_since_unplug)
-                            HistoryPeriod.HOUR -> stringResource(R.string.history_period_hour)
-                            HistoryPeriod.SIX_HOURS -> stringResource(R.string.history_period_6h)
-                            HistoryPeriod.TWELVE_HOURS -> stringResource(R.string.history_period_12h)
-                            HistoryPeriod.DAY -> stringResource(R.string.history_period_day)
-                            HistoryPeriod.WEEK -> stringResource(R.string.history_period_week)
-                            HistoryPeriod.MONTH -> stringResource(R.string.history_period_month)
-                            HistoryPeriod.ALL -> stringResource(R.string.history_period_all)
-                        }
-                    FilterChip(
-                        selected = state.selectedPeriod == period,
-                        onClick = { onPeriodChange(period) },
-                        label = { Text(label) },
-                    )
-                }
-            }
+            EnumFilterChipRow(
+                values = HistoryPeriod.entries,
+                selected = state.selectedPeriod,
+                onSelect = onPeriodChange,
+                labelFor = { period ->
+                    when (period) {
+                        HistoryPeriod.SINCE_UNPLUG -> stringResource(R.string.history_period_since_unplug)
+                        HistoryPeriod.HOUR -> stringResource(R.string.history_period_hour)
+                        HistoryPeriod.SIX_HOURS -> stringResource(R.string.history_period_6h)
+                        HistoryPeriod.TWELVE_HOURS -> stringResource(R.string.history_period_12h)
+                        HistoryPeriod.DAY -> stringResource(R.string.history_period_day)
+                        HistoryPeriod.WEEK -> stringResource(R.string.history_period_week)
+                        HistoryPeriod.MONTH -> stringResource(R.string.history_period_month)
+                        HistoryPeriod.ALL -> stringResource(R.string.history_period_all)
+                    }
+                },
+            )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-            ) {
-                BatteryHistoryMetric.entries.forEach { metric ->
-                    FilterChip(
-                        selected = selectedMetric == metric,
-                        onClick = { onMetricChange(metric) },
-                        label = { Text(historyMetricLabel(metric)) },
-                    )
-                }
-            }
+            EnumFilterChipRow(
+                values = BatteryHistoryMetric.entries,
+                selected = selectedMetric,
+                onSelect = onMetricChange,
+                labelFor = { metric -> historyMetricLabel(metric) },
+            )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
@@ -1417,37 +1465,19 @@ private fun BatterySessionGraphPanel(
         CardSectionTitle(text = stringResource(R.string.battery_session_graph_title))
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
 
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-        ) {
-            SessionGraphMetric.entries.forEach { metric ->
-                FilterChip(
-                    selected = selectedMetric == metric,
-                    onClick = { onMetricChange(metric) },
-                    label = { Text(sessionGraphMetricLabel(metric)) },
-                )
-            }
-        }
+        EnumFilterChipRow(
+            values = SessionGraphMetric.entries,
+            selected = selectedMetric,
+            onSelect = onMetricChange,
+            labelFor = { metric -> sessionGraphMetricLabel(metric) },
+        )
 
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-        ) {
-            SessionGraphWindow.entries.forEach { window ->
-                FilterChip(
-                    selected = selectedWindow == window,
-                    onClick = { onWindowChange(window) },
-                    label = { Text(sessionGraphWindowLabel(window)) },
-                )
-            }
-        }
+        EnumFilterChipRow(
+            values = SessionGraphWindow.entries,
+            selected = selectedWindow,
+            onSelect = onWindowChange,
+            labelFor = { window -> sessionGraphWindowLabel(window) },
+        )
 
         if (chartModel.chartData.size >= 2) {
             val chartAccessibilitySummary =

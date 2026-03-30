@@ -37,8 +37,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
+import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun InfoCard(
@@ -50,10 +52,11 @@ fun InfoCard(
     visible: Boolean = true,
     onLearnMore: (() -> Unit)? = null,
 ) {
+    val tokens = MaterialTheme.uiTokens
     val accentColor = MaterialTheme.colorScheme.primary
     var dismissRequested by remember(id) { mutableStateOf(false) }
     val skipAnimation = MaterialTheme.reducedMotion
-    val animDuration = if (skipAnimation) 0 else 300
+    val animDuration = if (skipAnimation) 0 else MotionTokens.MEDIUM
     val renderedVisible = visible && !dismissRequested
 
     LaunchedEffect(visible) {
@@ -97,7 +100,7 @@ fun InfoCard(
                 Icon(
                     imageVector = Icons.Outlined.Info,
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(tokens.iconLarge),
                     tint = accentColor,
                 )
 
@@ -123,7 +126,7 @@ fun InfoCard(
                             color = MaterialTheme.colorScheme.primary,
                             modifier =
                                 Modifier
-                                    .defaultMinSize(minHeight = 48.dp)
+                                    .defaultMinSize(minHeight = tokens.touchTarget)
                                     .clickable(onClick = onLearnMore)
                                     .padding(vertical = MaterialTheme.spacing.md),
                         )
@@ -136,12 +139,12 @@ fun InfoCard(
                         onDismiss(id)
                     },
                     enabled = !dismissRequested,
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(tokens.touchTarget),
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Close,
                         contentDescription = stringResource(R.string.a11y_dismiss_card),
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(tokens.iconSmall),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }

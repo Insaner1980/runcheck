@@ -153,6 +153,7 @@ fun HomeScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val loadingDescription = stringResource(R.string.a11y_loading)
 
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer =
@@ -196,7 +197,7 @@ fun HomeScreen(
                         Modifier
                             .fillMaxSize()
                             .semantics {
-                                contentDescription = context.getString(R.string.a11y_loading)
+                                contentDescription = loadingDescription
                                 liveRegion = LiveRegionMode.Polite
                             },
                     contentAlignment = Alignment.Center,
@@ -311,21 +312,11 @@ private fun HomeContent(
 
             HomeStatusSummary(state = state)
 
-            // Trial or post-expiration card
-            if (state.proState.status == ProStatus.TRIAL_ACTIVE) {
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-                TrialHomeCard(
-                    proState = state.proState,
-                    onNavigateToProUpgrade = onNavigateToProUpgrade,
-                )
-            } else if (state.showUpgradeCard) {
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-                PostExpirationUpgradeCard(
-                    formattedPrice = null,
-                    onNavigateToProUpgrade = onNavigateToProUpgrade,
-                    onDismiss = onDismissUpgradeCard,
-                )
-            }
+            HomeTrialSection(
+                state = state,
+                onNavigateToProUpgrade = onNavigateToProUpgrade,
+                onDismissUpgradeCard = onDismissUpgradeCard,
+            )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
 
@@ -347,231 +338,304 @@ private fun HomeContent(
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
 
-            // 2×2 grid on phones, 1×4 row on wide screens (≥600dp)
-            if (isWideScreen) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-                ) {
-                    HomeGridCards(
-                        state,
-                        context,
-                        onNavigateToNetwork,
-                        onNavigateToThermal,
-                        onNavigateToCharger,
-                        onNavigateToStorage,
-                        onNavigateToProUpgrade,
-                    )
-                }
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-                ) {
-                    GridCard(
-                        icon = Icons.Outlined.SignalCellularAlt,
-                        title = stringResource(R.string.home_network_card),
-                        subtitle =
-                            connectionDisplayLabel(
-                                connectionType = state.networkState.connectionType,
-                                wifiSsid = state.networkState.wifiSsid,
-                                networkSubtype = state.networkState.networkSubtype,
-                            ),
-                        subtitleColor = MaterialTheme.colorScheme.onSurface,
-                        statusLabel = signalQualityLabel(state.networkState.signalQuality),
-                        iconTint = statusColorForSignalQuality(state.networkState.signalQuality),
-                        iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                        onClick = onNavigateToNetwork,
-                        modifier = Modifier.weight(1f),
-                    )
-                    GridCard(
-                        icon = Icons.Outlined.Thermostat,
-                        title = stringResource(R.string.home_thermal_card),
-                        subtitle =
-                            formatTemperature(
-                                state.thermalState.batteryTempC,
-                                state.temperatureUnit,
-                            ),
-                        subtitleColor = MaterialTheme.colorScheme.onSurface,
-                        statusLabel = temperatureBandLabel(state.thermalState.batteryTempC),
-                        iconTint = statusColorForTemperature(state.thermalState.batteryTempC),
-                        iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                        onClick = onNavigateToThermal,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-                ) {
-                    GridCard(
-                        icon = Icons.Outlined.BatteryChargingFull,
-                        title = stringResource(R.string.home_chargers_card),
-                        subtitle = stringResource(R.string.home_test_compare),
-                        subtitleColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                        locked = !state.isPro,
-                        onClick = if (state.isPro) onNavigateToCharger else onNavigateToProUpgrade,
-                        modifier = Modifier.weight(1f),
-                    )
-                    GridCard(
-                        icon = Icons.Outlined.DataUsage,
-                        title = stringResource(R.string.home_storage_card),
-                        subtitle =
-                            stringResource(
-                                R.string.home_storage_free,
-                                formatStorageSize(context, state.storageState.availableBytes),
-                                stringResource(R.string.home_free_suffix),
-                            ),
-                        subtitleColor = MaterialTheme.colorScheme.onSurface,
-                        iconTint =
-                            statusColorForStoragePercent(
-                                (
-                                    (state.storageState.totalBytes - state.storageState.availableBytes) * 100 /
-                                        state.storageState.totalBytes.coerceAtLeast(1)
-                                ).toInt(),
-                            ),
-                        iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                        onClick = onNavigateToStorage,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
+            HomeGridSection(
+                state = state,
+                context = context,
+                isWideScreen = isWideScreen,
+                onNavigateToNetwork = onNavigateToNetwork,
+                onNavigateToThermal = onNavigateToThermal,
+                onNavigateToCharger = onNavigateToCharger,
+                onNavigateToStorage = onNavigateToStorage,
+                onNavigateToProUpgrade = onNavigateToProUpgrade,
+            )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
 
-            SectionHeader(stringResource(R.string.home_quick_tools))
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-
-            Card(
-                shape = MaterialTheme.shapes.large,
-                colors = runcheckCardColors(),
-                elevation = runcheckCardElevation(),
-            ) {
-                Column(
-                    modifier =
-                        Modifier.padding(
-                            horizontal = MaterialTheme.spacing.base,
-                            vertical = MaterialTheme.spacing.xs,
-                        ),
-                ) {
-                    ListRow(
-                        label = stringResource(R.string.home_speed_test),
-                        icon = Icons.Outlined.Speed,
-                        onClick = onNavigateToSpeedTest,
-                    )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        ListRow(
-                            label = stringResource(R.string.home_app_usage_card),
-                            icon = Icons.Outlined.DataUsage,
-                            onClick = if (state.isPro) onNavigateToAppUsage else onNavigateToProUpgrade,
-                            trailing =
-                                if (!state.isPro) {
-                                    { ProBadgePill() }
-                                } else {
-                                    null
-                                },
-                        )
-
-                        if (!state.isPro) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxSize()
-                                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.14f)),
-                            )
-                        }
-                    }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-                    ListRow(
-                        label = stringResource(R.string.home_learn),
-                        icon = Icons.AutoMirrored.Outlined.MenuBook,
-                        onClick = onNavigateToLearn,
-                    )
-                }
-            }
+            HomeQuickToolsSection(
+                isPro = state.isPro,
+                onNavigateToSpeedTest = onNavigateToSpeedTest,
+                onNavigateToAppUsage = onNavigateToAppUsage,
+                onNavigateToProUpgrade = onNavigateToProUpgrade,
+                onNavigateToLearn = onNavigateToLearn,
+            )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
 
-            if (state.proState.status == ProStatus.PRO_PURCHASED) {
-                Card(
-                    shape = MaterialTheme.shapes.large,
-                    colors = runcheckCardColors(),
-                    elevation = runcheckCardElevation(),
-                ) {
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(18.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    ) {
-                        IconCircle(
-                            icon = Icons.Outlined.Star,
-                            tint = MaterialTheme.statusColors.healthy,
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.home_insights_title),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = stringResource(R.string.home_insights_desc),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-            } else if (state.proState.status == ProStatus.TRIAL_EXPIRED) {
-                Card(
-                    onClick = onNavigateToProUpgrade,
-                    shape = MaterialTheme.shapes.large,
-                    colors = runcheckCardColors(),
-                    elevation = runcheckCardElevation(),
-                ) {
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(18.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    ) {
-                        IconCircle(
-                            icon = Icons.Outlined.Lock,
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.home_pro_title),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = stringResource(R.string.home_pro_history_desc),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
+            HomeProStatusSection(
+                proStatus = state.proState.status,
+                onNavigateToProUpgrade = onNavigateToProUpgrade,
+            )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
+        }
+    }
+}
+
+@Composable
+private fun HomeTrialSection(
+    state: HomeUiState.Success,
+    onNavigateToProUpgrade: () -> Unit,
+    onDismissUpgradeCard: () -> Unit,
+) {
+    if (state.proState.status == ProStatus.TRIAL_ACTIVE) {
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
+        TrialHomeCard(
+            proState = state.proState,
+            onNavigateToProUpgrade = onNavigateToProUpgrade,
+        )
+    } else if (state.showUpgradeCard) {
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
+        PostExpirationUpgradeCard(
+            formattedPrice = null,
+            onNavigateToProUpgrade = onNavigateToProUpgrade,
+            onDismiss = onDismissUpgradeCard,
+        )
+    }
+}
+
+@Composable
+private fun HomeGridSection(
+    state: HomeUiState.Success,
+    context: android.content.Context,
+    isWideScreen: Boolean,
+    onNavigateToNetwork: () -> Unit,
+    onNavigateToThermal: () -> Unit,
+    onNavigateToCharger: () -> Unit,
+    onNavigateToStorage: () -> Unit,
+    onNavigateToProUpgrade: () -> Unit,
+) {
+    if (isWideScreen) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+        ) {
+            HomeGridCards(
+                state,
+                context,
+                onNavigateToNetwork,
+                onNavigateToThermal,
+                onNavigateToCharger,
+                onNavigateToStorage,
+                onNavigateToProUpgrade,
+            )
+        }
+        return
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+    ) {
+        GridCard(
+            icon = Icons.Outlined.SignalCellularAlt,
+            title = stringResource(R.string.home_network_card),
+            subtitle =
+                connectionDisplayLabel(
+                    connectionType = state.networkState.connectionType,
+                    wifiSsid = state.networkState.wifiSsid,
+                    networkSubtype = state.networkState.networkSubtype,
+                ),
+            subtitleColor = MaterialTheme.colorScheme.onSurface,
+            statusLabel = signalQualityLabel(state.networkState.signalQuality),
+            iconTint = statusColorForSignalQuality(state.networkState.signalQuality),
+            iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+            onClick = onNavigateToNetwork,
+            modifier = Modifier.weight(1f),
+        )
+        GridCard(
+            icon = Icons.Outlined.Thermostat,
+            title = stringResource(R.string.home_thermal_card),
+            subtitle =
+                formatTemperature(
+                    state.thermalState.batteryTempC,
+                    state.temperatureUnit,
+                ),
+            subtitleColor = MaterialTheme.colorScheme.onSurface,
+            statusLabel = temperatureBandLabel(state.thermalState.batteryTempC),
+            iconTint = statusColorForTemperature(state.thermalState.batteryTempC),
+            iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+            onClick = onNavigateToThermal,
+            modifier = Modifier.weight(1f),
+        )
+    }
+
+    Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+    ) {
+        GridCard(
+            icon = Icons.Outlined.BatteryChargingFull,
+            title = stringResource(R.string.home_chargers_card),
+            subtitle = stringResource(R.string.home_test_compare),
+            subtitleColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+            locked = !state.isPro,
+            onClick = if (state.isPro) onNavigateToCharger else onNavigateToProUpgrade,
+            modifier = Modifier.weight(1f),
+        )
+        GridCard(
+            icon = Icons.Outlined.DataUsage,
+            title = stringResource(R.string.home_storage_card),
+            subtitle =
+                stringResource(
+                    R.string.home_storage_free,
+                    formatStorageSize(context, state.storageState.availableBytes),
+                    stringResource(R.string.home_free_suffix),
+                ),
+            subtitleColor = MaterialTheme.colorScheme.onSurface,
+            iconTint =
+                statusColorForStoragePercent(
+                    (
+                        (state.storageState.totalBytes - state.storageState.availableBytes) * 100 /
+                            state.storageState.totalBytes.coerceAtLeast(1)
+                    ).toInt(),
+                ),
+            iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+            onClick = onNavigateToStorage,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun HomeQuickToolsSection(
+    isPro: Boolean,
+    onNavigateToSpeedTest: () -> Unit,
+    onNavigateToAppUsage: () -> Unit,
+    onNavigateToProUpgrade: () -> Unit,
+    onNavigateToLearn: () -> Unit,
+) {
+    SectionHeader(stringResource(R.string.home_quick_tools))
+
+    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+
+    Card(
+        shape = MaterialTheme.shapes.large,
+        colors = runcheckCardColors(),
+        elevation = runcheckCardElevation(),
+    ) {
+        Column(
+            modifier =
+                Modifier.padding(
+                    horizontal = MaterialTheme.spacing.base,
+                    vertical = MaterialTheme.spacing.xs,
+                ),
+        ) {
+            ListRow(
+                label = stringResource(R.string.home_speed_test),
+                icon = Icons.Outlined.Speed,
+                onClick = onNavigateToSpeedTest,
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+            Box(modifier = Modifier.fillMaxWidth()) {
+                ListRow(
+                    label = stringResource(R.string.home_app_usage_card),
+                    icon = Icons.Outlined.DataUsage,
+                    onClick = if (isPro) onNavigateToAppUsage else onNavigateToProUpgrade,
+                    trailing =
+                        if (!isPro) {
+                            { ProBadgePill() }
+                        } else {
+                            null
+                        },
+                )
+
+                if (!isPro) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.14f)),
+                    )
+                }
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+            ListRow(
+                label = stringResource(R.string.home_learn),
+                icon = Icons.AutoMirrored.Outlined.MenuBook,
+                onClick = onNavigateToLearn,
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeProStatusSection(
+    proStatus: ProStatus,
+    onNavigateToProUpgrade: () -> Unit,
+) {
+    if (proStatus == ProStatus.PRO_PURCHASED) {
+        Card(
+            shape = MaterialTheme.shapes.large,
+            colors = runcheckCardColors(),
+            elevation = runcheckCardElevation(),
+        ) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                IconCircle(
+                    icon = Icons.Outlined.Star,
+                    tint = MaterialTheme.statusColors.healthy,
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.home_insights_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = stringResource(R.string.home_insights_desc),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    } else if (proStatus == ProStatus.TRIAL_EXPIRED) {
+        Card(
+            onClick = onNavigateToProUpgrade,
+            shape = MaterialTheme.shapes.large,
+            colors = runcheckCardColors(),
+            elevation = runcheckCardElevation(),
+        ) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                IconCircle(
+                    icon = Icons.Outlined.Lock,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.home_pro_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = stringResource(R.string.home_pro_history_desc),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

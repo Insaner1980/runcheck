@@ -42,7 +42,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -82,11 +81,14 @@ import com.runcheck.ui.chart.historyPeriodLabel
 import com.runcheck.ui.chart.networkHistoryMetricLabel
 import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.chart.signalQualityZones
+import com.runcheck.ui.common.ApplyFullscreenChartSelectionResult
+import com.runcheck.ui.common.EnumFilterChipRow
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.findActivity
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.isUnknownValue
 import com.runcheck.ui.common.rememberFormattedDateTime
+import com.runcheck.ui.common.rememberSaveableEnumState
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.common.signalQualityLabel
 import com.runcheck.ui.components.CardSectionTitle
@@ -100,9 +102,10 @@ import com.runcheck.ui.components.PullToRefreshWrapper
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SignalBars
 import com.runcheck.ui.components.TrendChart
-import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
+import com.runcheck.ui.components.info.InfoSheetHost
+import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.fullscreen.FullscreenChartSeedStore
 import com.runcheck.ui.fullscreen.FullscreenChartUiState
 import com.runcheck.ui.fullscreen.sanitizeFullscreenMetric
@@ -118,6 +121,7 @@ import com.runcheck.ui.theme.runcheckHeroCardColors
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColorForSignalQuality
 import com.runcheck.ui.theme.statusColors
+import com.runcheck.util.enumValueOrDefault
 
 @Composable
 fun NetworkDetailScreen(
@@ -135,6 +139,7 @@ fun NetworkDetailScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val networkUiState by viewModel.networkUiState.collectAsStateWithLifecycle()
+    val loadingDescription = stringResource(R.string.a11y_loading)
     val speedTestState by viewModel.speedTestState.collectAsStateWithLifecycle()
 
     DisposableEffect(lifecycleOwner, viewModel) {
@@ -171,7 +176,7 @@ fun NetworkDetailScreen(
                         Modifier
                             .fillMaxSize()
                             .semantics {
-                                contentDescription = context.getString(R.string.a11y_loading)
+                                contentDescription = loadingDescription
                                 liveRegion =
                                     LiveRegionMode.Polite
                             },
@@ -647,22 +652,26 @@ private fun SignalHistoryCard(
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
     overrideMetric: String? = null,
 ) {
-    var selectedMetric by rememberSaveable { mutableStateOf(NetworkHistoryMetric.SIGNAL.name) }
+    var selectedMetric by rememberSaveableEnumState(NetworkHistoryMetric.SIGNAL)
 
-    // Apply metric override from fullscreen chart
-    LaunchedEffect(overrideMetric) {
-        if (overrideMetric != null) {
+    ApplyFullscreenChartSelectionResult(
+        defaultSource = FullscreenChartSource.NETWORK_HISTORY,
+        rawMetric = overrideMetric,
+        rawPeriod = null,
+        onConsumed = {},
+        applySelection = { _, metric, _ ->
             selectedMetric =
-                sanitizeFullscreenMetric(
-                    source = FullscreenChartSource.NETWORK_HISTORY,
-                    rawMetric = overrideMetric,
+                enumValueOrDefault(
+                    sanitizeFullscreenMetric(
+                        source = FullscreenChartSource.NETWORK_HISTORY,
+                        rawMetric = metric,
+                    ),
+                    NetworkHistoryMetric.SIGNAL,
                 )
-        }
-    }
+        },
+    )
 
-    val metric =
-        NetworkHistoryMetric.entries.firstOrNull { it.name == selectedMetric }
-            ?: NetworkHistoryMetric.SIGNAL
+    val metric = selectedMetric
 
     val chartModel =
         remember(history, metric, selectedPeriod) {
@@ -680,39 +689,19 @@ private fun SignalHistoryCard(
     NetworkPanel {
         CardSectionTitle(text = stringResource(R.string.network_section_signal_history))
 
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-        ) {
-            NetworkHistoryMetric.entries.forEach { m ->
-                FilterChip(
-                    selected = metric == m,
-                    onClick = { selectedMetric = m.name },
-                    label = { Text(networkHistoryMetricLabel(m)) },
-                )
-            }
-        }
+        EnumFilterChipRow(
+            values = NetworkHistoryMetric.entries,
+            selected = metric,
+            onSelect = { selectedMetric = it },
+            labelFor = { networkHistoryMetricLabel(it) },
+        )
 
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-        ) {
-            HistoryPeriod.entries
-                .filter { it != HistoryPeriod.SINCE_UNPLUG }
-                .forEach { period ->
-                    FilterChip(
-                        selected = selectedPeriod == period,
-                        onClick = { onPeriodChange(period) },
-                        label = { Text(historyPeriodLabel(period)) },
-                    )
-                }
-        }
+        EnumFilterChipRow(
+            values = HistoryPeriod.entries.filter { it != HistoryPeriod.SINCE_UNPLUG },
+            selected = selectedPeriod,
+            onSelect = onPeriodChange,
+            labelFor = { historyPeriodLabel(it) },
+        )
 
         historyLoadError?.let { error ->
             Text(
@@ -932,26 +921,25 @@ private fun NetworkContent(
     onFullscreenResultConsumed: () -> Unit = {},
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
-    var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
+    var activeInfoSheet by rememberInfoSheetState()
 
-    // Apply fullscreen chart selection results when navigating back
-    val currentOnPeriodChange by rememberUpdatedState(onPeriodChange)
-    val currentOnFullscreenResultConsumed by rememberUpdatedState(onFullscreenResultConsumed)
-    LaunchedEffect(fullscreenResultMetric, fullscreenResultPeriod) {
-        if (fullscreenResultMetric != null && fullscreenResultPeriod != null) {
-            val period =
-                runCatching {
-                    HistoryPeriod.valueOf(
-                        sanitizeFullscreenPeriod(
-                            source = FullscreenChartSource.NETWORK_HISTORY,
-                            rawPeriod = fullscreenResultPeriod,
-                        ),
-                    )
-                }.getOrNull()
-            if (period != null) currentOnPeriodChange(period)
-            currentOnFullscreenResultConsumed()
-        }
-    }
+    ApplyFullscreenChartSelectionResult(
+        defaultSource = FullscreenChartSource.NETWORK_HISTORY,
+        rawMetric = fullscreenResultMetric,
+        rawPeriod = fullscreenResultPeriod,
+        onConsumed = onFullscreenResultConsumed,
+        applySelection = { _, _, period ->
+            onPeriodChange(
+                enumValueOrDefault(
+                    sanitizeFullscreenPeriod(
+                        source = FullscreenChartSource.NETWORK_HISTORY,
+                        rawPeriod = period,
+                    ),
+                    HistoryPeriod.DAY,
+                ),
+            )
+        },
+    )
     val context = LocalContext.current
     val activity = context.findActivity()
     val networkState = state.networkState
@@ -994,148 +982,202 @@ private fun NetworkContent(
         ) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-            NetworkHeroSection(
+            NetworkOverviewSection(
+                state = state,
                 networkState = networkState,
-                liveSignalDbm = state.liveSignalDbm,
-                onInfoClick = { activeInfoSheet = it },
-            )
-
-            // Info cards
-            val shouldShowWeakSignalInfoCard =
-                networkState.connectionType != ConnectionType.NONE &&
-                    networkState.signalDbm != null &&
-                    (
-                        networkState.signalQuality == SignalQuality.POOR ||
-                            networkState.signalQuality == SignalQuality.NO_SIGNAL
-                    )
-
-            if (shouldShowWeakSignalInfoCard) {
-                InfoCard(
-                    id = InfoCardCatalog.NetworkWeakSignalDrain.id,
-                    headline = stringResource(InfoCardCatalog.NetworkWeakSignalDrain.headlineRes),
-                    body = stringResource(InfoCardCatalog.NetworkWeakSignalDrain.bodyRes),
-                    onDismiss = { onDismissInfoCard(it) },
-                    visible =
-                        InfoCardCatalog.NetworkWeakSignalDrain.id !in state.dismissedInfoCards &&
-                            state.showInfoCards,
-                    onLearnMore = {
-                        InfoCardCatalog
-                            .resolveLearnArticleId(
-                                InfoCardCatalog.NetworkWeakSignalDrain,
-                            )?.let(onNavigateToLearnArticle)
-                    },
-                )
-            }
-
-            InfoCard(
-                id = InfoCardCatalog.NetworkSpeedTestScope.id,
-                headline = stringResource(InfoCardCatalog.NetworkSpeedTestScope.headlineRes),
-                body = stringResource(InfoCardCatalog.NetworkSpeedTestScope.bodyRes),
-                onDismiss = { onDismissInfoCard(it) },
-                visible =
-                    InfoCardCatalog.NetworkSpeedTestScope.id !in state.dismissedInfoCards &&
-                        state.showInfoCards,
-                onLearnMore = {
-                    InfoCardCatalog
-                        .resolveLearnArticleId(
-                            InfoCardCatalog.NetworkSpeedTestScope,
-                        )?.let(onNavigateToLearnArticle)
+                hasLocationPermission = hasLocationPermission,
+                locationEnabled = locationEnabled,
+                locationRequestAttempted = locationRequestAttempted,
+                activity = activity,
+                onDismissInfoCard = onDismissInfoCard,
+                onNavigateToLearnArticle = onNavigateToLearnArticle,
+                onRequestLocationPermission = {
+                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                 },
-            )
-
-            if (networkState.connectionType == ConnectionType.WIFI && networkState.wifiSsid == null) {
-                WifiNameHelpCard(
-                    hasLocationPermission = hasLocationPermission,
-                    locationEnabled = locationEnabled,
-                    showOpenSettings =
-                        !hasLocationPermission &&
-                            locationRequestAttempted &&
-                            activity?.let {
-                                !ActivityCompat.shouldShowRequestPermissionRationale(
-                                    it,
-                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                )
-                            } == true,
-                    onRequestPermission = {
-                        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                    },
-                    onOpenSettings = {
-                        if (!hasLocationPermission) {
-                            context.startActivity(
-                                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                    data = Uri.fromParts("package", context.packageName, null)
-                                },
-                            )
-                        } else if (!locationEnabled) {
-                            context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                        }
-                    },
-                )
-            }
-
-            ConnectionDetailsCard(networkState = networkState, onInfoClick = { activeInfoSheet = it })
-            IpDnsCard(networkState = networkState, onInfoClick = { activeInfoSheet = it })
-
-            if (state.isPro) {
-                SignalHistoryCard(
-                    history = state.signalHistory,
-                    selectedPeriod = state.selectedHistoryPeriod,
-                    historyLoadError = state.historyLoadError,
-                    onPeriodChange = onPeriodChange,
-                    onNavigateToFullscreen = onNavigateToFullscreen,
-                    overrideMetric = fullscreenResultMetric,
-                )
-            } else {
-                ProFeatureCalloutCard(
-                    message = stringResource(R.string.pro_feature_network_history_message),
-                    actionLabel = stringResource(R.string.pro_feature_upgrade_action),
-                    onAction = onUpgradeToPro,
-                )
-            }
-
-            SpeedTestSummaryCard(
-                lastResult = speedTestState.lastResult,
-                onNavigateToSpeedTest = onNavigateToSpeedTest,
+                onOpenLocationHelp = {
+                    if (!hasLocationPermission) {
+                        context.startActivity(
+                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.fromParts("package", context.packageName, null)
+                            },
+                        )
+                    } else if (!locationEnabled) {
+                        context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                    }
+                },
                 onInfoClick = { activeInfoSheet = it },
             )
 
-            RelatedArticlesSection(
-                articleIds =
-                    listOf(
-                        LearnArticleIds.NETWORK_SIGNAL,
-                        LearnArticleIds.NETWORK_WIFI_BANDS,
-                        LearnArticleIds.NETWORK_SPEED_TESTS,
-                    ),
-                onNavigateToArticle = onNavigateToLearnArticle,
+            NetworkToolsSection(
+                state = state,
+                speedTestState = speedTestState,
+                fullscreenResultMetric = fullscreenResultMetric,
+                onPeriodChange = onPeriodChange,
+                onNavigateToFullscreen = onNavigateToFullscreen,
+                onNavigateToSpeedTest = onNavigateToSpeedTest,
+                onUpgradeToPro = onUpgradeToPro,
+                onNavigateToLearnArticle = onNavigateToLearnArticle,
+                onInfoClick = { activeInfoSheet = it },
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }
     }
 
-    activeInfoSheet?.let { key ->
-        val content =
-            when (key) {
-                "signalStrength" -> NetworkInfoContent.signalStrength
-                "latency" -> NetworkInfoContent.latency
-                "jitter" -> NetworkInfoContent.jitter
-                "frequency" -> NetworkInfoContent.frequency
-                "wifiStandard" -> NetworkInfoContent.wifiStandard
-                "linkSpeed" -> NetworkInfoContent.linkSpeed
-                "bandwidth" -> NetworkInfoContent.bandwidth
-                "mtu" -> NetworkInfoContent.mtu
-                "connectionType" -> NetworkInfoContent.connectionType
-                "metered" -> NetworkInfoContent.metered
-                "roaming" -> NetworkInfoContent.roaming
-                "vpn" -> NetworkInfoContent.vpn
-                "subtype" -> NetworkInfoContent.subtype
-                else -> null
-            }
-        content?.let {
-            InfoBottomSheet(content = it, onDismiss = { activeInfoSheet = null })
-        }
-    }
+    InfoSheetHost(
+        activeKey = activeInfoSheet,
+        onDismiss = { activeInfoSheet = null },
+        resolveContent = ::resolveNetworkInfoContent,
+    )
 }
+
+@Composable
+private fun NetworkOverviewSection(
+    state: NetworkUiState.Success,
+    networkState: NetworkState,
+    hasLocationPermission: Boolean,
+    locationEnabled: Boolean,
+    locationRequestAttempted: Boolean,
+    activity: android.app.Activity?,
+    onDismissInfoCard: (String) -> Unit,
+    onNavigateToLearnArticle: (String) -> Unit,
+    onRequestLocationPermission: () -> Unit,
+    onOpenLocationHelp: () -> Unit,
+    onInfoClick: (String) -> Unit,
+) {
+    NetworkHeroSection(
+        networkState = networkState,
+        liveSignalDbm = state.liveSignalDbm,
+        onInfoClick = onInfoClick,
+    )
+
+    val shouldShowWeakSignalInfoCard =
+        networkState.connectionType != ConnectionType.NONE &&
+            networkState.signalDbm != null &&
+            (
+                networkState.signalQuality == SignalQuality.POOR ||
+                    networkState.signalQuality == SignalQuality.NO_SIGNAL
+            )
+
+    if (shouldShowWeakSignalInfoCard) {
+        InfoCard(
+            id = InfoCardCatalog.NetworkWeakSignalDrain.id,
+            headline = stringResource(InfoCardCatalog.NetworkWeakSignalDrain.headlineRes),
+            body = stringResource(InfoCardCatalog.NetworkWeakSignalDrain.bodyRes),
+            onDismiss = onDismissInfoCard,
+            visible =
+                InfoCardCatalog.NetworkWeakSignalDrain.id !in state.dismissedInfoCards &&
+                    state.showInfoCards,
+            onLearnMore = {
+                InfoCardCatalog
+                    .resolveLearnArticleId(
+                        InfoCardCatalog.NetworkWeakSignalDrain,
+                    )?.let(onNavigateToLearnArticle)
+            },
+        )
+    }
+
+    InfoCard(
+        id = InfoCardCatalog.NetworkSpeedTestScope.id,
+        headline = stringResource(InfoCardCatalog.NetworkSpeedTestScope.headlineRes),
+        body = stringResource(InfoCardCatalog.NetworkSpeedTestScope.bodyRes),
+        onDismiss = onDismissInfoCard,
+        visible =
+            InfoCardCatalog.NetworkSpeedTestScope.id !in state.dismissedInfoCards &&
+                state.showInfoCards,
+        onLearnMore = {
+            InfoCardCatalog
+                .resolveLearnArticleId(
+                    InfoCardCatalog.NetworkSpeedTestScope,
+                )?.let(onNavigateToLearnArticle)
+        },
+    )
+
+    if (networkState.connectionType == ConnectionType.WIFI && networkState.wifiSsid == null) {
+        WifiNameHelpCard(
+            hasLocationPermission = hasLocationPermission,
+            locationEnabled = locationEnabled,
+            showOpenSettings =
+                !hasLocationPermission &&
+                    locationRequestAttempted &&
+                    activity?.let {
+                        !ActivityCompat.shouldShowRequestPermissionRationale(
+                            it,
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                        )
+                    } == true,
+            onRequestPermission = onRequestLocationPermission,
+            onOpenSettings = onOpenLocationHelp,
+        )
+    }
+
+    ConnectionDetailsCard(networkState = networkState, onInfoClick = onInfoClick)
+    IpDnsCard(networkState = networkState, onInfoClick = onInfoClick)
+}
+
+@Composable
+private fun NetworkToolsSection(
+    state: NetworkUiState.Success,
+    speedTestState: SpeedTestUiState,
+    fullscreenResultMetric: String?,
+    onPeriodChange: (HistoryPeriod) -> Unit,
+    onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
+    onNavigateToSpeedTest: () -> Unit,
+    onUpgradeToPro: () -> Unit,
+    onNavigateToLearnArticle: (String) -> Unit,
+    onInfoClick: (String) -> Unit,
+) {
+    if (state.isPro) {
+        SignalHistoryCard(
+            history = state.signalHistory,
+            selectedPeriod = state.selectedHistoryPeriod,
+            historyLoadError = state.historyLoadError,
+            onPeriodChange = onPeriodChange,
+            onNavigateToFullscreen = onNavigateToFullscreen,
+            overrideMetric = fullscreenResultMetric,
+        )
+    } else {
+        ProFeatureCalloutCard(
+            message = stringResource(R.string.pro_feature_network_history_message),
+            actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+            onAction = onUpgradeToPro,
+        )
+    }
+
+    SpeedTestSummaryCard(
+        lastResult = speedTestState.lastResult,
+        onNavigateToSpeedTest = onNavigateToSpeedTest,
+        onInfoClick = onInfoClick,
+    )
+
+    RelatedArticlesSection(
+        articleIds =
+            listOf(
+                LearnArticleIds.NETWORK_SIGNAL,
+                LearnArticleIds.NETWORK_WIFI_BANDS,
+                LearnArticleIds.NETWORK_SPEED_TESTS,
+            ),
+        onNavigateToArticle = onNavigateToLearnArticle,
+    )
+}
+
+private fun resolveNetworkInfoContent(key: String) =
+    when (key) {
+        "signalStrength" -> NetworkInfoContent.signalStrength
+        "latency" -> NetworkInfoContent.latency
+        "jitter" -> NetworkInfoContent.jitter
+        "frequency" -> NetworkInfoContent.frequency
+        "wifiStandard" -> NetworkInfoContent.wifiStandard
+        "linkSpeed" -> NetworkInfoContent.linkSpeed
+        "bandwidth" -> NetworkInfoContent.bandwidth
+        "mtu" -> NetworkInfoContent.mtu
+        "connectionType" -> NetworkInfoContent.connectionType
+        "metered" -> NetworkInfoContent.metered
+        "roaming" -> NetworkInfoContent.roaming
+        "vpn" -> NetworkInfoContent.vpn
+        "subtype" -> NetworkInfoContent.subtype
+        else -> null
+    }
 
 // ── WiFi name help card ─────────────────────────────────────────────────────────
 

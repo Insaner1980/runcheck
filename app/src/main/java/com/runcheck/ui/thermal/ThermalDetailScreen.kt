@@ -31,7 +31,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,11 +67,13 @@ import com.runcheck.ui.chart.historyPeriodLabel
 import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.chart.thermalHistoryMetricLabel
 import com.runcheck.ui.chart.thermalQualityZones
+import com.runcheck.ui.common.EnumFilterChipRow
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.common.formatTemperatureValue
 import com.runcheck.ui.common.rememberFormattedDateTime
+import com.runcheck.ui.common.rememberSaveableEnumState
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.common.temperatureBandLabel
 import com.runcheck.ui.common.temperatureUnitRes
@@ -89,10 +90,11 @@ import com.runcheck.ui.components.SegmentedStatusBar
 import com.runcheck.ui.components.StatusDot
 import com.runcheck.ui.components.StatusSegment
 import com.runcheck.ui.components.TrendChart
-import com.runcheck.ui.components.info.InfoBottomSheet
 import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.info.InfoSheetContent
+import com.runcheck.ui.components.info.InfoSheetHost
+import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.numericFontFamily
@@ -118,6 +120,7 @@ fun ThermalDetailScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val loadingDescription = stringResource(R.string.a11y_loading)
 
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer =
@@ -151,7 +154,7 @@ fun ThermalDetailScreen(
                         Modifier
                             .fillMaxSize()
                             .semantics {
-                                contentDescription = context.getString(R.string.a11y_loading)
+                                contentDescription = loadingDescription
                                 liveRegion =
                                     LiveRegionMode.Polite
                             },
@@ -199,7 +202,7 @@ private fun ThermalContent(
     onDismissInfoCard: (String) -> Unit,
     onPeriodChange: (HistoryPeriod) -> Unit,
 ) {
-    var activeInfoSheet by rememberSaveable { mutableStateOf<String?>(null) }
+    var activeInfoSheet by rememberInfoSheetState()
     var isRefreshing by remember { mutableStateOf(false) }
     val thermal = state.thermalState
 
@@ -223,88 +226,18 @@ private fun ThermalContent(
         ) {
             item { Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm)) }
 
-            // Hero card: thermometer + big temperature + status
-            item {
-                ThermalHeroCard(
-                    thermal = thermal,
-                    temperatureUnit = state.temperatureUnit,
-                    sessionMinTemp = state.sessionMinTemp,
-                    sessionMaxTemp = state.sessionMaxTemp,
-                )
-            }
+            thermalOverviewItems(
+                state = state,
+                thermal = thermal,
+                onDismissInfoCard = onDismissInfoCard,
+                onNavigateToLearnArticle = onNavigateToLearnArticle,
+                onInfoClick = { activeInfoSheet = it },
+            )
 
-            // HeatStrip
-            item {
-                HeatStrip(
-                    temperatureC = thermal.batteryTempC,
-                    temperatureUnit = state.temperatureUnit,
-                )
-            }
-
-            // Info cards — throttling card only relevant on API 29+ where thermal API exists
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                item {
-                    InfoCard(
-                        id = InfoCardCatalog.ThermalThrottlingExplainer.id,
-                        headline = stringResource(InfoCardCatalog.ThermalThrottlingExplainer.headlineRes),
-                        body = stringResource(InfoCardCatalog.ThermalThrottlingExplainer.bodyRes),
-                        onDismiss = { onDismissInfoCard(it) },
-                        visible =
-                            InfoCardCatalog.ThermalThrottlingExplainer.id !in state.dismissedInfoCards &&
-                                state.showInfoCards,
-                        onLearnMore = {
-                            InfoCardCatalog
-                                .resolveLearnArticleId(
-                                    InfoCardCatalog.ThermalThrottlingExplainer,
-                                )?.let(onNavigateToLearnArticle)
-                        },
-                    )
-                }
-            }
-
-            if (thermal.batteryTempC > 35f) {
-                item {
-                    InfoCard(
-                        id = InfoCardCatalog.ThermalHeatBatteryLoop.id,
-                        headline = stringResource(InfoCardCatalog.ThermalHeatBatteryLoop.headlineRes),
-                        body = stringResource(InfoCardCatalog.ThermalHeatBatteryLoop.bodyRes),
-                        onDismiss = { onDismissInfoCard(it) },
-                        visible =
-                            InfoCardCatalog.ThermalHeatBatteryLoop.id !in state.dismissedInfoCards &&
-                                state.showInfoCards,
-                        onLearnMore = {
-                            InfoCardCatalog
-                                .resolveLearnArticleId(
-                                    InfoCardCatalog.ThermalHeatBatteryLoop,
-                                )?.let(onNavigateToLearnArticle)
-                        },
-                    )
-                }
-            }
-
-            // Metrics grid
-            item {
-                ThermalMetricsCard(
-                    thermal = thermal,
-                    temperatureUnit = state.temperatureUnit,
-                    liveTempC = state.liveTempC,
-                    liveHeadroom = state.liveHeadroom,
-                    onInfoClick = { key -> activeInfoSheet = key },
-                )
-            }
-
-            // Temperature history chart (Pro only)
-            if (state.isPro) {
-                item {
-                    ThermalHistoryCard(
-                        history = state.thermalHistory,
-                        selectedPeriod = state.selectedHistoryPeriod,
-                        historyLoadError = state.historyLoadError,
-                        temperatureUnit = state.temperatureUnit,
-                        onPeriodChange = { onPeriodChange(it) },
-                    )
-                }
-            }
+            thermalHistoryItems(
+                state = state,
+                onPeriodChange = onPeriodChange,
+            )
 
             throttlingSection(state = state, onUpgradeToPro = onUpgradeToPro)
 
@@ -324,10 +257,102 @@ private fun ThermalContent(
         }
     }
 
-    ThermalInfoSheet(
+    InfoSheetHost(
         activeKey = activeInfoSheet,
         onDismiss = { activeInfoSheet = null },
+        resolveContent = ::resolveThermalInfoContent,
     )
+}
+
+private fun LazyListScope.thermalOverviewItems(
+    state: ThermalUiState.Success,
+    thermal: ThermalState,
+    onDismissInfoCard: (String) -> Unit,
+    onNavigateToLearnArticle: (String) -> Unit,
+    onInfoClick: (String) -> Unit,
+) {
+    item {
+        ThermalHeroCard(
+            thermal = thermal,
+            temperatureUnit = state.temperatureUnit,
+            sessionMinTemp = state.sessionMinTemp,
+            sessionMaxTemp = state.sessionMaxTemp,
+        )
+    }
+
+    item {
+        HeatStrip(
+            temperatureC = thermal.batteryTempC,
+            temperatureUnit = state.temperatureUnit,
+        )
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        item {
+            InfoCard(
+                id = InfoCardCatalog.ThermalThrottlingExplainer.id,
+                headline = stringResource(InfoCardCatalog.ThermalThrottlingExplainer.headlineRes),
+                body = stringResource(InfoCardCatalog.ThermalThrottlingExplainer.bodyRes),
+                onDismiss = onDismissInfoCard,
+                visible =
+                    InfoCardCatalog.ThermalThrottlingExplainer.id !in state.dismissedInfoCards &&
+                        state.showInfoCards,
+                onLearnMore = {
+                    InfoCardCatalog
+                        .resolveLearnArticleId(
+                            InfoCardCatalog.ThermalThrottlingExplainer,
+                        )?.let(onNavigateToLearnArticle)
+                },
+            )
+        }
+    }
+
+    if (thermal.batteryTempC > 35f) {
+        item {
+            InfoCard(
+                id = InfoCardCatalog.ThermalHeatBatteryLoop.id,
+                headline = stringResource(InfoCardCatalog.ThermalHeatBatteryLoop.headlineRes),
+                body = stringResource(InfoCardCatalog.ThermalHeatBatteryLoop.bodyRes),
+                onDismiss = onDismissInfoCard,
+                visible =
+                    InfoCardCatalog.ThermalHeatBatteryLoop.id !in state.dismissedInfoCards &&
+                        state.showInfoCards,
+                onLearnMore = {
+                    InfoCardCatalog
+                        .resolveLearnArticleId(
+                            InfoCardCatalog.ThermalHeatBatteryLoop,
+                        )?.let(onNavigateToLearnArticle)
+                },
+            )
+        }
+    }
+
+    item {
+        ThermalMetricsCard(
+            thermal = thermal,
+            temperatureUnit = state.temperatureUnit,
+            liveTempC = state.liveTempC,
+            liveHeadroom = state.liveHeadroom,
+            onInfoClick = onInfoClick,
+        )
+    }
+}
+
+private fun LazyListScope.thermalHistoryItems(
+    state: ThermalUiState.Success,
+    onPeriodChange: (HistoryPeriod) -> Unit,
+) {
+    if (state.isPro) {
+        item {
+            ThermalHistoryCard(
+                history = state.thermalHistory,
+                selectedPeriod = state.selectedHistoryPeriod,
+                historyLoadError = state.historyLoadError,
+                temperatureUnit = state.temperatureUnit,
+                onPeriodChange = onPeriodChange,
+            )
+        }
+    }
 }
 
 private fun LazyListScope.throttlingSection(
@@ -363,20 +388,6 @@ private fun LazyListScope.throttlingSection(
                 onAction = onUpgradeToPro,
             )
         }
-    }
-}
-
-@Composable
-private fun ThermalInfoSheet(
-    activeKey: String?,
-    onDismiss: () -> Unit,
-) {
-    val infoContent = activeKey?.let { resolveThermalInfoContent(it) }
-    if (infoContent != null) {
-        InfoBottomSheet(
-            content = infoContent,
-            onDismiss = onDismiss,
-        )
     }
 }
 
@@ -677,11 +688,8 @@ private fun ThermalHistoryCard(
     temperatureUnit: TemperatureUnit,
     onPeriodChange: (HistoryPeriod) -> Unit,
 ) {
-    var selectedMetric by rememberSaveable { mutableStateOf(ThermalHistoryMetric.BATTERY_TEMP.name) }
-
-    val metric =
-        ThermalHistoryMetric.entries.firstOrNull { it.name == selectedMetric }
-            ?: ThermalHistoryMetric.BATTERY_TEMP
+    var selectedMetric by rememberSaveableEnumState(ThermalHistoryMetric.BATTERY_TEMP)
+    val metric = selectedMetric
 
     val chartModel =
         remember(history, metric, selectedPeriod, temperatureUnit) {
@@ -711,39 +719,19 @@ private fun ThermalHistoryCard(
         ) {
             CardSectionTitle(text = stringResource(R.string.thermal_history))
 
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-            ) {
-                ThermalHistoryMetric.entries.forEach { m ->
-                    FilterChip(
-                        selected = metric == m,
-                        onClick = { selectedMetric = m.name },
-                        label = { Text(thermalHistoryMetricLabel(m)) },
-                    )
-                }
-            }
+            EnumFilterChipRow(
+                values = ThermalHistoryMetric.entries,
+                selected = metric,
+                onSelect = { selectedMetric = it },
+                labelFor = { thermalHistoryMetricLabel(it) },
+            )
 
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-            ) {
-                HistoryPeriod.entries
-                    .filter { it != HistoryPeriod.SINCE_UNPLUG }
-                    .forEach { period ->
-                        FilterChip(
-                            selected = selectedPeriod == period,
-                            onClick = { onPeriodChange(period) },
-                            label = { Text(historyPeriodLabel(period)) },
-                        )
-                    }
-            }
+            EnumFilterChipRow(
+                values = HistoryPeriod.entries.filter { it != HistoryPeriod.SINCE_UNPLUG },
+                selected = selectedPeriod,
+                onSelect = onPeriodChange,
+                labelFor = { historyPeriodLabel(it) },
+            )
 
             historyLoadError?.let { error ->
                 Text(

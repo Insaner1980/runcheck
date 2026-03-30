@@ -227,8 +227,7 @@ object DatabaseModule {
                                 .apply()
                         }
                     },
-                )
-                .build()
+                ).build()
 
         return database
     }

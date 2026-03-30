@@ -1,6 +1,7 @@
 package com.runcheck.ui.theme
 
 import android.provider.Settings
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CardElevation
@@ -32,6 +33,11 @@ val MaterialTheme.iconCircleColor: Color
     @ReadOnlyComposable
     get() = colorScheme.surfaceContainerHighest
 
+val MaterialTheme.cardStrokeColor: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = colorScheme.outlineVariant.copy(alpha = uiTokens.outlineAlpha)
+
 @Composable
 fun runcheckCardColors(containerColor: Color = MaterialTheme.colorScheme.surfaceContainer): CardColors =
     CardDefaults.cardColors(containerColor = containerColor)
@@ -41,6 +47,10 @@ fun runcheckHeroCardColors(): CardColors = CardDefaults.cardColors(containerColo
 
 @Composable
 fun runcheckCardElevation(): CardElevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+
+@Composable
+fun runcheckOutlinedCardBorder(): BorderStroke =
+    BorderStroke(width = MaterialTheme.uiTokens.outlineWidth, color = MaterialTheme.cardStrokeColor)
 
 private val RuncheckColorScheme =
     darkColorScheme(
@@ -85,6 +95,7 @@ fun RuncheckTheme(content: @Composable () -> Unit) {
         LocalStatusColors provides RuncheckStatusColors,
         LocalReducedMotion provides reducedMotion,
         LocalNumericFontFamily provides JetBrainsMonoFontFamily,
+        LocalUiTokens provides UiTokens(),
     ) {
         MaterialTheme(
             colorScheme = RuncheckColorScheme,

@@ -1,5 +1,7 @@
 package com.runcheck.data.network
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -77,13 +79,7 @@ class NetworkDataSource
                 }
 
                 val callback =
-                    object : ConnectivityManager.NetworkCallback(
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            FLAG_INCLUDE_LOCATION_INFO
-                        } else {
-                            0
-                        },
-                    ) {
+                    object : ConnectivityManager.NetworkCallback() {
                         override fun onAvailable(network: Network) {
                             currentDefaultNetwork = network
                         }
@@ -164,8 +160,8 @@ class NetworkDataSource
                     if (wifiCallback != null) {
                         runCatching { connectivityManager.unregisterNetworkCallback(wifiCallback) }
                     }
-                    if (telephonyCallback != null) {
-                        runCatching { telephonyManager?.unregisterTelephonyCallback(telephonyCallback) }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && telephonyCallback != null) {
+                        runCatching { unregisterTelephonyCallback(telephonyCallback) }
                     }
                 }
             }.distinctUntilChanged().shareIn(
@@ -505,13 +501,18 @@ class NetworkDataSource
                 else -> context.getString(R.string.network_type_cellular)
             }
 
+        @SuppressLint("MissingPermission")
         private fun getCellularDetails(): CellularDetails {
             val runtimeType =
                 telephonyManager?.let { manager ->
-                    try {
-                        @Suppress("DEPRECATION")
-                        mapNetworkType(manager.dataNetworkType)
-                    } catch (_: SecurityException) {
+                    if (hasPhoneStatePermission()) {
+                        try {
+                            @Suppress("DEPRECATION")
+                            mapNetworkType(manager.dataNetworkType)
+                        } catch (_: SecurityException) {
+                            context.getString(R.string.network_type_cellular)
+                        }
+                    } else {
                         context.getString(R.string.network_type_cellular)
                     }
                 } ?: context.getString(R.string.network_type_cellular)
@@ -542,6 +543,20 @@ class NetworkDataSource
                 context,
                 android.Manifest.permission.ACCESS_FINE_LOCATION,
             ) == PermissionChecker.PERMISSION_GRANTED
+
+        private fun hasPhoneStatePermission(): Boolean {
+            val hasReadPhoneState =
+                PermissionChecker.checkSelfPermission(
+                    context,
+                    Manifest.permission.READ_PHONE_STATE,
+                ) == PermissionChecker.PERMISSION_GRANTED
+            if (hasReadPhoneState) return true
+            return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                PermissionChecker.checkSelfPermission(
+                    context,
+                    Manifest.permission.READ_BASIC_PHONE_STATE,
+                ) == PermissionChecker.PERMISSION_GRANTED
+        }
 
         private fun canReadWifiDetails(): Boolean = hasFineLocationPermission() && isLocationEnabled()
 
@@ -574,6 +589,7 @@ class NetworkDataSource
         }
 
         @Suppress("DEPRECATION")
+        @RequiresApi(Build.VERSION_CODES.R)
         private fun WifiInfo.toWifiStandardLabel(frequencyMhz: Int): String? =
             when (wifiStandard) {
                 WIFI_STANDARD_LEGACY -> {
@@ -608,6 +624,11 @@ class NetworkDataSource
                     null
                 }
             }
+
+        @RequiresApi(Build.VERSION_CODES.S)
+        private fun unregisterTelephonyCallback(callback: TelephonyCallback) {
+            telephonyManager?.unregisterTelephonyCallback(callback)
+        }
 
         private fun normalizeSsid(rawSsid: String?): String? {
             val normalized =

@@ -25,6 +25,10 @@ import com.runcheck.ui.chart.calculateChargingSessionSummary
 import com.runcheck.ui.components.ChartXLabel
 import com.runcheck.ui.components.ChartYLabel
 import com.runcheck.util.ReleaseSafeLog
+import com.runcheck.util.enumValueOrDefault
+import com.runcheck.util.getEnumOrDefault
+import com.runcheck.util.getSanitizedString
+import com.runcheck.util.putEnum
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -49,9 +53,8 @@ class FullscreenChartViewModel
         private val observeProAccess: ObserveProAccessUseCase,
         private val manageUserPreferences: ManageUserPreferencesUseCase,
     ) : ViewModel() {
-        private val parsedSource = parseFullscreenChartSource(savedStateHandle["source"])
-
-        val source: FullscreenChartSource = parsedSource ?: FullscreenChartSource.BATTERY_SESSION
+        val source: FullscreenChartSource =
+            savedStateHandle.getEnumOrDefault("source", FullscreenChartSource.BATTERY_SESSION)
         private var isProUserCached: Boolean = isProUser()
         val isProLocked: Boolean
             get() = fullscreenChartRequiresPro(source) && !isProUserCached
@@ -66,21 +69,21 @@ class FullscreenChartViewModel
         val uiState: StateFlow<FullscreenChartUiState> = _uiState.asStateFlow()
 
         private var currentMetric: String
-            get() = sanitizeFullscreenMetric(source, savedStateHandle["metric"])
+            get() = savedStateHandle.getSanitizedString("metric") { sanitizeFullscreenMetric(source, it) }
             set(value) {
                 savedStateHandle["metric"] = sanitizeFullscreenMetric(source, value)
             }
         private var currentPeriod: String
-            get() = sanitizeFullscreenPeriod(source, savedStateHandle["period"])
+            get() = savedStateHandle.getSanitizedString("period") { sanitizeFullscreenPeriod(source, it) }
             set(value) {
                 savedStateHandle["period"] = sanitizeFullscreenPeriod(source, value)
             }
         private var loadJob: Job? = null
 
         init {
-            savedStateHandle["source"] = source.name
-            savedStateHandle["metric"] = sanitizeFullscreenMetric(source, savedStateHandle["metric"])
-            savedStateHandle["period"] = sanitizeFullscreenPeriod(source, savedStateHandle["period"])
+            savedStateHandle.putEnum("source", source)
+            currentMetric = currentMetric
+            currentPeriod = currentPeriod
             FullscreenChartSeedStore.take(source, currentMetric, currentPeriod)?.let { seed ->
                 _uiState.value = seed
             }
@@ -178,12 +181,8 @@ class FullscreenChartViewModel
         }
 
         private suspend fun loadBatteryHistory() {
-            val metric =
-                runCatching { BatteryHistoryMetric.valueOf(currentMetric) }
-                    .getOrDefault(BatteryHistoryMetric.LEVEL)
-            val period =
-                runCatching { HistoryPeriod.valueOf(currentPeriod) }
-                    .getOrDefault(HistoryPeriod.DAY)
+            val metric = enumValueOrDefault(currentMetric, BatteryHistoryMetric.LEVEL)
+            val period = enumValueOrDefault(currentPeriod, HistoryPeriod.DAY)
             val metricOptions = BatteryHistoryMetric.entries.map { it.name }
             val periodOptions = HistoryPeriod.entries.map { it.name }
 
@@ -231,12 +230,8 @@ class FullscreenChartViewModel
         }
 
         private suspend fun loadBatterySession() {
-            val metric =
-                runCatching { SessionGraphMetric.valueOf(currentMetric) }
-                    .getOrDefault(SessionGraphMetric.CURRENT)
-            val window =
-                runCatching { SessionGraphWindow.valueOf(currentPeriod) }
-                    .getOrDefault(SessionGraphWindow.ALL)
+            val metric = enumValueOrDefault(currentMetric, SessionGraphMetric.CURRENT)
+            val window = enumValueOrDefault(currentPeriod, SessionGraphWindow.ALL)
 
             val period = HistoryPeriod.DAY
             val metricOptions = SessionGraphMetric.entries.map { it.name }
@@ -296,12 +291,8 @@ class FullscreenChartViewModel
         }
 
         private suspend fun loadNetworkHistory() {
-            val metric =
-                runCatching { NetworkHistoryMetric.valueOf(currentMetric) }
-                    .getOrDefault(NetworkHistoryMetric.SIGNAL)
-            val period =
-                runCatching { HistoryPeriod.valueOf(currentPeriod) }
-                    .getOrDefault(HistoryPeriod.DAY)
+            val metric = enumValueOrDefault(currentMetric, NetworkHistoryMetric.SIGNAL)
+            val period = enumValueOrDefault(currentPeriod, HistoryPeriod.DAY)
 
             val metricOptions = NetworkHistoryMetric.entries.map { it.name }
             val periodOptions =

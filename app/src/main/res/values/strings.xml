@@ -823,7 +823,7 @@
     <string name="info_battery_health_status_matters">This status helps explain charging problems, thermal warnings, or unsafe battery states. Use Health Percentage for long-term wear, and Battery Health for the current system-reported condition.</string>
 
     <string name="info_battery_cycle_count_title">Cycle Count</string>
-    <string name="info_battery_cycle_count_explanation">How many full charge-discharge cycles your battery has completed. Using 50% and recharging twice counts as one cycle.</string>
+    <string name="info_battery_cycle_count_explanation" formatted="false">How many full charge-discharge cycles your battery has completed. Using 50% and recharging twice counts as one cycle.</string>
     <string name="info_battery_cycle_count_range">Most phone batteries are rated for 500–800 cycles before significant degradation.</string>
     <string name="info_battery_cycle_count_matters">Higher cycle counts correlate with reduced battery capacity. This is a key indicator of battery wear.</string>
     <string name="info_battery_cycle_count_detail">Modern lithium-ion batteries retain about 80% of their original capacity after 500 cycles under ideal conditions. Fast charging, heat, and deep discharges can reduce this number.</string>
@@ -910,7 +910,7 @@
     <string name="info_battery_stats_avg_usage_matters">This long-term average is more reliable than the current drain rate for understanding your typical usage pattern. Compare it week over week to spot changes.</string>
 
     <string name="info_battery_stats_full_charge_est_title">Full Charge Estimate</string>
-    <string name="info_battery_stats_full_charge_est_explanation">Based on your average drain rate, this estimates how long a full 100% charge would last. This is a theoretical maximum, not a real-time prediction.</string>
+    <string name="info_battery_stats_full_charge_est_explanation" formatted="false">Based on your average drain rate, this estimates how long a full 100% charge would last. This is a theoretical maximum, not a real-time prediction.</string>
     <string name="info_battery_stats_full_charge_est_range">8–16 hours for typical smartphone use. Can be longer with light use or shorter with constant screen-on activity.</string>
     <string name="info_battery_stats_full_charge_est_matters">This gives you a benchmark for your battery\'s practical capacity. If this number drops significantly over months, it may indicate battery degradation.</string>
 
@@ -1058,11 +1058,11 @@
 
     <!-- Info Cards - Battery -->
     <string name="info_card_health_80_headline">Your battery has degraded</string>
-    <string name="info_card_health_80_body">Below 90% health means your battery has lost some of its original capacity. That is normal for lithium-ion batteries after enough time and charge cycles. You may notice shorter battery life between charges.</string>
+    <string name="info_card_health_80_body" formatted="false">Below 90% health means your battery has lost some of its original capacity. That is normal for lithium-ion batteries after enough time and charge cycles. You may notice shorter battery life between charges.</string>
     <string name="info_card_dies_before_zero_headline">Phone dying before 0%?</string>
     <string name="info_card_dies_before_zero_body">A worn battery can drop voltage faster under load, which can make the percentage gauge feel less reliable and cause shutdowns before 0%. If this happens regularly, battery replacement is usually the fix.</string>
     <string name="info_card_charging_habits_headline">Charging tip</string>
-    <string name="info_card_charging_habits_body">Partial charges are fine. The main thing to avoid is heat while charging, especially during gaming, navigation, or direct sun. Spending less time sitting warm at 100% can also reduce wear.</string>
+    <string name="info_card_charging_habits_body" formatted="false">Partial charges are fine. The main thing to avoid is heat while charging, especially during gaming, navigation, or direct sun. Spending less time sitting warm at 100% can also reduce wear.</string>
     <string name="info_card_screen_off_drain_headline">High background drain detected</string>
     <string name="info_card_screen_off_drain_body">Your battery is draining faster than normal with the screen off. This usually means background activity is keeping the phone awake. Compare the Screen Off and Sleep Analysis sections below, and review recent app activity if the pattern continues.</string>
 
@@ -1080,7 +1080,7 @@
 
     <!-- Info Cards - Storage -->
     <string name="info_card_full_storage_headline">Why a full phone is a slow phone</string>
-    <string name="info_card_full_storage_body">When storage is above 75% full, your phone has less room for temporary files, app caches, and system operations. This can slow down app launches, photo saving, and even system updates.</string>
+    <string name="info_card_full_storage_body" formatted="false">When storage is above 75% full, your phone has less room for temporary files, app caches, and system operations. This can slow down app launches, photo saving, and even system updates.</string>
     <string name="info_card_storage_overview_headline">Where your storage actually goes</string>
     <string name="info_card_storage_overview_body">Apps and their data usually use the most space, followed by photos and videos. System files, cached data, and downloaded files can also add up. The media breakdown above shows your personal usage pattern.</string>
 
@@ -1143,7 +1143,7 @@
     <!-- Learn Articles - Storage -->
     <string name="learn_storage_slowdown_title">Full Storage &amp; Performance</string>
     <string name="learn_storage_slowdown_preview">Why a nearly-full phone runs slower and what you can do about it.</string>
-    <string name="learn_storage_slowdown_body">## How storage affects speed\n\nModern flash storage (UFS/eMMC) needs free space to operate efficiently. The controller uses free blocks for wear leveling, garbage collection, and write amplification management. Below about 25% free space, these operations become constrained.\n\n## What you\'ll notice\n\nApp launches take longer. Photos take a moment to save. System updates may fail. Apps may crash when they can\'t write temporary data. The overall system feels sluggish.\n\n## Fixing it\n\nStart with obvious wins: large files, stale downloads, leftover APK installers, and oversized app caches. If you have runcheck pro, the Storage cleanup tools can help surface those categories quickly. Review apps you haven\'t used recently and move large photos or videos off the device if space stays tight.</string>
+    <string name="learn_storage_slowdown_body" formatted="false">## How storage affects speed\n\nModern flash storage (UFS/eMMC) needs free space to operate efficiently. The controller uses free blocks for wear leveling, garbage collection, and write amplification management. Below about 25% free space, these operations become constrained.\n\n## What you\'ll notice\n\nApp launches take longer. Photos take a moment to save. System updates may fail. Apps may crash when they can\'t write temporary data. The overall system feels sluggish.\n\n## Fixing it\n\nStart with obvious wins: large files, stale downloads, leftover APK installers, and oversized app caches. If you have runcheck pro, the Storage cleanup tools can help surface those categories quickly. Review apps you haven\'t used recently and move large photos or videos off the device if space stays tight.</string>
 
     <string name="learn_storage_breakdown_title">Where Your Storage Goes</string>
     <string name="learn_storage_breakdown_preview">Understanding what uses your storage and how to manage each category effectively.</string>

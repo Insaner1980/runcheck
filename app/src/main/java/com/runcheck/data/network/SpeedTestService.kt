@@ -5,7 +5,6 @@ import android.net.ConnectivityManager
 import android.net.LinkProperties
 import android.net.Network
 import android.net.NetworkCapabilities
-import android.os.Build
 import com.runcheck.R
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.SpeedTestConnectionInfo
@@ -84,12 +83,13 @@ class SpeedTestService
                     return@callbackFlow
                 }
 
-                val session = SpeedTestSession(
-                    connectionInfo = validatedNetwork.toConnectionInfo(),
-                    connectionKey = validatedNetwork.toConnectionKey(),
-                    startingDefaultNetwork = connectivityManager.activeNetwork,
-                    scope = this,
-                )
+                val session =
+                    SpeedTestSession(
+                        connectionInfo = validatedNetwork.toConnectionInfo(),
+                        connectionKey = validatedNetwork.toConnectionKey(),
+                        startingDefaultNetwork = connectivityManager.activeNetwork,
+                        scope = this,
+                    )
 
                 val connectionCallback = session.createConnectionCallback()
                 var networkCallbackRegistered = false
@@ -205,13 +205,7 @@ class SpeedTestService
 
             fun createConnectionCallback(): ConnectivityManager.NetworkCallback {
                 var latestLinkProperties: LinkProperties? = null
-                val callbackFlags =
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        ConnectivityManager.NetworkCallback.FLAG_INCLUDE_LOCATION_INFO
-                    } else {
-                        0
-                    }
-                return object : ConnectivityManager.NetworkCallback(callbackFlags) {
+                return object : ConnectivityManager.NetworkCallback() {
                     override fun onAvailable(network: Network) {
                         if (isUnexpectedNetwork(network)) failConnectionChanged()
                     }

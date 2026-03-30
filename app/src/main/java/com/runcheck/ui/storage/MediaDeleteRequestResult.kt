@@ -1,10 +1,10 @@
 package com.runcheck.ui.storage
 
-import android.app.RecoverableSecurityException
 import android.content.Context
 import android.os.Build
 import android.provider.MediaStore
 import androidx.activity.result.IntentSenderRequest
+import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
 import com.runcheck.R
 
@@ -21,15 +21,17 @@ sealed interface MediaDeleteRequestResult {
 fun buildMediaDeleteRequest(
     context: Context,
     uriStrings: List<String>,
-): MediaDeleteRequestResult =
-    buildMediaDeleteRequestResult(
+): MediaDeleteRequestResult {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || uriStrings.isEmpty()) {
+        return MediaDeleteRequestResult.Failed(R.string.cleanup_delete_failed)
+    }
+    return buildMediaDeleteRequestResult(
         sdkInt = Build.VERSION.SDK_INT,
         uriStrings = uriStrings,
     ) { deleteUris ->
-        val uris = deleteUris.map(android.net.Uri::parse)
-        val deleteRequest = MediaStore.createDeleteRequest(context.contentResolver, uris)
-        IntentSenderRequest.Builder(deleteRequest.intentSender).build()
+        createDeleteRequest(context, deleteUris)
     }
+}
 
 internal fun buildMediaDeleteRequestResult(
     sdkInt: Int,
@@ -42,11 +44,19 @@ internal fun buildMediaDeleteRequestResult(
 
     return try {
         MediaDeleteRequestResult.Ready(requestFactory(uriStrings))
-    } catch (_: RecoverableSecurityException) {
-        MediaDeleteRequestResult.Failed(R.string.cleanup_delete_permission_error)
     } catch (_: SecurityException) {
         MediaDeleteRequestResult.Failed(R.string.cleanup_delete_permission_error)
     } catch (_: IllegalArgumentException) {
         MediaDeleteRequestResult.Failed(R.string.cleanup_delete_failed)
     }
+}
+
+@RequiresApi(Build.VERSION_CODES.R)
+private fun createDeleteRequest(
+    context: Context,
+    uriStrings: List<String>,
+): IntentSenderRequest {
+    val uris = uriStrings.map(android.net.Uri::parse)
+    val deleteRequest = MediaStore.createDeleteRequest(context.contentResolver, uris)
+    return IntentSenderRequest.Builder(deleteRequest.intentSender).build()
 }

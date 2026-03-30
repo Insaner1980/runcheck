@@ -2,12 +2,28 @@
 
 _Auto-generated from git history. Updated on each commit._
 
-## 2026 Week 13 (Mar 23 – Mar 29)
+## 2026 Week 13 (maalis 23 – maalis 29)
 
 ### Fixed
+- Korjaa SpeedTestService: unresolved FLAG_INCLUDE_LOCATION_INFO (`ad1ab54`)
+### Added
+- Lisää sonar-project.properties: ekskluoi generoidut tiedostot (`991bb66`)
+- Korjaa 6 SonarCloud-issueta + vähennä duplikaatioita (`6e89f94`)
+- Korjaa 11 SonarCloud-löydöstä: kompleksisuus, unused values, equals, naming (`e30fe88`)
+- Lisää SonarCloud-workflow (`3776789`)
+### Other
+- Päivitä PROJECT.md: CI/CD, Linear, Insights Engine roadmap (`4b93fb9`)
+- Korjaa CodeQL implicit PendingIntent -alertit (CWE-927) (`1dab1c4`)
+- Lisää workflow_dispatch CodeQL-workflowiin (`d1b071f`)
+- Poista ylimääräiset HTML/stitch-tiedostot (`38acd4e`)
+- Korjaa Qodana: poista kiinteä linter, anna qodana.yaml päättää (`e39de24`)
+- Add github workflow file (`7c66b6c`)
+- Add qodana.yaml file (`d6987a0`)
+- Lisää Qodana-workflow (`7256c23`)
+- Lisää Semgrep + OWASP security workflow (`2506988`)
+- Update changelog after monitoring fixes (`a43ee92`)
 - Fix monitoring regressions and migration test setup (`272d2b4`)
 - Fix dependency-analysis plugin version (`cdb9154`)
-### Other
 - Harden release logging and latency config (`a324e77`)
 - CHANGELOG-päivitys: viimeisin commit lisätty automaattisesti (`64d06cf`)
 - Laaja koodilaadun refaktorointi: annotaatiot, nimeäminen, arkkitehtuuri ja kuolleen koodin poisto (`ddabc45`)
@@ -17,7 +33,6 @@ _Auto-generated from git history. Updated on each commit._
 - GridCard subtitleColor-bugikorjaus + SonarCloud-analyysi dokumentoitu (`24f56a1`)
 - SonarCloud-koodihajujen korjaus: käyttämättömät muuttujat, duplikaattiliteraalit ja -haarat (`033c98d`)
 - trigger sonar analysis after fixes (`4afb11c`)
-### Added
 - Add tools:replace for android:usesCleartextTraffic (`50e5c97`)
 - trigger build (`4186d99`)
 - Lyhennetty FGS-syyteksti yksinkertaisemmaksi (`9fff055`)
@@ -65,7 +80,7 @@ _Auto-generated from git history. Updated on each commit._
 - feat: add live signal strength chart on network detail screen (`33dd7f0`)
 - feat: add live charts for battery level, temperature, and voltage (`5231e7d`)
 
-## 2026 Week 12 (Mar 16 – Mar 22)
+## 2026 Week 12 (maalis 16 – maalis 22)
 
 ### Fixed
 - Fix notification tap actions, deep-linking, and worker locale (`3eb095e`)
@@ -120,7 +135,7 @@ _Auto-generated from git history. Updated on each commit._
 - Add files via upload (`392645a`)
 - Laaja ominaisuuspäivitys: akku, storage, thermal, asetukset (`8980fc3`)
 
-## 2026 Week 11 (Mar 09 – Mar 15)
+## 2026 Week 11 (maalis 09 – maalis 15)
 
 ### Changed
 - Uudista NetworkDetailScreen korttipohj. layoutiin (`d36ac53`)

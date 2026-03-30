@@ -13,29 +13,35 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.runcheck.ui.theme.iconCircleColor
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun IconCircle(
     icon: ImageVector,
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    size: Dp = 44.dp,
-    iconSize: Dp = 22.dp,
+    backgroundColor: Color = Color.Unspecified,
+    size: Dp = Dp.Unspecified,
+    iconSize: Dp = Dp.Unspecified,
 ) {
+    val tokens = MaterialTheme.uiTokens
+    val resolvedBackgroundColor =
+        backgroundColor.takeIf { it != Color.Unspecified } ?: MaterialTheme.iconCircleColor
+    val resolvedSize = if (size == Dp.Unspecified) tokens.iconCircle else size
+    val resolvedIconSize = if (iconSize == Dp.Unspecified) tokens.iconCircleInner else iconSize
     Box(
         modifier =
             modifier
-                .size(size)
+                .size(resolvedSize)
                 .clearAndSetSemantics {}
-                .background(color = MaterialTheme.iconCircleColor, shape = CircleShape),
+                .background(color = resolvedBackgroundColor, shape = CircleShape),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.size(iconSize),
+            modifier = Modifier.size(resolvedIconSize),
             tint = tint,
         )
     }

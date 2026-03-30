@@ -15,6 +15,8 @@ import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.messageOr
 import com.runcheck.util.appendLiveValue
+import com.runcheck.util.getEnumOrDefault
+import com.runcheck.util.putEnum
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,13 +45,9 @@ class ThermalViewModel
         private var loadJob: Job? = null
         private var historyJob: Job? = null
         private var selectedHistoryPeriod: HistoryPeriod
-            get() =
-                savedStateHandle
-                    .get<String>(SELECTED_HISTORY_PERIOD_KEY)
-                    ?.let { value -> runCatching { HistoryPeriod.valueOf(value) }.getOrNull() }
-                    ?: HistoryPeriod.DAY
+            get() = savedStateHandle.getEnumOrDefault(SELECTED_HISTORY_PERIOD_KEY, HistoryPeriod.DAY)
             set(value) {
-                savedStateHandle[SELECTED_HISTORY_PERIOD_KEY] = value.name
+                savedStateHandle.putEnum(SELECTED_HISTORY_PERIOD_KEY, value)
             }
         private var sessionMinTemp: Float?
             get() = savedStateHandle.get<Float>(KEY_SESSION_MIN_TEMP)
