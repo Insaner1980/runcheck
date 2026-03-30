@@ -5,6 +5,8 @@ _Auto-generated from git history. Updated on each commit._
 ## 2026 Week 14 (Mar 30 – Apr 05)
 
 ### Other
+- Address SonarCloud Compose issues (`5583ed3`)
+- Päivitä changelog boot-hardeningin jälkeen (`119c6d1`)
 - Koveta boot-vastaanotin julkaisuun (`ba3fb74`)
 - Päivitä changelog detekt-siivouksen jälkeen (`812cd0b`)
 ### Changed
