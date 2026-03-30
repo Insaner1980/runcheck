@@ -4,9 +4,11 @@ _Auto-generated from git history. Updated on each commit._
 
 ## 2026 Week 14 (Mar 30 – Apr 05)
 
+### Other
+- Koveta boot-vastaanotin julkaisuun (`ba3fb74`)
+- Päivitä changelog detekt-siivouksen jälkeen (`812cd0b`)
 ### Changed
 - Siivoa detekt-löydökset ja pilko settings-osioita (`b6b7290`)
-### Other
 - Päivitä changelog refaktorointicommitin jälkeen (`47bbbac`)
 - Refaktoroi UI-tilahelperit ja lisää security-check-skripti (`83985a3`)
 
