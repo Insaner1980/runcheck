@@ -4,7 +4,10 @@ _Auto-generated from git history. Updated on each commit._
 
 ## 2026 Week 14 (Mar 30 – Apr 05)
 
+### Changed
+- Siivoa detekt-löydökset ja pilko settings-osioita (`b6b7290`)
 ### Other
+- Päivitä changelog refaktorointicommitin jälkeen (`47bbbac`)
 - Refaktoroi UI-tilahelperit ja lisää security-check-skripti (`83985a3`)
 
 ## 2026 Week 13 (Mar 23 – Mar 29)
