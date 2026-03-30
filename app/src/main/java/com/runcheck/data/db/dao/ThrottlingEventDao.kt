@@ -14,6 +14,9 @@ interface ThrottlingEventDao {
     @Query("SELECT * FROM throttling_events ORDER BY timestamp DESC LIMIT :limit")
     fun getRecentEvents(limit: Int = 50): Flow<List<ThrottlingEventEntity>>
 
+    @Query("SELECT * FROM throttling_events WHERE timestamp >= :since ORDER BY timestamp DESC")
+    suspend fun getEventsSinceSync(since: Long): List<ThrottlingEventEntity>
+
     @Query(
         """
         UPDATE throttling_events

@@ -105,10 +105,27 @@ val MaterialTheme.numericSpeedHeroValueTextStyle: TextStyle
             lineHeight = 44.sp,
         )
 
+val MaterialTheme.numericMetricDisplayTextStyle: TextStyle
+    @Composable
+    @ReadOnlyComposable
+    get() =
+        typography.displayLarge.copy(
+            fontFamily = numericFontFamily,
+            fontSize = 48.sp,
+            fontWeight = FontWeight.Bold,
+            lineHeight = 48.sp,
+            letterSpacing = (-3).sp,
+        )
+
 val MaterialTheme.chartAxisTextStyle: TextStyle
     @Composable
     @ReadOnlyComposable
-    get() = typography.labelSmall.copy(fontFamily = numericFontFamily)
+    get() =
+        typography.labelSmall.copy(
+            fontFamily = numericFontFamily,
+            fontSize = 12.sp,
+            lineHeight = 14.sp,
+        )
 
 val MaterialTheme.chartTooltipTextStyle: TextStyle
     @Composable
@@ -116,7 +133,8 @@ val MaterialTheme.chartTooltipTextStyle: TextStyle
     get() =
         typography.bodySmall.copy(
             fontFamily = numericFontFamily,
-            fontSize = 11.sp,
+            fontSize = 13.sp,
+            lineHeight = 16.sp,
         )
 
 val RuncheckTypography =

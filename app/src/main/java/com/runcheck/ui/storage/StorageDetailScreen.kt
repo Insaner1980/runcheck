@@ -667,10 +667,10 @@ private fun StorageHeroCard(
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
-                                text = "%",
+                                text = stringResource(R.string.unit_percent),
                                 style = MaterialTheme.numericHeroDisplayUnitTextStyle,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 2.dp, bottom = 10.dp),
+                                modifier = Modifier.padding(start = 2.dp, bottom = 12.dp),
                             )
                         }
                         Text(
@@ -725,7 +725,7 @@ private fun StorageHeroCard(
                     MetricPill(
                         label = stringResource(R.string.storage_fill_rate),
                         value =
-                            storage.fillRateEstimate?.let { "~$it" }
+                            storage.fillRateEstimate?.let { stringResource(R.string.unit_approx_prefix, it) }
                                 ?: stringResource(R.string.battery_estimating),
                         modifier = Modifier.weight(1f),
                         onInfoClick = { onInfoClick("fillRate") },

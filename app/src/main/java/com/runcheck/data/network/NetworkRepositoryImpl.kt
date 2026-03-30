@@ -103,6 +103,11 @@ class NetworkRepositoryImpl
                 }.flowOn(Dispatchers.IO)
         }
 
+        override suspend fun getReadingsSinceSync(since: Long): List<NetworkReading> =
+            withContext(Dispatchers.IO) {
+                networkReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
+            }
+
         override suspend fun deleteOlderThan(cutoff: Long) =
             withContext(Dispatchers.IO) {
                 try {

@@ -12,6 +12,8 @@ interface ThermalRepository {
         limit: Int? = null,
     ): Flow<List<ThermalReading>>
 
+    suspend fun getReadingsSinceSync(since: Long): List<ThermalReading>
+
     suspend fun saveReading(state: ThermalState)
 
     suspend fun getAllReadings(): List<ThermalReading>

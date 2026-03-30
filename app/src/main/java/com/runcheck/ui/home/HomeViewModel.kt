@@ -8,6 +8,7 @@ import com.runcheck.domain.model.HealthScore
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
+import com.runcheck.domain.repository.InsightRepository
 import com.runcheck.domain.repository.MonitoringStatusRepository
 import com.runcheck.domain.scoring.HealthScoreCalculator
 import com.runcheck.domain.usecase.ChargerSessionTracker
@@ -46,6 +47,7 @@ class HomeViewModel
         private val getNetworkState: GetNetworkStateUseCase,
         private val getThermalState: GetThermalStateUseCase,
         private val getStorageState: GetStorageStateUseCase,
+        private val insightRepository: InsightRepository,
         private val monitoringStatusRepository: MonitoringStatusRepository,
         private val proManager: ProManager,
         private val trialManager: TrialManager,
@@ -56,6 +58,7 @@ class HomeViewModel
         private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
         val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
         private var loadJob: Job? = null
+        private var lastSeenInsightIds: Set<Long> = emptySet()
 
         // Persisted across process death via SavedStateHandle
         private var expirationModalShownThisSession: Boolean
@@ -113,6 +116,12 @@ class HomeViewModel
             }
         }
 
+        fun dismissInsight(id: Long) {
+            viewModelScope.launch {
+                insightRepository.dismiss(id)
+            }
+        }
+
         @OptIn(FlowPreview::class)
         private fun loadHome() {
             loadJob?.cancel()
@@ -154,12 +163,26 @@ class HomeViewModel
                             )
                         }
 
+                    val insightFlow =
+                        combine(
+                            insightRepository.getHomeInsights(limit = MAX_HOME_INSIGHTS),
+                            insightRepository.getActiveInsights(),
+                            insightRepository.getUnseenCount(),
+                        ) { insights, activeInsights, unseenInsightCount ->
+                            InsightSnapshot(
+                                insights = insights,
+                                totalInsightCount = activeInsights.size,
+                                unseenInsightCount = unseenInsightCount,
+                            )
+                        }
+
                     combine(
                         dataFlow,
+                        insightFlow,
                         proManager.proState,
                         preferencesFlow,
                         monitoringStaleFlow,
-                    ) { data, proState, preferences, monitoringStale ->
+                    ) { data, insightSnapshot, proState, preferences, monitoringStale ->
                         val showWelcomeSheet =
                             proState.status == ProStatus.TRIAL_ACTIVE &&
                                 !trialManager.isWelcomeShown()
@@ -203,6 +226,9 @@ class HomeViewModel
                             networkState = data.network,
                             thermalState = data.thermal,
                             storageState = data.storage,
+                            insights = insightSnapshot.insights,
+                            totalInsightCount = insightSnapshot.totalInsightCount,
+                            unseenInsightCount = insightSnapshot.unseenInsightCount,
                             temperatureUnit = preferences.temperatureUnit,
                             monitoringStale = monitoringStale,
                             proState = proState,
@@ -217,8 +243,27 @@ class HomeViewModel
                         }.collect { state ->
                             maybeTrackChargerSession(state.batteryState)
                             _uiState.value = state
+                            maybeMarkInsightsSeen(state)
                         }
                 }
+        }
+
+        private fun maybeMarkInsightsSeen(state: HomeUiState.Success) {
+            val unseenIds =
+                state.insights
+                    .filterNot { it.seen }
+                    .map { it.id }
+                    .toSet()
+            if (unseenIds.isEmpty()) {
+                lastSeenInsightIds = emptySet()
+                return
+            }
+            if (unseenIds == lastSeenInsightIds) return
+
+            lastSeenInsightIds = unseenIds
+            viewModelScope.launch {
+                insightRepository.markAllSeen()
+            }
         }
 
         private fun monitoringFreshnessTicker() =
@@ -259,7 +304,14 @@ class HomeViewModel
             val health: HealthScore,
         )
 
+        private data class InsightSnapshot(
+            val insights: List<com.runcheck.domain.insights.model.Insight>,
+            val totalInsightCount: Int,
+            val unseenInsightCount: Int,
+        )
+
         companion object {
+            private const val MAX_HOME_INSIGHTS = 3
             private const val DISPLAY_UPDATE_INTERVAL_MS = 333L
             private const val CHARGER_SESSION_TRACK_INTERVAL_MS = 15_000L
             private const val MONITORING_STALE_CHECK_INTERVAL_MS = 15_000L

@@ -2,11 +2,13 @@ package com.runcheck.data.db
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import com.runcheck.data.db.dao.AppBatteryUsageDao
 import com.runcheck.data.db.dao.BatteryReadingDao
 import com.runcheck.data.db.dao.ChargerDao
 import com.runcheck.data.db.dao.DeviceDao
+import com.runcheck.data.db.dao.InsightDao
 import com.runcheck.data.db.dao.NetworkReadingDao
 import com.runcheck.data.db.dao.SpeedTestResultDao
 import com.runcheck.data.db.dao.StorageReadingDao
@@ -17,6 +19,7 @@ import com.runcheck.data.db.entity.BatteryReadingEntity
 import com.runcheck.data.db.entity.ChargerProfileEntity
 import com.runcheck.data.db.entity.ChargingSessionEntity
 import com.runcheck.data.db.entity.DeviceEntity
+import com.runcheck.data.db.entity.InsightEntity
 import com.runcheck.data.db.entity.NetworkReadingEntity
 import com.runcheck.data.db.entity.SpeedTestResultEntity
 import com.runcheck.data.db.entity.StorageReadingEntity
@@ -35,12 +38,21 @@ import com.runcheck.data.db.entity.ThrottlingEventEntity
         ChargingSessionEntity::class,
         AppBatteryUsageEntity::class,
         SpeedTestResultEntity::class,
+        InsightEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
-@TypeConverters(Converters::class)
+@TypeConverters(RuncheckDatabase.Converters::class)
 abstract class RuncheckDatabase : RoomDatabase() {
+    class Converters {
+        @TypeConverter
+        fun fromBoolean(value: Boolean): Int = if (value) 1 else 0
+
+        @TypeConverter
+        fun toBoolean(value: Int): Boolean = value != 0
+    }
+
     abstract fun batteryReadingDao(): BatteryReadingDao
 
     abstract fun networkReadingDao(): NetworkReadingDao
@@ -58,4 +70,6 @@ abstract class RuncheckDatabase : RoomDatabase() {
     abstract fun appBatteryUsageDao(): AppBatteryUsageDao
 
     abstract fun speedTestResultDao(): SpeedTestResultDao
+
+    abstract fun insightDao(): InsightDao
 }

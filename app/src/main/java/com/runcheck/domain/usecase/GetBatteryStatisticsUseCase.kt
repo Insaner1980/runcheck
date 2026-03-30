@@ -1,5 +1,6 @@
 package com.runcheck.domain.usecase
 
+import com.runcheck.domain.insights.analysis.BatteryDrainAnalyzer
 import com.runcheck.domain.repository.BatteryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -9,6 +10,7 @@ class GetBatteryStatisticsUseCase
     @Inject
     constructor(
         private val batteryRepository: BatteryRepository,
+        private val batteryDrainAnalyzer: BatteryDrainAnalyzer,
     ) {
         suspend operator fun invoke(periodDays: Int = DEFAULT_PERIOD_DAYS): BatteryStatistics? {
             return withContext(Dispatchers.Default) {
@@ -18,7 +20,7 @@ class GetBatteryStatisticsUseCase
 
                 val sorted = readings.sortedBy { it.timestamp }
                 val chargeSummary = calculateChargeSummary(sorted)
-                val avgDrainRate = calculateAverageDrainRate(sorted)
+                val avgDrainRate = batteryDrainAnalyzer.calculateAverageDrainRate(sorted)
                 val fullChargeEstimateHours = avgDrainRate?.takeIf { it > MIN_DRAIN_RATE }?.let { 100f / it }
 
                 BatteryStatistics(
@@ -63,32 +65,9 @@ class GetBatteryStatisticsUseCase
             )
         }
 
-        private fun calculateAverageDrainRate(
-            readings: List<com.runcheck.domain.model.BatteryReading>,
-        ): Float? {
-            val dischargingPairs =
-                readings.zipWithNext().filter { (_, current) ->
-                    current.status == "DISCHARGING" || current.status == "NOT_CHARGING"
-                }
-            if (dischargingPairs.isEmpty()) return null
-
-            val totalDrainPct =
-                dischargingPairs.sumOf { (previous, current) ->
-                    (previous.level - current.level).coerceAtLeast(0).toDouble()
-                }.toFloat()
-            val totalDrainMs =
-                dischargingPairs.sumOf { (previous, current) ->
-                    current.timestamp - previous.timestamp
-                }
-            if (totalDrainMs <= 0) return null
-
-            return totalDrainPct / (totalDrainMs / HOUR_MS.toFloat())
-        }
-
         companion object {
             const val DEFAULT_PERIOD_DAYS = 10
             private const val DAY_MS = 24 * 60 * 60 * 1000L
-            private const val HOUR_MS = 3_600_000L
             private const val MIN_DRAIN_RATE = 0.1f
         }
     }

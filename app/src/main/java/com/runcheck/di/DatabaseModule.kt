@@ -11,6 +11,7 @@ import com.runcheck.data.db.dao.AppBatteryUsageDao
 import com.runcheck.data.db.dao.BatteryReadingDao
 import com.runcheck.data.db.dao.ChargerDao
 import com.runcheck.data.db.dao.DeviceDao
+import com.runcheck.data.db.dao.InsightDao
 import com.runcheck.data.db.dao.NetworkReadingDao
 import com.runcheck.data.db.dao.SpeedTestResultDao
 import com.runcheck.data.db.dao.StorageReadingDao
@@ -190,6 +191,43 @@ object DatabaseModule {
             }
         }
 
+    private val MIGRATION_9_10 =
+        object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `insights` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `rule_id` TEXT NOT NULL,
+                        `dedupe_key` TEXT NOT NULL,
+                        `type` TEXT NOT NULL,
+                        `priority` INTEGER NOT NULL,
+                        `confidence` REAL NOT NULL,
+                        `title_key` TEXT NOT NULL,
+                        `body_key` TEXT NOT NULL,
+                        `body_args_json` TEXT NOT NULL,
+                        `generated_at` INTEGER NOT NULL,
+                        `expires_at` INTEGER NOT NULL,
+                        `data_window_start` INTEGER NOT NULL,
+                        `data_window_end` INTEGER NOT NULL,
+                        `target` TEXT NOT NULL,
+                        `dismissed` INTEGER NOT NULL DEFAULT 0,
+                        `seen` INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_insights_generated_at` ON `insights` (`generated_at`)",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_insights_dismissed_expires_at_priority` ON `insights` (`dismissed`, `expires_at`, `priority`)",
+                )
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_insights_rule_id_dedupe_key` ON `insights` (`rule_id`, `dedupe_key`)",
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -200,6 +238,7 @@ object DatabaseModule {
             MIGRATION_6_7,
             MIGRATION_7_8,
             MIGRATION_8_9,
+            MIGRATION_9_10,
         )
 
     @Provides
@@ -272,4 +311,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideSpeedTestResultDao(db: RuncheckDatabase): SpeedTestResultDao = db.speedTestResultDao()
+
+    @Provides
+    @Singleton
+    fun provideInsightDao(db: RuncheckDatabase): InsightDao = db.insightDao()
 }

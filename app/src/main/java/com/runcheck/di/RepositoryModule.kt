@@ -5,6 +5,7 @@ import com.runcheck.data.battery.BatteryRepositoryImpl
 import com.runcheck.data.charger.ChargerRepositoryImpl
 import com.runcheck.data.device.DeviceProfileRepositoryImpl
 import com.runcheck.data.export.FileExportRepositoryImpl
+import com.runcheck.data.insights.InsightRepositoryImpl
 import com.runcheck.data.network.NetworkRepositoryImpl
 import com.runcheck.data.network.SpeedTestRepositoryImpl
 import com.runcheck.data.preferences.MonitoringStatusRepositoryImpl
@@ -17,6 +18,7 @@ import com.runcheck.domain.repository.AppBatteryUsageRepository
 import com.runcheck.domain.repository.ChargerRepository
 import com.runcheck.domain.repository.FileExportRepository
 import com.runcheck.domain.repository.InfoCardDismissalRepository
+import com.runcheck.domain.repository.InsightRepository
 import com.runcheck.domain.repository.MonitoringStatusRepository
 import com.runcheck.domain.repository.StorageCleanupRepository
 import com.runcheck.domain.repository.ThrottlingRepository
@@ -71,6 +73,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindAppBatteryUsageRepository(impl: AppBatteryUsageRepositoryImpl): AppBatteryUsageRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindInsightRepository(impl: InsightRepositoryImpl): InsightRepository
 
     @Binds
     @Singleton

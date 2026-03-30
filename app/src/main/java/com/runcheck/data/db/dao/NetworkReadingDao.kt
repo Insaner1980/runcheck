@@ -45,4 +45,7 @@ interface NetworkReadingDao {
 
     @Query("SELECT * FROM network_readings ORDER BY timestamp ASC")
     suspend fun getAll(): List<NetworkReadingEntity>
+
+    @Query("SELECT * FROM network_readings WHERE timestamp >= :since ORDER BY timestamp ASC")
+    suspend fun getReadingsSinceSync(since: Long): List<NetworkReadingEntity>
 }

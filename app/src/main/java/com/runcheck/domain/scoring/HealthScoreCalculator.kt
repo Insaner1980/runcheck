@@ -265,7 +265,7 @@ class HealthScoreCalculator
                 ThermalStatus.SHUTDOWN -> 95
             }
 
-        private fun calculateStorageScore(storage: StorageState): Int {
+        fun calculateStorageScore(storage: StorageState): Int {
             var score = 100
 
             // Usage percentage impact

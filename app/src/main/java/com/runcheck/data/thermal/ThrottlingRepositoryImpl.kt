@@ -25,6 +25,11 @@ class ThrottlingRepositoryImpl
                     entities.map { it.toDomain() }
                 }.flowOn(Dispatchers.IO)
 
+        override suspend fun getEventsSinceSync(since: Long): List<ThrottlingEvent> =
+            withContext(Dispatchers.IO) {
+                throttlingEventDao.getEventsSinceSync(since).map { it.toDomain() }
+            }
+
         override suspend fun insert(event: ThrottlingEvent): Long =
             withContext(Dispatchers.IO) {
                 throttlingEventDao.insert(event.toEntity())

@@ -640,7 +640,7 @@ private fun SpeedTestHero(
                     Text(
                         text =
                             if (progressPercent != null) {
-                                "$centerLabel  $progressPercent%"
+                                stringResource(R.string.speed_test_progress, centerLabel, progressPercent)
                             } else {
                                 centerLabel
                             },
@@ -672,7 +672,7 @@ private fun SpeedMetricsCard(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 18.dp)
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
                     .semantics { liveRegion = LiveRegionMode.Polite },
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -832,7 +832,7 @@ private fun LatestResultCard(result: SpeedTestResult) {
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 18.dp),
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
@@ -923,7 +923,7 @@ private fun HistoryResultItem(result: SpeedTestResult) {
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -1074,7 +1074,7 @@ private fun connectionTypeShortLabel(result: SpeedTestResult): String {
             ConnectionType.NONE -> stringResource(R.string.connection_none)
         }
     val subtype = result.networkSubtype
-    return if (!subtype.isNullOrBlank()) "$base · $subtype" else base
+    return if (!subtype.isNullOrBlank()) stringResource(R.string.speed_test_connection_detail, base, subtype) else base
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────────

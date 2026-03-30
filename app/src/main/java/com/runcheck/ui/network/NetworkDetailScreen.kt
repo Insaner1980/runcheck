@@ -52,10 +52,8 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.location.LocationManagerCompat
@@ -279,7 +277,6 @@ private fun NetworkHeroSection(
                 Text(
                     text = qualityLabel,
                     style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
                     color = qualityColor,
                 )
                 SignalBars(
@@ -299,10 +296,7 @@ private fun NetworkHeroSection(
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             text = dbm.toString(),
-                            style =
-                                MaterialTheme.numericHeroDisplayTextStyle.copy(
-                                    fontSize = 48.sp,
-                                ),
+                            style = MaterialTheme.numericMetricDisplayTextStyle,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
@@ -317,10 +311,7 @@ private fun NetworkHeroSection(
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             text = ms.toString(),
-                            style =
-                                MaterialTheme.numericHeroDisplayTextStyle.copy(
-                                    fontSize = 48.sp,
-                                ),
+                            style = MaterialTheme.numericMetricDisplayTextStyle,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
@@ -1257,8 +1248,8 @@ private fun WifiNameHelpCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = Icons.Filled.Warning,
-                contentDescription = null,
+                imageVector = Icons.Outlined.WarningAmber,
+                contentDescription = stringResource(R.string.a11y_warning),
                 tint = MaterialTheme.colorScheme.primary,
             )
             Column(modifier = Modifier.weight(1f)) {

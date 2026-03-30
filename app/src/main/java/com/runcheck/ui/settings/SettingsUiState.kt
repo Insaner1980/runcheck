@@ -8,6 +8,8 @@ data class SettingsUiState(
     val preferences: UserPreferences = UserPreferences(),
     val deviceProfile: DeviceProfileInfo? = null,
     val isPro: Boolean = false,
+    val debugInsightsAvailable: Boolean = false,
+    val isProcessingDebugInsights: Boolean = false,
     val billingAvailable: Boolean = false,
     val proPrice: String? = null,
     val billingStatus: UiText? = null,
@@ -15,5 +17,6 @@ data class SettingsUiState(
     val exportUris: List<String>? = null,
     val exportStatus: UiText? = null,
     val clearDataStatus: UiText? = null,
+    val debugStatus: UiText? = null,
     val errorMessage: UiText? = null,
 )

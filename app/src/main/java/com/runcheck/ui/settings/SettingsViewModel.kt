@@ -10,6 +10,7 @@ import com.runcheck.billing.PurchaseEvent
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.model.TemperatureUnit
+import com.runcheck.domain.repository.InsightDebugActions
 import com.runcheck.domain.repository.SpeedTestRepository
 import com.runcheck.domain.usecase.ClearMonitoringDataUseCase
 import com.runcheck.domain.usecase.ExportDataUseCase
@@ -47,12 +48,14 @@ class SettingsViewModel
         private val manageUserPreferences: ManageUserPreferencesUseCase,
         private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase,
         private val speedTestRepository: SpeedTestRepository,
+        private val insightDebugActions: InsightDebugActions,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(SettingsUiState())
         val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
         private var isFetchingPrice = false
 
         init {
+            _uiState.update { it.copy(debugInsightsAvailable = insightDebugActions.isAvailable) }
             viewModelScope.launch {
                 combine(
                     observeSettings(),
@@ -71,6 +74,7 @@ class SettingsViewModel
                             deviceProfile = settings.deviceProfile,
                             isPro = isPro,
                             billingAvailable = billingAvailable,
+                            debugInsightsAvailable = insightDebugActions.isAvailable,
                         )
                     }
                     if (billingAvailable) {
@@ -234,6 +238,10 @@ class SettingsViewModel
             _uiState.update { it.copy(clearDataStatus = null) }
         }
 
+        fun clearDebugStatus() {
+            _uiState.update { it.copy(debugStatus = null) }
+        }
+
         fun clearBillingStatus() {
             _uiState.update { it.copy(billingStatus = null) }
         }
@@ -364,6 +372,27 @@ class SettingsViewModel
             }
         }
 
+        fun seedDemoInsights() {
+            runDebugInsightAction {
+                val count = insightDebugActions.seedDemoInsights()
+                UiText.Dynamic("Demo insights seeded ($count active)")
+            }
+        }
+
+        fun generateInsightsNow() {
+            runDebugInsightAction {
+                val count = insightDebugActions.generateInsightsNow()
+                UiText.Dynamic("Insights regenerated ($count active)")
+            }
+        }
+
+        fun clearInsights() {
+            runDebugInsightAction {
+                insightDebugActions.clearInsights()
+                UiText.Resource(R.string.settings_debug_insights_cleared)
+            }
+        }
+
         private fun executePreferenceUpdate(block: suspend () -> Unit) {
             viewModelScope.launch {
                 try {
@@ -372,6 +401,38 @@ class SettingsViewModel
                     throw e
                 } catch (_: Exception) {
                     _uiState.update { it.copy(errorMessage = UiText.Resource(R.string.common_error_generic)) }
+                }
+            }
+        }
+
+        private fun runDebugInsightAction(action: suspend () -> UiText) {
+            if (!insightDebugActions.isAvailable) return
+
+            viewModelScope.launch {
+                try {
+                    _uiState.update {
+                        it.copy(
+                            isProcessingDebugInsights = true,
+                            debugStatus = null,
+                        )
+                    }
+                    val status = action()
+                    _uiState.update {
+                        it.copy(
+                            isProcessingDebugInsights = false,
+                            debugStatus = status,
+                        )
+                    }
+                } catch (e: CancellationException) {
+                    _uiState.update { it.copy(isProcessingDebugInsights = false) }
+                    throw e
+                } catch (_: Exception) {
+                    _uiState.update {
+                        it.copy(
+                            isProcessingDebugInsights = false,
+                            errorMessage = UiText.Resource(R.string.common_error_generic),
+                        )
+                    }
                 }
             }
         }

@@ -216,7 +216,7 @@ private fun FullscreenChartScaffold(
                 ) {
                     IconButton(onClick = onClose) {
                         Icon(
-                            imageVector = Icons.Filled.Close,
+                            imageVector = Icons.Outlined.Close,
                             contentDescription = stringResource(R.string.close_fullscreen_chart),
                         )
                     }

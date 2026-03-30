@@ -25,9 +25,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.domain.model.DataRetention
@@ -259,9 +259,9 @@ internal fun AlertThresholdsSection(
     onResetThresholdsClick: () -> Unit,
 ) {
     val isDefault =
-        preferences.alertBatteryThreshold == DefaultAlertBatteryThreshold &&
-            preferences.alertTempThreshold == DefaultAlertTemperatureThreshold &&
-            preferences.alertStorageThreshold == DefaultAlertStorageThreshold
+        preferences.alertBatteryThreshold == DEFAULT_ALERT_BATTERY_THRESHOLD &&
+            preferences.alertTempThreshold == DEFAULT_ALERT_TEMPERATURE_THRESHOLD &&
+            preferences.alertStorageThreshold == DEFAULT_ALERT_STORAGE_THRESHOLD
 
     SettingsCard {
         CardSectionTitle(text = stringResource(R.string.settings_alert_thresholds))
@@ -271,7 +271,7 @@ internal fun AlertThresholdsSection(
             label = stringResource(R.string.settings_threshold_battery),
             value = preferences.alertBatteryThreshold,
             allowedValues = LOW_BATTERY_THRESHOLD_VALUES,
-            valueLabelFor = { current -> "$current%" },
+            valueLabelFor = { current -> context.getString(R.string.settings_threshold_percent, current) },
             onValueChange = onSetAlertBatteryThreshold,
         )
         SettingsDivider()
@@ -294,7 +294,7 @@ internal fun AlertThresholdsSection(
             label = stringResource(R.string.settings_threshold_storage),
             value = preferences.alertStorageThreshold,
             allowedValues = LOW_STORAGE_THRESHOLD_VALUES,
-            valueLabelFor = { current -> "$current%" },
+            valueLabelFor = { current -> context.getString(R.string.settings_threshold_percent, current) },
             onValueChange = onSetAlertStorageThreshold,
         )
 
@@ -420,6 +420,67 @@ internal fun DataSection(
             labelColor = MaterialTheme.colorScheme.error,
             onClick = onClearAllDataClick,
         )
+    }
+}
+
+@Composable
+internal fun DebugInsightsSection(
+    uiState: SettingsUiState,
+    onSeedDemoInsights: () -> Unit,
+    onGenerateInsightsNow: () -> Unit,
+    onClearInsights: () -> Unit,
+) {
+    if (!uiState.debugInsightsAvailable) return
+
+    SettingsCard {
+        CardSectionTitle(text = stringResource(R.string.settings_debug_insights_section))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+        Text(
+            text = stringResource(R.string.settings_debug_insights_description),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        if (uiState.isProcessingDebugInsights) {
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                Text(
+                    text = stringResource(R.string.settings_debug_insights_running),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        OutlinedButton(
+            onClick = onSeedDemoInsights,
+            enabled = !uiState.isProcessingDebugInsights,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.settings_debug_insights_seed_demo))
+        }
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+        OutlinedButton(
+            onClick = onGenerateInsightsNow,
+            enabled = !uiState.isProcessingDebugInsights,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.settings_debug_insights_run_now))
+        }
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+        TextButton(
+            onClick = onClearInsights,
+            enabled = !uiState.isProcessingDebugInsights,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.settings_debug_insights_clear))
+        }
     }
 }
 

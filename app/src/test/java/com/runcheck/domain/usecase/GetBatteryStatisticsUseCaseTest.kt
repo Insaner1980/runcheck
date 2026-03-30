@@ -1,5 +1,6 @@
 package com.runcheck.domain.usecase
 
+import com.runcheck.domain.insights.analysis.BatteryDrainAnalyzer
 import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.repository.BatteryRepository
 import io.mockk.coEvery
@@ -19,7 +20,7 @@ class GetBatteryStatisticsUseCaseTest {
     @Before
     fun setup() {
         batteryRepository = mockk()
-        useCase = GetBatteryStatisticsUseCase(batteryRepository)
+        useCase = GetBatteryStatisticsUseCase(batteryRepository, BatteryDrainAnalyzer())
     }
 
     private fun reading(

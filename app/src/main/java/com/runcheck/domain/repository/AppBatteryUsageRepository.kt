@@ -10,6 +10,8 @@ interface AppBatteryUsageRepository {
 
     fun getUsageSummarySince(since: Long): Flow<AppUsageListSummary>
 
+    suspend fun getUsageSinceSync(since: Long): List<AppBatteryUsage>
+
     suspend fun collectUsageSnapshot()
 
     suspend fun deleteOlderThan(cutoff: Long)

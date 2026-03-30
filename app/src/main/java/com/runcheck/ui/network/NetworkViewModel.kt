@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
@@ -292,7 +293,8 @@ class NetworkViewModel
                         showInfoCards = preferences.showInfoCards,
                         isPro = isPro,
                     )
-                }.catch { error -> handleNetworkSnapshotError(error) }
+                }.sample(333L)
+                    .catch { error -> handleNetworkSnapshotError(error) }
                     .collect(::applyNetworkSnapshot)
             }
 

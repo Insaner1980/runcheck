@@ -28,6 +28,7 @@ import com.runcheck.ui.charger.ChargerComparisonScreen
 import com.runcheck.ui.fullscreen.FullscreenChartResult
 import com.runcheck.ui.fullscreen.FullscreenChartScreen
 import com.runcheck.ui.home.HomeScreen
+import com.runcheck.ui.insights.InsightsScreen
 import com.runcheck.ui.learn.LearnArticleDetailScreen
 import com.runcheck.ui.learn.LearnScreen
 import com.runcheck.ui.network.NetworkDetailScreen
@@ -123,12 +124,30 @@ fun RuncheckNavHost(
                     )
                 },
                 onNavigateToAppUsage = { navController.navigateSingleTop(Screen.AppUsage.route) },
+                onNavigateToInsights = { navController.navigateSingleTop(Screen.Insights.route) },
                 onNavigateToSettings = { navController.navigateSingleTop(Screen.Settings.route) },
                 onNavigateToProUpgrade = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
                 onNavigateToLearn = { navController.navigateSingleTop(Screen.Learn.route) },
                 onNavigateToLearnArticle = { articleId ->
                     navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
                 },
+            )
+        }
+        composable(Screen.Insights.route) {
+            InsightsScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToBattery = { navController.navigateSingleTop(Screen.Battery.route) },
+                onNavigateToNetwork = { navController.navigateSingleTop(Screen.Network.route) },
+                onNavigateToThermal = { navController.navigateSingleTop(Screen.Thermal.route) },
+                onNavigateToStorage = { navController.navigateSingleTop(Screen.Storage.route) },
+                onNavigateToCharger = {
+                    navController.navigateNested(
+                        parentRoute = Screen.Battery.route,
+                        childRoute = Screen.Charger.route,
+                    )
+                },
+                onNavigateToAppUsage = { navController.navigateSingleTop(Screen.AppUsage.route) },
+                onNavigateToProUpgrade = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
             )
         }
         composable(Screen.Battery.route) { entry ->

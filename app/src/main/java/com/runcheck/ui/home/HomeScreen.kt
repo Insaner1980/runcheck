@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.BatteryChargingFull
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.DataUsage
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Settings
@@ -109,6 +110,7 @@ import com.runcheck.ui.components.PrimaryTopBar
 import com.runcheck.ui.components.ProBadgePill
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.StatusDot
+import com.runcheck.ui.home.insights.InsightsCard
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.pro.PostExpirationUpgradeCard
 import com.runcheck.ui.pro.TrialHomeCard
@@ -143,6 +145,7 @@ fun HomeScreen(
     onNavigateToCharger: () -> Unit,
     onNavigateToSpeedTest: () -> Unit,
     onNavigateToAppUsage: () -> Unit,
+    onNavigateToInsights: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToProUpgrade: () -> Unit,
     modifier: Modifier = Modifier,
@@ -249,6 +252,8 @@ fun HomeScreen(
                         onNavigateToCharger = onNavigateToCharger,
                         onNavigateToSpeedTest = onNavigateToSpeedTest,
                         onNavigateToAppUsage = onNavigateToAppUsage,
+                        onNavigateToInsights = onNavigateToInsights,
+                        onDismissInsight = { viewModel.dismissInsight(it) },
                         onNavigateToProUpgrade = onNavigateToProUpgrade,
                         onNavigateToLearn = onNavigateToLearn,
                         onNavigateToLearnArticle = onNavigateToLearnArticle,
@@ -283,12 +288,13 @@ private fun HomeContent(
     onNavigateToCharger: () -> Unit,
     onNavigateToSpeedTest: () -> Unit,
     onNavigateToAppUsage: () -> Unit,
+    onNavigateToInsights: () -> Unit,
+    onDismissInsight: (Long) -> Unit,
     onNavigateToProUpgrade: () -> Unit,
     onNavigateToLearn: () -> Unit = {},
     onNavigateToLearnArticle: (String) -> Unit = {},
     onDismissUpgradeCard: () -> Unit = {},
 ) {
-    val context = LocalContext.current
     val isWideScreen = LocalConfiguration.current.screenWidthDp >= 600
 
     ContentContainer {
@@ -348,6 +354,26 @@ private fun HomeContent(
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
+
+            InsightsCard(
+                insights = state.insights,
+                totalInsightCount = state.totalInsightCount,
+                unseenInsightCount = state.unseenInsightCount,
+                isPro = state.isPro,
+                onNavigateToBattery = onNavigateToBattery,
+                onNavigateToNetwork = onNavigateToNetwork,
+                onNavigateToThermal = onNavigateToThermal,
+                onNavigateToStorage = onNavigateToStorage,
+                onNavigateToCharger = onNavigateToCharger,
+                onNavigateToAppUsage = onNavigateToAppUsage,
+                onNavigateToInsights = onNavigateToInsights,
+                onNavigateToProUpgrade = onNavigateToProUpgrade,
+                onDismissInsight = onDismissInsight,
+            )
+
+            if (state.insights.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
+            }
 
             HomeQuickToolsSection(
                 isPro = state.isPro,
@@ -627,9 +653,9 @@ private fun HomeProStatusSection(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(18.dp),
+                        .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 IconCircle(
                     icon = Icons.Outlined.Star,
@@ -660,9 +686,9 @@ private fun HomeProStatusSection(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(18.dp),
+                        .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 IconCircle(
                     icon = Icons.Outlined.Lock,
@@ -826,7 +852,7 @@ private fun MonitoringStaleWarning(onLearnWhy: () -> Unit) {
         ) {
             Icon(
                 imageVector = Icons.Outlined.WarningAmber,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.a11y_stale_data_warning),
                 tint = MaterialTheme.statusColors.poor,
                 modifier =
                     Modifier
@@ -904,7 +930,7 @@ private fun HealthScoreCard(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
+                    .padding(horizontal = 24.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(
@@ -921,7 +947,7 @@ private fun HealthScoreCard(
                 verticalAlignment = Alignment.Bottom,
                 modifier =
                     Modifier.semantics(mergeDescendants = true) {
-                        contentDescription = "$score / 100"
+                        contentDescription = stringResource(R.string.a11y_health_score, score)
                         liveRegion = LiveRegionMode.Polite
                     },
             ) {
@@ -931,10 +957,10 @@ private fun HealthScoreCard(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = "/100",
+                    text = stringResource(R.string.unit_per_hundred),
                     style = MaterialTheme.numericHeroDisplayUnitTextStyle,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 4.dp, bottom = 10.dp),
+                    modifier = Modifier.padding(start = 4.dp, bottom = 12.dp),
                 )
             }
 
@@ -1017,7 +1043,7 @@ private fun BatteryHeroCard(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 14.dp),
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
         ) {
             SectionHeader(stringResource(R.string.home_battery_card))
 
@@ -1042,7 +1068,7 @@ private fun BatteryHeroCard(
                                     fontFamily = MaterialTheme.numericFontFamily,
                                 ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 2.dp, bottom = 11.dp),
+                            modifier = Modifier.padding(start = 2.dp, bottom = 12.dp),
                         )
                     }
                     Text(
@@ -1106,7 +1132,7 @@ private fun HealthBreakdownRow(
                 .clickable(onClick = onClick, onClickLabel = clickLabel)
                 .semantics(mergeDescendants = true) {
                     stateDescription = statusText
-                }.padding(vertical = 10.dp),
+                }.padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         StatusDot(
@@ -1335,12 +1361,12 @@ private fun HealthCategoryBar(
                             .height(6.dp)
                             .background(
                                 color = color,
-                                shape = RoundedCornerShape(3.dp),
+                                shape = RoundedCornerShape(4.dp),
                             ),
                 )
             }
         }
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,

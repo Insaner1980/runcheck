@@ -46,6 +46,11 @@ class AppBatteryUsageRepositoryImpl
                 .map { it.toDomain() }
                 .flowOn(Dispatchers.IO)
 
+        override suspend fun getUsageSinceSync(since: Long): List<AppBatteryUsage> =
+            withContext(Dispatchers.IO) {
+                appBatteryUsageDao.getUsageSinceSync(since).map { it.toDomain() }
+            }
+
         override suspend fun collectUsageSnapshot() =
             withContext(Dispatchers.IO) {
                 if (!appUsageDataSource.hasUsageStatsPermission()) {

@@ -18,6 +18,8 @@ interface NetworkRepository {
         limit: Int? = null,
     ): Flow<List<NetworkReading>>
 
+    suspend fun getReadingsSinceSync(since: Long): List<NetworkReading>
+
     suspend fun deleteOlderThan(cutoff: Long)
 
     suspend fun deleteAll()

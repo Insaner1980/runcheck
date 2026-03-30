@@ -47,6 +47,7 @@ Push-based navigation from a single Home screen. No bottom nav, no tabs.
 
 ```text
 Home
+├── Insights
 ├── Battery Detail
 │   ├── Charger Comparison [PRO]
 │   └── Fullscreen Chart
@@ -66,6 +67,7 @@ Home
 Defined routes in code:
 
 - `home`
+- `insights`
 - `battery`
 - `charger`
 - `network`
@@ -103,7 +105,7 @@ State restoration details:
 
 ### Background Monitoring
 
-Two WorkManager jobs are scheduled through `MonitorScheduler`:
+Three WorkManager jobs are scheduled through `MonitorScheduler`:
 
 - `HealthMonitorWorker`
   - collects battery, network, thermal, and storage snapshots
@@ -114,6 +116,10 @@ Two WorkManager jobs are scheduled through `MonitorScheduler`:
   - collects per-app usage snapshots
   - cleans up old readings
   - refreshes widgets
+- `InsightGenerationWorker`
+  - evaluates persisted Room history through the Insights Engine
+  - refreshes the Home insights surface on a low-frequency schedule
+  - stays battery-conscious with `requiresBatteryNotLow` constraints
 
 Supporting monitor components include:
 
@@ -159,6 +165,7 @@ Main sections:
   - Thermal
   - Charger comparison
   - Storage
+- Rule-driven Insights summary backed by persisted Room insight rows, with Home showing a curated subset of up to three items and a dedicated full Insights screen
 - Quick tools card
   - Speed Test
   - App Usage
@@ -171,7 +178,9 @@ Trial and Pro UI handled on Home:
 - Day-5 trial snackbar/banner
 - Trial-expiration modal
 - Post-expiration upgrade card
-- Purchased Pro “Insights” card
+- Purchased Pro status card
+- Top-level Insights summary available to all users, with the full list available from the dedicated Insights screen
+- Insight targets may still deep-link to Pro-gated destinations such as Charger Comparison or App Usage
 
 ---
 
@@ -586,8 +595,9 @@ Used via `MaterialTheme.statusColors` extension. Always paired with icons or tex
 | numericHeroUnitTextStyle | headlineLarge | 20sp SemiBold | Units next to hero values |
 | numericRingValueTextStyle | displayMedium | 32sp Bold | ProgressRing center value |
 | numericSpeedHeroValueTextStyle | displaySmall | 40sp | Speed test hero display |
-| chartAxisTextStyle | labelSmall | 10sp | Chart axis labels |
-| chartTooltipTextStyle | bodySmall | 11sp | Chart tooltip values |
+| numericMetricDisplayTextStyle | displayLarge | 48sp Bold, -3sp tracking | Secondary hero numbers (dBm, latency) |
+| chartAxisTextStyle | labelSmall | 12sp | Chart axis labels |
+| chartTooltipTextStyle | bodySmall | 13sp | Chart tooltip values |
 
 ### Shapes & Spacing
 
@@ -604,6 +614,7 @@ Used via `MaterialTheme.statusColors` extension. Always paired with icons or tex
 
 | Token | Value | Usage |
 |-------|-------|-------|
+| xxs | 2dp | Micro gaps, baseline alignment |
 | xs | 4dp | Tight gaps |
 | sm | 8dp | Small gaps, inter-row spacing |
 | md | 12dp | Between cards, standard gaps |
@@ -655,9 +666,9 @@ Local tools:
 
 ## Roadmap
 
-### Next Major Feature: Insights Engine
+### Current Major Differentiator: Insights Engine
 
-Cross-category correlation engine that analyzes Room data across all four monitoring categories (battery, thermal, network, storage) and surfaces insights, trends, and anomalies automatically. Differentiator vs AccuBattery, DevCheck, AIDA64 which show categories as separate silos. Examples:
+runcheck now includes a cross-category correlation engine that analyzes Room data across battery, thermal, network, storage, charger, and app-usage history and surfaces insights automatically on Home. It is one of the clearest product differentiators versus apps that only show siloed metrics. Examples:
 - Correlation between temperature rise and battery drain spike
 - Network quality degradation at specific times
 - Anomaly detection from normal usage patterns

@@ -1,5 +1,7 @@
 package com.runcheck.di
 
+import android.content.Context
+import androidx.work.WorkManager
 import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.data.appusage.AppUsageDataSource
 import com.runcheck.data.billing.BillingManager
@@ -16,7 +18,9 @@ import com.runcheck.service.monitor.MonitorScheduler
 import com.runcheck.service.monitor.ScreenStateTracker
 import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -50,4 +54,12 @@ abstract class SystemBindingsModule {
     @Binds
     @Singleton
     abstract fun bindDatabaseTransactionRunner(impl: RoomTransactionRunner): DatabaseTransactionRunner
+
+    companion object {
+        @Provides
+        @Singleton
+        fun provideWorkManager(
+            @ApplicationContext context: Context,
+        ): WorkManager = WorkManager.getInstance(context)
+    }
 }

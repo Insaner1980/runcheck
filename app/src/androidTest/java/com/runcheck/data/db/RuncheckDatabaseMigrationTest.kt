@@ -98,6 +98,44 @@ class RuncheckDatabaseMigrationTest {
         helper.runMigrationsAndValidate(TEST_DB, 9, true, *DatabaseModule.ALL_MIGRATIONS)
     }
 
+    @Test
+    fun migrate9To10_createsInsightsTableAndIndexes() {
+        helper.createDatabase(TEST_DB, 9).close()
+
+        val database = helper.runMigrationsAndValidate(TEST_DB, 10, true, *DatabaseModule.ALL_MIGRATIONS)
+
+        database.query("PRAGMA table_info(`insights`)").use { cursor ->
+            check(cursor.count > 0) {
+                "Expected insights table columns to exist after migration to version 10"
+            }
+        }
+
+        database.query("PRAGMA index_list(`insights`)").use { cursor ->
+            val nameColumn = cursor.getColumnIndexOrThrow("name")
+            var foundGeneratedAtIndex = false
+            var foundDismissedPriorityIndex = false
+            var foundRuleDedupeIndex = false
+
+            while (cursor.moveToNext()) {
+                when (cursor.getString(nameColumn)) {
+                    "index_insights_generated_at" -> foundGeneratedAtIndex = true
+                    "index_insights_dismissed_expires_at_priority" -> foundDismissedPriorityIndex = true
+                    "index_insights_rule_id_dedupe_key" -> foundRuleDedupeIndex = true
+                }
+            }
+
+            check(foundGeneratedAtIndex) {
+                "Expected generated_at index to exist after migration to version 10"
+            }
+            check(foundDismissedPriorityIndex) {
+                "Expected dismissed/expires_at/priority index to exist after migration to version 10"
+            }
+            check(foundRuleDedupeIndex) {
+                "Expected unique rule_id/dedupe_key index to exist after migration to version 10"
+            }
+        }
+    }
+
     private companion object {
         const val TEST_DB = "runcheck-migration-test"
     }

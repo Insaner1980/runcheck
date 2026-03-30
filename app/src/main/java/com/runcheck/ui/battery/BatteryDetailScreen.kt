@@ -266,7 +266,7 @@ private fun BatteryContent(
         applySelection = { source, metric, period ->
             when (source) {
                 FullscreenChartSource.BATTERY_HISTORY -> {
-                        selectedHistoryMetricState.value =
+                    selectedHistoryMetricState.value =
                         enumValueOrDefault(
                             sanitizeFullscreenMetric(
                                 source = FullscreenChartSource.BATTERY_HISTORY,
@@ -286,7 +286,7 @@ private fun BatteryContent(
                 }
 
                 FullscreenChartSource.BATTERY_SESSION -> {
-                        selectedSessionMetricState.value =
+                    selectedSessionMetricState.value =
                         enumValueOrDefault(
                             sanitizeFullscreenMetric(
                                 source = FullscreenChartSource.BATTERY_SESSION,
@@ -294,7 +294,7 @@ private fun BatteryContent(
                             ),
                             SessionGraphMetric.CURRENT,
                         )
-                        selectedSessionWindowState.value =
+                    selectedSessionWindowState.value =
                         enumValueOrDefault(
                             sanitizeFullscreenPeriod(
                                 source = FullscreenChartSource.BATTERY_SESSION,
@@ -999,7 +999,7 @@ private fun BatteryHeroSection(
                                 text = stringResource(R.string.unit_percent),
                                 style = MaterialTheme.numericHeroDisplayUnitTextStyle,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 2.dp, bottom = 10.dp),
+                                modifier = Modifier.padding(start = 2.dp, bottom = 12.dp),
                             )
                         }
                         Text(

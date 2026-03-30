@@ -203,7 +203,7 @@ private fun ChargerContent(
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             ) {
                 Icon(
-                    imageVector = Icons.Default.Add,
+                    imageVector = Icons.Outlined.Add,
                     contentDescription = stringResource(R.string.charger_add),
                 )
             }
@@ -465,7 +465,7 @@ private fun ChargerCard(
                 }
                 IconButton(onClick = onDelete) {
                     Icon(
-                        imageVector = Icons.Default.Delete,
+                        imageVector = Icons.Outlined.Delete,
                         contentDescription = stringResource(R.string.charger_delete),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

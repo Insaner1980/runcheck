@@ -19,14 +19,26 @@ interface ChargerDao {
     @Query("DELETE FROM charger_profiles WHERE id = :id")
     suspend fun deleteChargerById(id: Long)
 
+    @Query("DELETE FROM charger_profiles")
+    suspend fun deleteAllChargers()
+
+    @Query("DELETE FROM charging_sessions")
+    suspend fun deleteAllSessions()
+
     @Insert
     suspend fun insertSession(session: ChargingSessionEntity): Long
 
     @Query("SELECT * FROM charger_profiles ORDER BY created DESC")
     fun getChargerProfiles(): Flow<List<ChargerProfileEntity>>
 
+    @Query("SELECT * FROM charger_profiles ORDER BY created DESC")
+    suspend fun getChargerProfilesSync(): List<ChargerProfileEntity>
+
     @Query("SELECT * FROM charging_sessions ORDER BY start_time DESC")
     fun getAllSessions(): Flow<List<ChargingSessionEntity>>
+
+    @Query("SELECT * FROM charging_sessions ORDER BY start_time DESC")
+    suspend fun getAllSessionsSync(): List<ChargingSessionEntity>
 
     @Query("SELECT * FROM charging_sessions WHERE end_time IS NULL LIMIT 1")
     suspend fun getActiveSession(): ChargingSessionEntity?

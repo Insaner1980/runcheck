@@ -95,10 +95,10 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 internal const val TAG = "SettingsScreen"
-internal const val DefaultAlertBatteryThreshold = 20
-internal const val DefaultAlertTemperatureThreshold = 42
-internal const val DefaultAlertStorageThreshold = 90
-internal const val DisabledContentAlpha = 0.38f
+internal const val DEFAULT_ALERT_BATTERY_THRESHOLD = 20
+internal const val DEFAULT_ALERT_TEMPERATURE_THRESHOLD = 42
+internal const val DEFAULT_ALERT_STORAGE_THRESHOLD = 90
+internal const val DISABLED_CONTENT_ALPHA = 0.38f
 
 @Composable
 fun SettingsScreen(
@@ -285,6 +285,13 @@ fun SettingsScreen(
                     onClearAllDataClick = { showClearDialogState.value = true },
                 )
 
+                DebugInsightsSection(
+                    uiState = uiState,
+                    onSeedDemoInsights = viewModel::seedDemoInsights,
+                    onGenerateInsightsNow = viewModel::generateInsightsNow,
+                    onClearInsights = viewModel::clearInsights,
+                )
+
                 ProSection(
                     uiState = uiState,
                     onPurchasePro = { activity?.let(viewModel::purchasePro) },
@@ -305,6 +312,7 @@ fun SettingsScreen(
                     onClearBillingStatus = { viewModel.clearBillingStatus() },
                     onClearExportStatus = { viewModel.clearExportStatus() },
                     onClearClearDataStatus = { viewModel.clearClearDataStatus() },
+                    onClearDebugStatus = { viewModel.clearDebugStatus() },
                     onClearExportUris = { viewModel.clearExportUris() },
                     onClearErrorMessage = { viewModel.clearErrorMessage() },
                 )
@@ -556,12 +564,14 @@ private fun SettingsTransientEffects(
     onClearBillingStatus: () -> Unit,
     onClearExportStatus: () -> Unit,
     onClearClearDataStatus: () -> Unit,
+    onClearDebugStatus: () -> Unit,
     onClearExportUris: () -> Unit,
     onClearErrorMessage: () -> Unit,
 ) {
     val currentOnClearBillingStatus = rememberUpdatedState(onClearBillingStatus)
     val currentOnClearExportStatus = rememberUpdatedState(onClearExportStatus)
     val currentOnClearClearDataStatus = rememberUpdatedState(onClearClearDataStatus)
+    val currentOnClearDebugStatus = rememberUpdatedState(onClearDebugStatus)
     val currentOnClearExportUris = rememberUpdatedState(onClearExportUris)
     val currentOnClearErrorMessage = rememberUpdatedState(onClearErrorMessage)
 
@@ -581,6 +591,12 @@ private fun SettingsTransientEffects(
         LaunchedEffect(status) {
             Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
             currentOnClearClearDataStatus.value()
+        }
+    }
+    uiState.debugStatus?.let { status ->
+        LaunchedEffect(status) {
+            Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
+            currentOnClearDebugStatus.value()
         }
     }
     uiState.exportUris?.let { exportUriStrings ->
@@ -746,7 +762,7 @@ internal fun SettingsRadioRow(
             Modifier
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 48.dp)
-                .alpha(if (enabled) 1f else DisabledContentAlpha)
+                .alpha(if (enabled) 1f else DISABLED_CONTENT_ALPHA)
                 .selectable(
                     selected = selected,
                     enabled = enabled,
@@ -777,7 +793,7 @@ internal fun SettingsToggle(
             Modifier
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 48.dp)
-                .alpha(if (enabled) 1f else DisabledContentAlpha)
+                .alpha(if (enabled) 1f else DISABLED_CONTENT_ALPHA)
                 .toggleable(
                     value = checked,
                     enabled = enabled,

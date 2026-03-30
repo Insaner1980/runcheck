@@ -1,6 +1,10 @@
 package com.runcheck.ui.home
 
 import androidx.lifecycle.SavedStateHandle
+import com.runcheck.domain.insights.model.Insight
+import com.runcheck.domain.insights.model.InsightPriority
+import com.runcheck.domain.insights.model.InsightTarget
+import com.runcheck.domain.insights.model.InsightType
 import com.runcheck.domain.model.BatteryHealth
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.ChargingStatus
@@ -14,6 +18,7 @@ import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
 import com.runcheck.domain.model.UserPreferences
+import com.runcheck.domain.repository.InsightRepository
 import com.runcheck.domain.repository.MonitoringStatusRepository
 import com.runcheck.domain.scoring.HealthScoreCalculator
 import com.runcheck.domain.usecase.ChargerSessionTracker
@@ -54,6 +59,7 @@ class HomeViewModelTest {
     private val getNetworkState: GetNetworkStateUseCase = mockk()
     private val getThermalState: GetThermalStateUseCase = mockk()
     private val getStorageState: GetStorageStateUseCase = mockk()
+    private val insightRepository: InsightRepository = mockk(relaxed = true)
     private val monitoringStatusRepository: MonitoringStatusRepository = mockk(relaxed = true)
     private val proManager: ProManager = mockk()
     private val trialManager: TrialManager = mockk(relaxed = true)
@@ -108,6 +114,9 @@ class HomeViewModelTest {
         every { getNetworkState() } returns flowOf(testNetwork)
         every { getThermalState() } returns flowOf(testThermal)
         every { getStorageState() } returns flowOf(testStorage)
+        every { insightRepository.getHomeInsights(any()) } returns flowOf(emptyList())
+        every { insightRepository.getActiveInsights() } returns flowOf(emptyList())
+        every { insightRepository.getUnseenCount() } returns flowOf(0)
         every { proManager.proState } returns proStateFlow
         every { manageUserPreferences.observePreferences() } returns flowOf(UserPreferences())
         every { monitoringStatusRepository.observeLastWorkerHeartbeatAt() } returns
@@ -129,6 +138,7 @@ class HomeViewModelTest {
             getNetworkState = getNetworkState,
             getThermalState = getThermalState,
             getStorageState = getStorageState,
+            insightRepository = insightRepository,
             monitoringStatusRepository = monitoringStatusRepository,
             proManager = proManager,
             trialManager = trialManager,
@@ -406,5 +416,53 @@ class HomeViewModelTest {
             assertTrue("Pro user isPro should be true", state.isPro)
 
             viewModel.stopObserving()
+        }
+
+    @Test
+    fun `visible unseen insights are marked seen for free users too`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val insight =
+                Insight(
+                    id = 7L,
+                    ruleId = "battery_degradation_trend",
+                    type = InsightType.BATTERY,
+                    priority = InsightPriority.HIGH,
+                    confidence = 0.9f,
+                    titleKey = "insight_battery_degradation_title",
+                    bodyKey = "insight_battery_degradation_body",
+                    bodyArgs = listOf("18"),
+                    generatedAt = System.currentTimeMillis(),
+                    expiresAt = System.currentTimeMillis() + 60_000L,
+                    target = InsightTarget.BATTERY,
+                    seen = false,
+                    dismissed = false,
+                )
+            every { insightRepository.getHomeInsights(any()) } returns flowOf(listOf(insight))
+            every { insightRepository.getActiveInsights() } returns flowOf(listOf(insight))
+            every { insightRepository.getUnseenCount() } returns flowOf(1)
+            coEvery { insightRepository.markAllSeen() } returns Unit
+
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceAll()
+
+            val state = viewModel.uiState.value as HomeUiState.Success
+            assertEquals(1, state.insights.size)
+            assertEquals(1, state.unseenInsightCount)
+            coVerify(exactly = 1) { insightRepository.markAllSeen() }
+
+            viewModel.stopObserving()
+        }
+
+    @Test
+    fun `dismiss insight delegates to repository`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            coEvery { insightRepository.dismiss(42L) } returns Unit
+
+            viewModel = createViewModel()
+            viewModel.dismissInsight(42L)
+            advanceAll()
+
+            coVerify(exactly = 1) { insightRepository.dismiss(42L) }
         }
 }

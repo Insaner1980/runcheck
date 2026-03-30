@@ -60,7 +60,7 @@ fun TrialExpirationModal(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Lock,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.a11y_trial_expired),
                     modifier = Modifier.size(64.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

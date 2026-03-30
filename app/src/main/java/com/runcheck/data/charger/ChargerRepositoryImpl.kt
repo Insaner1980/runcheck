@@ -34,6 +34,16 @@ class ChargerRepositoryImpl
                     entities.map { it.toDomain() }
                 }.flowOn(Dispatchers.IO)
 
+        override suspend fun getChargerProfilesSync(): List<ChargerProfile> =
+            withContext(Dispatchers.IO) {
+                chargerDao.getChargerProfilesSync().map { it.toDomain() }
+            }
+
+        override suspend fun getAllSessionsSync(): List<ChargingSession> =
+            withContext(Dispatchers.IO) {
+                chargerDao.getAllSessionsSync().map { it.toDomain() }
+            }
+
         override suspend fun insertCharger(name: String): Long =
             withContext(Dispatchers.IO) {
                 chargerDao.insertCharger(

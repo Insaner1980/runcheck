@@ -3,6 +3,7 @@ package com.runcheck.ui.storage.cleanup
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.components.MiniBar
+import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
@@ -59,8 +61,8 @@ fun CleanupBottomBar(
 
     AnimatedVisibility(
         visible = visible,
-        enter = if (noMotion) EnterTransition.None else slideInVertically { it },
-        exit = if (noMotion) ExitTransition.None else slideOutVertically { it },
+        enter = if (noMotion) EnterTransition.None else slideInVertically(tween(MotionTokens.MEDIUM)) { it },
+        exit = if (noMotion) ExitTransition.None else slideOutVertically(tween(MotionTokens.MEDIUM)) { it },
         modifier = modifier,
     ) {
         Surface(

@@ -110,6 +110,11 @@ class StorageRepositoryImpl
                 .flowOn(Dispatchers.IO)
         }
 
+        override suspend fun getReadingsSinceSync(since: Long): List<StorageReading> =
+            withContext(Dispatchers.IO) {
+                storageReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
+            }
+
         override suspend fun getAllReadings(): List<StorageReading> =
             withContext(Dispatchers.IO) {
                 storageReadingDao.getAll().map { it.toDomain() }

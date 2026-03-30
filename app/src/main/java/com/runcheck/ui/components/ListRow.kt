@@ -44,7 +44,7 @@ fun ListRow(
                         Modifier
                     },
                 ).semantics(mergeDescendants = true) {}
-                .padding(vertical = 14.dp),
+                .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {

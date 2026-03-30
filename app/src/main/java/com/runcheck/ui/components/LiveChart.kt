@@ -138,7 +138,7 @@ private fun LiveChartCanvas(
         return
     }
 
-    val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
+    val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
 
     // Compute Y range
     val computedMin = yMin ?: data.min()

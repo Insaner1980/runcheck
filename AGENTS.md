@@ -60,6 +60,7 @@ Current navigation snapshot:
 
 ```text
 Home
+├── Insights
 ├── Battery Detail
 │   ├── Charger Comparison [PRO]
 │   └── Fullscreen Chart
@@ -82,9 +83,12 @@ Current runtime systems:
 - `RuncheckApp` also initializes source-set-specific `SentryInit`; debug builds may report to Sentry, release builds are a no-op and must remain telemetry-free
 - WorkManager runs `HealthMonitorWorker` for snapshot collection + alert evaluation
 - WorkManager runs `HealthMaintenanceWorker` for app-usage refresh, cleanup, and widget refresh
+- WorkManager runs `InsightGenerationWorker` on the monitoring scheduler lifecycle to generate persisted Home insights from Room history
 - `RealTimeMonitorService` is an opt-in live notification foreground service and must stay user-controlled from Settings
 - Widgets are backed by Room snapshots and treated as a Pro feature
 - Trial state currently counts as Pro access through `ProState.isPro`
+- Home now includes a rule-driven Insights surface backed by Room-persisted insight rows; Home shows a curated subset of up to three items and the full list lives in the dedicated Insights screen
+- Debug-only insight seeding and manual regeneration live behind debug source-set wiring and must stay release-inaccessible
 
 State restoration conventions:
 
@@ -118,6 +122,7 @@ When reviewing a PR or file, check for these in order:
 - Pro features: Charger Comparison, Per-App Battery, Extended History, Thermal Logs, CSV Export, Widgets.
 - Each must check `ProManager.isPro()` or the injected `ProStatusProvider` / `IsProUserUseCase` path before showing content.
 - Locked state must use `ProFeatureLockedState` component, not custom implementations.
+- The top-level Home Insights card is not a Pro feature. It may link into Pro-gated destinations, but the destinations themselves must remain gated.
 
 ### 5. Speed test
 - Uses M-Lab NDT7 (`ndt7-client-android` Kotlin library). No other speed test backend.
@@ -141,6 +146,10 @@ When reviewing a PR or file, check for these in order:
 - Card corner radius: 16dp. Small elements: 8dp. No shadows, no elevation, no borders (except ActionCards: 1dp outlineVariant at 35% alpha).
 - No dynamic colors. If a task changes visual design, follow `UI-SPEC.md` instead of inventing alternate tokens or component variants.
 - English-only strings are intentional right now. Do not reintroduce partial localization without updating docs and string coverage together.
+- Icons: use `Icons.Outlined` exclusively — no `Icons.Default`, `Icons.Filled`, or `Icons.Rounded`
+- All padding/spacing values must be on the 4dp grid (2/4/8/12/16/24/32dp)
+- All animation durations must use `MotionTokens` constants, never bare `tween()` without explicit spec
+- All ViewModels with live state flows must use `.sample(333L)` to throttle UI updates
 
 ### 8. Accessibility
 - Minimum touch target: 48dp.

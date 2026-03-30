@@ -85,9 +85,9 @@ fun MetricRow(
                 style =
                     MaterialTheme.typography.titleLarge.copy(
                         fontFamily = MaterialTheme.numericFontFamily,
+                        fontWeight = FontWeight.SemiBold,
                     ),
                 color = valueColor,
-                fontWeight = FontWeight.SemiBold,
                 maxLines = maxLines,
                 overflow = if (truncate) TextOverflow.Ellipsis else TextOverflow.Clip,
                 textAlign = if (truncate) TextAlign.End else TextAlign.Unspecified,

@@ -5,6 +5,8 @@ sealed class Screen(
 ) {
     data object Home : Screen("home")
 
+    data object Insights : Screen("insights")
+
     data object Battery : Screen("battery")
 
     data object Network : Screen("network")
@@ -57,6 +59,7 @@ sealed class Screen(
         private val directRoutes: Set<String> by lazy {
             setOf(
                 Home.route,
+                Insights.route,
                 Battery.route,
                 Network.route,
                 SpeedTest.route,

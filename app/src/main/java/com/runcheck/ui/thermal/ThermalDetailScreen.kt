@@ -440,7 +440,7 @@ private fun ThermalHeroCard(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = MaterialTheme.spacing.lg, vertical = 22.dp),
+                    .padding(horizontal = MaterialTheme.spacing.lg, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(
@@ -463,7 +463,7 @@ private fun ThermalHeroCard(
                     text = stringResource(temperatureUnitRes(temperatureUnit)),
                     style = MaterialTheme.numericHeroDisplayUnitTextStyle,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 2.dp, bottom = 10.dp),
+                    modifier = Modifier.padding(start = 2.dp, bottom = 12.dp),
                 )
             }
 
@@ -675,7 +675,10 @@ private fun ThermalLiveCharts(
                 data = liveHeadroom,
                 currentValueLabel =
                     thermal.thermalHeadroom?.let {
-                        stringResource(R.string.value_headroom_percent, formatDecimal((1f - it.coerceIn(0f, 1f)) * 100, 0))
+                        stringResource(
+                            R.string.value_headroom_percent,
+                            formatDecimal((1f - it.coerceIn(0f, 1f)) * 100, 0),
+                        )
                     } ?: "\u2014",
                 label = stringResource(R.string.thermal_headroom),
                 lineColor =

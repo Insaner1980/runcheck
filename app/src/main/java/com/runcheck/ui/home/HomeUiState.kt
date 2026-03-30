@@ -1,5 +1,6 @@
 package com.runcheck.ui.home
 
+import com.runcheck.domain.insights.model.Insight
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.HealthScore
 import com.runcheck.domain.model.NetworkState
@@ -17,6 +18,9 @@ sealed interface HomeUiState {
         val networkState: NetworkState,
         val thermalState: ThermalState,
         val storageState: StorageState,
+        val insights: List<Insight> = emptyList(),
+        val totalInsightCount: Int = 0,
+        val unseenInsightCount: Int = 0,
         val temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS,
         val proState: ProState = ProState(),
         val monitoringStale: Boolean = false,

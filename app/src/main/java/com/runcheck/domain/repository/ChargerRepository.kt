@@ -10,6 +10,10 @@ interface ChargerRepository {
 
     fun getAllSessions(): Flow<List<ChargingSession>>
 
+    suspend fun getChargerProfilesSync(): List<ChargerProfile>
+
+    suspend fun getAllSessionsSync(): List<ChargingSession>
+
     suspend fun insertCharger(name: String): Long
 
     suspend fun deleteChargerById(id: Long)

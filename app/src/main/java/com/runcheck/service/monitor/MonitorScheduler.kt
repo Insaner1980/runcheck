@@ -1,6 +1,5 @@
 package com.runcheck.service.monitor
 
-import android.content.Context
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -8,7 +7,7 @@ import androidx.work.WorkManager
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.repository.MonitoringScheduler
 import com.runcheck.domain.repository.UserPreferencesRepository
-import dagger.hilt.android.qualifiers.ApplicationContext
+import com.runcheck.worker.InsightGenerationWorker
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -18,7 +17,7 @@ import javax.inject.Singleton
 class MonitorScheduler
     @Inject
     constructor(
-        @param:ApplicationContext private val context: Context,
+        private val workManager: WorkManager,
         private val preferencesRepository: UserPreferencesRepository,
     ) : MonitoringScheduler {
         override fun schedule(interval: MonitoringInterval) {
@@ -28,7 +27,7 @@ class MonitorScheduler
                     TimeUnit.MINUTES,
                 ).build()
 
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            workManager.enqueueUniquePeriodicWork(
                 HealthMonitorWorker.WORK_NAME,
                 ExistingPeriodicWorkPolicy.UPDATE,
                 alertWorkRequest,
@@ -45,24 +44,42 @@ class MonitorScheduler
                         .build(),
                 ).build()
 
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            workManager.enqueueUniquePeriodicWork(
                 HealthMaintenanceWorker.WORK_NAME,
                 ExistingPeriodicWorkPolicy.UPDATE,
                 maintenanceWorkRequest,
             )
+
+            val insightWorkRequest =
+                PeriodicWorkRequestBuilder<InsightGenerationWorker>(
+                    INSIGHT_INTERVAL_HOURS,
+                    TimeUnit.HOURS,
+                ).setConstraints(
+                    Constraints
+                        .Builder()
+                        .setRequiresBatteryNotLow(true)
+                        .build(),
+                ).build()
+
+            workManager.enqueueUniquePeriodicWork(
+                InsightGenerationWorker.WORK_NAME,
+                ExistingPeriodicWorkPolicy.UPDATE,
+                insightWorkRequest,
+            )
         }
 
         override fun cancel() {
-            WorkManager
-                .getInstance(context)
-                .cancelUniqueWork(HealthMonitorWorker.WORK_NAME)
-            WorkManager
-                .getInstance(context)
-                .cancelUniqueWork(HealthMaintenanceWorker.WORK_NAME)
+            workManager.cancelUniqueWork(HealthMonitorWorker.WORK_NAME)
+            workManager.cancelUniqueWork(HealthMaintenanceWorker.WORK_NAME)
+            workManager.cancelUniqueWork(InsightGenerationWorker.WORK_NAME)
         }
 
         override suspend fun ensureScheduled() {
             val interval = preferencesRepository.getPreferences().first().monitoringInterval
             schedule(interval)
+        }
+
+        private companion object {
+            const val INSIGHT_INTERVAL_HOURS = 6L
         }
     }

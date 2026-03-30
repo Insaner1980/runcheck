@@ -41,7 +41,7 @@ fun PrimaryTopBar(
         if (onMenuClick != null) {
             IconButton(onClick = onMenuClick) {
                 Icon(
-                    imageVector = Icons.Default.Menu,
+                    imageVector = Icons.Outlined.Menu,
                     contentDescription = stringResource(R.string.navigate_menu),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )

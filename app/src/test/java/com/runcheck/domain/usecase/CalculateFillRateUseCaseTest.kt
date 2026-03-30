@@ -1,5 +1,6 @@
 package com.runcheck.domain.usecase
 
+import com.runcheck.domain.insights.analysis.StorageGrowthAnalyzer
 import com.runcheck.domain.model.StorageReading
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -13,7 +14,7 @@ class CalculateFillRateUseCaseTest {
 
     @Before
     fun setup() {
-        useCase = CalculateFillRateUseCase()
+        useCase = CalculateFillRateUseCase(StorageGrowthAnalyzer())
     }
 
     // --- invoke() tests ---

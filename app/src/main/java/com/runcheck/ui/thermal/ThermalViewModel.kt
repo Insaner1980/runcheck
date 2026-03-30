@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -164,11 +165,12 @@ class ThermalViewModel
                             selectedHistoryPeriod = currentSuccess?.selectedHistoryPeriod ?: selectedHistoryPeriod,
                             historyLoadError = currentSuccess?.historyLoadError,
                         )
-                    }.catch { e ->
-                        _uiState.value = ThermalUiState.Error(e.messageOr("Unknown error"))
-                    }.collect { state ->
-                        _uiState.value = state
-                    }
+                    }.sample(333L)
+                        .catch { e ->
+                            _uiState.value = ThermalUiState.Error(e.messageOr("Unknown error"))
+                        }.collect { state ->
+                            _uiState.value = state
+                        }
                 }
         }
     }

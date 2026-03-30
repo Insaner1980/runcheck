@@ -7,9 +7,17 @@ plugins {
     alias(libs.plugins.detekt)
 }
 
-val releaseSigningRequested =
-    gradle.startParameter.taskNames.any {
-        it.contains("release", ignoreCase = true)
+val releaseSigningEnvNames =
+    listOf(
+        "RUNCHECK_KEYSTORE_PATH",
+        "RUNCHECK_KEYSTORE_PASSWORD",
+        "RUNCHECK_KEY_ALIAS",
+        "RUNCHECK_KEY_PASSWORD",
+    )
+
+val releaseSigningAvailable =
+    releaseSigningEnvNames.all { envName ->
+        providers.environmentVariable(envName).orNull?.isNotBlank() == true
     }
 
 fun requiredReleaseEnv(name: String): String =
@@ -50,7 +58,7 @@ android {
             // Set these via environment variables before release:
             // RUNCHECK_KEYSTORE_PATH, RUNCHECK_KEYSTORE_PASSWORD,
             // RUNCHECK_KEY_ALIAS, RUNCHECK_KEY_PASSWORD
-            if (releaseSigningRequested) {
+            if (releaseSigningAvailable) {
                 storeFile = file(requiredReleaseEnv("RUNCHECK_KEYSTORE_PATH"))
                 storePassword = requiredReleaseEnv("RUNCHECK_KEYSTORE_PASSWORD")
                 keyAlias = requiredReleaseEnv("RUNCHECK_KEY_ALIAS")
@@ -89,7 +97,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            if (releaseSigningRequested) {
+            if (releaseSigningAvailable) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
@@ -146,6 +154,27 @@ android {
         // Write HTML + XML reports for CI/local review
         htmlReport = true
         xmlReport = true
+    }
+}
+
+gradle.taskGraph.whenReady {
+    val releaseArtifactsRequested =
+        allTasks.any { task ->
+            val name = task.name
+            name.endsWith("Release") &&
+                (
+                    name.startsWith("assemble") ||
+                        name.startsWith("bundle") ||
+                        name.startsWith("package") ||
+                        name.startsWith("publish")
+                )
+        }
+
+    if (releaseArtifactsRequested && !releaseSigningAvailable) {
+        error(
+            "Release signing requires these environment variables: " +
+                releaseSigningEnvNames.joinToString(),
+        )
     }
 }
 

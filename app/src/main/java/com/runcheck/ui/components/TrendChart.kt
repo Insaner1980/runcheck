@@ -53,7 +53,6 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import com.runcheck.R
 import com.runcheck.ui.chart.qualityZoneColorForValue
@@ -331,7 +330,7 @@ fun TrendChart(
             TrendChartPresentation.Fullscreen -> {
                 TrendChartStyle(
                     chartPadding = 16.dp,
-                    yLabelGap = 10.dp,
+                    yLabelGap = 8.dp,
                     xLabelTopPadding = 8.dp,
                     gestureEdgeGuard = 28.dp,
                     lineStrokeWidth = 3.dp,
@@ -340,16 +339,8 @@ fun TrendChart(
                     pointMarkerRadius = 3.5.dp,
                     selectedPointOuterRadius = 6.dp,
                     selectedPointInnerRadius = 3.dp,
-                    axisTextStyle =
-                        MaterialTheme.chartAxisTextStyle.copy(
-                            fontSize = 12.sp,
-                            lineHeight = 14.sp,
-                        ),
-                    tooltipTextStyle =
-                        MaterialTheme.chartTooltipTextStyle.copy(
-                            fontSize = 13.sp,
-                            lineHeight = 16.sp,
-                        ),
+                    axisTextStyle = MaterialTheme.chartAxisTextStyle,
+                    tooltipTextStyle = MaterialTheme.chartTooltipTextStyle,
                 )
             }
         }
@@ -844,7 +835,7 @@ fun TrendChart(
                 shadowElevation = 0.dp,
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
@@ -853,7 +844,7 @@ fun TrendChart(
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurface,
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = stringResource(R.string.chart_expand_action),
                         style = MaterialTheme.typography.labelMedium,

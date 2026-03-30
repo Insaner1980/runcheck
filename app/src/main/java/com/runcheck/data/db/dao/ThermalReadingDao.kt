@@ -45,4 +45,7 @@ interface ThermalReadingDao {
 
     @Query("SELECT * FROM thermal_readings ORDER BY timestamp ASC")
     suspend fun getAll(): List<ThermalReadingEntity>
+
+    @Query("SELECT * FROM thermal_readings WHERE timestamp >= :since ORDER BY timestamp ASC")
+    suspend fun getReadingsSinceSync(since: Long): List<ThermalReadingEntity>
 }

@@ -44,3 +44,34 @@
 # All model classes — deserialized from JSON WebSocket messages via Gson internally
 -keep class net.measurementlab.ndt7.android.models.** { *; }
 -keep class net.measurementlab.ndt7.android.utils.DataConverter { *; }
+
+# ── Android Internal APIs (Reflection) ──────────────────────────────────────
+# BatteryCapacityReader accesses PowerProfile via reflection
+-dontwarn com.android.internal.os.PowerProfile
+-keep class com.android.internal.os.PowerProfile {
+    public <init>(...);
+    public double getBatteryCapacity();
+}
+
+# StorageDataSource reads system properties via reflection
+-dontwarn android.os.SystemProperties
+-keep class android.os.SystemProperties {
+    public static java.lang.String get(java.lang.String, java.lang.String);
+}
+
+# ── Enums deserialized via Enum.valueOf() ──────────────────────────────────
+-keepclassmembers enum com.runcheck.domain.model.Confidence { *; }
+-keepclassmembers enum com.runcheck.domain.model.ConnectionType { *; }
+-keepclassmembers enum com.runcheck.domain.model.HistoryPeriod { *; }
+-keepclassmembers enum com.runcheck.ui.chart.BatteryHistoryMetric { *; }
+-keepclassmembers enum com.runcheck.ui.chart.NetworkHistoryMetric { *; }
+-keepclassmembers enum com.runcheck.ui.chart.SessionGraphMetric { *; }
+-keepclassmembers enum com.runcheck.ui.chart.SessionGraphWindow { *; }
+
+# ── Hilt Entry Points ───────────────────────────────────────────────────────
+-keep interface com.runcheck.widget.WidgetDataEntryPoint { *; }
+
+# ── Google Play Billing (defensive) ────────────────────────────────────────
+-keep class com.android.billingclient.api.BillingClient { *; }
+-keep class com.android.billingclient.api.BillingResult { *; }
+-keep class com.android.billingclient.api.Purchase { *; }

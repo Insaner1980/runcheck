@@ -144,6 +144,8 @@ private class FakeNetworkRepository : NetworkRepository {
 
     override suspend fun getAllReadings(): List<NetworkReading> = emptyList()
 
+    override suspend fun getReadingsSinceSync(since: Long): List<NetworkReading> = emptyList()
+
     override suspend fun deleteOlderThan(cutoff: Long) = Unit
 
     override suspend fun deleteAll() = Unit
@@ -162,6 +164,19 @@ private class FakeThrottlingRepository : ThrottlingRepository {
                     foregroundApp = null,
                     durationMs = null,
                 ),
+            ),
+        )
+
+    override suspend fun getEventsSinceSync(since: Long): List<ThrottlingEvent> =
+        listOf(
+            ThrottlingEvent(
+                id = 1L,
+                timestamp = 1_000L,
+                thermalStatus = "SEVERE",
+                batteryTempC = 43f,
+                cpuTempC = null,
+                foregroundApp = null,
+                durationMs = null,
             ),
         )
 

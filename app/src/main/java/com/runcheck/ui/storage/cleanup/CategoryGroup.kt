@@ -86,9 +86,9 @@ fun CategoryGroup(
             Icon(
                 imageVector =
                     if (group.expanded) {
-                        Icons.Filled.ExpandMore
+                        Icons.Outlined.ExpandMore
                     } else {
-                        Icons.AutoMirrored.Filled.KeyboardArrowRight
+                        Icons.AutoMirrored.Outlined.KeyboardArrowRight
                     },
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),

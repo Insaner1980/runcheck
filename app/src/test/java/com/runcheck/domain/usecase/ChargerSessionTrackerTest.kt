@@ -128,6 +128,10 @@ private class FakeChargerRepository : ChargerRepository {
 
     override fun getAllSessions(): Flow<List<ChargingSession>> = flowOf(emptyList())
 
+    override suspend fun getChargerProfilesSync(): List<ChargerProfile> = emptyList()
+
+    override suspend fun getAllSessionsSync(): List<ChargingSession> = emptyList()
+
     override suspend fun insertCharger(name: String): Long = 0L
 
     override suspend fun deleteChargerById(id: Long) = Unit

@@ -3,6 +3,7 @@ package com.runcheck.domain.usecase
 import com.runcheck.domain.repository.AppBatteryUsageRepository
 import com.runcheck.domain.repository.BatteryRepository
 import com.runcheck.domain.repository.DatabaseTransactionRunner
+import com.runcheck.domain.repository.InsightRepository
 import com.runcheck.domain.repository.NetworkRepository
 import com.runcheck.domain.repository.SpeedTestRepository
 import com.runcheck.domain.repository.StorageRepository
@@ -21,6 +22,7 @@ class ClearMonitoringDataUseCase
         private val throttlingRepository: ThrottlingRepository,
         private val appBatteryUsageRepository: AppBatteryUsageRepository,
         private val speedTestRepository: SpeedTestRepository,
+        private val insightRepository: InsightRepository,
     ) {
         suspend operator fun invoke() {
             transactionRunner.runInTransaction {
@@ -31,6 +33,7 @@ class ClearMonitoringDataUseCase
                 throttlingRepository.deleteAll()
                 appBatteryUsageRepository.deleteAll()
                 speedTestRepository.deleteAll()
+                insightRepository.clearAll()
             }
         }
     }

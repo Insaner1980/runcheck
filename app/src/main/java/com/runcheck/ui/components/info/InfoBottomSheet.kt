@@ -3,6 +3,7 @@ package com.runcheck.ui.components.info
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.ui.theme.BottomSheetShape
+import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
 
@@ -126,8 +128,8 @@ fun InfoBottomSheet(
 
                 AnimatedVisibility(
                     visible = expanded,
-                    enter = if (reducedMotion) EnterTransition.None else expandVertically(),
-                    exit = if (reducedMotion) ExitTransition.None else shrinkVertically(),
+                    enter = if (reducedMotion) EnterTransition.None else expandVertically(tween(MotionTokens.MEDIUM)),
+                    exit = if (reducedMotion) ExitTransition.None else shrinkVertically(tween(MotionTokens.MEDIUM)),
                 ) {
                     Text(
                         text = stringResource(detailRes),

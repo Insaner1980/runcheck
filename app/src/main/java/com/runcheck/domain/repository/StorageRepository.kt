@@ -14,6 +14,8 @@ interface StorageRepository {
         limit: Int? = null,
     ): Flow<List<StorageReading>>
 
+    suspend fun getReadingsSinceSync(since: Long): List<StorageReading>
+
     suspend fun getAllReadings(): List<StorageReading>
 
     suspend fun deleteOlderThan(cutoff: Long)

@@ -3,6 +3,7 @@ package com.runcheck.ui.storage.cleanup
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -29,6 +30,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.ui.common.formatStorageSize
+import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
@@ -50,8 +52,8 @@ fun CleanupSuccessOverlay(
 
     AnimatedVisibility(
         visible = visible,
-        enter = if (noMotion) EnterTransition.None else fadeIn(initialAlpha = 0f),
-        exit = if (noMotion) ExitTransition.None else fadeOut(),
+        enter = if (noMotion) EnterTransition.None else fadeIn(tween(MotionTokens.MEDIUM), initialAlpha = 0f),
+        exit = if (noMotion) ExitTransition.None else fadeOut(tween(MotionTokens.MEDIUM)),
         modifier = modifier,
     ) {
         Box(

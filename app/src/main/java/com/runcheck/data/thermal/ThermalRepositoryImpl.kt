@@ -88,6 +88,11 @@ class ThermalRepositoryImpl
                 .flowOn(Dispatchers.IO)
         }
 
+        override suspend fun getReadingsSinceSync(since: Long): List<ThermalReading> =
+            withContext(Dispatchers.IO) {
+                thermalReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
+            }
+
         override suspend fun saveReading(state: ThermalState) =
             withContext(Dispatchers.IO) {
                 try {

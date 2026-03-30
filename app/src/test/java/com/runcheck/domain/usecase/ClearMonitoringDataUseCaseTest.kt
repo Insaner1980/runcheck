@@ -3,6 +3,7 @@ package com.runcheck.domain.usecase
 import com.runcheck.domain.repository.AppBatteryUsageRepository
 import com.runcheck.domain.repository.BatteryRepository
 import com.runcheck.domain.repository.DatabaseTransactionRunner
+import com.runcheck.domain.repository.InsightRepository
 import com.runcheck.domain.repository.NetworkRepository
 import com.runcheck.domain.repository.SpeedTestRepository
 import com.runcheck.domain.repository.StorageRepository
@@ -24,6 +25,7 @@ class ClearMonitoringDataUseCaseTest {
     private lateinit var throttlingRepository: ThrottlingRepository
     private lateinit var appBatteryUsageRepository: AppBatteryUsageRepository
     private lateinit var speedTestRepository: SpeedTestRepository
+    private lateinit var insightRepository: InsightRepository
 
     private lateinit var useCase: ClearMonitoringDataUseCase
 
@@ -37,6 +39,7 @@ class ClearMonitoringDataUseCaseTest {
         throttlingRepository = mockk(relaxed = true)
         appBatteryUsageRepository = mockk(relaxed = true)
         speedTestRepository = mockk(relaxed = true)
+        insightRepository = mockk(relaxed = true)
 
         useCase =
             ClearMonitoringDataUseCase(
@@ -48,6 +51,7 @@ class ClearMonitoringDataUseCaseTest {
                 throttlingRepository = throttlingRepository,
                 appBatteryUsageRepository = appBatteryUsageRepository,
                 speedTestRepository = speedTestRepository,
+                insightRepository = insightRepository,
             )
     }
 
@@ -61,6 +65,7 @@ class ClearMonitoringDataUseCaseTest {
             coEvery { throttlingRepository.deleteAll() } returns Unit
             coEvery { appBatteryUsageRepository.deleteAll() } returns Unit
             coEvery { speedTestRepository.deleteAll() } returns Unit
+            coEvery { insightRepository.clearAll() } returns Unit
 
             useCase()
 
@@ -71,5 +76,6 @@ class ClearMonitoringDataUseCaseTest {
             coVerify(exactly = 1) { throttlingRepository.deleteAll() }
             coVerify(exactly = 1) { appBatteryUsageRepository.deleteAll() }
             coVerify(exactly = 1) { speedTestRepository.deleteAll() }
+            coVerify(exactly = 1) { insightRepository.clearAll() }
         }
 }

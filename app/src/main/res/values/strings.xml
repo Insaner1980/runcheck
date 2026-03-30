@@ -35,8 +35,42 @@
     <string name="home_speed_test">Speed Test</string>
     <string name="home_test_compare">Test &amp; compare</string>
     <string name="home_pro_history_desc">History, charger testing, export &amp; more</string>
-    <string name="home_insights_title">Insights unlocked</string>
-    <string name="home_insights_desc">Extended history, widgets, exports, and throttling insights are active.</string>
+    <string name="home_insights_section_title">Insights</string>
+    <string name="home_insights_view_all">View all</string>
+    <string name="home_insights_title">Pro unlocked</string>
+    <string name="home_insights_desc">Extended history, widgets, exports, and throttling tools are active.</string>
+    <plurals name="home_insights_unseen_count">
+        <item quantity="one">%1$d new</item>
+        <item quantity="other">%1$d new</item>
+    </plurals>
+    <string name="insights_screen_title">Insights</string>
+    <string name="insights_screen_empty">No active insights right now.</string>
+    <plurals name="insights_screen_count">
+        <item quantity="one">%1$d active insight</item>
+        <item quantity="other">%1$d active insights</item>
+    </plurals>
+    <string name="insight_battery_degradation_title">Battery draining faster</string>
+    <string name="insight_battery_degradation_body">Your battery has been draining %1$s%% faster this week compared to last week.</string>
+    <string name="insight_app_battery_impact_title">One app is hitting battery unusually hard</string>
+    <string name="insight_app_battery_impact_body">%1$s accounted for about %2$s mAh of estimated drain, around %3$s%% of tracked app battery use today.</string>
+    <string name="insight_charger_performance_title">One charger is clearly slower</string>
+    <string name="insight_charger_performance_body">%1$s is charging about %2$s%% slower than your best saved charger.</string>
+    <string name="insight_storage_pressure_title">Storage may fill up soon</string>
+    <string name="insight_storage_pressure_body">At the current growth rate, free space could run out in about %1$s.</string>
+    <string name="insight_storage_impact_title">Storage pressure is lowering device health</string>
+    <string name="insight_storage_impact_body">Storage health is down to %1$s/100, and free space may run out in about %2$s at the current growth rate.</string>
+    <string name="insight_thermal_pattern_title">Heat has stayed elevated recently</string>
+    <string name="insight_thermal_pattern_body">Recent thermal readings were elevated about %1$s%% of the time, averaging around %2$s°C battery temperature.</string>
+    <string name="insight_thermal_throttling_title">Thermal throttling is recurring</string>
+    <string name="insight_thermal_throttling_body">%1$s severe thermal events were recorded this week, peaking at %2$s around %3$s°C battery temperature.</string>
+    <string name="insight_app_usage_title">One app is dominating screen time</string>
+    <string name="insight_app_usage_body">%1$s accounted for %2$s%% of tracked foreground use in the last day, about %3$s.</string>
+    <string name="insight_network_signal_pattern_title">Weak cellular signal pattern detected</string>
+    <string name="insight_network_signal_pattern_body">Cellular signal was weak in %1$s%% of recent checks, averaging %2$s dBm.</string>
+    <string name="insight_network_drain_title">Weak signal is likely increasing battery drain</string>
+    <string name="insight_network_drain_body">During weak cellular coverage, battery drain ran about %1$s%% higher than during stronger signal windows (around %2$s dBm).</string>
+    <string name="insight_heat_battery_wear_title">Heat is stressing battery performance</string>
+    <string name="insight_heat_battery_wear_body">During hotter periods, battery drain ran about %1$s%% higher, with battery temperature peaking around %2$s°C.</string>
     <string name="home_free_suffix">free</string>
     <string name="home_status_summary">%1$s · %2$s · %3$s</string>
     <string name="home_thermal_summary">%1$s · %2$s</string>
@@ -190,6 +224,8 @@
     <string name="unit_volts">V</string>
     <string name="unit_watts">W</string>
     <string name="unit_asu">ASU</string>
+    <string name="unit_per_hundred">/100</string>
+    <string name="unit_approx_prefix">~%1$s</string>
 
     <!-- Value Formatting -->
     <string name="value_percent">%1$d%%</string>
@@ -525,6 +561,15 @@
 
     <!-- Settings: Data Management -->
     <string name="settings_data_section">Data</string>
+    <string name="settings_debug_insights_section">Debug Insights</string>
+    <string name="settings_debug_insights_description">Debug builds only. Seed deterministic monitoring data to exercise Home insights, or regenerate insights from current local data.</string>
+    <string name="settings_debug_insights_seed_demo">Seed Demo Insights</string>
+    <string name="settings_debug_insights_run_now">Regenerate Insights Now</string>
+    <string name="settings_debug_insights_clear">Clear Insights</string>
+    <string name="settings_debug_insights_running">Processing debug insights…</string>
+    <string name="settings_debug_insights_seeded">Demo insights seeded.</string>
+    <string name="settings_debug_insights_generated">Insights regenerated.</string>
+    <string name="settings_debug_insights_cleared">Insights cleared.</string>
     <string name="settings_reset_tips">Reset Info Tips</string>
     <string name="settings_reset_tips_done">Info tips restored</string>
     <string name="settings_reset_tips_confirm_title">Reset info tips?</string>
@@ -542,6 +587,9 @@
     <string name="settings_data_cleared">Data cleared</string>
 
     <!-- Settings: About (extended) -->
+    <string name="settings_android_api_version">API %1$d</string>
+    <string name="settings_threshold_percent">%1$d%%</string>
+    <string name="settings_threshold_celsius">%1$d°C</string>
     <string name="settings_feedback">Send Feedback</string>
     <string name="settings_rate">Rate on Play Store</string>
     <string name="settings_privacy_policy">Privacy Policy</string>
@@ -685,6 +733,8 @@
     <string name="speed_test_no_history">No saved speed tests yet. Run a test to start building history.</string>
     <string name="speed_test_cellular_warning">This test will use approximately 20–50 MB of mobile data</string>
     <string name="speed_test_cellular_proceed">Proceed</string>
+    <string name="speed_test_progress">%1$s  %2$d%%</string>
+    <string name="speed_test_connection_detail">%1$s · %2$s</string>
     <string name="speed_test_cellular_cancel">Cancel</string>
     <string name="speed_test_mlab_notice">Speed test powered by M-Lab. Test data contributes to open internet research.</string>
     <string name="speed_test_last_result">Latest Result</string>
@@ -729,6 +779,7 @@
     <string name="trial_expired_upgrade_with_price">Your Pro trial ended. Unlock Pro for %1$s.</string>
     <string name="trial_dismiss">Dismiss</string>
     <string name="a11y_dismiss_card">Dismiss card</string>
+    <string name="a11y_open_insight_destination">Open related details</string>
 
     <!-- Trial Notifications -->
     <string name="notification_channel_trial">Trial Reminders</string>
@@ -779,6 +830,10 @@
     </plurals>
     <string name="a11y_exporting_data">Exporting data</string>
     <string name="a11y_trial_dialog">Trial expired dialog</string>
+    <string name="a11y_health_score">Health score %1$d out of 100</string>
+    <string name="a11y_warning">Warning</string>
+    <string name="a11y_stale_data_warning">Stale data warning</string>
+    <string name="a11y_trial_expired">Trial expired</string>
 
     <!-- Fullscreen Chart -->
     <string name="a11y_expand_chart_fullscreen">View chart fullscreen</string>

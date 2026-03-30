@@ -7,7 +7,7 @@ runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device
 ## Tech Stack
 
 - **Language:** Kotlin 2.3.0 (via AGP 9.1.0 built-in Kotlin)
-- **UI:** Jetpack Compose with Material 3 / Material You (BOM 2026.03.00)
+- **UI:** Jetpack Compose with Material 3 (BOM 2026.03.00), single dark theme
 - **Min SDK:** 26 (Android 8.0)
 - **Target SDK:** CinnamonBun beta (Android 17)
 - **Compile SDK:** CinnamonBun beta (Android 17)
@@ -33,23 +33,26 @@ app/src/main/java/com/runcheck/
 │   ├── charger/       # Charger comparison data
 │   ├── device/        # Device detection, DeviceProfile, DeviceProfileProvider,
 │   │                  #   DeviceCapabilityManager
-│   ├── db/            # Room database (RuncheckDatabase, Converters, RoomTransactionRunner)
+│   ├── db/            # Room database (RuncheckDatabase with inner Converters, RoomTransactionRunner)
 │   │   ├── dao/       # Room DAOs (Battery, Network, Thermal, Storage, Charger, etc.)
 │   │   └── entity/    # Room entities (BatteryReadingEntity, etc.)
 │   ├── export/        # Data export functionality
+│   ├── insights/      # Persisted insights repository, debug seed helpers
 │   ├── network/       # ConnectivityManager, TelephonyManager, SpeedTestService,
 │   │                  #   LatencyMeasurer, NetworkRepositoryImpl, SpeedTestRepositoryImpl
 │   ├── preferences/   # DataStore preferences
 │   ├── storage/       # MediaStoreScanner, StorageCleanupHelper,
 │   │                  #   CleanupPagingSource, StorageCleanupRepositoryImpl
-│   └── thermal/       # ThermalManager, CPU temp sysfs readers
+│   └── thermal/       # ThermalManager, thermal/throttling repositories
 ├── domain/
+│   ├── insights/      # Insight models (InsightModels.kt), rules, engine (+ ranking policy)
 │   ├── model/         # Domain models (BatteryState, NetworkState, StorageState, etc.)
 │   ├── usecase/       # Business logic (37 use cases)
 │   ├── repository/    # Repository interfaces
 │   └── scoring/       # Health score algorithm
 ├── ui/
 │   ├── home/          # Single home screen (hub) + ViewModel
+│   ├── insights/      # Dedicated Insights screen + ViewModel
 │   ├── battery/       # Battery detail screen + ViewModel + session stats
 │   │                  #   + BatteryInfoContent, BatteryInfoCards
 │   ├── network/       # Network detail + SpeedTest screens + ViewModel
@@ -75,7 +78,7 @@ app/src/main/java/com/runcheck/
 ├── pro/               # Pro/trial state management
 ├── billing/           # Billing state helpers
 ├── widget/            # Glance widgets (BatteryWidget, HealthWidget, WidgetDataProvider)
-├── worker/            # WorkManager workers (trial notifications)
+├── worker/            # WorkManager workers (Insights generation and related jobs)
 ├── service/
 │   └── monitor/       # HealthMonitorWorker, HealthMaintenanceWorker,
 │                      #   RealTimeMonitorService, ScreenStateTracker,
@@ -94,6 +97,7 @@ app/src/main/java/com/runcheck/
 - **ViewModels must not hold Context** — use `UiText` sealed interface (`UiText.Resource(@StringRes)` / `UiText.Dynamic(value)`) for error messages and status text. Composables resolve with `.resolve()`.
 - **Business logic belongs in use cases** — repositories handle data access only. Calculations (e.g., `CalculateFillRateUseCase`), state machines (e.g., `TrackThrottlingEventsUseCase`), and formatting logic go in `domain/usecase/`.
 - **`BillingManager` is a lifecycle-aware service, not a repository** — initialized/destroyed by `RuncheckApp`. Widget updates triggered from Application via Flow collection, not from the billing layer.
+- **ViewModels must throttle live state flows** — use `.sample(333L)` before `.collect` on combined state flows to limit UI updates to ~3/second and reduce unnecessary recomposition.
 - **Debug builds always have Pro enabled** — `BillingManager.initialize()` short-circuits with `_isProState = true` when `BuildConfig.DEBUG` is true, so all Pro features are visible during development.
 
 ## Code Style & Conventions
@@ -139,6 +143,7 @@ Do not annotate:
   - TextPrimary `#E8E8ED`, TextSecondary `#90A8B0`, TextMuted `#7A949E`, TextOnLime `#1A2E0A`
 - **Typography:** Manrope (custom, body/headers) + JetBrains Mono (numeric displays) via `MaterialTheme.typography` and `MaterialTheme.numericFontFamily`
 - **Navigation:** Push-based from single Home screen (no bottom nav bar), includes Learn section
+- **Insights UX:** Home shows a curated subset of up to three insight cards; the full active list lives in a dedicated Insights screen
 - **Cards:** Flat backgrounds, no borders, no shadows, no elevation, 16dp rounded corners
 - **Tonal layering:** Hero cards use `BgCardDeep` (#0D2530), data cards use `BgCard` (#133040) — creates "recessed instrument panel" depth
 - **Hero sections:** Typography-dominant — large 64sp JetBrains Mono values with smaller 28sp units, ProgressRing reduced to 100dp decorative role in Battery/Storage
@@ -157,6 +162,10 @@ Do not annotate:
   - `CardSectionTitle` (onSurfaceVariant / TextSecondary) — subsection titles inside cards
 - **Corner radii:** Cards = 16dp, small elements (badges, chips) = 8dp
 - **Dividers:** `outlineVariant.copy(alpha = 0.35f)` everywhere — no hardcoded colors
+- **Icons:** `Icons.Outlined` exclusively — no `Icons.Default`, `Icons.Filled`, or `Icons.Rounded`
+- **Spacing:** All padding/spacing values must be on the 4dp grid (2/4/8/12/16/24/32dp)
+- **Animations:** All durations must use `MotionTokens` constants — no bare `tween()` without explicit spec
+- **Chart grid alpha:** `outlineVariant.copy(alpha = 0.2f)` for all chart grid lines
 - **Value colors:** Data values default to `onSurface`, status labels use `statusColors`. In GridCard, use `statusLabel`/`statusColor` params to separate data from status.
 - **Status colors** via `MaterialTheme.statusColors` extension — always paired with icons or text labels for accessibility
   - Healthy = Teal, Fair = Amber, Poor = Orange, Critical = Red
@@ -205,6 +214,15 @@ The storage detail screen provides monitoring and cleanup tools:
 - **Details card:** Total/Used/Available/Apps/Cache + technical details (File System from `/proc/mounts`, Encryption from `ro.crypto.type` system property, Storage Volumes from `StorageManager`)
 - **SD card:** Shown if detected via `getExternalFilesDirs`
 - **Permissions:** `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO` (API 33+) + `READ_EXTERNAL_STORAGE` (API ≤32) — runtime-requested on StorageDetailScreen entry
+
+## Insights Features
+
+- **Persisted insights:** Room-backed insight rows generated from historical device data rather than transient UI-only suggestions
+- **Generation:** `InsightGenerationWorker` runs on the monitoring scheduler lifecycle and refreshes insight rows in the background
+- **Home preview:** Home shows a curated subset of up to three insights to reduce noise
+- **Dedicated screen:** A separate Insights screen exposes the full active list, unseen count behavior, dismiss actions, and destination deep links
+- **Ranking policy:** Home preview prefers one strong insight per destination area before filling remaining slots
+- **Release safety:** The default `InsightDebugActions` implementation is a release-safe no-op; debug builds override it with deterministic seeding/regeneration tools
 
 ## Settings Features
 
