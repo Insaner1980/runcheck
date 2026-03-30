@@ -2,7 +2,12 @@
 
 _Auto-generated from git history. Updated on each commit._
 
-## 2026 Week 13 (maalis 23 – maalis 29)
+## 2026 Week 14 (Mar 30 – Apr 05)
+
+### Other
+- Refaktoroi UI-tilahelperit ja lisää security-check-skripti (`83985a3`)
+
+## 2026 Week 13 (Mar 23 – Mar 29)
 
 ### Fixed
 - Korjaa SpeedTestService: unresolved FLAG_INCLUDE_LOCATION_INFO (`ad1ab54`)
@@ -80,7 +85,7 @@ _Auto-generated from git history. Updated on each commit._
 - feat: add live signal strength chart on network detail screen (`33dd7f0`)
 - feat: add live charts for battery level, temperature, and voltage (`5231e7d`)
 
-## 2026 Week 12 (maalis 16 – maalis 22)
+## 2026 Week 12 (Mar 16 – Mar 22)
 
 ### Fixed
 - Fix notification tap actions, deep-linking, and worker locale (`3eb095e`)
@@ -135,7 +140,7 @@ _Auto-generated from git history. Updated on each commit._
 - Add files via upload (`392645a`)
 - Laaja ominaisuuspäivitys: akku, storage, thermal, asetukset (`8980fc3`)
 
-## 2026 Week 11 (maalis 09 – maalis 15)
+## 2026 Week 11 (Mar 09 – Mar 15)
 
 ### Changed
 - Uudista NetworkDetailScreen korttipohj. layoutiin (`d36ac53`)
