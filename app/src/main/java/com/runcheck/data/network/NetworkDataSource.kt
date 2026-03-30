@@ -196,6 +196,7 @@ class NetworkDataSource
                 capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
         }
 
+        @Suppress("LongMethod", "CyclomaticComplexMethod")
         private fun buildNetworkInfo(
             capabilities: NetworkCapabilities,
             linkProperties: android.net.LinkProperties?,
@@ -649,7 +650,7 @@ class NetworkDataSource
             }
         }
 
-        @Suppress("DEPRECATION")
+        @Suppress("DEPRECATION", "CyclomaticComplexMethod")
         private fun classifySignal(
             dbm: Int?,
             type: ConnectionType,

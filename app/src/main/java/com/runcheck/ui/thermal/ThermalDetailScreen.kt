@@ -35,7 +35,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
@@ -117,7 +116,6 @@ fun ThermalDetailScreen(
     onNavigateToLearnArticle: (articleId: String) -> Unit = {},
     viewModel: ThermalViewModel = hiltViewModel(),
 ) {
-    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val loadingDescription = stringResource(R.string.a11y_loading)
@@ -287,6 +285,30 @@ private fun LazyListScope.thermalOverviewItems(
         )
     }
 
+    thermalInfoCards(
+        state = state,
+        thermal = thermal,
+        onDismissInfoCard = onDismissInfoCard,
+        onNavigateToLearnArticle = onNavigateToLearnArticle,
+    )
+
+    item {
+        ThermalMetricsCard(
+            thermal = thermal,
+            temperatureUnit = state.temperatureUnit,
+            liveTempC = state.liveTempC,
+            liveHeadroom = state.liveHeadroom,
+            onInfoClick = onInfoClick,
+        )
+    }
+}
+
+private fun LazyListScope.thermalInfoCards(
+    state: ThermalUiState.Success,
+    thermal: ThermalState,
+    onDismissInfoCard: (String) -> Unit,
+    onNavigateToLearnArticle: (String) -> Unit,
+) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         item {
             InfoCard(
@@ -325,16 +347,6 @@ private fun LazyListScope.thermalOverviewItems(
                 },
             )
         }
-    }
-
-    item {
-        ThermalMetricsCard(
-            thermal = thermal,
-            temperatureUnit = state.temperatureUnit,
-            liveTempC = state.liveTempC,
-            liveHeadroom = state.liveHeadroom,
-            onInfoClick = onInfoClick,
-        )
     }
 }
 
@@ -642,39 +654,41 @@ private fun ThermalLiveCharts(
     liveTempC: List<Float>,
     liveHeadroom: List<Float>,
 ) {
-    if (liveTempC.size >= 2) {
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-        LiveChart(
-            data = liveTempC,
-            currentValueLabel = formatTemperature(thermal.batteryTempC, temperatureUnit),
-            label = stringResource(R.string.thermal_battery_temp),
-            lineColor = statusColorForTemperature(thermal.batteryTempC),
-            accessibilityDescription =
-                stringResource(
-                    R.string.a11y_chart_trend,
-                    stringResource(R.string.thermal_battery_temp),
-                ),
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
-    if (liveHeadroom.size >= 2) {
-        LiveChart(
-            data = liveHeadroom,
-            currentValueLabel =
-                thermal.thermalHeadroom?.let {
-                    stringResource(R.string.value_headroom_percent, formatDecimal((1f - it.coerceIn(0f, 1f)) * 100, 0))
-                } ?: "\u2014",
-            label = stringResource(R.string.thermal_headroom),
-            lineColor =
-                thermal.thermalHeadroom?.let { headroomColor(it) }
-                    ?: MaterialTheme.colorScheme.primary,
-            accessibilityDescription =
-                stringResource(
-                    R.string.a11y_chart_trend,
-                    stringResource(R.string.thermal_headroom),
-                ),
-            modifier = Modifier.fillMaxWidth(),
-        )
+    Column {
+        if (liveTempC.size >= 2) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+            LiveChart(
+                data = liveTempC,
+                currentValueLabel = formatTemperature(thermal.batteryTempC, temperatureUnit),
+                label = stringResource(R.string.thermal_battery_temp),
+                lineColor = statusColorForTemperature(thermal.batteryTempC),
+                accessibilityDescription =
+                    stringResource(
+                        R.string.a11y_chart_trend,
+                        stringResource(R.string.thermal_battery_temp),
+                    ),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if (liveHeadroom.size >= 2) {
+            LiveChart(
+                data = liveHeadroom,
+                currentValueLabel =
+                    thermal.thermalHeadroom?.let {
+                        stringResource(R.string.value_headroom_percent, formatDecimal((1f - it.coerceIn(0f, 1f)) * 100, 0))
+                    } ?: "\u2014",
+                label = stringResource(R.string.thermal_headroom),
+                lineColor =
+                    thermal.thermalHeadroom?.let { headroomColor(it) }
+                        ?: MaterialTheme.colorScheme.primary,
+                accessibilityDescription =
+                    stringResource(
+                        R.string.a11y_chart_trend,
+                        stringResource(R.string.thermal_headroom),
+                    ),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 

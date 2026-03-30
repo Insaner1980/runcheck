@@ -35,6 +35,7 @@ class BatteryWidget : GlanceAppWidget() {
             setOf(SMALL, MEDIUM, LARGE),
         )
 
+    @Suppress("LongMethod")
     override suspend fun provideGlance(
         context: Context,
         id: GlanceId,

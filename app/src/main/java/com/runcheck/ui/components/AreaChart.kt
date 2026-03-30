@@ -91,6 +91,7 @@ fun AreaChart(
     }
 }
 
+@Suppress("LongParameterList")
 private fun DrawScope.drawAreaChart(
     data: List<Float>,
     minVal: Float,

@@ -185,6 +185,7 @@ class RealTimeMonitorService : Service() {
             }
     }
 
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     private fun buildLiveNotification(
         battery: BatteryState,
         prefs: UserPreferences,

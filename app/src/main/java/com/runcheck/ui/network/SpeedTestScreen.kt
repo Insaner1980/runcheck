@@ -54,7 +54,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -104,7 +103,6 @@ fun SpeedTestScreen(
     viewModel: NetworkViewModel = hiltViewModel(),
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
-    val context = LocalContext.current
     val networkUiState by viewModel.networkUiState.collectAsStateWithLifecycle()
     val speedTestState by viewModel.speedTestState.collectAsStateWithLifecycle()
     val loadingDescription = stringResource(R.string.a11y_loading)

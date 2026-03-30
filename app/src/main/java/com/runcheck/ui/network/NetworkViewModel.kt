@@ -12,7 +12,6 @@ import com.runcheck.domain.usecase.FinalizeSpeedTestUseCase
 import com.runcheck.domain.usecase.GetMeasuredNetworkStateUseCase
 import com.runcheck.domain.usecase.GetNetworkHistoryUseCase
 import com.runcheck.domain.usecase.GetSpeedTestHistoryUseCase
-import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
@@ -50,7 +49,6 @@ class NetworkViewModel
         private val runSpeedTest: RunSpeedTestUseCase,
         private val getSpeedTestHistory: GetSpeedTestHistoryUseCase,
         private val finalizeSpeedTest: FinalizeSpeedTestUseCase,
-        private val isProUser: IsProUserUseCase,
         private val getNetworkHistory: GetNetworkHistoryUseCase,
         private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase,
         private val manageUserPreferences: ManageUserPreferencesUseCase,
@@ -275,63 +273,78 @@ class NetworkViewModel
             if (_networkUiState.value !is NetworkUiState.Success) {
                 _networkUiState.value = NetworkUiState.Loading
             }
-            networkJob =
-                viewModelScope.launch {
-                    combine(
-                        getMeasuredNetworkState(),
-                        manageInfoCardDismissals.observeDismissedCardIds(),
-                        manageUserPreferences.observePreferences(),
-                        observeProAccess().distinctUntilChanged(),
-                    ) { state, dismissedCards, preferences, isPro ->
-                        NetworkScreenSnapshot(
-                            state = state,
-                            dismissedCards = dismissedCards,
-                            showInfoCards = preferences.showInfoCards,
-                            isPro = isPro,
-                        )
-                    }.catch { e ->
-                        if (_networkUiState.value !is NetworkUiState.Success) {
-                            _networkUiState.value =
-                                NetworkUiState.Error(
-                                    e.messageOrRes(R.string.common_error_generic),
-                                )
-                        }
-                    }.collect { snapshot ->
-                        snapshot.state.signalDbm?.let { liveSignalDbm.appendLiveValue(it.toFloat()) }
-                        _networkUiState.update { current ->
-                            val existing = current as? NetworkUiState.Success
-                            NetworkUiState.Success(
-                                networkState = snapshot.state,
-                                signalHistory = existing?.signalHistory ?: emptyList(),
-                                selectedHistoryPeriod = selectedHistoryPeriod,
-                                historyLoadError = existing?.historyLoadError,
-                                isPro = snapshot.isPro,
-                                dismissedInfoCards = snapshot.dismissedCards,
-                                showInfoCards = snapshot.showInfoCards,
-                                liveSignalDbm = liveSignalDbm.toList(),
-                            )
-                        }
-                    }
-                }
-            historyNetworkJob =
-                viewModelScope.launch {
-                    getNetworkHistory(selectedHistoryPeriod)
-                        .catch { e ->
-                            _networkUiState.update { current ->
-                                (current as? NetworkUiState.Success)?.copy(
-                                    historyLoadError = e.messageOrRes(R.string.common_error_generic),
-                                ) ?: current
-                            }
-                        }.collect { readings ->
-                            _networkUiState.update { current ->
-                                (current as? NetworkUiState.Success)?.copy(
-                                    signalHistory = readings,
-                                    selectedHistoryPeriod = selectedHistoryPeriod,
-                                    historyLoadError = null,
-                                ) ?: current
-                            }
-                        }
-                }
+            networkJob = observeNetworkSnapshot()
+            historyNetworkJob = observeNetworkHistory()
+        }
+
+        @OptIn(ExperimentalCoroutinesApi::class)
+        private fun observeNetworkSnapshot() =
+            viewModelScope.launch {
+                combine(
+                    getMeasuredNetworkState(),
+                    manageInfoCardDismissals.observeDismissedCardIds(),
+                    manageUserPreferences.observePreferences(),
+                    observeProAccess().distinctUntilChanged(),
+                ) { state, dismissedCards, preferences, isPro ->
+                    NetworkScreenSnapshot(
+                        state = state,
+                        dismissedCards = dismissedCards,
+                        showInfoCards = preferences.showInfoCards,
+                        isPro = isPro,
+                    )
+                }.catch { error -> handleNetworkSnapshotError(error) }
+                    .collect(::applyNetworkSnapshot)
+            }
+
+        private fun observeNetworkHistory() =
+            viewModelScope.launch {
+                getNetworkHistory(selectedHistoryPeriod)
+                    .catch { error -> handleNetworkHistoryError(error) }
+                    .collect(::applyNetworkHistory)
+            }
+
+        private fun handleNetworkSnapshotError(error: Throwable) {
+            if (_networkUiState.value !is NetworkUiState.Success) {
+                _networkUiState.value =
+                    NetworkUiState.Error(
+                        error.messageOrRes(R.string.common_error_generic),
+                    )
+            }
+        }
+
+        private fun applyNetworkSnapshot(snapshot: NetworkScreenSnapshot) {
+            snapshot.state.signalDbm?.let { liveSignalDbm.appendLiveValue(it.toFloat()) }
+            _networkUiState.update { current ->
+                val existing = current as? NetworkUiState.Success
+                NetworkUiState.Success(
+                    networkState = snapshot.state,
+                    signalHistory = existing?.signalHistory ?: emptyList(),
+                    selectedHistoryPeriod = selectedHistoryPeriod,
+                    historyLoadError = existing?.historyLoadError,
+                    isPro = snapshot.isPro,
+                    dismissedInfoCards = snapshot.dismissedCards,
+                    showInfoCards = snapshot.showInfoCards,
+                    liveSignalDbm = liveSignalDbm.toList(),
+                )
+            }
+        }
+
+        private fun handleNetworkHistoryError(error: Throwable) {
+            _networkUiState.update { current ->
+                (current as? NetworkUiState.Success)?.copy(
+                    historyLoadError = error.messageOrRes(R.string.common_error_generic),
+                ) ?: current
+            }
+        }
+
+        private fun applyNetworkHistory(readings: List<com.runcheck.domain.model.NetworkReading>) {
+            _networkUiState.update { current ->
+                (current as? NetworkUiState.Success)?.copy(
+                    signalHistory = readings,
+                    selectedHistoryPeriod = selectedHistoryPeriod,
+                    historyLoadError = null,
+                ) ?: current
+            }
         }
 
         @OptIn(ExperimentalCoroutinesApi::class)

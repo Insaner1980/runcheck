@@ -83,6 +83,7 @@ class RuncheckApp :
                 .setWorkerFactory(workerFactory)
                 .build()
 
+    @Suppress("TooGenericExceptionCaught")
     private fun launchSafely(
         dispatcher: kotlinx.coroutines.CoroutineDispatcher,
         taskName: String,

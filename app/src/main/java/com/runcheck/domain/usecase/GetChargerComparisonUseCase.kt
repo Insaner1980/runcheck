@@ -1,6 +1,7 @@
 package com.runcheck.domain.usecase
 
 import com.runcheck.domain.model.ChargerSummary
+import com.runcheck.domain.model.ChargingSession
 import com.runcheck.domain.repository.ChargerRepository
 import com.runcheck.domain.repository.ProStatusProvider
 import kotlinx.coroutines.flow.Flow
@@ -24,75 +25,51 @@ class GetChargerComparisonUseCase
             ) { chargers, sessions ->
                 chargers
                     .map { charger ->
-                        val chargerSessions = sessions.filter { it.chargerId == charger.id }
-                        val completedSessions = chargerSessions.filter { it.endTime != null }
-                        val latestCompletedSession = completedSessions.maxByOrNull { it.endTime ?: 0L }
-
-                        val avgSpeed =
-                            if (completedSessions.isNotEmpty()) {
-                                completedSessions.mapNotNull { it.avgCurrentMa }.averageOrNull()
-                            } else {
-                                null
-                            }
-
-                        val avgPower =
-                            if (completedSessions.isNotEmpty()) {
-                                completedSessions
-                                    .mapNotNull { session ->
-                                        session.avgPowerMw ?: session.avgCurrentMa?.let { currentMa ->
-                                            session.avgVoltageMv?.let { voltageMv ->
-                                                (currentMa * voltageMv) / 1000
-                                            }
-                                        }
-                                    }.averageOrNull()
-                            } else {
-                                null
-                            }
-
-                        val latestPower =
-                            latestCompletedSession?.avgPowerMw
-                                ?: latestCompletedSession?.avgCurrentMa?.let { currentMa ->
-                                    latestCompletedSession.avgVoltageMv?.let { voltageMv ->
-                                        (currentMa * voltageMv) / 1000
-                                    }
-                                }
-
-                        val avgTimeToFull =
-                            if (completedSessions.isNotEmpty()) {
-                                completedSessions
-                                    .mapNotNull { session ->
-                                        session.endTime?.let { end ->
-                                            val durationMinutes = (end - session.startTime) / 60_000
-                                            val levelGain =
-                                                (session.endLevel ?: session.startLevel) - session.startLevel
-                                            if (levelGain > 0) {
-                                                (durationMinutes * 100 / levelGain).toInt()
-                                            } else {
-                                                null
-                                            }
-                                        }
-                                    }.averageOrNull()
-                            } else {
-                                null
-                            }
-
-                        val lastUsed =
-                            latestCompletedSession?.endTime ?: chargerSessions.maxByOrNull { it.startTime }?.startTime
-
-                        ChargerSummary(
+                        buildSummary(
                             chargerId = charger.id,
                             chargerName = charger.name,
-                            sessionCount = chargerSessions.size,
-                            avgChargingSpeedMa = avgSpeed,
-                            avgPowerMw = avgPower,
-                            latestChargingSpeedMa = latestCompletedSession?.avgCurrentMa,
-                            latestPowerMw = latestPower,
-                            avgTimeToFullMinutes = avgTimeToFull,
-                            lastUsed = lastUsed,
-                            hasActiveSession = chargerSessions.any { it.endTime == null },
+                            sessions = sessions.filter { it.chargerId == charger.id },
                         )
                     }.sortedByDescending { it.lastUsed ?: 0L }
             }
+        }
+
+        private fun buildSummary(
+            chargerId: Long,
+            chargerName: String,
+            sessions: List<ChargingSession>,
+        ): ChargerSummary {
+            val completedSessions = sessions.filter { it.endTime != null }
+            val latestCompletedSession = completedSessions.maxByOrNull { it.endTime ?: 0L }
+
+            return ChargerSummary(
+                chargerId = chargerId,
+                chargerName = chargerName,
+                sessionCount = sessions.size,
+                avgChargingSpeedMa = completedSessions.mapNotNull { it.avgCurrentMa }.averageOrNull(),
+                avgPowerMw = completedSessions.mapNotNull(::resolveSessionPowerMw).averageOrNull(),
+                latestChargingSpeedMa = latestCompletedSession?.avgCurrentMa,
+                latestPowerMw = latestCompletedSession?.let(::resolveSessionPowerMw),
+                avgTimeToFullMinutes = completedSessions.mapNotNull(::estimateTimeToFullMinutes).averageOrNull(),
+                lastUsed = latestCompletedSession?.endTime ?: sessions.maxByOrNull { it.startTime }?.startTime,
+                hasActiveSession = sessions.any { it.endTime == null },
+            )
+        }
+
+        private fun resolveSessionPowerMw(session: ChargingSession): Int? =
+            session.avgPowerMw
+                ?: session.avgCurrentMa?.let { currentMa ->
+                    session.avgVoltageMv?.let { voltageMv ->
+                        (currentMa * voltageMv) / 1000
+                    }
+                }
+
+        private fun estimateTimeToFullMinutes(session: ChargingSession): Int? {
+            val endTime = session.endTime ?: return null
+            val durationMinutes = (endTime - session.startTime) / 60_000
+            val levelGain = (session.endLevel ?: session.startLevel) - session.startLevel
+            if (levelGain <= 0) return null
+            return (durationMinutes * 100 / levelGain).toInt()
         }
     }
 

@@ -133,7 +133,13 @@ class DeviceCapabilityManager
                 readings: List<Int>,
             ): SignConvention {
                 val avgReading = readings.average()
-                return if ((isCharging && avgReading > 0) || (!isCharging && avgReading < 0)) {
+                val chargingUsesPositiveReadings =
+                    if (isCharging) {
+                        avgReading > 0
+                    } else {
+                        avgReading < 0
+                    }
+                return if (chargingUsesPositiveReadings) {
                     SignConvention.POSITIVE_CHARGING
                 } else {
                     SignConvention.NEGATIVE_CHARGING

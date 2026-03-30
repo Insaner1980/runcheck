@@ -36,6 +36,7 @@ class ProManager
 
         private var initialized = false
 
+        @Suppress("TooGenericExceptionCaught")
         fun initialize() {
             if (initialized) return
             initialized = true

@@ -160,6 +160,7 @@ class StorageDataSource
             val availableBytes: Long,
         )
 
+        @Suppress("TooGenericExceptionCaught", "CyclomaticComplexMethod")
         private fun getDeviceStorageInfo(): DeviceStorageInfo {
             var fsType: String? = null
             var encrypted: String? = null
@@ -200,7 +201,7 @@ class StorageDataSource
             try {
                 val sm = context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
                 volumes = sm.storageVolumes.size
-            } catch (e: Exception) {
+            } catch (e: RuntimeException) {
                 ReleaseSafeLog.error(TAG, "Failed to count storage volumes", e)
             }
 

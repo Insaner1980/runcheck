@@ -45,7 +45,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -152,7 +151,6 @@ fun BatteryDetailScreen(
     onFullscreenResultConsumed: () -> Unit = {},
     viewModel: BatteryViewModel = hiltViewModel(),
 ) {
-    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val loadingDescription = stringResource(R.string.a11y_loading)
@@ -395,199 +393,201 @@ private fun BatteryOverviewSection(
     onNavigateToLearnArticle: (String) -> Unit,
     onInfoClick: (String) -> Unit,
 ) {
-    BatteryHeroSection(
-        battery = battery,
-        history = state.history,
-        onInfoClick = onInfoClick,
-    )
+    Column {
+        BatteryHeroSection(
+            battery = battery,
+            history = state.history,
+            onInfoClick = onInfoClick,
+        )
 
-    InfoCard(
-        id = InfoCardCatalog.BatteryLiveNotification.id,
-        headline = stringResource(InfoCardCatalog.BatteryLiveNotification.headlineRes),
-        body = stringResource(InfoCardCatalog.BatteryLiveNotification.bodyRes),
-        onDismiss = onDismissInfoCard,
-        visible =
-            InfoCardCatalog.BatteryLiveNotification.id !in state.dismissedInfoCards &&
-                state.showInfoCards,
-    )
-
-    if (battery.healthPercent != null && battery.healthPercent < 90) {
         InfoCard(
-            id = InfoCardCatalog.BatteryHealthDegraded.id,
-            headline = stringResource(InfoCardCatalog.BatteryHealthDegraded.headlineRes),
-            body = stringResource(InfoCardCatalog.BatteryHealthDegraded.bodyRes),
+            id = InfoCardCatalog.BatteryLiveNotification.id,
+            headline = stringResource(InfoCardCatalog.BatteryLiveNotification.headlineRes),
+            body = stringResource(InfoCardCatalog.BatteryLiveNotification.bodyRes),
             onDismiss = onDismissInfoCard,
             visible =
-                InfoCardCatalog.BatteryHealthDegraded.id !in state.dismissedInfoCards && state.showInfoCards,
-            onLearnMore = {
-                InfoCardCatalog
-                    .resolveLearnArticleId(
-                        InfoCardCatalog.BatteryHealthDegraded,
-                    )?.let(onNavigateToLearnArticle)
-            },
+                InfoCardCatalog.BatteryLiveNotification.id !in state.dismissedInfoCards &&
+                    state.showInfoCards,
         )
-    }
 
-    if (battery.healthPercent != null && battery.healthPercent < 80) {
-        InfoCard(
-            id = InfoCardCatalog.BatteryDiesBeforeZero.id,
-            headline = stringResource(InfoCardCatalog.BatteryDiesBeforeZero.headlineRes),
-            body = stringResource(InfoCardCatalog.BatteryDiesBeforeZero.bodyRes),
-            onDismiss = onDismissInfoCard,
-            visible =
-                InfoCardCatalog.BatteryDiesBeforeZero.id !in state.dismissedInfoCards && state.showInfoCards,
-            onLearnMore = {
-                InfoCardCatalog
-                    .resolveLearnArticleId(
-                        InfoCardCatalog.BatteryDiesBeforeZero,
-                    )?.let(onNavigateToLearnArticle)
-            },
-        )
-    }
-
-    BatteryPanel {
-        CardSectionTitle(text = stringResource(R.string.battery_section_details))
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-        MetricRow(
-            label = stringResource(R.string.battery_voltage),
-            value =
-                stringResource(
-                    R.string.value_voltage_volts,
-                    (battery.voltageMv / 1000f).toDouble(),
-                ),
-            onInfoClick = { onInfoClick("voltage") },
-        )
-        MetricRow(
-            label = stringResource(R.string.battery_temperature),
-            value =
-                buildTemperatureValue(
-                    temperatureC = battery.temperatureC,
-                    temperatureUnit = state.temperatureUnit,
-                ),
-            valueColor = temperatureColor(battery.temperatureC),
-            onInfoClick = { onInfoClick("temperature") },
-        )
-        MetricRow(
-            label = stringResource(R.string.battery_health),
-            value = batteryHealthLabel(battery.health),
-            valueColor = healthColor(battery.health),
-            onInfoClick = { onInfoClick("healthStatus") },
-        )
-        MetricRow(
-            label = stringResource(R.string.battery_technology),
-            value =
-                battery.technology
-                    .takeUnless { it.equals("Unknown", ignoreCase = true) }
-                    ?.takeUnless(String::isBlank)
-                    ?: stringResource(R.string.not_available),
-            onInfoClick = { onInfoClick("technology") },
-        )
-        battery.cycleCount?.let { count ->
-            MetricRow(
-                label = stringResource(R.string.battery_cycle_count),
-                value =
-                    stringResource(
-                        R.string.value_with_estimated_badge,
-                        count.toString(),
-                    ),
-                showDivider = battery.healthPercent != null,
-                onInfoClick = { onInfoClick("cycleCount") },
-            )
-        }
-        battery.healthPercent?.let { pct ->
-            MetricRow(
-                label = stringResource(R.string.battery_health_percent),
-                value =
-                    stringResource(
-                        R.string.value_with_estimated_badge,
-                        stringResource(R.string.value_percent, pct),
-                    ),
-                showDivider = battery.estimatedCapacityMah != null,
-                onInfoClick = { onInfoClick("healthPercent") },
-            )
-        }
-        if (battery.estimatedCapacityMah != null && battery.designCapacityMah != null) {
-            MetricRow(
-                label = stringResource(R.string.unit_milliamp_hours),
-                value =
-                    stringResource(
-                        R.string.battery_capacity_mah,
-                        battery.estimatedCapacityMah,
-                        battery.designCapacityMah,
-                    ),
-                showDivider = false,
-                onInfoClick = { onInfoClick("capacity") },
+        if (battery.healthPercent != null && battery.healthPercent < 90) {
+            InfoCard(
+                id = InfoCardCatalog.BatteryHealthDegraded.id,
+                headline = stringResource(InfoCardCatalog.BatteryHealthDegraded.headlineRes),
+                body = stringResource(InfoCardCatalog.BatteryHealthDegraded.bodyRes),
+                onDismiss = onDismissInfoCard,
+                visible =
+                    InfoCardCatalog.BatteryHealthDegraded.id !in state.dismissedInfoCards && state.showInfoCards,
+                onLearnMore = {
+                    InfoCardCatalog
+                        .resolveLearnArticleId(
+                            InfoCardCatalog.BatteryHealthDegraded,
+                        )?.let(onNavigateToLearnArticle)
+                },
             )
         }
 
-        val hasBatteryLiveCharts =
-            state.liveLevel.size >= 2 ||
-                state.liveTempC.size >= 2 ||
-                state.liveVoltage.size >= 2
-        if (hasBatteryLiveCharts) {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-            )
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-        }
-        if (state.liveLevel.size >= 2) {
-            LiveChart(
-                data = state.liveLevel,
-                currentValueLabel = stringResource(R.string.value_percent, battery.level),
-                label = stringResource(R.string.battery_level),
-                lineColor = MaterialTheme.colorScheme.primary,
-                yMin = 0f,
-                yMax = 100f,
-                accessibilityDescription =
-                    stringResource(
-                        R.string.a11y_chart_trend,
-                        stringResource(R.string.battery_level),
-                    ),
-                modifier = Modifier.fillMaxWidth(),
+        if (battery.healthPercent != null && battery.healthPercent < 80) {
+            InfoCard(
+                id = InfoCardCatalog.BatteryDiesBeforeZero.id,
+                headline = stringResource(InfoCardCatalog.BatteryDiesBeforeZero.headlineRes),
+                body = stringResource(InfoCardCatalog.BatteryDiesBeforeZero.bodyRes),
+                onDismiss = onDismissInfoCard,
+                visible =
+                    InfoCardCatalog.BatteryDiesBeforeZero.id !in state.dismissedInfoCards && state.showInfoCards,
+                onLearnMore = {
+                    InfoCardCatalog
+                        .resolveLearnArticleId(
+                            InfoCardCatalog.BatteryDiesBeforeZero,
+                        )?.let(onNavigateToLearnArticle)
+                },
             )
         }
-        if (state.liveTempC.size >= 2) {
-            if (state.liveLevel.size >= 2) {
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            }
-            LiveChart(
-                data = state.liveTempC,
-                currentValueLabel =
-                    buildTemperatureValue(
-                        temperatureC = battery.temperatureC,
-                        temperatureUnit = state.temperatureUnit,
-                    ),
-                label = stringResource(R.string.battery_temperature),
-                lineColor = temperatureColor(battery.temperatureC),
-                accessibilityDescription =
-                    stringResource(
-                        R.string.a11y_chart_trend,
-                        stringResource(R.string.battery_temperature),
-                    ),
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        if (state.liveVoltage.size >= 2) {
-            if (state.liveLevel.size >= 2 || state.liveTempC.size >= 2) {
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            }
-            LiveChart(
-                data = state.liveVoltage,
-                currentValueLabel =
+
+        BatteryPanel {
+            CardSectionTitle(text = stringResource(R.string.battery_section_details))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+            MetricRow(
+                label = stringResource(R.string.battery_voltage),
+                value =
                     stringResource(
                         R.string.value_voltage_volts,
                         (battery.voltageMv / 1000f).toDouble(),
                     ),
-                label = stringResource(R.string.battery_voltage),
-                lineColor = MaterialTheme.statusColors.fair,
-                accessibilityDescription =
-                    stringResource(
-                        R.string.a11y_chart_trend,
-                        stringResource(R.string.battery_voltage),
-                    ),
-                modifier = Modifier.fillMaxWidth(),
+                onInfoClick = { onInfoClick("voltage") },
             )
+            MetricRow(
+                label = stringResource(R.string.battery_temperature),
+                value =
+                    buildTemperatureValue(
+                        temperatureC = battery.temperatureC,
+                        temperatureUnit = state.temperatureUnit,
+                    ),
+                valueColor = temperatureColor(battery.temperatureC),
+                onInfoClick = { onInfoClick("temperature") },
+            )
+            MetricRow(
+                label = stringResource(R.string.battery_health),
+                value = batteryHealthLabel(battery.health),
+                valueColor = healthColor(battery.health),
+                onInfoClick = { onInfoClick("healthStatus") },
+            )
+            MetricRow(
+                label = stringResource(R.string.battery_technology),
+                value =
+                    battery.technology
+                        .takeUnless { it.equals("Unknown", ignoreCase = true) }
+                        ?.takeUnless(String::isBlank)
+                        ?: stringResource(R.string.not_available),
+                onInfoClick = { onInfoClick("technology") },
+            )
+            battery.cycleCount?.let { count ->
+                MetricRow(
+                    label = stringResource(R.string.battery_cycle_count),
+                    value =
+                        stringResource(
+                            R.string.value_with_estimated_badge,
+                            count.toString(),
+                        ),
+                    showDivider = battery.healthPercent != null,
+                    onInfoClick = { onInfoClick("cycleCount") },
+                )
+            }
+            battery.healthPercent?.let { pct ->
+                MetricRow(
+                    label = stringResource(R.string.battery_health_percent),
+                    value =
+                        stringResource(
+                            R.string.value_with_estimated_badge,
+                            stringResource(R.string.value_percent, pct),
+                        ),
+                    showDivider = battery.estimatedCapacityMah != null,
+                    onInfoClick = { onInfoClick("healthPercent") },
+                )
+            }
+            if (battery.estimatedCapacityMah != null && battery.designCapacityMah != null) {
+                MetricRow(
+                    label = stringResource(R.string.unit_milliamp_hours),
+                    value =
+                        stringResource(
+                            R.string.battery_capacity_mah,
+                            battery.estimatedCapacityMah,
+                            battery.designCapacityMah,
+                        ),
+                    showDivider = false,
+                    onInfoClick = { onInfoClick("capacity") },
+                )
+            }
+
+            val hasBatteryLiveCharts =
+                state.liveLevel.size >= 2 ||
+                    state.liveTempC.size >= 2 ||
+                    state.liveVoltage.size >= 2
+            if (hasBatteryLiveCharts) {
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                )
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            }
+            if (state.liveLevel.size >= 2) {
+                LiveChart(
+                    data = state.liveLevel,
+                    currentValueLabel = stringResource(R.string.value_percent, battery.level),
+                    label = stringResource(R.string.battery_level),
+                    lineColor = MaterialTheme.colorScheme.primary,
+                    yMin = 0f,
+                    yMax = 100f,
+                    accessibilityDescription =
+                        stringResource(
+                            R.string.a11y_chart_trend,
+                            stringResource(R.string.battery_level),
+                        ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            if (state.liveTempC.size >= 2) {
+                if (state.liveLevel.size >= 2) {
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                }
+                LiveChart(
+                    data = state.liveTempC,
+                    currentValueLabel =
+                        buildTemperatureValue(
+                            temperatureC = battery.temperatureC,
+                            temperatureUnit = state.temperatureUnit,
+                        ),
+                    label = stringResource(R.string.battery_temperature),
+                    lineColor = temperatureColor(battery.temperatureC),
+                    accessibilityDescription =
+                        stringResource(
+                            R.string.a11y_chart_trend,
+                            stringResource(R.string.battery_temperature),
+                        ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            if (state.liveVoltage.size >= 2) {
+                if (state.liveLevel.size >= 2 || state.liveTempC.size >= 2) {
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                }
+                LiveChart(
+                    data = state.liveVoltage,
+                    currentValueLabel =
+                        stringResource(
+                            R.string.value_voltage_volts,
+                            (battery.voltageMv / 1000f).toDouble(),
+                        ),
+                    label = stringResource(R.string.battery_voltage),
+                    lineColor = MaterialTheme.statusColors.fair,
+                    accessibilityDescription =
+                        stringResource(
+                            R.string.a11y_chart_trend,
+                            stringResource(R.string.battery_voltage),
+                        ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }
@@ -823,55 +823,57 @@ private fun BatteryFooterSection(
     onNavigateToLearnArticle: (String) -> Unit,
     onInfoClick: (String) -> Unit,
 ) {
-    BatteryPanel {
-        CardSectionTitle(text = stringResource(R.string.home_test_compare))
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-        Text(
-            text = stringResource(R.string.charger_title),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-        Text(
-            text = stringResource(R.string.home_chargers_desc),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-        Button(
-            onClick = onNavigateToCharger,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.charger_title))
+    Column {
+        BatteryPanel {
+            CardSectionTitle(text = stringResource(R.string.home_test_compare))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+            Text(
+                text = stringResource(R.string.charger_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+            Text(
+                text = stringResource(R.string.home_chargers_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            Button(
+                onClick = onNavigateToCharger,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.charger_title))
+            }
         }
-    }
 
-    BatteryHistoryPanel(
-        state = state,
-        selectedMetric = selectedHistoryMetric,
-        onMetricChange = onHistoryMetricChange,
-        onPeriodChange = onPeriodChange,
-        onUpgradeToPro = onUpgradeToPro,
-        onNavigateToFullscreen = onNavigateToFullscreen,
-    )
+        BatteryHistoryPanel(
+            state = state,
+            selectedMetric = selectedHistoryMetric,
+            onMetricChange = onHistoryMetricChange,
+            onPeriodChange = onPeriodChange,
+            onUpgradeToPro = onUpgradeToPro,
+            onNavigateToFullscreen = onNavigateToFullscreen,
+        )
 
-    if (state.isPro && state.statistics != null) {
-        BatteryStatisticsPanel(
-            statistics = state.statistics,
-            onInfoClick = onInfoClick,
+        if (state.isPro && state.statistics != null) {
+            BatteryStatisticsPanel(
+                statistics = state.statistics,
+                onInfoClick = onInfoClick,
+            )
+        }
+
+        RelatedArticlesSection(
+            articleIds =
+                listOf(
+                    LearnArticleIds.BATTERY_HEALTH,
+                    LearnArticleIds.BATTERY_DRAIN,
+                    LearnArticleIds.BATTERY_CHARGING,
+                    LearnArticleIds.BATTERY_CURRENT_POWER,
+                ),
+            onNavigateToArticle = onNavigateToLearnArticle,
         )
     }
-
-    RelatedArticlesSection(
-        articleIds =
-            listOf(
-                LearnArticleIds.BATTERY_HEALTH,
-                LearnArticleIds.BATTERY_DRAIN,
-                LearnArticleIds.BATTERY_CHARGING,
-                LearnArticleIds.BATTERY_CURRENT_POWER,
-            ),
-        onNavigateToArticle = onNavigateToLearnArticle,
-    )
 }
 
 @Composable
@@ -1876,6 +1878,7 @@ private fun BatteryStatisticsPanel(
     }
 }
 
+@Suppress("CyclomaticComplexMethod")
 private fun resolveBatteryInfoContent(key: String): InfoSheetContent? =
     when (key) {
         "voltage" -> BatteryInfoContent.voltage

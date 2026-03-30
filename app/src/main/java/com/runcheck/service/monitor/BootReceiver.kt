@@ -28,6 +28,7 @@ class BootReceiver : BroadcastReceiver() {
     @Inject
     lateinit var userPreferencesRepository: UserPreferencesRepository
 
+    @Suppress("TooGenericExceptionCaught")
     override fun onReceive(
         context: Context,
         intent: Intent,
@@ -62,6 +63,7 @@ class BootReceiver : BroadcastReceiver() {
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun restartLiveNotificationIfEnabled(context: Context) {
         try {
             val prefs = userPreferencesRepository.getPreferences().first()

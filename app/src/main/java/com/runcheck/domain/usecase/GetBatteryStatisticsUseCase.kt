@@ -17,69 +17,15 @@ class GetBatteryStatisticsUseCase
                 if (readings.size < 2) return@withContext null
 
                 val sorted = readings.sortedBy { it.timestamp }
-
-                // Calculate total charged and discharged percentages
-                var totalCharged = 0f
-                var totalDischarged = 0f
-                var chargeSessions = 0
-                var wasCharging = false
-
-                for (i in 1 until sorted.size) {
-                    val prev = sorted[i - 1]
-                    val curr = sorted[i]
-                    val levelDiff = curr.level - prev.level
-                    val isCharging = curr.status == "CHARGING"
-
-                    if (levelDiff > 0) {
-                        totalCharged += levelDiff
-                    } else if (levelDiff < 0) {
-                        totalDischarged += -levelDiff
-                    }
-
-                    // Count charge session starts
-                    if (isCharging && !wasCharging) {
-                        chargeSessions++
-                    }
-                    wasCharging = isCharging
-                }
-
-                // Calculate average drain rates from discharging-only readings
-                val dischargingPairs =
-                    sorted.zipWithNext().filter { (_, curr) ->
-                        curr.status == "DISCHARGING" || curr.status == "NOT_CHARGING"
-                    }
-
-                val avgDrainRate =
-                    if (dischargingPairs.isNotEmpty()) {
-                        val totalDrainPct =
-                            dischargingPairs
-                                .sumOf { (prev, curr) ->
-                                    (prev.level - curr.level).coerceAtLeast(0).toDouble()
-                                }.toFloat()
-                        val totalDrainMs =
-                            dischargingPairs.sumOf { (prev, curr) ->
-                                curr.timestamp - prev.timestamp
-                            }
-                        if (totalDrainMs > 0) {
-                            totalDrainPct / (totalDrainMs / 3_600_000f)
-                        } else {
-                            null
-                        }
-                    } else {
-                        null
-                    }
-
-                // Full charge estimate (hours)
-                val fullChargeEstimateHours =
-                    avgDrainRate?.let {
-                        if (it > 0.1f) 100f / it else null
-                    }
+                val chargeSummary = calculateChargeSummary(sorted)
+                val avgDrainRate = calculateAverageDrainRate(sorted)
+                val fullChargeEstimateHours = avgDrainRate?.takeIf { it > MIN_DRAIN_RATE }?.let { 100f / it }
 
                 BatteryStatistics(
                     periodDays = periodDays,
-                    totalChargedPct = totalCharged,
-                    totalDischargedPct = totalDischarged,
-                    chargeSessions = chargeSessions,
+                    totalChargedPct = chargeSummary.totalCharged,
+                    totalDischargedPct = chargeSummary.totalDischarged,
+                    chargeSessions = chargeSummary.chargeSessions,
                     avgDrainRatePctPerHour = avgDrainRate,
                     fullChargeEstimateHours = fullChargeEstimateHours,
                     readingCount = sorted.size,
@@ -87,11 +33,71 @@ class GetBatteryStatisticsUseCase
             }
         }
 
+        private fun calculateChargeSummary(readings: List<com.runcheck.domain.model.BatteryReading>): ChargeSummary {
+            var totalCharged = 0f
+            var totalDischarged = 0f
+            var chargeSessions = 0
+            var wasCharging = false
+
+            for (index in 1 until readings.size) {
+                val previous = readings[index - 1]
+                val current = readings[index]
+                val levelDiff = current.level - previous.level
+                val isCharging = current.status == "CHARGING"
+
+                when {
+                    levelDiff > 0 -> totalCharged += levelDiff
+                    levelDiff < 0 -> totalDischarged += -levelDiff
+                }
+
+                if (isCharging && !wasCharging) {
+                    chargeSessions++
+                }
+                wasCharging = isCharging
+            }
+
+            return ChargeSummary(
+                totalCharged = totalCharged,
+                totalDischarged = totalDischarged,
+                chargeSessions = chargeSessions,
+            )
+        }
+
+        private fun calculateAverageDrainRate(
+            readings: List<com.runcheck.domain.model.BatteryReading>,
+        ): Float? {
+            val dischargingPairs =
+                readings.zipWithNext().filter { (_, current) ->
+                    current.status == "DISCHARGING" || current.status == "NOT_CHARGING"
+                }
+            if (dischargingPairs.isEmpty()) return null
+
+            val totalDrainPct =
+                dischargingPairs.sumOf { (previous, current) ->
+                    (previous.level - current.level).coerceAtLeast(0).toDouble()
+                }.toFloat()
+            val totalDrainMs =
+                dischargingPairs.sumOf { (previous, current) ->
+                    current.timestamp - previous.timestamp
+                }
+            if (totalDrainMs <= 0) return null
+
+            return totalDrainPct / (totalDrainMs / HOUR_MS.toFloat())
+        }
+
         companion object {
             const val DEFAULT_PERIOD_DAYS = 10
             private const val DAY_MS = 24 * 60 * 60 * 1000L
+            private const val HOUR_MS = 3_600_000L
+            private const val MIN_DRAIN_RATE = 0.1f
         }
     }
+
+private data class ChargeSummary(
+    val totalCharged: Float,
+    val totalDischarged: Float,
+    val chargeSessions: Int,
+)
 
 data class BatteryStatistics(
     val periodDays: Int,

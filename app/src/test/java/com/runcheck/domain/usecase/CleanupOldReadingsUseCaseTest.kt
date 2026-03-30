@@ -72,6 +72,7 @@ class CleanupOldReadingsUseCaseTest {
             )
     }
 
+    @Suppress("LongMethod")
     @Test
     fun `free user triggers cleanup with 24-hour cutoff`() =
         runTest {
@@ -246,6 +247,7 @@ class CleanupOldReadingsUseCaseTest {
             }
         }
 
+    @Suppress("LongMethod")
     @Test
     fun `pro user with three months retention triggers cleanup with correct cutoff`() =
         runTest {

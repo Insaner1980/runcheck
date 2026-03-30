@@ -107,6 +107,7 @@ class BatteryViewModel
         }
 
         @OptIn(FlowPreview::class)
+        @Suppress("TooGenericExceptionCaught")
         private fun loadBatteryData() {
             loadJob?.cancel()
             loadJob =

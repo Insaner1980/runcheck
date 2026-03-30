@@ -50,6 +50,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -70,7 +71,6 @@ import com.runcheck.BuildConfig
 import com.runcheck.R
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
-import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.service.monitor.NotificationHelper
 import com.runcheck.service.monitor.RealTimeMonitorService
 import com.runcheck.ui.common.findActivity
@@ -93,7 +93,11 @@ import com.runcheck.util.ReleaseSafeLog
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-private const val TAG = "SettingsScreen"
+internal const val TAG = "SettingsScreen"
+internal const val DefaultAlertBatteryThreshold = 20
+internal const val DefaultAlertTemperatureThreshold = 42
+internal const val DefaultAlertStorageThreshold = 90
+internal const val DisabledContentAlpha = 0.38f
 
 @Composable
 fun SettingsScreen(
@@ -177,6 +181,34 @@ fun SettingsScreen(
             permissionRequestedForLive = false
         }
 
+    val requestNotificationPermission: (Boolean) -> Unit = { forLive ->
+        permissionRequestedForLive = forLive
+        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    val updateLiveNotificationEnabled: (Boolean) -> Unit = { enabled ->
+        if (enabled && !hasNotificationPermission && notificationsPermissionRequired) {
+            requestNotificationPermission(true)
+        } else {
+            viewModel.setLiveNotificationEnabled(enabled)
+            val serviceIntent = Intent(context, RealTimeMonitorService::class.java)
+            if (enabled) {
+                context.startForegroundService(serviceIntent)
+            } else {
+                serviceIntent.action = RealTimeMonitorService.ACTION_STOP
+                context.startService(serviceIntent)
+            }
+        }
+    }
+
+    val updateNotificationsEnabled: (Boolean) -> Unit = { enabled ->
+        if (enabled && !hasNotificationPermission && notificationsPermissionRequired) {
+            requestNotificationPermission(false)
+        } else {
+            viewModel.setNotifications(enabled)
+        }
+    }
+
     // Confirmation dialog states
     var showClearDialog by rememberSaveable { mutableStateOf(false) }
     var showClearSpeedTestsDialog by rememberSaveable { mutableStateOf(false) }
@@ -196,460 +228,67 @@ fun SettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
             ) {
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                MonitoringSection(
+                    context = context,
+                    monitoringInterval = uiState.preferences.monitoringInterval,
+                    isBatteryOptimizationExempt = isBatteryOptimizationExempt,
+                    onSetMonitoringInterval = viewModel::setMonitoringInterval,
+                    onNavigateToMonitoringHelp = {
+                        onNavigateToLearnArticle(LearnArticleIds.BACKGROUND_MONITORING)
+                    },
+                )
 
-                // ── MONITORING ─────────────────────────────────────────────
-                SettingsCard {
-                    CardSectionTitle(text = stringResource(R.string.settings_monitoring_interval))
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                    Text(
-                        text = stringResource(R.string.settings_monitoring_interval_note),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                    MonitoringInterval.entries.forEachIndexed { index, interval ->
-                        if (index > 0) SettingsDivider()
-                        SettingsRadioRow(
-                            label =
-                                when (interval) {
-                                    MonitoringInterval.FIFTEEN -> stringResource(R.string.settings_interval_15)
-                                    MonitoringInterval.THIRTY -> stringResource(R.string.settings_interval_30)
-                                    MonitoringInterval.SIXTY -> stringResource(R.string.settings_interval_60)
-                                },
-                            selected = uiState.preferences.monitoringInterval == interval,
-                            onSelect = { viewModel.setMonitoringInterval(interval) },
-                        )
-                    }
+                LiveNotificationSection(
+                    preferences = uiState.preferences,
+                    onSetLiveNotificationEnabled = updateLiveNotificationEnabled,
+                    onSetLiveNotifCurrent = viewModel::setLiveNotifCurrent,
+                    onSetLiveNotifDrainRate = viewModel::setLiveNotifDrainRate,
+                    onSetLiveNotifTemperature = viewModel::setLiveNotifTemperature,
+                    onSetLiveNotifScreenStats = viewModel::setLiveNotifScreenStats,
+                    onSetLiveNotifRemainingTime = viewModel::setLiveNotifRemainingTime,
+                )
 
-                    SettingsDivider()
-                    CardSectionTitle(text = stringResource(R.string.settings_battery_optimization))
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                    if (isBatteryOptimizationExempt) {
-                        Text(
-                            text = stringResource(R.string.settings_battery_optimization_exempt),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.statusColors.healthy,
-                        )
-                        Text(
-                            text = stringResource(R.string.settings_battery_optimization_exempt_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    } else {
-                        Row(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .defaultMinSize(minHeight = 48.dp)
-                                    .clickable {
-                                        val intent =
-                                            Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                                                data = Uri.parse("package:${context.packageName}")
-                                            }
-                                        try {
-                                            context.startActivity(intent)
-                                        } catch (_: android.content.ActivityNotFoundException) {
-                                            try {
-                                                context.startActivity(
-                                                    Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS),
-                                                )
-                                            } catch (e: android.content.ActivityNotFoundException) {
-                                                ReleaseSafeLog.warn(
-                                                    TAG,
-                                                    "Failed to open battery optimization settings",
-                                                    e,
-                                                )
-                                            }
-                                        }
-                                    }.padding(vertical = MaterialTheme.spacing.xs),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.settings_battery_optimization_restricted),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.error,
-                                )
-                                Text(
-                                    text = stringResource(R.string.settings_battery_optimization_restricted_desc),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
+                NotificationsSection(
+                    context = context,
+                    preferences = uiState.preferences,
+                    alertsEffectivelyEnabled = alertsEffectivelyEnabled,
+                    isXiaomiFamilyDevice = isXiaomiFamilyDevice,
+                    onSetNotificationsEnabled = updateNotificationsEnabled,
+                    onSetNotifLowBattery = viewModel::setNotifLowBattery,
+                    onSetNotifHighTemp = viewModel::setNotifHighTemp,
+                    onSetNotifLowStorage = viewModel::setNotifLowStorage,
+                    onSetNotifChargeComplete = viewModel::setNotifChargeComplete,
+                )
 
-                    SettingsDivider()
-                    SettingsNavigationRow(
-                        label = stringResource(R.string.settings_monitoring_help),
-                        onClick = { onNavigateToLearnArticle(LearnArticleIds.BACKGROUND_MONITORING) },
-                    )
-                }
+                AlertThresholdsSection(
+                    context = context,
+                    preferences = uiState.preferences,
+                    onSetAlertBatteryThreshold = viewModel::setAlertBatteryThreshold,
+                    onSetAlertTempThreshold = viewModel::setAlertTempThreshold,
+                    onSetAlertStorageThreshold = viewModel::setAlertStorageThreshold,
+                    onResetThresholdsClick = { showResetThresholdsDialog = true },
+                )
 
-                // ── LIVE NOTIFICATION ─────────────────────────────────────
-                SettingsCard {
-                    CardSectionTitle(text = stringResource(R.string.settings_live_notification))
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                DisplaySection(
+                    preferences = uiState.preferences,
+                    onSetTemperatureUnit = viewModel::setTemperatureUnit,
+                    onSetShowInfoCards = viewModel::setShowInfoCards,
+                )
 
-                    val liveEnabled = uiState.preferences.liveNotificationEnabled
+                DataSection(
+                    uiState = uiState,
+                    onSetDataRetention = viewModel::setDataRetention,
+                    onExportData = viewModel::exportData,
+                    onResetTipsClick = { showResetTipsDialog = true },
+                    onClearSpeedTestsClick = { showClearSpeedTestsDialog = true },
+                    onClearAllDataClick = { showClearDialog = true },
+                )
 
-                    SettingsToggle(
-                        title = stringResource(R.string.settings_live_notification),
-                        description = stringResource(R.string.settings_live_notification_desc),
-                        checked = liveEnabled,
-                        onCheckedChange = { enabled ->
-                            if (enabled && !hasNotificationPermission && notificationsPermissionRequired) {
-                                permissionRequestedForLive = true
-                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                            } else {
-                                viewModel.setLiveNotificationEnabled(enabled)
-                                val serviceIntent = Intent(context, RealTimeMonitorService::class.java)
-                                if (enabled) {
-                                    context.startForegroundService(serviceIntent)
-                                } else {
-                                    serviceIntent.action = RealTimeMonitorService.ACTION_STOP
-                                    context.startService(serviceIntent)
-                                }
-                            }
-                        },
-                    )
-
-                    if (liveEnabled) {
-                        SettingsDivider()
-                        Text(
-                            text = stringResource(R.string.settings_live_notification_show),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(top = MaterialTheme.spacing.xs),
-                        )
-                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                        SettingsToggle(
-                            title = stringResource(R.string.settings_live_notif_current),
-                            description = null,
-                            checked = uiState.preferences.liveNotifCurrent,
-                            onCheckedChange = { viewModel.setLiveNotifCurrent(it) },
-                        )
-                        SettingsToggle(
-                            title = stringResource(R.string.settings_live_notif_drain_rate),
-                            description = null,
-                            checked = uiState.preferences.liveNotifDrainRate,
-                            onCheckedChange = { viewModel.setLiveNotifDrainRate(it) },
-                        )
-                        SettingsToggle(
-                            title = stringResource(R.string.settings_live_notif_temperature),
-                            description = null,
-                            checked = uiState.preferences.liveNotifTemperature,
-                            onCheckedChange = { viewModel.setLiveNotifTemperature(it) },
-                        )
-                        SettingsToggle(
-                            title = stringResource(R.string.settings_live_notif_screen_stats),
-                            description = null,
-                            checked = uiState.preferences.liveNotifScreenStats,
-                            onCheckedChange = { viewModel.setLiveNotifScreenStats(it) },
-                        )
-                        SettingsToggle(
-                            title = stringResource(R.string.settings_live_notif_remaining_time),
-                            description = null,
-                            checked = uiState.preferences.liveNotifRemainingTime,
-                            onCheckedChange = { viewModel.setLiveNotifRemainingTime(it) },
-                        )
-                    }
-                }
-
-                // ── NOTIFICATIONS ──────────────────────────────────────────
-                SettingsCard {
-                    CardSectionTitle(text = stringResource(R.string.settings_notifications))
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-
-                    val masterEnabled = uiState.preferences.notificationsEnabled
-
-                    SettingsToggle(
-                        title = stringResource(R.string.settings_notifications),
-                        description = stringResource(R.string.settings_notifications_desc),
-                        checked = masterEnabled,
-                        onCheckedChange = { enabled ->
-                            if (enabled && !hasNotificationPermission && notificationsPermissionRequired) {
-                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                            } else {
-                                viewModel.setNotifications(enabled)
-                            }
-                        },
-                    )
-                    SettingsDivider()
-
-                    Column {
-                        SettingsToggle(
-                            title = stringResource(R.string.settings_notif_low_battery),
-                            description = stringResource(R.string.settings_notif_low_battery_desc),
-                            checked = uiState.preferences.notifLowBattery,
-                            enabled = masterEnabled,
-                            onCheckedChange = { if (masterEnabled) viewModel.setNotifLowBattery(it) },
-                        )
-                        SettingsDivider()
-                        SettingsToggle(
-                            title = stringResource(R.string.settings_notif_high_temp),
-                            description = stringResource(R.string.settings_notif_high_temp_desc),
-                            checked = uiState.preferences.notifHighTemp,
-                            enabled = masterEnabled,
-                            onCheckedChange = { if (masterEnabled) viewModel.setNotifHighTemp(it) },
-                        )
-                        SettingsDivider()
-                        SettingsToggle(
-                            title = stringResource(R.string.settings_notif_low_storage),
-                            description = stringResource(R.string.settings_notif_low_storage_desc),
-                            checked = uiState.preferences.notifLowStorage,
-                            enabled = masterEnabled,
-                            onCheckedChange = { if (masterEnabled) viewModel.setNotifLowStorage(it) },
-                        )
-                        SettingsDivider()
-                        SettingsToggle(
-                            title = stringResource(R.string.settings_notif_charge_complete),
-                            description = stringResource(R.string.settings_notif_charge_complete_desc),
-                            checked = uiState.preferences.notifChargeComplete,
-                            enabled = masterEnabled,
-                            onCheckedChange = { if (masterEnabled) viewModel.setNotifChargeComplete(it) },
-                        )
-                    }
-
-                    // Warning when notifications are enabled in-app but muted at the system level
-                    if (uiState.preferences.notificationsEnabled && !alertsEffectivelyEnabled) {
-                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                        Text(
-                            text =
-                                stringResource(
-                                    if (isXiaomiFamilyDevice) {
-                                        R.string.settings_notifications_system_muted_xiaomi
-                                    } else {
-                                        R.string.settings_notifications_system_muted
-                                    },
-                                ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier =
-                                Modifier
-                                    .padding(horizontal = MaterialTheme.spacing.xs)
-                                    .clickable {
-                                        val intent =
-                                            Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                                putExtra(
-                                                    android.provider.Settings.EXTRA_APP_PACKAGE,
-                                                    context.packageName,
-                                                )
-                                            }
-                                        context.startActivity(intent)
-                                    },
-                        )
-                    }
-                }
-
-                // ── ALERT THRESHOLDS ───────────────────────────────────────
-                SettingsCard {
-                    CardSectionTitle(text = stringResource(R.string.settings_alert_thresholds))
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-
-                    SettingsSlider(
-                        label = stringResource(R.string.settings_threshold_battery),
-                        value = uiState.preferences.alertBatteryThreshold,
-                        allowedValues = LOW_BATTERY_THRESHOLD_VALUES,
-                        valueLabelFor = { current -> "$current%" },
-                        onValueChange = { viewModel.setAlertBatteryThreshold(it) },
-                    )
-                    SettingsDivider()
-                    SettingsSlider(
-                        label = stringResource(R.string.settings_threshold_temp),
-                        value = uiState.preferences.alertTempThreshold,
-                        allowedValues = TEMPERATURE_THRESHOLD_VALUES,
-                        valueLabelFor = { current ->
-                            formatTemperature(
-                                context = context,
-                                valueCelsius = current,
-                                unit = uiState.preferences.temperatureUnit,
-                                fractionDigits = 0,
-                            )
-                        },
-                        onValueChange = { viewModel.setAlertTempThreshold(it) },
-                    )
-                    SettingsDivider()
-                    SettingsSlider(
-                        label = stringResource(R.string.settings_threshold_storage),
-                        value = uiState.preferences.alertStorageThreshold,
-                        allowedValues = LOW_STORAGE_THRESHOLD_VALUES,
-                        valueLabelFor = { current -> "$current%" },
-                        onValueChange = { viewModel.setAlertStorageThreshold(it) },
-                    )
-
-                    val isDefault =
-                        uiState.preferences.alertBatteryThreshold == 20 &&
-                            uiState.preferences.alertTempThreshold == 42 &&
-                            uiState.preferences.alertStorageThreshold == 90
-                    if (!isDefault) {
-                        SettingsDivider()
-                        TextButton(
-                            onClick = { showResetThresholdsDialog = true },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(stringResource(R.string.settings_reset_thresholds))
-                        }
-                    }
-                }
-
-                // ── DISPLAY ────────────────────────────────────────────────
-                SettingsCard {
-                    CardSectionTitle(text = stringResource(R.string.settings_display))
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-
-                    Text(
-                        text = stringResource(R.string.settings_temp_unit),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                    SettingsRadioRow(
-                        label = stringResource(R.string.settings_temp_celsius),
-                        selected = uiState.preferences.temperatureUnit == TemperatureUnit.CELSIUS,
-                        onSelect = { viewModel.setTemperatureUnit(TemperatureUnit.CELSIUS) },
-                    )
-                    SettingsRadioRow(
-                        label = stringResource(R.string.settings_temp_fahrenheit),
-                        selected = uiState.preferences.temperatureUnit == TemperatureUnit.FAHRENHEIT,
-                        onSelect = { viewModel.setTemperatureUnit(TemperatureUnit.FAHRENHEIT) },
-                    )
-
-                    SettingsDivider()
-
-                    SettingsToggle(
-                        title = stringResource(R.string.settings_show_info_cards),
-                        description = stringResource(R.string.settings_show_info_cards_desc),
-                        checked = uiState.preferences.showInfoCards,
-                        onCheckedChange = { viewModel.setShowInfoCards(it) },
-                    )
-                }
-
-                // ── DATA ───────────────────────────────────────────────────
-                SettingsCard {
-                    val exportingDescription = stringResource(R.string.a11y_exporting_data)
-                    CardSectionTitle(text = stringResource(R.string.settings_data_section))
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-
-                    Text(
-                        text =
-                            if (uiState.isPro) {
-                                stringResource(R.string.settings_data_retention_description)
-                            } else {
-                                stringResource(R.string.settings_data_retention_free)
-                            },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                    DataRetention.entries.forEachIndexed { index, retention ->
-                        if (index > 0) SettingsDivider()
-                        SettingsRadioRow(
-                            label = retention.label(),
-                            selected = uiState.preferences.dataRetention == retention,
-                            enabled = uiState.isPro,
-                            onSelect = { viewModel.setDataRetention(retention) },
-                        )
-                    }
-                    SettingsDivider()
-                    OutlinedButton(
-                        onClick = { viewModel.exportData() },
-                        enabled = uiState.isPro && !uiState.isExporting,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        if (uiState.isExporting) {
-                            CircularProgressIndicator(
-                                modifier =
-                                    Modifier
-                                        .size(18.dp)
-                                        .semantics {
-                                            contentDescription = exportingDescription
-                                        },
-                                strokeWidth = 2.dp,
-                            )
-                        } else {
-                            Text(stringResource(R.string.settings_export_data))
-                        }
-                    }
-
-                    SettingsDivider()
-
-                    SettingsNavigationRow(
-                        label = stringResource(R.string.settings_reset_tips),
-                        onClick = { showResetTipsDialog = true },
-                    )
-
-                    SettingsDivider()
-
-                    SettingsNavigationRow(
-                        label = stringResource(R.string.settings_clear_speed_tests),
-                        onClick = { showClearSpeedTestsDialog = true },
-                    )
-
-                    SettingsDivider()
-
-                    SettingsNavigationRow(
-                        label = stringResource(R.string.settings_clear_all_data),
-                        labelColor = MaterialTheme.colorScheme.error,
-                        onClick = { showClearDialog = true },
-                    )
-                }
-
-                // ── PRO ────────────────────────────────────────────────────
-                SettingsCard {
-                    CardSectionTitle(text = stringResource(R.string.settings_pro_section))
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-
-                    SettingsValueRow(
-                        label = stringResource(R.string.settings_status_label),
-                        value =
-                            if (uiState.isPro) {
-                                stringResource(R.string.settings_pro_status_active)
-                            } else {
-                                stringResource(R.string.settings_pro_status_not_active)
-                            },
-                        valueColor =
-                            if (uiState.isPro) {
-                                MaterialTheme.statusColors.healthy
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                    )
-
-                    if (uiState.isPro) {
-                        SettingsDivider()
-                        Text(
-                            text = stringResource(R.string.settings_pro_thank_you),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                    } else if (uiState.billingAvailable) {
-                        SettingsDivider()
-                        Button(
-                            onClick = { activity?.let { viewModel.purchasePro(it) } },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(
-                                uiState.proPrice?.let { stringResource(R.string.settings_upgrade_pro_with_price, it) }
-                                    ?: stringResource(R.string.settings_upgrade_pro),
-                            )
-                        }
-                    }
-                    if (!uiState.isPro) {
-                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                        SettingsNavigationRow(
-                            label = stringResource(R.string.settings_restore_purchase),
-                            onClick = { viewModel.refreshPurchaseStatus() },
-                        )
-                    }
-                }
+                ProSection(
+                    uiState = uiState,
+                    onPurchasePro = { activity?.let(viewModel::purchasePro) },
+                    onRefreshPurchaseStatus = viewModel::refreshPurchaseStatus,
+                )
 
                 SettingsMeasurementSection(
                     uiState = uiState,
@@ -682,7 +321,6 @@ fun SettingsScreen(
     val resetTipsDoneMessage = stringResource(R.string.settings_reset_tips_done)
 
     SettingsDialogs(
-        context = context,
         showResetThresholdsDialog = showResetThresholdsDialog,
         onDismissResetThresholds = { showResetThresholdsDialog = false },
         onConfirmResetThresholds = { viewModel.resetAlertThresholds() },
@@ -902,59 +540,46 @@ private fun SettingsTransientEffects(
     onClearExportUris: () -> Unit,
     onClearErrorMessage: () -> Unit,
 ) {
+    val currentOnClearBillingStatus = rememberUpdatedState(onClearBillingStatus)
+    val currentOnClearExportStatus = rememberUpdatedState(onClearExportStatus)
+    val currentOnClearClearDataStatus = rememberUpdatedState(onClearClearDataStatus)
+    val currentOnClearExportUris = rememberUpdatedState(onClearExportUris)
+    val currentOnClearErrorMessage = rememberUpdatedState(onClearErrorMessage)
+
     uiState.billingStatus?.let { status ->
         LaunchedEffect(status) {
             Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
-            onClearBillingStatus()
+            currentOnClearBillingStatus.value()
         }
     }
     uiState.exportStatus?.let { status ->
         LaunchedEffect(status) {
             Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
-            onClearExportStatus()
+            currentOnClearExportStatus.value()
         }
     }
     uiState.clearDataStatus?.let { status ->
         LaunchedEffect(status) {
             Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
-            onClearClearDataStatus()
+            currentOnClearClearDataStatus.value()
         }
     }
     uiState.exportUris?.let { exportUriStrings ->
         LaunchedEffect(exportUriStrings) {
-            val parsedUris = exportUriStrings.map { Uri.parse(it) }
-            val shareIntent =
-                if (parsedUris.size == 1) {
-                    Intent(Intent.ACTION_SEND).apply {
-                        type = "text/csv"
-                        putExtra(Intent.EXTRA_STREAM, parsedUris.first())
-                        clipData = android.content.ClipData.newRawUri(null, parsedUris.first())
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                } else {
-                    Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                        type = "text/csv"
-                        putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(parsedUris))
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                }
-            context.startActivity(
-                Intent.createChooser(shareIntent, context.getString(R.string.settings_export_share_title)),
-            )
-            onClearExportUris()
+            shareExportUris(context, exportUriStrings)
+            currentOnClearExportUris.value()
         }
     }
     uiState.errorMessage?.let { message ->
         LaunchedEffect(message) {
             Toast.makeText(context, message.resolve(context), Toast.LENGTH_SHORT).show()
-            onClearErrorMessage()
+            currentOnClearErrorMessage.value()
         }
     }
 }
 
 @Composable
 private fun SettingsDialogs(
-    context: android.content.Context,
     showResetThresholdsDialog: Boolean,
     onDismissResetThresholds: () -> Unit,
     onConfirmResetThresholds: () -> Unit,
@@ -1085,7 +710,7 @@ private fun SettingsDialogs(
 // ── Reusable settings components ──────────────────────────────────────────────
 
 @Composable
-private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
+internal fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
     Card(
         shape = MaterialTheme.shapes.large,
         colors = runcheckCardColors(),
@@ -1099,12 +724,12 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-private fun SettingsDivider() {
+internal fun SettingsDivider() {
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
 }
 
 @Composable
-private fun SettingsRadioRow(
+internal fun SettingsRadioRow(
     label: String,
     selected: Boolean,
     enabled: Boolean = true,
@@ -1115,7 +740,7 @@ private fun SettingsRadioRow(
             Modifier
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 48.dp)
-                .alpha(if (enabled) 1f else 0.38f)
+                .alpha(if (enabled) 1f else DisabledContentAlpha)
                 .selectable(
                     selected = selected,
                     enabled = enabled,
@@ -1134,7 +759,7 @@ private fun SettingsRadioRow(
 }
 
 @Composable
-private fun SettingsToggle(
+internal fun SettingsToggle(
     title: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
@@ -1146,7 +771,7 @@ private fun SettingsToggle(
             Modifier
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 48.dp)
-                .alpha(if (enabled) 1f else 0.38f)
+                .alpha(if (enabled) 1f else DisabledContentAlpha)
                 .toggleable(
                     value = checked,
                     enabled = enabled,
@@ -1171,7 +796,7 @@ private fun SettingsToggle(
 }
 
 @Composable
-private fun SettingsSlider(
+internal fun SettingsSlider(
     label: String,
     value: Int,
     allowedValues: List<Int>,
@@ -1223,7 +848,7 @@ private fun SettingsSlider(
 }
 
 @Composable
-private fun SettingsValueRow(
+internal fun SettingsValueRow(
     label: String,
     value: String,
     valueColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1243,7 +868,7 @@ private fun SettingsValueRow(
 }
 
 @Composable
-private fun SettingsNavigationRow(
+internal fun SettingsNavigationRow(
     label: String,
     onClick: () -> Unit,
     labelColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
@@ -1270,7 +895,7 @@ private fun SettingsNavigationRow(
 }
 
 @Composable
-private fun DataRetention.label(): String =
+internal fun DataRetention.label(): String =
     when (this) {
         DataRetention.THREE_MONTHS -> stringResource(R.string.settings_retention_3_months)
         DataRetention.SIX_MONTHS -> stringResource(R.string.settings_retention_6_months)
@@ -1315,6 +940,30 @@ private fun resolveSettingsInfoContent(key: String): InfoSheetContent? =
         else -> null
     }
 
-private val LOW_BATTERY_THRESHOLD_VALUES = (5..50 step 5).toList()
-private val TEMPERATURE_THRESHOLD_VALUES = (35..50).toList()
-private val LOW_STORAGE_THRESHOLD_VALUES = listOf(70, 75, 80, 85, 90, 95, 99)
+internal fun shareExportUris(
+    context: android.content.Context,
+    exportUriStrings: List<String>,
+) {
+    val parsedUris = exportUriStrings.map(Uri::parse)
+    val shareIntent =
+        if (parsedUris.size == 1) {
+            Intent(Intent.ACTION_SEND).apply {
+                type = "text/csv"
+                putExtra(Intent.EXTRA_STREAM, parsedUris.first())
+                clipData = android.content.ClipData.newRawUri(null, parsedUris.first())
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+        } else {
+            Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                type = "text/csv"
+                putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(parsedUris))
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+        }
+    val chooserTitle = context.getString(R.string.settings_export_share_title)
+    context.startActivity(Intent.createChooser(shareIntent, chooserTitle))
+}
+
+internal val LOW_BATTERY_THRESHOLD_VALUES = (5..50 step 5).toList()
+internal val TEMPERATURE_THRESHOLD_VALUES = (35..50).toList()
+internal val LOW_STORAGE_THRESHOLD_VALUES = listOf(70, 75, 80, 85, 90, 95, 99)

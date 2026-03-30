@@ -207,6 +207,7 @@ private fun StorageReadingEntity.toStorageState(): StorageState {
     )
 }
 
+@Suppress("CyclomaticComplexMethod")
 private fun classifySignal(
     dbm: Int?,
     type: ConnectionType,

@@ -1045,74 +1045,76 @@ private fun NetworkOverviewSection(
     onOpenLocationHelp: () -> Unit,
     onInfoClick: (String) -> Unit,
 ) {
-    NetworkHeroSection(
-        networkState = networkState,
-        liveSignalDbm = state.liveSignalDbm,
-        onInfoClick = onInfoClick,
-    )
+    Column {
+        NetworkHeroSection(
+            networkState = networkState,
+            liveSignalDbm = state.liveSignalDbm,
+            onInfoClick = onInfoClick,
+        )
 
-    val shouldShowWeakSignalInfoCard =
-        networkState.connectionType != ConnectionType.NONE &&
-            networkState.signalDbm != null &&
-            (
-                networkState.signalQuality == SignalQuality.POOR ||
-                    networkState.signalQuality == SignalQuality.NO_SIGNAL
+        val shouldShowWeakSignalInfoCard =
+            networkState.connectionType != ConnectionType.NONE &&
+                networkState.signalDbm != null &&
+                (
+                    networkState.signalQuality == SignalQuality.POOR ||
+                        networkState.signalQuality == SignalQuality.NO_SIGNAL
+                )
+
+        if (shouldShowWeakSignalInfoCard) {
+            InfoCard(
+                id = InfoCardCatalog.NetworkWeakSignalDrain.id,
+                headline = stringResource(InfoCardCatalog.NetworkWeakSignalDrain.headlineRes),
+                body = stringResource(InfoCardCatalog.NetworkWeakSignalDrain.bodyRes),
+                onDismiss = onDismissInfoCard,
+                visible =
+                    InfoCardCatalog.NetworkWeakSignalDrain.id !in state.dismissedInfoCards &&
+                        state.showInfoCards,
+                onLearnMore = {
+                    InfoCardCatalog
+                        .resolveLearnArticleId(
+                            InfoCardCatalog.NetworkWeakSignalDrain,
+                        )?.let(onNavigateToLearnArticle)
+                },
             )
+        }
 
-    if (shouldShowWeakSignalInfoCard) {
         InfoCard(
-            id = InfoCardCatalog.NetworkWeakSignalDrain.id,
-            headline = stringResource(InfoCardCatalog.NetworkWeakSignalDrain.headlineRes),
-            body = stringResource(InfoCardCatalog.NetworkWeakSignalDrain.bodyRes),
+            id = InfoCardCatalog.NetworkSpeedTestScope.id,
+            headline = stringResource(InfoCardCatalog.NetworkSpeedTestScope.headlineRes),
+            body = stringResource(InfoCardCatalog.NetworkSpeedTestScope.bodyRes),
             onDismiss = onDismissInfoCard,
             visible =
-                InfoCardCatalog.NetworkWeakSignalDrain.id !in state.dismissedInfoCards &&
+                InfoCardCatalog.NetworkSpeedTestScope.id !in state.dismissedInfoCards &&
                     state.showInfoCards,
             onLearnMore = {
                 InfoCardCatalog
                     .resolveLearnArticleId(
-                        InfoCardCatalog.NetworkWeakSignalDrain,
+                        InfoCardCatalog.NetworkSpeedTestScope,
                     )?.let(onNavigateToLearnArticle)
             },
         )
+
+        if (networkState.connectionType == ConnectionType.WIFI && networkState.wifiSsid == null) {
+            WifiNameHelpCard(
+                hasLocationPermission = hasLocationPermission,
+                locationEnabled = locationEnabled,
+                showOpenSettings =
+                    !hasLocationPermission &&
+                        locationRequestAttempted &&
+                        activity?.let {
+                            !ActivityCompat.shouldShowRequestPermissionRationale(
+                                it,
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                            )
+                        } == true,
+                onRequestPermission = onRequestLocationPermission,
+                onOpenSettings = onOpenLocationHelp,
+            )
+        }
+
+        ConnectionDetailsCard(networkState = networkState, onInfoClick = onInfoClick)
+        IpDnsCard(networkState = networkState, onInfoClick = onInfoClick)
     }
-
-    InfoCard(
-        id = InfoCardCatalog.NetworkSpeedTestScope.id,
-        headline = stringResource(InfoCardCatalog.NetworkSpeedTestScope.headlineRes),
-        body = stringResource(InfoCardCatalog.NetworkSpeedTestScope.bodyRes),
-        onDismiss = onDismissInfoCard,
-        visible =
-            InfoCardCatalog.NetworkSpeedTestScope.id !in state.dismissedInfoCards &&
-                state.showInfoCards,
-        onLearnMore = {
-            InfoCardCatalog
-                .resolveLearnArticleId(
-                    InfoCardCatalog.NetworkSpeedTestScope,
-                )?.let(onNavigateToLearnArticle)
-        },
-    )
-
-    if (networkState.connectionType == ConnectionType.WIFI && networkState.wifiSsid == null) {
-        WifiNameHelpCard(
-            hasLocationPermission = hasLocationPermission,
-            locationEnabled = locationEnabled,
-            showOpenSettings =
-                !hasLocationPermission &&
-                    locationRequestAttempted &&
-                    activity?.let {
-                        !ActivityCompat.shouldShowRequestPermissionRationale(
-                            it,
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                        )
-                    } == true,
-            onRequestPermission = onRequestLocationPermission,
-            onOpenSettings = onOpenLocationHelp,
-        )
-    }
-
-    ConnectionDetailsCard(networkState = networkState, onInfoClick = onInfoClick)
-    IpDnsCard(networkState = networkState, onInfoClick = onInfoClick)
 }
 
 @Composable
@@ -1161,6 +1163,7 @@ private fun NetworkToolsSection(
     )
 }
 
+@Suppress("CyclomaticComplexMethod")
 private fun resolveNetworkInfoContent(key: String) =
     when (key) {
         "signalStrength" -> NetworkInfoContent.signalStrength

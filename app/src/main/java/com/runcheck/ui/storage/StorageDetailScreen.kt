@@ -523,22 +523,24 @@ private fun StorageFooterSection(
     onNavigateToLearnArticle: (String) -> Unit,
     onInfoClick: (String) -> Unit,
 ) {
-    StorageDetailsCard(storage = storage, onInfoClick = onInfoClick)
+    Column {
+        StorageDetailsCard(storage = storage, onInfoClick = onInfoClick)
 
-    if (storage.sdCardAvailable) {
-        StorageSdCardCard(storage = storage)
+        if (storage.sdCardAvailable) {
+            StorageSdCardCard(storage = storage)
+        }
+
+        StorageQuickActionsCard()
+
+        RelatedArticlesSection(
+            articleIds =
+                listOf(
+                    LearnArticleIds.STORAGE_SLOWDOWN,
+                    LearnArticleIds.STORAGE_BREAKDOWN,
+                ),
+            onNavigateToArticle = onNavigateToLearnArticle,
+        )
     }
-
-    StorageQuickActionsCard()
-
-    RelatedArticlesSection(
-        articleIds =
-            listOf(
-                LearnArticleIds.STORAGE_SLOWDOWN,
-                LearnArticleIds.STORAGE_BREAKDOWN,
-            ),
-        onNavigateToArticle = onNavigateToLearnArticle,
-    )
 }
 
 @Composable

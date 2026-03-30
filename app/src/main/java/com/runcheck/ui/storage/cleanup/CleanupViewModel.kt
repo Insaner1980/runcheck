@@ -110,6 +110,7 @@ class CleanupViewModel
                 }
         }
 
+        @Suppress("LongMethod")
         private suspend fun performScan() {
             val storageState = storageCleanup.getCurrentStorageState()
             currentStorageTotal = storageState.totalBytes.coerceAtLeast(1L)

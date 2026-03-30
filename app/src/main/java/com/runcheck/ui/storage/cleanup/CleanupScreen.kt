@@ -69,6 +69,7 @@ import com.runcheck.ui.theme.spacing
 import kotlinx.coroutines.flow.Flow
 
 @Composable
+@Suppress("ViewModelForwarding")
 fun CleanupScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -158,6 +159,7 @@ fun CleanupScreen(
 }
 
 @Composable
+@Suppress("ViewModelForwarding")
 private fun CleanupScreenBody(
     uiState: CleanupUiState,
     cleanupType: CleanupType,

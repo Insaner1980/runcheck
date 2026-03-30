@@ -173,7 +173,8 @@ object DatabaseModule {
         object : Migration(7, 8) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS `index_app_battery_usage_package_name_timestamp` ON `app_battery_usage` (`package_name`, `timestamp`)",
+                    "CREATE INDEX IF NOT EXISTS `index_app_battery_usage_package_name_timestamp` " +
+                        "ON `app_battery_usage` (`package_name`, `timestamp`)",
                 )
             }
         }
