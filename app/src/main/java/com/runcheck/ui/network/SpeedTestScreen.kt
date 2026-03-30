@@ -183,7 +183,7 @@ private fun SpeedTestContent(
     onConfirmCellular: () -> Unit,
     onDismissCellular: () -> Unit,
 ) {
-    var activeInfoSheet by rememberInfoSheetState()
+    val activeInfoSheetState = rememberInfoSheetState()
     val hasConnection = networkState.connectionType != ConnectionType.NONE
 
     Column(
@@ -220,7 +220,7 @@ private fun SpeedTestContent(
         // Combined metrics card (Download, Upload, Ping, Jitter)
         SpeedMetricsCard(
             state = speedTestState,
-            onInfoClick = { key -> activeInfoSheet = key },
+            onInfoClick = { key -> activeInfoSheetState.value = key },
         )
 
         if (speedTestState.phase is SpeedTestPhase.Failed) {
@@ -257,8 +257,8 @@ private fun SpeedTestContent(
     }
 
     InfoSheetHost(
-        activeKey = activeInfoSheet,
-        onDismiss = { activeInfoSheet = null },
+        activeKey = activeInfoSheetState.value,
+        onDismiss = { activeInfoSheetState.value = null },
         resolveContent = ::resolveSpeedTestInfoContent,
     )
 }

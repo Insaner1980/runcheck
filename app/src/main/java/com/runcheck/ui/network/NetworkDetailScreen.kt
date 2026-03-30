@@ -136,7 +136,6 @@ fun NetworkDetailScreen(
     onFullscreenResultConsumed: () -> Unit = {},
     viewModel: NetworkViewModel = hiltViewModel(),
 ) {
-    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val networkUiState by viewModel.networkUiState.collectAsStateWithLifecycle()
     val loadingDescription = stringResource(R.string.a11y_loading)
@@ -652,7 +651,7 @@ private fun SignalHistoryCard(
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
     overrideMetric: String? = null,
 ) {
-    var selectedMetric by rememberSaveableEnumState(NetworkHistoryMetric.SIGNAL)
+    val selectedMetricState = rememberSaveableEnumState(NetworkHistoryMetric.SIGNAL)
 
     ApplyFullscreenChartSelectionResult(
         defaultSource = FullscreenChartSource.NETWORK_HISTORY,
@@ -660,7 +659,7 @@ private fun SignalHistoryCard(
         rawPeriod = null,
         onConsumed = {},
         applySelection = { _, metric, _ ->
-            selectedMetric =
+            selectedMetricState.value =
                 enumValueOrDefault(
                     sanitizeFullscreenMetric(
                         source = FullscreenChartSource.NETWORK_HISTORY,
@@ -671,7 +670,7 @@ private fun SignalHistoryCard(
         },
     )
 
-    val metric = selectedMetric
+    val metric = selectedMetricState.value
 
     val chartModel =
         remember(history, metric, selectedPeriod) {
@@ -692,7 +691,7 @@ private fun SignalHistoryCard(
         EnumFilterChipRow(
             values = NetworkHistoryMetric.entries,
             selected = metric,
-            onSelect = { selectedMetric = it },
+            onSelect = { selectedMetricState.value = it },
             labelFor = { networkHistoryMetricLabel(it) },
         )
 
@@ -921,7 +920,7 @@ private fun NetworkContent(
     onFullscreenResultConsumed: () -> Unit = {},
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
-    var activeInfoSheet by rememberInfoSheetState()
+    val activeInfoSheetState = rememberInfoSheetState()
 
     ApplyFullscreenChartSelectionResult(
         defaultSource = FullscreenChartSource.NETWORK_HISTORY,
@@ -1005,7 +1004,7 @@ private fun NetworkContent(
                         context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
                     }
                 },
-                onInfoClick = { activeInfoSheet = it },
+                onInfoClick = { activeInfoSheetState.value = it },
             )
 
             NetworkToolsSection(
@@ -1017,7 +1016,7 @@ private fun NetworkContent(
                 onNavigateToSpeedTest = onNavigateToSpeedTest,
                 onUpgradeToPro = onUpgradeToPro,
                 onNavigateToLearnArticle = onNavigateToLearnArticle,
-                onInfoClick = { activeInfoSheet = it },
+                onInfoClick = { activeInfoSheetState.value = it },
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
@@ -1025,14 +1024,15 @@ private fun NetworkContent(
     }
 
     InfoSheetHost(
-        activeKey = activeInfoSheet,
-        onDismiss = { activeInfoSheet = null },
+        activeKey = activeInfoSheetState.value,
+        onDismiss = { activeInfoSheetState.value = null },
         resolveContent = ::resolveNetworkInfoContent,
     )
 }
 
+@Suppress("kotlin:S107")
 @Composable
-private fun NetworkOverviewSection(
+private fun NetworkOverviewSection( // NOSONAR
     state: NetworkUiState.Success,
     networkState: NetworkState,
     hasLocationPermission: Boolean,
@@ -1117,8 +1117,9 @@ private fun NetworkOverviewSection(
     }
 }
 
+@Suppress("kotlin:S107")
 @Composable
-private fun NetworkToolsSection(
+private fun NetworkToolsSection( // NOSONAR
     state: NetworkUiState.Success,
     speedTestState: SpeedTestUiState,
     fullscreenResultMetric: String?,

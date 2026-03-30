@@ -163,8 +163,9 @@ internal fun LiveNotificationSection(
     }
 }
 
+@Suppress("kotlin:S107")
 @Composable
-internal fun NotificationsSection(
+internal fun NotificationsSection( // NOSONAR
     context: android.content.Context,
     preferences: UserPreferences,
     alertsEffectivelyEnabled: Boolean,

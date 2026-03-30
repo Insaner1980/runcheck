@@ -151,7 +151,6 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
-    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val loadingDescription = stringResource(R.string.a11y_loading)
 
@@ -340,7 +339,6 @@ private fun HomeContent(
 
             HomeGridSection(
                 state = state,
-                context = context,
                 isWideScreen = isWideScreen,
                 onNavigateToNetwork = onNavigateToNetwork,
                 onNavigateToThermal = onNavigateToThermal,
@@ -396,7 +394,6 @@ private fun HomeTrialSection(
 @Composable
 private fun HomeGridSection(
     state: HomeUiState.Success,
-    context: android.content.Context,
     isWideScreen: Boolean,
     onNavigateToNetwork: () -> Unit,
     onNavigateToThermal: () -> Unit,
@@ -404,6 +401,7 @@ private fun HomeGridSection(
     onNavigateToStorage: () -> Unit,
     onNavigateToProUpgrade: () -> Unit,
 ) {
+    val context = LocalContext.current
     if (isWideScreen) {
         WideHomeGridSection(
             state = state,
@@ -573,28 +571,11 @@ private fun HomeQuickToolsSection(
                     onClick = onNavigateToSpeedTest,
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    ListRow(
-                        label = stringResource(R.string.home_app_usage_card),
-                        icon = Icons.Outlined.DataUsage,
-                        onClick = if (isPro) onNavigateToAppUsage else onNavigateToProUpgrade,
-                        trailing =
-                            if (!isPro) {
-                                { ProBadgePill() }
-                            } else {
-                                null
-                            },
-                    )
-
-                    if (!isPro) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.14f)),
-                        )
-                    }
-                }
+                HomeAppUsageQuickToolRow(
+                    isPro = isPro,
+                    onNavigateToAppUsage = onNavigateToAppUsage,
+                    onNavigateToProUpgrade = onNavigateToProUpgrade,
+                )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                 ListRow(
                     label = stringResource(R.string.home_learn),
@@ -602,6 +583,31 @@ private fun HomeQuickToolsSection(
                     onClick = onNavigateToLearn,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun HomeAppUsageQuickToolRow(
+    isPro: Boolean,
+    onNavigateToAppUsage: () -> Unit,
+    onNavigateToProUpgrade: () -> Unit,
+) {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        ListRow(
+            label = stringResource(R.string.home_app_usage_card),
+            icon = Icons.Outlined.DataUsage,
+            onClick = if (isPro) onNavigateToAppUsage else onNavigateToProUpgrade,
+            trailing = if (!isPro) ({ ProBadgePill() }) else null,
+        )
+
+        if (!isPro) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.14f)),
+            )
         }
     }
 }

@@ -421,8 +421,9 @@ private fun StorageContent(
     )
 }
 
+@Suppress("kotlin:S107")
 @Composable
-private fun StorageOverviewSection(
+private fun StorageOverviewSection( // NOSONAR
     state: StorageUiState.Success,
     storage: StorageState,
     hasMediaPermissions: Boolean,
@@ -817,8 +818,8 @@ private fun StorageHistoryCard(
     historyLoadError: UiText?,
     onPeriodChange: (HistoryPeriod) -> Unit,
 ) {
-    var selectedMetric by rememberSaveableEnumState(StorageHistoryMetric.USED_SPACE)
-    val metric = selectedMetric
+    val selectedMetricState = rememberSaveableEnumState(StorageHistoryMetric.USED_SPACE)
+    val metric = selectedMetricState.value
 
     val chartModel =
         remember(history, metric, selectedPeriod) {
@@ -848,7 +849,7 @@ private fun StorageHistoryCard(
             EnumFilterChipRow(
                 values = StorageHistoryMetric.entries,
                 selected = metric,
-                onSelect = { selectedMetric = it },
+                onSelect = { selectedMetricState.value = it },
                 labelFor = { storageHistoryMetricLabel(it) },
             )
 

@@ -702,8 +702,8 @@ private fun ThermalHistoryCard(
     temperatureUnit: TemperatureUnit,
     onPeriodChange: (HistoryPeriod) -> Unit,
 ) {
-    var selectedMetric by rememberSaveableEnumState(ThermalHistoryMetric.BATTERY_TEMP)
-    val metric = selectedMetric
+    val selectedMetricState = rememberSaveableEnumState(ThermalHistoryMetric.BATTERY_TEMP)
+    val metric = selectedMetricState.value
 
     val chartModel =
         remember(history, metric, selectedPeriod, temperatureUnit) {
@@ -736,7 +736,7 @@ private fun ThermalHistoryCard(
             EnumFilterChipRow(
                 values = ThermalHistoryMetric.entries,
                 selected = metric,
-                onSelect = { selectedMetric = it },
+                onSelect = { selectedMetricState.value = it },
                 labelFor = { thermalHistoryMetricLabel(it) },
             )
 

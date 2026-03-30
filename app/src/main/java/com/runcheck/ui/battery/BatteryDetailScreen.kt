@@ -248,15 +248,15 @@ private fun BatteryContent(
     fullscreenResultPeriod: String? = null,
     onFullscreenResultConsumed: () -> Unit = {},
 ) {
-    var activeInfoSheet by rememberInfoSheetState()
+    val activeInfoSheetState = rememberInfoSheetState()
     var isRefreshing by remember { mutableStateOf(false) }
     val battery = state.batteryState
-    var selectedHistoryMetric by rememberSaveableEnumState(BatteryHistoryMetric.LEVEL)
-    var selectedSessionMetric by rememberSaveableEnumState(SessionGraphMetric.CURRENT)
-    var selectedSessionWindow by rememberSaveableEnumState(SessionGraphWindow.ALL)
-    val historyMetric = selectedHistoryMetric
-    val sessionMetric = selectedSessionMetric
-    val sessionWindow = selectedSessionWindow
+    val selectedHistoryMetricState = rememberSaveableEnumState(BatteryHistoryMetric.LEVEL)
+    val selectedSessionMetricState = rememberSaveableEnumState(SessionGraphMetric.CURRENT)
+    val selectedSessionWindowState = rememberSaveableEnumState(SessionGraphWindow.ALL)
+    val historyMetric = selectedHistoryMetricState.value
+    val sessionMetric = selectedSessionMetricState.value
+    val sessionWindow = selectedSessionWindowState.value
 
     ApplyFullscreenChartSelectionResult(
         rawSource = fullscreenResultSource,
@@ -266,7 +266,7 @@ private fun BatteryContent(
         applySelection = { source, metric, period ->
             when (source) {
                 FullscreenChartSource.BATTERY_HISTORY -> {
-                    selectedHistoryMetric =
+                        selectedHistoryMetricState.value =
                         enumValueOrDefault(
                             sanitizeFullscreenMetric(
                                 source = FullscreenChartSource.BATTERY_HISTORY,
@@ -286,7 +286,7 @@ private fun BatteryContent(
                 }
 
                 FullscreenChartSource.BATTERY_SESSION -> {
-                    selectedSessionMetric =
+                        selectedSessionMetricState.value =
                         enumValueOrDefault(
                             sanitizeFullscreenMetric(
                                 source = FullscreenChartSource.BATTERY_SESSION,
@@ -294,7 +294,7 @@ private fun BatteryContent(
                             ),
                             SessionGraphMetric.CURRENT,
                         )
-                    selectedSessionWindow =
+                        selectedSessionWindowState.value =
                         enumValueOrDefault(
                             sanitizeFullscreenPeriod(
                                 source = FullscreenChartSource.BATTERY_SESSION,
@@ -345,7 +345,7 @@ private fun BatteryContent(
                 battery = battery,
                 onDismissInfoCard = onDismissInfoCard,
                 onNavigateToLearnArticle = onNavigateToLearnArticle,
-                onInfoClick = { activeInfoSheet = it },
+                onInfoClick = { activeInfoSheetState.value = it },
             )
 
             BatteryChargingSection(
@@ -353,25 +353,25 @@ private fun BatteryContent(
                 battery = battery,
                 chargingSessionSummary = chargingSessionSummary,
                 selectedSessionMetric = sessionMetric,
-                onSessionMetricChange = { selectedSessionMetric = it },
+                onSessionMetricChange = { selectedSessionMetricState.value = it },
                 selectedSessionWindow = sessionWindow,
-                onSessionWindowChange = { selectedSessionWindow = it },
+                onSessionWindowChange = { selectedSessionWindowState.value = it },
                 onNavigateToFullscreen = onNavigateToFullscreen,
                 onDismissInfoCard = onDismissInfoCard,
                 onNavigateToLearnArticle = onNavigateToLearnArticle,
-                onInfoClick = { activeInfoSheet = it },
+                onInfoClick = { activeInfoSheetState.value = it },
             )
 
             BatteryFooterSection(
                 state = state,
                 selectedHistoryMetric = historyMetric,
-                onHistoryMetricChange = { selectedHistoryMetric = it },
+                onHistoryMetricChange = { selectedHistoryMetricState.value = it },
                 onPeriodChange = onPeriodChange,
                 onUpgradeToPro = onUpgradeToPro,
                 onNavigateToFullscreen = onNavigateToFullscreen,
                 onNavigateToCharger = onNavigateToCharger,
                 onNavigateToLearnArticle = onNavigateToLearnArticle,
-                onInfoClick = { activeInfoSheet = it },
+                onInfoClick = { activeInfoSheetState.value = it },
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
@@ -379,14 +379,15 @@ private fun BatteryContent(
     }
 
     InfoSheetHost(
-        activeKey = activeInfoSheet,
-        onDismiss = { activeInfoSheet = null },
+        activeKey = activeInfoSheetState.value,
+        onDismiss = { activeInfoSheetState.value = null },
         resolveContent = ::resolveBatteryInfoContent,
     )
 }
 
+@Suppress("kotlin:S3776")
 @Composable
-private fun BatteryOverviewSection(
+private fun BatteryOverviewSection( // NOSONAR
     state: BatteryUiState.Success,
     battery: BatteryState,
     onDismissInfoCard: (String) -> Unit,
@@ -592,8 +593,9 @@ private fun BatteryOverviewSection(
     }
 }
 
+@Suppress("kotlin:S107", "kotlin:S3776")
 @Composable
-private fun BatteryChargingSection(
+private fun BatteryChargingSection( // NOSONAR
     state: BatteryUiState.Success,
     battery: BatteryState,
     chargingSessionSummary: ChargingSessionSummary?,
@@ -811,8 +813,9 @@ private fun BatteryChargingSection(
     }
 }
 
+@Suppress("kotlin:S107")
 @Composable
-private fun BatteryFooterSection(
+private fun BatteryFooterSection( // NOSONAR
     state: BatteryUiState.Success,
     selectedHistoryMetric: BatteryHistoryMetric,
     onHistoryMetricChange: (BatteryHistoryMetric) -> Unit,

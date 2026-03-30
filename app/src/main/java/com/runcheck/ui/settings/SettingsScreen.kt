@@ -46,6 +46,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -134,8 +135,8 @@ fun SettingsScreen(
     }
     // Track whether the permission request was triggered by the live-notification toggle
     var permissionRequestedForLive by remember { mutableStateOf(false) }
-    var showNotifPermissionDeniedDialog by rememberSaveable { mutableStateOf(false) }
-    var activeInfoSheet by rememberInfoSheetState()
+    val showNotifPermissionDeniedDialogState = rememberSaveable { mutableStateOf(false) }
+    val activeInfoSheetState = rememberInfoSheetState()
 
     LifecycleResumeEffect(Unit) {
         hasNotificationPermission = !notificationsPermissionRequired ||
@@ -175,7 +176,7 @@ fun SettingsScreen(
                             Manifest.permission.POST_NOTIFICATIONS,
                         )
                 if (permanentlyDenied) {
-                    showNotifPermissionDeniedDialog = true
+                    showNotifPermissionDeniedDialogState.value = true
                 }
             }
             permissionRequestedForLive = false
@@ -210,10 +211,10 @@ fun SettingsScreen(
     }
 
     // Confirmation dialog states
-    var showClearDialog by rememberSaveable { mutableStateOf(false) }
-    var showClearSpeedTestsDialog by rememberSaveable { mutableStateOf(false) }
-    var showResetTipsDialog by rememberSaveable { mutableStateOf(false) }
-    var showResetThresholdsDialog by rememberSaveable { mutableStateOf(false) }
+    val showClearDialogState = rememberSaveable { mutableStateOf(false) }
+    val showClearSpeedTestsDialogState = rememberSaveable { mutableStateOf(false) }
+    val showResetTipsDialogState = rememberSaveable { mutableStateOf(false) }
+    val showResetThresholdsDialogState = rememberSaveable { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
@@ -266,7 +267,7 @@ fun SettingsScreen(
                     onSetAlertBatteryThreshold = viewModel::setAlertBatteryThreshold,
                     onSetAlertTempThreshold = viewModel::setAlertTempThreshold,
                     onSetAlertStorageThreshold = viewModel::setAlertStorageThreshold,
-                    onResetThresholdsClick = { showResetThresholdsDialog = true },
+                    onResetThresholdsClick = { showResetThresholdsDialogState.value = true },
                 )
 
                 DisplaySection(
@@ -279,9 +280,9 @@ fun SettingsScreen(
                     uiState = uiState,
                     onSetDataRetention = viewModel::setDataRetention,
                     onExportData = viewModel::exportData,
-                    onResetTipsClick = { showResetTipsDialog = true },
-                    onClearSpeedTestsClick = { showClearSpeedTestsDialog = true },
-                    onClearAllDataClick = { showClearDialog = true },
+                    onResetTipsClick = { showResetTipsDialogState.value = true },
+                    onClearSpeedTestsClick = { showClearSpeedTestsDialogState.value = true },
+                    onClearAllDataClick = { showClearDialogState.value = true },
                 )
 
                 ProSection(
@@ -293,7 +294,7 @@ fun SettingsScreen(
                 SettingsMeasurementSection(
                     uiState = uiState,
                     context = context,
-                    onInfoClick = { activeInfoSheet = it },
+                    onInfoClick = { activeInfoSheetState.value = it },
                 )
 
                 SettingsAboutSection(context = context)
@@ -314,47 +315,65 @@ fun SettingsScreen(
     }
 
     InfoSheetHost(
-        activeKey = activeInfoSheet,
-        onDismiss = { activeInfoSheet = null },
+        activeKey = activeInfoSheetState.value,
+        onDismiss = { activeInfoSheetState.value = null },
         resolveContent = ::resolveSettingsInfoContent,
     )
     val resetTipsDoneMessage = stringResource(R.string.settings_reset_tips_done)
 
     SettingsDialogs(
-        showResetThresholdsDialog = showResetThresholdsDialog,
-        onDismissResetThresholds = { showResetThresholdsDialog = false },
-        onConfirmResetThresholds = { viewModel.resetAlertThresholds() },
-        showResetTipsDialog = showResetTipsDialog,
-        onDismissResetTips = { showResetTipsDialog = false },
-        onConfirmResetTips = {
-            viewModel.resetTips()
-            Toast
-                .makeText(
-                    context,
-                    resetTipsDoneMessage,
-                    Toast.LENGTH_SHORT,
-                ).show()
-        },
-        showClearSpeedTestsDialog = showClearSpeedTestsDialog,
-        onDismissClearSpeedTests = { showClearSpeedTestsDialog = false },
-        onConfirmClearSpeedTests = { viewModel.clearSpeedTests() },
-        showNotifPermissionDeniedDialog = showNotifPermissionDeniedDialog,
-        onDismissNotifPermissionDenied = { showNotifPermissionDeniedDialog = false },
-        onOpenNotificationSettings = {
-            context.startActivity(
-                Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                    putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+        handles =
+            SettingsDialogHandles(
+                showResetThresholdsDialog = showResetThresholdsDialogState,
+                showResetTipsDialog = showResetTipsDialogState,
+                showClearSpeedTestsDialog = showClearSpeedTestsDialogState,
+                showNotifPermissionDeniedDialog = showNotifPermissionDeniedDialogState,
+                showClearDialog = showClearDialogState,
+            ),
+        actions =
+            SettingsDialogActions(
+                onConfirmResetThresholds = { viewModel.resetAlertThresholds() },
+                onConfirmResetTips = {
+                    viewModel.resetTips()
+                    Toast
+                        .makeText(
+                            context,
+                            resetTipsDoneMessage,
+                            Toast.LENGTH_SHORT,
+                        ).show()
                 },
-            )
-        },
-        showClearDialog = showClearDialog,
-        onDismissClearDialog = { showClearDialog = false },
-        onConfirmClearDialog = { viewModel.clearAllData() },
+                onConfirmClearSpeedTests = { viewModel.clearSpeedTests() },
+                onOpenNotificationSettings = {
+                    context.startActivity(
+                        Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        },
+                    )
+                },
+                onConfirmClearDialog = { viewModel.clearAllData() },
+            ),
     )
 }
 
+private data class SettingsDialogHandles(
+    val showResetThresholdsDialog: MutableState<Boolean>,
+    val showResetTipsDialog: MutableState<Boolean>,
+    val showClearSpeedTestsDialog: MutableState<Boolean>,
+    val showNotifPermissionDeniedDialog: MutableState<Boolean>,
+    val showClearDialog: MutableState<Boolean>,
+)
+
+private data class SettingsDialogActions(
+    val onConfirmResetThresholds: () -> Unit,
+    val onConfirmResetTips: () -> Unit,
+    val onConfirmClearSpeedTests: () -> Unit,
+    val onOpenNotificationSettings: () -> Unit,
+    val onConfirmClearDialog: () -> Unit,
+)
+
+@Suppress("kotlin:S3776")
 @Composable
-private fun SettingsMeasurementSection(
+private fun SettingsMeasurementSection( // NOSONAR
     uiState: SettingsUiState,
     context: android.content.Context,
     onInfoClick: (String) -> Unit,
@@ -580,126 +599,113 @@ private fun SettingsTransientEffects(
 
 @Composable
 private fun SettingsDialogs(
-    showResetThresholdsDialog: Boolean,
-    onDismissResetThresholds: () -> Unit,
-    onConfirmResetThresholds: () -> Unit,
-    showResetTipsDialog: Boolean,
-    onDismissResetTips: () -> Unit,
-    onConfirmResetTips: () -> Unit,
-    showClearSpeedTestsDialog: Boolean,
-    onDismissClearSpeedTests: () -> Unit,
-    onConfirmClearSpeedTests: () -> Unit,
-    showNotifPermissionDeniedDialog: Boolean,
-    onDismissNotifPermissionDenied: () -> Unit,
-    onOpenNotificationSettings: () -> Unit,
-    showClearDialog: Boolean,
-    onDismissClearDialog: () -> Unit,
-    onConfirmClearDialog: () -> Unit,
+    handles: SettingsDialogHandles,
+    actions: SettingsDialogActions,
 ) {
-    if (showResetThresholdsDialog) {
+    if (handles.showResetThresholdsDialog.value) {
         AlertDialog(
-            onDismissRequest = onDismissResetThresholds,
+            onDismissRequest = { handles.showResetThresholdsDialog.value = false },
             shape = MaterialTheme.shapes.large,
             title = { Text(stringResource(R.string.settings_reset_thresholds_confirm_title)) },
             text = { Text(stringResource(R.string.settings_reset_thresholds_confirm_message)) },
             confirmButton = {
                 Button(
                     onClick = {
-                        onDismissResetThresholds()
-                        onConfirmResetThresholds()
+                        handles.showResetThresholdsDialog.value = false
+                        actions.onConfirmResetThresholds()
                     },
                 ) { Text(stringResource(R.string.settings_reset_thresholds)) }
             },
             dismissButton = {
-                TextButton(onClick = onDismissResetThresholds) {
+                TextButton(onClick = { handles.showResetThresholdsDialog.value = false }) {
                     Text(stringResource(R.string.common_cancel))
                 }
             },
         )
     }
 
-    if (showResetTipsDialog) {
+    if (handles.showResetTipsDialog.value) {
         AlertDialog(
-            onDismissRequest = onDismissResetTips,
+            onDismissRequest = { handles.showResetTipsDialog.value = false },
             shape = MaterialTheme.shapes.large,
             title = { Text(stringResource(R.string.settings_reset_tips_confirm_title)) },
             text = { Text(stringResource(R.string.settings_reset_tips_confirm_message)) },
             confirmButton = {
                 Button(
                     onClick = {
-                        onDismissResetTips()
-                        onConfirmResetTips()
+                        handles.showResetTipsDialog.value = false
+                        actions.onConfirmResetTips()
                     },
                 ) { Text(stringResource(R.string.settings_reset_tips)) }
             },
             dismissButton = {
-                TextButton(onClick = onDismissResetTips) {
+                TextButton(onClick = { handles.showResetTipsDialog.value = false }) {
                     Text(stringResource(R.string.common_cancel))
                 }
             },
         )
     }
 
-    if (showClearSpeedTestsDialog) {
+    if (handles.showClearSpeedTestsDialog.value) {
         AlertDialog(
-            onDismissRequest = onDismissClearSpeedTests,
+            onDismissRequest = { handles.showClearSpeedTestsDialog.value = false },
             shape = MaterialTheme.shapes.large,
             title = { Text(stringResource(R.string.settings_clear_speed_tests_confirm_title)) },
             text = { Text(stringResource(R.string.settings_clear_speed_tests_confirm_message)) },
             confirmButton = {
                 Button(
                     onClick = {
-                        onDismissClearSpeedTests()
-                        onConfirmClearSpeedTests()
+                        handles.showClearSpeedTestsDialog.value = false
+                        actions.onConfirmClearSpeedTests()
                     },
                 ) { Text(stringResource(R.string.settings_clear_action)) }
             },
             dismissButton = {
-                TextButton(onClick = onDismissClearSpeedTests) {
+                TextButton(onClick = { handles.showClearSpeedTestsDialog.value = false }) {
                     Text(stringResource(R.string.common_cancel))
                 }
             },
         )
     }
 
-    if (showNotifPermissionDeniedDialog) {
+    if (handles.showNotifPermissionDeniedDialog.value) {
         AlertDialog(
-            onDismissRequest = onDismissNotifPermissionDenied,
+            onDismissRequest = { handles.showNotifPermissionDeniedDialog.value = false },
             shape = MaterialTheme.shapes.large,
             title = { Text(stringResource(R.string.notification_permission_denied_title)) },
             text = { Text(stringResource(R.string.notification_permission_denied_message)) },
             confirmButton = {
                 Button(
                     onClick = {
-                        onDismissNotifPermissionDenied()
-                        onOpenNotificationSettings()
+                        handles.showNotifPermissionDeniedDialog.value = false
+                        actions.onOpenNotificationSettings()
                     },
                 ) { Text(stringResource(R.string.notification_permission_denied_open_settings)) }
             },
             dismissButton = {
-                TextButton(onClick = onDismissNotifPermissionDenied) {
+                TextButton(onClick = { handles.showNotifPermissionDeniedDialog.value = false }) {
                     Text(stringResource(R.string.common_cancel))
                 }
             },
         )
     }
 
-    if (showClearDialog) {
+    if (handles.showClearDialog.value) {
         AlertDialog(
-            onDismissRequest = onDismissClearDialog,
+            onDismissRequest = { handles.showClearDialog.value = false },
             shape = MaterialTheme.shapes.large,
             title = { Text(stringResource(R.string.settings_clear_confirm_title)) },
             text = { Text(stringResource(R.string.settings_clear_confirm_message)) },
             confirmButton = {
                 Button(
                     onClick = {
-                        onDismissClearDialog()
-                        onConfirmClearDialog()
+                        handles.showClearDialog.value = false
+                        actions.onConfirmClearDialog()
                     },
                 ) { Text(stringResource(R.string.settings_clear_action)) }
             },
             dismissButton = {
-                TextButton(onClick = onDismissClearDialog) {
+                TextButton(onClick = { handles.showClearDialog.value = false }) {
                     Text(stringResource(R.string.common_cancel))
                 }
             },

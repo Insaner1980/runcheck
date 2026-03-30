@@ -82,8 +82,6 @@ class FullscreenChartViewModel
 
         init {
             savedStateHandle.putEnum("source", source)
-            currentMetric = currentMetric
-            currentPeriod = currentPeriod
             FullscreenChartSeedStore.take(source, currentMetric, currentPeriod)?.let { seed ->
                 _uiState.value = seed
             }
