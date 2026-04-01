@@ -19,6 +19,7 @@ import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.iconCircleColor
 import com.runcheck.ui.theme.reducedMotion
 
@@ -29,7 +30,7 @@ fun ProgressRing(
     strokeWidth: Dp = 10.dp,
     trackColor: Color = MaterialTheme.iconCircleColor,
     progressColor: Color = MaterialTheme.colorScheme.primary,
-    animationDuration: Int = 1200,
+    animationDuration: Int = MotionTokens.RING,
     contentDescription: String? = null,
     content: @Composable () -> Unit = {},
 ) {

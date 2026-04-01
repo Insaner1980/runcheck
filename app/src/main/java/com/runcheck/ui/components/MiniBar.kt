@@ -18,6 +18,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.iconCircleColor
 import com.runcheck.ui.theme.reducedMotion
 
@@ -28,7 +29,7 @@ fun MiniBar(
     height: Dp = 6.dp,
     trackColor: Color = MaterialTheme.iconCircleColor,
     fillColor: Color = MaterialTheme.colorScheme.primary,
-    animationDuration: Int = 800,
+    animationDuration: Int = MotionTokens.SWEEP,
     contentDescription: String? = null,
 ) {
     val isReducedMotion = MaterialTheme.reducedMotion

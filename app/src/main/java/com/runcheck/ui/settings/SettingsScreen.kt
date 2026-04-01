@@ -90,6 +90,7 @@ import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
+import com.runcheck.ui.theme.uiTokens
 import com.runcheck.util.ReleaseSafeLog
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -309,12 +310,15 @@ fun SettingsScreen(
                 SettingsTransientEffects(
                     uiState = uiState,
                     context = context,
-                    onClearBillingStatus = { viewModel.clearBillingStatus() },
-                    onClearExportStatus = { viewModel.clearExportStatus() },
-                    onClearClearDataStatus = { viewModel.clearClearDataStatus() },
-                    onClearDebugStatus = { viewModel.clearDebugStatus() },
-                    onClearExportUris = { viewModel.clearExportUris() },
-                    onClearErrorMessage = { viewModel.clearErrorMessage() },
+                    actions =
+                        SettingsTransientEffectActions(
+                            onClearBillingStatus = viewModel::clearBillingStatus,
+                            onClearExportStatus = viewModel::clearExportStatus,
+                            onClearClearDataStatus = viewModel::clearClearDataStatus,
+                            onClearDebugStatus = viewModel::clearDebugStatus,
+                            onClearExportUris = viewModel::clearExportUris,
+                            onClearErrorMessage = viewModel::clearErrorMessage,
+                        ),
                 )
 
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
@@ -362,22 +366,6 @@ fun SettingsScreen(
             ),
     )
 }
-
-private data class SettingsDialogHandles(
-    val showResetThresholdsDialog: MutableState<Boolean>,
-    val showResetTipsDialog: MutableState<Boolean>,
-    val showClearSpeedTestsDialog: MutableState<Boolean>,
-    val showNotifPermissionDeniedDialog: MutableState<Boolean>,
-    val showClearDialog: MutableState<Boolean>,
-)
-
-private data class SettingsDialogActions(
-    val onConfirmResetThresholds: () -> Unit,
-    val onConfirmResetTips: () -> Unit,
-    val onConfirmClearSpeedTests: () -> Unit,
-    val onOpenNotificationSettings: () -> Unit,
-    val onConfirmClearDialog: () -> Unit,
-)
 
 @Suppress("kotlin:S3776")
 @Composable
@@ -557,178 +545,6 @@ private fun SettingsAboutSection(context: android.content.Context) {
     }
 }
 
-@Composable
-private fun SettingsTransientEffects(
-    uiState: SettingsUiState,
-    context: android.content.Context,
-    onClearBillingStatus: () -> Unit,
-    onClearExportStatus: () -> Unit,
-    onClearClearDataStatus: () -> Unit,
-    onClearDebugStatus: () -> Unit,
-    onClearExportUris: () -> Unit,
-    onClearErrorMessage: () -> Unit,
-) {
-    val currentOnClearBillingStatus = rememberUpdatedState(onClearBillingStatus)
-    val currentOnClearExportStatus = rememberUpdatedState(onClearExportStatus)
-    val currentOnClearClearDataStatus = rememberUpdatedState(onClearClearDataStatus)
-    val currentOnClearDebugStatus = rememberUpdatedState(onClearDebugStatus)
-    val currentOnClearExportUris = rememberUpdatedState(onClearExportUris)
-    val currentOnClearErrorMessage = rememberUpdatedState(onClearErrorMessage)
-
-    uiState.billingStatus?.let { status ->
-        LaunchedEffect(status) {
-            Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
-            currentOnClearBillingStatus.value()
-        }
-    }
-    uiState.exportStatus?.let { status ->
-        LaunchedEffect(status) {
-            Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
-            currentOnClearExportStatus.value()
-        }
-    }
-    uiState.clearDataStatus?.let { status ->
-        LaunchedEffect(status) {
-            Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
-            currentOnClearClearDataStatus.value()
-        }
-    }
-    uiState.debugStatus?.let { status ->
-        LaunchedEffect(status) {
-            Toast.makeText(context, status.resolve(context), Toast.LENGTH_SHORT).show()
-            currentOnClearDebugStatus.value()
-        }
-    }
-    uiState.exportUris?.let { exportUriStrings ->
-        LaunchedEffect(exportUriStrings) {
-            shareExportUris(context, exportUriStrings)
-            currentOnClearExportUris.value()
-        }
-    }
-    uiState.errorMessage?.let { message ->
-        LaunchedEffect(message) {
-            Toast.makeText(context, message.resolve(context), Toast.LENGTH_SHORT).show()
-            currentOnClearErrorMessage.value()
-        }
-    }
-}
-
-@Composable
-private fun SettingsDialogs(
-    handles: SettingsDialogHandles,
-    actions: SettingsDialogActions,
-) {
-    if (handles.showResetThresholdsDialog.value) {
-        AlertDialog(
-            onDismissRequest = { handles.showResetThresholdsDialog.value = false },
-            shape = MaterialTheme.shapes.large,
-            title = { Text(stringResource(R.string.settings_reset_thresholds_confirm_title)) },
-            text = { Text(stringResource(R.string.settings_reset_thresholds_confirm_message)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        handles.showResetThresholdsDialog.value = false
-                        actions.onConfirmResetThresholds()
-                    },
-                ) { Text(stringResource(R.string.settings_reset_thresholds)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { handles.showResetThresholdsDialog.value = false }) {
-                    Text(stringResource(R.string.common_cancel))
-                }
-            },
-        )
-    }
-
-    if (handles.showResetTipsDialog.value) {
-        AlertDialog(
-            onDismissRequest = { handles.showResetTipsDialog.value = false },
-            shape = MaterialTheme.shapes.large,
-            title = { Text(stringResource(R.string.settings_reset_tips_confirm_title)) },
-            text = { Text(stringResource(R.string.settings_reset_tips_confirm_message)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        handles.showResetTipsDialog.value = false
-                        actions.onConfirmResetTips()
-                    },
-                ) { Text(stringResource(R.string.settings_reset_tips)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { handles.showResetTipsDialog.value = false }) {
-                    Text(stringResource(R.string.common_cancel))
-                }
-            },
-        )
-    }
-
-    if (handles.showClearSpeedTestsDialog.value) {
-        AlertDialog(
-            onDismissRequest = { handles.showClearSpeedTestsDialog.value = false },
-            shape = MaterialTheme.shapes.large,
-            title = { Text(stringResource(R.string.settings_clear_speed_tests_confirm_title)) },
-            text = { Text(stringResource(R.string.settings_clear_speed_tests_confirm_message)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        handles.showClearSpeedTestsDialog.value = false
-                        actions.onConfirmClearSpeedTests()
-                    },
-                ) { Text(stringResource(R.string.settings_clear_action)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { handles.showClearSpeedTestsDialog.value = false }) {
-                    Text(stringResource(R.string.common_cancel))
-                }
-            },
-        )
-    }
-
-    if (handles.showNotifPermissionDeniedDialog.value) {
-        AlertDialog(
-            onDismissRequest = { handles.showNotifPermissionDeniedDialog.value = false },
-            shape = MaterialTheme.shapes.large,
-            title = { Text(stringResource(R.string.notification_permission_denied_title)) },
-            text = { Text(stringResource(R.string.notification_permission_denied_message)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        handles.showNotifPermissionDeniedDialog.value = false
-                        actions.onOpenNotificationSettings()
-                    },
-                ) { Text(stringResource(R.string.notification_permission_denied_open_settings)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { handles.showNotifPermissionDeniedDialog.value = false }) {
-                    Text(stringResource(R.string.common_cancel))
-                }
-            },
-        )
-    }
-
-    if (handles.showClearDialog.value) {
-        AlertDialog(
-            onDismissRequest = { handles.showClearDialog.value = false },
-            shape = MaterialTheme.shapes.large,
-            title = { Text(stringResource(R.string.settings_clear_confirm_title)) },
-            text = { Text(stringResource(R.string.settings_clear_confirm_message)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        handles.showClearDialog.value = false
-                        actions.onConfirmClearDialog()
-                    },
-                ) { Text(stringResource(R.string.settings_clear_action)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { handles.showClearDialog.value = false }) {
-                    Text(stringResource(R.string.common_cancel))
-                }
-            },
-        )
-    }
-}
-
 // ── Reusable settings components ──────────────────────────────────────────────
 
 @Composable
@@ -757,11 +573,12 @@ internal fun SettingsRadioRow(
     enabled: Boolean = true,
     onSelect: () -> Unit,
 ) {
+    val tokens = MaterialTheme.uiTokens
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .defaultMinSize(minHeight = 48.dp)
+                .defaultMinSize(minHeight = tokens.touchTarget)
                 .alpha(if (enabled) 1f else DISABLED_CONTENT_ALPHA)
                 .selectable(
                     selected = selected,
@@ -788,11 +605,12 @@ internal fun SettingsToggle(
     description: String? = null,
     enabled: Boolean = true,
 ) {
+    val tokens = MaterialTheme.uiTokens
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .defaultMinSize(minHeight = 48.dp)
+                .defaultMinSize(minHeight = tokens.touchTarget)
                 .alpha(if (enabled) 1f else DISABLED_CONTENT_ALPHA)
                 .toggleable(
                     value = checked,
@@ -875,11 +693,12 @@ internal fun SettingsValueRow(
     value: String,
     valueColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
+    val tokens = MaterialTheme.uiTokens
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .defaultMinSize(minHeight = 48.dp)
+                .defaultMinSize(minHeight = tokens.touchTarget)
                 .padding(vertical = MaterialTheme.spacing.xs),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -895,11 +714,12 @@ internal fun SettingsNavigationRow(
     onClick: () -> Unit,
     labelColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
 ) {
+    val tokens = MaterialTheme.uiTokens
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .defaultMinSize(minHeight = 48.dp)
+                .defaultMinSize(minHeight = tokens.touchTarget)
                 .clickable(onClick = onClick, role = Role.Button)
                 .semantics(mergeDescendants = true) {}
                 .padding(vertical = MaterialTheme.spacing.sm),
@@ -910,7 +730,7 @@ internal fun SettingsNavigationRow(
         Icon(
             imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
             contentDescription = null,
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier.size(tokens.iconMedium),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }

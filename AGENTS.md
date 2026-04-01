@@ -13,7 +13,7 @@ When product/runtime facts or visual system rules matter, treat `PROJECT.md` and
 Clean Architecture with three layers:
 
 - `data/` — Android framework APIs, Room database, BatteryManager, TelephonyManager, StorageStatsManager, PowerManager
-- `domain/` — Business logic, use cases, domain models. No Android imports.
+- `domain/` — Business logic, use cases, domain models. No `android.*` imports; keep `androidx.*` out unless there is an explicitly documented boundary exception such as `androidx.paging.PagingData`
 - `ui/` — Jetpack Compose screens and components. No direct data layer access.
 
 Dependency injection: Hilt. Database: Room. UI: Jetpack Compose + Material 3.
@@ -55,6 +55,11 @@ app/src/main/java/com/runcheck/
 ├── widget/
 └── util/
 ```
+
+Debug-only insight tooling also lives outside the main source tree:
+
+- `app/src/debug/java/com/runcheck/debug/insights/` for debug implementations
+- `app/src/main/java/com/runcheck/debug/insights/` for release-safe stubs
 
 Current navigation snapshot:
 
@@ -133,7 +138,7 @@ When reviewing a PR or file, check for these in order:
 
 ### 6. Animations
 - All animations must check `LocalReducedMotion.current` (or `MaterialTheme.reducedMotion`) and skip/shorten if true.
-- Standard durations: ProgressRing 1200ms, MiniBar 800ms, SegmentedBar 800ms, Thermometer 1200ms, Battery wave 2000ms loop.
+- Standard durations live in `MotionTokens`: ProgressRing 1200ms, MiniBar 800ms, SegmentedBar 800ms, Thermometer 1200ms, Battery wave 2000ms loop.
 
 ### 7. UI consistency
 - Background colors: BgPage `#0B1E24`, BgCard `#133040`, BgIconCircle `#1A3A48`.
@@ -144,6 +149,7 @@ When reviewing a PR or file, check for these in order:
 - Status colors (Teal/Blue/Orange/Red) are for small badges and status dots only, never for large fills.
 - Typography: Manrope for body text, JetBrains Mono for hero numbers and gauge values.
 - Card corner radius: 16dp. Small elements: 8dp. No shadows, no elevation, no borders (except ActionCards: 1dp outlineVariant at 35% alpha).
+- Shared touch targets, icon sizes, and common CTA heights should come from `UiTokens` instead of repeating raw values in shared components.
 - No dynamic colors. If a task changes visual design, follow `UI-SPEC.md` instead of inventing alternate tokens or component variants.
 - English-only strings are intentional right now. Do not reintroduce partial localization without updating docs and string coverage together.
 - Icons: use `Icons.Outlined` exclusively — no `Icons.Default`, `Icons.Filled`, or `Icons.Rounded`

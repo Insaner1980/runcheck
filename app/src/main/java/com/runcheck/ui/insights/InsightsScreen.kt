@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.home.insights.InsightNavigationHandlers
 import com.runcheck.ui.home.insights.InsightRow
 import com.runcheck.ui.home.insights.resolveInsightNavigationAction
 import com.runcheck.ui.theme.spacing
@@ -31,13 +32,7 @@ import com.runcheck.ui.theme.spacing
 @Composable
 fun InsightsScreen(
     onBack: () -> Unit,
-    onNavigateToBattery: () -> Unit,
-    onNavigateToNetwork: () -> Unit,
-    onNavigateToThermal: () -> Unit,
-    onNavigateToStorage: () -> Unit,
-    onNavigateToCharger: () -> Unit,
-    onNavigateToAppUsage: () -> Unit,
-    onNavigateToProUpgrade: () -> Unit,
+    navigationHandlers: InsightNavigationHandlers,
     viewModel: InsightsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -115,13 +110,7 @@ fun InsightsScreen(
                                     resolveInsightNavigationAction(
                                         insight = insight,
                                         isPro = state.isPro,
-                                        onNavigateToBattery = onNavigateToBattery,
-                                        onNavigateToNetwork = onNavigateToNetwork,
-                                        onNavigateToThermal = onNavigateToThermal,
-                                        onNavigateToStorage = onNavigateToStorage,
-                                        onNavigateToCharger = onNavigateToCharger,
-                                        onNavigateToAppUsage = onNavigateToAppUsage,
-                                        onNavigateToProUpgrade = onNavigateToProUpgrade,
+                                        navigationHandlers = navigationHandlers,
                                     )
 
                                 InsightRow(

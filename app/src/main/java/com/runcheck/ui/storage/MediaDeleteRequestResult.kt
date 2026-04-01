@@ -2,11 +2,10 @@ package com.runcheck.ui.storage
 
 import android.content.Context
 import android.os.Build
-import android.provider.MediaStore
 import androidx.activity.result.IntentSenderRequest
-import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
 import com.runcheck.R
+import com.runcheck.data.storage.StorageCleanupHelper
 
 sealed interface MediaDeleteRequestResult {
     data class Ready(
@@ -51,12 +50,12 @@ internal fun buildMediaDeleteRequestResult(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.R)
 private fun createDeleteRequest(
     context: Context,
     uriStrings: List<String>,
 ): IntentSenderRequest {
-    val uris = uriStrings.map(android.net.Uri::parse)
-    val deleteRequest = MediaStore.createDeleteRequest(context.contentResolver, uris)
+    val deleteRequest =
+        StorageCleanupHelper(context).createDeleteRequest(uriStrings)
+            ?: throw IllegalArgumentException("Delete request unavailable")
     return IntentSenderRequest.Builder(deleteRequest.intentSender).build()
 }

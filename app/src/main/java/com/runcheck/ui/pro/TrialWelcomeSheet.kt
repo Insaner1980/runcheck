@@ -28,6 +28,7 @@ import com.runcheck.R
 import com.runcheck.pro.ProFeature
 import com.runcheck.ui.theme.BottomSheetShape
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +36,7 @@ fun TrialWelcomeSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val tokens = MaterialTheme.uiTokens
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
@@ -81,7 +83,7 @@ fun TrialWelcomeSheet(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(52.dp),
+                        .height(tokens.compactButtonHeight),
                 shape = MaterialTheme.shapes.large,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             ) {
@@ -97,6 +99,7 @@ fun TrialWelcomeSheet(
 
 @Composable
 private fun WelcomeFeatureRow(label: String) {
+    val tokens = MaterialTheme.uiTokens
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -105,7 +108,7 @@ private fun WelcomeFeatureRow(label: String) {
         Icon(
             imageVector = Icons.Outlined.CheckCircle,
             contentDescription = null,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(tokens.iconLarge),
             tint = MaterialTheme.colorScheme.primary,
         )
         Text(

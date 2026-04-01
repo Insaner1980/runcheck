@@ -38,6 +38,7 @@ import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
+import com.runcheck.ui.theme.uiTokens
 import com.runcheck.util.ReleaseSafeLog
 
 @Composable
@@ -357,6 +358,7 @@ internal fun DataSection(
     onClearSpeedTestsClick: () -> Unit,
     onClearAllDataClick: () -> Unit,
 ) {
+    val tokens = MaterialTheme.uiTokens
     val exportingDescription = stringResource(R.string.a11y_exporting_data)
 
     SettingsCard {
@@ -393,7 +395,7 @@ internal fun DataSection(
                 CircularProgressIndicator(
                     modifier =
                         Modifier
-                            .size(18.dp)
+                            .size(tokens.iconMedium)
                             .semantics {
                                 contentDescription = exportingDescription
                             },
@@ -430,6 +432,7 @@ internal fun DebugInsightsSection(
     onGenerateInsightsNow: () -> Unit,
     onClearInsights: () -> Unit,
 ) {
+    val tokens = MaterialTheme.uiTokens
     if (!uiState.debugInsightsAvailable) return
 
     SettingsCard {
@@ -448,7 +451,7 @@ internal fun DebugInsightsSection(
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                CircularProgressIndicator(modifier = Modifier.size(tokens.iconMedium), strokeWidth = 2.dp)
                 Text(
                     text = stringResource(R.string.settings_debug_insights_running),
                     style = MaterialTheme.typography.bodyMedium,
@@ -560,11 +563,12 @@ private fun mutedNotificationMessage(isXiaomiFamilyDevice: Boolean): String =
 
 @Composable
 private fun BatteryOptimizationRow(context: android.content.Context) {
+    val tokens = MaterialTheme.uiTokens
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .defaultMinSize(minHeight = 48.dp)
+                .defaultMinSize(minHeight = tokens.touchTarget)
                 .clickable { openBatteryOptimizationSettings(context) }
                 .padding(vertical = MaterialTheme.spacing.xs),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -585,7 +589,7 @@ private fun BatteryOptimizationRow(context: android.content.Context) {
         Icon(
             imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
             contentDescription = null,
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier.size(tokens.iconMedium),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }

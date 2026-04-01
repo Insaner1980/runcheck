@@ -20,7 +20,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -59,6 +59,7 @@ import com.runcheck.ui.components.ProFeatureLockedState
 import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.components.TrendChartPresentation
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 
 /** Keys for passing selections back via savedStateHandle. */
 object FullscreenChartResult {
@@ -185,6 +186,7 @@ private fun FullscreenChartScaffold(
     controls: (@Composable () -> Unit)? = null,
     content: @Composable (Modifier) -> Unit,
 ) {
+    val tokens = MaterialTheme.uiTokens
     Scaffold(
         modifier = modifier.fillMaxSize(),
         contentWindowInsets =
@@ -211,7 +213,7 @@ private fun FullscreenChartScaffold(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .height(48.dp),
+                            .height(tokens.touchTarget),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     IconButton(onClick = onClose) {

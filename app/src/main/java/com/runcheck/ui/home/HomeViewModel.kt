@@ -17,7 +17,7 @@ import com.runcheck.domain.usecase.GetNetworkStateUseCase
 import com.runcheck.domain.usecase.GetStorageStateUseCase
 import com.runcheck.domain.usecase.GetThermalStateUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
-import com.runcheck.pro.ProManager
+import com.runcheck.pro.ProStateProvider
 import com.runcheck.pro.ProStatus
 import com.runcheck.pro.TrialManager
 import com.runcheck.ui.common.messageOr
@@ -49,7 +49,7 @@ class HomeViewModel
         private val getStorageState: GetStorageStateUseCase,
         private val insightRepository: InsightRepository,
         private val monitoringStatusRepository: MonitoringStatusRepository,
-        private val proManager: ProManager,
+        private val proStateProvider: ProStateProvider,
         private val trialManager: TrialManager,
         private val chargerSessionTracker: ChargerSessionTracker,
         private val healthScoreCalculator: HealthScoreCalculator,
@@ -179,7 +179,7 @@ class HomeViewModel
                     combine(
                         dataFlow,
                         insightFlow,
-                        proManager.proState,
+                        proStateProvider.proState,
                         preferencesFlow,
                         monitoringStaleFlow,
                     ) { data, insightSnapshot, proState, preferences, monitoringStale ->

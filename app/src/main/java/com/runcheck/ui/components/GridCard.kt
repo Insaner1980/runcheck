@@ -84,7 +84,7 @@ fun GridCard(
                     icon = icon,
                     tint = iconTint,
                     backgroundColor = resolvedIconBg,
-                    size = 36.dp,
+                    size = tokens.compactIconCircle,
                     iconSize = tokens.iconLarge,
                 )
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))

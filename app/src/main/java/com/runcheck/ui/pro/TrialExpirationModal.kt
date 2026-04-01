@@ -30,6 +30,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.runcheck.R
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun TrialExpirationModal(
@@ -38,6 +39,7 @@ fun TrialExpirationModal(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val tokens = MaterialTheme.uiTokens
     val dialogTitle = stringResource(R.string.a11y_trial_dialog)
     Dialog(
         onDismissRequest = onDismiss,
@@ -61,7 +63,7 @@ fun TrialExpirationModal(
                 Icon(
                     imageVector = Icons.Outlined.Lock,
                     contentDescription = stringResource(R.string.a11y_trial_expired),
-                    modifier = Modifier.size(64.dp),
+                    modifier = Modifier.size(tokens.dialogIcon),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
@@ -91,7 +93,7 @@ fun TrialExpirationModal(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .height(56.dp),
+                            .height(tokens.primaryButtonHeight),
                     shape = MaterialTheme.shapes.large,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 ) {

@@ -15,8 +15,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,8 +70,9 @@ fun ChargerComparisonScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
-    var showAddDialog by remember { mutableStateOf(false) }
-    var pendingDeleteCharger by remember { mutableStateOf<ChargerSummary?>(null) }
+    var showAddDialog by rememberSaveable { mutableStateOf(false) }
+    var pendingDeleteChargerId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var pendingDeleteChargerName by rememberSaveable { mutableStateOf<String?>(null) }
 
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer =
@@ -128,7 +130,10 @@ fun ChargerComparisonScreen(
                         onAddClick = { showAddDialog = true },
                         onSelectCharger = { viewModel.selectCharger(it) },
                         onClearSelectedCharger = { viewModel.clearSelectedCharger() },
-                        onDeleteRequest = { pendingDeleteCharger = it },
+                        onDeleteRequest = {
+                            pendingDeleteChargerId = it.chargerId
+                            pendingDeleteChargerName = it.chargerName
+                        },
                     )
                 }
 
@@ -166,13 +171,15 @@ fun ChargerComparisonScreen(
         )
     }
 
-    pendingDeleteCharger?.let { charger ->
+    pendingDeleteChargerId?.let { chargerId ->
         DeleteChargerDialog(
-            chargerName = charger.chargerName,
-            onDismiss = { pendingDeleteCharger = null },
+            chargerName = pendingDeleteChargerName.orEmpty(),
+            onDismiss = {
+                pendingDeleteChargerId = null
+            },
             onConfirm = {
-                viewModel.deleteCharger(charger.chargerId)
-                pendingDeleteCharger = null
+                viewModel.deleteCharger(chargerId)
+                pendingDeleteChargerId = null
             },
         )
     }

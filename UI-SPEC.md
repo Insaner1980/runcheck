@@ -141,6 +141,24 @@ Defined in `ui/theme/Spacing.kt`. Accessed via `MaterialTheme.spacing`.
 | lg | 24dp | Between major sections |
 | xl | 32dp | Page margins, large separations |
 
+Shared touch targets, icon sizes, icon circles, and common CTA heights are defined in `ui/theme/UiTokens.kt` and accessed via `MaterialTheme.uiTokens`.
+
+### Shared UI Metrics
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| touchTarget | 48dp | Minimum interactive height/width |
+| iconSmall | 16dp | Small inline icons |
+| iconMedium | 18dp | Compact trailing/action icons |
+| iconLarge | 20dp | Standard row and feature icons |
+| iconXLarge | 24dp | Larger CTA / feature icons |
+| iconCircle | 44dp | Standard icon circle container |
+| compactIconCircle | 36dp | Compact card icon circle |
+| primaryButtonHeight | 56dp | Primary CTA buttons |
+| compactButtonHeight | 52dp | Compact sheet CTA buttons |
+| dialogIcon | 64dp | Dialog hero icon |
+| celebrationIcon | 80dp | Thank-you / success hero icon |
+
 ### Layout Rules
 
 - **Card internal padding:** 16dp (base) on all sides
@@ -193,7 +211,7 @@ Settings / menu row with optional icon, value, trailing content.
 | Value | `bodyMedium`, `onSurfaceVariant` |
 | Icon | 20dp, `onSurfaceVariant` |
 | Trailing arrow | `KeyboardArrowRight` in rounded surface |
-| Padding | 14dp vertical |
+| Padding | 12dp vertical |
 
 #### ActionCard
 Outlined card for cleanup tool actions.

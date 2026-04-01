@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
@@ -30,13 +30,13 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.components.StatusDot
 import com.runcheck.ui.theme.categoryColor
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun CategoryGroup(
@@ -48,6 +48,7 @@ fun CategoryGroup(
     val context = LocalContext.current
     val color = categoryColor(group.category)
     val label = categoryLabel(context, group.category)
+    val tokens = MaterialTheme.uiTokens
     val allSelected = group.itemCount > 0 && group.selectedCount == group.itemCount
     val expandedLabel =
         if (group.expanded) {
@@ -82,7 +83,7 @@ fun CategoryGroup(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             StatusDot(color = color)
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(MaterialTheme.spacing.sm))
             Icon(
                 imageVector =
                     if (group.expanded) {
@@ -91,16 +92,16 @@ fun CategoryGroup(
                         Icons.AutoMirrored.Outlined.KeyboardArrowRight
                     },
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(tokens.iconLarge),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(MaterialTheme.spacing.xs))
             Text(
                 text = label,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Spacer(modifier = Modifier.width(2.dp))
+            Spacer(modifier = Modifier.width(MaterialTheme.spacing.xxs))
             Text(
                 text = stringResource(R.string.value_count_parenthetical, group.itemCount),
                 style = MaterialTheme.typography.bodySmall,
@@ -115,7 +116,7 @@ fun CategoryGroup(
                     ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(MaterialTheme.spacing.xs))
             Checkbox(
                 checked = allSelected,
                 onCheckedChange = { onToggleGroupSelection() },

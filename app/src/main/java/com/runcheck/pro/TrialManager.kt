@@ -36,6 +36,7 @@ class TrialManager
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
+        private val workManager: WorkManager,
     ) {
         private val _trialState = MutableStateFlow(TrialState())
         val trialState: StateFlow<TrialState> = _trialState.asStateFlow()
@@ -123,7 +124,6 @@ class TrialManager
         }
 
         private fun scheduleTrialNotifications(trialStart: Long) {
-            val workManager = WorkManager.getInstance(context)
             val now = System.currentTimeMillis()
             val day5Target = trialStart + TimeUnit.DAYS.toMillis(5)
             val day7Target = trialStart + TimeUnit.DAYS.toMillis(7)
@@ -170,7 +170,6 @@ class TrialManager
         }
 
         fun cancelTrialNotifications() {
-            val workManager = WorkManager.getInstance(context)
             workManager.cancelUniqueWork(TrialNotificationWorker.WORK_TAG_DAY5)
             workManager.cancelUniqueWork(TrialNotificationWorker.WORK_TAG_DAY7)
         }

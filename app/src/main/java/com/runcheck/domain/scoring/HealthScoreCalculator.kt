@@ -1,6 +1,5 @@
 package com.runcheck.domain.scoring
 
-import androidx.annotation.CheckResult
 import com.runcheck.domain.model.BatteryHealth
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.ConnectionType
@@ -18,7 +17,6 @@ import javax.inject.Singleton
 class HealthScoreCalculator
     @Inject
     constructor() {
-        @CheckResult
         fun calculate(
             battery: BatteryState,
             network: NetworkState,

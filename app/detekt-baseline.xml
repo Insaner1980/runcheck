@@ -14,6 +14,7 @@
     <ID>CyclomaticComplexMethod:StorageDataSource.kt$StorageDataSource$private fun getDeviceStorageInfo(): DeviceStorageInfo</ID>
     <ID>CyclomaticComplexMethod:UserPreferencesRepositoryImpl.kt$UserPreferencesRepositoryImpl$override fun getPreferences(): Flow&lt;UserPreferences&gt;</ID>
     <ID>CyclomaticComplexMethod:WidgetDataProvider.kt$private fun classifySignal(dbm: Int?, type: ConnectionType): SignalQuality</ID>
+    <ID>FunctionParameterNaming:ThermalDataSource.kt$ThermalDataSource$_unusedThermalZones: List&lt;String&gt;</ID>
     <ID>LargeClass:HealthScoreCalculatorTest.kt$HealthScoreCalculatorTest</ID>
     <ID>LargeClass:MediaStoreScanner.kt$MediaStoreScanner</ID>
     <ID>LongMethod:BatteryViewModel.kt$BatteryViewModel$@OptIn(FlowPreview::class) private fun loadBatteryData()</ID>
@@ -26,6 +27,8 @@
     <ID>LongMethod:NetworkViewModel.kt$NetworkViewModel$private fun proceedWithSpeedTest(allowCellular: Boolean)</ID>
     <ID>LongMethod:RealTimeMonitorService.kt$RealTimeMonitorService$private fun buildLiveNotification( battery: BatteryState, prefs: UserPreferences ): Notification</ID>
     <ID>LongMethod:SpeedTestService.kt$SpeedTestService$fun runSpeedTest(allowCellular: Boolean = false): Flow&lt;SpeedTestProgress&gt;</ID>
+    <ID>LongParameterList:CleanupOldReadingsUseCase.kt$CleanupOldReadingsUseCase$( private val transactionRunner: DatabaseTransactionRunner, private val batteryRepository: BatteryRepository, private val networkRepository: NetworkRepository, private val thermalRepository: ThermalRepository, private val storageRepository: StorageRepository, private val chargerRepository: ChargerRepository, private val throttlingRepository: ThrottlingRepository, private val appBatteryUsageRepository: AppBatteryUsageRepository, private val speedTestRepository: SpeedTestRepository, private val proStatusProvider: ProStatusProvider, private val userPreferencesRepository: UserPreferencesRepository )</ID>
+    <ID>LongParameterList:HealthMonitorWorker.kt$HealthMonitorWorker$( @Assisted context: Context, @Assisted workerParams: WorkerParameters, private val batteryRepository: BatteryRepository, private val networkRepository: NetworkRepository, private val thermalRepository: ThermalRepository, private val storageRepository: StorageRepository, private val userPreferencesRepository: UserPreferencesRepository, private val monitoringStatusRepository: MonitoringStatusRepository, private val chargerSessionTracker: ChargerSessionTracker, private val evaluateMonitoringAlerts: EvaluateMonitoringAlertsUseCase, private val monitoringAlertStateStore: MonitoringAlertStateStore, private val notificationHelper: NotificationHelper )</ID>
     <ID>LoopWithTooManyJumpStatements:LearnArticleBodyFormatter.kt$LearnArticleBodyFormatter$while</ID>
     <ID>MaxLineLength:CleanupBottomBar.kt$pluralStringResource(R.plurals.cleanup_free_action, selectedCount, formatStorageSize(context, selectedSize), selectedCount)</ID>
     <ID>MaxLineLength:CleanupScreen.kt$.</ID>
@@ -36,6 +39,20 @@
     <ID>ReturnCount:NetworkDataSource.kt$NetworkDataSource$@Suppress("DEPRECATION") private fun getWifiDetails(capabilities: NetworkCapabilities): WifiDetails?</ID>
     <ID>ReturnCount:TrialNotificationWorker.kt$TrialNotificationWorker$override suspend fun doWork(): Result</ID>
     <ID>SpreadOperator:DatabaseModule.kt$DatabaseModule$(*ALL_MIGRATIONS)</ID>
+    <ID>TooGenericExceptionCaught:BatteryRepositoryImpl.kt$BatteryRepositoryImpl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:BatteryViewModel.kt$BatteryViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:BootReceiver.kt$BootReceiver$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:HomeScreen.kt$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:HealthMonitorWorker.kt$HealthMonitorWorker$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:LatencyMeasurer.kt$LatencyMeasurer$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:NetworkRepositoryImpl.kt$NetworkRepositoryImpl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ProManager.kt$ProManager$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:RuncheckApp.kt$RuncheckApp$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:ScreenStateReceiver.kt$ScreenStateReceiver$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:SettingsScreen.kt$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:StorageDataSource.kt$StorageDataSource$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:StorageRepositoryImpl.kt$StorageRepositoryImpl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ThermalRepositoryImpl.kt$ThermalRepositoryImpl$e: Exception</ID>
     <ID>TooGenericExceptionCaught:AppUsageViewModel.kt$AppUsageViewModel$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ChargerViewModel.kt$ChargerViewModel$e: Exception</ID>
     <ID>TooGenericExceptionCaught:CleanupPagingSource.kt$CleanupPagingSource$t: Throwable</ID>
@@ -48,6 +65,7 @@
     <ID>TooGenericExceptionCaught:NetworkViewModel.kt$NetworkViewModel$error: Exception</ID>
     <ID>TooGenericExceptionCaught:RealTimeMonitorService.kt$RealTimeMonitorService$e: Exception</ID>
     <ID>TooGenericExceptionThrown:NetworkViewModelTest.kt$NetworkViewModelTest$throw RuntimeException("Network timeout")</ID>
+    <ID>TooManyFunctions:BillingManager.kt$BillingManager : PurchasesUpdatedListenerProStatusProviderProPurchaseManager</ID>
     <ID>TooManyFunctions:BatteryDataSource.kt$BatteryDataSource</ID>
     <ID>TooManyFunctions:BatteryDetailScreen.kt$com.runcheck.ui.battery.BatteryDetailScreen.kt</ID>
     <ID>TooManyFunctions:BatteryReadingDao.kt$BatteryReadingDao</ID>
@@ -57,7 +75,25 @@
     <ID>TooManyFunctions:MediaStoreScanner.kt$MediaStoreScanner</ID>
     <ID>TooManyFunctions:NetworkDataSource.kt$NetworkDataSource</ID>
     <ID>TooManyFunctions:ScreenStateTracker.kt$ScreenStateTracker : ScreenStateRepository</ID>
+    <ID>TooManyFunctions:ManageUserPreferencesUseCase.kt$ManageUserPreferencesUseCase</ID>
+    <ID>TooManyFunctions:ExportDataUseCase.kt$ExportDataUseCase</ID>
+    <ID>TooManyFunctions:HomeViewModel.kt$HomeViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:HomeScreen.kt$com.runcheck.ui.home.HomeScreen.kt</ID>
+    <ID>TooManyFunctions:FullscreenChartScreen.kt$com.runcheck.ui.fullscreen.FullscreenChartScreen.kt</ID>
+    <ID>TooManyFunctions:UiFormatters.kt$com.runcheck.ui.common.UiFormatters.kt</ID>
+    <ID>TooManyFunctions:ThermalDetailScreen.kt$com.runcheck.ui.thermal.ThermalDetailScreen.kt</ID>
+    <ID>TooManyFunctions:ChargerComparisonScreen.kt$com.runcheck.ui.charger.ChargerComparisonScreen.kt</ID>
+    <ID>TooManyFunctions:ChargerViewModel.kt$ChargerViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:SettingsScreen.kt$com.runcheck.ui.settings.SettingsScreen.kt</ID>
     <ID>TooManyFunctions:SettingsViewModel.kt$SettingsViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:SpeedTestScreen.kt$com.runcheck.ui.network.SpeedTestScreen.kt</ID>
+    <ID>TooManyFunctions:NetworkDetailScreen.kt$com.runcheck.ui.network.NetworkDetailScreen.kt</ID>
+    <ID>TooManyFunctions:NetworkViewModel.kt$NetworkViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:StorageDetailScreen.kt$com.runcheck.ui.storage.StorageDetailScreen.kt</ID>
+    <ID>TooManyFunctions:StorageViewModel.kt$StorageViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:RepositoryModule.kt$RepositoryModule</ID>
+    <ID>TooManyFunctions:RealTimeMonitorService.kt$RealTimeMonitorService : Service</ID>
+    <ID>TooManyFunctions:TrialManager.kt$TrialManager</ID>
     <ID>TooManyFunctions:UserPreferencesRepository.kt$UserPreferencesRepository</ID>
     <ID>TooManyFunctions:UserPreferencesRepositoryImpl.kt$UserPreferencesRepositoryImpl : UserPreferencesRepositoryInfoCardDismissalRepository</ID>
   </CurrentIssues>

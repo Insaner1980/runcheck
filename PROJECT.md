@@ -39,6 +39,11 @@ app/src/main/java/com/runcheck/
 └── util/
 ```
 
+Debug-only insight tooling also lives outside the main source tree:
+
+- `app/src/debug/java/com/runcheck/debug/insights/` for debug implementations
+- `app/src/main/java/com/runcheck/debug/insights/` for release-safe stubs
+
 ---
 
 ## Navigation

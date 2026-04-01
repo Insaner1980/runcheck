@@ -48,6 +48,7 @@ import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun ProUpgradeScreen(
@@ -91,6 +92,7 @@ private fun ProUpgradeContent(
     uiState: ProUpgradeUiState,
     onPurchase: () -> Unit,
 ) {
+    val tokens = MaterialTheme.uiTokens
     Column(
         modifier =
             Modifier
@@ -137,7 +139,7 @@ private fun ProUpgradeContent(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(tokens.primaryButtonHeight),
             shape = MaterialTheme.shapes.large,
             colors =
                 ButtonDefaults.buttonColors(
@@ -194,6 +196,7 @@ private fun FeatureRow(
     icon: ImageVector,
     label: String,
 ) {
+    val tokens = MaterialTheme.uiTokens
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -202,7 +205,7 @@ private fun FeatureRow(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(tokens.iconXLarge),
             tint = MaterialTheme.colorScheme.primary,
         )
         Text(

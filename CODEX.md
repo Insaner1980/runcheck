@@ -56,6 +56,11 @@ app/src/main/java/com/runcheck/
 └── util/
 ```
 
+Debug-only insight tooling also lives outside the main source tree:
+
+- `app/src/debug/java/com/runcheck/debug/insights/` for debug implementations
+- `app/src/main/java/com/runcheck/debug/insights/` for release-safe stubs
+
 Current navigation snapshot:
 
 ```text
@@ -100,6 +105,7 @@ State restoration conventions:
 - `data/` owns Android framework access, persistence, device APIs, and external SDK integration
 - `domain/` contains business logic, use cases, repository contracts, and domain models
 - `domain/` must not import `android.*` or concrete `data/` implementations
+- Keep `androidx.*` out of `domain/` unless there is a documented boundary exception such as `androidx.paging.PagingData`
 - `ui/` contains Compose screens, components, navigation, and ViewModels
 - `ui/` must not bypass use cases or repository contracts to talk directly to data sources
 - ViewModels are the bridge between `ui/` and `domain/`
@@ -190,6 +196,7 @@ Rules:
 - English-only strings are intentional right now. Do not reintroduce partial localization without updating docs and string coverage together.
 - Icons: use `Icons.Outlined` exclusively — no `Icons.Default`, `Icons.Filled`, or `Icons.Rounded`
 - All padding/spacing values must be on the 4dp grid (2/4/8/12/16/24/32dp)
+- Shared touch targets, icon sizes, icon circles, and common CTA heights should come from `UiTokens` instead of being repeated in shared components
 - All animation durations must use `MotionTokens` constants, never bare `tween()` without explicit spec
 - All ViewModels with live state flows must use `.sample(333L)` to throttle UI updates
 

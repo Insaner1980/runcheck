@@ -14,6 +14,7 @@ import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.repository.ScreenStateRepository
 import com.runcheck.domain.usecase.TrackThrottlingEventsUseCase
 import com.runcheck.pro.ProManager
+import com.runcheck.pro.ProStateProvider
 import com.runcheck.service.monitor.MonitorScheduler
 import com.runcheck.service.monitor.ScreenStateTracker
 import dagger.Binds
@@ -30,6 +31,10 @@ abstract class SystemBindingsModule {
     @Binds
     @Singleton
     abstract fun bindProStatusProvider(impl: ProManager): ProStatusProvider
+
+    @Binds
+    @Singleton
+    abstract fun bindProStateProvider(impl: ProManager): ProStateProvider
 
     @Binds
     @Singleton

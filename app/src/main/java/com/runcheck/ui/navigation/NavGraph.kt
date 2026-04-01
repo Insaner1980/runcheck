@@ -28,6 +28,7 @@ import com.runcheck.ui.charger.ChargerComparisonScreen
 import com.runcheck.ui.fullscreen.FullscreenChartResult
 import com.runcheck.ui.fullscreen.FullscreenChartScreen
 import com.runcheck.ui.home.HomeScreen
+import com.runcheck.ui.home.insights.InsightNavigationHandlers
 import com.runcheck.ui.insights.InsightsScreen
 import com.runcheck.ui.learn.LearnArticleDetailScreen
 import com.runcheck.ui.learn.LearnScreen
@@ -134,20 +135,26 @@ fun RuncheckNavHost(
             )
         }
         composable(Screen.Insights.route) {
+            val insightNavigationHandlers =
+                remember(navController) {
+                    InsightNavigationHandlers(
+                        onNavigateToBattery = { navController.navigateSingleTop(Screen.Battery.route) },
+                        onNavigateToNetwork = { navController.navigateSingleTop(Screen.Network.route) },
+                        onNavigateToThermal = { navController.navigateSingleTop(Screen.Thermal.route) },
+                        onNavigateToStorage = { navController.navigateSingleTop(Screen.Storage.route) },
+                        onNavigateToCharger = {
+                            navController.navigateNested(
+                                parentRoute = Screen.Battery.route,
+                                childRoute = Screen.Charger.route,
+                            )
+                        },
+                        onNavigateToAppUsage = { navController.navigateSingleTop(Screen.AppUsage.route) },
+                        onNavigateToProUpgrade = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
+                    )
+                }
             InsightsScreen(
                 onBack = { navController.popBackStack() },
-                onNavigateToBattery = { navController.navigateSingleTop(Screen.Battery.route) },
-                onNavigateToNetwork = { navController.navigateSingleTop(Screen.Network.route) },
-                onNavigateToThermal = { navController.navigateSingleTop(Screen.Thermal.route) },
-                onNavigateToStorage = { navController.navigateSingleTop(Screen.Storage.route) },
-                onNavigateToCharger = {
-                    navController.navigateNested(
-                        parentRoute = Screen.Battery.route,
-                        childRoute = Screen.Charger.route,
-                    )
-                },
-                onNavigateToAppUsage = { navController.navigateSingleTop(Screen.AppUsage.route) },
-                onNavigateToProUpgrade = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
+                navigationHandlers = insightNavigationHandlers,
             )
         }
         composable(Screen.Battery.route) { entry ->

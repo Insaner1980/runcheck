@@ -1,6 +1,5 @@
 package com.runcheck.domain.usecase
 
-import androidx.annotation.CheckResult
 import com.runcheck.domain.insights.analysis.StorageGrowthAnalyzer
 import com.runcheck.domain.model.StorageReading
 import javax.inject.Inject
@@ -14,7 +13,6 @@ class CalculateFillRateUseCase
          * Calculates storage fill rate in bytes/day using linear regression
          * over historical readings. Returns null if insufficient data.
          */
-        @CheckResult
         operator fun invoke(readings: List<StorageReading>): Long? =
             storageGrowthAnalyzer.calculateFillRateBytesPerDay(readings)
 
@@ -22,7 +20,6 @@ class CalculateFillRateUseCase
          * Formats an estimated time until storage is full.
          * Returns null if the fill rate is zero or negative (not filling up).
          */
-        @CheckResult
         fun formatEstimate(
             availableBytes: Long,
             bytesPerDay: Long,

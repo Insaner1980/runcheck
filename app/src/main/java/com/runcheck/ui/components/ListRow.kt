@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -44,7 +44,7 @@ fun ListRow(
                         Modifier
                     },
                 ).semantics(mergeDescendants = true) {}
-                .padding(vertical = 12.dp),
+                .padding(vertical = MaterialTheme.spacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
@@ -79,7 +79,7 @@ fun ListRow(
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                         contentDescription = null,
                         modifier =
                             Modifier

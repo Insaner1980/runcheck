@@ -27,14 +27,8 @@ fun InsightsCard(
     totalInsightCount: Int,
     unseenInsightCount: Int,
     isPro: Boolean,
-    onNavigateToBattery: () -> Unit,
-    onNavigateToNetwork: () -> Unit,
-    onNavigateToThermal: () -> Unit,
-    onNavigateToStorage: () -> Unit,
-    onNavigateToCharger: () -> Unit,
-    onNavigateToAppUsage: () -> Unit,
+    navigationHandlers: InsightNavigationHandlers,
     onNavigateToInsights: () -> Unit,
-    onNavigateToProUpgrade: () -> Unit,
     onDismissInsight: (Long) -> Unit,
 ) {
     if (insights.isEmpty()) return
@@ -62,13 +56,7 @@ fun InsightsCard(
                 resolveInsightNavigationAction(
                     insight = insight,
                     isPro = isPro,
-                    onNavigateToBattery = onNavigateToBattery,
-                    onNavigateToNetwork = onNavigateToNetwork,
-                    onNavigateToThermal = onNavigateToThermal,
-                    onNavigateToStorage = onNavigateToStorage,
-                    onNavigateToCharger = onNavigateToCharger,
-                    onNavigateToAppUsage = onNavigateToAppUsage,
-                    onNavigateToProUpgrade = onNavigateToProUpgrade,
+                    navigationHandlers = navigationHandlers,
                 )
 
             InsightRow(

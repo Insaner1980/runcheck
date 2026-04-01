@@ -50,6 +50,7 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
+import com.runcheck.data.storage.loadCleanupThumbnail
 import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.ScannedFile
 import com.runcheck.ui.common.formatStorageSize
@@ -58,6 +59,7 @@ import com.runcheck.ui.components.MiniBar
 import com.runcheck.ui.theme.categoryColor
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 import kotlin.math.roundToInt
 
 @Composable
@@ -69,6 +71,7 @@ fun FileListItem(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val tokens = MaterialTheme.uiTokens
     val categoryColor = categoryColor(file.category)
     val categoryIcon = categoryIcon(file.category)
     val toggleLabel = stringResource(R.string.a11y_toggle_selection, file.displayName)
@@ -106,13 +109,13 @@ fun FileListItem(
                     checkedColor = MaterialTheme.colorScheme.primary,
                 ),
         )
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.width(MaterialTheme.spacing.xs))
 
         // Thumbnail or icon
         Box(
             modifier =
                 Modifier
-                    .size(48.dp)
+                    .size(tokens.touchTarget)
                     .clip(MaterialTheme.shapes.small),
             contentAlignment = Alignment.Center,
         ) {
@@ -121,15 +124,15 @@ fun FileListItem(
                 Image(
                     bitmap = loadedThumbnail,
                     contentDescription = null,
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(tokens.touchTarget),
                     contentScale = ContentScale.Crop,
                 )
             } else {
                 IconCircle(
                     icon = categoryIcon,
                     tint = categoryColor,
-                    size = 48.dp,
-                    iconSize = 24.dp,
+                    size = tokens.touchTarget,
+                    iconSize = tokens.iconXLarge,
                 )
             }
         }
@@ -153,7 +156,7 @@ fun FileListItem(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
             MiniBar(
                 progress =
                     if (maxFileSize > 0) {

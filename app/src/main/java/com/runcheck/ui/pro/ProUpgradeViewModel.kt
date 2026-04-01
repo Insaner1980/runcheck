@@ -7,8 +7,8 @@ import com.runcheck.R
 import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.billing.PurchaseEvent
 import com.runcheck.pro.ProFeature
-import com.runcheck.pro.ProManager
 import com.runcheck.pro.ProState
+import com.runcheck.pro.ProStateProvider
 import com.runcheck.ui.common.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -33,7 +33,7 @@ data class ProUpgradeUiState(
 class ProUpgradeViewModel
     @Inject
     constructor(
-        private val proManager: ProManager,
+        private val proStateProvider: ProStateProvider,
         private val proPurchaseManager: ProPurchaseManager,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(ProUpgradeUiState())
@@ -43,7 +43,7 @@ class ProUpgradeViewModel
 
         init {
             viewModelScope.launch {
-                proManager.proState.collect { proState ->
+                proStateProvider.proState.collect { proState ->
                     val wasNotPro = !_uiState.value.proState.isPro
                     _uiState.update {
                         it.copy(

@@ -24,12 +24,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun PurchaseThankYouContent(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val tokens = MaterialTheme.uiTokens
     Column(
         modifier =
             modifier
@@ -41,7 +43,7 @@ fun PurchaseThankYouContent(
         Icon(
             imageVector = Icons.Outlined.CheckCircle,
             contentDescription = null,
-            modifier = Modifier.size(80.dp),
+            modifier = Modifier.size(tokens.celebrationIcon),
             tint = MaterialTheme.colorScheme.primary,
         )
 
@@ -71,7 +73,7 @@ fun PurchaseThankYouContent(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(tokens.primaryButtonHeight),
             shape = MaterialTheme.shapes.large,
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
         ) {

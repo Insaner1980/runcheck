@@ -90,7 +90,7 @@ app/src/main/java/com/runcheck/
 
 ## Architecture Conventions
 
-- **Domain layer must be pure Kotlin** — no `android.*` or `androidx.*` imports in `domain/`. Use `String` instead of `android.net.Uri`, map at data/UI boundaries. **Exception:** `androidx.paging.PagingData` is allowed in domain repository interfaces and use cases — wrapping it adds complexity without benefit in a single-module app.
+- **Domain layer must stay Android-free in practice** — no `android.*` imports in `domain/`, and avoid `androidx.*` there unless a documented boundary exception exists. Use `String` instead of `android.net.Uri`, map at data/UI boundaries. **Exception:** `androidx.paging.PagingData` is allowed in domain repository interfaces and use cases — wrapping it adds complexity without benefit in a single-module app.
 - **UI layer must not import data layer** — ViewModels inject use cases or domain repository interfaces, never data sources or data-layer classes directly.
 - **Data layer must not import UI framework** — no Compose types (`ImageBitmap`, etc.) in `data/`. Return platform primitives (`Bitmap`), convert in UI layer.
 - **Inject interfaces, not concrete classes** — repositories and data-layer services use interfaces (`DeviceProfileProvider`, `ForegroundAppProvider`). Bind via `@Binds` in Hilt modules.
@@ -164,6 +164,7 @@ Do not annotate:
 - **Dividers:** `outlineVariant.copy(alpha = 0.35f)` everywhere — no hardcoded colors
 - **Icons:** `Icons.Outlined` exclusively — no `Icons.Default`, `Icons.Filled`, or `Icons.Rounded`
 - **Spacing:** All padding/spacing values must be on the 4dp grid (2/4/8/12/16/24/32dp)
+- **Shared UI metrics:** Touch targets, icon sizes, icon circles, and common CTA heights should come from `UiTokens` rather than being repeated across shared components
 - **Animations:** All durations must use `MotionTokens` constants — no bare `tween()` without explicit spec
 - **Chart grid alpha:** `outlineVariant.copy(alpha = 0.2f)` for all chart grid lines
 - **Value colors:** Data values default to `onSurface`, status labels use `statusColors`. In GridCard, use `statusLabel`/`statusColor` params to separate data from status.

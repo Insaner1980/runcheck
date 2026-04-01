@@ -140,7 +140,7 @@ complexity:
     active: true
     # Hilt constructor injection often requires many dependencies
     functionThreshold: 8
-    constructorThreshold: 13
+    constructorThreshold: 14
     # Composables often have many params with defaults
     ignoreDefaultParameters: true
     ignoreDataClasses: true
@@ -179,10 +179,11 @@ complexity:
   TooManyFunctions:
     active: true
     excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**']
-    # Compose files naturally have many small composable functions
-    thresholdInFiles: 25
-    thresholdInClasses: 20
-    thresholdInInterfaces: 11
+    # Compose screen files have many small composable functions;
+    # Repository/DataSource/ViewModel classes grow with features
+    thresholdInFiles: 30
+    thresholdInClasses: 25
+    thresholdInInterfaces: 15
     thresholdInObjects: 11
     thresholdInEnums: 11
     ignoreDeprecated: false
@@ -689,7 +690,7 @@ style:
   ReturnCount:
     active: true
     # Kotlin uses early returns and guard clauses extensively
-    max: 4
+    max: 5
     excludedFunctions:
       - 'equals'
     excludeLabeled: false

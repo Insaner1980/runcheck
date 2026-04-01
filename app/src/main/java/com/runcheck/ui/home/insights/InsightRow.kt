@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Card
@@ -19,14 +19,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.domain.insights.model.Insight
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.ui.components.IconCircle
 import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
+import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun InsightRow(
@@ -34,6 +35,8 @@ fun InsightRow(
     onClick: (() -> Unit)?,
     onDismiss: () -> Unit,
 ) {
+    val spacing = MaterialTheme.spacing
+    val tokens = MaterialTheme.uiTokens
     val priorityTint =
         when (insight.priority) {
             InsightPriority.HIGH -> MaterialTheme.statusColors.critical
@@ -46,9 +49,9 @@ fun InsightRow(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(spacing.base),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(spacing.md),
         ) {
             IconCircle(
                 icon = Icons.Outlined.WarningAmber,
@@ -68,24 +71,24 @@ fun InsightRow(
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                horizontalArrangement = Arrangement.spacedBy(spacing.xxs),
             ) {
                 IconButton(
                     onClick = onDismiss,
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(tokens.touchTarget),
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Close,
                         contentDescription = stringResource(R.string.a11y_dismiss_card),
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(tokens.iconMedium),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 if (onClick != null) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                         contentDescription = stringResource(R.string.a11y_open_insight_destination),
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(tokens.iconLarge),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }

@@ -3,7 +3,7 @@ package com.runcheck.ui.insights
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.runcheck.domain.repository.InsightRepository
-import com.runcheck.pro.ProManager
+import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.common.messageOr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +19,7 @@ class InsightsViewModel
     @Inject
     constructor(
         private val insightRepository: InsightRepository,
-        private val proManager: ProManager,
+        private val observeProAccess: ObserveProAccessUseCase,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow<InsightsUiState>(InsightsUiState.Loading)
         val uiState: StateFlow<InsightsUiState> = _uiState.asStateFlow()
@@ -41,12 +41,12 @@ class InsightsViewModel
                 combine(
                     insightRepository.getActiveInsights(),
                     insightRepository.getUnseenCount(),
-                    proManager.proState,
-                ) { insights, unseenCount, proState ->
+                    observeProAccess(),
+                ) { insights, unseenCount, isPro ->
                     InsightsUiState.Success(
                         insights = insights,
                         unseenInsightCount = unseenCount,
-                        isPro = proState.isPro,
+                        isPro = isPro,
                     )
                 }.catch { error ->
                     _uiState.value = InsightsUiState.Error(error.messageOr("Unknown error"))

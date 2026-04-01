@@ -24,11 +24,12 @@ class ProManager
     constructor(
         private val trialManager: TrialManager,
         private val proPurchaseManager: ProPurchaseManager,
-    ) : ProStatusProvider {
+    ) : ProStatusProvider,
+        ProStateProvider {
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
         private val _proState = MutableStateFlow(ProState())
-        val proState: StateFlow<ProState> = _proState.asStateFlow()
+        override val proState: StateFlow<ProState> = _proState.asStateFlow()
         override val isProUser: Flow<Boolean> =
             proState
                 .map { it.isPro }

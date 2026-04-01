@@ -7,26 +7,58 @@ data class InsightNavigationAction(
     val onClick: (() -> Unit)?,
 )
 
+data class InsightNavigationHandlers(
+    val onNavigateToBattery: () -> Unit,
+    val onNavigateToNetwork: () -> Unit,
+    val onNavigateToThermal: () -> Unit,
+    val onNavigateToStorage: () -> Unit,
+    val onNavigateToCharger: () -> Unit,
+    val onNavigateToAppUsage: () -> Unit,
+    val onNavigateToProUpgrade: () -> Unit,
+)
+
 fun resolveInsightNavigationAction(
     insight: Insight,
     isPro: Boolean,
-    onNavigateToBattery: () -> Unit,
-    onNavigateToNetwork: () -> Unit,
-    onNavigateToThermal: () -> Unit,
-    onNavigateToStorage: () -> Unit,
-    onNavigateToCharger: () -> Unit,
-    onNavigateToAppUsage: () -> Unit,
-    onNavigateToProUpgrade: () -> Unit,
+    navigationHandlers: InsightNavigationHandlers,
 ): InsightNavigationAction {
     val onClick =
         when (insight.target) {
-            InsightTarget.BATTERY -> onNavigateToBattery
-            InsightTarget.THERMAL -> onNavigateToThermal
-            InsightTarget.NETWORK -> onNavigateToNetwork
-            InsightTarget.STORAGE -> onNavigateToStorage
-            InsightTarget.CHARGER -> if (isPro) onNavigateToCharger else onNavigateToProUpgrade
-            InsightTarget.APP_USAGE -> if (isPro) onNavigateToAppUsage else onNavigateToProUpgrade
-            InsightTarget.NONE -> null
+            InsightTarget.BATTERY -> {
+                navigationHandlers.onNavigateToBattery
+            }
+
+            InsightTarget.THERMAL -> {
+                navigationHandlers.onNavigateToThermal
+            }
+
+            InsightTarget.NETWORK -> {
+                navigationHandlers.onNavigateToNetwork
+            }
+
+            InsightTarget.STORAGE -> {
+                navigationHandlers.onNavigateToStorage
+            }
+
+            InsightTarget.CHARGER -> {
+                if (isPro) {
+                    navigationHandlers.onNavigateToCharger
+                } else {
+                    navigationHandlers.onNavigateToProUpgrade
+                }
+            }
+
+            InsightTarget.APP_USAGE -> {
+                if (isPro) {
+                    navigationHandlers.onNavigateToAppUsage
+                } else {
+                    navigationHandlers.onNavigateToProUpgrade
+                }
+            }
+
+            InsightTarget.NONE -> {
+                null
+            }
         }
 
     return InsightNavigationAction(onClick = onClick)

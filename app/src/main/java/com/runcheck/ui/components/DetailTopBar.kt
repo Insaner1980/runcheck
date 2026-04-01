@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -21,8 +21,9 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.runcheck.R
+import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun DetailTopBar(
@@ -30,18 +31,20 @@ fun DetailTopBar(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val spacing = MaterialTheme.spacing
+    val tokens = MaterialTheme.uiTokens
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(start = 4.dp, end = 4.dp, top = 2.dp, bottom = 4.dp)
+                .padding(start = spacing.xs, end = spacing.xs, top = spacing.xxs, bottom = spacing.xs)
                 .background(MaterialTheme.colorScheme.surface),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack) {
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                 contentDescription = stringResource(R.string.navigate_back),
             )
         }
@@ -59,7 +62,7 @@ fun DetailTopBar(
         Spacer(
             modifier =
                 Modifier
-                    .width(48.dp)
+                    .width(tokens.touchTarget)
                     .clearAndSetSemantics {},
         )
     }

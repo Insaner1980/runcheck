@@ -100,7 +100,8 @@
 - All animations respect reduced motion preference
 
 ### Code Quality & Security
-- Static analysis: Detekt + Compose Rules, ktlint, Android Lint, SonarCloud (0 open issues)
+- Static analysis: Detekt + Compose Rules, ktlint, Android Lint, SonarCloud
+- SonarCloud issue counts and quality-gate state are tracked in the dashboard instead of being hardcoded here
 - CI: CodeQL security scanning
 - R8/ProGuard enabled for release
 - Explicit PendingIntents with FLAG_IMMUTABLE
