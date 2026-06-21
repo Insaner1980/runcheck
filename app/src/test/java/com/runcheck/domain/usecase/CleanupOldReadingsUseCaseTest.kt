@@ -54,6 +54,7 @@ class CleanupOldReadingsUseCaseTest {
         coEvery { transactionRunner.runInTransaction(any()) } coAnswers {
             firstArg<suspend () -> Unit>().invoke()
         }
+        every { proStatusProvider.isProStatusReady } returns true
         every { userPreferencesRepository.getPreferences() } returns flowOf(UserPreferences())
 
         useCase =
@@ -183,6 +184,24 @@ class CleanupOldReadingsUseCaseTest {
                 )
             }
             coVerify(exactly = 1) { transactionRunner.runInTransaction(any()) }
+        }
+
+    @Test
+    fun `pro status not ready skips destructive cleanup`() =
+        runTest {
+            every { proStatusProvider.isProStatusReady } returns false
+
+            useCase()
+
+            coVerify(exactly = 0) { transactionRunner.runInTransaction(any()) }
+            coVerify(exactly = 0) { batteryRepository.deleteOlderThan(any()) }
+            coVerify(exactly = 0) { networkRepository.deleteOlderThan(any()) }
+            coVerify(exactly = 0) { thermalRepository.deleteOlderThan(any()) }
+            coVerify(exactly = 0) { storageRepository.deleteOlderThan(any()) }
+            coVerify(exactly = 0) { chargerRepository.deleteSessionsOlderThan(any()) }
+            coVerify(exactly = 0) { throttlingRepository.deleteOlderThan(any()) }
+            coVerify(exactly = 0) { appBatteryUsageRepository.deleteOlderThan(any()) }
+            coVerify(exactly = 0) { speedTestRepository.deleteOlderThan(any()) }
         }
 
     @Test

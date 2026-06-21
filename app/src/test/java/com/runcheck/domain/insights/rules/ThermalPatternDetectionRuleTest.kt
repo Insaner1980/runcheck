@@ -1,5 +1,6 @@
 package com.runcheck.domain.insights.rules
 
+import com.runcheck.domain.insights.model.InsightPriority
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -30,6 +31,7 @@ class ThermalPatternDetectionRuleTest {
             val insight = insights.single()
             assertEquals(ThermalPatternDetectionRule.RULE_ID, insight.ruleId)
             assertEquals("hot_pattern:70plus", insight.dedupeKey)
+            assertEquals(InsightPriority.HIGH, insight.priority)
             assertEquals("75", insight.bodyArgs[0])
             assertEquals("42", insight.bodyArgs[1])
         }
@@ -53,5 +55,45 @@ class ThermalPatternDetectionRuleTest {
             val insights = rule.evaluate(now)
 
             assertTrue(insights.isEmpty())
+        }
+
+    @Test
+    fun `returns medium priority insight when heat ratio is moderate and peak stays below high threshold`() =
+        runTest {
+            val now = 100L * INSIGHT_TEST_HOUR_MS
+            val readings =
+                listOf(
+                    thermalReading(now - 30L * INSIGHT_TEST_HOUR_MS, 34.0f, 1),
+                    thermalReading(now - 24L * INSIGHT_TEST_HOUR_MS, 35.0f, 1),
+                    thermalReading(now - 18L * INSIGHT_TEST_HOUR_MS, 39.6f, 2),
+                    thermalReading(now - 12L * INSIGHT_TEST_HOUR_MS, 39.8f, 2),
+                    thermalReading(now - 6L * INSIGHT_TEST_HOUR_MS, 40.0f, 2),
+                    thermalReading(now, 40.2f, 2),
+                )
+
+            val rule = ThermalPatternDetectionRule(TestThermalRepository(readings))
+
+            val insight = rule.evaluate(now).single()
+
+            assertEquals("hot_pattern:60plus", insight.dedupeKey)
+            assertEquals(InsightPriority.MEDIUM, insight.priority)
+            assertEquals("67", insight.bodyArgs[0])
+            assertEquals("40", insight.bodyArgs[1])
+        }
+
+    @Test
+    fun `returns empty when thermal history is too short`() =
+        runTest {
+            val now = 100L * INSIGHT_TEST_HOUR_MS
+            val readings =
+                listOf(
+                    thermalReading(now - 12L * INSIGHT_TEST_HOUR_MS, 40.5f, 2),
+                    thermalReading(now - 6L * INSIGHT_TEST_HOUR_MS, 41.0f, 3),
+                    thermalReading(now, 41.5f, 3),
+                )
+
+            val rule = ThermalPatternDetectionRule(TestThermalRepository(readings))
+
+            assertTrue(rule.evaluate(now).isEmpty())
         }
 }

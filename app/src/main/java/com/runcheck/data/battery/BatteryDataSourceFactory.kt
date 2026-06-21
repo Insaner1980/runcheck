@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.runcheck.data.device.DeviceProfile
+import com.runcheck.util.AppDispatchers
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -13,6 +14,7 @@ class BatteryDataSourceFactory
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
+        private val dispatchers: AppDispatchers,
     ) {
         private var cachedSource: BatteryDataSource? = null
         private var cachedProfileKey: String? = null
@@ -32,7 +34,7 @@ class BatteryDataSourceFactory
                         if (isApi34Plus) {
                             createSamsungApi34Source(profile)
                         } else {
-                            SamsungBatterySource(context, profile)
+                            SamsungBatterySource(context, profile, dispatchers)
                         }
                     }
 
@@ -40,7 +42,7 @@ class BatteryDataSourceFactory
                         if (isApi34Plus) {
                             createOnePlusApi34Source(profile)
                         } else {
-                            OnePlusBatterySource(context, profile)
+                            OnePlusBatterySource(context, profile, dispatchers)
                         }
                     }
 
@@ -49,7 +51,7 @@ class BatteryDataSourceFactory
                     }
 
                     else -> {
-                        GenericBatterySource(context, profile)
+                        GenericBatterySource(context, profile, dispatchers)
                     }
                 }
             cachedSource = source
@@ -59,13 +61,13 @@ class BatteryDataSourceFactory
 
         @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
         private fun createSamsungApi34Source(profile: DeviceProfile): BatteryDataSource =
-            SamsungAndroid14BatterySource(context, profile)
+            SamsungAndroid14BatterySource(context, profile, dispatchers)
 
         @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
         private fun createOnePlusApi34Source(profile: DeviceProfile): BatteryDataSource =
-            OnePlusAndroid14BatterySource(context, profile)
+            OnePlusAndroid14BatterySource(context, profile, dispatchers)
 
         @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
         private fun createGenericApi34Source(profile: DeviceProfile): BatteryDataSource =
-            Android14BatterySource(context, profile)
+            Android14BatterySource(context, profile, dispatchers)
     }

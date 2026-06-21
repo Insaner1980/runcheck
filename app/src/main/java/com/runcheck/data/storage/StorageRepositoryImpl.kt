@@ -5,14 +5,13 @@ import com.runcheck.data.db.entity.StorageReadingEntity
 import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.usecase.CalculateFillRateUseCase
+import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.runcheck.domain.repository.StorageRepository as StorageRepositoryContract
@@ -27,6 +26,7 @@ class StorageRepositoryImpl
         private val storageDataSource: StorageDataSource,
         private val storageReadingDao: StorageReadingDao,
         private val calculateFillRate: CalculateFillRateUseCase,
+        private val dispatchers: AppDispatchers,
     ) : StorageRepositoryContract {
         override fun getStorageState(): Flow<StorageState> =
             flow {
@@ -72,28 +72,27 @@ class StorageRepositoryImpl
                     )
                     delay(STORAGE_REFRESH_INTERVAL_MS)
                 }
-            }.flowOn(Dispatchers.IO)
+            }.flowOn(dispatchers.io)
 
-        override suspend fun saveReading(state: StorageState) =
-            withContext(Dispatchers.IO) {
-                try {
-                    val entity =
-                        StorageReadingEntity(
-                            timestamp = System.currentTimeMillis(),
-                            totalBytes = state.totalBytes,
-                            availableBytes = state.availableBytes,
-                            appsBytes = state.appsBytes ?: 0L,
-                            mediaBytes =
-                                state.mediaBreakdown?.let {
-                                    it.imagesBytes + it.videosBytes + it.audioBytes + it.documentsBytes +
-                                        it.downloadsBytes
-                                } ?: 0L,
-                        )
-                    storageReadingDao.insert(entity)
-                } catch (e: android.database.sqlite.SQLiteException) {
-                    ReleaseSafeLog.error(TAG, "Failed to save storage reading", e)
-                }
+        override suspend fun saveReading(state: StorageState) {
+            try {
+                val entity =
+                    StorageReadingEntity(
+                        timestamp = System.currentTimeMillis(),
+                        totalBytes = state.totalBytes,
+                        availableBytes = state.availableBytes,
+                        appsBytes = state.appsBytes ?: 0L,
+                        mediaBytes =
+                            state.mediaBreakdown?.let {
+                                it.imagesBytes + it.videosBytes + it.audioBytes + it.documentsBytes +
+                                    it.downloadsBytes
+                            } ?: 0L,
+                    )
+                storageReadingDao.insert(entity)
+            } catch (e: android.database.sqlite.SQLiteException) {
+                ReleaseSafeLog.error(TAG, "Failed to save storage reading", e)
             }
+        }
 
         override fun getReadingsSince(
             since: Long,
@@ -107,32 +106,25 @@ class StorageRepositoryImpl
                 }
             return source
                 .map { entities -> entities.map { it.toDomain() } }
-                .flowOn(Dispatchers.IO)
+                .flowOn(dispatchers.io)
         }
 
         override suspend fun getReadingsSinceSync(since: Long): List<StorageReading> =
-            withContext(Dispatchers.IO) {
-                storageReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
-            }
+            storageReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
 
         override suspend fun getAllReadings(): List<StorageReading> =
-            withContext(Dispatchers.IO) {
-                storageReadingDao.getAll().map { it.toDomain() }
-            }
+            storageReadingDao.getAll().map { it.toDomain() }
 
-        override suspend fun deleteOlderThan(cutoff: Long) =
-            withContext(Dispatchers.IO) {
-                try {
-                    storageReadingDao.deleteOlderThan(cutoff)
-                } catch (e: android.database.sqlite.SQLiteException) {
-                    ReleaseSafeLog.error(TAG, "Failed to delete old storage readings", e)
-                }
+        override suspend fun deleteOlderThan(cutoff: Long) {
+            try {
+                storageReadingDao.deleteOlderThan(cutoff)
+            } catch (e: android.database.sqlite.SQLiteException) {
+                ReleaseSafeLog.error(TAG, "Failed to delete old storage readings", e)
             }
+        }
 
         override suspend fun deleteAll() =
-            withContext<Unit>(Dispatchers.IO) {
-                storageReadingDao.deleteAll()
-            }
+            storageReadingDao.deleteAll()
 
         private companion object {
             const val TAG = "StorageRepository"

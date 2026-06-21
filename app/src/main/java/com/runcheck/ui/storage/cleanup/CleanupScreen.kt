@@ -126,16 +126,22 @@ fun CleanupScreen(
         ) { paddingValues ->
             ContentContainer(modifier = Modifier.padding(paddingValues)) {
                 CleanupScreenBody(
-                    uiState = uiState,
-                    cleanupType = cleanupType,
-                    selectedFilterIndex = viewModel.getSelectedFilterIndex(),
-                    onFilterSelect = viewModel::setFilter,
-                    onScan = viewModel::scan,
-                    pagerFlowFor = viewModel::pagerFlowFor,
-                    isSelected = viewModel::isSelected,
-                    onToggleGroupExpansion = viewModel::toggleGroupExpanded,
-                    onToggleGroupSelection = viewModel::toggleGroupSelection,
-                    onToggleSelection = viewModel::toggleSelection,
+                    state =
+                        CleanupScreenBodyState(
+                            uiState = uiState,
+                            cleanupType = cleanupType,
+                            selectedFilterIndex = viewModel.getSelectedFilterIndex(),
+                        ),
+                    actions =
+                        CleanupScreenBodyActions(
+                            onFilterSelect = viewModel::setFilter,
+                            onScan = viewModel::scan,
+                            pagerFlowFor = viewModel::pagerFlowFor,
+                            isSelected = viewModel::isSelected,
+                            onToggleGroupExpansion = viewModel::toggleGroupExpanded,
+                            onToggleGroupSelection = viewModel::toggleGroupSelection,
+                            onToggleSelection = viewModel::toggleSelection,
+                        ),
                 )
             }
         }
@@ -151,18 +157,19 @@ fun CleanupScreen(
 
 @Composable
 private fun CleanupScreenBody(
-    uiState: CleanupUiState,
-    cleanupType: CleanupType,
-    selectedFilterIndex: Int,
-    onFilterSelect: (Int) -> Unit,
-    onScan: () -> Unit,
-    pagerFlowFor: (MediaCategory) -> Flow<PagingData<ScannedFile>>,
-    isSelected: (ScannedFile) -> Boolean,
-    onToggleGroupExpansion: (MediaCategory) -> Unit,
-    onToggleGroupSelection: (MediaCategory) -> Unit,
-    onToggleSelection: (ScannedFile) -> Unit,
+    state: CleanupScreenBodyState,
+    actions: CleanupScreenBodyActions,
 ) {
-    val context = LocalContext.current
+    val uiState = state.uiState
+    val cleanupType = state.cleanupType
+    val selectedFilterIndex = state.selectedFilterIndex
+    val onFilterSelect = actions.onFilterSelect
+    val onScan = actions.onScan
+    val pagerFlowFor = actions.pagerFlowFor
+    val isSelected = actions.isSelected
+    val onToggleGroupExpansion = actions.onToggleGroupExpansion
+    val onToggleGroupSelection = actions.onToggleGroupSelection
+    val onToggleSelection = actions.onToggleSelection
     val scanningDescription = stringResource(R.string.a11y_scanning_files)
     val deletingDescription = stringResource(R.string.a11y_deleting_files)
 
@@ -313,6 +320,22 @@ private fun CleanupScreenBody(
         }
     }
 }
+
+private data class CleanupScreenBodyState(
+    val uiState: CleanupUiState,
+    val cleanupType: CleanupType,
+    val selectedFilterIndex: Int,
+)
+
+private class CleanupScreenBodyActions(
+    val onFilterSelect: (Int) -> Unit,
+    val onScan: () -> Unit,
+    val pagerFlowFor: (MediaCategory) -> Flow<PagingData<ScannedFile>>,
+    val isSelected: (ScannedFile) -> Boolean,
+    val onToggleGroupExpansion: (MediaCategory) -> Unit,
+    val onToggleGroupSelection: (MediaCategory) -> Unit,
+    val onToggleSelection: (ScannedFile) -> Unit,
+)
 
 @Composable
 private fun CleanupResultsList(

@@ -7,8 +7,8 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Process
 import com.runcheck.domain.usecase.TrackThrottlingEventsUseCase
+import com.runcheck.util.AppDispatchers
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,6 +18,7 @@ class AppUsageDataSource
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
+        private val dispatchers: AppDispatchers,
     ) : TrackThrottlingEventsUseCase.ForegroundAppProvider {
         private val usageStatsManager =
             context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
@@ -26,7 +27,7 @@ class AppUsageDataSource
             startTimeMs: Long,
             endTimeMs: Long,
         ): List<AppUsageSnapshot> =
-            withContext(Dispatchers.IO) {
+            withContext(dispatchers.io) {
                 if (endTimeMs <= startTimeMs || !hasUsageStatsPermission()) {
                     return@withContext emptyList()
                 }
@@ -57,7 +58,7 @@ class AppUsageDataSource
         override suspend fun getCurrentForegroundApp(): String? = getCurrentForegroundApp(RECENT_USAGE_LOOKBACK_MS)
 
         suspend fun getCurrentForegroundApp(lookbackWindowMs: Long): String? =
-            withContext(Dispatchers.IO) {
+            withContext(dispatchers.io) {
                 if (!hasUsageStatsPermission()) {
                     return@withContext null
                 }

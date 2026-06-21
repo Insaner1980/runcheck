@@ -25,11 +25,11 @@ import androidx.core.location.LocationManagerCompat
 import com.runcheck.R
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.SignalQuality
+import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -45,6 +45,7 @@ class NetworkDataSource
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
+        private val dispatchers: AppDispatchers,
     ) {
         private val connectivityManager =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -54,7 +55,7 @@ class NetworkDataSource
             context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
         private val dataSourceScope =
             CoroutineScope(
-                SupervisorJob() + Dispatchers.Default +
+                SupervisorJob() + dispatchers.default +
                     CoroutineExceptionHandler { _, throwable ->
                         ReleaseSafeLog.error(TAG, "Network callback flow failed", throwable)
                     },

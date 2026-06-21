@@ -339,7 +339,6 @@ private fun StorageContent(
     var isRefreshing by remember { mutableStateOf(false) }
     var activeInfoSheet by rememberInfoSheetState()
     val storage = state.storageState
-    val hasMediaPermissions = mediaAccessState == MediaAccessState.FULL
 
     LaunchedEffect(state) {
         isRefreshing = false

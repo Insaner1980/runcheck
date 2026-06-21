@@ -2,7 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <application>
+    <application
+        android:allowBackup="false"
+        android:usesCleartextTraffic="false">
         <!-- Disable Sentry auto-init; we initialize manually in SentryInit.kt -->
         <meta-data
             android:name="io.sentry.auto-init"

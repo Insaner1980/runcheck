@@ -8,6 +8,7 @@ import android.os.Build
 import android.provider.MediaStore
 import android.util.LruCache
 import android.util.Size
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -38,8 +39,9 @@ suspend fun loadCleanupThumbnail(
     context: Context,
     uriString: String,
     sizePx: Int = 96,
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ): Bitmap? =
-    withContext(Dispatchers.IO) {
+    withContext(ioDispatcher) {
         val cacheKey = "$uriString@$sizePx"
         CleanupThumbnailCache.thumbnails.get(cacheKey)?.let { return@withContext it }
 

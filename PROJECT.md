@@ -1069,7 +1069,7 @@ Get-ChildItem tools -Filter *.ps1 | ForEach-Object { & $_.FullName -PlanOnly }
 Report-reading convention:
 
 - "lue lint-tulokset" means read `reports/ktlint.txt`, `reports/detekt.txt`, and `reports/lint.txt`.
-- "lue security-tulokset" means read `reports/security-code.txt` and `reports/security-deps.txt`.
+- "lue security-tulokset" means read `reports/security-summary.txt`, `reports/semgrep-kotlin.txt`, `reports/semgrep-secrets.txt`, `reports/gitleaks.txt`, `reports/trufflehog.txt`, `reports/dependency-verification.txt`, `reports/osv.txt`, and `reports/security-deps.txt`.
 
 ---
 
@@ -1081,9 +1081,9 @@ GitHub Actions workflows in `.github/workflows/`:
 |----------|---------|--------|
 | `codeql.yml` | CodeQL security analysis (`java-kotlin`, manual `assembleDebug`) | Active |
 | `security.yml` | Semgrep SAST + OWASP Dependency-Check SARIF upload | Active |
-| `sonar.yml` | SonarCloud scan after `assembleDebug` | Active |
-| `qodana.yml` | JetBrains Qodana action (`v2025.1`) | Configured, but AGP 9.x support remains a known risk |
-| `qodana_code_quality.yml` | JetBrains Qodana action (`v2025.3`) for `main`, `releases/*`, PRs, and manual dispatch | Configured, but AGP 9.x support remains a known risk |
+| `sonar.yml` | SonarCloud scan through Gradle (`assembleDebug`, `:app:jacocoDebugUnitTestReport`, `sonar`) | Active |
+| `qodana.yml` | JetBrains Qodana main-branch scan (`v2026.1`) | Configured, but AGP 9.x support remains a known risk |
+| `qodana_code_quality.yml` | JetBrains Qodana action (`v2026.1`) for `main`, `releases/*`, PRs, and manual dispatch | Configured, but AGP 9.x support remains a known risk |
 
 External services:
 - **SonarCloud** — continuous code quality (`Insaner1980_runcheck`, org `insaner1980`). CI path is `.github/workflows/sonar.yml`; local path is `tools/sonar.ps1`.
@@ -1106,7 +1106,9 @@ Local PowerShell wrappers:
 - `tools/ga.ps1` (`ga`) — Google Android Security Lints through Android lint
 - `tools/sc.ps1` (`sc`) — combined security check; `-Full` also runs Android security checks
 - `tools/sentry.ps1` (`sentry`) — verifies debug-only Sentry wiring and release classpath exclusion; writes `reports/sentry.txt`
-- `tools/sonar.ps1` — SonarCloud local path; requires `SONAR_TOKEN`, runs `assembleDebug`, `:app:jacocoDebugUnitTestReport`, and `sonar`, then writes `reports/sonar.txt`
+- `tools/sonar.ps1` — SonarCloud local path; requires `SONAR_TOKEN`, runs `assembleDebug`, `:app:jacocoDebugUnitTestReport`, prepares an empty Android Lint import placeholder because `lc` owns real lint findings, and runs `sonar`, then writes `reports/sonar.txt`
+
+When `osv-scanner`, gitleaks, TruffleHog, or PMD are missing from `PATH`, the shared Android-check wrappers may download and cache verified tool binaries under `.gradle/android-check-tools/`; offline first runs can therefore skip or fail before a cached tool exists. The OSV source scan excludes `.deepsec` so Android-check's own DeepSec tooling dependencies do not fail app dependency scans.
 
 Compatibility wrappers and config:
 

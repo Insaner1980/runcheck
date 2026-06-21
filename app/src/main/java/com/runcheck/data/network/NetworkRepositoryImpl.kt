@@ -4,15 +4,14 @@ import com.runcheck.data.db.dao.NetworkReadingDao
 import com.runcheck.data.db.entity.NetworkReadingEntity
 import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.model.NetworkState
+import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.sample
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.runcheck.domain.repository.NetworkRepository as NetworkRepositoryContract
@@ -24,6 +23,7 @@ class NetworkRepositoryImpl
         private val networkDataSource: NetworkDataSource,
         private val latencyMeasurer: LatencyMeasurer,
         private val networkReadingDao: NetworkReadingDao,
+        private val dispatchers: AppDispatchers,
     ) : NetworkRepositoryContract {
         @OptIn(FlowPreview::class)
         override fun getNetworkState(): Flow<NetworkState> =
@@ -62,30 +62,27 @@ class NetworkRepositoryImpl
             return latencyMeasurer.measureLatency()?.pingMs
         }
 
-        override suspend fun saveReading(state: NetworkState) =
-            withContext(Dispatchers.IO) {
-                try {
-                    val entity =
-                        NetworkReadingEntity(
-                            timestamp = System.currentTimeMillis(),
-                            type = state.connectionType.name,
-                            signalDbm = state.signalDbm,
-                            wifiSpeedMbps = state.wifiSpeedMbps,
-                            wifiFrequency = state.wifiFrequencyMhz,
-                            carrier = state.carrier,
-                            networkSubtype = state.networkSubtype,
-                            latencyMs = state.latencyMs,
-                        )
-                    networkReadingDao.insert(entity)
-                } catch (e: android.database.sqlite.SQLiteException) {
-                    ReleaseSafeLog.error(TAG, "Failed to save network reading", e)
-                }
+        override suspend fun saveReading(state: NetworkState) {
+            try {
+                val entity =
+                    NetworkReadingEntity(
+                        timestamp = System.currentTimeMillis(),
+                        type = state.connectionType.name,
+                        signalDbm = state.signalDbm,
+                        wifiSpeedMbps = state.wifiSpeedMbps,
+                        wifiFrequency = state.wifiFrequencyMhz,
+                        carrier = state.carrier,
+                        networkSubtype = state.networkSubtype,
+                        latencyMs = state.latencyMs,
+                    )
+                networkReadingDao.insert(entity)
+            } catch (e: android.database.sqlite.SQLiteException) {
+                ReleaseSafeLog.error(TAG, "Failed to save network reading", e)
             }
+        }
 
         override suspend fun getAllReadings(): List<NetworkReading> =
-            withContext(Dispatchers.IO) {
-                networkReadingDao.getAll().map { it.toDomain() }
-            }
+            networkReadingDao.getAll().map { it.toDomain() }
 
         override fun getReadingsSince(
             since: Long,
@@ -100,27 +97,22 @@ class NetworkRepositoryImpl
             return readingsFlow
                 .map { entities ->
                     entities.map { it.toDomain() }
-                }.flowOn(Dispatchers.IO)
+                }.flowOn(dispatchers.io)
         }
 
         override suspend fun getReadingsSinceSync(since: Long): List<NetworkReading> =
-            withContext(Dispatchers.IO) {
-                networkReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
-            }
+            networkReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
 
-        override suspend fun deleteOlderThan(cutoff: Long) =
-            withContext(Dispatchers.IO) {
-                try {
-                    networkReadingDao.deleteOlderThan(cutoff)
-                } catch (e: android.database.sqlite.SQLiteException) {
-                    ReleaseSafeLog.error(TAG, "Failed to delete old network readings", e)
-                }
+        override suspend fun deleteOlderThan(cutoff: Long) {
+            try {
+                networkReadingDao.deleteOlderThan(cutoff)
+            } catch (e: android.database.sqlite.SQLiteException) {
+                ReleaseSafeLog.error(TAG, "Failed to delete old network readings", e)
             }
+        }
 
         override suspend fun deleteAll() =
-            withContext<Unit>(Dispatchers.IO) {
-                networkReadingDao.deleteAll()
-            }
+            networkReadingDao.deleteAll()
 
         companion object {
             private const val DISPLAY_UPDATE_INTERVAL_MS = 333L

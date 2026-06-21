@@ -4,7 +4,7 @@
   "scripts": {
     "deepsec": "deepsec",
     "deepsec:scan": "deepsec scan --project-id runcheck",
-    "deepsec:scan:custom": "deepsec scan --project-id runcheck --matchers android-exported-component,fileprovider-broad-path,android-uri-share-without-clipdata,outbound-network-surface,release-telemetry-surface,sensitive-android-log",
+    "deepsec:scan:custom": "deepsec scan --project-id runcheck --matchers android-exported-component,android-kotlin-security-surface,fileprovider-broad-path,android-uri-share-without-clipdata,outbound-network-surface,release-telemetry-surface,sensitive-android-log",
     "deepsec:process": "deepsec process --project-id runcheck",
     "deepsec:revalidate": "deepsec revalidate --project-id runcheck --min-severity HIGH",
     "deepsec:export": "deepsec export --project-id runcheck --format md-dir --out ./findings",

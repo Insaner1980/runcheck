@@ -10,11 +10,10 @@ import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.insights.model.InsightType
 import com.runcheck.domain.repository.DatabaseTransactionRunner
 import com.runcheck.domain.repository.InsightRepository
-import kotlinx.coroutines.Dispatchers
+import com.runcheck.util.AppDispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -26,13 +25,14 @@ class InsightRepositoryImpl
         private val insightDao: InsightDao,
         private val homeRankingPolicy: InsightHomeRankingPolicy,
         private val transactionRunner: DatabaseTransactionRunner,
+        private val dispatchers: AppDispatchers,
     ) : InsightRepository {
         override fun getHomeInsights(limit: Int): Flow<List<Insight>> =
             observeActiveInsights()
                 .map { insights -> homeRankingPolicy.selectHomeInsights(insights, limit) }
-                .flowOn(Dispatchers.IO)
+                .flowOn(dispatchers.io)
 
-        override fun getActiveInsights(): Flow<List<Insight>> = observeActiveInsights().flowOn(Dispatchers.IO)
+        override fun getActiveInsights(): Flow<List<Insight>> = observeActiveInsights().flowOn(dispatchers.io)
 
         override fun getUnseenCount(): Flow<Int> =
             insightDao
@@ -40,22 +40,16 @@ class InsightRepositoryImpl
                 .map { entities ->
                     val now = System.currentTimeMillis()
                     entities.count { !it.seen && it.expiresAt > now }
-                }.flowOn(Dispatchers.IO)
+                }.flowOn(dispatchers.io)
 
         override suspend fun dismiss(id: Long) =
-            withContext(Dispatchers.IO) {
-                insightDao.dismiss(id)
-            }
+            insightDao.dismiss(id)
 
         override suspend fun markAllSeen() =
-            withContext(Dispatchers.IO) {
-                insightDao.markAllSeen()
-            }
+            insightDao.markAllSeen()
 
         override suspend fun clearAll() =
-            withContext(Dispatchers.IO) {
-                insightDao.deleteAll()
-            }
+            insightDao.deleteAll()
 
         override suspend fun replaceRuleResults(
             ruleId: String,
@@ -86,9 +80,7 @@ class InsightRepositoryImpl
         }
 
         override suspend fun deleteExpired(now: Long) =
-            withContext(Dispatchers.IO) {
-                insightDao.deleteExpired(now)
-            }
+            insightDao.deleteExpired(now)
 
         private fun observeActiveInsights(): Flow<List<Insight>> =
             insightDao

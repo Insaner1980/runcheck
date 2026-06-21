@@ -3,8 +3,8 @@ package com.runcheck.data.export
 import android.content.Context
 import androidx.core.content.FileProvider
 import com.runcheck.domain.repository.FileExportRepository
+import com.runcheck.util.AppDispatchers
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
@@ -15,9 +15,10 @@ class FileExportRepositoryImpl
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
+        private val dispatchers: AppDispatchers,
     ) : FileExportRepository {
         override suspend fun prepareExportShare(files: Map<String, String>): List<String> =
-            withContext(Dispatchers.IO) {
+            withContext(dispatchers.io) {
                 val exportRoot =
                     File(context.cacheDir, EXPORT_DIR_NAME).apply {
                         mkdirs()

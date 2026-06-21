@@ -85,7 +85,7 @@
         <!-- Battery Widget -->
         <receiver
             android:name=".widget.BatteryWidgetReceiver"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/widget_battery_name"
             android:permission="android.permission.BIND_APPWIDGET">
             <intent-filter>
@@ -99,7 +99,7 @@
         <!-- Health Score Widget -->
         <receiver
             android:name=".widget.HealthWidgetReceiver"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/widget_health_name"
             android:permission="android.permission.BIND_APPWIDGET">
             <intent-filter>

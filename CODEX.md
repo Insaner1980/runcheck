@@ -26,6 +26,7 @@ Legacy billing or ad-related code may still exist in the repo. Do not expand tha
 - Main module: single `app` module
 - Architecture: Clean Architecture with `data/`, `domain/`, and `ui/`
 - Dependency injection: Hilt
+- Coroutine dispatchers: centralized through `AppDispatchers`; production code should not call coroutine builders with raw `Dispatchers.*`
 - Database: Room
 - Preferences: DataStore
 - UI: Jetpack Compose + Material 3
@@ -119,9 +120,11 @@ PowerShell wrappers live in `tools/` and forward to `C:\Dev\Android-check\tools\
 - `ga` / `tools\ga.ps1` — Google Android Security Lints through Android lint
 - `sc` / `tools\sc.ps1` — combined security check; `-Full` also runs Android security checks
 - `sentry` / `tools\sentry.ps1` — verifies debug-only Sentry wiring; debug must contain `io.sentry`, release must not contain `io.sentry`, and results are written to `reports\sentry.txt`
-- `tools\sonar.ps1` — SonarCloud path; requires `SONAR_TOKEN`, runs `assembleDebug`, `:app:jacocoDebugUnitTestReport`, and `sonar`, then writes `reports\sonar.txt`
+- `tools\sonar.ps1` — SonarCloud path; requires `SONAR_TOKEN`, runs `assembleDebug`, `:app:jacocoDebugUnitTestReport`, prepares an empty Android Lint import placeholder because `lc` owns real lint findings, and runs `sonar`, then writes `reports\sonar.txt`
 
 `scripts\security-check.ps1` is only a compatibility wrapper to `tools\sc.ps1`. `scripts\security-check.sh` is Linux legacy. `reports/` is ignored and must not be committed.
+
+When `osv-scanner`, gitleaks, TruffleHog, or PMD are missing from `PATH`, the shared Android-check wrappers may download and cache verified tool binaries under `.gradle\android-check-tools\`; offline first runs can therefore skip or fail before a cached tool exists. The OSV source scan excludes `.deepsec` so Android-check's own DeepSec tooling dependencies do not fail app dependency scans.
 
 Do not run the heavy `lc`, `sc`, Sonar, Dependency-Check, MobSF, DeepSec, or full Gradle verification paths unless the user explicitly asks or they are required to unblock the task. Prefer `-PlanOnly`, task listing, targeted config checks, and narrow tests first.
 

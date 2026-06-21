@@ -1,6 +1,7 @@
 package com.runcheck.domain.insights.rules
 
 import com.runcheck.domain.insights.analysis.StorageGrowthAnalyzer
+import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.repository.StorageRepository
@@ -111,6 +112,41 @@ class StoragePressureProjectionRuleTest {
 
             assertTrue(insights.isEmpty())
         }
+
+    @Test
+    fun `returns medium priority projection for thirty day bucket`() =
+        runTest {
+            val dayMs = 24L * 60L * 60L * 1000L
+            val now = 30L * dayMs
+            val readings =
+                listOf(
+                    storage(now - 6L * dayMs, availableBytes = 88_000L),
+                    storage(now - 4L * dayMs, availableBytes = 82_000L),
+                    storage(now - 2L * dayMs, availableBytes = 76_000L),
+                    storage(now, availableBytes = 70_000L),
+                )
+            val rule =
+                StoragePressureProjectionRule(
+                    storageRepository = FakeStorageRepository(readings),
+                    storageGrowthAnalyzer = StorageGrowthAnalyzer(),
+                )
+
+            val insight = rule.evaluate(now).single()
+
+            assertEquals("30d", insight.dedupeKey)
+            assertEquals(InsightPriority.MEDIUM, insight.priority)
+        }
+
+    private fun storage(
+        timestamp: Long,
+        availableBytes: Long,
+    ) = StorageReading(
+        timestamp = timestamp,
+        totalBytes = 100_000L,
+        availableBytes = availableBytes,
+        appsBytes = 0L,
+        mediaBytes = 0L,
+    )
 }
 
 private class FakeStorageRepository(

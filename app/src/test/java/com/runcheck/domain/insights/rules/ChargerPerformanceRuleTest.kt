@@ -1,5 +1,6 @@
 package com.runcheck.domain.insights.rules
 
+import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.model.ChargerProfile
 import com.runcheck.domain.model.ChargingSession
 import com.runcheck.domain.repository.ChargerRepository
@@ -42,6 +43,99 @@ class ChargerPerformanceRuleTest {
         }
 
     @Test
+    fun `uses current and voltage samples and returns high priority for very slow charger`() =
+        runTest {
+            val dayMs = 24L * 60L * 60L * 1000L
+            val now = 60L * dayMs
+            val chargers =
+                listOf(
+                    ChargerProfile(id = 1L, name = "Fast Brick", created = now - 30L * dayMs),
+                    ChargerProfile(id = 2L, name = "Travel Charger", created = now - 25L * dayMs),
+                )
+            val sessions =
+                listOf(
+                    session(1L, now - 12L * dayMs, avgPowerMw = 31_000),
+                    session(1L, now - 8L * dayMs, avgPowerMw = 30_000),
+                    session(2L, now - 6L * dayMs, avgCurrentMa = 1_000, avgVoltageMv = 5_000),
+                    session(2L, now - 2L * dayMs, avgCurrentMa = 900, avgVoltageMv = 5_000),
+                )
+
+            val rule = ChargerPerformanceRule(FakeChargerRepository(chargers, sessions))
+
+            val insight = rule.evaluate(now).single()
+
+            assertEquals("charger:2:50plus", insight.dedupeKey)
+            assertEquals(InsightPriority.HIGH, insight.priority)
+            assertEquals("Travel Charger", insight.bodyArgs[0])
+            assertEquals("84", insight.bodyArgs[1])
+        }
+
+    @Test
+    fun `returns medium priority for moderately slower charger`() =
+        runTest {
+            val dayMs = 24L * 60L * 60L * 1000L
+            val now = 60L * dayMs
+            val chargers =
+                listOf(
+                    ChargerProfile(id = 1L, name = "Fast Brick", created = now - 30L * dayMs),
+                    ChargerProfile(id = 2L, name = "Desk Charger", created = now - 25L * dayMs),
+                )
+            val sessions =
+                listOf(
+                    session(1L, now - 12L * dayMs, 30_000),
+                    session(1L, now - 8L * dayMs, 30_000),
+                    session(2L, now - 6L * dayMs, 23_000),
+                    session(2L, now - 2L * dayMs, 22_000),
+                )
+
+            val rule = ChargerPerformanceRule(FakeChargerRepository(chargers, sessions))
+
+            val insight = rule.evaluate(now).single()
+
+            assertEquals("charger:2:20plus", insight.dedupeKey)
+            assertEquals(InsightPriority.MEDIUM, insight.priority)
+            assertEquals("25", insight.bodyArgs[1])
+        }
+
+    @Test
+    fun `returns empty when there are not enough saved chargers`() =
+        runTest {
+            val dayMs = 24L * 60L * 60L * 1000L
+            val now = 60L * dayMs
+            val chargers =
+                listOf(
+                    ChargerProfile(id = 1L, name = "Only Charger", created = now - 30L * dayMs),
+                )
+
+            val rule = ChargerPerformanceRule(FakeChargerRepository(chargers, sessions = emptyList()))
+
+            assertTrue(rule.evaluate(now).isEmpty())
+        }
+
+    @Test
+    fun `returns empty when only one charger has enough samples`() =
+        runTest {
+            val dayMs = 24L * 60L * 60L * 1000L
+            val now = 60L * dayMs
+            val chargers =
+                listOf(
+                    ChargerProfile(id = 1L, name = "Fast Brick", created = now - 30L * dayMs),
+                    ChargerProfile(id = 2L, name = "Desk Charger", created = now - 25L * dayMs),
+                )
+            val sessions =
+                listOf(
+                    session(1L, now - 12L * dayMs, avgPowerMw = 31_000),
+                    session(1L, now - 8L * dayMs, avgPowerMw = 30_000),
+                    session(1L, now - 6L * dayMs, avgPowerMw = 29_000),
+                    session(1L, now - 2L * dayMs, avgPowerMw = 28_000),
+                )
+
+            val rule = ChargerPerformanceRule(FakeChargerRepository(chargers, sessions))
+
+            assertTrue(rule.evaluate(now).isEmpty())
+        }
+
+    @Test
     fun `returns empty when charger speeds are similar`() =
         runTest {
             val dayMs = 24L * 60L * 60L * 1000L
@@ -69,16 +163,18 @@ class ChargerPerformanceRuleTest {
     private fun session(
         chargerId: Long,
         endTime: Long,
-        avgPowerMw: Int,
+        avgPowerMw: Int? = null,
+        avgCurrentMa: Int? = null,
+        avgVoltageMv: Int? = null,
     ) = ChargingSession(
         chargerId = chargerId,
         startTime = endTime - (50L * 60L * 1000L),
         endTime = endTime,
         startLevel = 25,
         endLevel = 80,
-        avgCurrentMa = null,
+        avgCurrentMa = avgCurrentMa,
         maxCurrentMa = null,
-        avgVoltageMv = null,
+        avgVoltageMv = avgVoltageMv,
         avgPowerMw = avgPowerMw,
         plugType = "AC",
     )

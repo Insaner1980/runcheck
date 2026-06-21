@@ -8,12 +8,12 @@ import androidx.core.content.ContextCompat
 import com.runcheck.domain.repository.MonitoringScheduler
 import com.runcheck.domain.repository.ScreenStateRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
+import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
 import com.runcheck.util.RuncheckPermissionPolicy
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,6 +28,9 @@ class BootReceiver : BroadcastReceiver() {
 
     @Inject
     lateinit var userPreferencesRepository: UserPreferencesRepository
+
+    @Inject
+    lateinit var dispatchers: AppDispatchers
 
     @Suppress("TooGenericExceptionCaught")
     override fun onReceive(
@@ -49,7 +52,7 @@ class BootReceiver : BroadcastReceiver() {
         }
 
         val pendingResult = goAsync()
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(dispatchers.io).launch {
             try {
                 screenStateRepository.initialize()
                 monitorScheduler.ensureScheduled()

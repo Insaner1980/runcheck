@@ -10,8 +10,9 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class InsightDebugModule {
+@Suppress("kotlin:S6517")
+interface InsightDebugModule {
     @Binds
     @Singleton
-    abstract fun bindInsightDebugActions(impl: DebugInsightActionsImpl): InsightDebugActions
+    fun bindInsightDebugActions(impl: DebugInsightActionsImpl): InsightDebugActions
 }

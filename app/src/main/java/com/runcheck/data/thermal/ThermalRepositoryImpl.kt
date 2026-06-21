@@ -7,10 +7,10 @@ import com.runcheck.domain.model.ThermalReading
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
 import com.runcheck.domain.usecase.TrackThrottlingEventsUseCase
+import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.shareIn
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.runcheck.domain.repository.ThermalRepository as ThermalRepositoryContract
@@ -34,10 +33,11 @@ class ThermalRepositoryImpl
         private val deviceProfileProvider: DeviceProfileProvider,
         private val thermalReadingDao: ThermalReadingDao,
         private val trackThrottlingEvents: TrackThrottlingEventsUseCase,
+        private val dispatchers: AppDispatchers,
     ) : ThermalRepositoryContract {
         private val repositoryScope =
             CoroutineScope(
-                SupervisorJob() + Dispatchers.IO +
+                SupervisorJob() + dispatchers.io +
                     CoroutineExceptionHandler { _, throwable ->
                         ReleaseSafeLog.error(TAG, "Thermal sharing coroutine failed", throwable)
                     },
@@ -85,49 +85,41 @@ class ThermalRepositoryImpl
                 }
             return source
                 .map { entities -> entities.map { it.toDomain() } }
-                .flowOn(Dispatchers.IO)
+                .flowOn(dispatchers.io)
         }
 
         override suspend fun getReadingsSinceSync(since: Long): List<ThermalReading> =
-            withContext(Dispatchers.IO) {
-                thermalReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
-            }
+            thermalReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
 
-        override suspend fun saveReading(state: ThermalState) =
-            withContext(Dispatchers.IO) {
-                try {
-                    val entity =
-                        ThermalReadingEntity(
-                            timestamp = System.currentTimeMillis(),
-                            batteryTempC = state.batteryTempC,
-                            cpuTempC = state.cpuTempC,
-                            thermalStatus = state.thermalStatus.ordinal,
-                            throttling = state.isThrottling,
-                        )
-                    thermalReadingDao.insert(entity)
-                } catch (e: android.database.sqlite.SQLiteException) {
-                    ReleaseSafeLog.error(TAG, "Failed to save thermal reading", e)
-                }
+        override suspend fun saveReading(state: ThermalState) {
+            try {
+                val entity =
+                    ThermalReadingEntity(
+                        timestamp = System.currentTimeMillis(),
+                        batteryTempC = state.batteryTempC,
+                        cpuTempC = state.cpuTempC,
+                        thermalStatus = state.thermalStatus.ordinal,
+                        throttling = state.isThrottling,
+                    )
+                thermalReadingDao.insert(entity)
+            } catch (e: android.database.sqlite.SQLiteException) {
+                ReleaseSafeLog.error(TAG, "Failed to save thermal reading", e)
             }
+        }
 
         override suspend fun getAllReadings(): List<ThermalReading> =
-            withContext(Dispatchers.IO) {
-                thermalReadingDao.getAll().map { it.toDomain() }
-            }
+            thermalReadingDao.getAll().map { it.toDomain() }
 
-        override suspend fun deleteOlderThan(cutoff: Long) =
-            withContext(Dispatchers.IO) {
-                try {
-                    thermalReadingDao.deleteOlderThan(cutoff)
-                } catch (e: android.database.sqlite.SQLiteException) {
-                    ReleaseSafeLog.error(TAG, "Failed to delete old thermal readings", e)
-                }
+        override suspend fun deleteOlderThan(cutoff: Long) {
+            try {
+                thermalReadingDao.deleteOlderThan(cutoff)
+            } catch (e: android.database.sqlite.SQLiteException) {
+                ReleaseSafeLog.error(TAG, "Failed to delete old thermal readings", e)
             }
+        }
 
         override suspend fun deleteAll() =
-            withContext<Unit>(Dispatchers.IO) {
-                thermalReadingDao.deleteAll()
-            }
+            thermalReadingDao.deleteAll()
 
         private companion object {
             const val STOP_TIMEOUT_MS = 0L

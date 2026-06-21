@@ -2,8 +2,6 @@ package com.runcheck.domain.usecase
 
 import com.runcheck.domain.insights.analysis.BatteryDrainAnalyzer
 import com.runcheck.domain.repository.BatteryRepository
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class GetBatteryStatisticsUseCase
@@ -13,26 +11,24 @@ class GetBatteryStatisticsUseCase
         private val batteryDrainAnalyzer: BatteryDrainAnalyzer,
     ) {
         suspend operator fun invoke(periodDays: Int = DEFAULT_PERIOD_DAYS): BatteryStatistics? {
-            return withContext(Dispatchers.Default) {
-                val since = System.currentTimeMillis() - periodDays * DAY_MS
-                val readings = batteryRepository.getReadingsSinceSync(since)
-                if (readings.size < 2) return@withContext null
+            val since = System.currentTimeMillis() - periodDays * DAY_MS
+            val readings = batteryRepository.getReadingsSinceSync(since)
+            if (readings.size < 2) return null
 
-                val sorted = readings.sortedBy { it.timestamp }
-                val chargeSummary = calculateChargeSummary(sorted)
-                val avgDrainRate = batteryDrainAnalyzer.calculateAverageDrainRate(sorted)
-                val fullChargeEstimateHours = avgDrainRate?.takeIf { it > MIN_DRAIN_RATE }?.let { 100f / it }
+            val sorted = readings.sortedBy { it.timestamp }
+            val chargeSummary = calculateChargeSummary(sorted)
+            val avgDrainRate = batteryDrainAnalyzer.calculateAverageDrainRate(sorted)
+            val fullChargeEstimateHours = avgDrainRate?.takeIf { it > MIN_DRAIN_RATE }?.let { 100f / it }
 
-                BatteryStatistics(
-                    periodDays = periodDays,
-                    totalChargedPct = chargeSummary.totalCharged,
-                    totalDischargedPct = chargeSummary.totalDischarged,
-                    chargeSessions = chargeSummary.chargeSessions,
-                    avgDrainRatePctPerHour = avgDrainRate,
-                    fullChargeEstimateHours = fullChargeEstimateHours,
-                    readingCount = sorted.size,
-                )
-            }
+            return BatteryStatistics(
+                periodDays = periodDays,
+                totalChargedPct = chargeSummary.totalCharged,
+                totalDischargedPct = chargeSummary.totalDischarged,
+                chargeSessions = chargeSummary.chargeSessions,
+                avgDrainRatePctPerHour = avgDrainRate,
+                fullChargeEstimateHours = fullChargeEstimateHours,
+                readingCount = sorted.size,
+            )
         }
 
         private fun calculateChargeSummary(readings: List<com.runcheck.domain.model.BatteryReading>): ChargeSummary {

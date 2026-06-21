@@ -109,6 +109,7 @@ import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.StatusDot
 import com.runcheck.ui.home.insights.InsightNavigationHandlers
 import com.runcheck.ui.home.insights.InsightsCard
+import com.runcheck.ui.home.insights.InsightsCardState
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.pro.PostExpirationUpgradeCard
 import com.runcheck.ui.pro.TrialHomeCard
@@ -357,10 +358,13 @@ private fun HomeContent(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
 
             InsightsCard(
-                insights = state.insights,
-                totalInsightCount = state.totalInsightCount,
-                unseenInsightCount = state.unseenInsightCount,
-                isPro = state.isPro,
+                state =
+                    InsightsCardState(
+                        insights = state.insights,
+                        totalInsightCount = state.totalInsightCount,
+                        unseenInsightCount = state.unseenInsightCount,
+                        isPro = state.isPro,
+                    ),
                 navigationHandlers = insightNavigationHandlers,
                 onNavigateToInsights = onNavigateToInsights,
                 onDismissInsight = onDismissInsight,

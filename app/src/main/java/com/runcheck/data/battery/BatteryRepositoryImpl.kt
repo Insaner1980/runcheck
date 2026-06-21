@@ -7,9 +7,9 @@ import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.MeasuredValue
+import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
 import com.runcheck.util.TimestampSanitizer
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
@@ -30,6 +30,7 @@ class BatteryRepositoryImpl
         private val deviceProfileProvider: DeviceProfileProvider,
         private val batteryReadingDao: BatteryReadingDao,
         private val batteryCapacityReader: BatteryCapacityReader,
+        private val dispatchers: AppDispatchers,
     ) : BatteryRepositoryContract {
         private val sourceMutex = Mutex()
 
@@ -40,10 +41,7 @@ class BatteryRepositoryImpl
             cachedSource?.let { return it }
             return sourceMutex.withLock {
                 cachedSource?.let { return@withLock it }
-                val profile =
-                    withContext(Dispatchers.IO) {
-                        deviceProfileProvider.getDeviceProfile()
-                    }
+                val profile = deviceProfileProvider.getDeviceProfile()
                 batteryDataSourceFactory.create(profile).also { cachedSource = it }
             }
         }
@@ -76,7 +74,7 @@ class BatteryRepositoryImpl
 
                 val chargeCounterFlow = source.getChargeCounter()
                 val designCapacityMah =
-                    withContext(Dispatchers.IO) {
+                    withContext(dispatchers.io) {
                         batteryCapacityReader.getDesignCapacityMah()
                     }
 
@@ -121,70 +119,58 @@ class BatteryRepositoryImpl
                     entities
                         .map { it.toDomain() }
                         .filter { TimestampSanitizer.isUsable(it.timestamp) }
-                }.flowOn(Dispatchers.IO)
+                }.flowOn(dispatchers.io)
         }
 
-        override suspend fun saveReading(state: BatteryState) =
-            withContext(Dispatchers.IO) {
-                try {
-                    val entity =
-                        BatteryReadingEntity(
-                            timestamp = System.currentTimeMillis(),
-                            level = state.level,
-                            voltageMv = state.voltageMv,
-                            temperatureC = state.temperatureC,
-                            currentMa =
-                                if (state.currentMa.confidence != Confidence.UNAVAILABLE) {
-                                    state.currentMa.value
-                                } else {
-                                    null
-                                },
-                            currentConfidence = state.currentMa.confidence.name,
-                            status = state.chargingStatus.name,
-                            plugType = state.plugType.name,
-                            health = state.health.name,
-                            cycleCount = state.cycleCount,
-                            healthPct = state.healthPercent,
-                        )
-                    batteryReadingDao.insert(entity)
-                } catch (e: android.database.sqlite.SQLiteException) {
-                    ReleaseSafeLog.error(TAG, "Failed to save battery reading", e)
-                }
+        override suspend fun saveReading(state: BatteryState) {
+            try {
+                val entity =
+                    BatteryReadingEntity(
+                        timestamp = System.currentTimeMillis(),
+                        level = state.level,
+                        voltageMv = state.voltageMv,
+                        temperatureC = state.temperatureC,
+                        currentMa =
+                            if (state.currentMa.confidence != Confidence.UNAVAILABLE) {
+                                state.currentMa.value
+                            } else {
+                                null
+                            },
+                        currentConfidence = state.currentMa.confidence.name,
+                        status = state.chargingStatus.name,
+                        plugType = state.plugType.name,
+                        health = state.health.name,
+                        cycleCount = state.cycleCount,
+                        healthPct = state.healthPercent,
+                    )
+                batteryReadingDao.insert(entity)
+            } catch (e: android.database.sqlite.SQLiteException) {
+                ReleaseSafeLog.error(TAG, "Failed to save battery reading", e)
             }
+        }
 
         override suspend fun getAllReadings(): List<BatteryReading> =
-            withContext(Dispatchers.IO) {
-                batteryReadingDao.getAll().map { it.toDomain() }
-            }
+            batteryReadingDao.getAll().map { it.toDomain() }
 
         override suspend fun getReadingsSinceSync(since: Long): List<BatteryReading> =
-            withContext(Dispatchers.IO) {
-                batteryReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
-            }
+            batteryReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
 
-        override suspend fun deleteOlderThan(cutoff: Long) =
-            withContext(Dispatchers.IO) {
-                try {
-                    batteryReadingDao.deleteOlderThan(cutoff)
-                } catch (e: android.database.sqlite.SQLiteException) {
-                    ReleaseSafeLog.error(TAG, "Failed to delete old battery readings", e)
-                }
+        override suspend fun deleteOlderThan(cutoff: Long) {
+            try {
+                batteryReadingDao.deleteOlderThan(cutoff)
+            } catch (e: android.database.sqlite.SQLiteException) {
+                ReleaseSafeLog.error(TAG, "Failed to delete old battery readings", e)
             }
+        }
 
         override suspend fun deleteAll() =
-            withContext<Unit>(Dispatchers.IO) {
-                batteryReadingDao.deleteAll()
-            }
+            batteryReadingDao.deleteAll()
 
         override suspend fun getLastChargingTimestamp(): Long? =
-            withContext(Dispatchers.IO) {
-                batteryReadingDao.getLastChargingTimestamp()
-            }
+            batteryReadingDao.getLastChargingTimestamp()
 
         override suspend fun getLatestReadingTimestamp(): Long? =
-            withContext(Dispatchers.IO) {
-                batteryReadingDao.getLatestReadingTimestamp()
-            }
+            batteryReadingDao.getLatestReadingTimestamp()
 
         private companion object {
             const val TAG = "BatteryRepository"

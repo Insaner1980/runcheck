@@ -11,9 +11,9 @@ import android.os.StatFs
 import android.os.storage.StorageManager
 import com.runcheck.domain.model.MediaBreakdown
 import com.runcheck.domain.model.TrashInfo
+import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
@@ -25,12 +25,26 @@ class StorageDataSource
     constructor(
         @param:ApplicationContext private val context: Context,
         private val mediaStoreScanner: MediaStoreScanner,
+        private val dispatchers: AppDispatchers,
     ) {
         private val storageStatsManager =
             context.getSystemService(Context.STORAGE_STATS_SERVICE) as? StorageStatsManager
 
-        suspend fun getStorageInfo(): StorageInfo =
-            withContext(Dispatchers.IO) {
+        suspend fun getStorageInfo(): StorageInfo {
+            val mediaBreakdown =
+                try {
+                    mediaStoreScanner.getMediaBreakdown()
+                } catch (_: Exception) {
+                    null
+                }
+            val trashInfo =
+                try {
+                    mediaStoreScanner.getTrashInfo()
+                } catch (_: Exception) {
+                    null
+                }
+
+            return withContext(dispatchers.io) {
                 val ssm = storageStatsManager
                 val uuid = StorageManager.UUID_DEFAULT
                 val totalBytes =
@@ -49,18 +63,6 @@ class StorageDataSource
 
                 val hasUsageStats = hasUsageStatsPermission()
                 val appStats = if (hasUsageStats) calculateAppStats() else null
-                val mediaBreakdown =
-                    try {
-                        mediaStoreScanner.getMediaBreakdown()
-                    } catch (_: Exception) {
-                        null
-                    }
-                val trashInfo =
-                    try {
-                        mediaStoreScanner.getTrashInfo()
-                    } catch (_: Exception) {
-                        null
-                    }
                 val sdCard = getExternalSdCard()
                 val deviceInfo = getDeviceStorageInfo()
 
@@ -81,6 +83,7 @@ class StorageDataSource
                     storageVolumes = deviceInfo.storageVolumes,
                 )
             }
+        }
 
         fun hasUsageStatsPermission(): Boolean {
             val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
@@ -120,6 +123,7 @@ class StorageDataSource
             }
         }
 
+        @Suppress("kotlin:S5324")
         private fun getExternalSdCard(): SdCardInfo? {
             val externalDirs = context.getExternalFilesDirs(null)
             if (externalDirs.size < 2) return null

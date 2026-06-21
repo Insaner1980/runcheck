@@ -2,8 +2,8 @@ package com.runcheck.data.network
 
 import androidx.annotation.WorkerThread
 import com.runcheck.BuildConfig
+import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.net.InetSocketAddress
@@ -21,38 +21,40 @@ private const val LATENCY_TOTAL_TIMEOUT_MS = 6_000L
 @Singleton
 class LatencyMeasurer
     @Inject
-    constructor() {
+    constructor(
+        private val dispatchers: AppDispatchers,
+    ) {
         data class LatencyResult(
             val pingMs: Int,
             val jitterMs: Int?,
         )
 
         suspend fun measureLatency(): LatencyResult? {
-            return withContext(Dispatchers.IO) {
-                withTimeoutOrNull(LATENCY_TOTAL_TIMEOUT_MS) {
-                    val results =
-                        buildList {
-                            repeat(LATENCY_SAMPLE_COUNT) {
-                                val latency =
-                                    withTimeoutOrNull(LATENCY_TIMEOUT_MS) {
+            return withTimeoutOrNull(LATENCY_TOTAL_TIMEOUT_MS) {
+                val results =
+                    buildList {
+                        repeat(LATENCY_SAMPLE_COUNT) {
+                            val latency =
+                                withTimeoutOrNull(LATENCY_TIMEOUT_MS) {
+                                    withContext(dispatchers.io) {
                                         measureTcpConnect()
                                     }
-                                if (latency != null) {
-                                    add(latency)
                                 }
+                            if (latency != null) {
+                                add(latency)
                             }
                         }
-                    if (results.isEmpty()) return@withTimeoutOrNull null
+                    }
+                if (results.isEmpty()) return@withTimeoutOrNull null
 
-                    val pingMs = results.minOrNull() ?: return@withTimeoutOrNull null
-                    val jitterMs =
-                        if (results.size >= MIN_JITTER_SAMPLE_COUNT) {
-                            computeRfc3550Jitter(results)
-                        } else {
-                            null
-                        }
-                    LatencyResult(pingMs, jitterMs)
-                }
+                val pingMs = results.minOrNull() ?: return@withTimeoutOrNull null
+                val jitterMs =
+                    if (results.size >= MIN_JITTER_SAMPLE_COUNT) {
+                        computeRfc3550Jitter(results)
+                    } else {
+                        null
+                    }
+                LatencyResult(pingMs, jitterMs)
             }
         }
 

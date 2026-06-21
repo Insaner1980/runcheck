@@ -5,12 +5,11 @@ import com.runcheck.data.db.entity.SpeedTestResultEntity
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.SpeedTestProgress
 import com.runcheck.domain.model.SpeedTestResult
+import com.runcheck.util.AppDispatchers
 import com.runcheck.util.TimestampSanitizer
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.runcheck.domain.repository.SpeedTestRepository as SpeedTestRepositoryContract
@@ -21,35 +20,34 @@ class SpeedTestRepositoryImpl
     constructor(
         private val speedTestService: SpeedTestService,
         private val speedTestResultDao: SpeedTestResultDao,
+        private val dispatchers: AppDispatchers,
     ) : SpeedTestRepositoryContract {
         override fun runSpeedTest(allowCellular: Boolean): Flow<SpeedTestProgress> =
             speedTestService.runSpeedTest(allowCellular = allowCellular)
 
-        override suspend fun saveResult(result: SpeedTestResult) =
-            withContext(Dispatchers.IO) {
-                val entity =
-                    SpeedTestResultEntity(
-                        timestamp = TimestampSanitizer.clampToNow(result.timestamp),
-                        downloadMbps = result.downloadMbps,
-                        uploadMbps = result.uploadMbps,
-                        pingMs = result.pingMs,
-                        jitterMs = result.jitterMs,
-                        serverName = result.serverName,
-                        serverLocation = result.serverLocation,
-                        connectionType = result.connectionType.name,
-                        networkSubtype = result.networkSubtype,
-                        signalDbm = result.signalDbm,
-                    )
-                speedTestResultDao.insert(entity)
-                Unit
-            }
+        override suspend fun saveResult(result: SpeedTestResult) {
+            val entity =
+                SpeedTestResultEntity(
+                    timestamp = TimestampSanitizer.clampToNow(result.timestamp),
+                    downloadMbps = result.downloadMbps,
+                    uploadMbps = result.uploadMbps,
+                    pingMs = result.pingMs,
+                    jitterMs = result.jitterMs,
+                    serverName = result.serverName,
+                    serverLocation = result.serverLocation,
+                    connectionType = result.connectionType.name,
+                    networkSubtype = result.networkSubtype,
+                    signalDbm = result.signalDbm,
+                )
+            speedTestResultDao.insert(entity)
+        }
 
         override fun getLatestResult(): Flow<SpeedTestResult?> =
             speedTestResultDao
                 .getLatestResult(System.currentTimeMillis())
                 .map { entity ->
                     entity?.toDomain()?.takeIf { TimestampSanitizer.isUsable(it.timestamp) }
-                }.flowOn(Dispatchers.IO)
+                }.flowOn(dispatchers.io)
 
         override fun getRecentResults(limit: Int): Flow<List<SpeedTestResult>> =
             speedTestResultDao
@@ -58,22 +56,16 @@ class SpeedTestRepositoryImpl
                     list
                         .map { it.toDomain() }
                         .filter { TimestampSanitizer.isUsable(it.timestamp) }
-                }.flowOn(Dispatchers.IO)
+                }.flowOn(dispatchers.io)
 
         override suspend fun trimResults(keepCount: Int) =
-            withContext<Unit>(Dispatchers.IO) {
-                speedTestResultDao.deleteOldResults(keepCount)
-            }
+            speedTestResultDao.deleteOldResults(keepCount)
 
         override suspend fun deleteOlderThan(cutoff: Long) =
-            withContext<Unit>(Dispatchers.IO) {
-                speedTestResultDao.deleteOlderThan(cutoff)
-            }
+            speedTestResultDao.deleteOlderThan(cutoff)
 
         override suspend fun deleteAll() =
-            withContext<Unit>(Dispatchers.IO) {
-                speedTestResultDao.deleteAll()
-            }
+            speedTestResultDao.deleteAll()
 
         private fun SpeedTestResultEntity.toDomain(): SpeedTestResult =
             SpeedTestResult(
