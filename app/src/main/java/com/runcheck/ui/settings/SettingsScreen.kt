@@ -2,7 +2,6 @@ package com.runcheck.ui.settings
 
 import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
@@ -64,7 +63,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -92,6 +90,7 @@ import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.uiTokens
 import com.runcheck.util.ReleaseSafeLog
+import com.runcheck.util.RuncheckPermissionPolicy
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -121,13 +120,9 @@ fun SettingsScreen(
 
     // Notification permission handling — re-checked every time the screen resumes
     // so that revoking permission in system settings is reflected immediately.
-    val notificationsPermissionRequired = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+    val notificationsPermissionRequired = RuncheckPermissionPolicy.isNotificationRuntimePermissionRequired()
     var hasNotificationPermission by remember {
-        mutableStateOf(
-            !notificationsPermissionRequired ||
-                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-                PackageManager.PERMISSION_GRANTED,
-        )
+        mutableStateOf(RuncheckPermissionPolicy.canPostNotifications(context))
     }
     var alertsEffectivelyEnabled by remember { mutableStateOf(true) }
     var isBatteryOptimizationExempt by remember {
@@ -139,12 +134,24 @@ fun SettingsScreen(
     val showNotifPermissionDeniedDialogState = rememberSaveable { mutableStateOf(false) }
     val activeInfoSheetState = rememberInfoSheetState()
 
-    LifecycleResumeEffect(Unit) {
-        hasNotificationPermission = !notificationsPermissionRequired ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
+    fun stopLiveNotificationService() {
+        context.startService(
+            Intent(context, RealTimeMonitorService::class.java).apply {
+                action = RealTimeMonitorService.ACTION_STOP
+            },
+        )
+    }
+
+    LifecycleResumeEffect(context, uiState.preferences.liveNotificationEnabled) {
+        val canPostNotifications = RuncheckPermissionPolicy.canPostNotifications(context)
+        hasNotificationPermission = canPostNotifications
+        if (!canPostNotifications && uiState.preferences.liveNotificationEnabled) {
+            viewModel.setLiveNotificationEnabled(false)
+            stopLiveNotificationService()
+        }
         val nm = context.getSystemService(android.app.NotificationManager::class.java)
-        alertsEffectivelyEnabled = nm.areNotificationsEnabled() &&
+        alertsEffectivelyEnabled = canPostNotifications &&
+            nm.areNotificationsEnabled() &&
             (
                 nm.getNotificationChannel(NotificationHelper.CHANNEL_ALERTS)?.importance
                     != android.app.NotificationManager.IMPORTANCE_NONE
@@ -178,6 +185,10 @@ fun SettingsScreen(
                         )
                 if (permanentlyDenied) {
                     showNotifPermissionDeniedDialogState.value = true
+                }
+                if (permissionRequestedForLive) {
+                    viewModel.setLiveNotificationEnabled(false)
+                    stopLiveNotificationService()
                 }
             }
             permissionRequestedForLive = false
@@ -242,7 +253,7 @@ fun SettingsScreen(
 
                 LiveNotificationSection(
                     preferences = uiState.preferences,
-                    onSetLiveNotificationEnabled = updateLiveNotificationEnabled,
+                    onLiveNotificationEnabledChange = updateLiveNotificationEnabled,
                     onSetLiveNotifCurrent = viewModel::setLiveNotifCurrent,
                     onSetLiveNotifDrainRate = viewModel::setLiveNotifDrainRate,
                     onSetLiveNotifTemperature = viewModel::setLiveNotifTemperature,
@@ -255,7 +266,7 @@ fun SettingsScreen(
                     preferences = uiState.preferences,
                     alertsEffectivelyEnabled = alertsEffectivelyEnabled,
                     isXiaomiFamilyDevice = isXiaomiFamilyDevice,
-                    onSetNotificationsEnabled = updateNotificationsEnabled,
+                    onNotificationsEnabledChange = updateNotificationsEnabled,
                     onSetNotifLowBattery = viewModel::setNotifLowBattery,
                     onSetNotifHighTemp = viewModel::setNotifHighTemp,
                     onSetNotifLowStorage = viewModel::setNotifLowStorage,

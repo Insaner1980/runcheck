@@ -1,6 +1,5 @@
 package com.runcheck.service.monitor
 
-import android.content.Context
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.Operation
 import androidx.work.PeriodicWorkRequest
@@ -29,7 +28,6 @@ class MonitorSchedulerTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val context: Context = mockk(relaxed = true)
     private val preferencesRepository: UserPreferencesRepository = mockk()
     private val workManager: WorkManager = mockk()
     private val operation: Operation = mockk(relaxed = true)

@@ -33,11 +33,12 @@ import com.runcheck.ui.theme.spacing
 fun InsightsScreen(
     onBack: () -> Unit,
     navigationHandlers: InsightNavigationHandlers,
+    modifier: Modifier = Modifier,
     viewModel: InsightsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(
             title = stringResource(R.string.insights_screen_title),
             onBack = onBack,

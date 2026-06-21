@@ -127,9 +127,9 @@ Speed test data is accessed via the existing `NetworkViewModel.speedTestState: S
 - Text: "No speed test results yet"
 - Button: navigates to SpeedTestScreen
 
-### 5. Ad Banner + Bottom Spacing
+### 5. Bottom Spacing
 
-Existing `DetailScreenAdBanner()` + `Spacer(xl)` at the bottom, same as current.
+No ad banner. Keep only the bottom spacing needed for the current scroll layout.
 
 ## NetworkState Model Extensions
 

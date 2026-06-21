@@ -129,37 +129,8 @@ private fun CompactHomeGridSection(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
         ) {
-            GridCard(
-                icon = Icons.Outlined.SignalCellularAlt,
-                title = stringResource(R.string.home_network_card),
-                subtitle =
-                    connectionDisplayLabel(
-                        connectionType = state.networkState.connectionType,
-                        wifiSsid = state.networkState.wifiSsid,
-                        networkSubtype = state.networkState.networkSubtype,
-                    ),
-                subtitleColor = MaterialTheme.colorScheme.onSurface,
-                statusLabel = signalQualityLabel(state.networkState.signalQuality),
-                iconTint = statusColorForSignalQuality(state.networkState.signalQuality),
-                iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                onClick = onNavigateToNetwork,
-                modifier = Modifier.weight(1f),
-            )
-            GridCard(
-                icon = Icons.Outlined.Thermostat,
-                title = stringResource(R.string.home_thermal_card),
-                subtitle =
-                    formatTemperature(
-                        state.thermalState.batteryTempC,
-                        state.temperatureUnit,
-                    ),
-                subtitleColor = MaterialTheme.colorScheme.onSurface,
-                statusLabel = temperatureBandLabel(state.thermalState.batteryTempC),
-                iconTint = statusColorForTemperature(state.thermalState.batteryTempC),
-                iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                onClick = onNavigateToThermal,
-                modifier = Modifier.weight(1f),
-            )
+            NetworkGridCard(state = state, onClick = onNavigateToNetwork)
+            ThermalGridCard(state = state, onClick = onNavigateToThermal)
         }
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
@@ -168,39 +139,109 @@ private fun CompactHomeGridSection(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
         ) {
-            GridCard(
-                icon = Icons.Outlined.BatteryChargingFull,
-                title = stringResource(R.string.home_chargers_card),
-                subtitle = stringResource(R.string.home_test_compare),
-                subtitleColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                locked = !state.isPro,
-                onClick = if (state.isPro) onNavigateToCharger else onNavigateToProUpgrade,
-                modifier = Modifier.weight(1f),
+            ChargerGridCard(
+                isPro = state.isPro,
+                onNavigateToCharger = onNavigateToCharger,
+                onNavigateToProUpgrade = onNavigateToProUpgrade,
             )
-            GridCard(
-                icon = Icons.Outlined.DataUsage,
-                title = stringResource(R.string.home_storage_card),
-                subtitle =
-                    stringResource(
-                        R.string.home_storage_free,
-                        formatStorageSize(context, state.storageState.availableBytes),
-                        stringResource(R.string.home_free_suffix),
-                    ),
-                subtitleColor = MaterialTheme.colorScheme.onSurface,
-                iconTint =
-                    statusColorForStoragePercent(
-                        (
-                            (state.storageState.totalBytes - state.storageState.availableBytes) * 100 /
-                                state.storageState.totalBytes.coerceAtLeast(1)
-                        ).toInt(),
-                    ),
-                iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+            StorageGridCard(
+                state = state,
+                context = context,
                 onClick = onNavigateToStorage,
-                modifier = Modifier.weight(1f),
             )
         }
     }
+}
+
+@Composable
+private fun RowScope.NetworkGridCard(
+    state: HomeUiState.Success,
+    onClick: () -> Unit,
+) {
+    GridCard(
+        icon = Icons.Outlined.SignalCellularAlt,
+        title = stringResource(R.string.home_network_card),
+        subtitle =
+            connectionDisplayLabel(
+                connectionType = state.networkState.connectionType,
+                wifiSsid = state.networkState.wifiSsid,
+                networkSubtype = state.networkState.networkSubtype,
+            ),
+        subtitleColor = MaterialTheme.colorScheme.onSurface,
+        statusLabel = signalQualityLabel(state.networkState.signalQuality),
+        iconTint = statusColorForSignalQuality(state.networkState.signalQuality),
+        iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        onClick = onClick,
+        modifier = Modifier.weight(1f),
+    )
+}
+
+@Composable
+private fun RowScope.ThermalGridCard(
+    state: HomeUiState.Success,
+    onClick: () -> Unit,
+) {
+    GridCard(
+        icon = Icons.Outlined.Thermostat,
+        title = stringResource(R.string.home_thermal_card),
+        subtitle =
+            formatTemperature(
+                state.thermalState.batteryTempC,
+                state.temperatureUnit,
+            ),
+        subtitleColor = MaterialTheme.colorScheme.onSurface,
+        statusLabel = temperatureBandLabel(state.thermalState.batteryTempC),
+        iconTint = statusColorForTemperature(state.thermalState.batteryTempC),
+        iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        onClick = onClick,
+        modifier = Modifier.weight(1f),
+    )
+}
+
+@Composable
+private fun RowScope.ChargerGridCard(
+    isPro: Boolean,
+    onNavigateToCharger: () -> Unit,
+    onNavigateToProUpgrade: () -> Unit,
+) {
+    GridCard(
+        icon = Icons.Outlined.BatteryChargingFull,
+        title = stringResource(R.string.home_chargers_card),
+        subtitle = stringResource(R.string.home_test_compare),
+        subtitleColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        locked = !isPro,
+        onClick = if (isPro) onNavigateToCharger else onNavigateToProUpgrade,
+        modifier = Modifier.weight(1f),
+    )
+}
+
+@Composable
+private fun RowScope.StorageGridCard(
+    state: HomeUiState.Success,
+    context: Context,
+    onClick: () -> Unit,
+) {
+    GridCard(
+        icon = Icons.Outlined.DataUsage,
+        title = stringResource(R.string.home_storage_card),
+        subtitle =
+            stringResource(
+                R.string.home_storage_free,
+                formatStorageSize(context, state.storageState.availableBytes),
+                stringResource(R.string.home_free_suffix),
+            ),
+        subtitleColor = MaterialTheme.colorScheme.onSurface,
+        iconTint =
+            statusColorForStoragePercent(
+                state.storageState.usagePercent
+                    .toInt()
+                    .coerceIn(0, 100),
+            ),
+        iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        onClick = onClick,
+        modifier = Modifier.weight(1f),
+    )
 }
 
 @Composable
@@ -364,66 +405,16 @@ private fun RowScope.HomeGridCards(
     onNavigateToStorage: () -> Unit,
     onNavigateToProUpgrade: () -> Unit,
 ) {
-    GridCard(
-        icon = Icons.Outlined.SignalCellularAlt,
-        title = stringResource(R.string.home_network_card),
-        subtitle =
-            connectionDisplayLabel(
-                connectionType = state.networkState.connectionType,
-                wifiSsid = state.networkState.wifiSsid,
-                networkSubtype = state.networkState.networkSubtype,
-            ),
-        subtitleColor = MaterialTheme.colorScheme.onSurface,
-        statusLabel = signalQualityLabel(state.networkState.signalQuality),
-        iconTint = statusColorForSignalQuality(state.networkState.signalQuality),
-        iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-        onClick = onNavigateToNetwork,
-        modifier = Modifier.weight(1f),
+    NetworkGridCard(state = state, onClick = onNavigateToNetwork)
+    ThermalGridCard(state = state, onClick = onNavigateToThermal)
+    ChargerGridCard(
+        isPro = state.isPro,
+        onNavigateToCharger = onNavigateToCharger,
+        onNavigateToProUpgrade = onNavigateToProUpgrade,
     )
-    GridCard(
-        icon = Icons.Outlined.Thermostat,
-        title = stringResource(R.string.home_thermal_card),
-        subtitle =
-            formatTemperature(
-                state.thermalState.batteryTempC,
-                state.temperatureUnit,
-            ),
-        subtitleColor = MaterialTheme.colorScheme.onSurface,
-        statusLabel = temperatureBandLabel(state.thermalState.batteryTempC),
-        iconTint = statusColorForTemperature(state.thermalState.batteryTempC),
-        iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-        onClick = onNavigateToThermal,
-        modifier = Modifier.weight(1f),
-    )
-    GridCard(
-        icon = Icons.Outlined.BatteryChargingFull,
-        title = stringResource(R.string.home_chargers_card),
-        subtitle = stringResource(R.string.home_test_compare),
-        subtitleColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-        locked = !state.isPro,
-        onClick = if (state.isPro) onNavigateToCharger else onNavigateToProUpgrade,
-        modifier = Modifier.weight(1f),
-    )
-    GridCard(
-        icon = Icons.Outlined.DataUsage,
-        title = stringResource(R.string.home_storage_card),
-        subtitle =
-            stringResource(
-                R.string.home_storage_free,
-                formatStorageSize(context, state.storageState.availableBytes),
-                stringResource(R.string.home_free_suffix),
-            ),
-        subtitleColor = MaterialTheme.colorScheme.onSurface,
-        iconTint =
-            statusColorForStoragePercent(
-                (
-                    (state.storageState.totalBytes - state.storageState.availableBytes) * 100 /
-                        state.storageState.totalBytes.coerceAtLeast(1)
-                ).toInt(),
-            ),
-        iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+    StorageGridCard(
+        state = state,
+        context = context,
         onClick = onNavigateToStorage,
-        modifier = Modifier.weight(1f),
     )
 }

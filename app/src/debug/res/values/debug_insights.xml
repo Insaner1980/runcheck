@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_debug_insights_section">Debug Insights</string>
+    <string name="settings_debug_insights_description">Debug builds only. Seed deterministic monitoring data to exercise Home insights, or regenerate insights from current local data.</string>
+    <string name="settings_debug_insights_seed_demo">Seed Demo Insights</string>
+    <string name="settings_debug_insights_run_now">Regenerate Insights Now</string>
+    <string name="settings_debug_insights_clear">Clear Insights</string>
+    <string name="settings_debug_insights_running">Processing debug insights…</string>
+    <string name="settings_debug_insights_seeded">Demo insights seeded.</string>
+    <string name="settings_debug_insights_generated">Insights regenerated.</string>
+    <string name="settings_debug_insights_cleared">Insights cleared.</string>
+</resources>

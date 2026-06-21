@@ -301,8 +301,8 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 
 ## Database
 
-- Room with auto-migrations
-- Tables: `battery_readings`, `storage_readings`, `network_readings`, `thermal_readings`, `throttling_events`, `charging_sessions`, `charger_profiles`, `speed_test_results`, `app_battery_usage`, `devices`
+- Room with explicit manual migrations registered from 1→2 through 9→10
+- Tables: `battery_readings`, `storage_readings`, `network_readings`, `thermal_readings`, `throttling_events`, `charging_sessions`, `charger_profiles`, `speed_test_results`, `app_battery_usage`, `devices`, `insights`
 - Free tier: retain only 24 hours of readings (delete older on each write)
 - Pro tier: configurable retention (3mo / 6mo / 1yr / forever)
 - Indices on timestamp columns for efficient range queries
@@ -321,15 +321,15 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 - Trial system with expiration modal and notification worker
 - Use Google Play Billing Library
 - Gate pro features with `BillingManager` (implements `ProStatusProvider` + `ProPurchaseManager`)
-- Ad banners on detail screens (free tier only)
+- No ad banners; monetization is Pro purchase/trial only.
 
 ## Build & Release
 
 - Use a single `app` module (no multi-module until necessary)
-- **Static analysis:** ktlint (formatting) + detekt 1.23.8 with compose-rules 0.4.27 (code quality, `ignoreFailures = true` during adoption) + Android Lint (correctness/security/a11y checks)
+- **Static analysis:** ktlint (formatting, rule engine 1.8.0, compose-rules ktlint 0.5.9) + detekt 1.23.8 with compose-rules detekt 0.4.28 + Android Lint (correctness/security/a11y checks)
 - ProGuard/R8 minification enabled for release builds
 - Generate signed APK/AAB for Play Store
-- Version code: auto-increment
+- Version code: manually increment `versionCode` in `app/build.gradle.kts` before each Play upload
 - Version name: semver (1.0.0)
 
 ## Build Notes
@@ -338,6 +338,15 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 - `android.disallowKotlinSourceSets=false` is needed for KSP generated sources with AGP 9
 - `BatteryManager.BATTERY_PROPERTY_CHARGING_CYCLE_COUNT` and `STATE_OF_HEALTH` are not in the public SDK — use raw integer constants (8 and 12)
 - Pull-to-refresh uses `PullToRefreshBox` (not the deprecated `PullToRefreshContainer`)
+
+## Local Development Setup
+
+- **`local.properties`** is gitignored and must be created locally so Gradle can find the Android SDK. Single line: `sdk.dir=<path>` (e.g. `C\:\\Users\\<user>\\AppData\\Local\\Android\\Sdk` on Windows, `/home/<user>/Android/Sdk` on Linux).
+- **JDK 21** required (Android Studio's bundled JBR is fine: `C:\Program Files\Android\Android Studio\jbr` on Windows).
+- **Build commands:**
+  - Windows (PowerShell): `.\gradlew.bat assembleDebug`
+  - Linux/macOS: `./gradlew assembleDebug`
+- **Security scan:** `scripts/security-check.sh` (bash) and `scripts/security-check.ps1` (PowerShell) — same behavior, pick the one matching your shell. Both write to `reports/`.
 
 ## Important Notes
 
@@ -428,7 +437,7 @@ This project is published on Google Play and handles device hardware data. All c
 ### Before Every PR
 
 Before creating a pull request, verify:
-1. `./gradlew assembleDebug` compiles without errors
+1. `./gradlew assembleDebug` (or `.\gradlew.bat assembleDebug` on Windows) compiles without errors
 2. No `!!` operators added
 3. No hardcoded secrets or API keys
 4. No new exported components without justification

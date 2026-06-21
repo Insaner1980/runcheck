@@ -1,20 +1,17 @@
 package com.runcheck.service.monitor
 
-import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat
 import com.runcheck.MainActivity
 import com.runcheck.R
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.ui.common.formatTemperature
+import com.runcheck.util.RuncheckPermissionPolicy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -247,9 +244,5 @@ class NotificationHelper
         }
 
         private fun canPostNotifications(): Boolean =
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.POST_NOTIFICATIONS,
-                ) == PackageManager.PERMISSION_GRANTED
+            RuncheckPermissionPolicy.canPostNotifications(context)
     }

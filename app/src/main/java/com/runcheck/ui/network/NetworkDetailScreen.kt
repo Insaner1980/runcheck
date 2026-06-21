@@ -36,7 +36,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,10 +56,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.location.LocationManagerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.domain.model.ConnectionType
@@ -69,7 +65,9 @@ import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SignalQuality
 import com.runcheck.domain.model.SpeedTestResult
+import com.runcheck.ui.chart.ChartStatsRow
 import com.runcheck.ui.chart.FullscreenChartSource
+import com.runcheck.ui.chart.HistoryPeriodFilterChipRow
 import com.runcheck.ui.chart.MAX_NETWORK_HISTORY_POINTS
 import com.runcheck.ui.chart.NetworkHistoryMetric
 import com.runcheck.ui.chart.buildNetworkHistoryChartModel
@@ -80,6 +78,8 @@ import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.chart.signalQualityZones
 import com.runcheck.ui.common.ApplyFullscreenChartSelectionResult
 import com.runcheck.ui.common.EnumFilterChipRow
+import com.runcheck.ui.common.HistoryLoadErrorMessage
+import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.findActivity
 import com.runcheck.ui.common.formatDecimal
@@ -119,7 +119,38 @@ import com.runcheck.ui.theme.runcheckHeroCardColors
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColorForSignalQuality
 import com.runcheck.ui.theme.statusColors
+import com.runcheck.util.RuncheckPermissionPolicy
 import com.runcheck.util.enumValueOrDefault
+
+internal data class NetworkFullscreenSelection(
+    val metric: NetworkHistoryMetric,
+    val period: HistoryPeriod,
+)
+
+internal fun resolveNetworkFullscreenSelection(
+    rawMetric: String?,
+    rawPeriod: String?,
+): NetworkFullscreenSelection? {
+    if (rawMetric == null || rawPeriod == null) return null
+    return NetworkFullscreenSelection(
+        metric =
+            enumValueOrDefault(
+                sanitizeFullscreenMetric(
+                    source = FullscreenChartSource.NETWORK_HISTORY,
+                    rawMetric = rawMetric,
+                ),
+                NetworkHistoryMetric.SIGNAL,
+            ),
+        period =
+            enumValueOrDefault(
+                sanitizeFullscreenPeriod(
+                    source = FullscreenChartSource.NETWORK_HISTORY,
+                    rawPeriod = rawPeriod,
+                ),
+                HistoryPeriod.DAY,
+            ),
+    )
+}
 
 @Composable
 fun NetworkDetailScreen(
@@ -131,34 +162,17 @@ fun NetworkDetailScreen(
     onNavigateToLearnArticle: (articleId: String) -> Unit = {},
     fullscreenResultMetric: String? = null,
     fullscreenResultPeriod: String? = null,
-    onFullscreenResultConsumed: () -> Unit = {},
+    onConsumeFullscreenResult: () -> Unit = {},
     viewModel: NetworkViewModel = hiltViewModel(),
 ) {
-    val lifecycleOwner = LocalLifecycleOwner.current
     val networkUiState by viewModel.networkUiState.collectAsStateWithLifecycle()
     val loadingDescription = stringResource(R.string.a11y_loading)
     val speedTestState by viewModel.speedTestState.collectAsStateWithLifecycle()
 
-    DisposableEffect(lifecycleOwner, viewModel) {
-        val observer =
-            LifecycleEventObserver { _, event ->
-                when (event) {
-                    Lifecycle.Event.ON_START -> viewModel.startObserving()
-                    Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
-                    else -> Unit
-                }
-            }
-
-        lifecycleOwner.lifecycle.addObserver(observer)
-        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-            viewModel.startObserving()
-        }
-
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            viewModel.stopObserving()
-        }
-    }
+    LifecycleStartStopEffect(
+        onStart = viewModel::startObserving,
+        onStop = viewModel::stopObserving,
+    )
 
     Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(
@@ -210,7 +224,7 @@ fun NetworkDetailScreen(
                         onDismissInfoCard = { viewModel.dismissInfoCard(it) },
                         fullscreenResultMetric = fullscreenResultMetric,
                         fullscreenResultPeriod = fullscreenResultPeriod,
-                        onFullscreenResultConsumed = onFullscreenResultConsumed,
+                        onConsumeFullscreenResult = onConsumeFullscreenResult,
                     )
                 }
             }
@@ -431,31 +445,13 @@ private fun bandPillValue(state: NetworkState): String =
 private fun SignalHistoryCard(
     history: List<NetworkReading>,
     selectedPeriod: HistoryPeriod,
+    selectedMetric: NetworkHistoryMetric,
     historyLoadError: UiText?,
     onPeriodChange: (HistoryPeriod) -> Unit,
+    onMetricChange: (NetworkHistoryMetric) -> Unit,
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
-    overrideMetric: String? = null,
 ) {
-    val selectedMetricState = rememberSaveableEnumState(NetworkHistoryMetric.SIGNAL)
-
-    ApplyFullscreenChartSelectionResult(
-        defaultSource = FullscreenChartSource.NETWORK_HISTORY,
-        rawMetric = overrideMetric,
-        rawPeriod = null,
-        onConsumed = {},
-        applySelection = { _, metric, _ ->
-            selectedMetricState.value =
-                enumValueOrDefault(
-                    sanitizeFullscreenMetric(
-                        source = FullscreenChartSource.NETWORK_HISTORY,
-                        rawMetric = metric,
-                    ),
-                    NetworkHistoryMetric.SIGNAL,
-                )
-        },
-    )
-
-    val metric = selectedMetricState.value
+    val metric = selectedMetric
 
     val chartModel =
         remember(history, metric, selectedPeriod) {
@@ -476,24 +472,16 @@ private fun SignalHistoryCard(
         EnumFilterChipRow(
             values = NetworkHistoryMetric.entries,
             selected = metric,
-            onSelect = { selectedMetricState.value = it },
+            onSelect = onMetricChange,
             labelFor = { networkHistoryMetricLabel(it) },
         )
 
-        EnumFilterChipRow(
-            values = HistoryPeriod.entries.filter { it != HistoryPeriod.SINCE_UNPLUG },
+        HistoryPeriodFilterChipRow(
             selected = selectedPeriod,
             onSelect = onPeriodChange,
-            labelFor = { historyPeriodLabel(it) },
         )
 
-        historyLoadError?.let { error ->
-            Text(
-                text = error.resolve(),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
+        HistoryLoadErrorMessage(error = historyLoadError)
 
         if (chartModel.chartData.size >= 2) {
             val chartAccessibilitySummary =
@@ -558,34 +546,7 @@ private fun SignalHistoryCard(
                 },
             )
 
-            // Min / Avg / Max summary
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-                verticalAlignment = Alignment.Top,
-            ) {
-                chartModel.minValue?.let {
-                    MetricPill(
-                        label = stringResource(R.string.chart_stat_min),
-                        value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                chartModel.averageValue?.let {
-                    MetricPill(
-                        label = stringResource(R.string.chart_stat_avg),
-                        value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                chartModel.maxValue?.let {
-                    MetricPill(
-                        label = stringResource(R.string.chart_stat_max),
-                        value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
+            ChartStatsRow(chartModel = chartModel)
         } else {
             Text(
                 text = stringResource(R.string.network_history_empty),
@@ -702,26 +663,25 @@ private fun NetworkContent(
     onDismissInfoCard: (String) -> Unit,
     fullscreenResultMetric: String? = null,
     fullscreenResultPeriod: String? = null,
-    onFullscreenResultConsumed: () -> Unit = {},
+    onConsumeFullscreenResult: () -> Unit = {},
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     val activeInfoSheetState = rememberInfoSheetState()
+    val selectedNetworkHistoryMetricState = rememberSaveableEnumState(NetworkHistoryMetric.SIGNAL)
 
     ApplyFullscreenChartSelectionResult(
         defaultSource = FullscreenChartSource.NETWORK_HISTORY,
         rawMetric = fullscreenResultMetric,
         rawPeriod = fullscreenResultPeriod,
-        onConsumed = onFullscreenResultConsumed,
-        applySelection = { _, _, period ->
-            onPeriodChange(
-                enumValueOrDefault(
-                    sanitizeFullscreenPeriod(
-                        source = FullscreenChartSource.NETWORK_HISTORY,
-                        rawPeriod = period,
-                    ),
-                    HistoryPeriod.DAY,
-                ),
-            )
+        onConsume = onConsumeFullscreenResult,
+        applySelection = { _, metric, period ->
+            resolveNetworkFullscreenSelection(
+                rawMetric = metric,
+                rawPeriod = period,
+            )?.let { selection ->
+                selectedNetworkHistoryMetricState.value = selection.metric
+                onPeriodChange(selection.period)
+            }
         },
     )
     val context = LocalContext.current
@@ -739,10 +699,11 @@ private fun NetworkContent(
     var locationRequestAttempted by rememberSaveable { mutableStateOf(false) }
     val locationPermissionLauncher =
         rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission(),
-        ) { granted ->
+            contract = ActivityResultContracts.RequestMultiplePermissions(),
+        ) { grants ->
             locationRequestAttempted = true
-            if (granted) onRefresh()
+            hasLocationPermission = context.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+            if (grants[Manifest.permission.ACCESS_FINE_LOCATION] == true) onRefresh()
         }
 
     LaunchedEffect(state) {
@@ -776,7 +737,9 @@ private fun NetworkContent(
                 onDismissInfoCard = onDismissInfoCard,
                 onNavigateToLearnArticle = onNavigateToLearnArticle,
                 onRequestLocationPermission = {
-                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                    locationPermissionLauncher.launch(
+                        RuncheckPermissionPolicy.wifiDetailLocationPermissions.toTypedArray(),
+                    )
                 },
                 onOpenLocationHelp = {
                     if (!hasLocationPermission) {
@@ -795,7 +758,8 @@ private fun NetworkContent(
             NetworkToolsSection(
                 state = state,
                 speedTestState = speedTestState,
-                fullscreenResultMetric = fullscreenResultMetric,
+                selectedHistoryMetric = selectedNetworkHistoryMetricState.value,
+                onHistoryMetricChange = { selectedNetworkHistoryMetricState.value = it },
                 onPeriodChange = onPeriodChange,
                 onNavigateToFullscreen = onNavigateToFullscreen,
                 onNavigateToSpeedTest = onNavigateToSpeedTest,
@@ -887,10 +851,9 @@ private fun NetworkOverviewSection( // NOSONAR
                     !hasLocationPermission &&
                         locationRequestAttempted &&
                         activity?.let {
-                            !ActivityCompat.shouldShowRequestPermissionRationale(
-                                it,
-                                Manifest.permission.ACCESS_FINE_LOCATION,
-                            )
+                            RuncheckPermissionPolicy.wifiDetailLocationPermissions.none { permission ->
+                                ActivityCompat.shouldShowRequestPermissionRationale(it, permission)
+                            }
                         } == true,
                 onRequestPermission = onRequestLocationPermission,
                 onOpenSettings = onOpenLocationHelp,
@@ -907,7 +870,8 @@ private fun NetworkOverviewSection( // NOSONAR
 private fun NetworkToolsSection( // NOSONAR
     state: NetworkUiState.Success,
     speedTestState: SpeedTestUiState,
-    fullscreenResultMetric: String?,
+    selectedHistoryMetric: NetworkHistoryMetric,
+    onHistoryMetricChange: (NetworkHistoryMetric) -> Unit,
     onPeriodChange: (HistoryPeriod) -> Unit,
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
     onNavigateToSpeedTest: () -> Unit,
@@ -919,10 +883,11 @@ private fun NetworkToolsSection( // NOSONAR
         SignalHistoryCard(
             history = state.signalHistory,
             selectedPeriod = state.selectedHistoryPeriod,
+            selectedMetric = selectedHistoryMetric,
             historyLoadError = state.historyLoadError,
             onPeriodChange = onPeriodChange,
+            onMetricChange = onHistoryMetricChange,
             onNavigateToFullscreen = onNavigateToFullscreen,
-            overrideMetric = fullscreenResultMetric,
         )
     } else {
         ProFeatureCalloutCard(

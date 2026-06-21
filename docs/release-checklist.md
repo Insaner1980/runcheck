@@ -8,15 +8,15 @@
 - [ ] Test purchase flow with license testers
 
 ### Signing
-- [ ] Generate upload keystore:
+- [ ] Generate upload keystore outside the repository:
   ```bash
-  keytool -genkey -v -keystore runcheck-upload.jks \
+  keytool -genkey -v -keystore "$HOME/.android/runcheck-upload.jks" \
     -keyalg RSA -keysize 2048 -validity 10000 \
     -alias runcheck
   ```
 - [ ] Set environment variables:
   ```bash
-  export RUNCHECK_KEYSTORE_PATH=/path/to/runcheck-upload.jks
+  export RUNCHECK_KEYSTORE_PATH=$HOME/.android/runcheck-upload.jks
   export RUNCHECK_KEYSTORE_PASSWORD=your_password
   export RUNCHECK_KEY_ALIAS=runcheck
   export RUNCHECK_KEY_PASSWORD=your_password

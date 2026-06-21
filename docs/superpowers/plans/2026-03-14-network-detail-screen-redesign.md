@@ -1280,8 +1280,6 @@ private fun NetworkContent(
                 onNavigateToSpeedTest = onNavigateToSpeedTest
             )
 
-            DetailScreenAdBanner()
-
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }
     }
@@ -1355,4 +1353,4 @@ git commit -m "Kirjoita NetworkDetailScreen uudelleen korttityylillä"
 - [ ] Speed Test card: button navigates to SpeedTestScreen
 - [ ] WiFi name help card still appears when SSID unavailable
 - [ ] Pull to refresh works
-- [ ] Ad banner shows at bottom for free tier
+- [ ] No ad banner is added; bottom spacing remains comfortable

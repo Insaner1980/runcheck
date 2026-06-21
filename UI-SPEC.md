@@ -665,7 +665,7 @@ Push-based from single Home screen. No bottom nav, no tabs.
 
 ### Navigation Rules
 
-- All routes use `navigateSingleTop` to prevent duplicate instances
+- Route pushes use `navigateSingleTop` to prevent duplicate top instances
 - Detail screens receive `onNavigateTo*` callbacks, not NavController
 - Nested routes (Charger, SpeedTest) navigate parent first, then child
 - Fullscreen chart returns result via `savedStateHandle`
@@ -675,6 +675,7 @@ Push-based from single Home screen. No bottom nav, no tabs.
 
 ```
 home
+├── insights
 ├── battery
 │   ├── charger [PRO]
 │   └── fullscreen_chart/{source}/{metric}/{period}

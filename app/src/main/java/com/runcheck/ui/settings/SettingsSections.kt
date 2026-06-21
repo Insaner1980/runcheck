@@ -96,7 +96,7 @@ internal fun MonitoringSection(
 @Composable
 internal fun LiveNotificationSection(
     preferences: UserPreferences,
-    onSetLiveNotificationEnabled: (Boolean) -> Unit,
+    onLiveNotificationEnabledChange: (Boolean) -> Unit,
     onSetLiveNotifCurrent: (Boolean) -> Unit,
     onSetLiveNotifDrainRate: (Boolean) -> Unit,
     onSetLiveNotifTemperature: (Boolean) -> Unit,
@@ -140,7 +140,7 @@ internal fun LiveNotificationSection(
             title = stringResource(R.string.settings_live_notification),
             description = stringResource(R.string.settings_live_notification_desc),
             checked = preferences.liveNotificationEnabled,
-            onCheckedChange = onSetLiveNotificationEnabled,
+            onCheckedChange = onLiveNotificationEnabledChange,
         )
 
         if (preferences.liveNotificationEnabled) {
@@ -171,7 +171,7 @@ internal fun NotificationsSection( // NOSONAR
     preferences: UserPreferences,
     alertsEffectivelyEnabled: Boolean,
     isXiaomiFamilyDevice: Boolean,
-    onSetNotificationsEnabled: (Boolean) -> Unit,
+    onNotificationsEnabledChange: (Boolean) -> Unit,
     onSetNotifLowBattery: (Boolean) -> Unit,
     onSetNotifHighTemp: (Boolean) -> Unit,
     onSetNotifLowStorage: (Boolean) -> Unit,
@@ -214,7 +214,7 @@ internal fun NotificationsSection( // NOSONAR
             title = stringResource(R.string.settings_notifications),
             description = stringResource(R.string.settings_notifications_desc),
             checked = masterEnabled,
-            onCheckedChange = onSetNotificationsEnabled,
+            onCheckedChange = onNotificationsEnabledChange,
         )
         SettingsDivider()
 

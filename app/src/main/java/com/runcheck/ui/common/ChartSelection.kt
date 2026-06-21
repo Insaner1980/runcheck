@@ -45,19 +45,19 @@ fun <T> EnumFilterChipRow(
 fun ApplyFullscreenChartSelectionResult(
     rawMetric: String?,
     rawPeriod: String?,
-    onConsumed: () -> Unit,
+    onConsume: () -> Unit,
     applySelection: (source: FullscreenChartSource, metric: String, period: String) -> Unit,
     rawSource: String? = null,
     defaultSource: FullscreenChartSource? = null,
 ) {
     val currentApplySelection = rememberUpdatedState(applySelection)
-    val currentOnConsumed = rememberUpdatedState(onConsumed)
+    val currentOnConsume = rememberUpdatedState(onConsume)
 
     LaunchedEffect(rawSource, defaultSource, rawMetric, rawPeriod) {
         val source = rawSource?.let(::parseFullscreenChartSource) ?: defaultSource
         if (source != null && rawMetric != null && rawPeriod != null) {
             currentApplySelection.value(source, rawMetric, rawPeriod)
-            currentOnConsumed.value()
+            currentOnConsume.value()
         }
     }
 }

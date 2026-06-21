@@ -395,6 +395,8 @@
     <string name="storage_cleanup_tools">Cleanup Tools</string>
     <string name="storage_media_permission_title">Allow media access for storage tools</string>
     <string name="storage_media_permission_message">Grant media access only if you want accurate photos, videos, audio, downloads, and cleanup suggestions. runcheck uses this data only on your device.</string>
+    <string name="storage_media_permission_partial_title">Limited media access</string>
+    <string name="storage_media_permission_partial_message">Only selected photos and videos are visible to runcheck. Allow full media access in Android settings for accurate storage breakdown and cleanup suggestions.</string>
     <string name="storage_media_permission_grant">Grant permission</string>
     <string name="storage_media_permission_open_settings">Open app settings</string>
     <string name="storage_large_files">Large Files</string>
@@ -429,10 +431,6 @@
     </plurals>
     <string name="cleanup_no_files">No files found</string>
     <string name="cleanup_no_files_desc">Your storage is looking clean!</string>
-    <string name="cleanup_storage_permission_title">File access needed</string>
-    <string name="cleanup_storage_permission_message">To scan for old downloads and APK files, runcheck needs access to all files on your device.</string>
-    <string name="cleanup_storage_permission_reason">Android restricts apps from seeing files created by other apps. This permission lets runcheck find files across your entire storage so you can clean up space.</string>
-    <string name="cleanup_storage_permission_action">Open Settings</string>
     <string name="cleanup_not_supported_version_title">Not supported on this Android version</string>
     <string name="cleanup_not_supported_version_message">Old Downloads and APK Files cleanup requires Android 11 or newer.</string>
     <string name="cleanup_delete_failed">Could not delete the selected files.</string>
@@ -561,15 +559,6 @@
 
     <!-- Settings: Data Management -->
     <string name="settings_data_section">Data</string>
-    <string name="settings_debug_insights_section">Debug Insights</string>
-    <string name="settings_debug_insights_description">Debug builds only. Seed deterministic monitoring data to exercise Home insights, or regenerate insights from current local data.</string>
-    <string name="settings_debug_insights_seed_demo">Seed Demo Insights</string>
-    <string name="settings_debug_insights_run_now">Regenerate Insights Now</string>
-    <string name="settings_debug_insights_clear">Clear Insights</string>
-    <string name="settings_debug_insights_running">Processing debug insights…</string>
-    <string name="settings_debug_insights_seeded">Demo insights seeded.</string>
-    <string name="settings_debug_insights_generated">Insights regenerated.</string>
-    <string name="settings_debug_insights_cleared">Insights cleared.</string>
     <string name="settings_reset_tips">Reset Info Tips</string>
     <string name="settings_reset_tips_done">Info tips restored</string>
     <string name="settings_reset_tips_confirm_title">Reset info tips?</string>
@@ -615,6 +604,10 @@
     <string name="widget_percent_value">%1$d%%</string>
     <string name="widget_temperature_value">%1$.1f°C</string>
     <string name="widget_current_value">%1$d mA</string>
+    <string name="widget_preview_health_score" translatable="false">82</string>
+    <string name="widget_preview_battery_percent" translatable="false">85%</string>
+    <string name="widget_preview_battery_temperature" translatable="false">32.5°C</string>
+    <string name="widget_preview_battery_current" translatable="false">-450 mA</string>
     <string name="widget_no_data_title">No data yet</string>
     <string name="widget_no_data_message">Open runcheck to collect readings</string>
 
@@ -756,6 +749,8 @@
     <string name="pro_feature_widgets">Home screen widgets</string>
     <string name="pro_feature_csv_export">CSV data export</string>
     <string name="pro_feature_thermal_logs">Thermal throttling logs</string>
+    <string name="pro_feature_remaining_charge_time">Remaining charge time estimates</string>
+    <string name="pro_feature_storage_cleanup">Storage cleanup tools</string>
     <string name="pro_unlock_button">Unlock with Pro</string>
 
     <!-- Pro Thank You -->

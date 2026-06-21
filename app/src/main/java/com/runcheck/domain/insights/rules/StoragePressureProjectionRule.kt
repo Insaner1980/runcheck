@@ -1,5 +1,6 @@
 package com.runcheck.domain.insights.rules
 
+import com.runcheck.domain.insights.analysis.StorageFillProjection
 import com.runcheck.domain.insights.analysis.StorageGrowthAnalyzer
 import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.model.InsightCandidate
@@ -17,66 +18,55 @@ class StoragePressureProjectionRule
     ) : InsightRule {
         override val ruleId: String = RULE_ID
 
-        override suspend fun evaluate(now: Long): List<InsightCandidate> {
+        override suspend fun evaluate(now: Long): List<InsightCandidate> = buildCandidate(now)?.let(::listOf).orEmpty()
+
+        private suspend fun buildCandidate(now: Long): InsightCandidate? {
             val readings = storageRepository.getReadingsSinceSync(now - LOOKBACK_MS)
-            if (readings.size < MINIMUM_READING_COUNT) return emptyList()
+            if (readings.size < MINIMUM_READING_COUNT) return null
 
-            val latest = readings.maxByOrNull { it.timestamp } ?: return emptyList()
-            val fillRateBytesPerDay = storageGrowthAnalyzer.calculateFillRateBytesPerDay(readings) ?: return emptyList()
-            if (fillRateBytesPerDay <= 0L) return emptyList()
+            val projection = storageGrowthAnalyzer.calculateProjection(readings) ?: return null
+            if (projection.daysUntilFull > MAX_DAYS_UNTIL_FULL) return null
 
-            val availableBytes = latest.availableBytes.coerceAtLeast(0L)
-            if (availableBytes == 0L) return emptyList()
-
-            val daysUntilFull = availableBytes / fillRateBytesPerDay
-            if (daysUntilFull > MAX_DAYS_UNTIL_FULL) return emptyList()
-
-            val estimate =
-                storageGrowthAnalyzer.formatEstimate(availableBytes, fillRateBytesPerDay) ?: return emptyList()
-            val usedPercent =
-                (
-                    (
-                        (latest.totalBytes - latest.availableBytes).toDouble() /
-                            latest.totalBytes
-                                .coerceAtLeast(
-                                    1,
-                                ).toDouble()
-                    ) *
-                        100.0
-                ).toInt()
-            val priority =
-                when {
-                    daysUntilFull <= HIGH_PRIORITY_DAYS ||
-                        usedPercent >= HIGH_PRIORITY_USED_PERCENT -> InsightPriority.HIGH
-
-                    else -> InsightPriority.MEDIUM
-                }
-            val confidence = (readings.size / CONFIDENCE_SAMPLE_COUNT.toFloat()).coerceIn(0f, 1f)
-            val bucket =
-                when {
-                    daysUntilFull <= 7 -> "7d"
-                    daysUntilFull <= 14 -> "14d"
-                    else -> "30d"
-                }
-
-            return listOf(
-                InsightCandidate(
-                    ruleId = ruleId,
-                    dedupeKey = bucket,
-                    type = InsightType.STORAGE,
-                    priority = priority,
-                    confidence = confidence,
-                    titleKey = TITLE_KEY,
-                    bodyKey = BODY_KEY,
-                    bodyArgs = listOf(estimate),
-                    generatedAt = now,
-                    expiresAt = now + TTL_MS,
-                    dataWindowStart = now - LOOKBACK_MS,
-                    dataWindowEnd = latest.timestamp,
-                    target = InsightTarget.STORAGE,
-                ),
-            )
+            return projection.toCandidate(now, readings.size)
         }
+
+        private fun StorageFillProjection.toCandidate(
+            now: Long,
+            readingCount: Int,
+        ): InsightCandidate =
+            InsightCandidate(
+                ruleId = ruleId,
+                dedupeKey = daysUntilFull.toBucket(),
+                type = InsightType.STORAGE,
+                priority = resolvePriority(daysUntilFull, usedPercent),
+                confidence = (readingCount / CONFIDENCE_SAMPLE_COUNT.toFloat()).coerceIn(0f, 1f),
+                titleKey = TITLE_KEY,
+                bodyKey = BODY_KEY,
+                bodyArgs = listOf(estimate),
+                generatedAt = now,
+                expiresAt = now + TTL_MS,
+                dataWindowStart = now - LOOKBACK_MS,
+                dataWindowEnd = latest.timestamp,
+                target = InsightTarget.STORAGE,
+            )
+
+        private fun resolvePriority(
+            daysUntilFull: Long,
+            usedPercent: Int,
+        ): InsightPriority =
+            when {
+                daysUntilFull <= HIGH_PRIORITY_DAYS ||
+                    usedPercent >= HIGH_PRIORITY_USED_PERCENT -> InsightPriority.HIGH
+
+                else -> InsightPriority.MEDIUM
+            }
+
+        private fun Long.toBucket(): String =
+            when {
+                this <= 7 -> "7d"
+                this <= 14 -> "14d"
+                else -> "30d"
+            }
 
         companion object {
             const val RULE_ID = "storage_pressure_projection"

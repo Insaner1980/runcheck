@@ -52,7 +52,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -83,14 +82,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.domain.model.HealthScore
 import com.runcheck.domain.model.HealthStatus
 import com.runcheck.pro.ProStatus
+import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.batteryHealthLabel
 import com.runcheck.ui.common.chargingStatusLabel
 import com.runcheck.ui.common.connectionDisplayLabel
@@ -154,30 +151,13 @@ fun HomeScreen(
     onNavigateToLearnArticle: (String) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
-    val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val loadingDescription = stringResource(R.string.a11y_loading)
 
-    DisposableEffect(lifecycleOwner, viewModel) {
-        val observer =
-            LifecycleEventObserver { _, event ->
-                when (event) {
-                    Lifecycle.Event.ON_START -> viewModel.startObserving()
-                    Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
-                    else -> Unit
-                }
-            }
-
-        lifecycleOwner.lifecycle.addObserver(observer)
-        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-            viewModel.startObserving()
-        }
-
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            viewModel.stopObserving()
-        }
-    }
+    LifecycleStartStopEffect(
+        onStart = viewModel::startObserving,
+        onStop = viewModel::stopObserving,
+    )
 
     Column(modifier = modifier.fillMaxSize()) {
         PrimaryTopBar(

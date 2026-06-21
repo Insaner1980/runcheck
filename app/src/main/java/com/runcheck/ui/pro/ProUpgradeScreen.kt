@@ -19,6 +19,7 @@ import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.DataUsage
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.NoAccounts
 import androidx.compose.material.icons.outlined.Thermostat
@@ -256,6 +257,8 @@ private fun featureIcon(feature: ProFeature): ImageVector =
         ProFeature.WIDGETS -> Icons.Outlined.Widgets
         ProFeature.CSV_EXPORT -> Icons.Outlined.FileDownload
         ProFeature.THERMAL_LOGS -> Icons.Outlined.Thermostat
+        ProFeature.REMAINING_CHARGE_TIME -> Icons.Outlined.BatteryChargingFull
+        ProFeature.STORAGE_CLEANUP -> Icons.Outlined.Delete
     }
 
 @Composable
@@ -267,4 +270,6 @@ private fun featureLabel(feature: ProFeature): String =
         ProFeature.WIDGETS -> stringResource(R.string.pro_feature_widgets)
         ProFeature.CSV_EXPORT -> stringResource(R.string.pro_feature_csv_export)
         ProFeature.THERMAL_LOGS -> stringResource(R.string.pro_feature_thermal_logs)
+        ProFeature.REMAINING_CHARGE_TIME -> stringResource(R.string.pro_feature_remaining_charge_time)
+        ProFeature.STORAGE_CLEANUP -> stringResource(R.string.pro_feature_storage_cleanup)
     }

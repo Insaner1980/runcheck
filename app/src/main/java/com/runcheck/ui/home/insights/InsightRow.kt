@@ -34,6 +34,7 @@ fun InsightRow(
     insight: Insight,
     onClick: (() -> Unit)?,
     onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val spacing = MaterialTheme.spacing
     val tokens = MaterialTheme.uiTokens
@@ -98,6 +99,7 @@ fun InsightRow(
 
     if (onClick != null) {
         Card(
+            modifier = modifier.fillMaxWidth(),
             onClick = onClick,
             shape = MaterialTheme.shapes.large,
             colors = runcheckCardColors(),
@@ -107,6 +109,7 @@ fun InsightRow(
         }
     } else {
         Card(
+            modifier = modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.large,
             colors = runcheckCardColors(),
             elevation = runcheckCardElevation(),

@@ -1,5 +1,7 @@
 # runcheck — Phase 1 Completion & Roadmap
 
+> Historiallinen tilannekuva 2026-03-10. Älä käytä tätä nykyisenä build-, SDK-, dependency- tai release-totuuden lähteenä; tarkista nykytila `PROJECT.md`:stä ja Gradle-tiedostoista.
+
 **Päivämäärä:** 2026-03-10
 **Tila:** Kaikki vaiheet (Phase 1-4) valmiit — julkaisuvalmis
 **Repo:** https://github.com/Insaner1980/runcheck

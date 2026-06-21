@@ -47,17 +47,17 @@ import com.runcheck.ui.thermal.ThermalDetailScreen
 fun RuncheckNavHost(
     modifier: Modifier = Modifier,
     deepLinkRoute: String? = null,
-    onDeepLinkConsumed: () -> Unit = {},
+    onConsumeDeepLink: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     val reducedMotion = LocalReducedMotion.current
 
     // Navigate to the deep-link screen and consume so it doesn't re-fire
-    val currentOnDeepLinkConsumed by rememberUpdatedState(onDeepLinkConsumed)
+    val currentOnConsumeDeepLink by rememberUpdatedState(onConsumeDeepLink)
     LaunchedEffect(deepLinkRoute) {
         if (deepLinkRoute != null) {
             navController.navigateNotificationRoute(deepLinkRoute)
-            currentOnDeepLinkConsumed()
+            currentOnConsumeDeepLink()
         }
     }
 
@@ -180,7 +180,7 @@ fun RuncheckNavHost(
                 fullscreenResultSource = resultSource,
                 fullscreenResultMetric = resultMetric,
                 fullscreenResultPeriod = resultPeriod,
-                onFullscreenResultConsumed = {
+                onConsumeFullscreenResult = {
                     entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_SOURCE)
                     entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_METRIC)
                     entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_PERIOD)
@@ -207,7 +207,7 @@ fun RuncheckNavHost(
                 },
                 fullscreenResultMetric = resultMetric,
                 fullscreenResultPeriod = resultPeriod,
-                onFullscreenResultConsumed = {
+                onConsumeFullscreenResult = {
                     entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_SOURCE)
                     entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_METRIC)
                     entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_PERIOD)
@@ -363,7 +363,7 @@ fun RuncheckNavHost(
             FullscreenChartScreen(
                 onBack = { navController.popBackStack() },
                 onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
-                onSelectionChanged = { source, metric, period ->
+                onSelectionChange = { source, metric, period ->
                     navController.previousBackStackEntry?.savedStateHandle?.apply {
                         set(FullscreenChartResult.KEY_SOURCE, source)
                         set(FullscreenChartResult.KEY_METRIC, metric)

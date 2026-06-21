@@ -1,7 +1,8 @@
 package com.runcheck.ui.common
 
 import android.content.Context
-import android.os.Build
+import android.content.res.Configuration
+import android.os.LocaleList
 import android.text.format.DateFormat
 import android.text.format.Formatter
 import androidx.compose.runtime.Composable
@@ -18,6 +19,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+private val appEnglishLocale: Locale = Locale.ENGLISH
+
 fun Throwable.messageOr(defaultMessage: String): String = message?.takeUnless(String::isBlank) ?: defaultMessage
 
 fun Throwable.messageOrRes(
@@ -29,29 +32,27 @@ fun Throwable.messageOrRes(
 fun formatStorageSize(
     context: Context,
     bytes: Long,
-): String = Formatter.formatShortFileSize(context, bytes)
+): String = Formatter.formatShortFileSize(context.withAppDisplayLocale(), bytes)
 
-fun currentLocale(context: Context): Locale {
-    val configuration = context.resources.configuration
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-        configuration.locales[0] ?: Locale.getDefault()
-    } else {
-        @Suppress("DEPRECATION")
-        configuration.locale ?: Locale.getDefault()
-    }
+fun appDisplayLocale(): Locale = appEnglishLocale
+
+private fun Context.withAppDisplayLocale(): Context {
+    val configuration = Configuration(resources.configuration)
+    configuration.setLocales(LocaleList(appDisplayLocale()))
+    return createConfigurationContext(configuration)
 }
 
 fun formatDecimal(
     value: Number,
     fractionDigits: Int,
-    locale: Locale = Locale.getDefault(),
+    locale: Locale = appDisplayLocale(),
 ): String = String.format(locale, "%.${fractionDigits}f", value.toDouble())
 
 fun formatLocalizedDateTime(
     timestamp: Long,
     skeleton: String,
 ): String {
-    val locale = Locale.getDefault()
+    val locale = appDisplayLocale()
     val pattern = DateFormat.getBestDateTimePattern(locale, skeleton)
     return SimpleDateFormat(pattern, locale).format(Date(timestamp))
 }
@@ -91,7 +92,6 @@ fun formatTemperature(
         formatDecimal(
             convertTemperature(valueCelsius, unit),
             fractionDigits,
-            currentLocale(context),
         ),
         context.getString(temperatureUnitRes(unit)),
     )

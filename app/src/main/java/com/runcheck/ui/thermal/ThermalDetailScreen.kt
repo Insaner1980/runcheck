@@ -26,7 +26,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,9 +46,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.domain.model.HistoryPeriod
@@ -58,6 +54,8 @@ import com.runcheck.domain.model.ThermalReading
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
 import com.runcheck.domain.model.ThrottlingEvent
+import com.runcheck.ui.chart.ChartStatsRow
+import com.runcheck.ui.chart.HistoryPeriodFilterChipRow
 import com.runcheck.ui.chart.MAX_THERMAL_HISTORY_POINTS
 import com.runcheck.ui.chart.ThermalHistoryMetric
 import com.runcheck.ui.chart.buildThermalHistoryChartModel
@@ -67,6 +65,8 @@ import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.chart.thermalHistoryMetricLabel
 import com.runcheck.ui.chart.thermalQualityZones
 import com.runcheck.ui.common.EnumFilterChipRow
+import com.runcheck.ui.common.HistoryLoadErrorMessage
+import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.formatTemperature
@@ -116,29 +116,13 @@ fun ThermalDetailScreen(
     onNavigateToLearnArticle: (articleId: String) -> Unit = {},
     viewModel: ThermalViewModel = hiltViewModel(),
 ) {
-    val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val loadingDescription = stringResource(R.string.a11y_loading)
 
-    DisposableEffect(lifecycleOwner, viewModel) {
-        val observer =
-            LifecycleEventObserver { _, event ->
-                when (event) {
-                    Lifecycle.Event.ON_START -> viewModel.startObserving()
-                    Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
-                    else -> Unit
-                }
-            }
-
-        lifecycleOwner.lifecycle.addObserver(observer)
-        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-            viewModel.startObserving()
-        }
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            viewModel.stopObserving()
-        }
-    }
+    LifecycleStartStopEffect(
+        onStart = viewModel::startObserving,
+        onStop = viewModel::stopObserving,
+    )
 
     Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(
@@ -743,20 +727,12 @@ private fun ThermalHistoryCard(
                 labelFor = { thermalHistoryMetricLabel(it) },
             )
 
-            EnumFilterChipRow(
-                values = HistoryPeriod.entries.filter { it != HistoryPeriod.SINCE_UNPLUG },
+            HistoryPeriodFilterChipRow(
                 selected = selectedPeriod,
                 onSelect = onPeriodChange,
-                labelFor = { historyPeriodLabel(it) },
             )
 
-            historyLoadError?.let { error ->
-                Text(
-                    text = error.resolve(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
+            HistoryLoadErrorMessage(error = historyLoadError)
 
             if (chartModel.chartData.size >= 2) {
                 val chartAccessibilitySummary =
@@ -792,34 +768,7 @@ private fun ThermalHistoryCard(
                     tooltipFormatter = { index -> formatChartTooltip(chartModel, index) },
                 )
 
-                // Min / Avg / Max summary
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-                    verticalAlignment = Alignment.Top,
-                ) {
-                    chartModel.minValue?.let {
-                        MetricPill(
-                            label = stringResource(R.string.chart_stat_min),
-                            value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    chartModel.averageValue?.let {
-                        MetricPill(
-                            label = stringResource(R.string.chart_stat_avg),
-                            value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    chartModel.maxValue?.let {
-                        MetricPill(
-                            label = stringResource(R.string.chart_stat_max),
-                            value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
+                ChartStatsRow(chartModel = chartModel)
             } else {
                 Text(
                     text = stringResource(R.string.network_history_empty),

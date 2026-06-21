@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     RuncheckNavHost(
                         deepLinkRoute = deepLinkRoute.value,
-                        onDeepLinkConsumed = { deepLinkRoute.value = null },
+                        onConsumeDeepLink = { deepLinkRoute.value = null },
                     )
                 }
             }

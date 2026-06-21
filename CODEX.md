@@ -85,7 +85,7 @@ Home
 Current runtime systems:
 
 - `RuncheckApp` initializes billing, Pro state, notification channels, screen-state tracking, periodic monitoring, and widget refresh hooks
-- `RuncheckApp` also initializes source-set-specific `SentryInit`; debug builds may report to Sentry, release builds are a no-op and must remain telemetry-free
+- `RuncheckApp` also initializes source-set-specific `SentryInit`; debug builds may report to Sentry through `sentry-android-core` only when `RUNCHECK_SENTRY_DSN`, `SENTRY_DSN`, or ignored `debug.credentials.properties` provides `sentry.dsn`; release builds are a no-op and must remain telemetry-free
 - WorkManager runs `HealthMonitorWorker` for snapshot collection + alert evaluation
 - WorkManager runs `HealthMaintenanceWorker` for app-usage refresh, cleanup, and widget refresh
 - WorkManager runs `InsightGenerationWorker` on the monitoring scheduler lifecycle to generate persisted Home insights from Room history
@@ -99,6 +99,41 @@ State restoration conventions:
 
 - Use `rememberSaveable` for screen-local UI state such as sheet visibility, dialogs, and metric chip selections
 - Use `SavedStateHandle` for route-backed or process-death-sensitive state such as selected history period, cleanup type, and fullscreen chart args
+
+## Local Check Tooling
+
+PowerShell wrappers live in `tools/` and forward to `C:\Dev\Android-check\tools\InvokeProjectCheck.ps1`.
+
+- `lc` / `tools\lc.ps1` — ktlint, detekt, Android lint; writes `reports\ktlint.txt`, `reports\detekt.txt`, and `reports\lint.txt`
+- `ac` / `tools\ac.ps1` — Android security surface; project Semgrep, mobsfscan, and DeepSec custom report
+- `dc` / `tools\dc.ps1` — dependency verification, OSV, OWASP Dependency-Check; use `dc -InitVerification` only when intentionally creating or updating `gradle\verification-metadata.xml`
+- `ss` / `tools\ss.ps1` — gitleaks, TruffleHog, Semgrep secrets
+- `ds` / `tools\ds.ps1` — DeepSec custom scan/report/revalidate paths
+- `ms` / `tools\ms.ps1` — mobsfscan
+- `os` / `tools\os.ps1` — OSV Scanner
+- `ql` / `tools\ql.ps1` — CodeQL workflow/status check through GitHub tooling
+- `db` / `tools\db.ps1` — Dependabot config and alert check
+- `pc` / `tools\pc.ps1` — PMD CPD duplicate scan; runcheckin oletuskynnys on 100 tokenia, ja sen voi ohittaa `PMD_CPD_MINIMUM_TOKENS`-ympäristömuuttujalla
+- `cs` / `tools\cs.ps1` — Compose Stability Analyzer (`:app:stabilityCheck`)
+- `cr` / `tools\cr.ps1` — compose-rules through ktlint and detekt
+- `ga` / `tools\ga.ps1` — Google Android Security Lints through Android lint
+- `sc` / `tools\sc.ps1` — combined security check; `-Full` also runs Android security checks
+- `sentry` / `tools\sentry.ps1` — verifies debug-only Sentry wiring; debug must contain `io.sentry`, release must not contain `io.sentry`, and results are written to `reports\sentry.txt`
+- `tools\sonar.ps1` — SonarCloud path; requires `SONAR_TOKEN`, runs `assembleDebug`, `:app:jacocoDebugUnitTestReport`, and `sonar`, then writes `reports\sonar.txt`
+
+`scripts\security-check.ps1` is only a compatibility wrapper to `tools\sc.ps1`. `scripts\security-check.sh` is Linux legacy. `reports/` is ignored and must not be committed.
+
+Do not run the heavy `lc`, `sc`, Sonar, Dependency-Check, MobSF, DeepSec, or full Gradle verification paths unless the user explicitly asks or they are required to unblock the task. Prefer `-PlanOnly`, task listing, targeted config checks, and narrow tests first.
+
+Project-specific check configuration lives in:
+
+- `config\semgrep\runcheck-security.yml`
+- `config\dependency-check\suppressions.xml`
+- `.mobsf`
+- `.deepsec\`
+- `.github\dependabot.yml`
+
+Compose-rules versions are intentionally split while the project stays on Detekt 1.23.8: ktlint uses the current 0.5.x line with ktlint explicitly pinned to the compatible 1.8.x rule engine, and Detekt uses the latest 0.4.x line compatible with Detekt 1.x. Do not move Detekt compose-rules to 0.5.x without a Detekt 2.x migration.
 
 ## Architecture Rules
 
@@ -238,7 +273,7 @@ Raise a review comment or fix request for any of these:
 - Kotlin version comes from `gradle/libs.versions.toml`
 - Compose uses the BOM defined in the version catalog
 - Hilt, Room, KSP, ktlint, and detekt are already wired into the build
-- No release-path crash reporting, analytics, or tracking — do not add telemetry beyond the current debug-only Sentry setup
+- No release-path crash reporting, analytics, replay, tracing, NDK symbol capture, or tracking — do not add telemetry beyond the current debug-only `sentry-android-core` setup
 
 ## Preferred Local Skills
 

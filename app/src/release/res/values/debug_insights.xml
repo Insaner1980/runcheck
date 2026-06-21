@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_debug_insights_section" translatable="false"></string>
+    <string name="settings_debug_insights_description" translatable="false"></string>
+    <string name="settings_debug_insights_seed_demo" translatable="false"></string>
+    <string name="settings_debug_insights_run_now" translatable="false"></string>
+    <string name="settings_debug_insights_clear" translatable="false"></string>
+    <string name="settings_debug_insights_running" translatable="false"></string>
+    <string name="settings_debug_insights_seeded" translatable="false"></string>
+    <string name="settings_debug_insights_generated" translatable="false"></string>
+    <string name="settings_debug_insights_cleared" translatable="false"></string>
+</resources>

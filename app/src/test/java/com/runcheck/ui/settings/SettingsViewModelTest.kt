@@ -11,6 +11,7 @@ import com.runcheck.domain.usecase.ExportDataUseCase
 import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
+import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.ObserveSettingsUseCase
 import com.runcheck.domain.usecase.SetDataRetentionUseCase
 import com.runcheck.domain.usecase.SetMonitoringIntervalUseCase
@@ -41,6 +42,7 @@ class SettingsViewModelTest {
 
     private val observeSettings: ObserveSettingsUseCase = mockk()
     private val proPurchaseManager: ProPurchaseManager = mockk()
+    private val observeProAccess: ObserveProAccessUseCase = mockk()
     private val isProUser: IsProUserUseCase = mockk()
     private val clearMonitoringDataUseCase: ClearMonitoringDataUseCase = mockk(relaxed = true)
     private val exportDataUseCase: ExportDataUseCase = mockk(relaxed = true)
@@ -60,6 +62,7 @@ class SettingsViewModelTest {
         every { proPurchaseManager.purchaseEvents } returns MutableSharedFlow<PurchaseEvent>()
         every { proPurchaseManager.hasPendingPurchase } returns flowOf(false)
         coEvery { proPurchaseManager.getFormattedPrice() } returns null
+        every { observeProAccess() } returns flowOf(false)
         every { isProUser() } returns false
         every { insightDebugActions.isAvailable } returns true
         coEvery { insightDebugActions.seedDemoInsights() } returns 9
@@ -87,7 +90,7 @@ class SettingsViewModelTest {
             coVerify(exactly = 1) { insightDebugActions.seedDemoInsights() }
             assertFalse(viewModel.uiState.value.isProcessingDebugInsights)
             assertEquals(
-                UiText.Dynamic("Demo insights seeded (9 active)"),
+                UiText.Resource(R.string.settings_debug_insights_seeded),
                 viewModel.uiState.value.debugStatus,
             )
         }
@@ -109,10 +112,24 @@ class SettingsViewModelTest {
             assertFalse(viewModel.uiState.value.isProcessingDebugInsights)
         }
 
+    @Test
+    fun `settings pro state uses trial-aware pro access when purchase is inactive`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            every { proPurchaseManager.isProUser } returns flowOf(false)
+            every { observeProAccess() } returns flowOf(true)
+            every { isProUser() } returns true
+
+            val viewModel = createViewModel()
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value.isPro)
+        }
+
     private fun createViewModel(): SettingsViewModel =
         SettingsViewModel(
             observeSettings = observeSettings,
             proPurchaseManager = proPurchaseManager,
+            observeProAccess = observeProAccess,
             isProUser = isProUser,
             clearMonitoringDataUseCase = clearMonitoringDataUseCase,
             exportDataUseCase = exportDataUseCase,

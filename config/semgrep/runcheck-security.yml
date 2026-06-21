@@ -1,0 +1,113 @@
+rules:
+  - id: runcheck-android-allowbackup-enabled
+    languages:
+      - xml
+    severity: ERROR
+    message: android:allowBackup="true" sallii sovellusdatan varmuuskopioinnin. Runcheckin laitehistoria ja Pro-tila vaativat erillisen reviewn ennen backupin sallimista.
+    patterns:
+      - pattern: |
+          <application ... android:allowBackup="true" ...>
+
+  - id: runcheck-android-cleartext-enabled
+    languages:
+      - xml
+    severity: ERROR
+    message: android:usesCleartextTraffic="true" sallii selkokielisen HTTP-liikenteen. Runcheckin verkkokutsut rajataan NDT7-, latency- ja billing-poluille.
+    patterns:
+      - pattern: |
+          <application ... android:usesCleartextTraffic="true" ...>
+
+  - id: runcheck-exported-component-review
+    languages:
+      - xml
+    severity: WARNING
+    message: Exported Android component needs trust-boundary review. Launcher and app widgets may be valid; new exported services/receivers require justification.
+    patterns:
+      - pattern-either:
+          - pattern: |
+              <activity ... android:exported="true" ...>
+          - pattern: |
+              <activity-alias ... android:exported="true" ...>
+          - pattern: |
+              <service ... android:exported="true" ...>
+          - pattern: |
+              <receiver ... android:exported="true" ...>
+
+  - id: runcheck-fileprovider-broad-path
+    languages:
+      - xml
+    severity: ERROR
+    message: FileProvider path is too broad. Use only app-owned, purpose-specific export subdirectories.
+    patterns:
+      - pattern-either:
+          - pattern: |
+              <root-path ...>
+          - pattern: |
+              <external-path ...>
+          - pattern: |
+              <files-path ... path="." ...>
+          - pattern: |
+              <cache-path ... path="." ...>
+          - pattern: |
+              <external-files-path ... path="." ...>
+          - pattern: |
+              <external-cache-path ... path="." ...>
+
+  - id: runcheck-sensitive-android-log
+    languages:
+      - kotlin
+    severity: WARNING
+    message: Android log call may disclose device, network, billing, storage, or measurement state. Keep release-safe logging redacted.
+    patterns:
+      - pattern-either:
+          - pattern: Log.v(..., $MSG)
+          - pattern: Log.d(..., $MSG)
+          - pattern: Log.i(..., $MSG)
+          - pattern: Log.w(..., $MSG)
+          - pattern: Log.e(..., $MSG)
+          - pattern: android.util.Log.v(..., $MSG)
+          - pattern: android.util.Log.d(..., $MSG)
+          - pattern: android.util.Log.i(..., $MSG)
+          - pattern: android.util.Log.w(..., $MSG)
+          - pattern: android.util.Log.e(..., $MSG)
+      - metavariable-regex:
+          metavariable: $MSG
+          regex: (?i).*(battery|thermal|network|ssid|ip|dns|storage|device|billing|purchase|pro|token|uri|path|snapshot|insight|runcheck).*
+
+  - id: runcheck-outbound-network-surface-review
+    languages:
+      - kotlin
+    severity: WARNING
+    message: New outbound network primitive outside the approved speed test, latency, or billing surface needs review.
+    paths:
+      exclude:
+        - app/src/main/java/com/runcheck/data/network/**
+        - app/src/main/java/com/runcheck/data/billing/**
+        - app/src/main/java/com/runcheck/billing/**
+        - app/src/test/**
+        - app/src/androidTest/**
+    patterns:
+      - pattern-either:
+          - pattern: OkHttpClient(...)
+          - pattern: HttpURLConnection(...)
+          - pattern: URL(...).openConnection(...)
+          - pattern: Socket(...)
+          - pattern: InetAddress.getByName(...)
+
+  - id: runcheck-release-telemetry-review
+    languages:
+      - kotlin
+    severity: ERROR
+    message: Release/main source set must stay telemetry-free except the current release-safe Sentry no-op boundary.
+    paths:
+      include:
+        - app/src/main/java/**
+        - app/src/release/java/**
+      exclude:
+        - app/src/release/java/com/runcheck/SentryInit.kt
+    patterns:
+      - pattern-either:
+          - pattern: SentryAndroid.init(...)
+          - pattern: FirebaseAnalytics.getInstance(...)
+          - pattern: FirebaseCrashlytics.getInstance(...)
+          - pattern: LogcatLogger(...)

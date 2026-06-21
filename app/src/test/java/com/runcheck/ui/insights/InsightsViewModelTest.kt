@@ -5,14 +5,12 @@ import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.insights.model.InsightType
 import com.runcheck.domain.repository.InsightRepository
-import com.runcheck.pro.ProManager
-import com.runcheck.pro.ProState
+import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.MainDispatcherRule
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -27,8 +25,7 @@ class InsightsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val insightRepository: InsightRepository = mockk(relaxed = true)
-    private val proManager: ProManager = mockk()
-    private val proStateFlow = MutableStateFlow(ProState())
+    private val observeProAccess: ObserveProAccessUseCase = mockk()
 
     @Test
     fun `loads active insights and marks unseen entries as seen`() =
@@ -36,12 +33,12 @@ class InsightsViewModelTest {
             val insight = testInsight(seen = false)
             every { insightRepository.getActiveInsights() } returns flowOf(listOf(insight))
             every { insightRepository.getUnseenCount() } returns flowOf(1)
-            every { proManager.proState } returns proStateFlow
+            every { observeProAccess() } returns flowOf(false)
 
             val viewModel =
                 InsightsViewModel(
                     insightRepository = insightRepository,
-                    proManager = proManager,
+                    observeProAccess = observeProAccess,
                 )
             runCurrent()
 
@@ -52,16 +49,42 @@ class InsightsViewModelTest {
         }
 
     @Test
-    fun `dismiss delegates to repository`() =
+    fun `filters pro-only insight targets for free users`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            every { insightRepository.getActiveInsights() } returns flowOf(emptyList())
-            every { insightRepository.getUnseenCount() } returns flowOf(0)
-            every { proManager.proState } returns proStateFlow
+            every { insightRepository.getActiveInsights() } returns
+                flowOf(
+                    listOf(
+                        testInsight(id = 1L, target = InsightTarget.BATTERY, seen = false),
+                        testInsight(id = 2L, target = InsightTarget.APP_USAGE),
+                        testInsight(id = 3L, target = InsightTarget.CHARGER),
+                    ),
+                )
+            every { insightRepository.getUnseenCount() } returns flowOf(3)
+            every { observeProAccess() } returns flowOf(false)
 
             val viewModel =
                 InsightsViewModel(
                     insightRepository = insightRepository,
-                    proManager = proManager,
+                    observeProAccess = observeProAccess,
+                )
+            runCurrent()
+
+            val state = viewModel.uiState.value as InsightsUiState.Success
+            assertEquals(listOf(InsightTarget.BATTERY), state.insights.map { it.target })
+            assertEquals(1, state.unseenInsightCount)
+        }
+
+    @Test
+    fun `dismiss delegates to repository`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            every { insightRepository.getActiveInsights() } returns flowOf(emptyList())
+            every { insightRepository.getUnseenCount() } returns flowOf(0)
+            every { observeProAccess() } returns flowOf(false)
+
+            val viewModel =
+                InsightsViewModel(
+                    insightRepository = insightRepository,
+                    observeProAccess = observeProAccess,
                 )
             runCurrent()
 
@@ -71,9 +94,13 @@ class InsightsViewModelTest {
             coVerify(exactly = 1) { insightRepository.dismiss(42L) }
         }
 
-    private fun testInsight(seen: Boolean) =
+    private fun testInsight(
+        id: Long = 1L,
+        target: InsightTarget = InsightTarget.BATTERY,
+        seen: Boolean = true,
+    ) =
         Insight(
-            id = 1L,
+            id = id,
             ruleId = "rule",
             type = InsightType.BATTERY,
             priority = InsightPriority.HIGH,
@@ -83,7 +110,7 @@ class InsightsViewModelTest {
             bodyArgs = emptyList(),
             generatedAt = 0L,
             expiresAt = Long.MAX_VALUE,
-            target = InsightTarget.BATTERY,
+            target = target,
             seen = seen,
             dismissed = false,
         )

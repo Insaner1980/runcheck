@@ -1,5 +1,7 @@
 # runcheck Consistency Follow-Up
 
+> Historiallinen follow-up 2026-03-13. Build-työkalujen versiot ja `ignoreFailures`-oletukset eivät ole nykyinen totuus; tarkista nykytila `gradle/libs.versions.toml`:sta ja Gradle-konfiguraatiosta.
+
 Date: 2026-03-13
 
 This file tracks consistency and code-style work that is still worth doing after the latest cleanup pass.
@@ -16,7 +18,7 @@ This file tracks consistency and code-style work that is still worth doing after
 - Standardized ViewModel state models (item 1) — sealed interface is the standard; Network converted, Settings stays flat (no loading state)
 - Reviewed Modifier ordering (item 2) — SettingsScreen ordering is intentionally correct (`.selectable()`/`.toggleable()` before `.padding()` = full-row touch targets, matching 48dp minimum)
 - String resource naming (item 3) — audit confirmed all keys already follow feature-prefix convention
-- Added detekt 2.0.0-alpha.2 (item 4) — required for Kotlin 2.3.0 compatibility; `ignoreFailures = true` during adoption, 66 pre-existing findings to address incrementally
+- Historical record: detekt 2.0.0-alpha.2 was added during this pass; current Detekt, compose-rules, and failure behavior must be checked from the live Gradle configuration.
 - No source file headers (item 5) — decided: not required for Google Play Store, avoids maintenance overhead
 
 ## Practical rule for future work

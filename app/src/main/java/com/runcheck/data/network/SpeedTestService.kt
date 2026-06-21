@@ -8,6 +8,7 @@ import android.net.NetworkCapabilities
 import com.runcheck.R
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.SpeedTestConnectionInfo
+import com.runcheck.domain.model.SpeedTestProgress
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
@@ -35,41 +36,6 @@ class SpeedTestService
         private val latencyMeasurer: LatencyMeasurer,
         private val networkDataSource: NetworkDataSource,
     ) {
-        sealed interface SpeedTestProgress {
-            data class CellularConfirmationRequired(
-                val connectionInfo: SpeedTestConnectionInfo,
-            ) : SpeedTestProgress
-
-            data class PingPhase(
-                val pingMs: Int,
-                val jitterMs: Int?,
-            ) : SpeedTestProgress
-
-            data class DownloadPhase(
-                val currentMbps: Double,
-                val progress: Float,
-            ) : SpeedTestProgress
-
-            data class UploadPhase(
-                val currentMbps: Double,
-                val progress: Float,
-            ) : SpeedTestProgress
-
-            data class Completed(
-                val downloadMbps: Double,
-                val uploadMbps: Double,
-                val pingMs: Int,
-                val jitterMs: Int?,
-                val serverName: String,
-                val serverLocation: String?,
-                val connectionInfo: SpeedTestConnectionInfo,
-            ) : SpeedTestProgress
-
-            data class Failed(
-                val error: String,
-            ) : SpeedTestProgress
-        }
-
         private val testLock = Any()
         private var activeTest: NdtTest? = null
         private val connectivityManager =

@@ -1,18 +1,34 @@
 *.iml
 .gradle/
+/.tmp/
+/android/FakeDependency.jar
+/caches/
+/daemon/
+/kotlin-profile/
+/native/
+/notifications/
+/wrapper/
 /local.properties
+/debug.credentials.properties
 .idea/
 /build/
 /app/build/
 /captures/
 .externalNativeBuild/
 .cxx/
+
+# Local signing material
+*.jks
+*.keystore
+*.p12
+*.pfx
+
 *.apk
 *.aab
 *.ap_
 *.dex
 *.class
-/app/schemas/
+# Room exported schemas are migration-test inputs; keep app/schemas/ versioned.
 *.hprof
 *.log
 .claude/

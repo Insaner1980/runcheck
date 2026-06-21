@@ -7,21 +7,25 @@ Android device health diagnostics app built with Kotlin and Jetpack Compose. Sin
 ## Technical Snapshot
 
 - Package root: `com.runcheck`
+- Application ID: `com.runcheck`
+- Current app version: `versionName = "1.0.0"`, `versionCode = 1`
 - Main module: single `app` module
 - Architecture: Clean Architecture with `data/`, `domain/`, and `ui/`
 - Dependency injection: Hilt
-- Database: Room
+- Database: Room (`RuncheckDatabase` schema version 10, exported schema enabled)
 - Preferences: DataStore
 - Background work: WorkManager
 - Widgets: Glance app widgets
 - Speed test backend: M-Lab NDT7
 - Build: Gradle Kotlin DSL
+- Build tooling: Gradle wrapper 9.4.0, AGP 9.1.0, Kotlin Gradle/Compose plugin 2.3.0, Kotlin runtime constraints 2.3.20, KSP 2.3.1, Compose BOM 2026.03.00
 - Compile SDK: Android 17 beta (`CinnamonBun`)
 - Target SDK: Android 17 beta (`CinnamonBun`)
 - Min SDK: 26
 - Java target: 17
 - Localization: English-only (`localeFilters = ["en"]`)
 - Build variants: `app/src/debug` and `app/src/release` source sets are active
+- Release signing: optional until a release artifact is requested, then `RUNCHECK_KEYSTORE_PATH`, `RUNCHECK_KEYSTORE_PASSWORD`, `RUNCHECK_KEY_ALIAS`, and `RUNCHECK_KEY_PASSWORD` are required
 
 High-level package layout:
 
@@ -43,6 +47,134 @@ Debug-only insight tooling also lives outside the main source tree:
 
 - `app/src/debug/java/com/runcheck/debug/insights/` for debug implementations
 - `app/src/main/java/com/runcheck/debug/insights/` for release-safe stubs
+
+### Build and dependency source of truth
+
+- `gradle/libs.versions.toml` is the source of truth for dependency and plugin versions.
+- `gradle/wrapper/gradle-wrapper.properties` pins Gradle to `9.4.0`.
+- `settings.gradle.kts` enforces centralized repositories with `RepositoriesMode.FAIL_ON_PROJECT_REPOS`.
+- Approved repositories are `google()`, `mavenCentral()`, and JitPack only for `com.github.m-lab`.
+- The app intentionally uses `org.jetbrains.kotlin.plugin.compose`; do not reintroduce `kotlin-android` unless the AGP/Kotlin integration model changes and is verified.
+- `debug.credentials.properties` is ignored local-only input for debug Sentry DSN. It is read through Gradle Providers API and must not be committed.
+- `localeFilters = ["en"]` and `app/src/main/res/xml/locales_config.xml` both encode the English-only product state.
+
+Current version catalog highlights:
+
+| Area | Current value |
+|------|---------------|
+| Gradle wrapper | `9.4.0` |
+| Android Gradle Plugin | `9.1.0` |
+| Kotlin Gradle / Compose plugin | `2.3.0` |
+| Kotlin runtime constraints | `2.3.20` |
+| KSP | `2.3.1` |
+| Hilt | `2.59.2` |
+| Room | `2.8.4` |
+| Compose BOM | `2026.03.00` |
+| Navigation Compose | `2.9.7` |
+| Lifecycle | `2.10.0` |
+| WorkManager | `2.11.1` |
+| DataStore | `1.2.0` |
+| Paging | `3.3.6` |
+| Play Billing | `8.3.0` |
+| Glance | `1.1.1` |
+| M-Lab NDT7 client | `1.0.0` |
+| OkHttp | `4.12.0` |
+| Sentry debug-only core | `8.43.1` |
+| ktlint rule engine | `1.8.0` |
+| ktlint Gradle plugin | `14.2.0` |
+| Detekt | `1.23.8` |
+| compose-rules for ktlint | `0.5.9` |
+| compose-rules for Detekt | `0.4.28` |
+| OWASP Dependency-Check Gradle plugin | `12.2.2` |
+| SonarQube Gradle plugin | `7.3.1.8318` |
+| Compose Stability Analyzer | `0.7.4` |
+| Google Android Security Lints | `1.0.4` |
+| JaCoCo | `0.8.14` |
+
+### External version review snapshot
+
+Checked on 2026-06-21 against official Android, Kotlin, Compose, and Gradle documentation:
+
+- The repo is not on the newest available Android/Gradle ecosystem versions in every area; that is expected and should be reviewed deliberately.
+- AGP 9.1.x official notes list API 37 support and Gradle 9.3.1 minimum compatibility; this repo's Gradle 9.4.0 wrapper satisfies that baseline.
+- AGP 9.2.0 is available upstream and lists Gradle 9.4.1 as its minimum/default Gradle line; AGP 9.3.0 preview is also published and lists Gradle 9.5.0 as its minimum/default Gradle line. This repo currently uses AGP 9.1.0 with Gradle 9.4.0, so AGP upgrades should be evaluated with Android 17 preview, Qodana, CodeQL, Gradle wrapper, dependency verification, and Kotlin plugin behavior together.
+- Kotlin 2.3.20 is available upstream and the repo already constrains Kotlin stdlib adapter/runtime artifacts to 2.3.20, but the Gradle/Compose plugin remains 2.3.0. Do not treat this as a typo without checking AGP/Qodana/CodeQL runner behavior.
+- CodeQL 2.25.2 added Kotlin support up to 2.3.20. Kotlin 2.4.x still needs a fresh CodeQL compatibility check before adoption.
+- Kotlin 2.4.0 is newer than this repo's Kotlin plugin line, supports Gradle 7.6.3 through 9.5.0 directly, and should be treated as a deliberate migration, not a routine patch bump.
+- Compose BOM `2026.06.00` is available upstream; this repo currently uses `2026.03.00`. Any bump should include Compose UI regression review, compose-rules compatibility, and dependency verification metadata.
+- Gradle 9.6.0 is available upstream; this repo currently uses 9.4.0. Wrapper bumps should be checked against AGP and all local wrappers.
+- Android 17 uses the `CinnamonBun` preview SDK naming in this checkout. Android 17 SDK setup expects the Cinnamon Bun Preview platform and Android SDK Build-Tools 37.x line to be installed locally.
+
+External references used for this snapshot:
+
+- Android 17 beta overview: <https://developer.android.com/about/versions/17>
+- Android 17 SDK setup: <https://developer.android.com/about/versions/17/setup-sdk>
+- AGP 9.1 release notes: <https://developer.android.com/build/releases/agp-9-1-0-release-notes>
+- AGP 9.2 release notes: <https://developer.android.com/build/releases/agp-9-2-0-release-notes>
+- AGP 9.3 preview release notes: <https://developer.android.com/build/releases/agp-9-3-0-release-notes>
+- Kotlin 2.3.0 release notes: <https://kotlinlang.org/docs/whatsnew23.html>
+- Kotlin 2.3.20 release notes: <https://kotlinlang.org/docs/whatsnew2320.html>
+- Kotlin 2.4.0 release notes: <https://kotlinlang.org/docs/whatsnew24.html>
+- Compose BOM mapping: <https://developer.android.com/develop/ui/compose/bom/bom-mapping>
+- Compose BOM guidance: <https://developer.android.com/develop/ui/compose/bom>
+- Gradle current release notes: <https://docs.gradle.org/current/release-notes.html>
+- CodeQL 2.25.2 Kotlin 2.3.20 support changelog: <https://github.blog/changelog/2026-04-15-codeql-2-25-2-adds-kotlin-2-3-20-support-and-other-updates/>
+
+### Current authoritative files
+
+When auditing this project, treat these as stronger than older prose docs:
+
+- Build and dependency truth: `settings.gradle.kts`, `build.gradle.kts`, `app/build.gradle.kts`, `gradle/libs.versions.toml`, `gradle/wrapper/gradle-wrapper.properties`
+- Runtime entry points: `RuncheckApp`, `MainActivity`, `RuncheckNavHost`, `MonitorScheduler`
+- Persistence truth: `RuncheckDatabase`, `DatabaseModule`, Room entities/DAOs, app schema exports
+- Product gates: `ProState`, `ProManager`, `BillingManager`, `IsProUserUseCase`
+- Visual system: `ui/theme/Color.kt`, `Theme.kt`, `Type.kt`, `Shapes.kt`, `Spacing.kt`, `MotionTokens.kt`, `UiTokens.kt`, `StatusColors.kt`
+- Shared UI/runtime helpers: `LifecycleStartStopEffect`, `HistoryLoadErrorMessage`, `HistoryPeriodFilterChipRow`, `ChartStatsRow`, `RuncheckPermissionPolicy`
+- Security surface: `AndroidManifest.xml`, `network_security_config.xml`, `file_export_paths.xml`, `ReleaseSafeLog`, Semgrep config, Sentry source sets
+
+---
+
+## Architecture and Data Flow
+
+runcheck is a single-module Android app using a layered Clean Architecture style. The UI observes domain-facing use cases and repository interfaces; data implementations own Android framework APIs and persistence.
+
+```text
+Android framework / Play Billing / MediaStore / M-Lab NDT7
+        ↓
+data/ sources + repository implementations
+        ↓
+domain/ models, repository contracts, use cases, scoring, insights
+        ↓
+ui/ Hilt ViewModels
+        ↓
+Compose screens and reusable components
+```
+
+Layer expectations:
+
+- `domain/` owns business models, repository interfaces, use cases, health scoring, and insight rules.
+- `data/` owns Android APIs, Room, MediaStore, BatteryManager, ConnectivityManager, PowerManager, StorageStatsManager, Play Billing, and NDT7 integration.
+- `ui/` owns Compose screens, components, ViewModels, navigation, saved UI state, and visual formatting.
+- ViewModels bridge UI and domain only; UI should not call data implementations directly.
+- `androidx.paging.PagingData` is an allowed documented boundary exception in domain cleanup/app-usage flows.
+
+Dependency injection:
+
+- `RepositoryModule` binds data implementations to domain repository contracts.
+- `DatabaseModule` builds Room with migrations 1 through 10 and provides DAOs.
+- `SystemBindingsModule` binds Pro, billing, device profile, monitoring scheduler, screen-state tracking, foreground-app provider, and transaction-runner abstractions.
+- `InsightsModule` multibinds each `InsightRule` into `Set<InsightRule>`.
+- `DataModule` currently provides shared `Gson`.
+- Debug and release `InsightDebugModule` source sets keep debug insight tooling out of release builds.
+
+Important runtime data flows:
+
+- Home combines live battery, network, thermal, storage, insight, Pro, preference, and monitoring-freshness flows, throttled to 333ms display updates.
+- Battery/network/thermal/storage detail ViewModels sample live updates at 333ms to avoid high-frequency UI churn.
+- Periodic monitoring persists snapshots to Room, updates charger sessions, evaluates alerts, records heartbeat, and retries only when core collection/maintenance fails.
+- Insight generation is rule-driven and persisted; Home shows ranked persisted rows, not ad hoc generated UI-only messages.
+- Fullscreen chart route passes selected source/metric/period back to the parent back stack entry through `SavedStateHandle`.
+- Screen observation start/stop is centralized through `LifecycleStartStopEffect` on Home and detail/tool screens so active collectors are started at `ON_START` and stopped at `ON_STOP`.
 
 ---
 
@@ -92,6 +224,9 @@ State restoration details:
 - `rememberSaveable` is used for screen-local UI state such as sheet visibility and metric chip selections.
 - `SavedStateHandle` is used for route-backed or deep state that must survive recreation, including battery/network history period, cleanup filter selection, and fullscreen chart metric/period.
 - Free-tier entry into `charger` and `app_usage` routes redirects to `pro_upgrade`.
+- Direct notification/deep-link routes are limited to argument-free destinations in `Screen.directRoutes`.
+- Learn article cross-links are validated against direct routes at catalog initialization time.
+- Fullscreen chart args are route-backed, but selection changes are returned to Battery/Network through `FullscreenChartResult` keys on the previous back stack entry.
 
 ---
 
@@ -106,25 +241,43 @@ State restoration details:
 - Screen-state tracking repository
 - Periodic monitoring scheduling
 - Widget refreshes when Pro state changes
-- Source-set-specific `SentryInit` initialization; debug builds may report to Sentry, release builds are a no-op
+- Source-set-specific `SentryInit` initialization; debug builds may report to Sentry through `sentry-android-core` only when `RUNCHECK_SENTRY_DSN`, `SENTRY_DSN`, or ignored `debug.credentials.properties` provides `sentry.dsn`; release builds are a no-op and do not include Sentry on the release classpath
+- Debug-only StrictMode policies for thread and VM issue logging
+- Hilt WorkManager factory through `Configuration.Provider`
 
 ### Background Monitoring
 
-Three WorkManager jobs are scheduled through `MonitorScheduler`:
+Three periodic WorkManager jobs are scheduled through `MonitorScheduler`:
 
 - `HealthMonitorWorker`
+  - unique work name: `health_monitor`
+  - interval: current `MonitoringInterval` preference (`15`, `30`, or `60` minutes; default `30`)
   - collects battery, network, thermal, and storage snapshots
   - persists readings into Room
+  - updates charger sessions through `ChargerSessionTracker`
   - evaluates alert conditions
+  - persists last successful worker heartbeat
   - posts notifications for low battery, high temperature, low storage, and charge complete
 - `HealthMaintenanceWorker`
+  - unique work name: `health_maintenance`
+  - interval: current `MonitoringInterval` preference
+  - constrained with `requiresBatteryNotLow`
   - collects per-app usage snapshots
   - cleans up old readings
-  - refreshes widgets
+  - refreshes widgets best-effort; widget refresh failure does not force a retry
 - `InsightGenerationWorker`
+  - unique work name: `insight_generation`
   - evaluates persisted Room history through the Insights Engine
-  - refreshes the Home insights surface on a low-frequency schedule
+  - refreshes the Home insights surface every 6 hours
   - stays battery-conscious with `requiresBatteryNotLow` constraints
+  - retries only on `SQLException`; cancellation is rethrown
+
+Additional WorkManager-backed trial behavior:
+
+- `TrialNotificationWorker`
+  - scheduled by `TrialManager` as unique one-time day-5 and day-7 trial notification work
+  - initializes billing before notifying and skips notifications when Pro is already active
+  - canceled by `ProManager` once a permanent purchase is active
 
 Supporting monitor components include:
 
@@ -157,6 +310,70 @@ Widget data is read from the latest Room snapshots. Widget access is treated as 
 
 ---
 
+## Measurement Reliability and Health Score
+
+### Measured values and confidence
+
+- Sensor values that can be unreliable use `MeasuredValue<T>` with `Confidence`.
+- Internal confidence enum values are `HIGH`, `LOW`, and `UNAVAILABLE`.
+- The UI maps those internal values to user-facing badge labels: `HIGH` → Accurate, `LOW` → Estimated, `UNAVAILABLE` → Unavailable.
+- `ConfidenceBadge` is the shared UI component and uses theme status tokens for backgrounds/text.
+
+Battery current reliability:
+
+- `DeviceCapabilityManager.validateCurrentNow()` reads `BATTERY_PROPERTY_CURRENT_NOW` three times with 300ms spacing.
+- A current source is considered reliable only when readings are non-zero, changing, and plausible.
+- Runtime current normalization distinguishes microamps from milliamps with `MICROAMP_THRESHOLD = 25_000`.
+- Plausible normalized current must be in `0..10000` mA during capability validation.
+- Current sign is aligned with charging state so charging values are positive and discharging values are negative.
+- Device profile stores manufacturer, model, API level, current unit, sign convention, cycle-count availability, thermal-zone list, and storage-health availability.
+- Vendor-specific battery sources exist for Samsung and OnePlus, with API 34+ variants using Android 14+ capabilities when available.
+
+Thermal reliability:
+
+- Battery temperature comes from `ACTION_BATTERY_CHANGED`.
+- Thermal status uses `PowerManager.currentThermalStatus` and `OnThermalStatusChangedListener` on API 29+.
+- Thermal headroom uses `PowerManager.getThermalHeadroom(10)` on API 30+ and polls every 3 seconds.
+- CPU temperature currently emits `null`; no sysfs thermal reads are used.
+
+Network reliability:
+
+- Current connection details are read through Android network APIs.
+- Latency uses five TCP-connect samples against `BuildConfig.LATENCY_HOST` / `BuildConfig.LATENCY_PORT`, with a 1.5s per-sample timeout and 6s total timeout.
+- Jitter is computed with an RFC 3550-style moving jitter formula when at least four samples are available.
+- Network detail and speed test may display signal, latency, Wi-Fi standard, cellular subtype, DNS/IP/MTU, and VPN state when Android exposes them.
+
+### Health score calculation
+
+`HealthScoreCalculator` combines four subsystem scores:
+
+| Subsystem | Weight |
+|-----------|--------|
+| Battery | 40% |
+| Network | 25% |
+| Thermal | 25% |
+| Storage | 10% |
+
+Status thresholds:
+
+| Score | Status |
+|-------|--------|
+| 75-100 | Healthy |
+| 50-74 | Fair |
+| 25-49 | Poor |
+| 0-24 | Critical |
+
+Scoring details:
+
+- Battery score penalizes health state, battery temperature, voltage, and optional health percentage.
+- Network score is `0` when disconnected.
+- Without a recent speed test, network score is based on signal quality and latency.
+- With a speed test less than 1 hour old, network score weighs signal 40%, latency/ping 30%, download speed 20%, and jitter/stability 10%.
+- Thermal score penalizes battery temperature, missing/known CPU temperature, and Android thermal status.
+- Storage score penalizes usage percent, with sharp penalties at high utilization.
+
+---
+
 ## Home Screen
 
 Home is the single entry point and aggregates the latest device state from battery, network, thermal, and storage.
@@ -171,6 +388,7 @@ Main sections:
   - Charger comparison
   - Storage
 - Rule-driven Insights summary backed by persisted Room insight rows, with Home showing a curated subset of up to three items and a dedicated full Insights screen
+- Home Insights are selected by `InsightHomeRankingPolicy`, which avoids showing multiple items from the same target bucket before filling remaining slots
 - Quick tools card
   - Speed Test
   - App Usage
@@ -185,7 +403,9 @@ Trial and Pro UI handled on Home:
 - Post-expiration upgrade card
 - Purchased Pro status card
 - Top-level Insights summary available to all users, with the full list available from the dedicated Insights screen
-- Insight targets may still deep-link to Pro-gated destinations such as Charger Comparison or App Usage
+- Insight targets for Pro-only destinations such as Charger Comparison and App Usage are hidden for free users and visible for trial/Pro users
+- Monitoring stale state is derived from the last worker heartbeat and becomes stale after more than 3x the configured monitoring interval.
+- Home marks currently displayed unseen insight rows as seen through `InsightRepository.markAllSeen()`.
 
 ---
 
@@ -211,11 +431,13 @@ Key sections:
 Battery-specific supporting behavior:
 
 - Current readings use `MeasuredValue<Int>`
+- Current confidence is internally `HIGH`, `LOW`, or `UNAVAILABLE`; badge copy presents those as Accurate, Estimated, or Unavailable.
 - Current stats are tracked in-memory and reset on status change
 - Session and history charts can open a fullscreen landscape chart route
 - History charts use "Instrument Sweep" animation (3-phase: grid fade → oscilloscope sweep → emphasis)
 - Live current/power charts use smooth scroll interpolation + glow pulse on new data
 - Battery screen also consumes dismissed educational/info cards
+- Charger session tracking runs both from Home live observation and from `HealthMonitorWorker` so charge sessions can be updated in foreground and background.
 
 ---
 
@@ -237,6 +459,7 @@ Latency measurement:
 
 - `GetMeasuredNetworkStateUseCase` combines the network state flow with periodic TCP latency measurements (30-second interval via `LatencyMeasurer`)
 - Latency resets to null when connection is lost and re-measures immediately when connection type changes
+- Approved outbound latency surface is TCP connect only to `BuildConfig.LATENCY_HOST` / `BuildConfig.LATENCY_PORT` (`locate.measurementlab.net:443` by default).
 
 Historical chart behavior:
 
@@ -275,6 +498,17 @@ Connection type (WiFi/Cellular) and network subtype are shown in both the latest
 
 Free tier stores a limited history. Pro keeps a larger history.
 
+Implementation constraints:
+
+- `SpeedTestService` uses `net.measurementlab.ndt7.android.NdtTest`.
+- The service lets NDT7 auto-select the server; it does not hardcode a fixed test server.
+- A validated internet connection is required before starting.
+- Cellular starts are blocked with `CellularConfirmationRequired` until the user confirms.
+- The active default network is locked at test start; network loss or connection identity changes fail the test instead of mixing measurements.
+- Download and upload phases each use roughly 10 seconds of NDT7 progress.
+- Server metadata is extracted from NDT7 `ClientResponse.origin` / `ClientResponse.test` when present.
+- `FinalizeSpeedTestUseCase` trims stored history to the free-tier limit unless Pro is active.
+
 ---
 
 ## Thermal Detail
@@ -312,12 +546,18 @@ Main sections:
 - Optional SD card section
 - Educational/info cards
 
+Permission behavior:
+
+- Storage asks through `RuncheckPermissionPolicy.mediaPermissionsForApi()`.
+- Android 14+ distinguishes full media access from selected visual media access through `MediaAccessState`.
+- Media breakdown and cleanup affordances are shown only when the relevant media access exists.
+
 Cleanup tool entry points:
 
 - Large Files
 - Old Downloads
 - APK Files
-- Trash (API 30+)
+- Trash is not a `cleanup/{type}` route; Storage shows trash info and empties trash through a separate API 30+ MediaStore delete request path when trashed media exists.
 
 Free tier behavior:
 
@@ -349,8 +589,14 @@ UI and data behavior:
 - Expand/collapse per category
 - Selection by file or whole group
 - Paging-backed item loading per group
+- Paging page size: 40
 - API 30+ delete flow uses system delete request / intent sender
+- Android 10 and below legacy delete path uses `StorageCleanupHelper.deleteLegacy`
+- Old Downloads and APK cleanup are version-restricted to API 30+ in `CleanupViewModel`
+- APK cleanup preselects all groups by default
 - Selected filter is stored through `SavedStateHandle`
+- Route is Pro-gated in the ViewModel; non-Pro users receive a locked error state before scanning
+- Storage, thermal, network, and battery trend sections share `HistoryPeriodFilterChipRow`, `HistoryLoadErrorMessage`, and `ChartStatsRow` for period chips, history-load failures, and min/avg/max chart stats.
 
 ---
 
@@ -368,7 +614,7 @@ Behavior:
 
 Background support:
 
-- Usage snapshots are collected periodically in maintenance work
+- Usage snapshots are collected periodically in maintenance work only while trial/Pro access is active
 - Data is persisted and then paged back into the UI
 
 ---
@@ -385,8 +631,12 @@ Screens:
 Behavior:
 
 - Articles are grouped by topic
+- Current catalog size: 15 articles
+- Current topics: Battery, Temperature, Network, Storage, General
 - Article detail renders structured body text from catalog resources
 - Some articles expose cross-link buttons into app routes
+- Cross-link routes are validated at startup, and legacy article IDs can alias to canonical IDs.
+- Read/unread state is not persisted.
 
 ---
 
@@ -397,9 +647,12 @@ Fullscreen charts are launched from battery and network trend sections.
 Behavior:
 
 - Landscape-only while the route is visible
-- Supports battery history, battery session, and network history sources
+- Supports battery history, battery session, and network history sources through `FullscreenChartSource`
 - Metric and period chip selections are stored in `SavedStateHandle`
 - Uses the same chart data model, tooltip formatting, and "Instrument Sweep" animation as embedded charts
+- The route itself is `fullscreen_chart/{source}/{metric}/{period}`.
+- Pro lock is applied for `BATTERY_HISTORY` and `NETWORK_HISTORY`; `BATTERY_SESSION` remains available as the current-session fullscreen source.
+- Selection changes are sent back to the previous route with `FullscreenChartResult.KEY_SOURCE`, `KEY_METRIC`, and `KEY_PERIOD`.
 
 ---
 
@@ -444,6 +697,10 @@ Sections:
   - current-now reliability
   - cycle-count availability
   - thermal zone count
+- Debug Insights
+  - visible only when the injected `InsightDebugActions` implementation reports availability
+  - debug builds can seed deterministic demo insight data, regenerate insights from local data, and clear insight rows
+  - release builds bind `ReleaseSafeInsightDebugActions`, return unavailable/no-op behavior, and ship empty non-translatable release strings for this section
 - About
   - version
   - Play Store link
@@ -452,7 +709,7 @@ Sections:
 
 Notes:
 
-- Notification permission handling is built into Settings for Android 13+
+- Notification permission handling is built into Settings for Android 13+ through `RuncheckPermissionPolicy`
 - Export shares one or more CSV files through `FileProvider`
 - All destructive actions (clear speed tests, clear all data, reset tips, reset thresholds) show a confirmation AlertDialog with primary blue confirm button
 
@@ -471,12 +728,70 @@ Primary persisted data:
 - Charger profiles / sessions
 - App usage snapshots
 - Device profile info
+- Insight rows with rule id, dedupe key, priority, confidence, seen/dismissed state, and expiry window
 - User preferences and dismissed info cards
+- Trial state and upgrade-card dismissal pacing
 
 Persistence technologies:
 
-- Room for telemetry/history entities
-- DataStore for user preferences and UI dismissals
+- Room database name: `runcheck.db`
+- Room schema version: 10
+- Room for telemetry/history, charger, app-usage, speed-test, and insight entities
+- Room schema export is enabled and androidTest assets include `app/schemas`; exported schema assets currently cover versions 6-10
+- Room migrations are explicitly registered from 1→2 through 9→10
+- A destructive migration callback logs debug-only and records `destructive_migration_occurred` in `runcheck_db_events`
+- DataStore `settings` for user preferences, dismissed info cards, selected charger, and app-usage collection timestamp
+- DataStore `trial_state` for trial start, last-known timestamp, welcome/day-5 prompt state, and upgrade-card dismissal pacing
+- DataStore `monitoring_status` for the last successful periodic worker heartbeat
+- DataStore `monitoring_alert_state` for the previous alert snapshot and charge-complete debounce state
+- SharedPreferences `pro_status_cache` for synchronous cached purchase status during release cold start
+
+Room tables/entities:
+
+| Table | Entity | Purpose |
+|-------|--------|---------|
+| `battery_readings` | `BatteryReadingEntity` | Battery history |
+| `network_readings` | `NetworkReadingEntity` | Network signal/latency history |
+| `thermal_readings` | `ThermalReadingEntity` | Thermal history |
+| `storage_readings` | `StorageReadingEntity` | Storage usage history |
+| `throttling_events` | `ThrottlingEventEntity` | Thermal throttling log |
+| `charger_profiles` | `ChargerProfileEntity` | User charger labels |
+| `charging_sessions` | `ChargingSessionEntity` | Charging session measurements |
+| `app_battery_usage` | `AppBatteryUsageEntity` | Per-app foreground/estimated usage snapshots |
+| `speed_test_results` | `SpeedTestResultEntity` | NDT7 speed test history |
+| `devices` | `DeviceEntity` | Current device profile JSON |
+| `insights` | `InsightEntity` | Persisted rule-driven insight rows |
+
+Migration history:
+
+| Migration | Main change |
+|-----------|-------------|
+| 1→2 | Adds `throttling_events` |
+| 2→3 | Adds charger profiles and charging sessions |
+| 3→4 | Adds app battery usage |
+| 4→5 | Recreates network readings with nullable `signal_dbm` |
+| 5→6 | Adds speed test results |
+| 6→7 | Adds battery status/timestamp and charging session end-time indexes |
+| 7→8 | Adds app-usage package/timestamp composite index |
+| 8→9 | Drops redundant package-name-only app-usage index |
+| 9→10 | Adds `insights` table and indexes |
+
+Default preference values:
+
+| Setting | Default |
+|---------|---------|
+| Monitoring interval | 30 minutes |
+| Notifications master toggle | Enabled |
+| Data retention | 3 months |
+| Low battery alert | Enabled, threshold 20% |
+| High temperature alert | Enabled, threshold 42°C |
+| Low storage alert | Enabled, threshold 90% |
+| Charge-complete alert | Disabled |
+| Temperature unit | Celsius |
+| Live notification | Disabled |
+| Live current/drain/temp lines | Enabled |
+| Live screen stats/remaining time lines | Disabled |
+| Info cards | Enabled |
 
 ---
 
@@ -486,10 +801,16 @@ Pro state is handled through `BillingManager`, `ProManager`, and `ProState`.
 
 Current product behavior:
 
-- Trial state is treated as Pro access
+- Trial duration is 7 days and trial state is treated as Pro access
 - Expired trial loses gated features
 - Purchased Pro unlocks all Pro features permanently
 - No subscriptions
+- Debug builds force `BillingManager` Pro state to active for development
+- Release builds use Google Play Billing one-time `INAPP` product, default product id `runcheck_pro`
+- Product id can be overridden with `RUNCHECK_PRO_PRODUCT_ID`
+- Pending purchases are tracked separately and do not unlock Pro until purchased
+- Purchased but unacknowledged purchases are acknowledged with up to 3 retries
+- Cached Pro state is restored synchronously in release builds to avoid a free-tier flash while Billing queries run
 
 Pro-gated areas currently include:
 
@@ -500,6 +821,67 @@ Pro-gated areas currently include:
 - CSV export
 - Widgets
 - Remaining charge time
+- Storage cleanup route
+
+`ProFeature` enum values:
+
+- `EXTENDED_HISTORY`
+- `CHARGER_COMPARISON`
+- `PER_APP_BATTERY`
+- `WIDGETS`
+- `CSV_EXPORT`
+- `THERMAL_LOGS`
+- `REMAINING_CHARGE_TIME`
+- `STORAGE_CLEANUP`
+
+All current features share the single `ProState.isPro` decision. The per-feature enum remains in place so a future per-feature gate can be added without changing all UI call sites.
+
+---
+
+## Security and Privacy Surface
+
+Manifest and network posture:
+
+- `android:allowBackup="false"`
+- `android:usesCleartextTraffic="false"`
+- `network_security_config.xml` permits system trust anchors only and disallows cleartext traffic.
+- `androidx.startup.InitializationProvider` is removed; startup is explicit through `RuncheckApp`.
+- Main launcher activity is exported by design.
+- App widgets are exported with `android.permission.BIND_APPWIDGET`.
+- `RealTimeMonitorService` is not exported and uses `foregroundServiceType="specialUse"` with a declared special-use subtype.
+- FileProvider is not exported and exposes only cache path `exports/` as `csv_exports`.
+
+Declared permission surface:
+
+| Permission | Purpose |
+|------------|---------|
+| `ACCESS_NETWORK_STATE` | Network type/capability detection |
+| `ACCESS_WIFI_STATE` | Wi-Fi connection details |
+| `INTERNET` | User-initiated NDT7 speed tests and TCP latency measurement |
+| `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION` | Optional Wi-Fi SSID/BSSID visibility; requested together so Android can offer precise access |
+| `POST_NOTIFICATIONS` | Android 13+ notifications |
+| `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE` | Opt-in live monitoring notification |
+| `RECEIVE_BOOT_COMPLETED` | Reschedule monitoring after boot/package replacement/unlock |
+| `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO`, `READ_MEDIA_VISUAL_USER_SELECTED` | Android 13+ media breakdown/cleanup, including Android 14+ selected visual media state |
+| `READ_EXTERNAL_STORAGE` maxSdk 32 | Android 12 and below media fallback |
+| `WRITE_EXTERNAL_STORAGE` maxSdk 28 | Legacy delete fallback |
+| `PACKAGE_USAGE_STATS` | App Usage / per-app battery feature |
+| `READ_BASIC_PHONE_STATE` | Android 13+ cellular network generation fallback |
+
+Runtime permission decisions are centralized in `RuncheckPermissionPolicy` for Wi-Fi detail location permissions, Android-version-specific media permission lists, Android 14+ partial visual media access, and Android 13+ notification permission checks.
+
+Approved outbound network surfaces:
+
+- User-initiated M-Lab NDT7 speed tests
+- TCP latency measurement to the configured latency host/port
+- Google Play Billing
+
+Telemetry/logging boundary:
+
+- Release Sentry init is a no-op.
+- Debug Sentry disables tracing, profiling, auto session tracking, breadcrumbs, activity lifecycle tracing, frames tracking, screenshots, view hierarchy, NDK, performance v2, and auto trace id generation.
+- `ReleaseSafeLog` emits Android logs only in debug builds.
+- Semgrep has project-specific rules for backup, cleartext, exported components, broad FileProvider paths, sensitive Android logging, outbound network primitives, and release telemetry expansion.
 
 ---
 
@@ -521,6 +903,7 @@ Single dark theme — no light mode, no AMOLED toggle, no dynamic colors.
 |-------|-----|----------------|-------|
 | BgPage | `#0B1E24` | `background`, `surface` | Page background |
 | BgCard | `#133040` | `surfaceContainer` | Card backgrounds |
+| BgCardDeep | `#0D2530` | — | Deeper card surfaces where explicitly used |
 | BgCardAlt | `#0F2A35` | `surfaceContainerHigh` | Info cards, elevated surfaces |
 | BgIconCircle | `#1A3A48` | `surfaceContainerHighest`, `surfaceVariant` | Icon circle backgrounds |
 
@@ -594,6 +977,8 @@ Used via `MaterialTheme.statusColors` extension. Always paired with icons or tex
 
 | Style | Base | Size | Usage |
 |-------|------|------|-------|
+| numericHeroDisplayTextStyle | displayLarge | 64sp Bold, -3sp tracking | Primary large hero displays |
+| numericHeroDisplayUnitTextStyle | headlineLarge | 28sp SemiBold | Units next to primary large hero displays |
 | numericHeroValueTextStyle | displayLarge | 48sp Bold | Large hero values |
 | numericHeroLargeValueTextStyle | displayLarge | 54sp | Battery level display |
 | numericHeroLevelTextStyle | displayLarge | 48sp Bold, -2sp tracking | Compact hero values |
@@ -629,6 +1014,8 @@ Used via `MaterialTheme.statusColors` extension. Always paired with icons or tex
 
 **Dividers:** `outlineVariant.copy(alpha = 0.35f)` — no hardcoded colors.
 
+Shared UI dimensions such as touch targets, icon sizes, button heights, outline width, and Pro lock/badge alpha values live in `UiTokens`.
+
 **Contrast:** Minimum 4.5:1 body text, 3:1 large text (WCAG AA). Minimum touch target 48dp.
 
 ### Logo
@@ -638,23 +1025,95 @@ Icon source files in `icons/` directory (SVG masters + 512px PNG exports).
 
 ---
 
+## Testing and Verification
+
+Current test surface:
+
+- Unit tests: 58 Kotlin files under `app/src/test/java/com/runcheck/`
+- Instrumented tests: 1 Kotlin file under `app/src/androidTest/java/com/runcheck/`
+- Android test assets include exported Room schemas for migration tests; current exported assets cover versions 6-10.
+- Shared coroutine main dispatcher rule lives in `ui/MainDispatcherRule.kt`.
+
+High-value unit coverage areas:
+
+- Battery source normalization and device capability detection
+- Billing helper behavior and Pro state transitions
+- Network VPN detection and network ViewModel behavior
+- Thermal helper mapping
+- Health score calculation
+- Domain use cases for cleanup, alerts, export, battery stats, charger comparison, throttling, and retention
+- Insight home ranking policy and every current Insight rule
+- Home, Settings, Storage cleanup, App Usage, Charger, Battery, Network, Insights, Fullscreen Chart, and Learn ViewModel/helper behavior
+- Chart render/accessibility helpers
+- Debug/release-safe insight debug action boundaries
+- Worker behavior for monitor scheduler, health monitor, and insight generation
+
+Low-CPU verification policy:
+
+- Do not run full Gradle builds, `lc`, `sc`, Sonar, Dependency-Check, MobSF, DeepSec, or broad verification by default.
+- Prefer source-backed review, targeted tests, targeted Gradle tasks, wrapper `-PlanOnly`, and static grep first.
+- User-facing aliases `lc` and `sc` are intentionally run by the user when they want full lint/security reports.
+- When report artifacts exist, read them first instead of rerunning heavy wrappers.
+- `reports/` is ignored and must not be committed.
+
+Useful narrow commands:
+
+```powershell
+.\gradlew --no-daemon testDebugUnitTest --tests "com.runcheck.domain.scoring.HealthScoreCalculatorTest"
+.\gradlew --no-daemon :app:compileDebugKotlin :app:compileDebugUnitTestKotlin --no-configuration-cache
+.\tools\pc.ps1 -PlanOnly
+.\tools\sentry.ps1 -PlanOnly
+Get-ChildItem tools -Filter *.ps1 | ForEach-Object { & $_.FullName -PlanOnly }
+```
+
+Report-reading convention:
+
+- "lue lint-tulokset" means read `reports/ktlint.txt`, `reports/detekt.txt`, and `reports/lint.txt`.
+- "lue security-tulokset" means read `reports/security-code.txt` and `reports/security-deps.txt`.
+
+---
+
 ## CI/CD Pipeline
 
 GitHub Actions workflows in `.github/workflows/`:
 
 | Workflow | Purpose | Status |
 |----------|---------|--------|
-| `codeql.yml` | CodeQL security analysis (java-kotlin, manual build) | Active |
-| `security.yml` | Semgrep SAST + OWASP Dependency-Check (SARIF → Code Scanning) | Active |
-| `qodana.yml` | JetBrains Qodana code quality (Community for Android) | Blocked — AGP 9 not yet supported |
+| `codeql.yml` | CodeQL security analysis (`java-kotlin`, manual `assembleDebug`) | Active |
+| `security.yml` | Semgrep SAST + OWASP Dependency-Check SARIF upload | Active |
+| `sonar.yml` | SonarCloud scan after `assembleDebug` | Active |
+| `qodana.yml` | JetBrains Qodana action (`v2025.1`) | Configured, but AGP 9.x support remains a known risk |
+| `qodana_code_quality.yml` | JetBrains Qodana action (`v2025.3`) for `main`, `releases/*`, PRs, and manual dispatch | Configured, but AGP 9.x support remains a known risk |
 
 External services:
-- **SonarCloud** — continuous code quality (`Insaner1980_runcheck`, org `insaner1980`). CI workflow in runcheck repo configured separately.
+- **SonarCloud** — continuous code quality (`Insaner1980_runcheck`, org `insaner1980`). CI path is `.github/workflows/sonar.yml`; local path is `tools/sonar.ps1`.
 - **Qodana Cloud** — org "Finnvek Dev", project "runcheck"
 
-Local tools:
-- `scripts/security-check.sh` — runs Semgrep + OWASP dependency-check locally, results in `reports/`
-- `lint-check` / `security-check` aliases (`lc` / `sc`)
+Local PowerShell wrappers:
+
+- `tools/lc.ps1` (`lc`) — ktlint, detekt, Android lint; writes `reports/ktlint.txt`, `reports/detekt.txt`, and `reports/lint.txt`
+- `tools/ac.ps1` (`ac`) — Android security surface: project Semgrep, mobsfscan, and DeepSec custom report
+- `tools/dc.ps1` (`dc`) — Gradle dependency verification, OSV Scanner, and OWASP Dependency-Check
+- `tools/ss.ps1` (`ss`) — gitleaks, TruffleHog, and Semgrep secrets
+- `tools/ds.ps1` (`ds`) — DeepSec custom scan/report/revalidate paths
+- `tools/ms.ps1` (`ms`) — mobsfscan
+- `tools/os.ps1` (`os`) — OSV Scanner
+- `tools/ql.ps1` (`ql`) — CodeQL workflow/status check through GitHub tooling
+- `tools/db.ps1` (`db`) — Dependabot config and alert check
+- `tools/pc.ps1` (`pc`) — PMD CPD duplicate scan; default minimum token threshold is 100 and can be overridden with `PMD_CPD_MINIMUM_TOKENS`
+- `tools/cs.ps1` (`cs`) — Compose Stability Analyzer (`:app:stabilityCheck`)
+- `tools/cr.ps1` (`cr`) — compose-rules through ktlint and detekt
+- `tools/ga.ps1` (`ga`) — Google Android Security Lints through Android lint
+- `tools/sc.ps1` (`sc`) — combined security check; `-Full` also runs Android security checks
+- `tools/sentry.ps1` (`sentry`) — verifies debug-only Sentry wiring and release classpath exclusion; writes `reports/sentry.txt`
+- `tools/sonar.ps1` — SonarCloud local path; requires `SONAR_TOKEN`, runs `assembleDebug`, `:app:jacocoDebugUnitTestReport`, and `sonar`, then writes `reports/sonar.txt`
+
+Compatibility wrappers and config:
+
+- `scripts/security-check.ps1` forwards to `tools/sc.ps1`
+- `scripts/security-check.sh` is a Linux legacy script
+- Check configuration lives in `config/semgrep/runcheck-security.yml`, `config/dependency-check/suppressions.xml`, `.mobsf`, `.deepsec/`, `.github/dependabot.yml`, `sonar-project.properties`, and `gradle/osv-scanner.toml`
+- `reports/` is ignored and must not be committed
 
 ---
 
@@ -678,10 +1137,27 @@ runcheck now includes a cross-category correlation engine that analyzes Room dat
 - Network quality degradation at specific times
 - Anomaly detection from normal usage patterns
 
+Current Insights rule set:
+
+- `BatteryDegradationTrendRule`
+- `AppBatteryImpactRule`
+- `ChargerPerformanceRule`
+- `StoragePressureProjectionRule`
+- `RecurringThermalThrottlingRule`
+- `HeavyAppUsageRule`
+- `NetworkSignalPatternRule`
+- `NetworkDrivenBatteryDrainRule`
+- `HeatAcceleratedBatteryWearRule`
+- `StoragePressureImpactRule`
+- `ThermalPatternDetectionRule`
+
+Rules are Hilt multibindings into `Set<InsightRule>`. `InsightEngine` filters generated candidates below 0.6 confidence, replaces results per rule, preserves existing seen/dismissed state for matching dedupe keys, and deletes expired rows before and after generation.
+
 ### Known Tool Limitations
 
-- **Qodana:** AGP 9.1.0 not yet supported (`AndroidArtifact.getPrivacySandboxSdkInfo()`)
-- **CodeQL:** Works with Kotlin 2.3.0 (runcheck), does NOT support 2.3.20+
+- **Qodana:** AGP 9.x has a known `AndroidArtifact.getPrivacySandboxSdkInfo()` risk in JetBrains/Qodana tooling. Treat both Qodana workflows as configured-but-needing fresh proof on every AGP/Gradle bump.
+- **CodeQL:** GitHub CodeQL 2.25.2 supports Kotlin up to 2.3.20, but Kotlin 2.4.x is beyond the known-supported line in the current review snapshot. Check the actual CodeQL Action runner version before Kotlin plugin upgrades.
+- **Sonar:** AGP 9 support has had scanner-side compatibility churn. Keep `tools/sonar.ps1` and `.github/workflows/sonar.yml` verified when changing AGP, Gradle, or Kotlin.
 
 ---
 

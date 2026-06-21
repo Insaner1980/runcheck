@@ -36,8 +36,6 @@ sealed interface CleanupUiState {
 
     data object Empty : CleanupUiState
 
-    data object NeedsStoragePermission : CleanupUiState
-
     data object UnsupportedVersion : CleanupUiState
 }
 

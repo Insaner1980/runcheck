@@ -7,6 +7,7 @@ import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.usecase.GetStorageHistoryUseCase
 import com.runcheck.domain.usecase.GetStorageStateUseCase
+import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
@@ -39,6 +40,7 @@ class StorageViewModel
         private val savedStateHandle: SavedStateHandle,
         private val getStorageState: GetStorageStateUseCase,
         private val observeProAccess: ObserveProAccessUseCase,
+        private val isProUser: IsProUserUseCase,
         private val storageCleanup: StorageCleanupUseCase,
         private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase,
         private val manageUserPreferences: ManageUserPreferencesUseCase,
@@ -84,6 +86,7 @@ class StorageViewModel
 
         fun emptyTrash() {
             viewModelScope.launch {
+                if (!isProUser()) return@launch
                 val uris = storageCleanup.getTrashedUris()
                 if (uris.isEmpty()) return@launch
                 _trashDeleteRequestUris.emit(uris)

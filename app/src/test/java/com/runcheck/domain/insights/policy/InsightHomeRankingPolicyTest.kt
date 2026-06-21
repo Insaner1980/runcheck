@@ -1,5 +1,6 @@
 package com.runcheck.domain.insights.policy
 
+import com.runcheck.domain.insights.engine.InsightHomeRankingPolicy
 import com.runcheck.domain.insights.model.Insight
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget

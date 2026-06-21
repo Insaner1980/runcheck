@@ -27,8 +27,8 @@ import com.runcheck.domain.usecase.GetNetworkStateUseCase
 import com.runcheck.domain.usecase.GetStorageStateUseCase
 import com.runcheck.domain.usecase.GetThermalStateUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
-import com.runcheck.pro.ProManager
 import com.runcheck.pro.ProState
+import com.runcheck.pro.ProStateProvider
 import com.runcheck.pro.ProStatus
 import com.runcheck.pro.TrialManager
 import com.runcheck.ui.MainDispatcherRule
@@ -61,7 +61,7 @@ class HomeViewModelTest {
     private val getStorageState: GetStorageStateUseCase = mockk()
     private val insightRepository: InsightRepository = mockk(relaxed = true)
     private val monitoringStatusRepository: MonitoringStatusRepository = mockk(relaxed = true)
-    private val proManager: ProManager = mockk()
+    private val proStateProvider: ProStateProvider = mockk()
     private val trialManager: TrialManager = mockk(relaxed = true)
     private val chargerSessionTracker: ChargerSessionTracker = mockk(relaxed = true)
     private val healthScoreCalculator = HealthScoreCalculator()
@@ -117,7 +117,7 @@ class HomeViewModelTest {
         every { insightRepository.getHomeInsights(any()) } returns flowOf(emptyList())
         every { insightRepository.getActiveInsights() } returns flowOf(emptyList())
         every { insightRepository.getUnseenCount() } returns flowOf(0)
-        every { proManager.proState } returns proStateFlow
+        every { proStateProvider.proState } returns proStateFlow
         every { manageUserPreferences.observePreferences() } returns flowOf(UserPreferences())
         every { monitoringStatusRepository.observeLastWorkerHeartbeatAt() } returns
             flowOf(System.currentTimeMillis())
@@ -140,7 +140,7 @@ class HomeViewModelTest {
             getStorageState = getStorageState,
             insightRepository = insightRepository,
             monitoringStatusRepository = monitoringStatusRepository,
-            proManager = proManager,
+            proStateProvider = proStateProvider,
             trialManager = trialManager,
             chargerSessionTracker = chargerSessionTracker,
             healthScoreCalculator = healthScoreCalculator,
@@ -455,6 +455,31 @@ class HomeViewModelTest {
         }
 
     @Test
+    fun `home filters pro-only insights for free users`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val batteryInsight = testInsight(1L, InsightTarget.BATTERY)
+            val appUsageInsight = testInsight(2L, InsightTarget.APP_USAGE)
+            val chargerInsight = testInsight(3L, InsightTarget.CHARGER)
+            every { insightRepository.getHomeInsights(any()) } returns
+                flowOf(listOf(batteryInsight, appUsageInsight, chargerInsight))
+            every { insightRepository.getActiveInsights() } returns
+                flowOf(listOf(batteryInsight, appUsageInsight, chargerInsight))
+            every { insightRepository.getUnseenCount() } returns flowOf(3)
+            proStateFlow.value = ProState(status = ProStatus.TRIAL_EXPIRED)
+
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceAll()
+
+            val state = viewModel.uiState.value as HomeUiState.Success
+            assertEquals(listOf(InsightTarget.BATTERY), state.insights.map { it.target })
+            assertEquals(1, state.totalInsightCount)
+            assertEquals(1, state.unseenInsightCount)
+
+            viewModel.stopObserving()
+        }
+
+    @Test
     fun `dismiss insight delegates to repository`() =
         runTest(mainDispatcherRule.testDispatcher) {
             coEvery { insightRepository.dismiss(42L) } returns Unit
@@ -465,4 +490,23 @@ class HomeViewModelTest {
 
             coVerify(exactly = 1) { insightRepository.dismiss(42L) }
         }
+
+    private fun testInsight(
+        id: Long,
+        target: InsightTarget,
+    ) = Insight(
+        id = id,
+        ruleId = "rule_$id",
+        type = InsightType.BATTERY,
+        priority = InsightPriority.HIGH,
+        confidence = 0.9f,
+        titleKey = "title",
+        bodyKey = "body",
+        bodyArgs = emptyList(),
+        generatedAt = 0L,
+        expiresAt = Long.MAX_VALUE,
+        target = target,
+        seen = false,
+        dismissed = false,
+    )
 }
