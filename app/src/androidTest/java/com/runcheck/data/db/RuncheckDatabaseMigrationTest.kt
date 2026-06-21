@@ -38,7 +38,7 @@ class RuncheckDatabaseMigrationTest {
             close()
         }
 
-        helper.runMigrationsAndValidate(TEST_DB, 9, true, *DatabaseModule.ALL_MIGRATIONS)
+        helper.runMigrationsAndValidate(TEST_DB, 8, true, *DatabaseModule.ALL_MIGRATIONS)
     }
 
     @Test

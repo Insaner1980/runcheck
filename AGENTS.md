@@ -85,7 +85,7 @@ Home
 Current runtime systems:
 
 - `RuncheckApp` initializes billing, Pro state, notification channels, screen-state tracking, periodic monitoring, and widget refresh hooks
-- `RuncheckApp` also initializes source-set-specific `SentryInit`; debug builds may report to Sentry, release builds are a no-op and must remain telemetry-free
+- `RuncheckApp` also initializes source-set-specific `SentryInit`; debug builds may report to Sentry through `sentry-android-core` only when `RUNCHECK_SENTRY_DSN`, `SENTRY_DSN`, or ignored `debug.credentials.properties` provides `sentry.dsn`; release builds are a no-op and must remain telemetry-free
 - WorkManager runs `HealthMonitorWorker` for snapshot collection + alert evaluation
 - WorkManager runs `HealthMaintenanceWorker` for app-usage refresh, cleanup, and widget refresh
 - WorkManager runs `InsightGenerationWorker` on the monitoring scheduler lifecycle to generate persisted Home insights from Room history
@@ -99,6 +99,43 @@ State restoration conventions:
 
 - Use `rememberSaveable` for screen-local UI state such as sheet visibility, dialogs, and metric chip selections
 - Use `SavedStateHandle` for route-backed or process-death-sensitive state such as selected history period, cleanup type, and fullscreen chart args
+
+---
+
+## Local Check Tooling
+
+PowerShell wrappers live in `tools/` and forward to `C:\Dev\Android-check\tools\InvokeProjectCheck.ps1`.
+
+- `lc` / `tools\lc.ps1` — ktlint, detekt, Android lint; writes `reports\ktlint.txt`, `reports\detekt.txt`, and `reports\lint.txt`
+- `ac` / `tools\ac.ps1` — Android security surface; project Semgrep, mobsfscan, and DeepSec custom report
+- `dc` / `tools\dc.ps1` — dependency verification, OSV, OWASP Dependency-Check; use `dc -InitVerification` only when intentionally creating or updating `gradle\verification-metadata.xml`
+- `ss` / `tools\ss.ps1` — gitleaks, TruffleHog, Semgrep secrets
+- `ds` / `tools\ds.ps1` — DeepSec custom scan/report/revalidate paths
+- `ms` / `tools\ms.ps1` — mobsfscan
+- `os` / `tools\os.ps1` — OSV Scanner
+- `ql` / `tools\ql.ps1` — CodeQL workflow/status check through GitHub tooling
+- `db` / `tools\db.ps1` — Dependabot config and alert check
+- `pc` / `tools\pc.ps1` — PMD CPD duplicate scan; runcheckin oletuskynnys on 100 tokenia, ja sen voi ohittaa `PMD_CPD_MINIMUM_TOKENS`-ympäristömuuttujalla
+- `cs` / `tools\cs.ps1` — Compose Stability Analyzer (`:app:stabilityCheck`)
+- `cr` / `tools\cr.ps1` — compose-rules through ktlint and detekt
+- `ga` / `tools\ga.ps1` — Google Android Security Lints through Android lint
+- `sc` / `tools\sc.ps1` — combined security check; `-Full` also runs Android security checks
+- `sentry` / `tools\sentry.ps1` — verifies debug-only Sentry wiring; debug must contain `io.sentry`, release must not contain `io.sentry`, and results are written to `reports\sentry.txt`
+- `tools\sonar.ps1` — SonarCloud path; requires `SONAR_TOKEN`, runs `assembleDebug`, `:app:jacocoDebugUnitTestReport`, and `sonar`, then writes `reports\sonar.txt`
+
+`scripts\security-check.ps1` is only a compatibility wrapper to `tools\sc.ps1`. `scripts\security-check.sh` is Linux legacy. `reports/` is ignored and must not be committed.
+
+Do not run the heavy `lc`, `sc`, Sonar, Dependency-Check, MobSF, DeepSec, or full Gradle verification paths unless the user explicitly asks or they are required to unblock the task. Prefer `-PlanOnly`, task listing, targeted config checks, and narrow tests first.
+
+Project-specific check configuration lives in:
+
+- `config\semgrep\runcheck-security.yml`
+- `config\dependency-check\suppressions.xml`
+- `.mobsf`
+- `.deepsec\`
+- `.github\dependabot.yml`
+
+Compose-rules versions are intentionally split while the project stays on Detekt 1.23.8: ktlint uses the current 0.5.x line with ktlint explicitly pinned to the compatible 1.8.x rule engine, and Detekt uses the latest 0.4.x line compatible with Detekt 1.x. Do not move Detekt compose-rules to 0.5.x without a Detekt 2.x migration.
 
 ---
 
@@ -189,7 +226,7 @@ Raise a review comment for any of the following:
 - No dynamic colors.
 - One-time Pro purchase only. No subscription, no ads.
 - English-only localization is intentional for now. Do not reintroduce partial Finnish strings ad hoc.
-- Debug-only Sentry wiring exists for local/dev diagnostics; do not ship crash reporting, analytics, or tracking in release.
+- Debug-only Sentry wiring exists for local/dev diagnostics; keep it on `sentry-android-core`, do not hardcode the DSN, and do not ship crash reporting, analytics, replay, tracing, NDK symbol capture, or tracking in release.
 - NDT7 backend for speed tests. No alternatives.
 - Minimum SDK: 26. Do not lower.
 
@@ -212,3 +249,97 @@ If local Codex skills are installed, prefer:
 - If verification is needed, use the smallest scoped check possible: one compile task, one module task, or one narrowly filtered test class.
 - Avoid running multiple coding agents or tools that may build the same repo in parallel.
 - When verification is intentionally skipped or minimized, say so clearly in the final response.
+
+
+<claude-mem-context>
+# Memory Context
+
+# [runcheck] recent context, 2026-06-09 4:33pm GMT+3
+
+Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
+Format: ID TIME TYPE TITLE
+Fetch details: get_observations([IDs]) | Search: mem-search skill
+
+Stats: 50 obs (18,385t read) | 280,347t work | 93% savings
+
+### Mar 16, 2026
+4488 8:49p 🔵 Network detail screen displays IPv6 addresses using MetricRow component
+4489 " 🔵 Network detail screen structure examined for tap-to-copy integration
+4490 " 🔵 MetricRow component structure analyzed for interactive enhancement
+4491 8:50p ✅ Added clipboard feedback string resource
+4492 " 🟣 Added Finnish localization for clipboard copy feedback
+4493 " 🟣 MetricRow component enhanced with tap-to-copy and text truncation
+4494 " 🟣 Network detail fields enabled for tap-to-copy interaction
+4495 8:51p 🟣 Made WiFi BSSID copyable with tap-to-copy functionality
+4496 8:52p 🟣 MetricRow component enhanced with tap-to-copy and truncation support
+4497 " 🔵 MetricRow tap-to-copy implementation verified for design consistency
+4498 8:53p 🔄 Optimized MetricRow component for copyable and truncation logic
+4499 " 🔴 Text alignment corrected for truncated values in MetricRow
+S383 Update Get Shit Done (GSD) meta-prompting system from v1.22.4 to latest version (Mar 16, 8:53 PM)
+### Mar 17, 2026
+4500 5:37p 🔵 Battery & Thermal Enhancements Specification
+4501 5:41p 🔵 Battery and Thermal Subsystem Architecture Analysis
+### Mar 18, 2026
+4502 10:52a ✅ GSD upgraded from v1.22.4 to v1.25.1 globally
+S384 Fetch updated runcheck Android app code from GitHub repository (Mar 18, 10:53 AM)
+4503 10:54a 🟣 Device-specific battery monitoring and storage model enhancements
+S385 Comprehensive architecture audit of runcheck Android app after pulling GitHub updates (Mar 18, 10:55 AM)
+4504 11:06a 🔴 DAO dependency injection scoping corrected with @Singleton annotations
+4505 11:08a 🔄 Domain model ScannedFile decoupled from Android Uri dependency
+S386 Comprehensive Jetpack Compose code review for performance, correctness, and best practices across all UI files (Mar 18, 11:08 AM)
+4506 " 🔴 Fixed hardcoded navigation route in cleanup feature
+4507 " 🔄 FileExportRepository implementation updated to return String URIs
+4508 11:09a 🔄 Removed Compose UI dependency from ThumbnailLoader data layer class
+4509 " 🔄 FileListItem UI component decoupled from ThumbnailLoader data layer dependency
+4510 11:10a 🔄 SettingsUiState updated to use String URIs instead of android.net.Uri
+S387 Comprehensive Jetpack Compose code review for runcheck Android app with fixes applied to all issues including minor ones (Mar 18, 12:43 PM)
+S388 Comprehensive Jetpack Compose code review with systematic implementation of fixes; clarification requested on impact of removing unused imports (Mar 18, 12:44 PM)
+S389 Comprehensive Room database review covering entities, DAOs, migrations, type converters, threading, and lifecycle (Mar 18, 12:45 PM)
+S390 Verification that all minor/low severity Room database issues were addressed (Mar 18, 4:20 PM)
+S391 Fix duplicate Android string resource preventing unit test execution in runcheck app (Mar 18, 4:22 PM)
+4511 4:46p 🔵 Test Coverage Analysis Complete for runcheck Android App
+4512 6:50p 🔵 Duplicate string resource blocks Android build
+4513 " 🔵 String resource settings_data_section duplicated four times
+4514 " 🔵 First duplicate settings_data_section found in Export section
+4515 " 🔵 Finnish locale duplicates untranslated settings_data_section string
+4516 6:51p 🔵 Second duplicate settings_data_section found in Data Management section
+4517 " 🔵 Finnish locale duplicates untranslated settings_data_section in Data Management section
+4518 " 🔴 Removed duplicate settings_data_section from Export section
+4519 " 🔴 Removed duplicate settings_data_section from Finnish Export section
+4520 6:52p 🔴 Remove CLAUDE.md files from Android resource directories
+4521 6:53p 🔵 Identified claude-md-management plugin causing auto-CLAUDE.md creation
+4522 6:54p ✅ Add CLAUDE.md to .gitignore for Android resource directories
+4523 6:55p 🟣 Implement hookify rule to block CLAUDE.md creation in Android res directories
+S392 Fix recurring Android Gradle build failures caused by CLAUDE.md files in res directories (Mar 18, 6:55 PM)
+4524 6:57p 🔵 Android Build Failure: CLAUDE.md Files in Resource Directories
+4525 6:58p 🔵 Claude-Mem Plugin Enabled Despite CLAUDE.md Conflicts
+4526 " 🔵 Prevention Hook Exists But Ineffective Against CLAUDE.md Creation
+4527 " 🔵 Multiple Hook Layers Failed to Prevent CLAUDE.md Creation
+4528 6:59p 🔵 Claude-Mem Plugin Operates on PostToolUse Lifecycle Phase
+4529 7:01p 🔵 Claude-Mem Creates CLAUDE.md Files in Every Processed Directory
+4530 " 🔴 Removed Build-Breaking CLAUDE.md Files from Android Resource Directories
+4531 7:02p 🔄 ProGuard rules optimized by removing unnecessary keep rules
+4532 " 🔄 Removed unused kotlin-android plugin from version catalog
+**4533** " ✅ **Enforced centralized repository management in Gradle settings**
+The Gradle configuration was hardened by adding repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS) to the dependency resolution management block in settings.gradle.kts. This setting enforces that all dependency repositories (google(), mavenCentral(), JitPack) must be declared at the settings level, and prevents individual module build files from declaring their own repositories. This is a Gradle best practice that centralizes repository management, improves build reproducibility, and enhances security by ensuring all dependencies come from approved sources. If a module attempts to add its own repositories block, the build will fail with a clear error message, catching configuration mistakes early.
+~341t 🛠️ 1,292
+
+**4534** 7:03p 🔄 **Migrated environment variable reads to Gradle Providers API**
+The build configuration was modernized by migrating from direct System.getenv() calls to Gradle's Providers API using providers.environmentVariable(). This is critical for enabling Gradle's configuration cache feature, which can dramatically improve build performance by caching the result of the configuration phase. Direct System.getenv() reads break configuration cache because they're not tracked as build inputs, while the Providers API creates lazy providers that Gradle can properly track and cache. The migration maintains all existing default values (runcheck_pro for product ID, locate.measurementlab.net for latency host, 443 for port, and AdMob test IDs) while enabling modern Gradle optimizations. This is particularly important for CI/CD pipelines and local development where configuration cache can reduce build times significantly.
+~386t 🛠️ 4,624
+
+**4535** " 🔄 **Migrated signing configuration to Providers API**
+The signing configuration was updated to use Gradle's Providers API for reading release signing credentials from environment variables. This completes the migration away from System.getenv() calls in the build script. The signing config reads four sensitive environment variables (keystore path, keystore password, key alias, and key password) that are required for creating signed release APKs. Using providers.environmentVariable().getOrNull() maintains the existing behavior where signing is optional - if the keystore path is not set, the release build simply won't be signed (useful for CI builds that don't need signing). This migration is critical for enabling Gradle configuration cache, which significantly improves build performance by caching configuration phase results.
+~375t 🛠️ 4,696
+
+**4536** 7:04p ✅ **Removed unused dependency locking configuration**
+The dependency locking configuration was removed from the build script as it was not being actively used. Gradle's dependency locking feature requires explicit lock file generation with --write-locks flag and committed lockfiles to provide reproducible builds. When declared but not maintained, it adds configuration overhead without benefits. The project already uses a version catalog (libs.versions.toml) for centralized dependency version management, which provides similar reproducibility guarantees. Removing unused features simplifies the build configuration and reduces potential confusion. If reproducible builds become a requirement later, dependency locking can be re-enabled with proper lock file maintenance workflow.
+~333t 🛠️ 3,002
+
+**4537** " ✅ **Updated documentation to reflect Kotlin plugin configuration**
+The project documentation was updated to remove an outdated note about AGP built-in Kotlin configuration. The previous documentation mentioned that android.builtInKotlin was disabled for KSP compatibility, but this configuration detail was removed from the tech stack overview. This aligns with earlier changes where the kotlin-android plugin declaration was removed from the version catalog, with the project now relying on the kotlin-compose plugin for Kotlin compilation. The simplified documentation reflects the current build configuration without implementation details that may change or become outdated.
+~285t 🛠️ 5,794
+
+
+Access 280k tokens of past work via get_observations([IDs]) or mem-search skill.
+</claude-mem-context>

@@ -39,16 +39,17 @@ No analytics, crash reporting, or telemetry data is ever sent.
 |-----------|---------|
 | ACCESS_NETWORK_STATE | Monitor network connection type |
 | ACCESS_WIFI_STATE | Read WiFi signal strength and details |
-| ACCESS_FINE_LOCATION | Allow Android to expose the current WiFi SSID and BSSID |
+| ACCESS_COARSE_LOCATION / ACCESS_FINE_LOCATION | Allow Android to expose the current WiFi SSID and BSSID |
 | FOREGROUND_SERVICE | Run the optional Live Notification foreground service |
 | FOREGROUND_SERVICE_SPECIAL_USE | Declare the Live Notification foreground service subtype on supported Android versions |
 | POST_NOTIFICATIONS | Send alerts (low battery, high temp, etc.) |
 | RECEIVE_BOOT_COMPLETED | Restart monitoring after device reboot |
 | INTERNET | Latency measurement, speed testing, and billing |
-| READ_MEDIA_IMAGES / READ_MEDIA_VIDEO / READ_MEDIA_AUDIO | Scan media files for storage breakdown and cleanup tools (Android 13+) |
+| READ_MEDIA_IMAGES / READ_MEDIA_VIDEO / READ_MEDIA_AUDIO / READ_MEDIA_VISUAL_USER_SELECTED | Scan media files for storage breakdown and cleanup tools, including selected photo/video access on Android 14+ |
 | READ_EXTERNAL_STORAGE | Scan files for storage breakdown and cleanup tools (Android 12 and below) |
 | WRITE_EXTERNAL_STORAGE | Legacy external file access for cleanup actions on Android 9 and below |
 | PACKAGE_USAGE_STATS | Show per-app foreground time and label severe throttling events with the foreground app when available |
+| READ_BASIC_PHONE_STATE | Read cellular network generation when Android exposes only the basic phone-state permission |
 
 ## Data deletion
 

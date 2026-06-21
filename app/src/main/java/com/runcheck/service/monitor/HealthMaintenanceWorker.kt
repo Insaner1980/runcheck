@@ -4,8 +4,8 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.runcheck.domain.repository.AppBatteryUsageRepository
 import com.runcheck.domain.usecase.CleanupOldReadingsUseCase
+import com.runcheck.domain.usecase.RefreshAppUsageSnapshotUseCase
 import com.runcheck.util.ReleaseSafeLog
 import com.runcheck.widget.RuncheckWidgets
 import dagger.assisted.Assisted
@@ -18,13 +18,13 @@ class HealthMaintenanceWorker
     constructor(
         @Assisted context: Context,
         @Assisted workerParams: WorkerParameters,
-        private val appBatteryUsageRepository: AppBatteryUsageRepository,
+        private val refreshAppUsageSnapshot: RefreshAppUsageSnapshotUseCase,
         private val cleanupOldReadings: CleanupOldReadingsUseCase,
     ) : CoroutineWorker(context, workerParams) {
         override suspend fun doWork(): Result {
             var maintenanceFailure =
                 collectStep("app_usage") {
-                    appBatteryUsageRepository.collectUsageSnapshot()
+                    refreshAppUsageSnapshot()
                 }
 
             maintenanceFailure = collectStep("cleanup") { cleanupOldReadings() } || maintenanceFailure

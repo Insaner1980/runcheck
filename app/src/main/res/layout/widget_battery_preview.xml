@@ -10,7 +10,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="85%"
+        android:text="@string/widget_preview_battery_percent"
         android:textColor="#E8E8ED"
         android:textSize="28sp"
         android:textStyle="bold" />
@@ -27,14 +27,14 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="32.5°C"
+            android:text="@string/widget_preview_battery_temperature"
             android:textColor="#90A8B0"
             android:textSize="12sp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="-450 mA"
+            android:text="@string/widget_preview_battery_current"
             android:textColor="#90A8B0"
             android:textSize="12sp" />
     </LinearLayout>

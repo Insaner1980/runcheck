@@ -1,11 +1,9 @@
 package com.runcheck.ui.storage
 
-import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
@@ -42,7 +40,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -64,10 +61,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.domain.model.HistoryPeriod
@@ -76,6 +70,8 @@ import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.TrashInfo
+import com.runcheck.ui.chart.ChartStatsRow
+import com.runcheck.ui.chart.HistoryPeriodFilterChipRow
 import com.runcheck.ui.chart.MAX_STORAGE_HISTORY_POINTS
 import com.runcheck.ui.chart.StorageHistoryMetric
 import com.runcheck.ui.chart.buildStorageHistoryChartModel
@@ -85,6 +81,8 @@ import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.chart.storageHistoryMetricLabel
 import com.runcheck.ui.chart.storageQualityZones
 import com.runcheck.ui.common.EnumFilterChipRow
+import com.runcheck.ui.common.HistoryLoadErrorMessage
+import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.findActivity
 import com.runcheck.ui.common.formatDecimal
@@ -126,22 +124,8 @@ import com.runcheck.ui.theme.runcheckHeroCardColors
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColorForStoragePercent
 import com.runcheck.ui.theme.statusColors
-
-private fun requiredMediaPermissions(): List<String> =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        listOf(
-            Manifest.permission.READ_MEDIA_IMAGES,
-            Manifest.permission.READ_MEDIA_VIDEO,
-            Manifest.permission.READ_MEDIA_AUDIO,
-        )
-    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        listOf(Manifest.permission.READ_EXTERNAL_STORAGE)
-    } else {
-        listOf(
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-        )
-    }
+import com.runcheck.util.MediaAccessState
+import com.runcheck.util.RuncheckPermissionPolicy
 
 @Composable
 fun StorageDetailScreen(
@@ -154,30 +138,38 @@ fun StorageDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
     val loadingDescription = stringResource(R.string.a11y_loading)
     val cleanupDeleteFailed = stringResource(R.string.cleanup_delete_failed)
     val cleanupDeletePermissionError = stringResource(R.string.cleanup_delete_permission_error)
     val activity = context.findActivity()
     var mediaPermissionRequested by rememberSaveable { mutableStateOf(false) }
-    val requiredMediaPermissions = remember { requiredMediaPermissions() }
+    val mediaPermissions = remember { RuncheckPermissionPolicy.mediaPermissionsForApi() }
+    fun currentMediaAccessState(): MediaAccessState =
+        RuncheckPermissionPolicy.mediaAccessStateForApi { permission ->
+            ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+        }
+
+    var mediaAccessState by remember {
+        mutableStateOf(currentMediaAccessState())
+    }
     var missingMediaPermissions by remember {
         mutableStateOf(
-            requiredMediaPermissions.filter { permission ->
+            mediaPermissions.filter { permission ->
                 ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED
             },
         )
     }
     LifecycleResumeEffect(context) {
+        mediaAccessState = currentMediaAccessState()
         missingMediaPermissions =
-            requiredMediaPermissions.filter { permission ->
+            mediaPermissions.filter { permission ->
                 ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED
             }
         onPauseOrDispose { }
     }
     val shouldOpenMediaSettings =
         mediaPermissionRequested &&
-            missingMediaPermissions.isNotEmpty() &&
+            mediaAccessState != MediaAccessState.FULL &&
             activity?.let { hostActivity ->
                 missingMediaPermissions.none { permission ->
                     ActivityCompat.shouldShowRequestPermissionRationale(hostActivity, permission)
@@ -222,31 +214,16 @@ fun StorageDetailScreen(
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestMultiplePermissions(),
         ) { results ->
+            mediaAccessState = currentMediaAccessState()
             if (results.values.any { it }) {
                 viewModel.refresh()
             }
         }
 
-    DisposableEffect(lifecycleOwner, viewModel) {
-        val observer =
-            LifecycleEventObserver { _, event ->
-                when (event) {
-                    Lifecycle.Event.ON_START -> viewModel.startObserving()
-                    Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
-                    else -> Unit
-                }
-            }
-
-        lifecycleOwner.lifecycle.addObserver(observer)
-        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-            viewModel.startObserving()
-        }
-
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            viewModel.stopObserving()
-        }
-    }
+    LifecycleStartStopEffect(
+        onStart = viewModel::startObserving,
+        onStop = viewModel::stopObserving,
+    )
 
     Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(
@@ -284,7 +261,7 @@ fun StorageDetailScreen(
                 is StorageUiState.Success -> {
                     StorageContent(
                         state = state,
-                        hasMediaPermissions = missingMediaPermissions.isEmpty(),
+                        mediaAccessState = mediaAccessState,
                         shouldOpenMediaSettings = shouldOpenMediaSettings,
                         onRequestMediaPermissions = {
                             if (shouldOpenMediaSettings) {
@@ -295,7 +272,7 @@ fun StorageDetailScreen(
                                 )
                             } else {
                                 mediaPermissionRequested = true
-                                mediaPermissionLauncher.launch(requiredMediaPermissions.toTypedArray())
+                                mediaPermissionLauncher.launch(mediaPermissions.toTypedArray())
                             }
                         },
                         onRefresh = { viewModel.refresh() },
@@ -348,7 +325,7 @@ private fun TrashConfirmDialog(
 @Composable
 private fun StorageContent(
     state: StorageUiState.Success,
-    hasMediaPermissions: Boolean,
+    mediaAccessState: MediaAccessState,
     shouldOpenMediaSettings: Boolean,
     onRequestMediaPermissions: () -> Unit,
     onRefresh: () -> Unit,
@@ -362,6 +339,7 @@ private fun StorageContent(
     var isRefreshing by remember { mutableStateOf(false) }
     var activeInfoSheet by rememberInfoSheetState()
     val storage = state.storageState
+    val hasMediaPermissions = mediaAccessState == MediaAccessState.FULL
 
     LaunchedEffect(state) {
         isRefreshing = false
@@ -387,7 +365,7 @@ private fun StorageContent(
             StorageOverviewSection(
                 state = state,
                 storage = storage,
-                hasMediaPermissions = hasMediaPermissions,
+                mediaAccessState = mediaAccessState,
                 shouldOpenMediaSettings = shouldOpenMediaSettings,
                 onRequestMediaPermissions = onRequestMediaPermissions,
                 onDismissInfoCard = onDismissInfoCard,
@@ -426,13 +404,14 @@ private fun StorageContent(
 private fun StorageOverviewSection( // NOSONAR
     state: StorageUiState.Success,
     storage: StorageState,
-    hasMediaPermissions: Boolean,
+    mediaAccessState: MediaAccessState,
     shouldOpenMediaSettings: Boolean,
     onRequestMediaPermissions: () -> Unit,
     onDismissInfoCard: (String) -> Unit,
     onNavigateToLearnArticle: (String) -> Unit,
     onInfoClick: (String) -> Unit,
 ) {
+    val hasMediaPermissions = mediaAccessState == MediaAccessState.FULL
     StorageHeroCard(
         storage = storage,
         liveUsagePercent = state.liveUsagePercent,
@@ -458,13 +437,16 @@ private fun StorageOverviewSection( // NOSONAR
 
     if (!hasMediaPermissions) {
         StorageMediaPermissionCard(
+            partialAccess = mediaAccessState == MediaAccessState.PARTIAL_VISUAL,
             shouldOpenSettings = shouldOpenMediaSettings,
             onAction = onRequestMediaPermissions,
         )
     }
 
-    storage.mediaBreakdown?.let { breakdown ->
-        StorageMediaBreakdownCard(breakdown = breakdown, usedBytes = storage.usedBytes)
+    if (hasMediaPermissions) {
+        storage.mediaBreakdown?.let { breakdown ->
+            StorageMediaBreakdownCard(breakdown = breakdown, usedBytes = storage.usedBytes)
+        }
     }
 
     if (hasMediaPermissions && storage.mediaBreakdown != null) {
@@ -546,6 +528,7 @@ private fun StorageFooterSection(
 
 @Composable
 private fun StorageMediaPermissionCard(
+    partialAccess: Boolean,
     shouldOpenSettings: Boolean,
     onAction: () -> Unit,
 ) {
@@ -563,12 +546,26 @@ private fun StorageMediaPermissionCard(
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
         ) {
             Text(
-                text = stringResource(R.string.storage_media_permission_title),
+                text =
+                    stringResource(
+                        if (partialAccess) {
+                            R.string.storage_media_permission_partial_title
+                        } else {
+                            R.string.storage_media_permission_title
+                        },
+                    ),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = stringResource(R.string.storage_media_permission_message),
+                text =
+                    stringResource(
+                        if (partialAccess) {
+                            R.string.storage_media_permission_partial_message
+                        } else {
+                            R.string.storage_media_permission_message
+                        },
+                    ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -853,20 +850,12 @@ private fun StorageHistoryCard(
                 labelFor = { storageHistoryMetricLabel(it) },
             )
 
-            EnumFilterChipRow(
-                values = HistoryPeriod.entries.filter { it != HistoryPeriod.SINCE_UNPLUG },
+            HistoryPeriodFilterChipRow(
                 selected = selectedPeriod,
                 onSelect = onPeriodChange,
-                labelFor = { historyPeriodLabel(it) },
             )
 
-            historyLoadError?.let { error ->
-                Text(
-                    text = error.resolve(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
+            HistoryLoadErrorMessage(error = historyLoadError)
 
             if (chartModel.chartData.size >= 2) {
                 val chartAccessibilitySummary =
@@ -902,34 +891,7 @@ private fun StorageHistoryCard(
                     tooltipFormatter = { index -> formatChartTooltip(chartModel, index) },
                 )
 
-                // Min / Avg / Max summary
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-                    verticalAlignment = Alignment.Top,
-                ) {
-                    chartModel.minValue?.let {
-                        MetricPill(
-                            label = stringResource(R.string.chart_stat_min),
-                            value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    chartModel.averageValue?.let {
-                        MetricPill(
-                            label = stringResource(R.string.chart_stat_avg),
-                            value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    chartModel.maxValue?.let {
-                        MetricPill(
-                            label = stringResource(R.string.chart_stat_max),
-                            value = "${formatDecimal(it, chartModel.tooltipDecimals)}${chartModel.unit}",
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
+                ChartStatsRow(chartModel = chartModel)
             } else {
                 Text(
                     text = stringResource(R.string.network_history_empty),

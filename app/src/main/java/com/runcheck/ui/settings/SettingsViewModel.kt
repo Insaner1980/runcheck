@@ -17,6 +17,7 @@ import com.runcheck.domain.usecase.ExportDataUseCase
 import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
+import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.ObserveSettingsUseCase
 import com.runcheck.domain.usecase.SetDataRetentionUseCase
 import com.runcheck.domain.usecase.SetMonitoringIntervalUseCase
@@ -39,6 +40,7 @@ class SettingsViewModel
     constructor(
         private val observeSettings: ObserveSettingsUseCase,
         private val proPurchaseManager: ProPurchaseManager,
+        private val observeProAccess: ObserveProAccessUseCase,
         private val isProUser: IsProUserUseCase,
         private val clearMonitoringDataUseCase: ClearMonitoringDataUseCase,
         private val exportDataUseCase: ExportDataUseCase,
@@ -59,7 +61,7 @@ class SettingsViewModel
             viewModelScope.launch {
                 combine(
                     observeSettings(),
-                    proPurchaseManager.isProUser,
+                    observeProAccess(),
                     proPurchaseManager.billingAvailable,
                 ) { settings, isPro, billingAvailable ->
                     Triple(settings, isPro, billingAvailable)
@@ -374,15 +376,15 @@ class SettingsViewModel
 
         fun seedDemoInsights() {
             runDebugInsightAction {
-                val count = insightDebugActions.seedDemoInsights()
-                UiText.Dynamic("Demo insights seeded ($count active)")
+                insightDebugActions.seedDemoInsights()
+                UiText.Resource(R.string.settings_debug_insights_seeded)
             }
         }
 
         fun generateInsightsNow() {
             runDebugInsightAction {
-                val count = insightDebugActions.generateInsightsNow()
-                UiText.Dynamic("Insights regenerated ($count active)")
+                insightDebugActions.generateInsightsNow()
+                UiText.Resource(R.string.settings_debug_insights_generated)
             }
         }
 

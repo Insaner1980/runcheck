@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.4.xsd"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.4.xsd
+                                  https://dependency-check.github.io/DependencyCheck/dependency-suppression.1.4.xsd">
+    <suppress>
+        <notes><![CDATA[
+        AndroidX SQLite artifacts are not SQLite product version 2.6.2. This suppresses the incorrect
+        CPE match reported against androidx.sqlite:sqlite-android and sqlite-framework-android 2.6.2.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/androidx\.sqlite/sqlite(-framework)?-android@2\.6\.2$</packageUrl>
+        <cpe>cpe:/a:sqlite:sqlite:2.6.2</cpe>
+    </suppress>
+    <suppress>
+        <notes><![CDATA[
+        The package group prefix com.github.* is not GitHub Enterprise Server. These suppress incorrect
+        CPE matches reported against M-Lab ndt7 and Compose Stability runtime Maven artifacts.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/(com\.github\.m-lab/ndt7-client-android-java@1\.0\.0|com\.github\.skydoves/compose-stability-runtime-android@0\.7\.4)$</packageUrl>
+        <cpe>cpe:/a:github:github:1.0.0</cpe>
+        <cpe>cpe:/a:github:github:0.7.4</cpe>
+    </suppress>
+</suppressions>

@@ -7,9 +7,9 @@ Set up Detekt (static code analysis for Kotlin) and Compose Rules (Jetpack Compo
 ## Versions to Use
 
 - **Detekt**: `1.23.8` (latest stable, plugin id: `io.gitlab.arturbosch.detekt`)
-- **Compose Rules**: `io.nlopez.compose.rules:detekt:0.4.27` (latest for detekt 1.x)
+- **Compose Rules (Detekt path)**: `io.nlopez.compose.rules:detekt:0.4.28` (current repo version for Detekt 1.x)
 
-Do NOT use Detekt 2.x (alpha) or Compose Rules 0.5.x (which targets Detekt 2.x).
+Do NOT use Detekt 2.x (alpha) or Compose Rules 0.5.x on the Detekt path. The repo separately uses compose-rules 0.5.x on the ktlint path.
 
 ## Steps
 
@@ -25,7 +25,7 @@ detekt = "1.23.8"
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 
 [libraries]
-detekt-compose-rules = { module = "io.nlopez.compose.rules:detekt", version = "0.4.27" }
+detekt-compose-rules = { module = "io.nlopez.compose.rules:detekt", version = "0.4.28" }
 ```
 
 In root `build.gradle.kts`, apply the plugin:

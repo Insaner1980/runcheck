@@ -1,9 +1,12 @@
 package com.runcheck.domain.insights.rules
 
 import com.runcheck.domain.insights.analysis.BatteryDrainAnalyzer
+import com.runcheck.domain.insights.analysis.DrainRateComparison
 import com.runcheck.domain.insights.analysis.DrainSample
-import com.runcheck.domain.insights.analysis.TimeInterval
 import com.runcheck.domain.insights.analysis.TimeWindowAligner
+import com.runcheck.domain.insights.analysis.dischargingPairs
+import com.runcheck.domain.insights.analysis.toDrainSample
+import com.runcheck.domain.insights.analysis.toTimeIntervals
 import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.model.InsightCandidate
 import com.runcheck.domain.insights.model.InsightPriority
@@ -27,42 +30,49 @@ class NetworkDrivenBatteryDrainRule
     ) : InsightRule {
         override val ruleId: String = RULE_ID
 
-        override suspend fun evaluate(now: Long): List<InsightCandidate> {
+        override suspend fun evaluate(now: Long): List<InsightCandidate> = buildCandidate(now)?.let(::listOf).orEmpty()
+
+        private suspend fun buildCandidate(now: Long): InsightCandidate? {
+            val input = loadInput(now) ?: return null
+            val samples = classifyDrainSamples(input)
+            val comparison = samples.compareDrainRates() ?: return null
+
+            return buildCandidate(
+                now = now,
+                comparison = comparison,
+                averageWeakSignal = samples.averageWeakSignal,
+                confidence = samples.confidence,
+            )
+        }
+
+        private suspend fun loadInput(now: Long): NetworkDrainInput? {
             val batteryReadings = batteryRepository.getReadingsSinceSync(now - LOOKBACK_MS)
             val networkReadings = networkRepository.getReadingsSinceSync(now - LOOKBACK_MS)
             if (batteryReadings.size < MINIMUM_BATTERY_READING_COUNT ||
                 networkReadings.size < MINIMUM_NETWORK_READING_COUNT
             ) {
-                return emptyList()
+                return null
             }
 
-            val dischargingPairs =
-                batteryReadings
-                    .sortedBy { it.timestamp }
-                    .zipWithNext()
-                    .filter { (_, current) ->
-                        current.status in BatteryDrainAnalyzer.DEFAULT_DISCHARGING_STATUSES
-                    }
-            if (dischargingPairs.size < MINIMUM_TOTAL_INTERVAL_COUNT) return emptyList()
+            val dischargingPairs = batteryReadings.dischargingPairs()
+            return NetworkDrainInput(
+                dischargingPairs = dischargingPairs,
+                networkReadings = networkReadings,
+            ).takeIf { dischargingPairs.size >= MINIMUM_TOTAL_INTERVAL_COUNT }
+        }
 
+        private fun classifyDrainSamples(input: NetworkDrainInput): NetworkDrainSamples {
             val alignedIntervals =
                 timeWindowAligner.alignLatestContext(
-                    intervals =
-                        dischargingPairs.map { (previous, current) ->
-                            TimeInterval(
-                                startTime = previous.timestamp,
-                                endTime = current.timestamp,
-                            )
-                        },
-                    contexts = networkReadings,
+                    intervals = input.dischargingPairs.toTimeIntervals(),
+                    contexts = input.networkReadings,
                     contextTimestamp = NetworkReading::timestamp,
                 )
-
             val weakDrainSamples = mutableListOf<DrainSample>()
             val strongDrainSamples = mutableListOf<DrainSample>()
             val weakSignals = mutableListOf<Int>()
 
-            dischargingPairs.zip(alignedIntervals).forEach { (pair, aligned) ->
+            input.dischargingPairs.zip(alignedIntervals).forEach { (pair, aligned) ->
                 val networkReading = aligned.context ?: return@forEach
                 if (networkReading.type != ConnectionType.CELLULAR.name) return@forEach
 
@@ -81,75 +91,78 @@ class NetworkDrivenBatteryDrainRule
                 }
             }
 
-            if (weakDrainSamples.size < MINIMUM_CLASSIFIED_INTERVAL_COUNT ||
-                strongDrainSamples.size < MINIMUM_CLASSIFIED_INTERVAL_COUNT
-            ) {
-                return emptyList()
+            return NetworkDrainSamples(
+                weakDrainSamples = weakDrainSamples,
+                strongDrainSamples = strongDrainSamples,
+                weakSignals = weakSignals,
+            )
+        }
+
+        private fun NetworkDrainSamples.compareDrainRates(): DrainRateComparison? =
+            takeIf { it.hasEnoughSamples }
+                ?.let {
+                    batteryDrainAnalyzer.compareAverageDrainRates(
+                        currentSamples = weakDrainSamples,
+                        previousSamples = strongDrainSamples,
+                    )
+                }?.takeIf { it.changeRatio >= MINIMUM_DRAIN_RATIO }
+
+        private fun buildCandidate(
+            now: Long,
+            comparison: DrainRateComparison,
+            averageWeakSignal: Int,
+            confidence: Float,
+        ): InsightCandidate =
+            InsightCandidate(
+                ruleId = ruleId,
+                dedupeKey = "cellular_drain:${comparison.percentIncrease.toIncreaseBucket()}",
+                type = InsightType.NETWORK,
+                priority = resolvePriority(comparison, averageWeakSignal),
+                confidence = confidence,
+                titleKey = TITLE_KEY,
+                bodyKey = BODY_KEY,
+                bodyArgs =
+                    listOf(
+                        comparison.percentIncrease.coerceAtLeast(1).toString(),
+                        averageWeakSignal.toString(),
+                    ),
+                generatedAt = now,
+                expiresAt = now + TTL_MS,
+                dataWindowStart = now - LOOKBACK_MS,
+                dataWindowEnd = now,
+                target = InsightTarget.NETWORK,
+            )
+
+        private fun resolvePriority(
+            comparison: DrainRateComparison,
+            averageWeakSignal: Int,
+        ): InsightPriority =
+            when {
+                comparison.changeRatio >= HIGH_PRIORITY_DRAIN_RATIO ||
+                    averageWeakSignal <= HIGH_PRIORITY_SIGNAL_DBM -> InsightPriority.HIGH
+
+                else -> InsightPriority.MEDIUM
             }
 
-            val comparison =
-                batteryDrainAnalyzer.compareAverageDrainRates(
-                    currentSamples = weakDrainSamples,
-                    previousSamples = strongDrainSamples,
-                ) ?: return emptyList()
-            if (comparison.changeRatio < MINIMUM_DRAIN_RATIO) return emptyList()
+        private fun Int.toIncreaseBucket(): String =
+            when {
+                this >= 50 -> "50plus"
+                this >= 30 -> "30plus"
+                else -> "20plus"
+            }
 
-            val averageWeakSignal = weakSignals.average().roundToInt()
-            val priority =
-                when {
-                    comparison.changeRatio >= HIGH_PRIORITY_DRAIN_RATIO ||
-                        averageWeakSignal <= HIGH_PRIORITY_SIGNAL_DBM -> {
-                        InsightPriority.HIGH
-                    }
+        private val NetworkDrainSamples.hasEnoughSamples: Boolean
+            get() =
+                weakDrainSamples.size >= MINIMUM_CLASSIFIED_INTERVAL_COUNT &&
+                    strongDrainSamples.size >= MINIMUM_CLASSIFIED_INTERVAL_COUNT
 
-                    else -> {
-                        InsightPriority.MEDIUM
-                    }
-                }
-            val confidence =
+        private val NetworkDrainSamples.averageWeakSignal: Int
+            get() = weakSignals.average().roundToInt()
+
+        private val NetworkDrainSamples.confidence: Float
+            get() =
                 (minOf(weakDrainSamples.size, strongDrainSamples.size) / CONFIDENCE_INTERVAL_COUNT.toFloat())
                     .coerceIn(0f, 1f)
-            val increaseBucket =
-                when {
-                    comparison.percentIncrease >= 50 -> "50plus"
-                    comparison.percentIncrease >= 30 -> "30plus"
-                    else -> "20plus"
-                }
-
-            return listOf(
-                InsightCandidate(
-                    ruleId = ruleId,
-                    dedupeKey = "cellular_drain:$increaseBucket",
-                    type = InsightType.NETWORK,
-                    priority = priority,
-                    confidence = confidence,
-                    titleKey = TITLE_KEY,
-                    bodyKey = BODY_KEY,
-                    bodyArgs =
-                        listOf(
-                            comparison.percentIncrease.coerceAtLeast(1).toString(),
-                            averageWeakSignal.toString(),
-                        ),
-                    generatedAt = now,
-                    expiresAt = now + TTL_MS,
-                    dataWindowStart = now - LOOKBACK_MS,
-                    dataWindowEnd = now,
-                    target = InsightTarget.NETWORK,
-                ),
-            )
-        }
-
-        private fun Pair<BatteryReading, BatteryReading>.toDrainSample(): DrainSample? {
-            val (previous, current) = this
-            val levelDrop = (previous.level - current.level).coerceAtLeast(0)
-            val durationMs = (current.timestamp - previous.timestamp).coerceAtLeast(0L)
-            if (levelDrop <= 0 || durationMs <= 0L) return null
-
-            return DrainSample(
-                levelDropPct = levelDrop.toFloat(),
-                durationMs = durationMs,
-            )
-        }
 
         companion object {
             const val RULE_ID = "network_driven_battery_drain"
@@ -170,3 +183,14 @@ class NetworkDrivenBatteryDrainRule
             private const val CONFIDENCE_INTERVAL_COUNT = 5
         }
     }
+
+private data class NetworkDrainInput(
+    val dischargingPairs: List<Pair<BatteryReading, BatteryReading>>,
+    val networkReadings: List<NetworkReading>,
+)
+
+private data class NetworkDrainSamples(
+    val weakDrainSamples: List<DrainSample>,
+    val strongDrainSamples: List<DrainSample>,
+    val weakSignals: List<Int>,
+)

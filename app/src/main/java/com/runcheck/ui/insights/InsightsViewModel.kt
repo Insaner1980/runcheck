@@ -2,6 +2,7 @@ package com.runcheck.ui.insights
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.runcheck.domain.insights.policy.visibleForProAccess
 import com.runcheck.domain.repository.InsightRepository
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.common.messageOr
@@ -42,10 +43,11 @@ class InsightsViewModel
                     insightRepository.getActiveInsights(),
                     insightRepository.getUnseenCount(),
                     observeProAccess(),
-                ) { insights, unseenCount, isPro ->
+                ) { insights, _, isPro ->
+                    val visibleInsights = insights.visibleForProAccess(isPro)
                     InsightsUiState.Success(
-                        insights = insights,
-                        unseenInsightCount = unseenCount,
+                        insights = visibleInsights,
+                        unseenInsightCount = visibleInsights.count { !it.seen },
                         isPro = isPro,
                     )
                 }.catch { error ->

@@ -34,7 +34,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,9 +54,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.domain.model.BatteryHealth
@@ -73,6 +69,7 @@ import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.usecase.BatteryStatistics
 import com.runcheck.ui.chart.BatteryHistoryMetric
 import com.runcheck.ui.chart.ChargingSessionSummary
+import com.runcheck.ui.chart.ChartStatsRow
 import com.runcheck.ui.chart.FullscreenChartSource
 import com.runcheck.ui.chart.MAX_HISTORY_CHART_POINTS
 import com.runcheck.ui.chart.MAX_SESSION_CHART_POINTS
@@ -91,6 +88,7 @@ import com.runcheck.ui.chart.sessionGraphMetricLabel
 import com.runcheck.ui.chart.sessionGraphWindowLabel
 import com.runcheck.ui.common.ApplyFullscreenChartSelectionResult
 import com.runcheck.ui.common.EnumFilterChipRow
+import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.batteryHealthLabel
 import com.runcheck.ui.common.chargingStatusLabel
 import com.runcheck.ui.common.formatDecimal
@@ -148,33 +146,16 @@ fun BatteryDetailScreen(
     fullscreenResultSource: String? = null,
     fullscreenResultMetric: String? = null,
     fullscreenResultPeriod: String? = null,
-    onFullscreenResultConsumed: () -> Unit = {},
+    onConsumeFullscreenResult: () -> Unit = {},
     viewModel: BatteryViewModel = hiltViewModel(),
 ) {
-    val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val loadingDescription = stringResource(R.string.a11y_loading)
 
-    DisposableEffect(lifecycleOwner, viewModel) {
-        val observer =
-            LifecycleEventObserver { _, event ->
-                when (event) {
-                    Lifecycle.Event.ON_START -> viewModel.startObserving()
-                    Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
-                    else -> Unit
-                }
-            }
-
-        lifecycleOwner.lifecycle.addObserver(observer)
-        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-            viewModel.startObserving()
-        }
-
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            viewModel.stopObserving()
-        }
-    }
+    LifecycleStartStopEffect(
+        onStart = viewModel::startObserving,
+        onStop = viewModel::stopObserving,
+    )
 
     Column(modifier = modifier.fillMaxSize()) {
         DetailTopBar(
@@ -225,7 +206,7 @@ fun BatteryDetailScreen(
                         fullscreenResultSource = fullscreenResultSource,
                         fullscreenResultMetric = fullscreenResultMetric,
                         fullscreenResultPeriod = fullscreenResultPeriod,
-                        onFullscreenResultConsumed = onFullscreenResultConsumed,
+                        onConsumeFullscreenResult = onConsumeFullscreenResult,
                     )
                 }
             }
@@ -246,7 +227,7 @@ private fun BatteryContent(
     fullscreenResultSource: String? = null,
     fullscreenResultMetric: String? = null,
     fullscreenResultPeriod: String? = null,
-    onFullscreenResultConsumed: () -> Unit = {},
+    onConsumeFullscreenResult: () -> Unit = {},
 ) {
     val activeInfoSheetState = rememberInfoSheetState()
     var isRefreshing by remember { mutableStateOf(false) }
@@ -262,7 +243,7 @@ private fun BatteryContent(
         rawSource = fullscreenResultSource,
         rawMetric = fullscreenResultMetric,
         rawPeriod = fullscreenResultPeriod,
-        onConsumed = onFullscreenResultConsumed,
+        onConsume = onConsumeFullscreenResult,
         applySelection = { source, metric, period ->
             when (source) {
                 FullscreenChartSource.BATTERY_HISTORY -> {
@@ -761,7 +742,13 @@ private fun BatteryChargingSection( // NOSONAR
     }
 
     chargingSessionSummary?.let { summary ->
-        if (summary.hasMeaningfulRemainingEstimate(currentLevel = battery.level)) {
+        if (
+            shouldShowRemainingChargePanel(
+                isPro = state.isPro,
+                summary = summary,
+                currentLevel = battery.level,
+            )
+        ) {
             BatteryRemainingTimePanel(
                 summary = summary,
                 currentLevel = battery.level,
@@ -1072,18 +1059,7 @@ private fun BatteryHistoryPanel(
                 values = HistoryPeriod.entries,
                 selected = state.selectedPeriod,
                 onSelect = onPeriodChange,
-                labelFor = { period ->
-                    when (period) {
-                        HistoryPeriod.SINCE_UNPLUG -> stringResource(R.string.history_period_since_unplug)
-                        HistoryPeriod.HOUR -> stringResource(R.string.history_period_hour)
-                        HistoryPeriod.SIX_HOURS -> stringResource(R.string.history_period_6h)
-                        HistoryPeriod.TWELVE_HOURS -> stringResource(R.string.history_period_12h)
-                        HistoryPeriod.DAY -> stringResource(R.string.history_period_day)
-                        HistoryPeriod.WEEK -> stringResource(R.string.history_period_week)
-                        HistoryPeriod.MONTH -> stringResource(R.string.history_period_month)
-                        HistoryPeriod.ALL -> stringResource(R.string.history_period_all)
-                    }
-                },
+                labelFor = { period -> historyPeriodLabel(period) },
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
@@ -1176,33 +1152,7 @@ private fun BatteryHistoryPanel(
                         )
                     },
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-                ) {
-                    val decimals = chartModel.tooltipDecimals
-                    chartModel.minValue?.let {
-                        MetricPill(
-                            label = stringResource(R.string.chart_stat_min),
-                            value = "${formatDecimal(it, decimals)}${chartModel.unit}",
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    chartModel.averageValue?.let {
-                        MetricPill(
-                            label = stringResource(R.string.chart_stat_avg),
-                            value = "${formatDecimal(it, decimals)}${chartModel.unit}",
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    chartModel.maxValue?.let {
-                        MetricPill(
-                            label = stringResource(R.string.chart_stat_max),
-                            value = "${formatDecimal(it, decimals)}${chartModel.unit}",
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
+                ChartStatsRow(chartModel = chartModel)
             } else {
                 BatteryHistoryEmptyState()
             }
@@ -1546,33 +1496,7 @@ private fun BatterySessionGraphPanel(
                     )
                 },
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-            ) {
-                val decimals = chartModel.tooltipDecimals
-                chartModel.minValue?.let {
-                    MetricPill(
-                        label = stringResource(R.string.chart_stat_min),
-                        value = "${formatDecimal(it, decimals)}${chartModel.unit}",
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                chartModel.averageValue?.let {
-                    MetricPill(
-                        label = stringResource(R.string.chart_stat_avg),
-                        value = "${formatDecimal(it, decimals)}${chartModel.unit}",
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                chartModel.maxValue?.let {
-                    MetricPill(
-                        label = stringResource(R.string.chart_stat_max),
-                        value = "${formatDecimal(it, decimals)}${chartModel.unit}",
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
+            ChartStatsRow(chartModel = chartModel)
         }
     }
 }
@@ -1666,6 +1590,12 @@ private fun ChargingSessionSummary.hasMeaningfulRemainingEstimate(currentLevel: 
     val fullAvailable = currentLevel >= TARGET_CHARGE_FULL || remainingTo100Ms != null
     return eightyAvailable || fullAvailable
 }
+
+internal fun shouldShowRemainingChargePanel(
+    isPro: Boolean,
+    summary: ChargingSessionSummary?,
+    currentLevel: Int,
+): Boolean = isPro && summary?.hasMeaningfulRemainingEstimate(currentLevel = currentLevel) == true
 
 @Composable
 private fun remainingChargeText(

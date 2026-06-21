@@ -41,7 +41,7 @@ import com.runcheck.ui.theme.uiTokens
 @Composable
 fun CategoryGroup(
     group: FileGroup,
-    onToggleExpanded: () -> Unit,
+    onToggleExpansion: () -> Unit,
     onToggleGroupSelection: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -64,18 +64,18 @@ fun CategoryGroup(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .clickable(onClick = onToggleExpanded, role = Role.Button)
+                    .clickable(onClick = onToggleExpansion, role = Role.Button)
                     .semantics(mergeDescendants = true) {
                         heading()
                         stateDescription = expandedLabel
                         if (group.expanded) {
                             collapse {
-                                onToggleExpanded()
+                                onToggleExpansion()
                                 true
                             }
                         } else {
                             expand {
-                                onToggleExpanded()
+                                onToggleExpansion()
                                 true
                             }
                         }

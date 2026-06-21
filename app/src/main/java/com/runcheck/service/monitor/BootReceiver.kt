@@ -9,6 +9,7 @@ import com.runcheck.domain.repository.MonitoringScheduler
 import com.runcheck.domain.repository.ScreenStateRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
 import com.runcheck.util.ReleaseSafeLog
+import com.runcheck.util.RuncheckPermissionPolicy
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -67,7 +68,7 @@ class BootReceiver : BroadcastReceiver() {
     private suspend fun restartLiveNotificationIfEnabled(context: Context) {
         try {
             val prefs = userPreferencesRepository.getPreferences().first()
-            if (prefs.liveNotificationEnabled) {
+            if (prefs.liveNotificationEnabled && RuncheckPermissionPolicy.canPostNotifications(context)) {
                 val serviceIntent = Intent(context, RealTimeMonitorService::class.java)
                 ContextCompat.startForegroundService(context, serviceIntent)
             }

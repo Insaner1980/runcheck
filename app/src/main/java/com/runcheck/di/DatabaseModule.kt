@@ -28,6 +28,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
+@Suppress("TooManyFunctions")
 object DatabaseModule {
     private val MIGRATION_1_2 =
         object : Migration(1, 2) {
@@ -211,8 +212,8 @@ object DatabaseModule {
                         `data_window_start` INTEGER NOT NULL,
                         `data_window_end` INTEGER NOT NULL,
                         `target` TEXT NOT NULL,
-                        `dismissed` INTEGER NOT NULL DEFAULT 0,
-                        `seen` INTEGER NOT NULL DEFAULT 0
+                        `dismissed` INTEGER NOT NULL,
+                        `seen` INTEGER NOT NULL
                     )
                     """.trimIndent(),
                 )

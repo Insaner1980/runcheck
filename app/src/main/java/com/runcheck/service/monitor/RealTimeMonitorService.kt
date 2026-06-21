@@ -18,10 +18,10 @@ import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.repository.BatteryRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
-import com.runcheck.ui.common.currentLocale
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.util.ReleaseSafeLog
+import com.runcheck.util.RuncheckPermissionPolicy
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -142,7 +142,12 @@ class RealTimeMonitorService : Service() {
             serviceScope.launch {
                 try {
                     val prefs = userPreferencesRepository.getPreferences().first()
-                    isLiveNotificationMode = prefs.liveNotificationEnabled
+                    val canShowLiveNotification = RuncheckPermissionPolicy.canPostNotifications(this@RealTimeMonitorService)
+                    isLiveNotificationMode = prefs.liveNotificationEnabled && canShowLiveNotification
+                    if (prefs.liveNotificationEnabled && !canShowLiveNotification) {
+                        stopLiveNotificationService()
+                        return@launch
+                    }
                     if (isLiveNotificationMode) {
                         startLiveUpdates()
                     } else if (activeBindings.get() == 0) {
@@ -163,12 +168,11 @@ class RealTimeMonitorService : Service() {
                 while (isActive) {
                     try {
                         val prefs = userPreferencesRepository.getPreferences().first()
-                        if (!prefs.liveNotificationEnabled) {
+                        if (!prefs.liveNotificationEnabled ||
+                            !RuncheckPermissionPolicy.canPostNotifications(this@RealTimeMonitorService)
+                        ) {
                             isLiveNotificationMode = false
-                            mainHandler.post {
-                                stopForeground(STOP_FOREGROUND_REMOVE)
-                                stopSelf()
-                            }
+                            stopLiveNotificationService()
                             return@launch
                         }
                         val battery = batteryRepository.getBatteryState().first()
@@ -183,6 +187,13 @@ class RealTimeMonitorService : Service() {
                     delay(UPDATE_INTERVAL_MS)
                 }
             }
+    }
+
+    private fun stopLiveNotificationService() {
+        mainHandler.post {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
     }
 
     @Suppress("LongMethod", "CyclomaticComplexMethod")
@@ -222,7 +233,7 @@ class RealTimeMonitorService : Service() {
                     getString(
                         R.string.live_notif_current_with_power,
                         currentMa,
-                        formatDecimal(powerW, 1, currentLocale(this)),
+                        formatDecimal(powerW, 1),
                     )
                 } else {
                     getString(R.string.live_notif_current, currentMa)

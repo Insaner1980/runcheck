@@ -1,0 +1,21 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deepsec": "deepsec",
+    "deepsec:scan": "deepsec scan --project-id runcheck",
+    "deepsec:scan:custom": "deepsec scan --project-id runcheck --matchers android-exported-component,fileprovider-broad-path,android-uri-share-without-clipdata,outbound-network-surface,release-telemetry-surface,sensitive-android-log",
+    "deepsec:process": "deepsec process --project-id runcheck",
+    "deepsec:revalidate": "deepsec revalidate --project-id runcheck --min-severity HIGH",
+    "deepsec:export": "deepsec export --project-id runcheck --format md-dir --out ./findings",
+    "deepsec:report": "pnpm run deepsec:scan && pnpm run deepsec:process && pnpm run deepsec:export",
+    "deepsec:report:custom": "pnpm run deepsec:scan:custom && pnpm run deepsec:process && pnpm run deepsec:export"
+  },
+  "dependencies": {
+    "deepsec": "2.0.12"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.2",
+    "typescript": "^6.0.3"
+  }
+}

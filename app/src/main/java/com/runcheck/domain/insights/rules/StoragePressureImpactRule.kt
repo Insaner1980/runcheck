@@ -1,5 +1,6 @@
 package com.runcheck.domain.insights.rules
 
+import com.runcheck.domain.insights.analysis.StorageFillProjection
 import com.runcheck.domain.insights.analysis.StorageGrowthAnalyzer
 import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.model.InsightCandidate
@@ -20,75 +21,70 @@ class StoragePressureImpactRule
     ) : InsightRule {
         override val ruleId: String = RULE_ID
 
-        override suspend fun evaluate(now: Long): List<InsightCandidate> {
+        override suspend fun evaluate(now: Long): List<InsightCandidate> = buildCandidate(now)?.let(::listOf).orEmpty()
+
+        private suspend fun buildCandidate(now: Long): InsightCandidate? {
             val readings = storageRepository.getReadingsSinceSync(now - LOOKBACK_MS)
-            if (readings.size < MINIMUM_READING_COUNT) return emptyList()
+            if (readings.size < MINIMUM_READING_COUNT) return null
 
-            val latest = readings.maxByOrNull { it.timestamp } ?: return emptyList()
-            val fillRateBytesPerDay = storageGrowthAnalyzer.calculateFillRateBytesPerDay(readings) ?: return emptyList()
-            if (fillRateBytesPerDay <= 0L) return emptyList()
+            val projection = storageGrowthAnalyzer.calculateProjection(readings) ?: return null
+            if (projection.daysUntilFull > MAX_DAYS_UNTIL_FULL) return null
 
-            val availableBytes = latest.availableBytes.coerceAtLeast(0L)
-            if (availableBytes <= 0L) return emptyList()
+            val storageScore = healthScoreCalculator.calculateStorageScore(projection.toStorageState())
+            if (storageScore > MAX_STORAGE_SCORE_FOR_INSIGHT) return null
 
-            val estimate =
-                storageGrowthAnalyzer.formatEstimate(availableBytes, fillRateBytesPerDay) ?: return emptyList()
-            val storageState =
-                StorageState(
-                    totalBytes = latest.totalBytes,
-                    availableBytes = latest.availableBytes,
-                    usedBytes = latest.totalBytes - latest.availableBytes,
-                    usagePercent =
-                        (
-                            (
-                                (latest.totalBytes - latest.availableBytes).toDouble() /
-                                    latest.totalBytes.coerceAtLeast(1).toDouble()
-                            ) *
-                                100.0
-                        ).toFloat(),
-                    appsBytes = latest.appsBytes,
-                    fillRateBytesPerDay = fillRateBytesPerDay,
-                    fillRateEstimate = estimate,
-                )
-            val storageScore = healthScoreCalculator.calculateStorageScore(storageState)
-            if (storageScore > MAX_STORAGE_SCORE_FOR_INSIGHT) return emptyList()
-
-            val daysUntilFull = availableBytes / fillRateBytesPerDay
-            if (daysUntilFull > MAX_DAYS_UNTIL_FULL) return emptyList()
-
-            val priority =
-                when {
-                    storageScore <= HIGH_PRIORITY_STORAGE_SCORE ||
-                        daysUntilFull <= HIGH_PRIORITY_DAYS -> InsightPriority.HIGH
-
-                    else -> InsightPriority.MEDIUM
-                }
-            val confidence = (readings.size / CONFIDENCE_SAMPLE_COUNT.toFloat()).coerceIn(0f, 1f)
-            val scoreBucket =
-                when {
-                    storageScore <= 20 -> "critical"
-                    storageScore <= 45 -> "poor"
-                    else -> "fair"
-                }
-
-            return listOf(
-                InsightCandidate(
-                    ruleId = ruleId,
-                    dedupeKey = "storage_score:$scoreBucket",
-                    type = InsightType.STORAGE,
-                    priority = priority,
-                    confidence = confidence,
-                    titleKey = TITLE_KEY,
-                    bodyKey = BODY_KEY,
-                    bodyArgs = listOf(storageScore.toString(), estimate),
-                    generatedAt = now,
-                    expiresAt = now + TTL_MS,
-                    dataWindowStart = now - LOOKBACK_MS,
-                    dataWindowEnd = latest.timestamp,
-                    target = InsightTarget.STORAGE,
-                ),
-            )
+            return projection.toCandidate(now, storageScore, readings.size)
         }
+
+        private fun StorageFillProjection.toStorageState(): StorageState =
+            StorageState(
+                totalBytes = latest.totalBytes,
+                availableBytes = latest.availableBytes,
+                usedBytes = latest.totalBytes - latest.availableBytes,
+                usagePercent = usedPercent.toFloat(),
+                appsBytes = latest.appsBytes,
+                fillRateBytesPerDay = fillRateBytesPerDay,
+                fillRateEstimate = estimate,
+            )
+
+        private fun StorageFillProjection.toCandidate(
+            now: Long,
+            storageScore: Int,
+            readingCount: Int,
+        ): InsightCandidate =
+            InsightCandidate(
+                ruleId = ruleId,
+                dedupeKey = "storage_score:${storageScore.toScoreBucket()}",
+                type = InsightType.STORAGE,
+                priority = resolvePriority(storageScore, daysUntilFull),
+                confidence = (readingCount / CONFIDENCE_SAMPLE_COUNT.toFloat()).coerceIn(0f, 1f),
+                titleKey = TITLE_KEY,
+                bodyKey = BODY_KEY,
+                bodyArgs = listOf(storageScore.toString(), estimate),
+                generatedAt = now,
+                expiresAt = now + TTL_MS,
+                dataWindowStart = now - LOOKBACK_MS,
+                dataWindowEnd = latest.timestamp,
+                target = InsightTarget.STORAGE,
+            )
+
+        private fun resolvePriority(
+            storageScore: Int,
+            daysUntilFull: Long,
+        ): InsightPriority =
+            when {
+                storageScore <= HIGH_PRIORITY_STORAGE_SCORE ||
+                    daysUntilFull <= HIGH_PRIORITY_DAYS -> InsightPriority.HIGH
+
+                else -> InsightPriority.MEDIUM
+            }
+
+        private fun Int.toScoreBucket(): String =
+            when {
+                this <= 20 -> "critical"
+                this <= 45 -> "poor"
+                else -> "fair"
+            }
 
         companion object {
             const val RULE_ID = "storage_pressure_impact"

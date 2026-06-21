@@ -30,7 +30,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,12 +44,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.domain.model.ChargerSummary
+import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.components.ContentContainer
@@ -69,31 +66,14 @@ fun ChargerComparisonScreen(
     viewModel: ChargerViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val lifecycleOwner = LocalLifecycleOwner.current
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var pendingDeleteChargerId by rememberSaveable { mutableStateOf<Long?>(null) }
     var pendingDeleteChargerName by rememberSaveable { mutableStateOf<String?>(null) }
 
-    DisposableEffect(lifecycleOwner, viewModel) {
-        val observer =
-            LifecycleEventObserver { _, event ->
-                when (event) {
-                    Lifecycle.Event.ON_START -> viewModel.startObserving()
-                    Lifecycle.Event.ON_STOP -> viewModel.stopObserving()
-                    else -> Unit
-                }
-            }
-
-        lifecycleOwner.lifecycle.addObserver(observer)
-        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-            viewModel.startObserving()
-        }
-
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            viewModel.stopObserving()
-        }
-    }
+    LifecycleStartStopEffect(
+        onStart = viewModel::startObserving,
+        onStop = viewModel::stopObserving,
+    )
 
     Column(modifier = modifier.fillMaxSize()) {
         ContentContainer {
@@ -267,7 +247,7 @@ private fun ChargerContent(
                         charger = charger,
                         isSelected = charger.chargerId == state.selectedChargerId,
                         onSelect = onSelect,
-                        onClearSelected = onClearSelectedCharger,
+                        onClearSelection = onClearSelectedCharger,
                         onDelete = onDelete,
                     )
                 }
@@ -411,7 +391,7 @@ private fun ChargerCard(
     charger: ChargerSummary,
     isSelected: Boolean,
     onSelect: () -> Unit,
-    onClearSelected: () -> Unit,
+    onClearSelection: () -> Unit,
     onDelete: () -> Unit,
 ) {
     // Pre-compute conditional values to reduce nesting complexity
@@ -428,7 +408,7 @@ private fun ChargerCard(
         } else {
             stringResource(R.string.charger_select)
         }
-    val buttonAction = if (isSelected) onClearSelected else onSelect
+    val buttonAction = if (isSelected) onClearSelection else onSelect
 
     val lastUsedText =
         charger.lastUsed?.let { timestamp ->

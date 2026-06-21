@@ -73,7 +73,7 @@ fun FullscreenChartScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onUpgradeToPro: () -> Unit = {},
-    onSelectionChanged: (source: String, metric: String, period: String) -> Unit = { _, _, _ -> },
+    onSelectionChange: (source: String, metric: String, period: String) -> Unit = { _, _, _ -> },
     viewModel: FullscreenChartViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -111,11 +111,11 @@ fun FullscreenChartScreen(
                             periodOptions = sel.periodOptions,
                             onMetricChange = {
                                 viewModel.setMetric(it)
-                                onSelectionChanged(viewModel.source.name, it, viewModel.selectedPeriod)
+                                onSelectionChange(viewModel.source.name, it, viewModel.selectedPeriod)
                             },
                             onPeriodChange = {
                                 viewModel.setPeriod(it)
-                                onSelectionChanged(viewModel.source.name, viewModel.selectedMetric, it)
+                                onSelectionChange(viewModel.source.name, viewModel.selectedMetric, it)
                             },
                         )
                     }

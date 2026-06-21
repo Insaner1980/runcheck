@@ -18,72 +18,90 @@ class ChargerPerformanceRule
     ) : InsightRule {
         override val ruleId: String = RULE_ID
 
-        override suspend fun evaluate(now: Long): List<InsightCandidate> {
+        override suspend fun evaluate(now: Long): List<InsightCandidate> = buildCandidate(now)?.let(::listOf).orEmpty()
+
+        private suspend fun buildCandidate(now: Long): InsightCandidate? {
+            val summaries = loadSummaries(now) ?: return null
+            val comparison = summaries.findComparison() ?: return null
+            if (comparison.percentSlower < MINIMUM_SLOWER_PERCENT) return null
+
+            return comparison.toCandidate(now)
+        }
+
+        private suspend fun loadSummaries(now: Long): List<ChargerPerformanceSummary>? {
             val chargers = chargerRepository.getChargerProfilesSync()
             val sessions = chargerRepository.getAllSessionsSync()
-            if (chargers.size < MINIMUM_CHARGER_COUNT || sessions.isEmpty()) return emptyList()
+            if (chargers.size < MINIMUM_CHARGER_COUNT || sessions.isEmpty()) return null
 
             val completedRecentSessions =
                 sessions.filter { session ->
                     session.endTime != null && session.endTime >= now - LOOKBACK_MS
                 }
-            if (completedRecentSessions.size < MINIMUM_TOTAL_COMPLETED_SESSIONS) return emptyList()
+            if (completedRecentSessions.size < MINIMUM_TOTAL_COMPLETED_SESSIONS) return null
 
-            val summaries =
-                chargers
-                    .mapNotNull { charger ->
-                        buildSummary(
-                            charger = charger,
-                            sessions = completedRecentSessions.filter { it.chargerId == charger.id },
-                        )
-                    }.filter { it.sampleCount >= MINIMUM_SESSION_COUNT_PER_CHARGER }
-            if (summaries.size < MINIMUM_CHARGER_COUNT) return emptyList()
-
-            val bestCharger = summaries.maxByOrNull { it.avgPowerMw } ?: return emptyList()
-            val weakestCharger =
-                summaries
-                    .filter { it.chargerId != bestCharger.chargerId }
-                    .maxByOrNull { it.lastUsed ?: 0L } ?: return emptyList()
-
-            val powerGapRatio = weakestCharger.avgPowerMw.toFloat() / bestCharger.avgPowerMw.toFloat()
-            val percentSlower = ((1f - powerGapRatio) * 100f).roundToInt()
-            if (percentSlower < MINIMUM_SLOWER_PERCENT) return emptyList()
-
-            val priority =
-                when {
-                    percentSlower >= HIGH_PRIORITY_SLOWER_PERCENT -> InsightPriority.HIGH
-                    else -> InsightPriority.MEDIUM
-                }
-            val confidence =
-                (
-                    minOf(bestCharger.sampleCount, weakestCharger.sampleCount) /
-                        CONFIDENCE_SAMPLE_COUNT.toFloat()
-                ).coerceIn(0f, 1f)
-            val speedBucket =
-                when {
-                    percentSlower >= 50 -> "50plus"
-                    percentSlower >= 35 -> "35plus"
-                    else -> "20plus"
-                }
-
-            return listOf(
-                InsightCandidate(
-                    ruleId = ruleId,
-                    dedupeKey = "charger:${weakestCharger.chargerId}:$speedBucket",
-                    type = InsightType.CHARGER,
-                    priority = priority,
-                    confidence = confidence,
-                    titleKey = TITLE_KEY,
-                    bodyKey = BODY_KEY,
-                    bodyArgs = listOf(weakestCharger.name, percentSlower.toString()),
-                    generatedAt = now,
-                    expiresAt = now + TTL_MS,
-                    dataWindowStart = now - LOOKBACK_MS,
-                    dataWindowEnd = weakestCharger.lastUsed ?: now,
-                    target = InsightTarget.CHARGER,
-                ),
-            )
+            return chargers
+                .mapNotNull { charger ->
+                    buildSummary(
+                        charger = charger,
+                        sessions = completedRecentSessions.filter { it.chargerId == charger.id },
+                    )
+                }.filter { it.sampleCount >= MINIMUM_SESSION_COUNT_PER_CHARGER }
+                .takeIf { it.size >= MINIMUM_CHARGER_COUNT }
         }
+
+        private fun List<ChargerPerformanceSummary>.findComparison(): ChargerPerformanceComparison? {
+            val bestCharger = maxByOrNull { it.avgPowerMw }
+            val weakestCharger =
+                bestCharger?.let { best ->
+                    filter { it.chargerId != best.chargerId }.maxByOrNull { it.lastUsed ?: 0L }
+                }
+
+            return if (bestCharger != null && weakestCharger != null) {
+                ChargerPerformanceComparison(
+                    bestCharger = bestCharger,
+                    weakestCharger = weakestCharger,
+                    percentSlower =
+                        ((1f - weakestCharger.avgPowerMw.toFloat() / bestCharger.avgPowerMw.toFloat()) * 100f)
+                            .roundToInt(),
+                )
+            } else {
+                null
+            }
+        }
+
+        private fun ChargerPerformanceComparison.toCandidate(now: Long): InsightCandidate =
+            InsightCandidate(
+                ruleId = ruleId,
+                dedupeKey = "charger:${weakestCharger.chargerId}:${percentSlower.toSpeedBucket()}",
+                type = InsightType.CHARGER,
+                priority = percentSlower.toPriority(),
+                confidence =
+                    (
+                        minOf(bestCharger.sampleCount, weakestCharger.sampleCount) /
+                            CONFIDENCE_SAMPLE_COUNT.toFloat()
+                    ).coerceIn(0f, 1f),
+                titleKey = TITLE_KEY,
+                bodyKey = BODY_KEY,
+                bodyArgs = listOf(weakestCharger.name, percentSlower.toString()),
+                generatedAt = now,
+                expiresAt = now + TTL_MS,
+                dataWindowStart = now - LOOKBACK_MS,
+                dataWindowEnd = weakestCharger.lastUsed ?: now,
+                target = InsightTarget.CHARGER,
+            )
+
+        private fun Int.toPriority(): InsightPriority =
+            when {
+                this >= HIGH_PRIORITY_SLOWER_PERCENT -> InsightPriority.HIGH
+                else -> InsightPriority.MEDIUM
+            }
+
+        private fun Int.toSpeedBucket(): String =
+            when {
+                this >= 50 -> "50plus"
+                this >= 35 -> "35plus"
+                else -> "20plus"
+            }
 
         private fun buildSummary(
             charger: ChargerProfile,
@@ -130,4 +148,10 @@ private data class ChargerPerformanceSummary(
     val avgPowerMw: Int,
     val sampleCount: Int,
     val lastUsed: Long?,
+)
+
+private data class ChargerPerformanceComparison(
+    val bestCharger: ChargerPerformanceSummary,
+    val weakestCharger: ChargerPerformanceSummary,
+    val percentSlower: Int,
 )

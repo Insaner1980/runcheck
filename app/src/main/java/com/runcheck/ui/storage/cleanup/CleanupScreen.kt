@@ -2,10 +2,6 @@ package com.runcheck.ui.storage.cleanup
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -46,7 +42,6 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
 import androidx.paging.PagingData
@@ -109,17 +104,6 @@ fun CleanupScreen(
         }
     }
 
-    // Re-scan when returning from settings after granting permission
-    LifecycleResumeEffect(viewModel) {
-        if (uiState is CleanupUiState.NeedsStoragePermission &&
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
-            Environment.isExternalStorageManager()
-        ) {
-            viewModel.scan()
-        }
-        onPauseOrDispose { }
-    }
-
     Box(modifier = modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
@@ -144,7 +128,14 @@ fun CleanupScreen(
                 CleanupScreenBody(
                     uiState = uiState,
                     cleanupType = cleanupType,
-                    viewModel = viewModel,
+                    selectedFilterIndex = viewModel.getSelectedFilterIndex(),
+                    onFilterSelect = viewModel::setFilter,
+                    onScan = viewModel::scan,
+                    pagerFlowFor = viewModel::pagerFlowFor,
+                    isSelected = viewModel::isSelected,
+                    onToggleGroupExpansion = viewModel::toggleGroupExpanded,
+                    onToggleGroupSelection = viewModel::toggleGroupSelection,
+                    onToggleSelection = viewModel::toggleSelection,
                 )
             }
         }
@@ -159,11 +150,17 @@ fun CleanupScreen(
 }
 
 @Composable
-@Suppress("ViewModelForwarding")
 private fun CleanupScreenBody(
     uiState: CleanupUiState,
     cleanupType: CleanupType,
-    viewModel: CleanupViewModel,
+    selectedFilterIndex: Int,
+    onFilterSelect: (Int) -> Unit,
+    onScan: () -> Unit,
+    pagerFlowFor: (MediaCategory) -> Flow<PagingData<ScannedFile>>,
+    isSelected: (ScannedFile) -> Boolean,
+    onToggleGroupExpansion: (MediaCategory) -> Unit,
+    onToggleGroupSelection: (MediaCategory) -> Unit,
+    onToggleSelection: (ScannedFile) -> Unit,
 ) {
     val context = LocalContext.current
     val scanningDescription = stringResource(R.string.a11y_scanning_files)
@@ -187,8 +184,8 @@ private fun CleanupScreenBody(
             ) {
                 cleanupType.filterOptions.forEachIndexed { index, option ->
                     FilterChip(
-                        selected = viewModel.getSelectedFilterIndex() == index,
-                        onClick = { viewModel.setFilter(index) },
+                        selected = selectedFilterIndex == index,
+                        onClick = { onFilterSelect(index) },
                         label = { Text(stringResource(option.labelRes)) },
                     )
                 }
@@ -212,58 +209,6 @@ private fun CleanupScreenBody(
                     contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()
-                }
-            }
-
-            is CleanupUiState.NeedsStoragePermission -> {
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.large,
-                    colors = runcheckCardColors(),
-                    elevation = runcheckCardElevation(),
-                ) {
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(MaterialTheme.spacing.base),
-                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.cleanup_storage_permission_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = stringResource(R.string.cleanup_storage_permission_message),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = stringResource(R.string.cleanup_storage_permission_reason),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        TextButton(
-                            onClick = {
-                                try {
-                                    context.startActivity(
-                                        Intent(
-                                            Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-                                            Uri.parse("package:${context.packageName}"),
-                                        ),
-                                    )
-                                } catch (_: Exception) {
-                                    context.startActivity(
-                                        Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION),
-                                    )
-                                }
-                            },
-                        ) {
-                            Text(stringResource(R.string.cleanup_storage_permission_action))
-                        }
-                    }
                 }
             }
 
@@ -319,11 +264,11 @@ private fun CleanupScreenBody(
             is CleanupUiState.Results -> {
                 CleanupResultsList(
                     state = state,
-                    pagerFlowFor = viewModel::pagerFlowFor,
-                    isSelected = viewModel::isSelected,
-                    onToggleGroupExpanded = viewModel::toggleGroupExpanded,
-                    onToggleGroupSelection = viewModel::toggleGroupSelection,
-                    onToggleSelection = viewModel::toggleSelection,
+                    pagerFlowFor = pagerFlowFor,
+                    isSelected = isSelected,
+                    onToggleGroupExpansion = onToggleGroupExpansion,
+                    onToggleGroupSelection = onToggleGroupSelection,
+                    onToggleSelection = onToggleSelection,
                 )
             }
 
@@ -359,7 +304,7 @@ private fun CleanupScreenBody(
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                        TextButton(onClick = { viewModel.scan() }) {
+                        TextButton(onClick = onScan) {
                             Text(text = stringResource(R.string.common_retry))
                         }
                     }
@@ -374,7 +319,7 @@ private fun CleanupResultsList(
     state: CleanupUiState.Results,
     pagerFlowFor: (MediaCategory) -> Flow<PagingData<ScannedFile>>,
     isSelected: (ScannedFile) -> Boolean,
-    onToggleGroupExpanded: (MediaCategory) -> Unit,
+    onToggleGroupExpansion: (MediaCategory) -> Unit,
     onToggleGroupSelection: (MediaCategory) -> Unit,
     onToggleSelection: (ScannedFile) -> Unit,
 ) {
@@ -419,9 +364,9 @@ private fun CleanupResultsList(
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
                     )
                 }
-                val onToggleExpanded =
+                val onToggleExpansion =
                     remember(group.category) {
-                        { onToggleGroupExpanded(group.category) }
+                        { onToggleGroupExpansion(group.category) }
                     }
                 val onToggleGroupSelectionCallback =
                     remember(group.category) {
@@ -429,7 +374,7 @@ private fun CleanupResultsList(
                     }
                 CategoryGroup(
                     group = group,
-                    onToggleExpanded = onToggleExpanded,
+                    onToggleExpansion = onToggleExpansion,
                     onToggleGroupSelection = onToggleGroupSelectionCallback,
                 )
             }

@@ -15,6 +15,8 @@ enum class ProFeature {
     WIDGETS,
     CSV_EXPORT,
     THERMAL_LOGS,
+    REMAINING_CHARGE_TIME,
+    STORAGE_CLEANUP,
 }
 
 @Immutable

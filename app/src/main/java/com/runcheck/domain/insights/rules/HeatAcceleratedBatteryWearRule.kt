@@ -1,9 +1,12 @@
 package com.runcheck.domain.insights.rules
 
 import com.runcheck.domain.insights.analysis.BatteryDrainAnalyzer
+import com.runcheck.domain.insights.analysis.DrainRateComparison
 import com.runcheck.domain.insights.analysis.DrainSample
-import com.runcheck.domain.insights.analysis.TimeInterval
 import com.runcheck.domain.insights.analysis.TimeWindowAligner
+import com.runcheck.domain.insights.analysis.dischargingPairs
+import com.runcheck.domain.insights.analysis.toDrainSample
+import com.runcheck.domain.insights.analysis.toTimeIntervals
 import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.model.InsightCandidate
 import com.runcheck.domain.insights.model.InsightPriority
@@ -27,42 +30,50 @@ class HeatAcceleratedBatteryWearRule
     ) : InsightRule {
         override val ruleId: String = RULE_ID
 
-        override suspend fun evaluate(now: Long): List<InsightCandidate> {
+        override suspend fun evaluate(now: Long): List<InsightCandidate> = buildCandidate(now)?.let(::listOf).orEmpty()
+
+        private suspend fun buildCandidate(now: Long): InsightCandidate? {
+            val input = loadInput(now) ?: return null
+            val samples = classifyDrainSamples(input)
+            val comparison = samples.compareDrainRates() ?: return null
+            val peakHotTemperature = samples.peakHotTemperature ?: return null
+
+            return buildCandidate(
+                now = now,
+                comparison = comparison,
+                peakHotTemperature = peakHotTemperature,
+                confidence = samples.confidence,
+            )
+        }
+
+        private suspend fun loadInput(now: Long): HeatDrainInput? {
             val batteryReadings = batteryRepository.getReadingsSinceSync(now - LOOKBACK_MS)
             val thermalReadings = thermalRepository.getReadingsSinceSync(now - LOOKBACK_MS)
             if (batteryReadings.size < MINIMUM_BATTERY_READING_COUNT ||
                 thermalReadings.size < MINIMUM_THERMAL_READING_COUNT
             ) {
-                return emptyList()
+                return null
             }
 
-            val dischargingPairs =
-                batteryReadings
-                    .sortedBy { it.timestamp }
-                    .zipWithNext()
-                    .filter { (_, current) ->
-                        current.status in BatteryDrainAnalyzer.DEFAULT_DISCHARGING_STATUSES
-                    }
-            if (dischargingPairs.size < MINIMUM_TOTAL_INTERVAL_COUNT) return emptyList()
+            val dischargingPairs = batteryReadings.dischargingPairs()
+            return HeatDrainInput(
+                dischargingPairs = dischargingPairs,
+                thermalReadings = thermalReadings,
+            ).takeIf { dischargingPairs.size >= MINIMUM_TOTAL_INTERVAL_COUNT }
+        }
 
+        private fun classifyDrainSamples(input: HeatDrainInput): HeatDrainSamples {
             val alignedIntervals =
                 timeWindowAligner.alignLatestContext(
-                    intervals =
-                        dischargingPairs.map { (previous, current) ->
-                            TimeInterval(
-                                startTime = previous.timestamp,
-                                endTime = current.timestamp,
-                            )
-                        },
-                    contexts = thermalReadings,
+                    intervals = input.dischargingPairs.toTimeIntervals(),
+                    contexts = input.thermalReadings,
                     contextTimestamp = ThermalReading::timestamp,
                 )
-
             val hotDrainSamples = mutableListOf<DrainSample>()
             val coolDrainSamples = mutableListOf<DrainSample>()
             val hotTemperatures = mutableListOf<Float>()
 
-            dischargingPairs.zip(alignedIntervals).forEach { (pair, aligned) ->
+            input.dischargingPairs.zip(alignedIntervals).forEach { (pair, aligned) ->
                 val thermalReading = aligned.context ?: return@forEach
                 val sample = pair.toDrainSample() ?: return@forEach
                 val thermalStatus = parseThermalStatus(thermalReading.thermalStatus)
@@ -79,78 +90,81 @@ class HeatAcceleratedBatteryWearRule
                 }
             }
 
-            if (hotDrainSamples.size < MINIMUM_CLASSIFIED_INTERVAL_COUNT ||
-                coolDrainSamples.size < MINIMUM_CLASSIFIED_INTERVAL_COUNT
-            ) {
-                return emptyList()
-            }
-
-            val comparison =
-                batteryDrainAnalyzer.compareAverageDrainRates(
-                    currentSamples = hotDrainSamples,
-                    previousSamples = coolDrainSamples,
-                ) ?: return emptyList()
-            if (comparison.changeRatio < MINIMUM_DRAIN_RATIO) return emptyList()
-
-            val peakHotTemperature = hotTemperatures.maxOrNull() ?: return emptyList()
-            val priority =
-                when {
-                    comparison.changeRatio >= HIGH_PRIORITY_DRAIN_RATIO ||
-                        peakHotTemperature >= HIGH_PRIORITY_TEMP_C -> {
-                        InsightPriority.HIGH
-                    }
-
-                    else -> {
-                        InsightPriority.MEDIUM
-                    }
-                }
-            val confidence =
-                (minOf(hotDrainSamples.size, coolDrainSamples.size) / CONFIDENCE_INTERVAL_COUNT.toFloat())
-                    .coerceIn(0f, 1f)
-            val increaseBucket =
-                when {
-                    comparison.percentIncrease >= 60 -> "60plus"
-                    comparison.percentIncrease >= 40 -> "40plus"
-                    else -> "20plus"
-                }
-
-            return listOf(
-                InsightCandidate(
-                    ruleId = ruleId,
-                    dedupeKey = "heat_drain:$increaseBucket",
-                    type = InsightType.BATTERY,
-                    priority = priority,
-                    confidence = confidence,
-                    titleKey = TITLE_KEY,
-                    bodyKey = BODY_KEY,
-                    bodyArgs =
-                        listOf(
-                            comparison.percentIncrease.coerceAtLeast(1).toString(),
-                            peakHotTemperature.roundToInt().toString(),
-                        ),
-                    generatedAt = now,
-                    expiresAt = now + TTL_MS,
-                    dataWindowStart = now - LOOKBACK_MS,
-                    dataWindowEnd = now,
-                    target = InsightTarget.BATTERY,
-                ),
+            return HeatDrainSamples(
+                hotDrainSamples = hotDrainSamples,
+                coolDrainSamples = coolDrainSamples,
+                hotTemperatures = hotTemperatures,
             )
         }
+
+        private fun HeatDrainSamples.compareDrainRates(): DrainRateComparison? =
+            takeIf { it.hasEnoughSamples }
+                ?.let {
+                    batteryDrainAnalyzer.compareAverageDrainRates(
+                        currentSamples = hotDrainSamples,
+                        previousSamples = coolDrainSamples,
+                    )
+                }?.takeIf { it.changeRatio >= MINIMUM_DRAIN_RATIO }
+
+        private fun buildCandidate(
+            now: Long,
+            comparison: DrainRateComparison,
+            peakHotTemperature: Float,
+            confidence: Float,
+        ): InsightCandidate =
+            InsightCandidate(
+                ruleId = ruleId,
+                dedupeKey = "heat_drain:${comparison.percentIncrease.toIncreaseBucket()}",
+                type = InsightType.BATTERY,
+                priority = resolvePriority(comparison, peakHotTemperature),
+                confidence = confidence,
+                titleKey = TITLE_KEY,
+                bodyKey = BODY_KEY,
+                bodyArgs =
+                    listOf(
+                        comparison.percentIncrease.coerceAtLeast(1).toString(),
+                        peakHotTemperature.roundToInt().toString(),
+                    ),
+                generatedAt = now,
+                expiresAt = now + TTL_MS,
+                dataWindowStart = now - LOOKBACK_MS,
+                dataWindowEnd = now,
+                target = InsightTarget.BATTERY,
+            )
+
+        private fun resolvePriority(
+            comparison: DrainRateComparison,
+            peakHotTemperature: Float,
+        ): InsightPriority =
+            when {
+                comparison.changeRatio >= HIGH_PRIORITY_DRAIN_RATIO ||
+                    peakHotTemperature >= HIGH_PRIORITY_TEMP_C -> InsightPriority.HIGH
+
+                else -> InsightPriority.MEDIUM
+            }
+
+        private fun Int.toIncreaseBucket(): String =
+            when {
+                this >= 60 -> "60plus"
+                this >= 40 -> "40plus"
+                else -> "20plus"
+            }
+
+        private val HeatDrainSamples.hasEnoughSamples: Boolean
+            get() =
+                hotDrainSamples.size >= MINIMUM_CLASSIFIED_INTERVAL_COUNT &&
+                    coolDrainSamples.size >= MINIMUM_CLASSIFIED_INTERVAL_COUNT
+
+        private val HeatDrainSamples.confidence: Float
+            get() =
+                (minOf(hotDrainSamples.size, coolDrainSamples.size) / CONFIDENCE_INTERVAL_COUNT.toFloat())
+                    .coerceIn(0f, 1f)
+
+        private val HeatDrainSamples.peakHotTemperature: Float?
+            get() = hotTemperatures.maxOrNull()
 
         private fun parseThermalStatus(raw: Int): ThermalStatus =
             ThermalStatus.entries.getOrElse(raw) { ThermalStatus.NONE }
-
-        private fun Pair<BatteryReading, BatteryReading>.toDrainSample(): DrainSample? {
-            val (previous, current) = this
-            val levelDrop = (previous.level - current.level).coerceAtLeast(0)
-            val durationMs = (current.timestamp - previous.timestamp).coerceAtLeast(0L)
-            if (levelDrop <= 0 || durationMs <= 0L) return null
-
-            return DrainSample(
-                levelDropPct = levelDrop.toFloat(),
-                durationMs = durationMs,
-            )
-        }
 
         companion object {
             const val RULE_ID = "heat_accelerated_battery_wear"
@@ -171,3 +185,14 @@ class HeatAcceleratedBatteryWearRule
             private const val CONFIDENCE_INTERVAL_COUNT = 5
         }
     }
+
+private data class HeatDrainInput(
+    val dischargingPairs: List<Pair<BatteryReading, BatteryReading>>,
+    val thermalReadings: List<ThermalReading>,
+)
+
+private data class HeatDrainSamples(
+    val hotDrainSamples: List<DrainSample>,
+    val coolDrainSamples: List<DrainSample>,
+    val hotTemperatures: List<Float>,
+)

@@ -2,6 +2,7 @@ package com.runcheck.ui.home.insights
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,10 +31,12 @@ fun InsightsCard(
     navigationHandlers: InsightNavigationHandlers,
     onNavigateToInsights: () -> Unit,
     onDismissInsight: (Long) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     if (insights.isEmpty()) return
 
-    androidx.compose.foundation.layout.Column(
+    Column(
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
         Row(

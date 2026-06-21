@@ -1,10 +1,5 @@
 package com.runcheck.domain.insights.rules
 
-import com.runcheck.domain.model.NetworkReading
-import com.runcheck.domain.model.NetworkState
-import com.runcheck.domain.repository.NetworkRepository
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -14,74 +9,9 @@ class NetworkSignalPatternRuleTest {
     @Test
     fun `returns network insight when cellular signal is repeatedly weak`() =
         runTest {
-            val hourMs = 60L * 60L * 1000L
-            val now = 96L * hourMs
-            val readings =
-                listOf(
-                    NetworkReading(
-                        timestamp = now - 50L * hourMs,
-                        type = "CELLULAR",
-                        signalDbm = -112,
-                        wifiSpeedMbps = null,
-                        wifiFrequency = null,
-                        carrier = "Carrier",
-                        networkSubtype = "LTE",
-                        latencyMs = 85,
-                    ),
-                    NetworkReading(
-                        timestamp = now - 42L * hourMs,
-                        type = "CELLULAR",
-                        signalDbm = -116,
-                        wifiSpeedMbps = null,
-                        wifiFrequency = null,
-                        carrier = "Carrier",
-                        networkSubtype = "LTE",
-                        latencyMs = 110,
-                    ),
-                    NetworkReading(
-                        timestamp = now - 34L * hourMs,
-                        type = "CELLULAR",
-                        signalDbm = -114,
-                        wifiSpeedMbps = null,
-                        wifiFrequency = null,
-                        carrier = "Carrier",
-                        networkSubtype = "LTE",
-                        latencyMs = 120,
-                    ),
-                    NetworkReading(
-                        timestamp = now - 26L * hourMs,
-                        type = "CELLULAR",
-                        signalDbm = -118,
-                        wifiSpeedMbps = null,
-                        wifiFrequency = null,
-                        carrier = "Carrier",
-                        networkSubtype = "LTE",
-                        latencyMs = 140,
-                    ),
-                    NetworkReading(
-                        timestamp = now - 18L * hourMs,
-                        type = "CELLULAR",
-                        signalDbm = -113,
-                        wifiSpeedMbps = null,
-                        wifiFrequency = null,
-                        carrier = "Carrier",
-                        networkSubtype = "LTE",
-                        latencyMs = 95,
-                    ),
-                    NetworkReading(
-                        timestamp = now - 10L * hourMs,
-                        type = "CELLULAR",
-                        signalDbm = -108,
-                        wifiSpeedMbps = null,
-                        wifiFrequency = null,
-                        carrier = "Carrier",
-                        networkSubtype = "LTE",
-                        latencyMs = 80,
-                    ),
-                )
-            val rule = NetworkSignalPatternRule(FakeNetworkRepository(readings))
+            val rule = NetworkSignalPatternRule(TestNetworkRepository(sustainedWeakSignalReadings()))
 
-            val insights = rule.evaluate(now)
+            val insights = rule.evaluate(NOW)
 
             assertEquals(1, insights.size)
             val insight = insights.single()
@@ -94,99 +24,56 @@ class NetworkSignalPatternRuleTest {
     @Test
     fun `returns empty when weak signal is not sustained`() =
         runTest {
-            val hourMs = 60L * 60L * 1000L
-            val now = 96L * hourMs
-            val readings =
-                listOf(
-                    NetworkReading(
-                        timestamp = now - 50L * hourMs,
-                        type = "CELLULAR",
-                        signalDbm = -101,
-                        wifiSpeedMbps = null,
-                        wifiFrequency = null,
-                        carrier = "Carrier",
-                        networkSubtype = "LTE",
-                        latencyMs = 40,
-                    ),
-                    NetworkReading(
-                        timestamp = now - 42L * hourMs,
-                        type = "CELLULAR",
-                        signalDbm = -105,
-                        wifiSpeedMbps = null,
-                        wifiFrequency = null,
-                        carrier = "Carrier",
-                        networkSubtype = "LTE",
-                        latencyMs = 45,
-                    ),
-                    NetworkReading(
-                        timestamp = now - 34L * hourMs,
-                        type = "CELLULAR",
-                        signalDbm = -109,
-                        wifiSpeedMbps = null,
-                        wifiFrequency = null,
-                        carrier = "Carrier",
-                        networkSubtype = "LTE",
-                        latencyMs = 55,
-                    ),
-                    NetworkReading(
-                        timestamp = now - 26L * hourMs,
-                        type = "CELLULAR",
-                        signalDbm = -111,
-                        wifiSpeedMbps = null,
-                        wifiFrequency = null,
-                        carrier = "Carrier",
-                        networkSubtype = "LTE",
-                        latencyMs = 60,
-                    ),
-                    NetworkReading(
-                        timestamp = now - 18L * hourMs,
-                        type = "WIFI",
-                        signalDbm = null,
-                        wifiSpeedMbps = 320,
-                        wifiFrequency = 5200,
-                        carrier = null,
-                        networkSubtype = null,
-                        latencyMs = 18,
-                    ),
-                    NetworkReading(
-                        timestamp = now - 10L * hourMs,
-                        type = "CELLULAR",
-                        signalDbm = -104,
-                        wifiSpeedMbps = null,
-                        wifiFrequency = null,
-                        carrier = "Carrier",
-                        networkSubtype = "LTE",
-                        latencyMs = 48,
-                    ),
-                )
-            val rule = NetworkSignalPatternRule(FakeNetworkRepository(readings))
+            val rule = NetworkSignalPatternRule(TestNetworkRepository(mixedSignalReadings()))
 
-            val insights = rule.evaluate(now)
+            val insights = rule.evaluate(NOW)
 
             assertTrue(insights.isEmpty())
         }
-}
 
-private class FakeNetworkRepository(
-    private val readings: List<NetworkReading>,
-) : NetworkRepository {
-    override fun getNetworkState(): Flow<NetworkState> = emptyFlow()
+    private fun sustainedWeakSignalReadings() =
+        listOf(
+            cellularReading(offsetHours = 50, signalDbm = -112, latencyMs = 85),
+            cellularReading(offsetHours = 42, signalDbm = -116, latencyMs = 110),
+            cellularReading(offsetHours = 34, signalDbm = -114, latencyMs = 120),
+            cellularReading(offsetHours = 26, signalDbm = -118, latencyMs = 140),
+            cellularReading(offsetHours = 18, signalDbm = -113, latencyMs = 95),
+            cellularReading(offsetHours = 10, signalDbm = -108, latencyMs = 80),
+        )
 
-    override suspend fun measureLatency(): Int? = null
+    private fun mixedSignalReadings() =
+        listOf(
+            cellularReading(offsetHours = 50, signalDbm = -101, latencyMs = 40),
+            cellularReading(offsetHours = 42, signalDbm = -105, latencyMs = 45),
+            cellularReading(offsetHours = 34, signalDbm = -109, latencyMs = 55),
+            cellularReading(offsetHours = 26, signalDbm = -111, latencyMs = 60),
+            wifiReading(offsetHours = 18),
+            cellularReading(offsetHours = 10, signalDbm = -104, latencyMs = 48),
+        )
 
-    override suspend fun saveReading(state: NetworkState) = Unit
+    private fun cellularReading(
+        offsetHours: Long,
+        signalDbm: Int,
+        latencyMs: Int,
+    ) = networkReading(
+        timestamp = NOW - offsetHours * HOUR_MS,
+        type = "CELLULAR",
+        signalDbm = signalDbm,
+        latencyMs = latencyMs,
+    )
 
-    override suspend fun getAllReadings(): List<NetworkReading> = readings
+    private fun wifiReading(offsetHours: Long) =
+        networkReading(
+            timestamp = NOW - offsetHours * HOUR_MS,
+            type = "WIFI",
+            signalDbm = null,
+            latencyMs = 18,
+            wifiSpeedMbps = 320,
+            wifiFrequency = 5200,
+        )
 
-    override fun getReadingsSince(
-        since: Long,
-        limit: Int?,
-    ): Flow<List<NetworkReading>> = emptyFlow()
-
-    override suspend fun getReadingsSinceSync(since: Long): List<NetworkReading> =
-        readings.filter { it.timestamp >= since }
-
-    override suspend fun deleteOlderThan(cutoff: Long) = Unit
-
-    override suspend fun deleteAll() = Unit
+    private companion object {
+        private const val HOUR_MS = 60L * 60L * 1000L
+        private const val NOW = 96L * HOUR_MS
+    }
 }

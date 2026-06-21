@@ -12,6 +12,7 @@ import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.chart.BatteryHistoryMetric
+import com.runcheck.ui.chart.ChartRenderModel
 import com.runcheck.ui.chart.FullscreenChartSource
 import com.runcheck.ui.chart.MAX_FULLSCREEN_CHART_POINTS
 import com.runcheck.ui.chart.MAX_FULLSCREEN_SESSION_POINTS
@@ -199,31 +200,14 @@ class FullscreenChartViewModel
                     maxPoints = MAX_FULLSCREEN_CHART_POINTS,
                 )
             }.collect { chartModel ->
-                if (chartModel.chartData.size < 2) {
-                    _uiState.value =
-                        FullscreenChartUiState.Empty(
-                            selectedMetric = metric.name,
-                            selectedPeriod = period.name,
-                            metricOptions = metricOptions,
-                            periodOptions = periodOptions,
-                        )
-                } else {
-                    _uiState.value =
-                        FullscreenChartUiState.Success(
-                            chartData = chartModel.chartData,
-                            chartTimestamps = chartModel.chartTimestamps,
-                            unit = chartModel.unit,
-                            selectedMetric = metric.name,
-                            selectedPeriod = period.name,
-                            metricOptions = metricOptions,
-                            periodOptions = periodOptions,
-                            yLabels = chartModel.yLabels,
-                            xLabels = chartModel.xLabels,
-                            tooltipDecimals = chartModel.tooltipDecimals,
-                            tooltipTimeSkeleton = chartModel.tooltipTimeSkeleton,
-                            temperatureUnit = chartModel.temperatureUnit ?: TemperatureUnit.CELSIUS,
-                        )
-                }
+                _uiState.value =
+                    chartModel.toFullscreenUiState(
+                        selectedMetric = metric.name,
+                        selectedPeriod = period.name,
+                        metricOptions = metricOptions,
+                        periodOptions = periodOptions,
+                        temperatureUnit = chartModel.temperatureUnit ?: TemperatureUnit.CELSIUS,
+                    )
             }
         }
 
@@ -261,30 +245,13 @@ class FullscreenChartViewModel
                         maxPoints = MAX_FULLSCREEN_SESSION_POINTS,
                     )
 
-                if (chartModel.chartData.size < 2) {
-                    _uiState.value =
-                        FullscreenChartUiState.Empty(
-                            selectedMetric = metric.name,
-                            selectedPeriod = window.name,
-                            metricOptions = metricOptions,
-                            periodOptions = periodOptions,
-                        )
-                } else {
-                    _uiState.value =
-                        FullscreenChartUiState.Success(
-                            chartData = chartModel.chartData,
-                            chartTimestamps = chartModel.chartTimestamps,
-                            unit = chartModel.unit,
-                            selectedMetric = metric.name,
-                            selectedPeriod = window.name,
-                            metricOptions = metricOptions,
-                            periodOptions = periodOptions,
-                            yLabels = chartModel.yLabels,
-                            xLabels = chartModel.xLabels,
-                            tooltipDecimals = chartModel.tooltipDecimals,
-                            tooltipTimeSkeleton = chartModel.tooltipTimeSkeleton,
-                        )
-                }
+                _uiState.value =
+                    chartModel.toFullscreenUiState(
+                        selectedMetric = metric.name,
+                        selectedPeriod = window.name,
+                        metricOptions = metricOptions,
+                        periodOptions = periodOptions,
+                    )
             }
         }
 
@@ -307,32 +274,46 @@ class FullscreenChartViewModel
                         maxPoints = MAX_FULLSCREEN_CHART_POINTS,
                     )
 
-                if (chartModel.chartData.size < 2) {
-                    _uiState.value =
-                        FullscreenChartUiState.Empty(
-                            selectedMetric = metric.name,
-                            selectedPeriod = period.name,
-                            metricOptions = metricOptions,
-                            periodOptions = periodOptions,
-                        )
-                } else {
-                    _uiState.value =
-                        FullscreenChartUiState.Success(
-                            chartData = chartModel.chartData,
-                            chartTimestamps = chartModel.chartTimestamps,
-                            unit = chartModel.unit,
-                            selectedMetric = metric.name,
-                            selectedPeriod = period.name,
-                            metricOptions = metricOptions,
-                            periodOptions = periodOptions,
-                            yLabels = chartModel.yLabels,
-                            xLabels = chartModel.xLabels,
-                            tooltipDecimals = chartModel.tooltipDecimals,
-                            tooltipTimeSkeleton = chartModel.tooltipTimeSkeleton,
-                        )
-                }
+                _uiState.value =
+                    chartModel.toFullscreenUiState(
+                        selectedMetric = metric.name,
+                        selectedPeriod = period.name,
+                        metricOptions = metricOptions,
+                        periodOptions = periodOptions,
+                    )
             }
         }
+    }
+
+private fun ChartRenderModel.toFullscreenUiState(
+    selectedMetric: String,
+    selectedPeriod: String,
+    metricOptions: List<String>,
+    periodOptions: List<String>,
+    temperatureUnit: TemperatureUnit? = null,
+): FullscreenChartUiState =
+    if (chartData.size < 2) {
+        FullscreenChartUiState.Empty(
+            selectedMetric = selectedMetric,
+            selectedPeriod = selectedPeriod,
+            metricOptions = metricOptions,
+            periodOptions = periodOptions,
+        )
+    } else {
+        FullscreenChartUiState.Success(
+            chartData = chartData,
+            chartTimestamps = chartTimestamps,
+            unit = unit,
+            selectedMetric = selectedMetric,
+            selectedPeriod = selectedPeriod,
+            metricOptions = metricOptions,
+            periodOptions = periodOptions,
+            yLabels = yLabels,
+            xLabels = xLabels,
+            tooltipDecimals = tooltipDecimals,
+            tooltipTimeSkeleton = tooltipTimeSkeleton,
+            temperatureUnit = temperatureUnit,
+        )
     }
 
 sealed interface FullscreenChartUiState {

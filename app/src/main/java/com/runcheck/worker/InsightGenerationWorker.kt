@@ -1,6 +1,7 @@
 package com.runcheck.worker
 
 import android.content.Context
+import android.database.SQLException
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -24,7 +25,7 @@ class InsightGenerationWorker
                 Result.success()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (e: SQLException) {
                 ReleaseSafeLog.error(TAG, "Insight generation failed", e)
                 Result.retry()
             }

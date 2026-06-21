@@ -128,4 +128,6 @@ private fun welcomeFeatureLabel(feature: ProFeature): String =
         ProFeature.WIDGETS -> stringResource(R.string.pro_feature_widgets)
         ProFeature.CSV_EXPORT -> stringResource(R.string.pro_feature_csv_export)
         ProFeature.THERMAL_LOGS -> stringResource(R.string.pro_feature_thermal_logs)
+        ProFeature.REMAINING_CHARGE_TIME -> stringResource(R.string.pro_feature_remaining_charge_time)
+        ProFeature.STORAGE_CLEANUP -> stringResource(R.string.pro_feature_storage_cleanup)
     }

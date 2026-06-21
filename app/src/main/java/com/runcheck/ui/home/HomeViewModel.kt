@@ -3,6 +3,7 @@ package com.runcheck.ui.home
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.runcheck.domain.insights.policy.visibleForProAccess
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.HealthScore
 import com.runcheck.domain.model.NetworkState
@@ -168,11 +169,10 @@ class HomeViewModel
                             insightRepository.getHomeInsights(limit = MAX_HOME_INSIGHTS),
                             insightRepository.getActiveInsights(),
                             insightRepository.getUnseenCount(),
-                        ) { insights, activeInsights, unseenInsightCount ->
+                        ) { insights, activeInsights, _ ->
                             InsightSnapshot(
                                 insights = insights,
-                                totalInsightCount = activeInsights.size,
-                                unseenInsightCount = unseenInsightCount,
+                                activeInsights = activeInsights,
                             )
                         }
 
@@ -220,15 +220,19 @@ class HomeViewModel
                                 false
                             }
 
+                        val isPro = proState.isPro
+                        val visibleInsights = insightSnapshot.insights.visibleForProAccess(isPro)
+                        val visibleActiveInsights = insightSnapshot.activeInsights.visibleForProAccess(isPro)
+
                         HomeUiState.Success(
                             healthScore = data.health,
                             batteryState = data.battery,
                             networkState = data.network,
                             thermalState = data.thermal,
                             storageState = data.storage,
-                            insights = insightSnapshot.insights,
-                            totalInsightCount = insightSnapshot.totalInsightCount,
-                            unseenInsightCount = insightSnapshot.unseenInsightCount,
+                            insights = visibleInsights,
+                            totalInsightCount = visibleActiveInsights.size,
+                            unseenInsightCount = visibleActiveInsights.count { !it.seen },
                             temperatureUnit = preferences.temperatureUnit,
                             monitoringStale = monitoringStale,
                             proState = proState,
@@ -306,8 +310,7 @@ class HomeViewModel
 
         private data class InsightSnapshot(
             val insights: List<com.runcheck.domain.insights.model.Insight>,
-            val totalInsightCount: Int,
-            val unseenInsightCount: Int,
+            val activeInsights: List<com.runcheck.domain.insights.model.Insight>,
         )
 
         companion object {

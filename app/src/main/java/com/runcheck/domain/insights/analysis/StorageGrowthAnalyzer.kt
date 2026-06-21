@@ -41,8 +41,45 @@ class StorageGrowthAnalyzer
             }
         }
 
+        fun calculateProjection(readings: List<StorageReading>): StorageFillProjection? {
+            val latest = readings.maxByOrNull { it.timestamp }
+            val fillRateBytesPerDay = calculateFillRateBytesPerDay(readings)
+
+            return if (latest == null || fillRateBytesPerDay == null || fillRateBytesPerDay <= 0L) {
+                null
+            } else {
+                val availableBytes = latest.availableBytes.coerceAtLeast(0L)
+                formatEstimate(availableBytes, fillRateBytesPerDay)?.let { estimate ->
+                    StorageFillProjection(
+                        latest = latest,
+                        fillRateBytesPerDay = fillRateBytesPerDay,
+                        daysUntilFull = availableBytes / fillRateBytesPerDay,
+                        estimate = estimate,
+                        usedPercent = latest.usedPercent(),
+                    )
+                }
+            }
+        }
+
+        private fun StorageReading.usedPercent(): Int =
+            (
+                (
+                    (totalBytes - availableBytes).toDouble() /
+                        totalBytes.coerceAtLeast(1).toDouble()
+                ) *
+                    100.0
+            ).toInt()
+
         companion object {
             private const val MIN_READINGS = 3
             private const val DAY_MS = 24L * 60L * 60L * 1000L
         }
     }
+
+data class StorageFillProjection(
+    val latest: StorageReading,
+    val fillRateBytesPerDay: Long,
+    val daysUntilFull: Long,
+    val estimate: String,
+    val usedPercent: Int,
+)

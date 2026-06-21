@@ -1,0 +1,22 @@
+---
+ignore-paths:
+  - .gradle
+  - .idea
+  - build
+  - app/build
+  - captures
+  - reports
+  - .deepsec/data
+  - .deepsec/findings
+  - .deepsec/node_modules
+  - app/schemas
+  - app/src/test
+  - app/src/androidTest
+
+ignore-rules:
+  # targetSdk comes from Gradle preview SDK settings, not only from the source manifest.
+  - android_task_hijacking2
+
+severity-filter:
+  - WARNING
+  - ERROR

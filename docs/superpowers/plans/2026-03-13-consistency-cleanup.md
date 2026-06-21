@@ -1,5 +1,7 @@
 # Consistency Cleanup Implementation Plan
 
+> Historiallinen toteutussuunnitelma 2026-03-13. Detekt-, Kotlin- ja compose-rules-versiot eivät ole nykyinen totuus; tarkista nykytila `gradle/libs.versions.toml`:sta, `PROJECT.md`:stä ja `AGENTS.md`:stä.
+
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Complete all remaining consistency items from `docs/reviews/2026-03-13-consistency-follow-up.md` — standardize NetworkViewModel to sealed interface, add detekt, fix Finnish string placement, and document resolved decisions.

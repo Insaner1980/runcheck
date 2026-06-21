@@ -23,7 +23,7 @@ class SpeedTestRepositoryImpl
         private val speedTestResultDao: SpeedTestResultDao,
     ) : SpeedTestRepositoryContract {
         override fun runSpeedTest(allowCellular: Boolean): Flow<SpeedTestProgress> =
-            speedTestService.runSpeedTest(allowCellular = allowCellular).map { it.toDomain() }
+            speedTestService.runSpeedTest(allowCellular = allowCellular)
 
         override suspend fun saveResult(result: SpeedTestResult) =
             withContext(Dispatchers.IO) {
@@ -94,39 +94,4 @@ class SpeedTestRepositoryImpl
                 networkSubtype = networkSubtype,
                 signalDbm = signalDbm,
             )
-    }
-
-private fun SpeedTestService.SpeedTestProgress.toDomain(): SpeedTestProgress =
-    when (this) {
-        is SpeedTestService.SpeedTestProgress.CellularConfirmationRequired -> {
-            SpeedTestProgress.CellularConfirmationRequired(connectionInfo)
-        }
-
-        is SpeedTestService.SpeedTestProgress.PingPhase -> {
-            SpeedTestProgress.PingPhase(pingMs, jitterMs)
-        }
-
-        is SpeedTestService.SpeedTestProgress.DownloadPhase -> {
-            SpeedTestProgress.DownloadPhase(currentMbps, progress)
-        }
-
-        is SpeedTestService.SpeedTestProgress.UploadPhase -> {
-            SpeedTestProgress.UploadPhase(currentMbps, progress)
-        }
-
-        is SpeedTestService.SpeedTestProgress.Completed -> {
-            SpeedTestProgress.Completed(
-                downloadMbps,
-                uploadMbps,
-                pingMs,
-                jitterMs,
-                serverName,
-                serverLocation,
-                connectionInfo,
-            )
-        }
-
-        is SpeedTestService.SpeedTestProgress.Failed -> {
-            SpeedTestProgress.Failed(error)
-        }
     }

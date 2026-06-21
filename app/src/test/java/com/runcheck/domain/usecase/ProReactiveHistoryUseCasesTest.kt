@@ -3,10 +3,16 @@ package com.runcheck.domain.usecase
 import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.NetworkReading
+import com.runcheck.domain.model.StorageReading
+import com.runcheck.domain.model.StorageState
+import com.runcheck.domain.model.ThermalReading
+import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThrottlingEvent
 import com.runcheck.domain.repository.BatteryRepository
 import com.runcheck.domain.repository.NetworkRepository
 import com.runcheck.domain.repository.ProStatusProvider
+import com.runcheck.domain.repository.StorageRepository
+import com.runcheck.domain.repository.ThermalRepository
 import com.runcheck.domain.repository.ThrottlingRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -80,6 +86,40 @@ class ProReactiveHistoryUseCasesTest {
                 ),
                 emissions,
             )
+        }
+
+    @Test
+    fun `storage history is empty until pro unlocks`() =
+        runTest {
+            val repo = FakeStorageRepository()
+            val proStatusProvider = FakeProStatusProvider(initial = false)
+            val useCase = GetStorageHistoryUseCase(repo, proStatusProvider)
+
+            val emissionsDeferred = async { useCase(HistoryPeriod.ALL).take(2).toList() }
+            advanceUntilIdle()
+
+            proStatusProvider.setPro(true)
+            val emissions = emissionsDeferred.await()
+
+            assertEquals(listOf(emptyList<StorageReading>(), listOf(testStorageReading)), emissions)
+            assertEquals(listOf(0L), repo.requestedSince)
+        }
+
+    @Test
+    fun `thermal history is empty until pro unlocks`() =
+        runTest {
+            val repo = FakeThermalRepository()
+            val proStatusProvider = FakeProStatusProvider(initial = false)
+            val useCase = GetThermalHistoryUseCase(repo, proStatusProvider)
+
+            val emissionsDeferred = async { useCase(HistoryPeriod.ALL).take(2).toList() }
+            advanceUntilIdle()
+
+            proStatusProvider.setPro(true)
+            val emissions = emissionsDeferred.await()
+
+            assertEquals(listOf(emptyList<ThermalReading>(), listOf(testThermalReading)), emissions)
+            assertEquals(listOf(0L), repo.requestedSince)
         }
 }
 
@@ -194,6 +234,72 @@ private class FakeThrottlingRepository : ThrottlingRepository {
         id: Long,
         durationMs: Long,
     ) = Unit
+
+    override suspend fun deleteOlderThan(cutoff: Long) = Unit
+
+    override suspend fun deleteAll() = Unit
+}
+
+private val testStorageReading =
+    StorageReading(
+        timestamp = 1_000L,
+        totalBytes = 128_000_000L,
+        availableBytes = 64_000_000L,
+        appsBytes = 12_000_000L,
+        mediaBytes = 24_000_000L,
+    )
+
+private class FakeStorageRepository : StorageRepository {
+    val requestedSince = mutableListOf<Long>()
+
+    override fun getStorageState() = emptyFlow<StorageState>()
+
+    override suspend fun saveReading(state: StorageState) = Unit
+
+    override fun getReadingsSince(
+        since: Long,
+        limit: Int?,
+    ): Flow<List<StorageReading>> {
+        requestedSince += since
+        return flowOf(listOf(testStorageReading))
+    }
+
+    override suspend fun getReadingsSinceSync(since: Long): List<StorageReading> = emptyList()
+
+    override suspend fun getAllReadings(): List<StorageReading> = emptyList()
+
+    override suspend fun deleteOlderThan(cutoff: Long) = Unit
+
+    override suspend fun deleteAll() = Unit
+}
+
+private val testThermalReading =
+    ThermalReading(
+        timestamp = 1_000L,
+        batteryTempC = 38f,
+        cpuTempC = null,
+        thermalStatus = 0,
+        throttling = false,
+    )
+
+private class FakeThermalRepository : ThermalRepository {
+    val requestedSince = mutableListOf<Long>()
+
+    override fun getThermalState() = emptyFlow<ThermalState>()
+
+    override fun getReadingsSince(
+        since: Long,
+        limit: Int?,
+    ): Flow<List<ThermalReading>> {
+        requestedSince += since
+        return flowOf(listOf(testThermalReading))
+    }
+
+    override suspend fun getReadingsSinceSync(since: Long): List<ThermalReading> = emptyList()
+
+    override suspend fun saveReading(state: ThermalState) = Unit
+
+    override suspend fun getAllReadings(): List<ThermalReading> = emptyList()
 
     override suspend fun deleteOlderThan(cutoff: Long) = Unit
 
