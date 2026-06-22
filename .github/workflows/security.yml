@@ -43,7 +43,9 @@ jobs:
 
   dependency-check:
     name: OWASP Dependency-Check
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     permissions:
       contents: read
       security-events: write
@@ -80,6 +82,8 @@ jobs:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
           DEPENDENCY_CHECK_AUTO_UPDATE: 'true'
           DEPENDENCY_CHECK_DATA_DIRECTORY: ${{ github.workspace }}/.gradle/dependency-check-data
+          NVD_API_MAX_RETRY_COUNT: '5'
+          NVD_VALID_FOR_HOURS: '168'
 
       - uses: github/codeql-action/upload-sarif@1a818fd5f97ed0ee9a823421bd5b171add01227f # v4.36.2
         if: always() && hashFiles('reports/dependency-check-report.sarif') != ''
