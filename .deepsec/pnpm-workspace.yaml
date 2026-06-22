@@ -1,0 +1,6 @@
+packages:
+  - "."
+
+overrides:
+  hono: 4.12.26
+  undici: 7.28.0
