@@ -1082,8 +1082,8 @@ GitHub Actions workflows in `.github/workflows/`:
 | `codeql.yml` | CodeQL security analysis (`java-kotlin`, manual `assembleDebug`) | Active |
 | `security.yml` | Semgrep SAST + OWASP Dependency-Check SARIF upload | Active |
 | `sonar.yml` | SonarCloud scan through Gradle (`assembleDebug`, `:app:jacocoDebugUnitTestReport`, `sonar`) | Active |
-| `qodana.yml` | JetBrains Qodana main-branch scan (`v2026.1`) | Configured, but AGP 9.x support remains a known risk |
-| `qodana_code_quality.yml` | JetBrains Qodana action (`v2026.1`) for `main`, `releases/*`, PRs, and manual dispatch | Configured, but AGP 9.x support remains a known risk |
+| `qodana.yml` | JetBrains Qodana main-branch scan (`v2026.1`) | Uses the JVM Community linter because the 2026.1 Android linter rejects AGP 9.1.0 during IDE import |
+| `qodana_code_quality.yml` | JetBrains Qodana action (`v2026.1`) for `main`, `releases/*`, PRs, and manual dispatch | Uses the JVM Community linter because the 2026.1 Android linter rejects AGP 9.1.0 during IDE import |
 
 External services:
 - **SonarCloud** — continuous code quality (`Insaner1980_runcheck`, org `insaner1980`). CI path is `.github/workflows/sonar.yml`; local path is `tools/sonar.ps1`.
@@ -1157,7 +1157,7 @@ Rules are Hilt multibindings into `Set<InsightRule>`. `InsightEngine` filters ge
 
 ### Known Tool Limitations
 
-- **Qodana:** AGP 9.x has a known `AndroidArtifact.getPrivacySandboxSdkInfo()` risk in JetBrains/Qodana tooling. Treat both Qodana workflows as configured-but-needing fresh proof on every AGP/Gradle bump.
+- **Qodana:** Qodana Android linter 2026.1 currently rejects this repo's AGP 9.1.0 during IDE import (`Latest supported version is AGP 9.0.0`). The workflows therefore run `jetbrains/qodana-jvm-community:2026.1` until JetBrains publishes an Android linter compatible with this AGP line. Re-test Qodana on every AGP/Gradle bump.
 - **CodeQL:** GitHub CodeQL 2.25.2 supports Kotlin up to 2.3.20, but Kotlin 2.4.x is beyond the known-supported line in the current review snapshot. Check the actual CodeQL Action runner version before Kotlin plugin upgrades.
 - **Sonar:** AGP 9 support has had scanner-side compatibility churn. Keep `tools/sonar.ps1` and `.github/workflows/sonar.yml` verified when changing AGP, Gradle, or Kotlin.
 

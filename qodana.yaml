@@ -3,7 +3,9 @@
 ####################################################################################################################
 
 version: "1.0"
-linter: jetbrains/qodana-jvm-android:2026.1
+# Qodana Android -linter 2026.1 hylkaa AGP 9.1.0 -projektin importissa.
+# Kaytetaan JVM Community -linteria, kunnes Android-linter tukee tata AGP-linjaa.
+linter: jetbrains/qodana-jvm-community:2026.1
 profile:
   name: qodana.recommended
 include:
