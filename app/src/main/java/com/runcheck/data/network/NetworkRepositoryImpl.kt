@@ -81,8 +81,7 @@ class NetworkRepositoryImpl
             }
         }
 
-        override suspend fun getAllReadings(): List<NetworkReading> =
-            networkReadingDao.getAll().map { it.toDomain() }
+        override suspend fun getAllReadings(): List<NetworkReading> = networkReadingDao.getAll().map { it.toDomain() }
 
         override fun getReadingsSince(
             since: Long,
@@ -111,8 +110,7 @@ class NetworkRepositoryImpl
             }
         }
 
-        override suspend fun deleteAll() =
-            networkReadingDao.deleteAll()
+        override suspend fun deleteAll() = networkReadingDao.deleteAll()
 
         companion object {
             private const val DISPLAY_UPDATE_INTERVAL_MS = 333L

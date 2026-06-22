@@ -149,8 +149,7 @@ class BatteryRepositoryImpl
             }
         }
 
-        override suspend fun getAllReadings(): List<BatteryReading> =
-            batteryReadingDao.getAll().map { it.toDomain() }
+        override suspend fun getAllReadings(): List<BatteryReading> = batteryReadingDao.getAll().map { it.toDomain() }
 
         override suspend fun getReadingsSinceSync(since: Long): List<BatteryReading> =
             batteryReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
@@ -163,14 +162,11 @@ class BatteryRepositoryImpl
             }
         }
 
-        override suspend fun deleteAll() =
-            batteryReadingDao.deleteAll()
+        override suspend fun deleteAll() = batteryReadingDao.deleteAll()
 
-        override suspend fun getLastChargingTimestamp(): Long? =
-            batteryReadingDao.getLastChargingTimestamp()
+        override suspend fun getLastChargingTimestamp(): Long? = batteryReadingDao.getLastChargingTimestamp()
 
-        override suspend fun getLatestReadingTimestamp(): Long? =
-            batteryReadingDao.getLatestReadingTimestamp()
+        override suspend fun getLatestReadingTimestamp(): Long? = batteryReadingDao.getLatestReadingTimestamp()
 
         private companion object {
             const val TAG = "BatteryRepository"

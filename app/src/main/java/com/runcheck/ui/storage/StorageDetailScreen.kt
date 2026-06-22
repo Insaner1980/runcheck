@@ -144,6 +144,7 @@ fun StorageDetailScreen(
     val activity = context.findActivity()
     var mediaPermissionRequested by rememberSaveable { mutableStateOf(false) }
     val mediaPermissions = remember { RuncheckPermissionPolicy.mediaPermissionsForApi() }
+
     fun currentMediaAccessState(): MediaAccessState =
         RuncheckPermissionPolicy.mediaAccessStateForApi { permission ->
             ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED

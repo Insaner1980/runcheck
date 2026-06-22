@@ -179,11 +179,17 @@ class MediaStoreScanner
             withContext(dispatchers.io) {
                 val coroutineContext = currentCoroutineContext()
                 when (query.source) {
-                    CleanupScanSource.LARGE_FILES ->
+                    CleanupScanSource.LARGE_FILES -> {
                         loadLargeFilesPage(category, query.filterValue, offset, limit, coroutineContext)
+                    }
 
-                    CleanupScanSource.OLD_DOWNLOADS -> loadOldDownloadsPage(offset, limit, query.filterValue, coroutineContext)
-                    CleanupScanSource.APK_FILES -> loadApkPage(offset, limit, coroutineContext)
+                    CleanupScanSource.OLD_DOWNLOADS -> {
+                        loadOldDownloadsPage(offset, limit, query.filterValue, coroutineContext)
+                    }
+
+                    CleanupScanSource.APK_FILES -> {
+                        loadApkPage(offset, limit, coroutineContext)
+                    }
                 }
             }
 
@@ -194,9 +200,21 @@ class MediaStoreScanner
             withContext(dispatchers.io) {
                 val coroutineContext = currentCoroutineContext()
                 when (query.source) {
-                    CleanupScanSource.LARGE_FILES -> queryUrisForLargeFileCategory(category, query.filterValue, coroutineContext)
-                    CleanupScanSource.OLD_DOWNLOADS -> queryOldDownloadUris(query.filterValue, coroutineContext)
-                    CleanupScanSource.APK_FILES -> queryApkUris(coroutineContext)
+                    CleanupScanSource.LARGE_FILES -> {
+                        queryUrisForLargeFileCategory(
+                            category,
+                            query.filterValue,
+                            coroutineContext,
+                        )
+                    }
+
+                    CleanupScanSource.OLD_DOWNLOADS -> {
+                        queryOldDownloadUris(query.filterValue, coroutineContext)
+                    }
+
+                    CleanupScanSource.APK_FILES -> {
+                        queryApkUris(coroutineContext)
+                    }
                 }
             }
 

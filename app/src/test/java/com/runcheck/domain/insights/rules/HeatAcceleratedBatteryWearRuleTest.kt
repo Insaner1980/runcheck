@@ -80,22 +80,26 @@ class HeatAcceleratedBatteryWearRuleTest {
 
             val mediumInsight =
                 HeatAcceleratedBatteryWearRule(
-                    batteryRepository = TestBatteryRepository(
-                        batteryDrainReadings(now, listOf(100, 96, 92, 88, 84, 79, 74, 69, 64)),
-                    ),
+                    batteryRepository =
+                        TestBatteryRepository(
+                            batteryDrainReadings(now, listOf(100, 96, 92, 88, 84, 79, 74, 69, 64)),
+                        ),
                     thermalRepository = TestThermalRepository(mediumThermalReadings),
                     batteryDrainAnalyzer = BatteryDrainAnalyzer(),
                     timeWindowAligner = TimeWindowAligner(),
-                ).evaluate(now).single()
+                ).evaluate(now)
+                    .single()
             val fortyPlusInsight =
                 HeatAcceleratedBatteryWearRule(
-                    batteryRepository = TestBatteryRepository(
-                        batteryDrainReadings(now, listOf(100, 96, 92, 88, 84, 78, 72, 66, 60)),
-                    ),
+                    batteryRepository =
+                        TestBatteryRepository(
+                            batteryDrainReadings(now, listOf(100, 96, 92, 88, 84, 78, 72, 66, 60)),
+                        ),
                     thermalRepository = TestThermalRepository(mediumThermalReadings),
                     batteryDrainAnalyzer = BatteryDrainAnalyzer(),
                     timeWindowAligner = TimeWindowAligner(),
-                ).evaluate(now).single()
+                ).evaluate(now)
+                    .single()
 
             assertEquals("heat_drain:20plus", mediumInsight.dedupeKey)
             assertEquals(InsightPriority.MEDIUM, mediumInsight.priority)

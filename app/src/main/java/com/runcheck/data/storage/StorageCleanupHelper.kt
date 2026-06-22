@@ -24,9 +24,7 @@ class StorageCleanupHelper
          * API 30+: Creates a PendingIntent that shows the system confirmation dialog
          * for batch deletion. Returns null on older API levels.
          */
-        fun createDeleteRequest(uriStrings: List<String>): PendingIntent? {
-            return createDeleteRequest(context, uriStrings)
-        }
+        fun createDeleteRequest(uriStrings: List<String>): PendingIntent? = createDeleteRequest(context, uriStrings)
 
         /**
          * API 29 and below: Deletes files one by one without system dialog.

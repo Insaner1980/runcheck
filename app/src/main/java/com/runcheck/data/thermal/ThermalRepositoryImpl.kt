@@ -107,8 +107,7 @@ class ThermalRepositoryImpl
             }
         }
 
-        override suspend fun getAllReadings(): List<ThermalReading> =
-            thermalReadingDao.getAll().map { it.toDomain() }
+        override suspend fun getAllReadings(): List<ThermalReading> = thermalReadingDao.getAll().map { it.toDomain() }
 
         override suspend fun deleteOlderThan(cutoff: Long) {
             try {
@@ -118,8 +117,7 @@ class ThermalRepositoryImpl
             }
         }
 
-        override suspend fun deleteAll() =
-            thermalReadingDao.deleteAll()
+        override suspend fun deleteAll() = thermalReadingDao.deleteAll()
 
         private companion object {
             const val STOP_TIMEOUT_MS = 0L

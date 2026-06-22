@@ -58,14 +58,11 @@ class SpeedTestRepositoryImpl
                         .filter { TimestampSanitizer.isUsable(it.timestamp) }
                 }.flowOn(dispatchers.io)
 
-        override suspend fun trimResults(keepCount: Int) =
-            speedTestResultDao.deleteOldResults(keepCount)
+        override suspend fun trimResults(keepCount: Int) = speedTestResultDao.deleteOldResults(keepCount)
 
-        override suspend fun deleteOlderThan(cutoff: Long) =
-            speedTestResultDao.deleteOlderThan(cutoff)
+        override suspend fun deleteOlderThan(cutoff: Long) = speedTestResultDao.deleteOlderThan(cutoff)
 
-        override suspend fun deleteAll() =
-            speedTestResultDao.deleteAll()
+        override suspend fun deleteAll() = speedTestResultDao.deleteAll()
 
         private fun SpeedTestResultEntity.toDomain(): SpeedTestResult =
             SpeedTestResult(

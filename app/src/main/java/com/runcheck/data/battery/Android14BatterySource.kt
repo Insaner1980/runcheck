@@ -4,8 +4,8 @@ import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.runcheck.data.device.DeviceProfile
-import com.runcheck.util.BatteryIntentReader
 import com.runcheck.util.AppDispatchers
+import com.runcheck.util.BatteryIntentReader
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn

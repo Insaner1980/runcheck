@@ -28,8 +28,7 @@ class ThrottlingRepositoryImpl
         override suspend fun getEventsSinceSync(since: Long): List<ThrottlingEvent> =
             throttlingEventDao.getEventsSinceSync(since).map { it.toDomain() }
 
-        override suspend fun insert(event: ThrottlingEvent): Long =
-            throttlingEventDao.insert(event.toEntity())
+        override suspend fun insert(event: ThrottlingEvent): Long = throttlingEventDao.insert(event.toEntity())
 
         override suspend fun updateSnapshot(
             id: Long,
@@ -54,11 +53,9 @@ class ThrottlingRepositoryImpl
             throttlingEventDao.updateDuration(id, durationMs)
         }
 
-        override suspend fun deleteOlderThan(cutoff: Long) =
-            throttlingEventDao.deleteOlderThan(cutoff)
+        override suspend fun deleteOlderThan(cutoff: Long) = throttlingEventDao.deleteOlderThan(cutoff)
 
-        override suspend fun deleteAll() =
-            throttlingEventDao.deleteAll()
+        override suspend fun deleteAll() = throttlingEventDao.deleteAll()
     }
 
 private fun ThrottlingEventEntity.toDomain() =

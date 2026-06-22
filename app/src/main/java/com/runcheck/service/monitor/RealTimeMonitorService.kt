@@ -149,7 +149,10 @@ class RealTimeMonitorService : Service() {
             serviceScope.launch {
                 try {
                     val prefs = userPreferencesRepository.getPreferences().first()
-                    val canShowLiveNotification = RuncheckPermissionPolicy.canPostNotifications(this@RealTimeMonitorService)
+                    val canShowLiveNotification =
+                        RuncheckPermissionPolicy.canPostNotifications(
+                            this@RealTimeMonitorService,
+                        )
                     isLiveNotificationMode = prefs.liveNotificationEnabled && canShowLiveNotification
                     if (prefs.liveNotificationEnabled && !canShowLiveNotification) {
                         stopLiveNotificationService()

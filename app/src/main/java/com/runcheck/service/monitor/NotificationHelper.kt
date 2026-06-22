@@ -243,6 +243,5 @@ class NotificationHelper
             return channel == null || channel.importance != NotificationManager.IMPORTANCE_NONE
         }
 
-        private fun canPostNotifications(): Boolean =
-            RuncheckPermissionPolicy.canPostNotifications(context)
+        private fun canPostNotifications(): Boolean = RuncheckPermissionPolicy.canPostNotifications(context)
     }

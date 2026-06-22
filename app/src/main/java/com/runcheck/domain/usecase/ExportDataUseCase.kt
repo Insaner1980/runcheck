@@ -9,7 +9,9 @@ import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.repository.StorageRepository
 import com.runcheck.domain.repository.ThermalRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
+import com.runcheck.util.AppDispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -25,6 +27,7 @@ class ExportDataUseCase
         private val fileExportRepository: FileExportRepository,
         private val proStatusProvider: ProStatusProvider,
         private val userPreferencesRepository: UserPreferencesRepository,
+        private val dispatchers: AppDispatchers,
     ) {
         private val isoFormatter: DateTimeFormatter =
             DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault())
@@ -144,12 +147,14 @@ class ExportDataUseCase
         }
 
         suspend fun exportAllCsv(): Map<String, String> =
-            mapOf(
-                "runcheck_battery.csv" to exportBatteryCsv(),
-                "runcheck_network.csv" to exportNetworkCsv(),
-                "runcheck_thermal.csv" to exportThermalCsv(),
-                "runcheck_storage.csv" to exportStorageCsv(),
-            )
+            withContext(dispatchers.default) {
+                mapOf(
+                    "runcheck_battery.csv" to exportBatteryCsv(),
+                    "runcheck_network.csv" to exportNetworkCsv(),
+                    "runcheck_thermal.csv" to exportThermalCsv(),
+                    "runcheck_storage.csv" to exportStorageCsv(),
+                )
+            }
 
         suspend fun prepareExportShare() = fileExportRepository.prepareExportShare(exportAllCsv())
     }

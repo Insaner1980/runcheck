@@ -112,8 +112,7 @@ class StorageRepositoryImpl
         override suspend fun getReadingsSinceSync(since: Long): List<StorageReading> =
             storageReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
 
-        override suspend fun getAllReadings(): List<StorageReading> =
-            storageReadingDao.getAll().map { it.toDomain() }
+        override suspend fun getAllReadings(): List<StorageReading> = storageReadingDao.getAll().map { it.toDomain() }
 
         override suspend fun deleteOlderThan(cutoff: Long) {
             try {
@@ -123,8 +122,7 @@ class StorageRepositoryImpl
             }
         }
 
-        override suspend fun deleteAll() =
-            storageReadingDao.deleteAll()
+        override suspend fun deleteAll() = storageReadingDao.deleteAll()
 
         private companion object {
             const val TAG = "StorageRepository"

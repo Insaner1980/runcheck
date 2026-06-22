@@ -2,11 +2,11 @@ package com.runcheck.ui.common
 
 import com.runcheck.R
 import com.runcheck.domain.model.TemperatureUnit
-import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.Locale
 
 class UiFormattersTest {
     @Test

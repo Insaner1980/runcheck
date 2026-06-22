@@ -48,8 +48,7 @@ class ChargerRepositoryImpl
                 ),
             )
 
-        override suspend fun deleteChargerById(id: Long) =
-            chargerDao.deleteChargerById(id)
+        override suspend fun deleteChargerById(id: Long) = chargerDao.deleteChargerById(id)
 
         override suspend fun insertSession(session: ChargingSession): Long =
             chargerDao.insertSession(session.toEntity())
@@ -66,11 +65,9 @@ class ChargerRepositoryImpl
             chargerDao.completeSession(id, endTime, endLevel, avgCurrentMa, maxCurrentMa, avgVoltageMv, avgPowerMw)
         }
 
-        override suspend fun getActiveSession(): ChargingSession? =
-            chargerDao.getActiveSession()?.toDomain()
+        override suspend fun getActiveSession(): ChargingSession? = chargerDao.getActiveSession()?.toDomain()
 
-        override suspend fun deleteSessionsOlderThan(cutoff: Long) =
-            chargerDao.deleteSessionsOlderThan(cutoff)
+        override suspend fun deleteSessionsOlderThan(cutoff: Long) = chargerDao.deleteSessionsOlderThan(cutoff)
     }
 
 private fun ChargerProfileEntity.toDomain() =

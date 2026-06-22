@@ -78,11 +78,9 @@ class AppBatteryUsageRepositoryImpl
             userPreferencesRepository.setAppUsageLastCollectedAt(endTime)
         }
 
-        override suspend fun deleteOlderThan(cutoff: Long) =
-            appBatteryUsageDao.deleteOlderThan(cutoff)
+        override suspend fun deleteOlderThan(cutoff: Long) = appBatteryUsageDao.deleteOlderThan(cutoff)
 
-        override suspend fun deleteAll() =
-            appBatteryUsageDao.deleteAll()
+        override suspend fun deleteAll() = appBatteryUsageDao.deleteAll()
 
         companion object {
             private const val DEFAULT_COLLECTION_WINDOW_MS = 24L * 60L * 60L * 1000L

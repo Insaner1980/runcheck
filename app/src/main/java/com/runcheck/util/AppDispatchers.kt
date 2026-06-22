@@ -6,18 +6,18 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AppDispatchers
+open class AppDispatchers
     @Inject
     constructor() {
-        val io: CoroutineDispatcher
+        open val io: CoroutineDispatcher
             get() = Dispatchers.IO
 
-        val default: CoroutineDispatcher
+        open val default: CoroutineDispatcher
             get() = Dispatchers.Default
 
-        val main: CoroutineDispatcher
+        open val main: CoroutineDispatcher
             get() = Dispatchers.Main
 
-        val mainImmediate: CoroutineDispatcher
+        open val mainImmediate: CoroutineDispatcher
             get() = Dispatchers.Main.immediate
     }

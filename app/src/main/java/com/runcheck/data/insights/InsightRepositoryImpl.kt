@@ -42,14 +42,11 @@ class InsightRepositoryImpl
                     entities.count { !it.seen && it.expiresAt > now }
                 }.flowOn(dispatchers.io)
 
-        override suspend fun dismiss(id: Long) =
-            insightDao.dismiss(id)
+        override suspend fun dismiss(id: Long) = insightDao.dismiss(id)
 
-        override suspend fun markAllSeen() =
-            insightDao.markAllSeen()
+        override suspend fun markAllSeen() = insightDao.markAllSeen()
 
-        override suspend fun clearAll() =
-            insightDao.deleteAll()
+        override suspend fun clearAll() = insightDao.deleteAll()
 
         override suspend fun replaceRuleResults(
             ruleId: String,
@@ -79,8 +76,7 @@ class InsightRepositoryImpl
             }
         }
 
-        override suspend fun deleteExpired(now: Long) =
-            insightDao.deleteExpired(now)
+        override suspend fun deleteExpired(now: Long) = insightDao.deleteExpired(now)
 
         private fun observeActiveInsights(): Flow<List<Insight>> =
             insightDao
