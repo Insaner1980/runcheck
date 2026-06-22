@@ -30,6 +30,8 @@ interface ProPurchaseManager {
     val purchaseEvents: SharedFlow<PurchaseEvent>
     val hasPendingPurchase: Flow<Boolean>
 
+    suspend fun awaitPurchaseStatusReady() = Unit
+
     suspend fun getFormattedPrice(): String?
 
     suspend fun refreshPurchaseStatus(): ProPurchaseRefreshResult

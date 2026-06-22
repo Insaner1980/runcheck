@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.usecase.CleanupOldReadingsUseCase
 import com.runcheck.domain.usecase.RefreshAppUsageSnapshotUseCase
 import com.runcheck.util.ReleaseSafeLog
@@ -20,6 +21,7 @@ class HealthMaintenanceWorker
         @Assisted workerParams: WorkerParameters,
         private val refreshAppUsageSnapshot: RefreshAppUsageSnapshotUseCase,
         private val cleanupOldReadings: CleanupOldReadingsUseCase,
+        private val proStatusProvider: ProStatusProvider,
     ) : CoroutineWorker(context, workerParams) {
         override suspend fun doWork(): Result {
             var maintenanceFailure =
@@ -27,7 +29,12 @@ class HealthMaintenanceWorker
                     refreshAppUsageSnapshot()
                 }
 
-            maintenanceFailure = collectStep("cleanup") { cleanupOldReadings() } || maintenanceFailure
+            maintenanceFailure =
+                if (proStatusProvider.isProStatusReady) {
+                    collectStep("cleanup") { cleanupOldReadings() } || maintenanceFailure
+                } else {
+                    true
+                }
 
             // Widget refresh is best-effort and should not force periodic retries.
             collectStep("widgets") {

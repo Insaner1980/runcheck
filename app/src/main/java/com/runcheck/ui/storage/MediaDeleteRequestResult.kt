@@ -55,7 +55,7 @@ private fun createDeleteRequest(
     uriStrings: List<String>,
 ): IntentSenderRequest {
     val deleteRequest =
-        StorageCleanupHelper(context).createDeleteRequest(uriStrings)
+        StorageCleanupHelper.createDeleteRequest(context, uriStrings)
             ?: throw IllegalArgumentException("Delete request unavailable")
     return IntentSenderRequest.Builder(deleteRequest.intentSender).build()
 }

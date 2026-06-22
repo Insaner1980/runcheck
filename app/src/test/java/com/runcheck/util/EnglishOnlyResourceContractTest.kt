@@ -1,14 +1,14 @@
 package com.runcheck.util
 
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.io.path.isDirectory
 import kotlin.io.path.name
 import kotlin.io.path.readText
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
 
 class EnglishOnlyResourceContractTest {
     private val appDir: Path = findAppDir()

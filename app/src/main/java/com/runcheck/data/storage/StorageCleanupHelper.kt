@@ -6,9 +6,9 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import com.runcheck.domain.model.StorageDeleteFailure
+import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,16 +18,13 @@ class StorageCleanupHelper
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
+        private val dispatchers: AppDispatchers,
     ) {
         /**
          * API 30+: Creates a PendingIntent that shows the system confirmation dialog
          * for batch deletion. Returns null on older API levels.
          */
-        fun createDeleteRequest(uriStrings: List<String>): PendingIntent? {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || uriStrings.isEmpty()) return null
-            val uris = uriStrings.map { Uri.parse(it) }
-            return MediaStore.createDeleteRequest(context.contentResolver, uris)
-        }
+        fun createDeleteRequest(uriStrings: List<String>): PendingIntent? = createDeleteRequest(context, uriStrings)
 
         /**
          * API 29 and below: Deletes files one by one without system dialog.
@@ -38,7 +35,7 @@ class StorageCleanupHelper
          * continues with remaining files — the caller handles partial results.
          */
         suspend fun deleteLegacy(uriStrings: Collection<String>): Set<String> =
-            withContext(Dispatchers.IO) {
+            withContext(dispatchers.io) {
                 val deletedUris = mutableSetOf<String>()
                 var skippedCount = 0
                 uriStrings.forEach { uriString ->
@@ -67,7 +64,16 @@ class StorageCleanupHelper
                 deletedUris
             }
 
-        private companion object {
+        companion object {
+            fun createDeleteRequest(
+                context: Context,
+                uriStrings: List<String>,
+            ): PendingIntent? {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || uriStrings.isEmpty()) return null
+                val uris = uriStrings.map { Uri.parse(it) }
+                return MediaStore.createDeleteRequest(context.contentResolver, uris)
+            }
+
             private const val TAG = "StorageCleanupHelper"
             private const val RECOVERABLE_SECURITY_EXCEPTION =
                 "android.app.RecoverableSecurityException"

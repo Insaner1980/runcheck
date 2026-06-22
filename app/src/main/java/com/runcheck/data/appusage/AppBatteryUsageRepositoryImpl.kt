@@ -11,11 +11,10 @@ import com.runcheck.domain.model.AppBatteryUsage
 import com.runcheck.domain.model.AppUsageListSummary
 import com.runcheck.domain.repository.AppBatteryUsageRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
-import kotlinx.coroutines.Dispatchers
+import com.runcheck.util.AppDispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,6 +25,7 @@ class AppBatteryUsageRepositoryImpl
         private val appBatteryUsageDao: AppBatteryUsageDao,
         private val appUsageDataSource: AppUsageDataSource,
         private val userPreferencesRepository: UserPreferencesRepository,
+        private val dispatchers: AppDispatchers,
     ) : AppBatteryUsageRepository {
         override fun getAggregatedUsageSince(since: Long): Flow<PagingData<AppBatteryUsage>> =
             Pager(
@@ -44,52 +44,43 @@ class AppBatteryUsageRepositoryImpl
             appBatteryUsageDao
                 .getUsageSummarySince(since)
                 .map { it.toDomain() }
-                .flowOn(Dispatchers.IO)
+                .flowOn(dispatchers.io)
 
         override suspend fun getUsageSinceSync(since: Long): List<AppBatteryUsage> =
-            withContext(Dispatchers.IO) {
-                appBatteryUsageDao.getUsageSinceSync(since).map { it.toDomain() }
+            appBatteryUsageDao.getUsageSinceSync(since).map { it.toDomain() }
+
+        override suspend fun collectUsageSnapshot() {
+            if (!appUsageDataSource.hasUsageStatsPermission()) {
+                return
             }
 
-        override suspend fun collectUsageSnapshot() =
-            withContext(Dispatchers.IO) {
-                if (!appUsageDataSource.hasUsageStatsPermission()) {
-                    return@withContext
-                }
+            val endTime = System.currentTimeMillis()
+            val startTime =
+                userPreferencesRepository
+                    .getAppUsageLastCollectedAt()
+                    ?.coerceAtMost(endTime)
+                    ?: (endTime - DEFAULT_COLLECTION_WINDOW_MS)
 
-                val endTime = System.currentTimeMillis()
-                val startTime =
-                    userPreferencesRepository
-                        .getAppUsageLastCollectedAt()
-                        ?.coerceAtMost(endTime)
-                        ?: (endTime - DEFAULT_COLLECTION_WINDOW_MS)
-
-                val usage = appUsageDataSource.getUsageSince(startTime, endTime)
-                if (usage.isNotEmpty()) {
-                    appBatteryUsageDao.insertAll(
-                        usage.map { snapshot ->
-                            AppBatteryUsageEntity(
-                                timestamp = endTime,
-                                packageName = snapshot.packageName,
-                                appLabel = snapshot.appLabel,
-                                foregroundTimeMs = snapshot.foregroundTimeMs,
-                                estimatedDrainMah = null,
-                            )
-                        },
-                    )
-                }
-                userPreferencesRepository.setAppUsageLastCollectedAt(endTime)
+            val usage = appUsageDataSource.getUsageSince(startTime, endTime)
+            if (usage.isNotEmpty()) {
+                appBatteryUsageDao.insertAll(
+                    usage.map { snapshot ->
+                        AppBatteryUsageEntity(
+                            timestamp = endTime,
+                            packageName = snapshot.packageName,
+                            appLabel = snapshot.appLabel,
+                            foregroundTimeMs = snapshot.foregroundTimeMs,
+                            estimatedDrainMah = null,
+                        )
+                    },
+                )
             }
+            userPreferencesRepository.setAppUsageLastCollectedAt(endTime)
+        }
 
-        override suspend fun deleteOlderThan(cutoff: Long) =
-            withContext<Unit>(Dispatchers.IO) {
-                appBatteryUsageDao.deleteOlderThan(cutoff)
-            }
+        override suspend fun deleteOlderThan(cutoff: Long) = appBatteryUsageDao.deleteOlderThan(cutoff)
 
-        override suspend fun deleteAll() =
-            withContext<Unit>(Dispatchers.IO) {
-                appBatteryUsageDao.deleteAll()
-            }
+        override suspend fun deleteAll() = appBatteryUsageDao.deleteAll()
 
         companion object {
             private const val DEFAULT_COLLECTION_WINDOW_MS = 24L * 60L * 60L * 1000L

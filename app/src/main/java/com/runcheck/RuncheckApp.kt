@@ -9,12 +9,12 @@ import com.runcheck.domain.repository.MonitoringScheduler
 import com.runcheck.domain.repository.ScreenStateRepository
 import com.runcheck.pro.ProManager
 import com.runcheck.service.monitor.NotificationHelper
+import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
 import com.runcheck.widget.RuncheckWidgets
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -25,10 +25,13 @@ import javax.inject.Inject
 class RuncheckApp :
     Application(),
     Configuration.Provider {
-    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private lateinit var applicationScope: CoroutineScope
 
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
+
+    @Inject
+    lateinit var dispatchers: AppDispatchers
 
     @Inject
     lateinit var billingManager: dagger.Lazy<BillingManager>
@@ -47,23 +50,24 @@ class RuncheckApp :
 
     override fun onCreate() {
         super.onCreate()
+        applicationScope = CoroutineScope(SupervisorJob() + dispatchers.default)
         SentryInit.init(this)
         configureDebugStrictMode()
 
         // Defer heavy initialization to after the first frame
-        launchSafely(Dispatchers.Default, "billing/pro initialization") {
+        launchSafely(dispatchers.default, "billing/pro initialization") {
             billingManager.get().initialize()
             proManager.get().initialize()
         }
-        launchSafely(Dispatchers.Default, "notification channel creation") {
+        launchSafely(dispatchers.default, "notification channel creation") {
             notificationHelper.get().createChannels()
         }
-        launchSafely(Dispatchers.Default, "screen state + scheduling") {
+        launchSafely(dispatchers.default, "screen state + scheduling") {
             screenStateRepository.get().initialize()
             monitorScheduler.get().ensureScheduled()
         }
         // Update widgets when pro status changes
-        launchSafely(Dispatchers.Default, "widget updates") {
+        launchSafely(dispatchers.default, "widget updates") {
             proManager.get().isProUser.distinctUntilChanged().collect {
                 RuncheckWidgets.updateAll(this@RuncheckApp)
             }
@@ -73,7 +77,9 @@ class RuncheckApp :
     override fun onTerminate() {
         super.onTerminate()
         billingManager.get().destroy()
-        applicationScope.cancel()
+        if (::applicationScope.isInitialized) {
+            applicationScope.cancel()
+        }
     }
 
     override val workManagerConfiguration: Configuration

@@ -304,8 +304,8 @@ fun TrendChart(
     val previousLinePath = remember { Path() }
     val stripPath = remember { Path() }
 
-    val hasYLabels = yLabels != null && yLabels.isNotEmpty()
-    val hasXLabels = xLabels != null && xLabels.isNotEmpty()
+    val hasYLabels = !yLabels.isNullOrEmpty()
+    val hasXLabels = !xLabels.isNullOrEmpty()
 
     val textMeasurer = rememberTextMeasurer()
     val chartStyle =

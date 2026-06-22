@@ -2,11 +2,13 @@ package com.runcheck.pro
 
 import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.domain.repository.ProStatusProvider
+import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,18 +27,24 @@ class ProManager
     constructor(
         private val trialManager: TrialManager,
         private val proPurchaseManager: ProPurchaseManager,
+        private val dispatchers: AppDispatchers,
     ) : ProStatusProvider,
         ProStateProvider {
-        private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        private val scope = CoroutineScope(SupervisorJob() + dispatchers.mainImmediate)
+        private val trialExpiryScope = CoroutineScope(SupervisorJob() + dispatchers.default)
 
         private val _proState = MutableStateFlow(ProState())
         override val proState: StateFlow<ProState> = _proState.asStateFlow()
+        private val _isProStatusReady = MutableStateFlow(false)
+        override val isProStatusReady: Boolean
+            get() = _isProStatusReady.value
         override val isProUser: Flow<Boolean> =
             proState
                 .map { it.isPro }
                 .distinctUntilChanged()
 
         private var initialized = false
+        private var trialExpiryJob: Job? = null
 
         @Suppress("TooGenericExceptionCaught")
         fun initialize() {
@@ -44,6 +53,7 @@ class ProManager
             scope.launch {
                 try {
                     trialManager.initialize()
+                    proPurchaseManager.awaitPurchaseStatusReady()
 
                     combine(
                         trialManager.trialState,
@@ -78,6 +88,8 @@ class ProManager
                     }.collect { state ->
                         val wasFree = _proState.value.status != ProStatus.PRO_PURCHASED
                         _proState.value = state
+                        _isProStatusReady.value = true
+                        scheduleTrialExpiryRefresh(state)
                         if (wasFree && state.status == ProStatus.PRO_PURCHASED) {
                             trialManager.cancelTrialNotifications()
                         }
@@ -94,7 +106,33 @@ class ProManager
 
         override fun isPro(): Boolean = _proState.value.isPro
 
+        private fun scheduleTrialExpiryRefresh(state: ProState) {
+            trialExpiryJob?.cancel()
+            if (state.status != ProStatus.TRIAL_ACTIVE || state.trialStartTimestamp <= 0L) return
+
+            trialExpiryJob =
+                trialExpiryScope.launch {
+                    delay(trialExpiryRefreshDelayMs(state.trialStartTimestamp, System.currentTimeMillis()))
+                    val current = _proState.value
+                    if (current.status == ProStatus.TRIAL_ACTIVE &&
+                        current.trialStartTimestamp == state.trialStartTimestamp
+                    ) {
+                        _proState.value = current.copy(status = ProStatus.TRIAL_EXPIRED, trialDaysRemaining = 0)
+                    }
+                }
+        }
+
         private companion object {
             private const val TAG = "ProManager"
         }
     }
+
+internal fun trialExpiryRefreshDelayMs(
+    trialStartTimestamp: Long,
+    now: Long,
+): Long {
+    val expiresAt = trialStartTimestamp + TimeUnit.DAYS.toMillis(TrialManager.TRIAL_DURATION_DAYS.toLong())
+    return (expiresAt - now).coerceAtLeast(0L) + TRIAL_EXPIRY_REFRESH_GRACE_MS
+}
+
+private const val TRIAL_EXPIRY_REFRESH_GRACE_MS = 1_000L

@@ -49,15 +49,47 @@ sonar {
                 property(propertyName, value.toString())
             }
         }
-        property(
-            "sonar.coverage.jacoco.xmlReportPaths",
-            rootProject.layout.projectDirectory
-                .file("app/build/reports/jacoco/jacocoDebugUnitTestReport/jacocoDebugUnitTestReport.xml")
-                .asFile.absolutePath,
+    }
+}
+
+project(":app") {
+    sonar {
+        properties {
+            property(
+                "sonar.coverage.jacoco.xmlReportPaths",
+                layout.buildDirectory
+                    .file("reports/jacoco/jacocoDebugUnitTestReport/jacocoDebugUnitTestReport.xml")
+                    .get()
+                    .asFile.absolutePath,
+            )
+        }
+    }
+}
+
+val prepareSonarAndroidLintReport by tasks.registering {
+    group = "verification"
+    description = "Writes an empty Android Lint XML import for SonarCloud; tools/lc.ps1 owns real Android Lint findings."
+
+    val reportFile = layout.projectDirectory.file("app/build/reports/lint-results-debug.xml")
+
+    outputs.file(reportFile)
+    outputs.upToDateWhen { false }
+    mustRunAfter(":app:lintDebug")
+
+    doLast {
+        val file = reportFile.asFile
+        file.parentFile.mkdirs()
+        file.writeText(
+            """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <issues format="6" by="lint">
+            </issues>
+            """.trimIndent() + "\n",
+            Charsets.UTF_8,
         )
     }
 }
 
 tasks.named("sonar") {
-    dependsOn(":app:assembleDebug", ":app:jacocoDebugUnitTestReport")
+    dependsOn(":app:assembleDebug", ":app:jacocoDebugUnitTestReport", prepareSonarAndroidLintReport)
 }

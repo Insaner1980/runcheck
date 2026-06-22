@@ -1,6 +1,7 @@
 package com.runcheck.worker
 
 import android.content.Context
+import android.database.SQLException
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import com.runcheck.domain.insights.engine.InsightEngine
@@ -37,9 +38,9 @@ class InsightGenerationWorkerTest {
         }
 
     @Test
-    fun `doWork returns retry when insight generation throws`() =
+    fun `doWork returns retry when insight generation throws database exception`() =
         runTest {
-            coEvery { insightEngine.generateInsights(any()) } throws IllegalStateException("boom")
+            coEvery { insightEngine.generateInsights(any()) } throws SQLException("boom")
 
             val worker =
                 InsightGenerationWorker(

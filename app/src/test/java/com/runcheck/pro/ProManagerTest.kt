@@ -1,9 +1,11 @@
 package com.runcheck.pro
 
 import com.runcheck.billing.ProPurchaseManager
+import com.runcheck.util.AppDispatchers
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +21,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProManagerTest {
@@ -40,8 +43,9 @@ class ProManagerTest {
 
         every { trialManager.trialState } returns trialStateFlow
         every { proPurchaseManager.isProUser } returns isProUserFlow
+        coEvery { proPurchaseManager.awaitPurchaseStatusReady() } returns Unit
 
-        proManager = ProManager(trialManager, proPurchaseManager)
+        proManager = ProManager(trialManager, proPurchaseManager, AppDispatchers())
     }
 
     @After
@@ -55,6 +59,7 @@ class ProManagerTest {
         assertEquals(ProStatus.TRIAL_EXPIRED, state.status)
         assertEquals(0, state.trialDaysRemaining)
         assertFalse(state.isPro)
+        assertFalse(proManager.isProStatusReady)
     }
 
     @Test
@@ -78,6 +83,7 @@ class ProManagerTest {
             assertEquals(ProStatus.TRIAL_EXPIRED, state.status)
             assertEquals(0, state.trialDaysRemaining)
             assertFalse(state.isPro)
+            assertTrue(proManager.isProStatusReady)
         }
 
     @Test
@@ -102,6 +108,46 @@ class ProManagerTest {
             assertEquals(5, state.trialDaysRemaining)
             assertEquals(trialStart, state.trialStartTimestamp)
             assertTrue(state.isPro)
+            assertTrue(proManager.isProStatusReady)
+        }
+
+    @Test
+    fun `trial expiry refresh delay targets trial end with grace period`() {
+        val now = TimeUnit.DAYS.toMillis(3)
+        val trialStart = now - TimeUnit.DAYS.toMillis(6)
+
+        val delayMs = trialExpiryRefreshDelayMs(trialStartTimestamp = trialStart, now = now)
+
+        assertEquals(TimeUnit.DAYS.toMillis(1) + 1_000L, delayMs)
+    }
+
+    @Test
+    fun `initialize waits for purchase status before marking pro status ready`() =
+        runTest(testDispatcher) {
+            val purchaseStatusReady = CompletableDeferred<Unit>()
+            coEvery { trialManager.initialize() } returns true
+            coEvery { proPurchaseManager.awaitPurchaseStatusReady() } coAnswers {
+                purchaseStatusReady.await()
+            }
+            trialStateFlow.value =
+                TrialState(
+                    isActive = false,
+                    daysRemaining = 0,
+                    startTimestamp = 0L,
+                    isFirstLaunch = true,
+                )
+            isProUserFlow.value = false
+
+            proManager.initialize()
+            advanceUntilIdle()
+
+            assertFalse(proManager.isProStatusReady)
+
+            purchaseStatusReady.complete(Unit)
+            advanceUntilIdle()
+
+            assertTrue(proManager.isProStatusReady)
+            assertEquals(ProStatus.TRIAL_EXPIRED, proManager.proState.value.status)
         }
 
     @Test

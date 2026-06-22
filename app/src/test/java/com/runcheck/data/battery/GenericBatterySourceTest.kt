@@ -6,6 +6,7 @@ import com.runcheck.data.device.DeviceProfile
 import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.CurrentUnit
 import com.runcheck.domain.model.SignConvention
+import com.runcheck.util.AppDispatchers
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
@@ -131,7 +132,7 @@ class GenericBatterySourceTest {
             mockk {
                 every { getSystemService(Context.BATTERY_SERVICE) } returns mockk<BatteryManager>(relaxed = true)
             }
-        return TestableGenericBatterySource(mockContext, profile)
+        return TestableGenericBatterySource(mockContext, profile, AppDispatchers())
     }
 
     /**
@@ -141,7 +142,8 @@ class GenericBatterySourceTest {
     private class TestableGenericBatterySource(
         context: Context,
         profile: DeviceProfile,
-    ) : GenericBatterySource(context, profile) {
+        dispatchers: AppDispatchers,
+    ) : GenericBatterySource(context, profile, dispatchers) {
         fun testNormalizeCurrent(raw: Int): Int = normalizeCurrent(raw)
 
         fun testCalculateCurrentConfidence(raw: Int): Confidence = calculateCurrentConfidence(raw)

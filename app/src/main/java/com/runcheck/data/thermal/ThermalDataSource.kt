@@ -10,8 +10,8 @@ import android.os.PowerManager
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.util.AppDispatchers
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -26,6 +26,7 @@ class ThermalDataSource
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
+        private val dispatchers: AppDispatchers,
     ) {
         private val powerManager =
             context.getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -69,7 +70,7 @@ class ThermalDataSource
                 } else {
                     emit(null)
                 }
-            }.flowOn(Dispatchers.IO)
+            }.flowOn(dispatchers.io)
 
         fun getThermalStatus(): Flow<ThermalStatus> =
             flow {

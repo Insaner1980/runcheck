@@ -26,8 +26,10 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -126,6 +128,12 @@ class BatteryViewModelTest {
             manageInfoCardDismissals = manageInfoCardDismissals,
         )
 
+    private fun advanceBatterySample() {
+        mainDispatcherRule.testDispatcher.scheduler.runCurrent()
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(334L)
+        mainDispatcherRule.testDispatcher.scheduler.runCurrent()
+    }
+
     @Test
     fun `initial state is Loading`() {
         every { getBatteryState() } returns flowOf(makeBatteryState())
@@ -137,11 +145,11 @@ class BatteryViewModelTest {
     fun `battery data loads into Success with correct values`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val testState = makeBatteryState(level = 72, currentMa = -500)
-            every { getBatteryState() } returns flowOf(testState)
+            every { getBatteryState() } returns MutableStateFlow(testState)
 
             viewModel = createViewModel()
             viewModel.startObserving()
-            advanceUntilIdle()
+            advanceBatterySample()
 
             val state = viewModel.uiState.value
             assertTrue("Expected Success but got $state", state is BatteryUiState.Success)
@@ -155,6 +163,7 @@ class BatteryViewModelTest {
             assertNotNull("Statistics should be loaded", success.statistics)
 
             verify { batteryScreenInsights.updateChargingStatus(ChargingStatus.DISCHARGING) }
+            viewModel.stopObserving()
         }
 
     @Test
@@ -165,18 +174,18 @@ class BatteryViewModelTest {
 
             viewModel = createViewModel()
             viewModel.startObserving()
-            advanceUntilIdle()
+            advanceBatterySample()
 
             // First emission: no stats yet (sampleCount < 2)
             batteryFlow.emit(makeBatteryState(currentMa = -300))
-            advanceUntilIdle()
+            advanceBatterySample()
 
             val state1 = viewModel.uiState.value as BatteryUiState.Success
             assertNull("Stats should be null with only 1 sample", state1.currentStats)
 
             // Second emission: stats should appear
             batteryFlow.emit(makeBatteryState(currentMa = -500))
-            advanceUntilIdle()
+            advanceBatterySample()
 
             val state2 = viewModel.uiState.value as BatteryUiState.Success
             assertNotNull("Stats should exist after 2 samples", state2.currentStats)
@@ -189,7 +198,7 @@ class BatteryViewModelTest {
 
             // Third emission: verify accumulation continues
             batteryFlow.emit(makeBatteryState(currentMa = -200))
-            advanceUntilIdle()
+            advanceBatterySample()
 
             val state3 = viewModel.uiState.value as BatteryUiState.Success
             val stats3 = state3.currentStats
@@ -199,6 +208,7 @@ class BatteryViewModelTest {
             assertEquals(-200, stats3.max)
             // avg = (-300 + -500 + -200) / 3 = -333
             assertEquals(-333, stats3.avg)
+            viewModel.stopObserving()
         }
 
     @Test
@@ -209,20 +219,20 @@ class BatteryViewModelTest {
 
             viewModel = createViewModel()
             viewModel.startObserving()
-            advanceUntilIdle()
+            advanceBatterySample()
 
             // Emit several discharging readings
             batteryFlow.emit(makeBatteryState(currentMa = -300, chargingStatus = ChargingStatus.DISCHARGING))
-            advanceUntilIdle()
+            advanceBatterySample()
             batteryFlow.emit(makeBatteryState(currentMa = -500, chargingStatus = ChargingStatus.DISCHARGING))
-            advanceUntilIdle()
+            advanceBatterySample()
 
             val stateBefore = viewModel.uiState.value as BatteryUiState.Success
             assertNotNull("Stats should exist before reset", stateBefore.currentStats)
 
             // Switch to charging: stats should reset
             batteryFlow.emit(makeBatteryState(currentMa = 1500, chargingStatus = ChargingStatus.CHARGING))
-            advanceUntilIdle()
+            advanceBatterySample()
 
             val stateAfterSwitch = viewModel.uiState.value as BatteryUiState.Success
             assertNull(
@@ -232,7 +242,7 @@ class BatteryViewModelTest {
 
             // Second charging sample: stats should reappear with only charging data
             batteryFlow.emit(makeBatteryState(currentMa = 1800, chargingStatus = ChargingStatus.CHARGING))
-            advanceUntilIdle()
+            advanceBatterySample()
 
             val stateCharging = viewModel.uiState.value as BatteryUiState.Success
             assertNotNull("Stats should exist after 2 charging samples", stateCharging.currentStats)
@@ -241,16 +251,17 @@ class BatteryViewModelTest {
             assertEquals(1500, stats.min)
             assertEquals(1800, stats.max)
             assertEquals(2, stats.sampleCount)
+            viewModel.stopObserving()
         }
 
     @Test
     fun `setHistoryPeriod triggers reload with new period`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            every { getBatteryState() } returns flowOf(makeBatteryState())
+            every { getBatteryState() } returns MutableStateFlow(makeBatteryState())
 
             viewModel = createViewModel()
             viewModel.startObserving()
-            advanceUntilIdle()
+            advanceBatterySample()
 
             // Default period is DAY
             val state1 = viewModel.uiState.value as BatteryUiState.Success
@@ -258,27 +269,29 @@ class BatteryViewModelTest {
 
             // Change to WEEK
             viewModel.setHistoryPeriod(HistoryPeriod.WEEK)
-            advanceUntilIdle()
+            advanceBatterySample()
 
             val state2 = viewModel.uiState.value as BatteryUiState.Success
             assertEquals(HistoryPeriod.WEEK, state2.selectedPeriod)
 
             // Verify that getBatteryHistory was called with WEEK
             verify { getBatteryHistory(HistoryPeriod.WEEK) }
+            viewModel.stopObserving()
         }
 
     @Test
     fun `setHistoryPeriod writes selected period to saved state`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            every { getBatteryState() } returns flowOf(makeBatteryState())
+            every { getBatteryState() } returns MutableStateFlow(makeBatteryState())
 
             val savedStateHandle = SavedStateHandle()
             viewModel = createViewModel(savedStateHandle = savedStateHandle)
             viewModel.startObserving()
-            advanceUntilIdle()
+            advanceBatterySample()
 
             viewModel.setHistoryPeriod(HistoryPeriod.MONTH)
 
             assertEquals(HistoryPeriod.MONTH.name, savedStateHandle.get<String>("battery_selected_period"))
+            viewModel.stopObserving()
         }
 }

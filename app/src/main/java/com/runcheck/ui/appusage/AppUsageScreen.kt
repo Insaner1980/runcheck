@@ -70,6 +70,7 @@ import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
@@ -447,16 +448,19 @@ private val appIconCache =
 private const val MAX_APP_ICON_CACHE_KB = 8 * 1024
 
 @Composable
-private fun AppIcon(packageName: String) {
+private fun AppIcon(
+    packageName: String,
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+) {
     val context = LocalContext.current
     val bitmapState =
         produceState<Bitmap?>(
-            initialValue = appIconCache.get(packageName),
+            initialValue = appIconCache[packageName],
             key1 = packageName,
         ) {
             if (value != null) return@produceState
             value =
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     loadAppIconBitmap(context, packageName)?.also { bitmap ->
                         appIconCache.put(packageName, bitmap)
                     }

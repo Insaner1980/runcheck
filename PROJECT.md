@@ -1069,7 +1069,7 @@ Get-ChildItem tools -Filter *.ps1 | ForEach-Object { & $_.FullName -PlanOnly }
 Report-reading convention:
 
 - "lue lint-tulokset" means read `reports/ktlint.txt`, `reports/detekt.txt`, and `reports/lint.txt`.
-- "lue security-tulokset" means read `reports/security-code.txt` and `reports/security-deps.txt`.
+- "lue security-tulokset" means read `reports/security-summary.txt`, `reports/semgrep-kotlin.txt`, `reports/semgrep-secrets.txt`, `reports/gitleaks.txt`, `reports/trufflehog.txt`, `reports/dependency-verification.txt`, `reports/osv.txt`, and `reports/security-deps.txt`.
 
 ---
 
@@ -1080,10 +1080,10 @@ GitHub Actions workflows in `.github/workflows/`:
 | Workflow | Purpose | Status |
 |----------|---------|--------|
 | `codeql.yml` | CodeQL security analysis (`java-kotlin`, manual `assembleDebug`) | Active |
-| `security.yml` | Semgrep SAST + OWASP Dependency-Check SARIF upload | Active |
-| `sonar.yml` | SonarCloud scan after `assembleDebug` | Active |
-| `qodana.yml` | JetBrains Qodana action (`v2025.1`) | Configured, but AGP 9.x support remains a known risk |
-| `qodana_code_quality.yml` | JetBrains Qodana action (`v2025.3`) for `main`, `releases/*`, PRs, and manual dispatch | Configured, but AGP 9.x support remains a known risk |
+| `security.yml` | Semgrep SAST on PRs/main plus OWASP Dependency-Check SARIF upload on main/scheduled runs | Active; OWASP is kept off PRs because cold NVD updates can stall without an API key |
+| `sonar.yml` | SonarCloud scan through Gradle (`assembleDebug`, `:app:jacocoDebugUnitTestReport`, `sonar`) | Active |
+| `qodana.yml` | JetBrains Qodana main-branch scan (`v2026.1`) | Uses the JVM Community linter because the 2026.1 Android linter rejects AGP 9.1.0 during IDE import |
+| `qodana_code_quality.yml` | JetBrains Qodana action (`v2026.1`) for `main`, `releases/*`, PRs, and manual dispatch | Uses the JVM Community linter because the 2026.1 Android linter rejects AGP 9.1.0 during IDE import |
 
 External services:
 - **SonarCloud** — continuous code quality (`Insaner1980_runcheck`, org `insaner1980`). CI path is `.github/workflows/sonar.yml`; local path is `tools/sonar.ps1`.
@@ -1106,7 +1106,9 @@ Local PowerShell wrappers:
 - `tools/ga.ps1` (`ga`) — Google Android Security Lints through Android lint
 - `tools/sc.ps1` (`sc`) — combined security check; `-Full` also runs Android security checks
 - `tools/sentry.ps1` (`sentry`) — verifies debug-only Sentry wiring and release classpath exclusion; writes `reports/sentry.txt`
-- `tools/sonar.ps1` — SonarCloud local path; requires `SONAR_TOKEN`, runs `assembleDebug`, `:app:jacocoDebugUnitTestReport`, and `sonar`, then writes `reports/sonar.txt`
+- `tools/sonar.ps1` — SonarCloud local path; requires `SONAR_TOKEN`, runs `assembleDebug`, `:app:jacocoDebugUnitTestReport`, prepares an empty Android Lint import placeholder because `lc` owns real lint findings, and runs `sonar`, then writes `reports/sonar.txt`
+
+When `osv-scanner`, gitleaks, TruffleHog, or PMD are missing from `PATH`, the shared Android-check wrappers may download and cache verified tool binaries under `.gradle/android-check-tools/`; offline first runs can therefore skip or fail before a cached tool exists. The OSV source scan excludes `.deepsec` so Android-check's own DeepSec tooling dependencies do not fail app dependency scans.
 
 Compatibility wrappers and config:
 
@@ -1155,9 +1157,10 @@ Rules are Hilt multibindings into `Set<InsightRule>`. `InsightEngine` filters ge
 
 ### Known Tool Limitations
 
-- **Qodana:** AGP 9.x has a known `AndroidArtifact.getPrivacySandboxSdkInfo()` risk in JetBrains/Qodana tooling. Treat both Qodana workflows as configured-but-needing fresh proof on every AGP/Gradle bump.
+- **Qodana:** Qodana Android linter 2026.1 currently rejects this repo's AGP 9.1.0 during IDE import (`Latest supported version is AGP 9.0.0`). The workflows therefore run `jetbrains/qodana-jvm-community:2026.1` until JetBrains publishes an Android linter compatible with this AGP line. Re-test Qodana on every AGP/Gradle bump.
 - **CodeQL:** GitHub CodeQL 2.25.2 supports Kotlin up to 2.3.20, but Kotlin 2.4.x is beyond the known-supported line in the current review snapshot. Check the actual CodeQL Action runner version before Kotlin plugin upgrades.
 - **Sonar:** AGP 9 support has had scanner-side compatibility churn. Keep `tools/sonar.ps1` and `.github/workflows/sonar.yml` verified when changing AGP, Gradle, or Kotlin.
+- **OWASP Dependency-Check:** NVD updates can take a very long time without `NVD_API_KEY`, so PRs run Semgrep/CodeQL/Qodana and Dependency-Check is reserved for main/scheduled runs with cache, bounded retries, and a job timeout.
 
 ---
 

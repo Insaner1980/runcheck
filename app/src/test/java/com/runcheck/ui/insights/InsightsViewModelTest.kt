@@ -98,20 +98,19 @@ class InsightsViewModelTest {
         id: Long = 1L,
         target: InsightTarget = InsightTarget.BATTERY,
         seen: Boolean = true,
-    ) =
-        Insight(
-            id = id,
-            ruleId = "rule",
-            type = InsightType.BATTERY,
-            priority = InsightPriority.HIGH,
-            confidence = 0.9f,
-            titleKey = "title",
-            bodyKey = "body",
-            bodyArgs = emptyList(),
-            generatedAt = 0L,
-            expiresAt = Long.MAX_VALUE,
-            target = target,
-            seen = seen,
-            dismissed = false,
-        )
+    ) = Insight(
+        id = id,
+        ruleId = "rule",
+        type = InsightType.BATTERY,
+        priority = InsightPriority.HIGH,
+        confidence = 0.9f,
+        titleKey = "title",
+        bodyKey = "body",
+        bodyArgs = emptyList(),
+        generatedAt = 0L,
+        expiresAt = Long.MAX_VALUE,
+        target = target,
+        seen = seen,
+        dismissed = false,
+    )
 }

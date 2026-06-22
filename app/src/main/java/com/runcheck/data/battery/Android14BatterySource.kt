@@ -1,12 +1,11 @@
 package com.runcheck.data.battery
 
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.runcheck.data.device.DeviceProfile
-import kotlinx.coroutines.Dispatchers
+import com.runcheck.util.AppDispatchers
+import com.runcheck.util.BatteryIntentReader
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -16,7 +15,8 @@ import java.io.File
 open class Android14BatterySource(
     context: Context,
     profile: DeviceProfile,
-) : GenericBatterySource(context, profile) {
+    private val dispatchers: AppDispatchers,
+) : GenericBatterySource(context, profile, dispatchers) {
     override fun getCycleCount(): Flow<Int?> =
         flow {
             val cycleCount =
@@ -25,16 +25,16 @@ open class Android14BatterySource(
                     ?: readSysfsInt(SYSFS_CYCLE_COUNT)?.takeIf { it <= MAX_PLAUSIBLE_CYCLE_COUNT }
 
             emit(cycleCount)
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(dispatchers.io)
 
     override fun getHealthPercent(): Flow<Int?> =
         flow {
             emit(calculateHealthFromSysfs())
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(dispatchers.io)
 
     private fun readCycleCountFromBroadcast(): Int? =
         try {
-            val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            val intent = BatteryIntentReader.readBatteryChangedStickyIntent(context)
             val cycleCount = intent?.getIntExtra(EXTRA_CYCLE_COUNT, -1) ?: -1
             if (cycleCount > 0) cycleCount else null
         } catch (_: Exception) {

@@ -57,9 +57,10 @@ class HealthMonitorWorker
 
             var coreFailure =
                 collectStep("battery") {
-                    batteryState = batteryRepository.getBatteryState().first()
-                    batteryRepository.saveReading(requireNotNull(batteryState))
-                    chargerSessionTracker.onBatteryState(requireNotNull(batteryState))
+                    val state = batteryRepository.getBatteryState().first()
+                    batteryState = state
+                    batteryRepository.saveReading(state)
+                    chargerSessionTracker.onBatteryState(state)
                 }
 
             coreFailure = collectStep("network") {
@@ -74,13 +75,15 @@ class HealthMonitorWorker
             } || coreFailure
 
             coreFailure = collectStep("thermal") {
-                thermalState = thermalRepository.getThermalState().first()
-                thermalRepository.saveReading(requireNotNull(thermalState))
+                val state = thermalRepository.getThermalState().first()
+                thermalState = state
+                thermalRepository.saveReading(state)
             } || coreFailure
 
             coreFailure = collectStep("storage") {
-                storageState = storageRepository.getStorageState().first()
-                storageRepository.saveReading(requireNotNull(storageState))
+                val state = storageRepository.getStorageState().first()
+                storageState = state
+                storageRepository.saveReading(state)
             } || coreFailure
 
             coreFailure = collectStep("alerts") {

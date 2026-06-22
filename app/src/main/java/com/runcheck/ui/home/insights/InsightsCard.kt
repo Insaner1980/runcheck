@@ -24,15 +24,13 @@ import com.runcheck.ui.theme.spacing
 
 @Composable
 fun InsightsCard(
-    insights: List<Insight>,
-    totalInsightCount: Int,
-    unseenInsightCount: Int,
-    isPro: Boolean,
+    state: InsightsCardState,
     navigationHandlers: InsightNavigationHandlers,
     onNavigateToInsights: () -> Unit,
     onDismissInsight: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val insights = state.insights
     if (insights.isEmpty()) return
 
     Column(
@@ -44,10 +42,10 @@ fun InsightsCard(
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
         ) {
             SectionHeader(text = stringResource(R.string.home_insights_section_title))
-            if (unseenInsightCount > 0) {
-                UnseenInsightsBadge(unseenInsightCount = unseenInsightCount)
+            if (state.unseenInsightCount > 0) {
+                UnseenInsightsBadge(unseenInsightCount = state.unseenInsightCount)
             }
-            if (totalInsightCount > insights.size) {
+            if (state.totalInsightCount > insights.size) {
                 TextButton(onClick = onNavigateToInsights) {
                     Text(text = stringResource(R.string.home_insights_view_all))
                 }
@@ -58,7 +56,7 @@ fun InsightsCard(
             val navigationAction =
                 resolveInsightNavigationAction(
                     insight = insight,
-                    isPro = isPro,
+                    isPro = state.isPro,
                     navigationHandlers = navigationHandlers,
                 )
 
@@ -70,6 +68,13 @@ fun InsightsCard(
         }
     }
 }
+
+data class InsightsCardState(
+    val insights: List<Insight>,
+    val totalInsightCount: Int,
+    val unseenInsightCount: Int,
+    val isPro: Boolean,
+)
 
 @Composable
 private fun UnseenInsightsBadge(unseenInsightCount: Int) {

@@ -5,6 +5,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.runcheck.data.device.DeviceProfile
 import com.runcheck.domain.model.MeasuredValue
+import com.runcheck.util.AppDispatchers
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -15,7 +16,8 @@ import kotlinx.coroutines.flow.Flow
 class SamsungAndroid14BatterySource(
     context: Context,
     profile: DeviceProfile,
-) : Android14BatterySource(context, profile) {
+    dispatchers: AppDispatchers,
+) : Android14BatterySource(context, profile, dispatchers) {
     override fun getCurrentNow(): Flow<MeasuredValue<Int>> =
         samsungCurrentNowFlow(
             stableReadingThreshold = STABLE_READING_THRESHOLD,

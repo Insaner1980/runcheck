@@ -21,7 +21,7 @@ rules:
     languages:
       - xml
     severity: WARNING
-    message: Exported Android component needs trust-boundary review. Launcher and app widgets may be valid; new exported services/receivers require justification.
+    message: Exported Android component needs trust-boundary review. Launcher activities are allowed; new exported services/receivers require justification.
     patterns:
       - pattern-either:
           - pattern: |
@@ -32,6 +32,18 @@ rules:
               <service ... android:exported="true" ...>
           - pattern: |
               <receiver ... android:exported="true" ...>
+      - pattern-not: |
+          <activity ... android:exported="true" ...>
+            ...
+            <intent-filter>
+              ...
+              <action android:name="android.intent.action.MAIN" />
+              ...
+              <category android:name="android.intent.category.LAUNCHER" />
+              ...
+            </intent-filter>
+            ...
+          </activity>
 
   - id: runcheck-fileprovider-broad-path
     languages:

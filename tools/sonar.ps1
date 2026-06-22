@@ -89,6 +89,7 @@ if ($PlanOnly) {
         "sonar"
         "  - Gradle assembleDebug: reports/sonar.txt"
         "  - Gradle :app:jacocoDebugUnitTestReport: reports/sonar.txt"
+        "  - Gradle prepareSonarAndroidLintReport: reports/sonar.txt"
         "  - Gradle sonar: reports/sonar.txt"
         "  - optional sonar.exe issue export: reports/sonar-issues.json"
         "  - requires SONAR_TOKEN for the full scan"

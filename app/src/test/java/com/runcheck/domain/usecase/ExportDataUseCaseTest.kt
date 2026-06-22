@@ -13,15 +13,19 @@ import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.repository.StorageRepository
 import com.runcheck.domain.repository.ThermalRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
+import com.runcheck.util.AppDispatchers
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import kotlin.coroutines.CoroutineContext
 
 class ExportDataUseCaseTest {
     private lateinit var useCase: ExportDataUseCase
@@ -55,17 +59,20 @@ class ExportDataUseCaseTest {
         coEvery { thermalRepository.getAllReadings() } returns emptyList()
         coEvery { storageRepository.getAllReadings() } returns emptyList()
 
-        useCase =
-            ExportDataUseCase(
-                batteryRepository = batteryRepository,
-                networkRepository = networkRepository,
-                thermalRepository = thermalRepository,
-                storageRepository = storageRepository,
-                fileExportRepository = fileExportRepository,
-                proStatusProvider = proStatusProvider,
-                userPreferencesRepository = userPreferencesRepository,
-            )
+        useCase = createUseCase()
     }
+
+    private fun createUseCase(dispatchers: AppDispatchers = AppDispatchers()) =
+        ExportDataUseCase(
+            batteryRepository = batteryRepository,
+            networkRepository = networkRepository,
+            thermalRepository = thermalRepository,
+            storageRepository = storageRepository,
+            fileExportRepository = fileExportRepository,
+            proStatusProvider = proStatusProvider,
+            userPreferencesRepository = userPreferencesRepository,
+            dispatchers = dispatchers,
+        )
 
     // --- CSV escaping tests (via battery export) ---
 
@@ -362,6 +369,35 @@ class ExportDataUseCaseTest {
             }
         }
 
+    @Test
+    fun `prepareExportShare builds csv payloads on default dispatcher before writing files`() =
+        runTest {
+            val recordingDispatcher = RecordingDispatcher()
+            val useCase = createUseCase(TestAppDispatchers(defaultDispatcher = recordingDispatcher))
+            coEvery { fileExportRepository.prepareExportShare(any()) } returns listOf("content://runcheck/export.zip")
+
+            val result = useCase.prepareExportShare()
+
+            assertEquals(listOf("content://runcheck/export.zip"), result)
+            assertTrue(
+                "CSV generation should switch to the injected default dispatcher",
+                recordingDispatcher.dispatchCount > 0,
+            )
+            coVerify(exactly = 1) {
+                fileExportRepository.prepareExportShare(
+                    match { files ->
+                        files.keys ==
+                            setOf(
+                                "runcheck_battery.csv",
+                                "runcheck_network.csv",
+                                "runcheck_thermal.csv",
+                                "runcheck_storage.csv",
+                            )
+                    },
+                )
+            }
+        }
+
     // --- Pro gate tests ---
 
     @Test(expected = IllegalStateException::class)
@@ -531,4 +567,24 @@ class ExportDataUseCaseTest {
             assertEquals("", cols[5]) // carrier
             assertEquals("", cols[6]) // networkSubtype
         }
+
+    private class TestAppDispatchers(
+        private val defaultDispatcher: CoroutineDispatcher,
+    ) : AppDispatchers() {
+        override val default: CoroutineDispatcher
+            get() = defaultDispatcher
+    }
+
+    private class RecordingDispatcher : CoroutineDispatcher() {
+        var dispatchCount: Int = 0
+            private set
+
+        override fun dispatch(
+            context: CoroutineContext,
+            block: Runnable,
+        ) {
+            dispatchCount += 1
+            block.run()
+        }
+    }
 }

@@ -5,3 +5,4 @@ if ([string]::IsNullOrWhiteSpace($env:PMD_CPD_MINIMUM_TOKENS)) {
 
 $ProjectCheckCommand = "pmd-check"
 & "C:\Dev\Android-check\tools\InvokeProjectCheck.ps1" -ProjectCheckCommand $ProjectCheckCommand @args
+exit $LASTEXITCODE

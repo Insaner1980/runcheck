@@ -20,12 +20,12 @@ import com.runcheck.domain.repository.BatteryRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.formatTemperature
+import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
 import com.runcheck.util.RuncheckPermissionPolicy
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -41,7 +41,7 @@ class RealTimeMonitorService : Service() {
     private val binder = Binder()
     private val mainHandler = Handler(Looper.getMainLooper())
     private val activeBindings = AtomicInteger(0)
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private lateinit var serviceScope: CoroutineScope
     private var updateJob: Job? = null
     private var prefCheckJob: Job? = null
     private val idleStopRunnable =
@@ -59,8 +59,11 @@ class RealTimeMonitorService : Service() {
 
     @Inject lateinit var userPreferencesRepository: UserPreferencesRepository
 
+    @Inject lateinit var dispatchers: AppDispatchers
+
     override fun onCreate() {
         super.onCreate()
+        serviceScope = CoroutineScope(SupervisorJob() + dispatchers.default)
         isRunning = true
         createNotificationChannel()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -103,7 +106,9 @@ class RealTimeMonitorService : Service() {
                 isLiveNotificationMode = false
                 updateJob?.cancel()
                 prefCheckJob?.cancel()
-                serviceScope.cancel()
+                if (::serviceScope.isInitialized) {
+                    serviceScope.cancel()
+                }
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
                 // Don't restart after explicit stop — prevents wasteful restart cycle
@@ -132,7 +137,9 @@ class RealTimeMonitorService : Service() {
         cancelIdleStop()
         updateJob?.cancel()
         prefCheckJob?.cancel()
-        serviceScope.cancel()
+        if (::serviceScope.isInitialized) {
+            serviceScope.cancel()
+        }
         super.onDestroy()
     }
 
@@ -142,7 +149,10 @@ class RealTimeMonitorService : Service() {
             serviceScope.launch {
                 try {
                     val prefs = userPreferencesRepository.getPreferences().first()
-                    val canShowLiveNotification = RuncheckPermissionPolicy.canPostNotifications(this@RealTimeMonitorService)
+                    val canShowLiveNotification =
+                        RuncheckPermissionPolicy.canPostNotifications(
+                            this@RealTimeMonitorService,
+                        )
                     isLiveNotificationMode = prefs.liveNotificationEnabled && canShowLiveNotification
                     if (prefs.liveNotificationEnabled && !canShowLiveNotification) {
                         stopLiveNotificationService()

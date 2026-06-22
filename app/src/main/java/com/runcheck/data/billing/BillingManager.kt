@@ -20,13 +20,13 @@ import com.runcheck.R
 import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.billing.ProPurchaseRefreshResult
 import com.runcheck.billing.PurchaseEvent
+import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -54,6 +54,7 @@ class BillingManager
     constructor(
         @param:ApplicationContext private val context: Context,
         private val proStatusCache: ProStatusCache,
+        private val dispatchers: AppDispatchers,
     ) : PurchasesUpdatedListener,
         com.runcheck.domain.repository.ProStatusProvider,
         ProPurchaseManager {
@@ -62,10 +63,12 @@ class BillingManager
                 ReleaseSafeLog.error(TAG, "Billing coroutine failed", throwable)
             }
         private val scopeJob = SupervisorJob()
-        private val scope = CoroutineScope(scopeJob + Dispatchers.Main + scopeExceptionHandler)
+        private val scope = CoroutineScope(scopeJob + dispatchers.main + scopeExceptionHandler)
 
         private val _isProUser = MutableStateFlow(false)
         override val isProUser: Flow<Boolean> = _isProUser.asStateFlow()
+        override val isProStatusReady: Boolean
+            get() = initComplete.isCompleted
         private val _billingAvailable = MutableStateFlow(false)
         override val billingAvailable: Flow<Boolean> = _billingAvailable.asStateFlow()
 
@@ -82,6 +85,8 @@ class BillingManager
         private val initComplete = CompletableDeferred<Unit>()
 
         override fun isPro(): Boolean = _isProUser.value
+
+        override suspend fun awaitPurchaseStatusReady() = awaitInitialized()
 
         suspend fun awaitInitialized() = initComplete.await()
 

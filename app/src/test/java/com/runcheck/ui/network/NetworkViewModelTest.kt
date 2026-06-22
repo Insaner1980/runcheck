@@ -22,9 +22,11 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -94,6 +96,12 @@ class NetworkViewModelTest {
             observeProAccess = observeProAccess,
         )
 
+    private fun advanceNetworkSample() {
+        mainDispatcherRule.testDispatcher.scheduler.runCurrent()
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(334L)
+        mainDispatcherRule.testDispatcher.scheduler.runCurrent()
+    }
+
     @Test
     fun `initial state is Loading`() {
         every { getMeasuredNetworkState() } returns emptyFlow()
@@ -105,11 +113,11 @@ class NetworkViewModelTest {
     @Test
     fun `network data loads into Success state`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            every { getMeasuredNetworkState() } returns flowOf(testNetworkState)
+            every { getMeasuredNetworkState() } returns MutableStateFlow(testNetworkState)
 
             viewModel = createViewModel()
             viewModel.startObserving()
-            advanceUntilIdle()
+            advanceNetworkSample()
 
             val state = viewModel.networkUiState.value
             assertTrue("Expected Success but got $state", state is NetworkUiState.Success)
@@ -120,19 +128,20 @@ class NetworkViewModelTest {
             assertEquals(SignalQuality.EXCELLENT, success.networkState.signalQuality)
             assertEquals("TestWiFi", success.networkState.wifiSsid)
             assertEquals(25, success.networkState.latencyMs)
+            viewModel.stopObserving()
         }
 
     @Test
     fun `speed test transitions through phases correctly`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            every { getMeasuredNetworkState() } returns flowOf(testNetworkState)
+            every { getMeasuredNetworkState() } returns MutableStateFlow(testNetworkState)
 
             val speedTestFlow = MutableSharedFlow<SpeedTestProgress>()
             every { runSpeedTest(any()) } returns speedTestFlow
 
             viewModel = createViewModel()
             viewModel.startObserving()
-            advanceUntilIdle()
+            advanceNetworkSample()
 
             // Start speed test
             viewModel.startSpeedTest()
@@ -198,19 +207,20 @@ class NetworkViewModelTest {
 
             // Verify finalize was called
             coVerify { finalizeSpeedTest(any(), any()) }
+            viewModel.stopObserving()
         }
 
     @Test
     fun `second speed test call is ignored while running`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            every { getMeasuredNetworkState() } returns flowOf(testNetworkState)
+            every { getMeasuredNetworkState() } returns MutableStateFlow(testNetworkState)
 
             val speedTestFlow = MutableSharedFlow<SpeedTestProgress>()
             every { runSpeedTest(any()) } returns speedTestFlow
 
             viewModel = createViewModel()
             viewModel.startObserving()
-            advanceUntilIdle()
+            advanceNetworkSample()
 
             // Start first speed test
             viewModel.startSpeedTest()
@@ -225,12 +235,13 @@ class NetworkViewModelTest {
             // runSpeedTest should only have been invoked once
             // The second call should be blocked by isRunning guard
             verify(exactly = 1) { runSpeedTest(any()) }
+            viewModel.stopObserving()
         }
 
     @Test
     fun `speed test error produces Failed phase`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            every { getMeasuredNetworkState() } returns flowOf(testNetworkState)
+            every { getMeasuredNetworkState() } returns MutableStateFlow(testNetworkState)
 
             every { runSpeedTest(any()) } returns
                 flow {
@@ -239,10 +250,10 @@ class NetworkViewModelTest {
 
             viewModel = createViewModel()
             viewModel.startObserving()
-            advanceUntilIdle()
+            advanceNetworkSample()
 
             viewModel.startSpeedTest()
-            advanceUntilIdle()
+            runCurrent()
 
             val speedState = viewModel.speedTestState.value
             assertTrue(
@@ -257,19 +268,20 @@ class NetworkViewModelTest {
                 "Error message should reflect the exception",
                 failedPhase.error is UiText.Dynamic && failedPhase.error.value == "Network timeout",
             )
+            viewModel.stopObserving()
         }
 
     @Test
     fun `speed test Failed progress event produces Failed phase`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            every { getMeasuredNetworkState() } returns flowOf(testNetworkState)
+            every { getMeasuredNetworkState() } returns MutableStateFlow(testNetworkState)
 
             val speedTestFlow = MutableSharedFlow<SpeedTestProgress>()
             every { runSpeedTest(any()) } returns speedTestFlow
 
             viewModel = createViewModel()
             viewModel.startObserving()
-            advanceUntilIdle()
+            advanceNetworkSample()
 
             viewModel.startSpeedTest()
             runCurrent()
@@ -280,12 +292,13 @@ class NetworkViewModelTest {
             val speedState = viewModel.speedTestState.value
             assertTrue(speedState.phase is SpeedTestPhase.Failed)
             assertFalse(speedState.isRunning)
+            viewModel.stopObserving()
         }
 
     @Test
     fun `selected network history period restores from saved state`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            every { getMeasuredNetworkState() } returns flowOf(testNetworkState)
+            every { getMeasuredNetworkState() } returns MutableStateFlow(testNetworkState)
 
             viewModel =
                 createViewModel(
@@ -297,10 +310,11 @@ class NetworkViewModelTest {
                         ),
                 )
             viewModel.startObserving()
-            advanceUntilIdle()
+            advanceNetworkSample()
 
             val state = viewModel.networkUiState.value as NetworkUiState.Success
             assertEquals(com.runcheck.domain.model.HistoryPeriod.MONTH, state.selectedHistoryPeriod)
             verify { getNetworkHistory(com.runcheck.domain.model.HistoryPeriod.MONTH) }
+            viewModel.stopObserving()
         }
 }

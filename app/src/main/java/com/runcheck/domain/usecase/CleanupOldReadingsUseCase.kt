@@ -46,6 +46,10 @@ class CleanupOldReadingsUseCase
         }
 
         private suspend fun resolveCutoff(now: Long): Long? {
+            if (!proStatusProvider.isProStatusReady) {
+                return null
+            }
+
             if (!proStatusProvider.isPro()) {
                 return now - TWENTY_FOUR_HOURS_MS
             }

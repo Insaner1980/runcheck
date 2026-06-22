@@ -1,13 +1,12 @@
 package com.runcheck.data.device
 
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Build
 import androidx.annotation.VisibleForTesting
 import com.runcheck.domain.model.CurrentUnit
 import com.runcheck.domain.model.SignConvention
+import com.runcheck.util.BatteryIntentReader
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import javax.inject.Inject
@@ -98,7 +97,7 @@ class DeviceCapabilityManager
 
         private fun detectCycleCountAvailability(apiLevel: Int): Boolean {
             if (apiLevel < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return false
-            val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            val batteryIntent = BatteryIntentReader.readBatteryChangedStickyIntent(context)
             val cycleCount = batteryIntent?.getIntExtra(BatteryManager.EXTRA_CYCLE_COUNT, -1) ?: -1
             return cycleCount > 0
         }

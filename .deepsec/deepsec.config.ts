@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { type DeepsecPlugin, defineConfig } from "deepsec/config";
 import { androidExportedComponent } from "./matchers/android-exported-component.js";
+import { androidKotlinSecuritySurface } from "./matchers/android-kotlin-security-surface.js";
 import { androidUriShareWithoutClipData } from "./matchers/android-uri-share-without-clipdata.js";
 import { fileproviderBroadPath } from "./matchers/fileprovider-broad-path.js";
 import { outboundNetworkSurface } from "./matchers/outbound-network-surface.js";
@@ -16,6 +17,7 @@ function runcheckPlugin(): DeepsecPlugin {
     name: "runcheck-android",
     matchers: [
       androidExportedComponent,
+      androidKotlinSecuritySurface,
       fileproviderBroadPath,
       androidUriShareWithoutClipData,
       outboundNetworkSurface,

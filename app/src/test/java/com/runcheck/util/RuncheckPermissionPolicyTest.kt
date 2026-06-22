@@ -45,6 +45,49 @@ class RuncheckPermissionPolicyTest {
     }
 
     @Test
+    fun `android 10 media request uses legacy read storage permission`() {
+        assertEquals(
+            listOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+            RuncheckPermissionPolicy.mediaPermissionsForApi(Build.VERSION_CODES.Q),
+        )
+    }
+
+    @Test
+    fun `pre android 10 media request includes legacy read and write storage permissions`() {
+        assertEquals(
+            listOf(
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            ),
+            RuncheckPermissionPolicy.mediaPermissionsForApi(Build.VERSION_CODES.P),
+        )
+    }
+
+    @Test
+    fun `pre android 14 media access is full only when every requested permission is granted`() {
+        val granted =
+            setOf(
+                Manifest.permission.READ_MEDIA_IMAGES,
+                Manifest.permission.READ_MEDIA_VIDEO,
+                Manifest.permission.READ_MEDIA_AUDIO,
+            )
+
+        assertEquals(
+            MediaAccessState.FULL,
+            RuncheckPermissionPolicy.mediaAccessStateForApi(Build.VERSION_CODES.TIRAMISU) {
+                it in granted
+            },
+        )
+
+        assertEquals(
+            MediaAccessState.MISSING,
+            RuncheckPermissionPolicy.mediaAccessStateForApi(Build.VERSION_CODES.TIRAMISU) {
+                it == Manifest.permission.READ_MEDIA_IMAGES
+            },
+        )
+    }
+
+    @Test
     fun `android 14 selected visual media without full grants is partial access`() {
         val granted =
             setOf(
@@ -73,6 +116,16 @@ class RuncheckPermissionPolicyTest {
             MediaAccessState.FULL,
             RuncheckPermissionPolicy.mediaAccessStateForApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 it in granted
+            },
+        )
+    }
+
+    @Test
+    fun `android 14 media access is missing without full or selected visual media grants`() {
+        assertEquals(
+            MediaAccessState.MISSING,
+            RuncheckPermissionPolicy.mediaAccessStateForApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                it == Manifest.permission.READ_MEDIA_AUDIO
             },
         )
     }

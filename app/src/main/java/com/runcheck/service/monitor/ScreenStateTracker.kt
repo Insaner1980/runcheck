@@ -11,6 +11,7 @@ import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.ScreenUsageStats
 import com.runcheck.domain.model.SleepAnalysis
 import com.runcheck.domain.repository.ScreenStateRepository
+import com.runcheck.util.BatteryIntentReader
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -382,11 +383,7 @@ class ScreenStateTracker
         }
 
         private fun getCurrentChargingStatus(): ChargingStatus {
-            val batteryIntent =
-                context.registerReceiver(
-                    null,
-                    android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED),
-                )
+            val batteryIntent = BatteryIntentReader.readBatteryChangedStickyIntent(context)
             val status =
                 batteryIntent?.getIntExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_UNKNOWN)
                     ?: BatteryManager.BATTERY_STATUS_UNKNOWN

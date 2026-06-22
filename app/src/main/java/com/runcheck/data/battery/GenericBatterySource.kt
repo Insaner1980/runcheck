@@ -15,10 +15,10 @@ import com.runcheck.domain.model.CurrentUnit
 import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.SignConvention
+import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
@@ -34,13 +34,14 @@ import kotlin.math.abs
 open class GenericBatterySource(
     protected val context: Context,
     protected val profile: DeviceProfile,
+    private val dispatchers: AppDispatchers,
 ) : BatteryDataSource {
     protected val batteryManager: BatteryManager =
         context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
     private val sourceJob = SupervisorJob()
     private val sourceScope =
         CoroutineScope(
-            sourceJob + Dispatchers.Default +
+            sourceJob + dispatchers.default +
                 CoroutineExceptionHandler { _, throwable ->
                     ReleaseSafeLog.error(TAG, "Battery source flow failed", throwable)
                 },
@@ -93,7 +94,7 @@ open class GenericBatterySource(
                 emit(MeasuredValue(currentMa, confidence))
                 delay(POLLING_INTERVAL_MS)
             }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(dispatchers.io)
 
     protected fun unavailableCurrent(): MeasuredValue<Int> =
         MeasuredValue(
@@ -215,7 +216,7 @@ open class GenericBatterySource(
                 emit(raw?.let { it / 1000 }) // µAh → mAh
                 delay(POLLING_INTERVAL_MS)
             }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(dispatchers.io)
 
     protected fun samsungCurrentNowFlow(
         stableReadingThreshold: Int,
@@ -256,7 +257,7 @@ open class GenericBatterySource(
                 emit(MeasuredValue(currentMa, confidence))
                 delay(POLLING_INTERVAL_MS)
             }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(dispatchers.io)
 
     protected fun mapHealth(health: Int): BatteryHealth =
         when (health) {
