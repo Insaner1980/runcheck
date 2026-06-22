@@ -1080,7 +1080,7 @@ GitHub Actions workflows in `.github/workflows/`:
 | Workflow | Purpose | Status |
 |----------|---------|--------|
 | `codeql.yml` | CodeQL security analysis (`java-kotlin`, manual `assembleDebug`) | Active |
-| `security.yml` | Semgrep SAST on PRs/main plus OWASP Dependency-Check SARIF upload on main/scheduled runs | Active; OWASP is kept off PRs because cold NVD updates can stall, and main/scheduled NVD update outages or step timeouts are non-blocking while SARIF upload still runs when a report is produced |
+| `security.yml` | Semgrep SAST on PRs/main plus OWASP Dependency-Check on weekly/manual runs | Active; Semgrep is the push/PR code-scanning path. OWASP is kept out of push/PR code scanning because cold NVD updates can stall or return 503s; scheduled/manual runs use cache, bounded retries, a job timeout, a shorter non-blocking OWASP step timeout, and upload the report as an Actions artifact when produced |
 | `sonar.yml` | SonarCloud scan through Gradle (`assembleDebug`, `:app:jacocoDebugUnitTestReport`, `sonar`) | Active |
 | `qodana.yml` | JetBrains Qodana main-branch scan (`v2026.1`) | Uses the JVM Community linter because the 2026.1 Android linter rejects AGP 9.1.0 during IDE import |
 | `qodana_code_quality.yml` | JetBrains Qodana action (`v2026.1`) for `main`, `releases/*`, PRs, and manual dispatch | Uses the JVM Community linter because the 2026.1 Android linter rejects AGP 9.1.0 during IDE import |
@@ -1160,7 +1160,7 @@ Rules are Hilt multibindings into `Set<InsightRule>`. `InsightEngine` filters ge
 - **Qodana:** Qodana Android linter 2026.1 currently rejects this repo's AGP 9.1.0 during IDE import (`Latest supported version is AGP 9.0.0`). The workflows therefore run `jetbrains/qodana-jvm-community:2026.1` until JetBrains publishes an Android linter compatible with this AGP line. Re-test Qodana on every AGP/Gradle bump.
 - **CodeQL:** GitHub CodeQL 2.25.2 supports Kotlin up to 2.3.20, but Kotlin 2.4.x is beyond the known-supported line in the current review snapshot. Check the actual CodeQL Action runner version before Kotlin plugin upgrades.
 - **Sonar:** AGP 9 support has had scanner-side compatibility churn. Keep `tools/sonar.ps1` and `.github/workflows/sonar.yml` verified when changing AGP, Gradle, or Kotlin.
-- **OWASP Dependency-Check:** NVD updates can take a very long time or return transient 503 responses, so PRs run Semgrep/CodeQL/Qodana and Dependency-Check is reserved for main/scheduled runs with cache, bounded retries, a job timeout, and a shorter non-blocking OWASP step timeout. If Dependency-Check produces SARIF, GitHub still ingests it.
+- **OWASP Dependency-Check:** NVD updates can take a very long time or return transient 503 responses, so PRs and ordinary main pushes run Semgrep/CodeQL/Qodana while Dependency-Check is reserved for weekly scheduled or manual runs with cache, bounded retries, a job timeout, and a shorter non-blocking OWASP step timeout. Dependency-Check reports are uploaded as Actions artifacts instead of GitHub Code scanning SARIF so stale dependency analyses do not keep fixed Dependabot issues open.
 
 ---
 
