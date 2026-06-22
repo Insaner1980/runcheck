@@ -23,5 +23,3 @@ jobs:
         with:
           primary-cache-key: qodana-main-2026.1-${{ github.ref }}-${{ github.sha }}
           additional-cache-key: qodana-main-2026.1-${{ github.ref }}
-        env:
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_773626803 }}

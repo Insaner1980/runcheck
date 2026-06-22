@@ -28,6 +28,3 @@ jobs:
           pr-mode: false
           primary-cache-key: qodana-code-quality-2026.1-${{ github.ref }}-${{ github.sha }}
           additional-cache-key: qodana-code-quality-2026.1-${{ github.ref }}
-        env:
-          QODANA_ENDPOINT: 'https://qodana.cloud'
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_773626803 }}

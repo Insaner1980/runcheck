@@ -1087,7 +1087,7 @@ GitHub Actions workflows in `.github/workflows/`:
 
 External services:
 - **SonarCloud** — continuous code quality (`Insaner1980_runcheck`, org `insaner1980`). CI path is `.github/workflows/sonar.yml`; local path is `tools/sonar.ps1`.
-- **Qodana Cloud** — org "Finnvek Dev", project "runcheck"
+- **Qodana Cloud** — org "Finnvek Dev", project "runcheck"; CI workflows currently run without `QODANA_TOKEN` because the available GitHub Actions secret is declined by Qodana Cloud license verification. Re-enable Cloud upload only after installing a valid Qodana Cloud project token.
 
 Local PowerShell wrappers:
 
