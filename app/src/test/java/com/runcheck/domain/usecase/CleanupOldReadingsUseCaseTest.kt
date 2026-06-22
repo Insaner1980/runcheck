@@ -193,15 +193,7 @@ class CleanupOldReadingsUseCaseTest {
 
             useCase()
 
-            coVerify(exactly = 0) { transactionRunner.runInTransaction(any()) }
-            coVerify(exactly = 0) { batteryRepository.deleteOlderThan(any()) }
-            coVerify(exactly = 0) { networkRepository.deleteOlderThan(any()) }
-            coVerify(exactly = 0) { thermalRepository.deleteOlderThan(any()) }
-            coVerify(exactly = 0) { storageRepository.deleteOlderThan(any()) }
-            coVerify(exactly = 0) { chargerRepository.deleteSessionsOlderThan(any()) }
-            coVerify(exactly = 0) { throttlingRepository.deleteOlderThan(any()) }
-            coVerify(exactly = 0) { appBatteryUsageRepository.deleteOlderThan(any()) }
-            coVerify(exactly = 0) { speedTestRepository.deleteOlderThan(any()) }
+            verifyNoCleanupRequested()
         }
 
     @Test
@@ -215,15 +207,7 @@ class CleanupOldReadingsUseCaseTest {
 
             useCase()
 
-            coVerify(exactly = 0) { transactionRunner.runInTransaction(any()) }
-            coVerify(exactly = 0) { batteryRepository.deleteOlderThan(any()) }
-            coVerify(exactly = 0) { networkRepository.deleteOlderThan(any()) }
-            coVerify(exactly = 0) { thermalRepository.deleteOlderThan(any()) }
-            coVerify(exactly = 0) { storageRepository.deleteOlderThan(any()) }
-            coVerify(exactly = 0) { chargerRepository.deleteSessionsOlderThan(any()) }
-            coVerify(exactly = 0) { throttlingRepository.deleteOlderThan(any()) }
-            coVerify(exactly = 0) { appBatteryUsageRepository.deleteOlderThan(any()) }
-            coVerify(exactly = 0) { speedTestRepository.deleteOlderThan(any()) }
+            verifyNoCleanupRequested()
         }
 
     @Test
@@ -402,5 +386,17 @@ class CleanupOldReadingsUseCaseTest {
                 "(expected max $expectedMax + tolerance $toleranceMs)",
             actual <= expectedMax + toleranceMs,
         )
+    }
+
+    private fun verifyNoCleanupRequested() {
+        coVerify(exactly = 0) { transactionRunner.runInTransaction(any()) }
+        coVerify(exactly = 0) { batteryRepository.deleteOlderThan(any()) }
+        coVerify(exactly = 0) { networkRepository.deleteOlderThan(any()) }
+        coVerify(exactly = 0) { thermalRepository.deleteOlderThan(any()) }
+        coVerify(exactly = 0) { storageRepository.deleteOlderThan(any()) }
+        coVerify(exactly = 0) { chargerRepository.deleteSessionsOlderThan(any()) }
+        coVerify(exactly = 0) { throttlingRepository.deleteOlderThan(any()) }
+        coVerify(exactly = 0) { appBatteryUsageRepository.deleteOlderThan(any()) }
+        coVerify(exactly = 0) { speedTestRepository.deleteOlderThan(any()) }
     }
 }

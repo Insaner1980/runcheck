@@ -1087,7 +1087,7 @@ GitHub Actions workflows in `.github/workflows/`:
 
 External services:
 - **SonarCloud** — continuous code quality (`Insaner1980_runcheck`, org `insaner1980`). CI path is `.github/workflows/sonar.yml`; local path is `tools/sonar.ps1`.
-- **Qodana Cloud** — org "Finnvek Dev", project "runcheck"
+- **Qodana Cloud** — org "Finnvek Dev", project "runcheck"; CI workflows currently run without `QODANA_TOKEN` because the available GitHub Actions secret is declined by Qodana Cloud license verification. Re-enable Cloud upload only after installing a valid Qodana Cloud project token.
 
 Local PowerShell wrappers:
 
@@ -1113,7 +1113,7 @@ When `osv-scanner`, gitleaks, TruffleHog, or PMD are missing from `PATH`, the sh
 Compatibility wrappers and config:
 
 - `scripts/security-check.ps1` forwards to `tools/sc.ps1`
-- `scripts/security-check.sh` is a Linux legacy script
+- No Linux shell security wrapper is maintained in this Windows-first repo
 - Check configuration lives in `config/semgrep/runcheck-security.yml`, `config/dependency-check/suppressions.xml`, `.mobsf`, `.deepsec/`, `.github/dependabot.yml`, `sonar-project.properties`, and `gradle/osv-scanner.toml`
 - `reports/` is ignored and must not be committed
 

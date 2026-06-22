@@ -2,6 +2,7 @@ package com.runcheck.ui.storage.cleanup
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.paging.PagingData
+import com.runcheck.R
 import com.runcheck.domain.model.CleanupGroupSummary
 import com.runcheck.domain.model.CleanupScanQuery
 import com.runcheck.domain.model.CleanupSummary
@@ -144,6 +145,23 @@ class CleanupViewModelTest {
             isProUser = isProUser,
         )
     }
+
+    @Test
+    fun `cleanup scan returns pro locked error for non pro users`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            every { isProUser() } returns false
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertTrue("Expected Error but got $state", state is CleanupUiState.Error)
+            assertEquals(
+                UiText.Resource(R.string.pro_feature_locked_generic),
+                (state as CleanupUiState.Error).message,
+            )
+            coVerify(exactly = 0) { storageCleanup.getCleanupSummary(any()) }
+        }
 
     @Test
     fun `scan produces results with correct grouping`() =

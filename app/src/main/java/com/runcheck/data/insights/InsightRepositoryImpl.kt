@@ -1,5 +1,7 @@
 package com.runcheck.data.insights
 
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.runcheck.data.db.dao.InsightDao
 import com.runcheck.data.db.entity.InsightEntity
 import com.runcheck.domain.insights.engine.InsightHomeRankingPolicy
@@ -14,7 +16,6 @@ import com.runcheck.util.AppDispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import org.json.JSONArray
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -126,9 +127,15 @@ private fun InsightCandidate.toEntity(existing: InsightEntity?): InsightEntity =
         seen = existing?.seen ?: false,
     )
 
-private fun List<String>.toJsonArrayString(): String = JSONArray(this).toString()
+private fun List<String>.toJsonArrayString(): String = InsightBodyArgsJsonCodec.encode(this)
 
-private fun String.toBodyArgs(): List<String> {
-    val array = JSONArray(this)
-    return List(array.length()) { index -> array.optString(index) }
+private fun String.toBodyArgs(): List<String> = InsightBodyArgsJsonCodec.decode(this)
+
+private object InsightBodyArgsJsonCodec {
+    private val gson = Gson()
+    private val stringListType = object : TypeToken<List<String>>() {}.type
+
+    fun encode(args: List<String>): String = gson.toJson(args, stringListType)
+
+    fun decode(json: String): List<String> = gson.fromJson<List<String>>(json, stringListType) ?: emptyList()
 }

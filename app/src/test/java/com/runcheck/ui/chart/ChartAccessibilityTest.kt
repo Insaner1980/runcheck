@@ -2,9 +2,22 @@ package com.runcheck.ui.chart
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class ChartAccessibilityTest {
+    @Test
+    fun `buildChartAccessibilitySnapshot returns null for empty data`() {
+        val snapshot =
+            buildChartAccessibilitySnapshot(
+                chartData = emptyList(),
+                unit = "%",
+                decimals = 0,
+            )
+
+        assertNull(snapshot)
+    }
+
     @Test
     fun `buildChartAccessibilitySnapshot formats values and detects increasing trend`() {
         val snapshot =
@@ -45,6 +58,21 @@ class ChartAccessibilityTest {
         assertEquals("4.09 V", snapshot?.minimumValue)
         assertEquals("4.12 V", snapshot?.maximumValue)
         assertEquals("4.11 V", snapshot?.latestValue)
+        assertEquals(ChartTrendDirection.STABLE, snapshot?.trendDirection)
+    }
+
+    @Test
+    fun `buildChartAccessibilitySnapshot treats a single value as stable`() {
+        val snapshot =
+            buildChartAccessibilitySnapshot(
+                chartData = listOf(12.3f),
+                unit = " mA",
+                decimals = 1,
+            )
+
+        assertEquals("12.3 mA", snapshot?.minimumValue)
+        assertEquals("12.3 mA", snapshot?.maximumValue)
+        assertEquals("12.3 mA", snapshot?.latestValue)
         assertEquals(ChartTrendDirection.STABLE, snapshot?.trendDirection)
     }
 }

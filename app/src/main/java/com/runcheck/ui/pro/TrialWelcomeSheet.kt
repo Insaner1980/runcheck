@@ -72,7 +72,7 @@ fun TrialWelcomeSheet(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
 
             ProFeature.entries.forEach { feature ->
-                WelcomeFeatureRow(label = welcomeFeatureLabel(feature))
+                WelcomeFeatureRow(label = stringResource(feature.labelResId()))
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
             }
 
@@ -118,16 +118,3 @@ private fun WelcomeFeatureRow(label: String) {
         )
     }
 }
-
-@Composable
-private fun welcomeFeatureLabel(feature: ProFeature): String =
-    when (feature) {
-        ProFeature.EXTENDED_HISTORY -> stringResource(R.string.pro_feature_extended_history)
-        ProFeature.CHARGER_COMPARISON -> stringResource(R.string.pro_feature_charger_comparison)
-        ProFeature.PER_APP_BATTERY -> stringResource(R.string.pro_feature_per_app_battery)
-        ProFeature.WIDGETS -> stringResource(R.string.pro_feature_widgets)
-        ProFeature.CSV_EXPORT -> stringResource(R.string.pro_feature_csv_export)
-        ProFeature.THERMAL_LOGS -> stringResource(R.string.pro_feature_thermal_logs)
-        ProFeature.REMAINING_CHARGE_TIME -> stringResource(R.string.pro_feature_remaining_charge_time)
-        ProFeature.STORAGE_CLEANUP -> stringResource(R.string.pro_feature_storage_cleanup)
-    }

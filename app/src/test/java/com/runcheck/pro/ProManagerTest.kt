@@ -11,6 +11,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -109,6 +110,43 @@ class ProManagerTest {
             assertEquals(trialStart, state.trialStartTimestamp)
             assertTrue(state.isPro)
             assertTrue(proManager.isProStatusReady)
+        }
+
+    @Test
+    fun `active trial refresh expires state after trial duration passes`() =
+        runTest {
+            val dispatcher = StandardTestDispatcher(testScheduler)
+            val manager =
+                ProManager(
+                    trialManager,
+                    proPurchaseManager,
+                    object : AppDispatchers() {
+                        override val default = dispatcher
+                        override val mainImmediate = dispatcher
+                    },
+                )
+            val expiredTrialStart =
+                System.currentTimeMillis() -
+                    TimeUnit.DAYS.toMillis(TrialManager.TRIAL_DURATION_DAYS.toLong())
+
+            coEvery { trialManager.initialize() } returns true
+            trialStateFlow.value =
+                TrialState(
+                    isActive = true,
+                    daysRemaining = 1,
+                    startTimestamp = expiredTrialStart,
+                )
+            isProUserFlow.value = false
+
+            manager.initialize()
+            advanceTimeBy(1_000L)
+            advanceUntilIdle()
+
+            val state = manager.proState.value
+            assertEquals(ProStatus.TRIAL_EXPIRED, state.status)
+            assertEquals(0, state.trialDaysRemaining)
+            assertEquals(expiredTrialStart, state.trialStartTimestamp)
+            assertFalse(state.isPro)
         }
 
     @Test

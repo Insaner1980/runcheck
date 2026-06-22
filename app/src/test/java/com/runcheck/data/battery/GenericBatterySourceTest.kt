@@ -3,8 +3,11 @@ package com.runcheck.data.battery
 import android.content.Context
 import android.os.BatteryManager
 import com.runcheck.data.device.DeviceProfile
+import com.runcheck.domain.model.BatteryHealth
+import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.CurrentUnit
+import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.SignConvention
 import com.runcheck.util.AppDispatchers
 import io.mockk.every
@@ -111,10 +114,60 @@ class GenericBatterySourceTest {
         assertEquals(Confidence.UNAVAILABLE, source.testCalculateCurrentConfidence(0))
     }
 
+    @Test
+    fun `alignCurrentSignWithChargeState corrects signs that disagree with charge state`() {
+        val chargingSource =
+            createTestSource(
+                unit = CurrentUnit.MILLIAMPS,
+                convention = SignConvention.POSITIVE_CHARGING,
+                isCharging = true,
+            )
+        val dischargingSource =
+            createTestSource(
+                unit = CurrentUnit.MILLIAMPS,
+                convention = SignConvention.POSITIVE_CHARGING,
+                isCharging = false,
+            )
+
+        assertEquals(500, chargingSource.testAlignCurrentSignWithChargeState(-500))
+        assertEquals(500, chargingSource.testAlignCurrentSignWithChargeState(500))
+        assertEquals(-500, dischargingSource.testAlignCurrentSignWithChargeState(500))
+        assertEquals(-500, dischargingSource.testAlignCurrentSignWithChargeState(-500))
+    }
+
+    @Test
+    fun `battery intent integer mappings fall back safely for unknown values`() {
+        val source =
+            createTestSource(
+                unit = CurrentUnit.MILLIAMPS,
+                convention = SignConvention.POSITIVE_CHARGING,
+            )
+
+        assertEquals(BatteryHealth.GOOD, source.testMapHealth(BatteryManager.BATTERY_HEALTH_GOOD))
+        assertEquals(BatteryHealth.OVERHEAT, source.testMapHealth(BatteryManager.BATTERY_HEALTH_OVERHEAT))
+        assertEquals(BatteryHealth.UNKNOWN, source.testMapHealth(-1))
+
+        assertEquals(
+            ChargingStatus.CHARGING,
+            source.testMapChargingStatus(BatteryManager.BATTERY_STATUS_CHARGING),
+        )
+        assertEquals(
+            ChargingStatus.DISCHARGING,
+            source.testMapChargingStatus(BatteryManager.BATTERY_STATUS_DISCHARGING),
+        )
+        assertEquals(ChargingStatus.NOT_CHARGING, source.testMapChargingStatus(-1))
+
+        assertEquals(PlugType.AC, source.testMapPlugType(BatteryManager.BATTERY_PLUGGED_AC))
+        assertEquals(PlugType.USB, source.testMapPlugType(BatteryManager.BATTERY_PLUGGED_USB))
+        assertEquals(PlugType.WIRELESS, source.testMapPlugType(BatteryManager.BATTERY_PLUGGED_WIRELESS))
+        assertEquals(PlugType.NONE, source.testMapPlugType(-1))
+    }
+
     private fun createTestSource(
         unit: CurrentUnit,
         convention: SignConvention,
         reliable: Boolean = true,
+        isCharging: Boolean = false,
     ): TestableGenericBatterySource {
         val profile =
             DeviceProfile(
@@ -128,9 +181,13 @@ class GenericBatterySourceTest {
                 thermalZonesAvailable = emptyList(),
                 storageHealthAvailable = true,
             )
+        val batteryManager =
+            mockk<BatteryManager>(relaxed = true) {
+                every { this@mockk.isCharging } returns isCharging
+            }
         val mockContext: Context =
             mockk {
-                every { getSystemService(Context.BATTERY_SERVICE) } returns mockk<BatteryManager>(relaxed = true)
+                every { getSystemService(Context.BATTERY_SERVICE) } returns batteryManager
             }
         return TestableGenericBatterySource(mockContext, profile, AppDispatchers())
     }
@@ -147,5 +204,13 @@ class GenericBatterySourceTest {
         fun testNormalizeCurrent(raw: Int): Int = normalizeCurrent(raw)
 
         fun testCalculateCurrentConfidence(raw: Int): Confidence = calculateCurrentConfidence(raw)
+
+        fun testAlignCurrentSignWithChargeState(currentMa: Int): Int = alignCurrentSignWithChargeState(currentMa)
+
+        fun testMapHealth(health: Int) = mapHealth(health)
+
+        fun testMapChargingStatus(status: Int) = mapChargingStatus(status)
+
+        fun testMapPlugType(plugged: Int) = mapPlugType(plugged)
     }
 }

@@ -346,7 +346,7 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 - **Build commands:**
   - Windows (PowerShell): `.\gradlew.bat assembleDebug`
   - Linux/macOS: `./gradlew assembleDebug`
-- **Security scan:** `scripts/security-check.sh` (bash) and `scripts/security-check.ps1` (PowerShell) — same behavior, pick the one matching your shell. Both write to `reports/`.
+- **Security scan:** `scripts/security-check.ps1` (PowerShell) forwards to `tools\sc.ps1` and writes to `reports/`. No Linux shell security wrapper is maintained.
 
 ## Important Notes
 
