@@ -127,7 +127,7 @@ private fun ProUpgradeContent(
         ProFeature.entries.forEach { feature ->
             FeatureRow(
                 icon = featureIcon(feature),
-                label = featureLabel(feature),
+                label = stringResource(feature.labelResId()),
             )
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
         }
@@ -259,17 +259,4 @@ private fun featureIcon(feature: ProFeature): ImageVector =
         ProFeature.THERMAL_LOGS -> Icons.Outlined.Thermostat
         ProFeature.REMAINING_CHARGE_TIME -> Icons.Outlined.BatteryChargingFull
         ProFeature.STORAGE_CLEANUP -> Icons.Outlined.Delete
-    }
-
-@Composable
-private fun featureLabel(feature: ProFeature): String =
-    when (feature) {
-        ProFeature.EXTENDED_HISTORY -> stringResource(R.string.pro_feature_extended_history)
-        ProFeature.CHARGER_COMPARISON -> stringResource(R.string.pro_feature_charger_comparison)
-        ProFeature.PER_APP_BATTERY -> stringResource(R.string.pro_feature_per_app_battery)
-        ProFeature.WIDGETS -> stringResource(R.string.pro_feature_widgets)
-        ProFeature.CSV_EXPORT -> stringResource(R.string.pro_feature_csv_export)
-        ProFeature.THERMAL_LOGS -> stringResource(R.string.pro_feature_thermal_logs)
-        ProFeature.REMAINING_CHARGE_TIME -> stringResource(R.string.pro_feature_remaining_charge_time)
-        ProFeature.STORAGE_CLEANUP -> stringResource(R.string.pro_feature_storage_cleanup)
     }

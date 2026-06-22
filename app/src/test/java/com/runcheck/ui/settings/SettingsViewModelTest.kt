@@ -100,6 +100,24 @@ class SettingsViewModelTest {
         }
 
     @Test
+    fun `seed demo insights exposes failure and clears busy flag`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            coEvery { insightDebugActions.seedDemoInsights() } throws IllegalStateException("seed failed")
+            val viewModel = createViewModel()
+            runCurrent()
+
+            viewModel.seedDemoInsights()
+            runCurrent()
+
+            assertFalse(viewModel.uiState.value.isProcessingDebugInsights)
+            assertEquals(
+                UiText.Resource(R.string.common_error_generic),
+                viewModel.uiState.value.errorMessage,
+            )
+            assertEquals(null, viewModel.uiState.value.debugStatus)
+        }
+
+    @Test
     fun `debug actions stay hidden and are not invoked when unavailable`() =
         runTest(mainDispatcherRule.testDispatcher) {
             every { insightDebugActions.isAvailable } returns false

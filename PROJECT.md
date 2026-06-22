@@ -1113,7 +1113,7 @@ When `osv-scanner`, gitleaks, TruffleHog, or PMD are missing from `PATH`, the sh
 Compatibility wrappers and config:
 
 - `scripts/security-check.ps1` forwards to `tools/sc.ps1`
-- `scripts/security-check.sh` is a Linux legacy script
+- No Linux shell security wrapper is maintained in this Windows-first repo
 - Check configuration lives in `config/semgrep/runcheck-security.yml`, `config/dependency-check/suppressions.xml`, `.mobsf`, `.deepsec/`, `.github/dependabot.yml`, `sonar-project.properties`, and `gradle/osv-scanner.toml`
 - `reports/` is ignored and must not be committed
 
