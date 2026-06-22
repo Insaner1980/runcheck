@@ -78,6 +78,7 @@ jobs:
 
       - name: OWASP Dependency-Check
         continue-on-error: true
+        timeout-minutes: 35
         run: ./gradlew :app:dependencyCheckAnalyze --no-daemon --no-configuration-cache --console=plain
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
