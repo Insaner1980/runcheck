@@ -65,6 +65,33 @@ class EnglishOnlyResourceContractTest {
         assertEquals(emptyList<String>(), hardcodedText)
     }
 
+    @Test
+    fun `runtime copy uses canonical runcheck product casing`() {
+        val checkedFiles =
+            listOf(
+                appDir.resolve("src/main/res/values/strings.xml"),
+                appDir.resolve("src/main/java/com/runcheck/domain/usecase/ExportDataUseCase.kt"),
+            )
+
+        val casingViolations =
+            checkedFiles
+                .flatMap { path ->
+                    val relativePath = appDir.relativize(path)
+                    path
+                        .readText()
+                        .lineSequence()
+                        .mapIndexedNotNull { index, line ->
+                            if (line.contains("Runcheck") || line.contains("runcheck pro")) {
+                                "$relativePath:${index + 1}:$line"
+                            } else {
+                                null
+                            }
+                        }.toList()
+                }.sorted()
+
+        assertEquals(emptyList<String>(), casingViolations)
+    }
+
     private fun findAppDir(): Path {
         val start = Paths.get("").toAbsolutePath()
         return generateSequence(start) { it.parent }

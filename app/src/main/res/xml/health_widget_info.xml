@@ -8,6 +8,7 @@
     android:maxResizeHeight="300dp"
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/glance_default_loading_layout"
+    android:previewImage="@drawable/widget_health_preview_image"
     android:previewLayout="@layout/widget_health_preview"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"

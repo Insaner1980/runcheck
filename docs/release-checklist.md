@@ -5,6 +5,7 @@
 ### Billing
 - [ ] Create in-app product `runcheck_pro` in Google Play Console
 - [ ] Set price for Pro upgrade
+- [ ] Keep `runcheck_pro` as a one-time `INAPP` product with one backward-compatible buy option, or update app offer-token selection before adding multiple one-time purchase offers
 - [ ] Test purchase flow with license testers
 
 ### Signing
@@ -30,25 +31,25 @@
 - [ ] Add URL to Google Play Console
 
 ### Assets
-- [ ] Design final app icon (512x512 for Play Store, adaptive icon for app)
+- [x] Design final app icon (512x512 for Play Store, adaptive icon for app). Verify or regenerate exports with `tools\export-launcher-icons.ps1`.
 - [ ] Create feature graphic (1024x500)
 - [ ] Take screenshots on phone (minimum 2, recommended 4-8)
 - [ ] Take screenshots on tablet (if targeting tablets)
 
 ## Release Build
 
-```bash
+```powershell
 # Set signing environment variables first, then:
-./gradlew bundleRelease
+.\gradlew.bat --no-configuration-cache --project-prop=runcheck.releaseVersionCodeFloor=<latest-published-versionCode> copyReleaseArtifacts
 ```
 
-The AAB file will be at `app/build/outputs/bundle/release/app-release.aab`.
+Use `0` for `runcheck.releaseVersionCodeFloor` before the first Play upload. The versioned AAB file will be at `app/build/outputs/release-upload/runcheck-<versionName>-code<versionCode>-release.aab`.
 
 ## Version Bumping
 
 Update `app/build.gradle.kts`:
-- `versionCode`: Increment by 1 for each upload (1, 2, 3...)
-- `versionName`: Follow semantic versioning (1.0.0, 1.1.0, 1.2.0...)
+- `currentReleaseVersionCode`: Increment by 1 for each upload (1, 2, 3...)
+- `currentReleaseVersionName`: Follow semantic versioning (1.0.0, 1.1.0, 1.2.0...)
 
 ## Google Play Console Upload
 

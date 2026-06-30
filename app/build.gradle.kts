@@ -1,20 +1,37 @@
+import org.gradle.api.configuration.BuildFeatures
 import org.gradle.api.tasks.testing.Test
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import java.io.StringReader
 import java.util.Properties
+import javax.inject.Inject
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.room)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
     alias(libs.plugins.owasp.dependency.check)
     alias(libs.plugins.stability.analyzer)
     jacoco
 }
+
+abstract class BuildFeatureAccess
+    @Inject
+    constructor(
+        val buildFeatures: BuildFeatures,
+    )
+
+val configurationCacheRequested =
+    objects
+        .newInstance<BuildFeatureAccess>()
+        .buildFeatures
+        .configurationCache
+        .requested
+        .getOrElse(false)
 
 val releaseSigningEnvNames =
     listOf(
@@ -24,19 +41,48 @@ val releaseSigningEnvNames =
         "RUNCHECK_KEY_PASSWORD",
     )
 
-val missingReleaseSigningEnvNames =
+fun missingReleaseSigningEnvNames(): List<String> =
     releaseSigningEnvNames.filter { envName ->
         providers.environmentVariable(envName).orNull.isNullOrBlank()
     }
+
 val releaseSigningAvailable =
-    missingReleaseSigningEnvNames.isEmpty()
+    !configurationCacheRequested && missingReleaseSigningEnvNames().isEmpty()
 val debugCredentialsFile = rootProject.layout.projectDirectory.file("debug.credentials.properties")
 val debugCredentialsText = providers.fileContents(debugCredentialsFile).asText.orElse("")
 val defaultLatencyHost = "locate.measurementlab.net"
+val defaultProProductId = "runcheck_pro"
+val currentReleaseVersionCode = 1
+val currentReleaseVersionName = "1.0.0"
+val releaseVersionCodeFloorPropertyName = "runcheck.releaseVersionCodeFloor"
+val releaseVersionCodeFloorEnvName = "RUNCHECK_RELEASE_VERSION_CODE_FLOOR"
+val releaseVersionCodeFloorValue =
+    providers
+        .gradleProperty(releaseVersionCodeFloorPropertyName)
+        .orElse(providers.environmentVariable(releaseVersionCodeFloorEnvName))
 
 fun requiredReleaseEnv(name: String): String =
     providers.environmentVariable(name).orNull?.takeIf { it.isNotBlank() }
         ?: error("Release signing requires the $name environment variable.")
+
+fun requiredReleaseVersionCodeFloor(): Int {
+    val rawValue =
+        releaseVersionCodeFloorValue.orNull
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?: error(
+                "Release artifacts require the latest published versionCode via " +
+                    "--project-prop=$releaseVersionCodeFloorPropertyName=<code> or $releaseVersionCodeFloorEnvName. " +
+                    "Use 0 before the first Play upload.",
+            )
+    val releaseVersionCodeFloor =
+        rawValue.toIntOrNull()
+            ?: error("$releaseVersionCodeFloorPropertyName must be a non-negative integer.")
+    require(releaseVersionCodeFloor >= 0) {
+        "$releaseVersionCodeFloorPropertyName must be a non-negative integer."
+    }
+    return releaseVersionCodeFloor
+}
 
 fun debugCredential(
     name: String,
@@ -55,9 +101,58 @@ fun debugCredential(
 }
 
 fun quotedBuildConfigValue(value: String): String =
-    "\"${value
-        .replace("\\", "\\\\")
-        .replace("\"", "\\\"")}\""
+    buildString {
+        append('"')
+        value.forEach { character ->
+            when (character) {
+                '\\' -> {
+                    append("\\\\")
+                }
+
+                '"' -> {
+                    append("\\\"")
+                }
+
+                '\n' -> {
+                    append("\\n")
+                }
+
+                '\r' -> {
+                    append("\\r")
+                }
+
+                '\t' -> {
+                    append("\\t")
+                }
+
+                '\b' -> {
+                    append("\\b")
+                }
+
+                '\u000C' -> {
+                    append("\\f")
+                }
+
+                '\u2028' -> {
+                    append("\\u2028")
+                }
+
+                '\u2029' -> {
+                    append("\\u2029")
+                }
+
+                else -> {
+                    if (character.code < 0x20 || character.code == 0x7F) {
+                        append("\\u")
+                        append(character.code.toString(16).padStart(4, '0'))
+                    } else {
+                        append(character)
+                    }
+                }
+            }
+        }
+        append('"')
+    }
 
 fun validatedPlayProductId(
     envName: String,
@@ -103,13 +198,72 @@ fun validatedLatencyPort(
     return port
 }
 
+fun isReleaseArtifactTaskName(name: String): Boolean =
+    name == "copyReleaseArtifacts" ||
+    (
+        name.endsWith("Release") &&
+            (
+                name.startsWith("assemble") ||
+                    name.startsWith("bundle") ||
+                    name.startsWith("package") ||
+                    name.startsWith("publish")
+            )
+    ) ||
+        name in
+        setOf(
+            "packageReleaseBundle",
+            "packageReleaseUniversalApk",
+            "signReleaseBundle",
+        )
+
+fun requestedTaskName(taskPath: String): String =
+    taskPath.substringAfterLast(':').takeIf { it.isNotBlank() } ?: taskPath
+
+fun isReleaseArtifactTaskRequested(): Boolean =
+    gradle.startParameter.taskNames.any { taskPath ->
+        isReleaseArtifactTaskName(requestedTaskName(taskPath))
+    }
+
+fun validateReleaseArtifactRequest() {
+    if (configurationCacheRequested) {
+        error(
+            "Signed release artifact tasks must be run with --no-configuration-cache " +
+                "so RUNCHECK_* signing secrets are not stored in configuration-cache entries.",
+        )
+    }
+
+    val releaseVersionCodeFloor = requiredReleaseVersionCodeFloor()
+    if (currentReleaseVersionCode <= releaseVersionCodeFloor) {
+        error(
+            "Release versionCode $currentReleaseVersionCode must be greater than " +
+                "latest published versionCode $releaseVersionCodeFloor.",
+        )
+    }
+
+    if (!releaseSigningAvailable) {
+        error(
+            "Release signing requires these missing environment variables: " +
+                missingReleaseSigningEnvNames().joinToString(),
+        )
+    }
+}
+
 jacoco {
     toolVersion = libs.versions.jacoco.get()
 }
 
+java {
+    toolchain {
+        languageVersion.set(
+            org.gradle.jvm.toolchain.JavaLanguageVersion
+                .of(17),
+        )
+    }
+}
+
 android {
     namespace = "com.runcheck"
-    compileSdkPreview = "CinnamonBun"
+    compileSdk = 37
 
     sourceSets {
         getByName("androidTest") {
@@ -117,28 +271,22 @@ android {
         }
     }
 
-    androidResources {
-        localeFilters += listOf("en")
+    room {
+        schemaDirectory("$projectDir/schemas")
     }
 
-    installation {
-        // Preview SDK -buildin testOnly-APK vaatii adb install -t -lipun.
-        installOptions.add("-t")
+    androidResources {
+        localeFilters += listOf("en")
     }
 
     defaultConfig {
         applicationId = "com.runcheck"
         minSdk = 26
-        targetSdkPreview = "CinnamonBun"
-        versionCode = 1
-        versionName = "1.0.0"
+        targetSdk = 37
+        versionCode = currentReleaseVersionCode
+        versionName = currentReleaseVersionName
         buildConfigField("String", "ROOM_DB_NAME", "\"runcheck.db\"")
-        val proProductId =
-            validatedPlayProductId(
-                "RUNCHECK_PRO_PRODUCT_ID",
-                providers.environmentVariable("RUNCHECK_PRO_PRODUCT_ID").getOrElse("runcheck_pro"),
-            )
-        buildConfigField("String", "PRO_PRODUCT_ID", quotedBuildConfigValue(proProductId))
+        buildConfigField("String", "PRO_PRODUCT_ID", quotedBuildConfigValue(defaultProProductId))
         buildConfigField("String", "LATENCY_HOST", quotedBuildConfigValue(defaultLatencyHost))
         buildConfigField("int", "LATENCY_PORT", "443")
 
@@ -161,12 +309,17 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("boolean", "ROOM_DEBUG_TOOLS_ENABLED", "true")
             buildConfigField(
                 "String",
                 "SENTRY_DSN",
                 quotedBuildConfigValue(debugCredential("sentry.dsn", "RUNCHECK_SENTRY_DSN", "SENTRY_DSN")),
             )
+            val debugProProductId =
+                validatedPlayProductId(
+                    "RUNCHECK_PRO_PRODUCT_ID",
+                    providers.environmentVariable("RUNCHECK_PRO_PRODUCT_ID").getOrElse(defaultProProductId),
+                )
+            buildConfigField("String", "PRO_PRODUCT_ID", quotedBuildConfigValue(debugProProductId))
             val debugLatencyHost =
                 validatedLatencyHost(
                     "RUNCHECK_LATENCY_HOST",
@@ -182,9 +335,9 @@ android {
         }
         release {
             isDebuggable = false
+            isJniDebuggable = false
             isMinifyEnabled = true
             isShrinkResources = true
-            buildConfigField("boolean", "ROOM_DEBUG_TOOLS_ENABLED", "false")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -234,7 +387,6 @@ android {
         // Intentionally disabled — too noisy or not relevant
         disable +=
             setOf(
-                "OldTargetApi", // targeting CinnamonBun preview
                 "GradleDependency", // version bumps are manual decisions
                 "AndroidGradlePluginVersion",
                 "NotificationPermission", // already handled at runtime in Settings
@@ -249,29 +401,32 @@ android {
     }
 }
 
-gradle.taskGraph.whenReady {
-    val releaseArtifactsRequested =
-        allTasks.any { task ->
-            val name = task.name
-            name.endsWith("Release") &&
-                (
-                    name.startsWith("assemble") ||
-                        name.startsWith("bundle") ||
-                        name.startsWith("package") ||
-                        name.startsWith("publish")
-                )
-        }
+val releaseArtifactBaseName = "runcheck-$currentReleaseVersionName-code$currentReleaseVersionCode-release"
 
-    if (releaseArtifactsRequested && !releaseSigningAvailable) {
-        error(
-            "Release signing requires these missing environment variables: " +
-                missingReleaseSigningEnvNames.joinToString(),
-        )
+tasks.register<Copy>("copyReleaseArtifacts") {
+    group = "distribution"
+    description = "Copies release APK/AAB outputs to versioned upload filenames."
+    dependsOn("assembleRelease", "bundleRelease")
+
+    from(layout.buildDirectory.file("outputs/apk/release/app-release.apk")) {
+        rename { "$releaseArtifactBaseName.apk" }
     }
+    from(layout.buildDirectory.file("outputs/bundle/release/app-release.aab")) {
+        rename { "$releaseArtifactBaseName.aab" }
+    }
+    into(layout.buildDirectory.dir("outputs/release-upload"))
 }
 
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
+if (isReleaseArtifactTaskRequested()) {
+    validateReleaseArtifactRequest()
+}
+
+tasks.configureEach {
+    if (isReleaseArtifactTaskName(name)) {
+        doFirst {
+            validateReleaseArtifactRequest()
+        }
+    }
 }
 
 hilt {
@@ -294,6 +449,17 @@ detekt {
     config.setFrom("$rootDir/config/detekt/detekt.yml")
     baseline = file("detekt-baseline.xml")
     parallel = true
+}
+
+composeStabilityAnalyzer {
+    stabilityValidation {
+        enabled.set(true)
+        outputDir.set(layout.projectDirectory.dir("stability"))
+        includeTests.set(false)
+        failOnStabilityChange.set(true)
+        ignoreNonRegressiveChanges.set(false)
+        allowMissingBaseline.set(false)
+    }
 }
 
 dependencyCheck {
@@ -464,11 +630,7 @@ tasks.register<JacocoReport>("jacocoDebugUnitTestReport") {
     )
 }
 
-tasks.configureEach {
-    if (name.startsWith("hiltJavaCompile") && name.endsWith("UnitTest")) {
-        enabled = false
-    }
-}
+val roomSerializationConstraintReason = "Room migration helpers require aligned kotlinx.serialization artifacts"
 
 dependencies {
     constraints {
@@ -479,16 +641,19 @@ dependencies {
             because("Keep Kotlin JDK adapter artifacts aligned with the resolved Kotlin runtime line")
         }
         implementation(libs.kotlinx.serialization.core) {
-            because("Room 2.8.4 migration helpers require kotlinx.serialization 1.8.1")
+            because(roomSerializationConstraintReason)
         }
         implementation(libs.kotlinx.serialization.json) {
-            because("Room 2.8.4 migration helpers require kotlinx.serialization 1.8.1")
+            because(roomSerializationConstraintReason)
+        }
+        implementation(libs.lifecycle.viewmodel.compose) {
+            because("Keep transitive Lifecycle Compose artifacts aligned with the verified lifecycle version")
         }
         androidTestImplementation(libs.kotlinx.serialization.core) {
-            because("Room 2.8.4 migration helpers require kotlinx.serialization 1.8.1")
+            because(roomSerializationConstraintReason)
         }
         androidTestImplementation(libs.kotlinx.serialization.json) {
-            because("Room 2.8.4 migration helpers require kotlinx.serialization 1.8.1")
+            because(roomSerializationConstraintReason)
         }
     }
 
@@ -509,7 +674,6 @@ dependencies {
 
     // Lifecycle
     implementation(libs.lifecycle.runtime.compose)
-    implementation(libs.lifecycle.viewmodel.compose)
 
     // Room
     implementation(libs.room.runtime)
@@ -519,7 +683,7 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
-    implementation(libs.hilt.navigation.compose)
+    implementation(libs.hilt.lifecycle.viewmodel.compose)
 
     // Hilt WorkManager
     implementation(libs.hilt.work)
@@ -544,13 +708,14 @@ dependencies {
     implementation(libs.activity.compose)
 
     // Baseline Profile
-    implementation(libs.profileinstaller)
+    runtimeOnly(libs.profileinstaller)
 
     // Gson
     implementation(libs.gson)
 
     // M-Lab NDT7 speed test
     implementation(libs.ndt7)
+    // NDT7 references OkHttp APIs, but the JitPack POM does not declare them.
     implementation(libs.okhttp)
 
     // Google Play Billing

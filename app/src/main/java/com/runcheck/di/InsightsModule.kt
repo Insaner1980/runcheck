@@ -2,6 +2,7 @@ package com.runcheck.di
 
 import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.rules.AppBatteryImpactRule
+import com.runcheck.domain.insights.rules.BaselineAnomalyRule
 import com.runcheck.domain.insights.rules.BatteryDegradationTrendRule
 import com.runcheck.domain.insights.rules.ChargerPerformanceRule
 import com.runcheck.domain.insights.rules.HeatAcceleratedBatteryWearRule
@@ -64,4 +65,8 @@ interface InsightsModule {
     @Binds
     @IntoSet
     fun bindThermalPatternDetectionRule(rule: ThermalPatternDetectionRule): InsightRule
+
+    @Binds
+    @IntoSet
+    fun bindBaselineAnomalyRule(rule: BaselineAnomalyRule): InsightRule
 }

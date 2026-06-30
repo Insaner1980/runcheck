@@ -1,7 +1,6 @@
 package com.runcheck.ui.home
 
 import android.content.Intent
-import android.net.Uri
 import android.provider.Settings
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
@@ -81,7 +80,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.domain.model.HealthScore
@@ -445,16 +444,11 @@ private fun MonitoringStaleWarning(onLearnWhy: () -> Unit) {
     val context = LocalContext.current
     Card(
         onClick = {
-            val intent =
-                Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                    data = Uri.parse("package:${context.packageName}")
-                }
             try {
-                context.startActivity(intent)
+                context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
             } catch (_: android.content.ActivityNotFoundException) {
-                // Fallback to general battery optimization settings
                 try {
-                    context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                    context.startActivity(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS))
                 } catch (e: android.content.ActivityNotFoundException) {
                     ReleaseSafeLog.warn(TAG, "Failed to open battery optimization settings", e)
                 }

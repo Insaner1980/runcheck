@@ -1,160 +1,152 @@
-# runcheck — Project Status
+# runcheck - Project Status
 
-**Date:** 2026-03-28
+**Date:** 2026-06-23
 **Version:** 1.0.0 (versionCode 1)
-**Build:** Compiles successfully (Gradle 9.4.0, AGP 9.1.0, Kotlin 2.3.0)
-**Tests:** 29 unit tests passing, 1 instrumented test (Room migration)
+**Build configuration:** Gradle wrapper 9.4.0, AGP 9.1.1, Kotlin plugin 2.3.0, Kotlin runtime constraints 2.3.20, Compose BOM 2026.03.00
+**Android SDK:** Android 17 (API 37) compile/target, minSdk 26
+**Database:** Room schema version 10 with exported schemas for versions 6-10
+**Test surface:** 74 JVM unit-test files and 1 instrumented migration-test file in the live checkout
 
 ---
 
 ## Implemented Features
 
-### Core Monitoring (4 categories)
+### Core Monitoring
 
 **Battery**
-- Real-time level, temperature, voltage, current (mA), power (W)
-- Health score, charging status, battery health percentage
-- Design capacity via PowerProfile, estimated capacity from health
-- Current stats (avg/min/max) that reset on charge state change
-- Screen on/off drain tracking with deep sleep / held awake detection
-- Long-term statistics (charged/discharged totals, session counts, drain rates)
-- History charts: Since Unplug, Day, Week, Month, All periods
-- Session graph: current and power charts with 15m/30m/All windows
-- Manufacturer-specific handling (Samsung, OnePlus, Pixel, API 34+, generic fallback)
-- Confidence badges (Accurate / Estimated / Unavailable)
+- Real-time level, temperature, voltage, current (mA), power (W), charge status, plug type, and health indicators
+- Battery current reliability validation with confidence labels surfaced to users
+- Battery health percentage, cycle-count support where available, design/estimated capacity paths, and manufacturer-specific handling
+- Screen on/off drain tracking, deep sleep / held-awake analysis, long-term statistics, and charging-session summaries
+- History charts for supported periods plus live current/power charting during charging
+- Pro-only remaining charge time estimates when the current session data is meaningful
 
 **Network**
-- WiFi/cellular type detection, signal strength (dBm), signal bars
-- Latency and jitter measurement
-- Speed test (NDT7 protocol) with upload/download, server selection, history
-- Live signal history chart with period selection
+- Wi-Fi/cellular type detection, signal strength, signal bars, SSID/IP/DNS details where Android permits access
+- On-device connection detail collection plus explicit latency measurement
+- User-initiated M-Lab NDT7 speed tests with download/upload, ping/jitter, cellular warning, and history
+- Network history with Pro-aware retention/period behavior
 
 **Thermal**
-- CPU temperature from thermal zones, thermal headroom
-- Session min/max tracking
-- Temperature history chart
-- Normal/warm/critical status indicators
+- PowerManager thermal status and headroom paths with battery/CPU temperature display where available
+- Temperature history, min/max tracking, and thermal status indicators
+- Pro-gated throttling log backed by `throttling_events`
+- Throttling events can store the foreground app through the app-usage foreground provider
 
 **Storage**
-- Used/available space with fill rate (linear regression, 7-day lookback)
-- Media breakdown: Images, Videos, Audio, Documents, Downloads, Other (SegmentedBar)
-- Cleanup tools: Large Files, Old Downloads, APK Files, Trash (API 30+)
-- Cleanup screen with thumbnails, category groups, before/after projection
-- SD card detection
-- Storage details: file system, encryption, volumes
+- Used/available storage, media breakdown, fill-rate projection, SD-card detection, and storage technical details
+- Pro-gated cleanup tools for large files, old downloads, APK files, and trash where supported by the Android version
+- Cleanup flow uses category-grouped file lists, thumbnails, delete requests, and before/after projection
 
-### Home Screen (Dashboard)
-- Unified health score from all 4 categories
-- Grid of metric cards with sparkline trend charts
-- Quick Tools card (Learn, Charger Comparison, App Usage links)
-- Pull-to-refresh
-- Adaptive layout (2x2 phones, 1x4 wide screens)
+### Home And Navigation
 
-### Background Monitoring
-- WorkManager periodic readings (configurable: 15/30/60 min)
-- Real-time foreground service for live notification (opt-in)
-- Live notification: BigTextStyle, updates every 5s, configurable metrics
-- Alert system: Low Battery, High Temperature, Low Storage, Charge Complete
-- Configurable thresholds (battery 5-50%, temp 35-50C, storage 70-99%)
-- Boot receiver for restart after reboot
+- Home dashboard with unified health score, metric cards, quick tools, trial/Pro state surfaces, stale-monitoring state, and pull-to-refresh
+- Dedicated screens for Insights, Battery, Network, Thermal, Storage, Cleanup, Charger Comparison, App Usage, Learn, Settings, Pro Upgrade, and fullscreen charts
+- Route-backed and process-death-sensitive state is handled through `SavedStateHandle` where needed
 
-### Home Screen Widgets (Pro)
-- Battery Widget (2x1): level, temperature, current
-- Health Widget (2x2): overall score + 4 mini indicators
-- Glance API (Compose-based)
+### Insights
 
-### Charger Comparison (Pro)
-- Charger session tracking and profiles
-- Fill rate calculation
-- Session history with comparison view
+- Room-backed Insights Engine with persisted `insights` rows and `InsightGenerationWorker` scheduled through `MonitorScheduler`
+- Home shows a curated subset of up to three visible insights; the dedicated Insights screen shows the full visible active list
+- Implemented rules:
+  - `BatteryDegradationTrendRule`
+  - `BaselineAnomalyRule`
+  - `AppBatteryImpactRule`
+  - `ChargerPerformanceRule`
+  - `StoragePressureProjectionRule`
+  - `RecurringThermalThrottlingRule`
+  - `HeavyAppUsageRule`
+  - `NetworkSignalPatternRule`
+  - `NetworkDrivenBatteryDrainRule`
+  - `HeatAcceleratedBatteryWearRule`
+  - `StoragePressureImpactRule`
+  - `ThermalPatternDetectionRule`
+- Insights are generally available, but insights targeting Pro-only destinations are filtered for free users:
+  - `APP_USAGE`
+  - `CHARGER`
+- Debug builds expose source-set-specific Insight seeding/regeneration tools; release builds bind a no-op `ReleaseSafeInsightDebugActions`
 
-### Per-App Battery Usage (Pro)
-- Foreground app detection
-- Battery drain correlation
-- Daily/weekly rankings
+### Pro And Monetization
 
-### Educational Content (free, 3 tiers)
-- Tier 1: Info Bottom Sheets — 51 metric explanations via (?) icons
-- Tier 2: Contextual Info Cards — 11 dismissible cards shown conditionally
-- Tier 3: Learn Section — 15 articles in 5 topics, accessible from Home
+- One-time Google Play Billing product ID path for `runcheck_pro`
+- Effective Pro access is trial-aware: active trial and purchased Pro both count as Pro
+- Debug billing path can auto-enable Pro for local development
+- Current `ProFeature` enum entries:
+  - Extended History
+  - Charger Comparison
+  - Per-App Battery
+  - Widgets
+  - CSV Export
+  - Thermal Logs
+  - Remaining Charge Time
+  - Storage Cleanup
 
-### Settings
-- Monitoring interval selection
-- Live notification with per-metric toggles
-- Per-alert notification toggles with threshold sliders
-- Temperature unit (C/F)
-- Data retention (Pro), CSV export (Pro), clear data with confirmation dialogs
-- Pro status display, purchase, restore
-- Device info (model, API level, reliability, cycle count, thermal zones)
+### Background Work, Notifications, And Widgets
 
-### Pro / Monetization
-- One-time in-app purchase (EUR 3.49) via Google Play Billing 8.3.0
-- 7-day free trial with expiration notification
-- 6 gated features: Extended History, Charger Comparison, Per-App Battery, Widgets, CSV Export, Thermal Logs
-- Debug builds auto-enable Pro
+- `HealthMonitorWorker` collects snapshots and evaluates alerts
+- `HealthMaintenanceWorker` refreshes app-usage data, performs cleanup, and refreshes widgets
+- `InsightGenerationWorker` regenerates persisted insights on the monitoring scheduler lifecycle
+- `RealTimeMonitorService` is an opt-in foreground service controlled from Settings
+- Alerts cover low battery, high temperature, low storage, and charge complete with settings-controlled thresholds/toggles
+- Glance widgets are present and treated as a Pro feature
 
-### Charts & Animations
-- TrendChart: oscilloscope sweep entry, status gradient line, quality zones, tap/drag tooltip, min/avg/max pills
-- AreaChart: oscilloscope sweep + height-proportional fill
-- LiveChart: smooth scroll with glow pulse
-- All animations respect reduced motion preference
+### Settings And Data
 
-### Code Quality & Security
-- Static analysis: Detekt + Compose Rules, ktlint, Android Lint, SonarCloud
-- SonarCloud issue counts and quality-gate state are tracked in the dashboard instead of being hardcoded here
-- CI: CodeQL security scanning
-- R8/ProGuard enabled for release
-- Explicit PendingIntents with FLAG_IMMUTABLE
-- No cleartext traffic, no exported components without justification
-- No analytics, no tracking, no crash reporting, no network calls except latency/speed test
+- Settings include monitoring interval, notification toggles, live notification metric toggles, temperature unit, data retention, CSV export, data clearing, Pro state, device profile, and debug Insights availability where applicable
+- DataStore stores preferences and feature state
+- Room stores battery, network, thermal, throttling, storage, charger, speed-test, app-usage, device, and insight data
+- `PACKAGE_USAGE_STATS` is declared in the manifest for app-usage based features
+
+### Code Quality And Security
+
+- Local wrapper tooling exists for lint, security, dependency, duplicate, Compose stability, Google Android lint, Sonar, and related checks
+- GitHub workflows exist for CodeQL, Qodana, security/dependency scanning, and SonarCloud
+- Release builds use R8/ProGuard configuration
+- Release path must remain telemetry-free; debug-only Sentry wiring is source-set separated
+- No analytics/tracking path is part of the current product contract
 
 ---
 
-## Not Yet Implemented
+## Not Yet Implemented Or Still External
+
+### Insights Follow-Ups
+
+- The current `InsightEngine` does not enforce a global "maximum one new insight per day across all rules" cap. It evaluates every bound rule, replaces results per rule, and leaves visible Home curation to `InsightHomeRankingPolicy`.
 
 ### Localization
-- English only — Finnish translations were removed (preserved in git history)
-- No multi-language support in current build
 
-### Play Store Assets
-- No feature graphic (1024x500)
-- No screenshots for store listing
-- Play Store listing text drafted (`docs/play-store-listing.md`) but not submitted
-- Privacy policy drafted (`docs/privacy-policy.md`) but not hosted
+- The app is intentionally English-only in the current build.
+- No multi-language resource set is active.
+
+### Play Store And Release Assets
+
+- Feature graphic and screenshot assets were not found in the repository.
+- Play Store listing text exists in `docs/play-store-listing.md`, but repository files cannot prove whether it has been submitted.
+- Privacy policy exists in `docs/privacy-policy.md`, but repository files cannot prove whether it is hosted at a public URL.
+- `docs/release-checklist.md` still tracks open Play Console, signing, privacy policy, asset, and upload steps.
+- No release upload workflow was found; existing CI workflows focus on analysis/security/quality gates rather than automated release publishing.
 
 ### Testing Gaps
-- 29 unit tests + 1 instrumented test — covers core logic but not comprehensive
-- No Compose UI tests
-- No end-to-end tests
-- No device compatibility test matrix
 
-### Release Process
-- Release signing configured in build.gradle.kts but keystore not in repo (expected)
-- Release checklist drafted (`docs/release-checklist.md`) but not executed
-- No Play Console account setup documented
-- No beta testing track configured
-- No CI/CD for automated release builds (only CodeQL)
-
-### Missing Minor Features
-- PACKAGE_USAGE_STATS permission not declared in manifest (needed for per-app battery usage)
-- Thermal throttling log screen exists but correlation with app usage not fully integrated
-- Widget click-through navigation may need refinement on some launchers
+- Unit coverage is broader than the old status file stated, but this is still not a complete end-to-end matrix.
+- No dedicated Compose UI test suite was found.
+- No full device compatibility matrix was found.
+- The Room migration test is instrumented and requires a connected emulator/device.
 
 ---
 
-## Project Structure
+## Project Structure Snapshot
 
-```
-37 domain use cases
-34 UI components (28 shared + 6 info)
-15 screens with navigation
-11 ViewModels
-13 repository interfaces
-10 Room database tables
-29 unit tests + 1 instrumented test
-15 Learn articles
-51 info bottom sheets
-11 contextual info cards
+```text
+Main module: app
+Package root: com.runcheck
+Source sets: main, debug, release
+Room schema version: 10
+Room entity files: 11
+Domain use-case files: 37
+ViewModel files: 12
+JVM unit-test files: 74
+Instrumented test files: 1
 ```
 
 ---
@@ -163,10 +155,13 @@
 
 | File | Content |
 |------|---------|
-| `CLAUDE.md` | Architecture, conventions, design system |
-| `docs/plans/2026-03-10-phase1-completion-and-roadmap.md` | Original Phase 1-4 roadmap |
+| `PROJECT.md` | Main live-state project snapshot and review reference |
+| `AGENTS.md` / `CODEX.md` | Agent instructions, architecture rules, tooling, and review priorities |
+| `UI-SPEC.md` | Visual system and UI behavior reference |
+| `INSIGHTS_REMAINING.md` | Current Insights rollout follow-up tracker |
+| `insights-engine-phase1-spec.md` | Historical Phase 1 Insights implementation spec |
+| `insights-engine-phase2-spec.md` | Historical/future Phase 2 Insights rule spec; not all claims are current runtime behavior |
 | `docs/release-checklist.md` | Release build and Play Store checklist |
-| `docs/play-store-listing.md` | Play Store listing content |
-| `docs/privacy-policy.md` | Privacy policy |
-| `educational-content-system.md` | Three-tier educational content spec |
-| `docs/CHANGELOG.md` | Auto-generated changelog from git |
+| `docs/play-store-listing.md` | Draft Play Store listing copy |
+| `docs/privacy-policy.md` | Draft privacy policy |
+| `docs/CHANGELOG.md` | Generated changelog from git history |

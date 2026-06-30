@@ -1,7 +1,6 @@
 package com.runcheck.ui.settings
 
 import android.content.Intent
-import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -596,15 +595,11 @@ private fun BatteryOptimizationRow(context: android.content.Context) {
 }
 
 private fun openBatteryOptimizationSettings(context: android.content.Context) {
-    val requestIntent =
-        Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-            data = Uri.parse("package:${context.packageName}")
-        }
     try {
-        context.startActivity(requestIntent)
+        context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
     } catch (_: android.content.ActivityNotFoundException) {
         try {
-            context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+            context.startActivity(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS))
         } catch (exception: android.content.ActivityNotFoundException) {
             ReleaseSafeLog.warn(
                 TAG,

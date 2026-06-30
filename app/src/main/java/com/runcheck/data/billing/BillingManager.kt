@@ -48,7 +48,6 @@ import kotlin.coroutines.resume
  * not a data repository — it must be explicitly initialized and destroyed.
  */
 @Singleton
-@Suppress("DEPRECATION")
 class BillingManager
     @Inject
     constructor(
@@ -115,6 +114,7 @@ class BillingManager
                 BillingClient
                     .newBuilder(context)
                     .setListener(this)
+                    .enableAutoServiceReconnection()
                     .enablePendingPurchases(
                         PendingPurchasesParams
                             .newBuilder()

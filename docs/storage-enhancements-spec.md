@@ -1,5 +1,7 @@
 # Storage Enhancements Spec
 
+> Historiallinen suunnitelma (maaliskuu 2026). Tätä ei pidä käyttää nykytilan lähteenä sellaisenaan. Tarkista nykyinen storage-toteutus `PROJECT.md`:stä ja koodista (`StorageRepositoryImpl`, `CalculateFillRateUseCase`, `MediaStoreScanner`, `CleanupType`), koska osa tämän dokumentin "Nykytila"-, placeholder- ja "UUSI"-merkinnöistä on jo toteutettu tai korvattu.
+
 Kattava suunnitelma storage-näkymän laajentamiseksi. Yhdistää informatiiviset osiot ja toiminnalliset työkalut.
 
 Perustuu Android 11–16 API-rajoitusten analyysiin (maaliskuu 2026).

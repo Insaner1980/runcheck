@@ -24,6 +24,7 @@ import com.runcheck.util.putEnum
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -278,7 +279,7 @@ class NetworkViewModel
             historyNetworkJob = observeNetworkHistory()
         }
 
-        @OptIn(ExperimentalCoroutinesApi::class)
+        @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
         private fun observeNetworkSnapshot() =
             viewModelScope.launch {
                 combine(

@@ -2,6 +2,8 @@ package com.runcheck.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,51 +43,59 @@ class HealthWidget : GlanceAppWidget() {
         context: Context,
         id: GlanceId,
     ) {
-        if (!WidgetDataProvider.isProUnlocked(context)) {
-            provideContent { WidgetLockedContent(context, R.string.widget_health_name) }
-            return
+        provideContent {
+            val widgetState by
+                WidgetDataProvider
+                    .observeHealthWidgetState(context)
+                    .collectAsState(initial = WidgetRenderState.Locked)
+
+            when (val state = widgetState) {
+                WidgetRenderState.Empty -> WidgetEmptyContent(context)
+                WidgetRenderState.Locked -> WidgetLockedContent(context, R.string.widget_health_name)
+                is WidgetRenderState.Content -> HealthWidgetContent(context, state.snapshot)
+            }
         }
-        val snapshot = WidgetDataProvider.loadHealthSnapshot(context)
-        if (snapshot == null) {
-            provideContent { WidgetEmptyContent(context) }
-            return
-        }
+    }
+
+    @Composable
+    private fun HealthWidgetContent(
+        context: Context,
+        snapshot: HealthWidgetSnapshot,
+    ) {
         val healthScoreLabel = context.getString(R.string.widget_health_score_label)
         val batteryLabel = context.getString(R.string.widget_battery_short_label)
         val batteryValue = context.getString(R.string.widget_percent_value, snapshot.batteryLevel)
 
-        provideContent {
-            GlanceTheme {
-                val size = LocalSize.current
-                Column(
-                    modifier = widgetContainerModifier(),
-                    verticalAlignment = Alignment.CenterVertically,
+        GlanceTheme {
+            val size = LocalSize.current
+            Column(
+                modifier = widgetContainerModifier(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = snapshot.overallScore.toString(),
+                    style =
+                        TextStyle(
+                            fontSize = if (size.width >= LARGE.width) 48.sp else 40.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GlanceTheme.colors.onSurface,
+                        ),
+                )
+                Text(
+                    text = healthScoreLabel,
+                    style =
+                        TextStyle(
+                            fontSize = 12.sp,
+                            color = GlanceTheme.colors.onSurfaceVariant,
+                        ),
+                )
+                Spacer(modifier = GlanceModifier.height(8.dp))
+                Row(
+                    modifier = GlanceModifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(
-                        text = snapshot.overallScore.toString(),
-                        style =
-                            TextStyle(
-                                fontSize = if (size.width >= LARGE.width) 48.sp else 40.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = GlanceTheme.colors.onSurface,
-                            ),
-                    )
-                    Text(
-                        text = healthScoreLabel,
-                        style =
-                            TextStyle(
-                                fontSize = 12.sp,
-                                color = GlanceTheme.colors.onSurfaceVariant,
-                            ),
-                    )
-                    Spacer(modifier = GlanceModifier.height(8.dp))
-                    Row(
-                        modifier = GlanceModifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        MiniIndicator(label = batteryLabel, value = batteryValue)
-                    }
+                    MiniIndicator(label = batteryLabel, value = batteryValue)
                 }
             }
         }

@@ -49,7 +49,7 @@ class ExportDataUseCase
         }
 
         private fun requirePro() {
-            check(proStatusProvider.isPro()) { "CSV export requires Runcheck Pro" }
+            check(proStatusProvider.isPro()) { "CSV export requires runcheck Pro" }
         }
 
         private suspend fun exportCutoff(): Long? {

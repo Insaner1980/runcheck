@@ -17,8 +17,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Centralized helper for creating notification channels and posting
- * device-alert notifications (low battery, high temp, low storage,
+ * Centralized helper for stable notification channel IDs, channel creation,
+ * and device-alert notifications (low battery, high temp, low storage,
  * charge complete).
  */
 @Singleton
@@ -40,6 +40,7 @@ class NotificationHelper
                     "runcheck_status",
                 )
             const val CHANNEL_TRIAL = "runcheck_trial"
+            const val CHANNEL_REAL_TIME = "real_time_monitor"
             const val NOTIFICATION_LOW_BATTERY = 1001
             const val NOTIFICATION_HIGH_TEMP = 1002
             const val NOTIFICATION_LOW_STORAGE = 1003
@@ -74,6 +75,20 @@ class NotificationHelper
                     intent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )
+            }
+
+            fun createRealTimeChannel(context: Context) {
+                val channel =
+                    NotificationChannel(
+                        CHANNEL_REAL_TIME,
+                        context.getString(R.string.monitor_realtime_channel_name),
+                        NotificationManager.IMPORTANCE_LOW,
+                    ).apply {
+                        description = context.getString(R.string.monitor_realtime_channel_description)
+                        setShowBadge(false)
+                    }
+                val notificationManager = context.getSystemService(NotificationManager::class.java)
+                notificationManager.createNotificationChannel(channel)
             }
         }
 

@@ -24,10 +24,10 @@ Cross-category correlation engine that analyzes existing Room data to generate a
 - Debug test data seeder
 - Room migration
 
-**Explicitly out of scope (phase 2+):**
+**Explicitly out of scope for Phase 1 at the time this spec was written:**
 - Cross-table correlation rules (ThermalDrainCorrelation, ChargerTemperature, NetworkDrainCorrelation)
 - StorageTrendRule (linear regression)
-- BaselineAnomalyRule (Z-score per category)
+- BaselineAnomalyRule (Z-score per category) — later implemented as a battery-drain baseline anomaly rule, not every category
 - Insight deep-linking to detail screens
 - Notification-based insights
 - Insight history/archive view
@@ -497,12 +497,12 @@ After this is working end-to-end and verified with the test data seeder, phase 2
 
 ---
 
-## Phase 2 Rules (future, not in this spec)
+## Phase 2 Rules (future at the time this spec was written, not in this spec)
 
-For reference, these are the planned follow-up rules. Each is a separate Claude Code task after phase 1 is verified:
+For reference, these were the planned follow-up rules. Each was intended as a separate task after phase 1 was verified:
 
 - **ThermalDrainCorrelationRule** — drain rate vs thermal state (cross-table: battery + thermal)
 - **ChargerTemperatureRule** — temperature differences between chargers (cross-table: charger sessions + thermal)
 - **StorageTrendRule** — linear regression on storage fill rate (single table)
 - **NetworkDrainCorrelationRule** — signal strength vs drain rate (cross-table: battery + network)
-- **BaselineAnomalyRule** — Z-score per category vs user's own historical baseline (per table, but needs rolling stats)
+- **BaselineAnomalyRule** — Z-score per category vs user's own historical baseline (later implemented narrowly as battery-drain baseline anomaly)
