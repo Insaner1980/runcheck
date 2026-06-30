@@ -42,7 +42,7 @@ jobs:
           build-mode: manual
 
       - name: Build with Gradle
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon --no-configuration-cache --console=plain
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
