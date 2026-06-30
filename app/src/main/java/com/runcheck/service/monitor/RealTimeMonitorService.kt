@@ -1,7 +1,6 @@
 package com.runcheck.service.monitor
 
 import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
@@ -65,7 +64,7 @@ class RealTimeMonitorService : Service() {
         super.onCreate()
         serviceScope = CoroutineScope(SupervisorJob() + dispatchers.default)
         isRunning = true
-        createNotificationChannel()
+        NotificationHelper.createRealTimeChannel(this)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(
                 NOTIFICATION_ID,
@@ -292,20 +291,6 @@ class RealTimeMonitorService : Service() {
             .build()
     }
 
-    private fun createNotificationChannel() {
-        val channel =
-            NotificationChannel(
-                CHANNEL_ID,
-                getString(R.string.monitor_realtime_channel_name),
-                NotificationManager.IMPORTANCE_LOW,
-            ).apply {
-                description = getString(R.string.monitor_realtime_channel_description)
-                setShowBadge(false)
-            }
-        val notificationManager = getSystemService(NotificationManager::class.java)
-        notificationManager.createNotificationChannel(channel)
-    }
-
     private fun createInitialNotification(): Notification {
         val contentIntent =
             NotificationHelper.createContentIntent(
@@ -336,7 +321,7 @@ class RealTimeMonitorService : Service() {
     }
 
     companion object {
-        const val CHANNEL_ID = "real_time_monitor"
+        const val CHANNEL_ID = NotificationHelper.CHANNEL_REAL_TIME
         const val NOTIFICATION_ID = 2001
         const val ACTION_STOP = "com.runcheck.STOP_MONITORING"
         private const val TAG = "RealTimeMonitorService"

@@ -1,6 +1,9 @@
 package com.runcheck.widget
 
 import android.content.Context
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,21 +38,29 @@ class BatteryWidget : GlanceAppWidget() {
             setOf(SMALL, MEDIUM, LARGE),
         )
 
-    @Suppress("LongMethod")
     override suspend fun provideGlance(
         context: Context,
         id: GlanceId,
     ) {
-        if (!WidgetDataProvider.isProUnlocked(context)) {
-            provideContent { WidgetLockedContent(context, R.string.widget_battery_name) }
-            return
-        }
-        val snapshot = WidgetDataProvider.loadBatterySnapshot(context)
-        if (snapshot == null) {
-            provideContent { WidgetEmptyContent(context) }
-            return
-        }
+        provideContent {
+            val widgetState by
+                WidgetDataProvider
+                    .observeBatteryWidgetState(context)
+                    .collectAsState(initial = WidgetRenderState.Locked)
 
+            when (val state = widgetState) {
+                WidgetRenderState.Empty -> WidgetEmptyContent(context)
+                WidgetRenderState.Locked -> WidgetLockedContent(context, R.string.widget_battery_name)
+                is WidgetRenderState.Content -> BatteryWidgetContent(context, state.snapshot)
+            }
+        }
+    }
+
+    @Composable
+    private fun BatteryWidgetContent(
+        context: Context,
+        snapshot: BatteryWidgetSnapshot,
+    ) {
         val levelText = context.getString(R.string.widget_percent_value, snapshot.level)
         val tempText = context.getString(R.string.widget_temperature_value, snapshot.temperatureC)
         val currentDisplay =
@@ -57,59 +68,57 @@ class BatteryWidget : GlanceAppWidget() {
                 context.getString(R.string.widget_current_value, it)
             }
 
-        provideContent {
-            GlanceTheme {
-                Column(
-                    modifier = widgetContainerModifier(),
+        GlanceTheme {
+            Column(
+                modifier = widgetContainerModifier(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(
+                    modifier = GlanceModifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(
-                        modifier = GlanceModifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
+                    Text(
+                        text = levelText,
+                        style =
+                            TextStyle(
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GlanceTheme.colors.onSurface,
+                            ),
+                    )
+                    Spacer(modifier = GlanceModifier.width(8.dp))
+                    Column {
                         Text(
-                            text = levelText,
+                            text = tempText,
                             style =
                                 TextStyle(
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = GlanceTheme.colors.onSurface,
+                                    fontSize = 12.sp,
+                                    color = GlanceTheme.colors.onSurfaceVariant,
                                 ),
                         )
-                        Spacer(modifier = GlanceModifier.width(8.dp))
-                        Column {
+                        currentDisplay?.let {
                             Text(
-                                text = tempText,
+                                text = it,
                                 style =
                                     TextStyle(
                                         fontSize = 12.sp,
                                         color = GlanceTheme.colors.onSurfaceVariant,
                                     ),
                             )
-                            currentDisplay?.let {
-                                Text(
-                                    text = it,
-                                    style =
-                                        TextStyle(
-                                            fontSize = 12.sp,
-                                            color = GlanceTheme.colors.onSurfaceVariant,
-                                        ),
-                                )
-                            }
                         }
                     }
-                    val size = androidx.glance.LocalSize.current
-                    if (size.width >= MEDIUM.width) {
-                        Spacer(modifier = GlanceModifier.height(4.dp))
-                        Text(
-                            text = context.getString(R.string.widget_battery_name),
-                            style =
-                                TextStyle(
-                                    fontSize = 11.sp,
-                                    color = GlanceTheme.colors.onSurfaceVariant,
-                                ),
-                        )
-                    }
+                }
+                val size = androidx.glance.LocalSize.current
+                if (size.width >= MEDIUM.width) {
+                    Spacer(modifier = GlanceModifier.height(4.dp))
+                    Text(
+                        text = context.getString(R.string.widget_battery_name),
+                        style =
+                            TextStyle(
+                                fontSize = 11.sp,
+                                color = GlanceTheme.colors.onSurfaceVariant,
+                            ),
+                    )
                 }
             }
         }

@@ -22,6 +22,21 @@ import org.junit.Test
 
 class BatteryRepositoryImplTest {
     @Test
+    fun `estimateFullCapacityMah estimates full battery capacity from charge counter and level`() {
+        assertEquals(4_000, estimateFullCapacityMah(2_000, 50))
+        assertEquals(4_500, estimateFullCapacityMah(3_375, 75))
+    }
+
+    @Test
+    fun `estimateFullCapacityMah rejects unavailable or implausible inputs`() {
+        assertEquals(null, estimateFullCapacityMah(null, 50))
+        assertEquals(null, estimateFullCapacityMah(2_000, 0))
+        assertEquals(null, estimateFullCapacityMah(2_000, 101))
+        assertEquals(null, estimateFullCapacityMah(1, 100))
+        assertEquals(null, estimateFullCapacityMah(50_000, 50))
+    }
+
+    @Test
     fun `saveReading stores null current when confidence is unavailable`() =
         runTest {
             val dao: BatteryReadingDao = mockk(relaxed = true)
@@ -83,7 +98,6 @@ class BatteryRepositoryImplTest {
             batteryDataSourceFactory = mockk(relaxed = true),
             deviceProfileProvider = mockk<DeviceProfileProvider>(relaxed = true),
             batteryReadingDao = dao,
-            batteryCapacityReader = mockk(relaxed = true),
             dispatchers = TestAppDispatchers(),
         )
 

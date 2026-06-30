@@ -30,7 +30,7 @@ The health score weights are: Battery 40%, Thermal 25%, Network 25%, Storage 10%
 
 **Actionable over informational.** Prioritize insights where the user can actually do something. "Your battery dropped 3% overnight" is informational. "Your battery is draining 4x faster than usual during sleep — a background app may be preventing deep sleep" is actionable.
 
-**One insight per rule evaluation, maximum.** If a rule detects multiple patterns, pick the most significant one. The engine already enforces max one new insight per day across all rules.
+**One insight per rule evaluation, maximum.** If a rule detects multiple patterns, pick the most significant one. The current engine does not enforce a global max-one-new-insight-per-day cap; it evaluates every registered rule and Home visibility is curated separately.
 
 **Plain language.** Insight titles should be short (under ~8 words). Descriptions should be 1-2 sentences, no jargon. Use the same terminology the app already uses in its UI (e.g., "Cool / Normal / Warm / Hot / Critical" for thermal bands, "Healthy / Fair / Poor / Critical" for health score).
 
@@ -246,7 +246,7 @@ These rules are the key differentiator. They look across multiple data categorie
 
 ## Insight Priorities
 
-When multiple rules fire in the same evaluation cycle, use this priority order to decide which insight gets surfaced (only one new insight per day):
+When multiple rules fire in the same evaluation cycle, use this priority order for surfacing if a future global throttle is added. Current code persists passing candidates per rule and does not enforce a single new insight per day:
 
 1. **Cross-category rules** (6, 7, 8) — highest value, unique to runcheck
 2. **Actionable single-category** (4: Charger, 5: App Impact, 2: Storage Projection) — user can do something immediately
@@ -288,7 +288,7 @@ The seeder should offer a "Seed all Phase 2 patterns" option that populates enou
 
 ## Evaluation Schedule
 
-All rules run inside the existing Insights Engine evaluation cycle. No changes to scheduling needed. The engine evaluates all registered rules in sequence and picks the highest-priority insight that passes its significance threshold.
+All rules run inside the existing Insights Engine evaluation cycle. No changes to scheduling needed. The current engine evaluates all registered rules, filters candidates below its confidence threshold, and replaces persisted results per rule; it does not pick one global highest-priority insight.
 
 New rules should be registered in the same way as `BatteryDegradationTrendRule` — the architecture already supports adding rules without modifying the engine itself.
 

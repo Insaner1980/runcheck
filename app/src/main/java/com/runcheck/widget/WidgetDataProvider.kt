@@ -29,9 +29,8 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 
 internal data class BatteryWidgetSnapshot(
     val level: Int,
@@ -44,35 +43,49 @@ internal data class HealthWidgetSnapshot(
     val batteryLevel: Int,
 )
 
+internal sealed interface WidgetRenderState<out T> {
+    data object Locked : WidgetRenderState<Nothing>
+
+    data object Empty : WidgetRenderState<Nothing>
+
+    data class Content<T>(
+        val snapshot: T,
+    ) : WidgetRenderState<T>
+}
+
 internal object WidgetDataProvider {
-    fun isProUnlocked(context: Context): Boolean = entryPoint(context).proStatusProvider().isPro()
-
-    suspend fun loadBatterySnapshot(context: Context): BatteryWidgetSnapshot? {
-        val latestReading =
-            entryPoint(context).batteryReadingDao().getLatestReading().first()
-                ?: return null
-
-        return BatteryWidgetSnapshot(
-            level = latestReading.level,
-            temperatureC = latestReading.temperatureC,
-            currentMa = latestReading.currentMa,
-        )
+    fun observeBatteryWidgetState(context: Context): Flow<WidgetRenderState<BatteryWidgetSnapshot>> {
+        val ep = entryPoint(context)
+        return combine(
+            ep.proStatusProvider().isProUser,
+            ep.batteryReadingDao().getLatestReading(),
+        ) { isPro, latestReading ->
+            when {
+                !isPro -> WidgetRenderState.Locked
+                latestReading == null -> WidgetRenderState.Empty
+                else -> WidgetRenderState.Content(latestReading.toBatteryWidgetSnapshot())
+            }
+        }
     }
 
-    suspend fun loadHealthSnapshot(context: Context): HealthWidgetSnapshot? =
-        coroutineScope {
-            val ep = entryPoint(context)
-            val batteryDeferred = async { ep.batteryReadingDao().getLatestReading().first() }
-            val networkDeferred = async { ep.networkReadingDao().getLatestReading().first() }
-            val thermalDeferred = async { ep.thermalReadingDao().getLatestReading().first() }
-            val storageDeferred = async { ep.storageReadingDao().getLatestReading().first() }
-
+    fun observeHealthWidgetState(context: Context): Flow<WidgetRenderState<HealthWidgetSnapshot>> {
+        val ep = entryPoint(context)
+        return combine(
+            ep.proStatusProvider().isProUser,
+            ep.batteryReadingDao().getLatestReading(),
+            ep.networkReadingDao().getLatestReading(),
+            ep.thermalReadingDao().getLatestReading(),
+            ep.storageReadingDao().getLatestReading(),
+        ) { isPro, batteryReading, networkReading, thermalReading, storageReading ->
+            if (!isPro) {
+                return@combine WidgetRenderState.Locked
+            }
             val battery =
-                batteryDeferred.await()?.toBatteryState()
-                    ?: return@coroutineScope null
-            val network = networkDeferred.await()?.toNetworkState() ?: DEFAULT_NETWORK
-            val thermal = thermalDeferred.await()?.toThermalState() ?: DEFAULT_THERMAL
-            val storage = storageDeferred.await()?.toStorageState() ?: DEFAULT_STORAGE
+                batteryReading?.toBatteryState()
+                    ?: return@combine WidgetRenderState.Empty
+            val network = networkReading?.toNetworkState() ?: DEFAULT_NETWORK
+            val thermal = thermalReading?.toThermalState() ?: DEFAULT_THERMAL
+            val storage = storageReading?.toStorageState() ?: DEFAULT_STORAGE
 
             val score =
                 ep.healthScoreCalculator().calculate(
@@ -82,11 +95,14 @@ internal object WidgetDataProvider {
                     storage = storage,
                 )
 
-            HealthWidgetSnapshot(
-                overallScore = score.overallScore,
-                batteryLevel = battery.level,
+            WidgetRenderState.Content(
+                HealthWidgetSnapshot(
+                    overallScore = score.overallScore,
+                    batteryLevel = battery.level,
+                ),
             )
         }
+    }
 
     // Neutral defaults for when no reading exists yet — must NOT penalize
     // the health score. ConnectionType.NONE → network score 0 which tanks
@@ -142,6 +158,13 @@ internal interface WidgetDataEntryPoint {
 
     fun proStatusProvider(): ProStatusProvider
 }
+
+private fun BatteryReadingEntity.toBatteryWidgetSnapshot(): BatteryWidgetSnapshot =
+    BatteryWidgetSnapshot(
+        level = level,
+        temperatureC = temperatureC,
+        currentMa = currentMa,
+    )
 
 private fun BatteryReadingEntity.toBatteryState(): BatteryState {
     val confidence =

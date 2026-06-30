@@ -18,14 +18,14 @@ Android device health diagnostics app built with Kotlin and Jetpack Compose. Sin
 - Widgets: Glance app widgets
 - Speed test backend: M-Lab NDT7
 - Build: Gradle Kotlin DSL
-- Build tooling: Gradle wrapper 9.4.0, AGP 9.1.0, Kotlin Gradle/Compose plugin 2.3.0, Kotlin runtime constraints 2.3.20, KSP 2.3.1, Compose BOM 2026.03.00
-- Compile SDK: Android 17 beta (`CinnamonBun`)
-- Target SDK: Android 17 beta (`CinnamonBun`)
+- Build tooling: Gradle wrapper 9.4.0, AGP 9.1.1, Kotlin Gradle/Compose plugin 2.3.0, Kotlin runtime constraints 2.3.20, KSP 2.3.1, Compose BOM 2026.03.00
+- Compile SDK: Android 17 (API 37)
+- Target SDK: Android 17 (API 37)
 - Min SDK: 26
 - Java target: 17
 - Localization: English-only (`localeFilters = ["en"]`)
 - Build variants: `app/src/debug` and `app/src/release` source sets are active
-- Release signing: optional until a release artifact is requested, then `RUNCHECK_KEYSTORE_PATH`, `RUNCHECK_KEYSTORE_PASSWORD`, `RUNCHECK_KEY_ALIAS`, and `RUNCHECK_KEY_PASSWORD` are required
+- Release signing: optional until a release artifact is requested, then `RUNCHECK_KEYSTORE_PATH`, `RUNCHECK_KEYSTORE_PASSWORD`, `RUNCHECK_KEY_ALIAS`, and `RUNCHECK_KEY_PASSWORD` are required; signed release artifact tasks must run with `--no-configuration-cache` and must provide the latest published versionCode through `--project-prop=runcheck.releaseVersionCodeFloor=<code>` or `RUNCHECK_RELEASE_VERSION_CODE_FLOOR`
 
 High-level package layout:
 
@@ -63,7 +63,7 @@ Current version catalog highlights:
 | Area | Current value |
 |------|---------------|
 | Gradle wrapper | `9.4.0` |
-| Android Gradle Plugin | `9.1.0` |
+| Android Gradle Plugin | `9.1.1` |
 | Kotlin Gradle / Compose plugin | `2.3.0` |
 | Kotlin runtime constraints | `2.3.20` |
 | KSP | `2.3.1` |
@@ -72,12 +72,12 @@ Current version catalog highlights:
 | Compose BOM | `2026.03.00` |
 | Navigation Compose | `2.9.7` |
 | Lifecycle | `2.10.0` |
-| WorkManager | `2.11.1` |
+| WorkManager | `2.11.2` |
 | DataStore | `1.2.0` |
 | Paging | `3.3.6` |
 | Play Billing | `8.3.0` |
 | Glance | `1.1.1` |
-| M-Lab NDT7 client | `1.0.0` |
+| M-Lab NDT7 client | `e0cb663613eb252a7793216ad28cf54a35677b8f` |
 | OkHttp | `4.12.0` |
 | Sentry debug-only core | `8.43.1` |
 | ktlint rule engine | `1.8.0` |
@@ -97,17 +97,17 @@ Checked on 2026-06-21 against official Android, Kotlin, Compose, and Gradle docu
 
 - The repo is not on the newest available Android/Gradle ecosystem versions in every area; that is expected and should be reviewed deliberately.
 - AGP 9.1.x official notes list API 37 support and Gradle 9.3.1 minimum compatibility; this repo's Gradle 9.4.0 wrapper satisfies that baseline.
-- AGP 9.2.0 is available upstream and lists Gradle 9.4.1 as its minimum/default Gradle line; AGP 9.3.0 preview is also published and lists Gradle 9.5.0 as its minimum/default Gradle line. This repo currently uses AGP 9.1.0 with Gradle 9.4.0, so AGP upgrades should be evaluated with Android 17 preview, Qodana, CodeQL, Gradle wrapper, dependency verification, and Kotlin plugin behavior together.
+- AGP 9.2.0 is available upstream and lists Gradle 9.4.1 as its minimum/default Gradle line; AGP 9.3.0 preview is also published and lists Gradle 9.5.0 as its minimum/default Gradle line. This repo currently uses AGP 9.1.1 with Gradle 9.4.0, so AGP upgrades should be evaluated with Android 17 stable SDK behavior, Qodana, CodeQL, Gradle wrapper, dependency verification, and Kotlin plugin behavior together.
 - Kotlin 2.3.20 is available upstream and the repo already constrains Kotlin stdlib adapter/runtime artifacts to 2.3.20, but the Gradle/Compose plugin remains 2.3.0. Do not treat this as a typo without checking AGP/Qodana/CodeQL runner behavior.
 - CodeQL 2.25.2 added Kotlin support up to 2.3.20. Kotlin 2.4.x still needs a fresh CodeQL compatibility check before adoption.
 - Kotlin 2.4.0 is newer than this repo's Kotlin plugin line, supports Gradle 7.6.3 through 9.5.0 directly, and should be treated as a deliberate migration, not a routine patch bump.
 - Compose BOM `2026.06.00` is available upstream; this repo currently uses `2026.03.00`. Any bump should include Compose UI regression review, compose-rules compatibility, and dependency verification metadata.
 - Gradle 9.6.0 is available upstream; this repo currently uses 9.4.0. Wrapper bumps should be checked against AGP and all local wrappers.
-- Android 17 uses the `CinnamonBun` preview SDK naming in this checkout. Android 17 SDK setup expects the Cinnamon Bun Preview platform and Android SDK Build-Tools 37.x line to be installed locally.
+- Android 17 uses stable API level 37 in this checkout. Android 17 SDK setup expects the Android 17 platform and Android SDK Build-Tools 37.x line to be installed locally.
 
 External references used for this snapshot:
 
-- Android 17 beta overview: <https://developer.android.com/about/versions/17>
+- Android 17 overview: <https://developer.android.com/about/versions/17>
 - Android 17 SDK setup: <https://developer.android.com/about/versions/17/setup-sdk>
 - AGP 9.1 release notes: <https://developer.android.com/build/releases/agp-9-1-0-release-notes>
 - AGP 9.2 release notes: <https://developer.android.com/build/releases/agp-9-2-0-release-notes>
@@ -130,7 +130,7 @@ When auditing this project, treat these as stronger than older prose docs:
 - Product gates: `ProState`, `ProManager`, `BillingManager`, `IsProUserUseCase`
 - Visual system: `ui/theme/Color.kt`, `Theme.kt`, `Type.kt`, `Shapes.kt`, `Spacing.kt`, `MotionTokens.kt`, `UiTokens.kt`, `StatusColors.kt`
 - Shared UI/runtime helpers: `LifecycleStartStopEffect`, `HistoryLoadErrorMessage`, `HistoryPeriodFilterChipRow`, `ChartStatsRow`, `RuncheckPermissionPolicy`
-- Security surface: `AndroidManifest.xml`, `network_security_config.xml`, `file_export_paths.xml`, `ReleaseSafeLog`, Semgrep config, Sentry source sets
+- Security surface: `AndroidManifest.xml`, `network_security_config.xml`, `data_extraction_rules.xml`, `backup_rules.xml`, `file_export_paths.xml`, `ReleaseSafeLog`, Semgrep config, Sentry source sets
 
 ---
 
@@ -153,7 +153,7 @@ Compose screens and reusable components
 Layer expectations:
 
 - `domain/` owns business models, repository interfaces, use cases, health scoring, and insight rules.
-- `data/` owns Android APIs, Room, MediaStore, BatteryManager, ConnectivityManager, PowerManager, StorageStatsManager, Play Billing, and NDT7 integration.
+- `data/` owns Android APIs, Room, MediaStore, BatteryManager, ConnectivityManager, PowerManager, StorageStatsManager, DevicePolicyManager, PackageManager launcher visibility queries, Play Billing, and NDT7 integration.
 - `ui/` owns Compose screens, components, ViewModels, navigation, saved UI state, and visual formatting.
 - ViewModels bridge UI and domain only; UI should not call data implementations directly.
 - `androidx.paging.PagingData` is an allowed documented boundary exception in domain cleanup/app-usage flows.
@@ -326,6 +326,9 @@ Battery current reliability:
 - Runtime current normalization distinguishes microamps from milliamps with `MICROAMP_THRESHOLD = 25_000`.
 - Plausible normalized current must be in `0..10000` mA during capability validation.
 - Current sign is aligned with charging state so charging values are positive and discharging values are negative.
+- Remaining battery capacity uses `BATTERY_PROPERTY_CHARGE_COUNTER` only when Android returns a positive value.
+- Estimated full battery capacity is calculated by `estimateFullCapacityMah(remainingMah, levelPercent)` and is emitted only when the battery level is 1..100 and the estimate is in the plausible 500..20,000 mAh range.
+- Battery design capacity is not queried or displayed in production; `designCapacityMah` remains `null` because this codebase does not use private `PowerProfile` or other private design-capacity APIs.
 - Device profile stores manufacturer, model, API level, current unit, sign convention, cycle-count availability, thermal-zone list, and storage-health availability.
 - Vendor-specific battery sources exist for Samsung and OnePlus, with API 34+ variants using Android 14+ capabilities when available.
 
@@ -342,6 +345,13 @@ Network reliability:
 - Latency uses five TCP-connect samples against `BuildConfig.LATENCY_HOST` / `BuildConfig.LATENCY_PORT`, with a 1.5s per-sample timeout and 6s total timeout.
 - Jitter is computed with an RFC 3550-style moving jitter formula when at least four samples are available.
 - Network detail and speed test may display signal, latency, Wi-Fi standard, cellular subtype, DNS/IP/MTU, and VPN state when Android exposes them.
+
+Storage reliability:
+
+- Aggregate app/data/cache bytes use `StorageStatsManager.queryStatsForUser(...)` and are unavailable when the service, access, or platform call is unavailable.
+- App count is a distinct count of launchable packages visible through `PackageManager.queryIntentActivities(Intent.ACTION_MAIN + Intent.CATEGORY_LAUNCHER)`; it is not a full installed-app inventory.
+- Storage encryption status uses `DevicePolicyManager.storageEncryptionStatus` and maps public platform states to FBE, Encrypted, Inactive, Unsupported, or unavailable.
+- No `SystemProperties` reflection or `PackageManager.getInstalledApplications(...)` package inventory is used for these storage values.
 
 ### Health score calculation
 
@@ -432,6 +442,9 @@ Battery-specific supporting behavior:
 
 - Current readings use `MeasuredValue<Int>`
 - Current confidence is internally `HIGH`, `LOW`, or `UNAVAILABLE`; badge copy presents those as Accurate, Estimated, or Unavailable.
+- Remaining mAh comes from the public BatteryManager charge-counter value when the platform provides one.
+- Estimated full capacity is shown as an estimate only when it can be derived from remaining mAh and current battery level inside the repository's plausible range.
+- Design capacity is intentionally absent from the UI because no stable public design-capacity source is used.
 - Current stats are tracked in-memory and reset on status change
 - Session and history charts can open a fullscreen landscape chart route
 - History charts use "Instrument Sweep" animation (3-phase: grid fade → oscilloscope sweep → emphasis)
@@ -551,6 +564,13 @@ Permission behavior:
 - Storage asks through `RuncheckPermissionPolicy.mediaPermissionsForApi()`.
 - Android 14+ distinguishes full media access from selected visual media access through `MediaAccessState`.
 - Media breakdown and cleanup affordances are shown only when the relevant media access exists.
+
+Storage-specific data behavior:
+
+- Aggregate app/data/cache bytes use `StorageStatsManager.queryStatsForUser(...)` and may be null without usage access or when Android denies the call.
+- App count means distinct launchable packages visible to this app through `ACTION_MAIN` + `CATEGORY_LAUNCHER`, not all installed packages on the device.
+- Encryption status comes from `DevicePolicyManager.storageEncryptionStatus`.
+- File-system type is read from `/proc/mounts` for `/data`; storage volume count uses `StorageManager.storageVolumes`.
 
 Cleanup tool entry points:
 
@@ -806,8 +826,8 @@ Current product behavior:
 - Purchased Pro unlocks all Pro features permanently
 - No subscriptions
 - Debug builds force `BillingManager` Pro state to active for development
-- Release builds use Google Play Billing one-time `INAPP` product, default product id `runcheck_pro`
-- Product id can be overridden with `RUNCHECK_PRO_PRODUCT_ID`
+- Release builds use Google Play Billing one-time `INAPP` product id `runcheck_pro`
+- Debug builds can override the product id with `RUNCHECK_PRO_PRODUCT_ID`; release builds keep the checked-in product id so release artifacts are reproducible.
 - Pending purchases are tracked separately and do not unlock Pro until purchased
 - Purchased but unacknowledged purchases are acknowledged with up to 3 retries
 - Cached Pro state is restored synchronously in release builds to avoid a free-tier flash while Billing queries run
@@ -843,9 +863,11 @@ All current features share the single `ProState.isPro` decision. The per-feature
 Manifest and network posture:
 
 - `android:allowBackup="false"`
+- `android:dataExtractionRules="@xml/data_extraction_rules"` and `android:fullBackupContent="@xml/backup_rules"` exclude root, files, databases, shared preferences, and external app data from cloud backup and device transfer rules.
 - `android:usesCleartextTraffic="false"`
 - `network_security_config.xml` permits system trust anchors only and disallows cleartext traffic.
-- `androidx.startup.InitializationProvider` is removed; startup is explicit through `RuncheckApp`.
+- Manifest package visibility is limited to an `ACTION_MAIN` + `CATEGORY_LAUNCHER` `<queries>` intent for launcher-app visibility; the app does not request `QUERY_ALL_PACKAGES`.
+- `androidx.startup.InitializationProvider` remains merged for non-WorkManager App Startup components; `androidx.work.WorkManagerInitializer` is removed so WorkManager uses `RuncheckApp`'s explicit `Configuration.Provider`.
 - Main launcher activity is exported by design.
 - App widgets are exported with `android.permission.BIND_APPWIDGET`.
 - `RealTimeMonitorService` is not exported and uses `foregroundServiceType="specialUse"` with a declared special-use subtype.
@@ -865,7 +887,7 @@ Declared permission surface:
 | `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO`, `READ_MEDIA_VISUAL_USER_SELECTED` | Android 13+ media breakdown/cleanup, including Android 14+ selected visual media state |
 | `READ_EXTERNAL_STORAGE` maxSdk 32 | Android 12 and below media fallback |
 | `WRITE_EXTERNAL_STORAGE` maxSdk 28 | Legacy delete fallback |
-| `PACKAGE_USAGE_STATS` | App Usage / per-app battery feature |
+| `PACKAGE_USAGE_STATS` | App Usage, per-app battery feature, and aggregate app/cache storage stats through `StorageStatsManager` |
 | `READ_BASIC_PHONE_STATE` | Android 13+ cellular network generation fallback |
 
 Runtime permission decisions are centralized in `RuncheckPermissionPolicy` for Wi-Fi detail location permissions, Android-version-specific media permission lists, Android 14+ partial visual media access, and Android 13+ notification permission checks.
@@ -1060,6 +1082,7 @@ Useful narrow commands:
 
 ```powershell
 .\gradlew --no-daemon testDebugUnitTest --tests "com.runcheck.domain.scoring.HealthScoreCalculatorTest"
+.\gradlew.bat :app:connectedDebugAndroidTest --project-prop=android.testInstrumentationRunnerArguments.class=com.runcheck.data.db.RuncheckDatabaseMigrationTest --dry-run --no-daemon --no-configuration-cache --console=plain
 .\gradlew --no-daemon :app:compileDebugKotlin :app:compileDebugUnitTestKotlin --no-configuration-cache
 .\tools\pc.ps1 -PlanOnly
 .\tools\sentry.ps1 -PlanOnly
@@ -1082,8 +1105,8 @@ GitHub Actions workflows in `.github/workflows/`:
 | `codeql.yml` | CodeQL security analysis (`java-kotlin`, manual `assembleDebug`) | Active |
 | `security.yml` | Semgrep SAST on PRs/main plus OWASP Dependency-Check on weekly/manual runs | Active; Semgrep is the push/PR code-scanning path. OWASP is kept out of push/PR code scanning because cold NVD updates can stall or return 503s; scheduled/manual runs use cache, bounded retries, a job timeout, a shorter non-blocking OWASP step timeout, and upload the report as an Actions artifact when produced |
 | `sonar.yml` | SonarCloud scan through Gradle (`assembleDebug`, `:app:jacocoDebugUnitTestReport`, `sonar`) | Active |
-| `qodana.yml` | JetBrains Qodana main-branch scan (`v2026.1`) | Uses the JVM Community linter because the 2026.1 Android linter rejects AGP 9.1.0 during IDE import |
-| `qodana_code_quality.yml` | JetBrains Qodana action (`v2026.1`) for `main`, `releases/*`, PRs, and manual dispatch | Uses the JVM Community linter because the 2026.1 Android linter rejects AGP 9.1.0 during IDE import |
+| `qodana.yml` | JetBrains Qodana main-branch scan (`v2026.1`) | Uses the JVM Community linter because the 2026.1 Android linter rejects AGP 9.1.x during IDE import |
+| `qodana_code_quality.yml` | JetBrains Qodana action (`v2026.1`) for `main`, `releases/*`, PRs, and manual dispatch | Uses the JVM Community linter because the 2026.1 Android linter rejects AGP 9.1.x during IDE import |
 
 External services:
 - **SonarCloud** — continuous code quality (`Insaner1980_runcheck`, org `insaner1980`). CI path is `.github/workflows/sonar.yml`; local path is `tools/sonar.ps1`.
@@ -1091,7 +1114,7 @@ External services:
 
 Local PowerShell wrappers:
 
-- `tools/lc.ps1` (`lc`) — ktlint, detekt, Android lint; writes `reports/ktlint.txt`, `reports/detekt.txt`, and `reports/lint.txt`
+- `tools/lc.ps1` (`lc`) — ktlint, detekt, Android lint; writes `reports/ktlint.txt`, `reports/detekt.txt`, and `reports/lint.txt`; the shared wrapper appends the Android lint text report and fails high-risk lint policy findings
 - `tools/ac.ps1` (`ac`) — Android security surface: project Semgrep, mobsfscan, and DeepSec custom report
 - `tools/dc.ps1` (`dc`) — Gradle dependency verification, OSV Scanner, and OWASP Dependency-Check
 - `tools/ss.ps1` (`ss`) — gitleaks, TruffleHog, and Semgrep secrets
@@ -1142,6 +1165,7 @@ runcheck now includes a cross-category correlation engine that analyzes Room dat
 Current Insights rule set:
 
 - `BatteryDegradationTrendRule`
+- `BaselineAnomalyRule`
 - `AppBatteryImpactRule`
 - `ChargerPerformanceRule`
 - `StoragePressureProjectionRule`
@@ -1157,7 +1181,7 @@ Rules are Hilt multibindings into `Set<InsightRule>`. `InsightEngine` filters ge
 
 ### Known Tool Limitations
 
-- **Qodana:** Qodana Android linter 2026.1 currently rejects this repo's AGP 9.1.0 during IDE import (`Latest supported version is AGP 9.0.0`). The workflows therefore run `jetbrains/qodana-jvm-community:2026.1` until JetBrains publishes an Android linter compatible with this AGP line. Re-test Qodana on every AGP/Gradle bump.
+- **Qodana:** Qodana Android linter 2026.1 currently rejects this repo's AGP 9.1.x during IDE import (`Latest supported version is AGP 9.0.0`). The workflows therefore run `jetbrains/qodana-jvm-community:2026.1` until JetBrains publishes an Android linter compatible with this AGP line. Re-test Qodana on every AGP/Gradle bump.
 - **CodeQL:** GitHub CodeQL 2.25.2 supports Kotlin up to 2.3.20, but Kotlin 2.4.x is beyond the known-supported line in the current review snapshot. Check the actual CodeQL Action runner version before Kotlin plugin upgrades.
 - **Sonar:** AGP 9 support has had scanner-side compatibility churn. Keep `tools/sonar.ps1` and `.github/workflows/sonar.yml` verified when changing AGP, Gradle, or Kotlin.
 - **OWASP Dependency-Check:** NVD updates can take a very long time or return transient 503 responses, so PRs and ordinary main pushes run Semgrep/CodeQL/Qodana while Dependency-Check is reserved for weekly scheduled or manual runs with cache, bounded retries, a job timeout, and a shorter non-blocking OWASP step timeout. Dependency-Check reports are uploaded as Actions artifacts instead of GitHub Code scanning SARIF so stale dependency analyses do not keep fixed Dependabot issues open.

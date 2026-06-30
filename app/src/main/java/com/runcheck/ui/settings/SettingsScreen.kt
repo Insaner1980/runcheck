@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -63,7 +64,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.BuildConfig
@@ -492,6 +493,12 @@ private fun SettingsMeasurementSection( // NOSONAR
 
 @Composable
 private fun SettingsAboutSection(context: android.content.Context) {
+    var showOpenSourceLicenses by rememberSaveable { mutableStateOf(false) }
+
+    if (showOpenSourceLicenses) {
+        OpenSourceLicensesDialog(onDismiss = { showOpenSourceLicenses = false })
+    }
+
     SettingsCard {
         CardSectionTitle(text = stringResource(R.string.settings_about))
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
@@ -535,6 +542,11 @@ private fun SettingsAboutSection(context: android.content.Context) {
         )
         SettingsDivider()
         SettingsNavigationRow(
+            label = stringResource(R.string.settings_open_source_licenses),
+            onClick = { showOpenSourceLicenses = true },
+        )
+        SettingsDivider()
+        SettingsNavigationRow(
             label = stringResource(R.string.settings_feedback),
             onClick = {
                 try {
@@ -554,6 +566,39 @@ private fun SettingsAboutSection(context: android.content.Context) {
             },
         )
     }
+}
+
+@Composable
+private fun OpenSourceLicensesDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val notices =
+        remember(context) {
+            context.resources
+                .openRawResource(R.raw.third_party_notices)
+                .bufferedReader()
+                .use { it.readText() }
+        }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.settings_open_source_licenses)) },
+        text = {
+            Text(
+                text = notices,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier =
+                    Modifier
+                        .heightIn(max = 420.dp)
+                        .verticalScroll(rememberScrollState()),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.common_close))
+            }
+        },
+    )
 }
 
 // ── Reusable settings components ──────────────────────────────────────────────

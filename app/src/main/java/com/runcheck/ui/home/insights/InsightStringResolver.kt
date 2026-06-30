@@ -9,6 +9,7 @@ import com.runcheck.domain.insights.model.Insight
 private val insightTitleResources =
     mapOf(
         "insight_battery_degradation_title" to R.string.insight_battery_degradation_title,
+        "insight_battery_baseline_anomaly_title" to R.string.insight_battery_baseline_anomaly_title,
         "insight_charger_performance_title" to R.string.insight_charger_performance_title,
         "insight_app_battery_impact_title" to R.string.insight_app_battery_impact_title,
         "insight_storage_pressure_title" to R.string.insight_storage_pressure_title,
@@ -24,6 +25,7 @@ private val insightTitleResources =
 private val insightBodyResources =
     mapOf(
         "insight_battery_degradation_body" to R.string.insight_battery_degradation_body,
+        "insight_battery_baseline_anomaly_body" to R.string.insight_battery_baseline_anomaly_body,
         "insight_charger_performance_body" to R.string.insight_charger_performance_body,
         "insight_app_battery_impact_body" to R.string.insight_app_battery_impact_body,
         "insight_storage_pressure_body" to R.string.insight_storage_pressure_body,

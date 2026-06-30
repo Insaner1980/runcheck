@@ -53,7 +53,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.domain.model.BatteryHealth
@@ -487,14 +487,13 @@ private fun BatteryOverviewSection( // NOSONAR
                     onInfoClick = { onInfoClick("healthPercent") },
                 )
             }
-            if (battery.estimatedCapacityMah != null && battery.designCapacityMah != null) {
+            battery.estimatedCapacityMah?.let { estimatedCapacityMah ->
                 MetricRow(
-                    label = stringResource(R.string.unit_milliamp_hours),
+                    label = stringResource(R.string.battery_estimated_full_capacity),
                     value =
                         stringResource(
-                            R.string.battery_capacity_mah,
-                            battery.estimatedCapacityMah,
-                            battery.designCapacityMah,
+                            R.string.battery_estimated_capacity_mah,
+                            estimatedCapacityMah,
                         ),
                     showDivider = false,
                     onInfoClick = { onInfoClick("capacity") },

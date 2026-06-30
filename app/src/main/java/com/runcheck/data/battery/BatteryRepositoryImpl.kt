@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.runcheck.domain.repository.BatteryRepository as BatteryRepositoryContract
@@ -29,7 +28,6 @@ class BatteryRepositoryImpl
         private val batteryDataSourceFactory: BatteryDataSourceFactory,
         private val deviceProfileProvider: DeviceProfileProvider,
         private val batteryReadingDao: BatteryReadingDao,
-        private val batteryCapacityReader: BatteryCapacityReader,
         private val dispatchers: AppDispatchers,
     ) : BatteryRepositoryContract {
         private val sourceMutex = Mutex()
@@ -73,18 +71,10 @@ class BatteryRepositoryImpl
                     }
 
                 val chargeCounterFlow = source.getChargeCounter()
-                val designCapacityMah =
-                    withContext(dispatchers.io) {
-                        batteryCapacityReader.getDesignCapacityMah()
-                    }
+                val designCapacityMah: Int? = null
 
                 combine(stateFlow, extraFlow, chargeCounterFlow) { partial, extra, chargeCounterMah ->
-                    val estimatedCapacityMah =
-                        if (designCapacityMah != null && extra.healthPct != null) {
-                            (designCapacityMah * extra.healthPct / 100)
-                        } else {
-                            null
-                        }
+                    val estimatedCapacityMah = estimateFullCapacityMah(chargeCounterMah, partial.level)
 
                     BatteryState(
                         level = partial.level,
@@ -204,3 +194,14 @@ private fun BatteryReadingEntity.toDomain() =
         cycleCount = cycleCount,
         healthPct = healthPct,
     )
+
+internal fun estimateFullCapacityMah(
+    remainingMah: Int?,
+    levelPercent: Int,
+): Int? {
+    val remaining = remainingMah ?: return null
+    if (remaining <= 0 || levelPercent !in 1..100) return null
+
+    val estimate = (remaining.toLong() * 100L / levelPercent).toInt()
+    return estimate.takeIf { it in 500..20_000 }
+}

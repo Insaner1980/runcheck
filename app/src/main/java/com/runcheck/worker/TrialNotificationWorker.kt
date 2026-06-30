@@ -47,7 +47,9 @@ class TrialNotificationWorker
             const val KEY_NOTIFICATION_TYPE = "notification_type"
             const val TYPE_DAY5 = "trial_day5"
             const val TYPE_DAY7 = "trial_day7"
-            const val WORK_TAG_DAY5 = "trial_notification_day5"
-            const val WORK_TAG_DAY7 = "trial_notification_day7"
+            const val UNIQUE_WORK_DAY5 = "trial_notification_day5"
+            const val UNIQUE_WORK_DAY7 = "trial_notification_day7"
+            const val TAG_DAY5 = "trial_notification_day5"
+            const val TAG_DAY7 = "trial_notification_day7"
         }
     }

@@ -18,6 +18,13 @@ When product/runtime facts or the visual system matter, use `PROJECT.md` and `UI
 
 Legacy billing or ad-related code may still exist in the repo. Do not expand that surface unless the task is explicitly about cleanup or migration.
 
+## Instruction Hierarchy
+
+- Direct user instructions in the current task override repository docs.
+- `AGENTS.md` and `CODEX.md` are the primary repository instruction files for agents. Keep overlapping rules in sync; if they conflict, fix the mismatch in both files instead of following divergent rule sets.
+- `PROJECT.md` is the current-state product, runtime, build, and report-reading source of truth; `UI-SPEC.md` is the visual-system companion.
+- Executable workflow behavior comes from `.github/workflows/`, `tools/`, `scripts/`, and the delegated Android-check wrapper source resolved by `tools\Invoke-RuncheckProjectCheck.ps1`. Documentation should describe those files, not override them.
+
 ---
 
 ## Current Project Snapshot
@@ -34,8 +41,8 @@ Legacy billing or ad-related code may still exist in the repo. Do not expand tha
 - Widgets: Glance
 - Speed test: M-Lab NDT7 (`ndt7-client-android`)
 - Build: Gradle Kotlin DSL
-- Compile SDK: Android 17 beta (`CinnamonBun`)
-- Target SDK: Android 17 beta (`CinnamonBun`)
+- Compile SDK: Android 17 (API 37)
+- Target SDK: Android 17 (API 37)
 - Min SDK: 26
 - Java target: 17
 - Localization: English-only (`localeFilters = ["en"]`)
@@ -103,7 +110,7 @@ State restoration conventions:
 
 ## Local Check Tooling
 
-PowerShell wrappers live in `tools/` and forward to `C:\Dev\Android-check\tools\InvokeProjectCheck.ps1`.
+PowerShell wrappers live in `tools/` and forward through `tools\Invoke-RuncheckProjectCheck.ps1`. The helper resolves the shared Android-check repository from `ANDROID_CHECK_ROOT` first, then from a sibling `Android-check` checkout next to `runcheck`.
 
 - `lc` / `tools\lc.ps1` — ktlint, detekt, Android lint; writes `reports\ktlint.txt`, `reports\detekt.txt`, and `reports\lint.txt`
 - `ac` / `tools\ac.ps1` — Android security surface; project Semgrep, mobsfscan, and DeepSec custom report
@@ -123,6 +130,8 @@ PowerShell wrappers live in `tools/` and forward to `C:\Dev\Android-check\tools\
 - `tools\sonar.ps1` — SonarCloud path; requires `SONAR_TOKEN`, runs `assembleDebug`, `:app:jacocoDebugUnitTestReport`, prepares an empty Android Lint import placeholder because `lc` owns real lint findings, and runs `sonar`, then writes `reports\sonar.txt`
 
 `scripts\security-check.ps1` is only a compatibility wrapper to `tools\sc.ps1`. No Linux shell security wrapper is maintained in this Windows-first repo. `reports/` is ignored and must not be committed.
+
+Report-reading phrase conventions live in `PROJECT.md` under "Report-reading convention"; use that list when the user says "lue lint-tulokset" or "lue security-tulokset" instead of inferring a shorter report list from wrapper summaries.
 
 When `osv-scanner`, gitleaks, TruffleHog, or PMD are missing from `PATH`, the shared Android-check wrappers may download and cache verified tool binaries under `.gradle\android-check-tools\`; offline first runs can therefore skip or fail before a cached tool exists. The OSV source scan excludes `.deepsec` so Android-check's own DeepSec tooling dependencies do not fail app dependency scans.
 
@@ -262,14 +271,14 @@ Raise a review comment or fix request for any of these:
 
 ## Working Conventions
 
-- Prefer explicit imports
-- Avoid wildcard imports
-- Keep comments in English
-- Avoid `!!`
-- Put user-facing strings in resources
-- Keep composables small and focused
-- Keep ViewModel state explicit and testable
-- Prefer minimal, targeted edits over broad rewrites
+- Prefer explicit imports.
+- Avoid wildcard imports.
+- Keep code comments in English.
+- Avoid `!!`.
+- Put user-facing strings in resources.
+- Keep composables small and focused.
+- Keep ViewModel state explicit and testable.
+- Prefer minimal, targeted edits over broad rewrites.
 
 ## Practical Build Notes
 
@@ -294,8 +303,7 @@ If local Codex skills are installed, prefer:
 - Avoid running multiple coding agents or tools that may build the same repo in parallel.
 - When verification is intentionally skipped or minimized, say so clearly in the final response.
 
-Useful local commands:
+Useful command references:
 
-- `./gradlew test`
-- `./gradlew ktlintCheck detekt`
-- `./gradlew assembleDebug`
+- Prefer the narrow examples in `PROJECT.md` under "Useful narrow commands".
+- Run broad Gradle tasks only when explicitly requested or required to unblock the task, and say why in the final response.

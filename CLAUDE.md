@@ -6,17 +6,17 @@ runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device
 
 ## Tech Stack
 
-- **Language:** Kotlin 2.3.0 (via AGP 9.1.0 built-in Kotlin)
+- **Language:** Kotlin 2.3.0 (via AGP 9.1.1 built-in Kotlin)
 - **UI:** Jetpack Compose with Material 3 (BOM 2026.03.00), single dark theme
 - **Min SDK:** 26 (Android 8.0)
-- **Target SDK:** CinnamonBun beta (Android 17)
-- **Compile SDK:** CinnamonBun beta (Android 17)
+- **Target SDK:** Android 17 (API 37)
+- **Compile SDK:** Android 17 (API 37)
 - **Architecture:** MVVM with Clean Architecture layers (data → domain → ui)
 - **Database:** Room 2.8.4 for local historical data
 - **Async:** Kotlin Coroutines 1.10.2 + Flow
 - **DI:** Hilt 2.59.2
 - **Charts:** Custom Compose components (TrendChart with axes/grid/tooltip/quality zones, AreaChart, HeatStrip, SegmentedBar)
-- **Build:** Gradle 9.4.0 with Kotlin DSL, AGP 9.1.0, KSP 2.3.1
+- **Build:** Gradle 9.4.0 with Kotlin DSL, AGP 9.1.1, KSP 2.3.1
 - **Localization:** English only (Finnish translations preserved in git history for future use)
 
 ## Project Structure
@@ -54,14 +54,14 @@ app/src/main/java/com/runcheck/
 │   ├── home/          # Single home screen (hub) + ViewModel
 │   ├── insights/      # Dedicated Insights screen + ViewModel
 │   ├── battery/       # Battery detail screen + ViewModel + session stats
-│   │                  #   + BatteryInfoContent, BatteryInfoCards
+│   │                  #   + BatteryInfoContent, shared InfoCardCatalog entries
 │   ├── network/       # Network detail + SpeedTest screens + ViewModel
-│   │                  #   + NetworkInfoContent, SpeedTestInfoContent, NetworkInfoCards
+│   │                  #   + NetworkInfoContent, SpeedTestInfoContent, shared InfoCardCatalog entries
 │   ├── thermal/       # Thermal detail screen + ViewModel + session min/max
-│   │                  #   + ThermalInfoContent, ThermalInfoCards
+│   │                  #   + ThermalInfoContent, shared InfoCardCatalog entries
 │   ├── storage/       # Storage detail screen + ViewModel + cleanup/
 │   │                  #   (CleanupScreen, CleanupViewModel, FileListItem, CategoryGroup)
-│   │                  #   + StorageInfoContent, StorageInfoCards
+│   │                  #   + StorageInfoContent, shared InfoCardCatalog entries
 │   ├── charger/       # Charger comparison screen + ViewModel
 │   ├── appusage/      # App battery usage screen + ViewModel
 │   ├── learn/         # Learn section — article catalog, list screen, detail screen
@@ -82,7 +82,7 @@ app/src/main/java/com/runcheck/
 ├── service/
 │   └── monitor/       # HealthMonitorWorker, HealthMaintenanceWorker,
 │                      #   RealTimeMonitorService, ScreenStateTracker,
-│                      #   ScreenStateReceiver, MonitoringAlertStateStore,
+│                      #   anonymous screen/idle receivers, MonitoringAlertStateStore,
 │                      #   NotificationHelper, MonitorScheduler, BootReceiver
 ├── di/                # Hilt modules
 └── util/              # Logging, timestamp sanitization, live chart buffer
@@ -255,7 +255,7 @@ Three-tier in-app educational system explaining technical metrics and concepts t
 ### Tier 2 — Contextual Info Cards (per screen section)
 - `InfoCard` composable: `surfaceContainerHigh` background, 3dp left `primary` accent border (`Modifier.drawBehind`), `InfoOutlined` 20dp icon, `Close` dismiss button, 16dp corners
 - Dismissible — dismissed state stored in DataStore via `UserPreferencesRepository.getDismissedInfoCards()` / `dismissInfoCard(id)` using `stringSetPreferencesKey`
-- Card IDs defined in `*InfoCards.kt` objects (e.g., `BatteryInfoCards.HEALTH_80_PERCENT`)
+- Card IDs are centralized in `InfoCardCatalog` (e.g., `InfoCardCatalog.BatteryHealthDegraded.id`)
 - Each ViewModel collects `dismissedInfoCards: Set<String>` into UiState and exposes `dismissInfoCard(id: String)`
 - Cards shown conditionally (e.g., health < 90%, charging, high drain, full storage) and disappear permanently when dismissed
 - **Coverage:** Battery (5 cards), Thermal (2), Network (2), Storage (2) = 11 total
@@ -334,7 +334,7 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 
 ## Build Notes
 
-- AGP 9.1.0 built-in Kotlin handles Kotlin compilation; `kotlin.compose` plugin applied separately for Compose compiler support
+- AGP 9.1.1 built-in Kotlin handles Kotlin compilation; `kotlin.compose` plugin applied separately for Compose compiler support
 - `android.disallowKotlinSourceSets=false` is needed for KSP generated sources with AGP 9
 - `BatteryManager.BATTERY_PROPERTY_CHARGING_CYCLE_COUNT` and `STATE_OF_HEALTH` are not in the public SDK — use raw integer constants (8 and 12)
 - Pull-to-refresh uses `PullToRefreshBox` (not the deprecated `PullToRefreshContainer`)
@@ -351,14 +351,14 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 ## Important Notes
 
 - This is an Android-only app — no iOS, no cross-platform
-- Privacy-first: no analytics, no tracking, no account system, no crash reporting, no network calls except latency ping and speed test
+- Privacy-first: no analytics, no tracking, no account system, and no release crash reporting. Off-device calls are limited to Google Play Billing, latency measurement, user-initiated speed tests, and debug-only Sentry diagnostics when a local DSN is configured.
 - All measurement and history data stays on device — zero data leaves the phone
-- The roadmap and next steps are documented in `docs/plans/2026-03-10-phase1-completion-and-roadmap.md`
+- Historical roadmap snapshot: `docs/plans/2026-03-10-phase1-completion-and-roadmap.md`. Use `PROJECT.md`, Gradle files, and live source for current state.
 
 ## Feature Specs
 
 - `docs/battery-enhancements-spec.md` — Battery & thermal enhancements (mAh remaining, W+mV, current stats, temp min/max, screen on/off, sleep analysis, statistics, since-unplug history)
-- `docs/storage-enhancements-spec.md` — Storage feature expansion (media breakdown, top apps, cleanup tools, trash management, large file scanner, history chart)
+- `docs/storage-enhancements-spec.md` — historical storage expansion plan; current implementation may supersede its "Nykytila" and planned-file sections
 - `docs/storage-ui-design.md` — Storage UI design spec (SegmentedBar, ActionCard, FileListItem, visual patterns)
 - `docs/storage-cleanup-spec.md` — Storage cleanup implementation (CleanupScreen, delete flow, thumbnails, category groups, success overlay)
 - `docs/settings-enhancements-spec.md` — Settings enhancements (per-alert notifications, alert thresholds, temperature unit, data management, grouped layout)

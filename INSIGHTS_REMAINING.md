@@ -14,11 +14,13 @@ This file tracks the remaining work after the initial Insights Engine rollout.
 - Added release-safety coverage for Settings debug availability and the default release-safe debug-actions implementation
 - Synced `AGENTS.md`, `CODEX.md`, and `PROJECT.md` with the implemented Insights behavior
 - Moved the release-safe `InsightDebugActions` no-op into `main` so it is covered by standard unit tests
+- Added `BaselineAnomalyRule` for battery drain that is unusually high against the user's own historical baseline
 
 ## Still Open
 
 - No required follow-up items for the current Insights rollout.
 - Future product refinements may still revisit ranking weights or the dedicated Insights screen UX if the rule set expands further.
+- The older Phase 2 "maximum one new insight per day across all rules" claim is not current shipped behavior; `InsightEngine` evaluates every bound rule and Home curation controls visible surfacing.
 
 ## Verification Targets
 

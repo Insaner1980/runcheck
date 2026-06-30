@@ -48,7 +48,6 @@
     <ID>TooGenericExceptionCaught:NetworkRepositoryImpl.kt$NetworkRepositoryImpl$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ProManager.kt$ProManager$t: Throwable</ID>
     <ID>TooGenericExceptionCaught:RuncheckApp.kt$RuncheckApp$t: Throwable</ID>
-    <ID>TooGenericExceptionCaught:ScreenStateReceiver.kt$ScreenStateReceiver$t: Throwable</ID>
     <ID>TooGenericExceptionCaught:SettingsScreen.kt$e: Exception</ID>
     <ID>TooGenericExceptionCaught:StorageDataSource.kt$StorageDataSource$e: Exception</ID>
     <ID>TooGenericExceptionCaught:StorageRepositoryImpl.kt$StorageRepositoryImpl$e: Exception</ID>

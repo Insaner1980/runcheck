@@ -1,3 +1,5 @@
 $ProjectCheckCommand = "dependabot-check"
-& "C:\Dev\Android-check\tools\InvokeProjectCheck.ps1" -ProjectCheckCommand $ProjectCheckCommand @args
+. "$PSScriptRoot\Invoke-RuncheckProjectCheck.ps1"
+$ProjectCheckScript = Resolve-RuncheckProjectCheck
+& $ProjectCheckScript -ProjectCheckCommand $ProjectCheckCommand @args
 exit $LASTEXITCODE

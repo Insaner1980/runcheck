@@ -1,6 +1,6 @@
 # runcheck Data Safety -inventaario koodista
 
-Paivitetty: 2026-03-30
+Paivitetty: 2026-06-23
 
 Tama tiedosto on tekninen inventaario.
 Tama EI ole lopullinen Play Console -lomake.
@@ -41,17 +41,17 @@ Mutta release-buildissa Sentry on no-op eika kuulu julkaistavaan artifactiin.
 
 Inventaario on tehty lukemalla ainakin seuraavat kohdat:
 
-- [app/src/main/AndroidManifest.xml](/home/emma/dev/runcheck/app/src/main/AndroidManifest.xml)
-- [app/build.gradle.kts](/home/emma/dev/runcheck/app/build.gradle.kts)
-- [app/src/main/java/com/runcheck/data/network/SpeedTestService.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/data/network/SpeedTestService.kt)
-- [app/src/main/java/com/runcheck/data/network/LatencyMeasurer.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/data/network/LatencyMeasurer.kt)
-- [app/src/main/java/com/runcheck/data/network/NetworkRepositoryImpl.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/data/network/NetworkRepositoryImpl.kt)
-- [app/src/main/java/com/runcheck/service/monitor/HealthMonitorWorker.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/service/monitor/HealthMonitorWorker.kt)
-- [app/src/main/java/com/runcheck/domain/usecase/GetMeasuredNetworkStateUseCase.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/domain/usecase/GetMeasuredNetworkStateUseCase.kt)
-- [app/src/main/java/com/runcheck/data/billing/BillingManager.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/data/billing/BillingManager.kt)
-- [app/src/main/java/com/runcheck/data/billing/ProStatusCache.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/data/billing/ProStatusCache.kt)
-- [app/src/debug/java/com/runcheck/SentryInit.kt](/home/emma/dev/runcheck/app/src/debug/java/com/runcheck/SentryInit.kt)
-- [app/src/release/java/com/runcheck/SentryInit.kt](/home/emma/dev/runcheck/app/src/release/java/com/runcheck/SentryInit.kt)
+- [app/src/main/AndroidManifest.xml](app/src/main/AndroidManifest.xml)
+- [app/build.gradle.kts](app/build.gradle.kts)
+- [app/src/main/java/com/runcheck/data/network/SpeedTestService.kt](app/src/main/java/com/runcheck/data/network/SpeedTestService.kt)
+- [app/src/main/java/com/runcheck/data/network/LatencyMeasurer.kt](app/src/main/java/com/runcheck/data/network/LatencyMeasurer.kt)
+- [app/src/main/java/com/runcheck/data/network/NetworkRepositoryImpl.kt](app/src/main/java/com/runcheck/data/network/NetworkRepositoryImpl.kt)
+- [app/src/main/java/com/runcheck/service/monitor/HealthMonitorWorker.kt](app/src/main/java/com/runcheck/service/monitor/HealthMonitorWorker.kt)
+- [app/src/main/java/com/runcheck/domain/usecase/GetMeasuredNetworkStateUseCase.kt](app/src/main/java/com/runcheck/domain/usecase/GetMeasuredNetworkStateUseCase.kt)
+- [app/src/main/java/com/runcheck/data/billing/BillingManager.kt](app/src/main/java/com/runcheck/data/billing/BillingManager.kt)
+- [app/src/main/java/com/runcheck/data/billing/ProStatusCache.kt](app/src/main/java/com/runcheck/data/billing/ProStatusCache.kt)
+- [app/src/debug/java/com/runcheck/SentryInit.kt](app/src/debug/java/com/runcheck/SentryInit.kt)
+- [app/src/release/java/com/runcheck/SentryInit.kt](app/src/release/java/com/runcheck/SentryInit.kt)
 
 ## 4. Data joka pysyy laitteella
 
@@ -69,9 +69,9 @@ Nama asiat nayttavat pysyvan laitteella eivatka tamanhetkisen koodin perusteella
 
 Esimerkkeja paikallisesta tallennuksesta:
 
-- [ProStatusCache.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/data/billing/ProStatusCache.kt)
-- [SpeedTestRepositoryImpl.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/data/network/SpeedTestRepositoryImpl.kt)
-- [NetworkRepositoryImpl.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/data/network/NetworkRepositoryImpl.kt)
+- [ProStatusCache.kt](app/src/main/java/com/runcheck/data/billing/ProStatusCache.kt)
+- [SpeedTestRepositoryImpl.kt](app/src/main/java/com/runcheck/data/network/SpeedTestRepositoryImpl.kt)
+- [NetworkRepositoryImpl.kt](app/src/main/java/com/runcheck/data/network/NetworkRepositoryImpl.kt)
 
 Tarkeaa:
 
@@ -88,8 +88,8 @@ Appi kayttaa Google Play Billingiä Pro-oston tarkistukseen ja ostoon.
 
 ### Missa koodissa
 
-- [BillingManager.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/data/billing/BillingManager.kt#L78)
-- [build.gradle.kts](/home/emma/dev/runcheck/app/build.gradle.kts#L260)
+- [BillingManager.kt](app/src/main/java/com/runcheck/data/billing/BillingManager.kt)
+- [build.gradle.kts](app/build.gradle.kts)
 
 ### Milloin data voi lahtea ulos
 
@@ -125,7 +125,7 @@ Appi tallentaa varmasti vain:
 
 Tasta loytyy koodi:
 
-- [ProStatusCache.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/data/billing/ProStatusCache.kt#L15)
+- [ProStatusCache.kt](app/src/main/java/com/runcheck/data/billing/ProStatusCache.kt)
 
 Appi ei tamanhetkisen koodin perusteella tallenna purchase tokenia omaan pysyvaan varastoonsa.
 
@@ -146,18 +146,18 @@ Appi tekee TCP-yhteyden hostiin `locate.measurementlab.net` porttiin `443` mitat
 
 ### Missa koodissa
 
-- [LatencyMeasurer.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/data/network/LatencyMeasurer.kt#L23)
-- [build.gradle.kts](/home/emma/dev/runcheck/app/build.gradle.kts#L42)
+- [LatencyMeasurer.kt](app/src/main/java/com/runcheck/data/network/LatencyMeasurer.kt)
+- [build.gradle.kts](app/build.gradle.kts)
 
 ### Miten tiedan etta tama ei ole vain speed test
 
 Latency-mittaus kaynnistyy myos taustatyossa:
 
-- [HealthMonitorWorker.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/service/monitor/HealthMonitorWorker.kt#L61)
+- [HealthMonitorWorker.kt](app/src/main/java/com/runcheck/service/monitor/HealthMonitorWorker.kt)
 
 Se kaynnistyy myos verkon mittausflowssa:
 
-- [GetMeasuredNetworkStateUseCase.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/domain/usecase/GetMeasuredNetworkStateUseCase.kt#L16)
+- [GetMeasuredNetworkStateUseCase.kt](app/src/main/java/com/runcheck/domain/usecase/GetMeasuredNetworkStateUseCase.kt)
 
 Tama tarkoittaa:
 
@@ -183,7 +183,7 @@ Koodi ei rakenna omaa sovellustasoista JSON- tai lomakepayloadia tassa kohdassa.
 
 Appi tallentaa vain mitatun latency-arvon paikalliseen historiaan:
 
-- [NetworkRepositoryImpl.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/data/network/NetworkRepositoryImpl.kt#L58)
+- [NetworkRepositoryImpl.kt](app/src/main/java/com/runcheck/data/network/NetworkRepositoryImpl.kt)
 
 ### Data safety -merkitys
 
@@ -202,9 +202,9 @@ Kun käyttäjä aloittaa speed testin, appi kayttaa M-Labin NDT7-palvelua lataus
 
 ### Missa koodissa
 
-- [SpeedTestService.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/data/network/SpeedTestService.kt#L27)
-- [RunSpeedTestUseCase.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/domain/usecase/RunSpeedTestUseCase.kt#L1)
-- [NetworkViewModel.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/ui/network/NetworkViewModel.kt#L99)
+- [SpeedTestService.kt](app/src/main/java/com/runcheck/data/network/SpeedTestService.kt)
+- [RunSpeedTestUseCase.kt](app/src/main/java/com/runcheck/domain/usecase/RunSpeedTestUseCase.kt)
+- [NetworkViewModel.kt](app/src/main/java/com/runcheck/ui/network/NetworkViewModel.kt)
 
 ### Mita dataa lahtee ulos
 
@@ -232,7 +232,7 @@ Appi tallentaa Roomiin:
 
 Tama loytyy taalta:
 
-- [SpeedTestRepositoryImpl.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/data/network/SpeedTestRepositoryImpl.kt#L28)
+- [SpeedTestRepositoryImpl.kt](app/src/main/java/com/runcheck/data/network/SpeedTestRepositoryImpl.kt)
 
 ### Data safety -merkitys
 
@@ -252,9 +252,9 @@ Release-buildissa Sentry on no-op.
 
 ### Missa koodissa
 
-- [app/src/debug/java/com/runcheck/SentryInit.kt](/home/emma/dev/runcheck/app/src/debug/java/com/runcheck/SentryInit.kt)
-- [app/src/release/java/com/runcheck/SentryInit.kt](/home/emma/dev/runcheck/app/src/release/java/com/runcheck/SentryInit.kt)
-- [build.gradle.kts](/home/emma/dev/runcheck/app/build.gradle.kts#L267)
+- [app/src/debug/java/com/runcheck/SentryInit.kt](app/src/debug/java/com/runcheck/SentryInit.kt)
+- [app/src/release/java/com/runcheck/SentryInit.kt](app/src/release/java/com/runcheck/SentryInit.kt)
+- [build.gradle.kts](app/build.gradle.kts)
 
 ### Data safety -merkitys
 
@@ -276,7 +276,7 @@ Korkea.
 
 Koodi:
 
-- [SettingsScreen.kt](/home/emma/dev/runcheck/app/src/main/java/com/runcheck/ui/settings/SettingsScreen.kt#L943)
+- [SettingsScreen.kt](app/src/main/java/com/runcheck/ui/settings/SettingsScreen.kt)
 
 Tama on kayttajan oma jakotoiminto:
 

@@ -155,7 +155,7 @@ class TrialManager
                                 TrialNotificationWorker.KEY_NOTIFICATION_TYPE,
                                 TrialNotificationWorker.TYPE_DAY5,
                             ).build(),
-                    ).addTag(TrialNotificationWorker.WORK_TAG_DAY5)
+                    ).addTag(TrialNotificationWorker.TAG_DAY5)
                     .build()
 
             val day7Request =
@@ -168,24 +168,24 @@ class TrialManager
                                 TrialNotificationWorker.KEY_NOTIFICATION_TYPE,
                                 TrialNotificationWorker.TYPE_DAY7,
                             ).build(),
-                    ).addTag(TrialNotificationWorker.WORK_TAG_DAY7)
+                    ).addTag(TrialNotificationWorker.TAG_DAY7)
                     .build()
 
             workManager.enqueueUniqueWork(
-                TrialNotificationWorker.WORK_TAG_DAY5,
+                TrialNotificationWorker.UNIQUE_WORK_DAY5,
                 ExistingWorkPolicy.KEEP,
                 day5Request,
             )
             workManager.enqueueUniqueWork(
-                TrialNotificationWorker.WORK_TAG_DAY7,
+                TrialNotificationWorker.UNIQUE_WORK_DAY7,
                 ExistingWorkPolicy.KEEP,
                 day7Request,
             )
         }
 
         fun cancelTrialNotifications() {
-            workManager.cancelUniqueWork(TrialNotificationWorker.WORK_TAG_DAY5)
-            workManager.cancelUniqueWork(TrialNotificationWorker.WORK_TAG_DAY7)
+            workManager.cancelUniqueWork(TrialNotificationWorker.UNIQUE_WORK_DAY5)
+            workManager.cancelUniqueWork(TrialNotificationWorker.UNIQUE_WORK_DAY7)
         }
 
         companion object {

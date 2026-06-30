@@ -18,6 +18,7 @@ import com.runcheck.util.appendLiveValue
 import com.runcheck.util.getEnumOrDefault
 import com.runcheck.util.putEnum
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -123,6 +124,7 @@ class ThermalViewModel
                 }
         }
 
+        @OptIn(FlowPreview::class)
         private fun loadThermalData() {
             loadJob?.cancel()
             loadJob =

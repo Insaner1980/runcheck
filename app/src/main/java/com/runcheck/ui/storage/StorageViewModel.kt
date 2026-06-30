@@ -19,6 +19,7 @@ import com.runcheck.util.getEnumOrDefault
 import com.runcheck.util.putEnum
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -135,6 +136,7 @@ class StorageViewModel
                 }
         }
 
+        @OptIn(FlowPreview::class)
         private fun loadStorageData() {
             loadJob?.cancel()
             loadJob =

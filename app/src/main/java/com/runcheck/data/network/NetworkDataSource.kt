@@ -11,6 +11,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.net.wifi.ScanResult
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
@@ -594,19 +595,19 @@ class NetworkDataSource
         @RequiresApi(Build.VERSION_CODES.R)
         private fun WifiInfo.toWifiStandardLabel(frequencyMhz: Int): String? =
             when (wifiStandard) {
-                WIFI_STANDARD_LEGACY -> {
+                ScanResult.WIFI_STANDARD_LEGACY -> {
                     null
                 }
 
-                WIFI_STANDARD_11N -> {
+                ScanResult.WIFI_STANDARD_11N -> {
                     "Wi-Fi 4 (802.11n)"
                 }
 
-                WIFI_STANDARD_11AC -> {
+                ScanResult.WIFI_STANDARD_11AC -> {
                     "Wi-Fi 5 (802.11ac)"
                 }
 
-                WIFI_STANDARD_11AX -> {
+                ScanResult.WIFI_STANDARD_11AX -> {
                     if (frequencyMhz >= MIN_6_GHZ_FREQUENCY_MHZ) {
                         "Wi-Fi 6E (802.11ax)"
                     } else {
@@ -614,11 +615,11 @@ class NetworkDataSource
                     }
                 }
 
-                WIFI_STANDARD_11AD -> {
+                ScanResult.WIFI_STANDARD_11AD -> {
                     "WiGig (802.11ad)"
                 }
 
-                WIFI_STANDARD_11BE -> {
+                ScanResult.WIFI_STANDARD_11BE -> {
                     "Wi-Fi 7 (802.11be)"
                 }
 
@@ -802,12 +803,6 @@ class NetworkDataSource
 
         companion object {
             private const val MIN_6_GHZ_FREQUENCY_MHZ = 5925
-            private const val WIFI_STANDARD_LEGACY = 1
-            private const val WIFI_STANDARD_11N = 4
-            private const val WIFI_STANDARD_11AC = 5
-            private const val WIFI_STANDARD_11AX = 6
-            private const val WIFI_STANDARD_11AD = 7
-            private const val WIFI_STANDARD_11BE = 8
             private const val STOP_TIMEOUT_MS = 0L
             private const val TAG = "NetworkDataSource"
         }

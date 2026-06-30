@@ -1,5 +1,6 @@
 package com.runcheck.pro
 
+import com.runcheck.worker.TrialNotificationWorker
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -134,5 +135,13 @@ class TrialManagerTest {
 
         assertFalse(resolution.state.isActive)
         assertEquals(0, resolution.state.daysRemaining)
+    }
+
+    @Test
+    fun `trial notification work names and tags expose separate roles`() {
+        assertEquals("trial_notification_day5", TrialNotificationWorker.UNIQUE_WORK_DAY5)
+        assertEquals("trial_notification_day7", TrialNotificationWorker.UNIQUE_WORK_DAY7)
+        assertEquals("trial_notification_day5", TrialNotificationWorker.TAG_DAY5)
+        assertEquals("trial_notification_day7", TrialNotificationWorker.TAG_DAY7)
     }
 }

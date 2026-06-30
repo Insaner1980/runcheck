@@ -6,6 +6,13 @@ Android device health diagnostics app. Kotlin + Jetpack Compose. Single dark the
 
 When product/runtime facts or visual system rules matter, treat `PROJECT.md` and `UI-SPEC.md` as the authoritative companion docs and keep them aligned with code.
 
+## Instruction Hierarchy
+
+- Direct user instructions in the current task override repository docs.
+- `AGENTS.md` and `CODEX.md` are the primary repository instruction files for agents. Keep overlapping rules in sync; if they conflict, fix the mismatch in both files instead of following divergent rule sets.
+- `PROJECT.md` is the current-state product, runtime, build, and report-reading source of truth; `UI-SPEC.md` is the visual-system companion.
+- Executable workflow behavior comes from `.github/workflows/`, `tools/`, `scripts/`, and the delegated Android-check wrapper source resolved by `tools\Invoke-RuncheckProjectCheck.ps1`. Documentation should describe those files, not override them.
+
 ---
 
 ## Architecture
@@ -34,8 +41,8 @@ Dependency injection: Hilt. Database: Room. UI: Jetpack Compose + Material 3.
 - Widgets: Glance
 - Speed test: M-Lab NDT7 (`ndt7-client-android`)
 - Build: Gradle Kotlin DSL
-- Compile SDK: Android 17 beta (`CinnamonBun`)
-- Target SDK: Android 17 beta (`CinnamonBun`)
+- Compile SDK: Android 17 (API 37)
+- Target SDK: Android 17 (API 37)
 - Min SDK: 26
 - Java target: 17
 - Localization: English-only (`localeFilters = ["en"]`)
@@ -105,7 +112,7 @@ State restoration conventions:
 
 ## Local Check Tooling
 
-PowerShell wrappers live in `tools/` and forward to `C:\Dev\Android-check\tools\InvokeProjectCheck.ps1`.
+PowerShell wrappers live in `tools/` and forward through `tools\Invoke-RuncheckProjectCheck.ps1`. The helper resolves the shared Android-check repository from `ANDROID_CHECK_ROOT` first, then from a sibling `Android-check` checkout next to `runcheck`.
 
 - `lc` / `tools\lc.ps1` — ktlint, detekt, Android lint; writes `reports\ktlint.txt`, `reports\detekt.txt`, and `reports\lint.txt`
 - `ac` / `tools\ac.ps1` — Android security surface; project Semgrep, mobsfscan, and DeepSec custom report
@@ -125,6 +132,8 @@ PowerShell wrappers live in `tools/` and forward to `C:\Dev\Android-check\tools\
 - `tools\sonar.ps1` — SonarCloud path; requires `SONAR_TOKEN`, runs `assembleDebug`, `:app:jacocoDebugUnitTestReport`, prepares an empty Android Lint import placeholder because `lc` owns real lint findings, and runs `sonar`, then writes `reports\sonar.txt`
 
 `scripts\security-check.ps1` is only a compatibility wrapper to `tools\sc.ps1`. No Linux shell security wrapper is maintained in this Windows-first repo. `reports/` is ignored and must not be committed.
+
+Report-reading phrase conventions live in `PROJECT.md` under "Report-reading convention"; use that list when the user says "lue lint-tulokset" or "lue security-tulokset" instead of inferring a shorter report list from wrapper summaries.
 
 When `osv-scanner`, gitleaks, TruffleHog, or PMD are missing from `PATH`, the shared Android-check wrappers may download and cache verified tool binaries under `.gradle\android-check-tools\`; offline first runs can therefore skip or fail before a cached tool exists. The OSV source scan excludes `.deepsec` so Android-check's own DeepSec tooling dependencies do not fail app dependency scans.
 
@@ -235,6 +244,19 @@ Raise a review comment for any of the following:
 
 ---
 
+## Working Conventions
+
+- Prefer explicit imports.
+- Avoid wildcard imports.
+- Keep code comments in English.
+- Avoid `!!`.
+- Put user-facing strings in resources.
+- Keep composables small and focused.
+- Keep ViewModel state explicit and testable.
+- Prefer minimal, targeted edits over broad rewrites.
+
+---
+
 ## Preferred Local Skills
 
 If local Codex skills are installed, prefer:
@@ -257,17 +279,16 @@ If local Codex skills are installed, prefer:
 <claude-mem-context>
 # Memory Context
 
-# [runcheck] recent context, 2026-06-09 4:33pm GMT+3
+# [runcheck] recent context, 2026-06-26 12:56pm GMT+3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (18,385t read) | 280,347t work | 93% savings
+Stats: 50 obs (18,445t read) | 409,222t work | 95% savings
 
 ### Mar 16, 2026
-4488 8:49p 🔵 Network detail screen displays IPv6 addresses using MetricRow component
-4489 " 🔵 Network detail screen structure examined for tap-to-copy integration
+4489 8:49p 🔵 Network detail screen structure examined for tap-to-copy integration
 4490 " 🔵 MetricRow component structure analyzed for interactive enhancement
 4491 8:50p ✅ Added clipboard feedback string resource
 4492 " 🟣 Added Finnish localization for clipboard copy feedback
@@ -323,10 +344,7 @@ S392 Fix recurring Android Gradle build failures caused by CLAUDE.md files in re
 4530 " 🔴 Removed Build-Breaking CLAUDE.md Files from Android Resource Directories
 4531 7:02p 🔄 ProGuard rules optimized by removing unnecessary keep rules
 4532 " 🔄 Removed unused kotlin-android plugin from version catalog
-**4533** " ✅ **Enforced centralized repository management in Gradle settings**
-The Gradle configuration was hardened by adding repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS) to the dependency resolution management block in settings.gradle.kts. This setting enforces that all dependency repositories (google(), mavenCentral(), JitPack) must be declared at the settings level, and prevents individual module build files from declaring their own repositories. This is a Gradle best practice that centralizes repository management, improves build reproducibility, and enhances security by ensuring all dependencies come from approved sources. If a module attempts to add its own repositories block, the build will fail with a clear error message, catching configuration mistakes early.
-~341t 🛠️ 1,292
-
+4533 " ✅ Enforced centralized repository management in Gradle settings
 **4534** 7:03p 🔄 **Migrated environment variable reads to Gradle Providers API**
 The build configuration was modernized by migrating from direct System.getenv() calls to Gradle's Providers API using providers.environmentVariable(). This is critical for enabling Gradle's configuration cache feature, which can dramatically improve build performance by caching the result of the configuration phase. Direct System.getenv() reads break configuration cache because they're not tracked as build inputs, while the Providers API creates lazy providers that Gradle can properly track and cache. The migration maintains all existing default values (runcheck_pro for product ID, locate.measurementlab.net for latency host, 443 for port, and AdMob test IDs) while enabling modern Gradle optimizations. This is particularly important for CI/CD pipelines and local development where configuration cache can reduce build times significantly.
 ~386t 🛠️ 4,624
@@ -343,6 +361,11 @@ The dependency locking configuration was removed from the build script as it was
 The project documentation was updated to remove an outdated note about AGP built-in Kotlin configuration. The previous documentation mentioned that android.builtInKotlin was disabled for KSP compatibility, but this configuration detail was removed from the tech stack overview. This aligns with earlier changes where the kotlin-android plugin declaration was removed from the version catalog, with the project now relying on the kotlin-compose plugin for Kotlin compilation. The simplified documentation reflects the current build configuration without implementation details that may change or become outdated.
 ~285t 🛠️ 5,794
 
+### Jun 24, 2026
+**5639** 8:24p 🔵 **AGP lint 32.1.1 missing from Gradle dependency verification metadata**
+Investigation into a Gradle build or lint failure in the runcheck Android project revealed that AGP/lint tooling had been upgraded from version 32.1.0 to 32.1.1, but the dependency verification metadata was stale. The most recent dependency-verification-report.html (timestamped at-1782315526490 on 2026-06-24) documented exactly which artifacts were missing verification checksums. The git diff shows verification-metadata.xml and verification-keyring.keys have been refreshed to add the missing 32.1.1 entries for all AGP/lint tooling components including intellij-core, kotlin-compiler, lint, lint-api, lint-checks, lint-gradle, play-sdk-proto, and uast. This matches the established pattern in MEMORY.md where lint/security wrapper failures often stem from missing dependency-verification metadata rather than actual code defects.
+~391t 🔍 139,676
 
-Access 280k tokens of past work via get_observations([IDs]) or mem-search skill.
+
+Access 409k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

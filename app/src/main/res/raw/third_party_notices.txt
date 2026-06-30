@@ -1,0 +1,73 @@
+runcheck third-party notices
+
+This app includes production open-source software, SDK components, fonts, and icon libraries from the projects listed below. This notice supplements license metadata packaged in dependency artifacts.
+
+AndroidX and Jetpack Compose
+Artifacts: Activity, Core, Lifecycle, Navigation, Room, WorkManager, DataStore, Paging, Glance, ProfileInstaller, Window, SQLite, Compose UI, Compose Foundation, Compose Animation, Compose Runtime, Compose Material 3, Compose Material Icons Core, and Compose Material Icons Extended.
+Copyright: The Android Open Source Project and contributors.
+License: Apache-2.0, except the repackaged protobuf artifacts listed separately below.
+Source and license: https://cs.android.com/androidx/platform/frameworks/support and https://www.apache.org/licenses/LICENSE-2.0
+
+AndroidX repackaged protobuf artifacts
+Artifacts: androidx.datastore:datastore-preferences-external-protobuf and androidx.glance:glance-appwidget-external-protobuf.
+Copyright: The Android Open Source Project and contributors.
+License: BSD-3-Clause.
+License text: https://opensource.org/licenses/BSD-3-Clause
+
+Kotlin and kotlinx libraries
+Artifacts: Kotlin standard library, kotlinx.coroutines, and kotlinx.serialization runtime artifacts.
+Copyright: JetBrains s.r.o. and Kotlin project contributors.
+License: Apache-2.0.
+License text: https://www.apache.org/licenses/LICENSE-2.0
+
+Dagger and Hilt
+Artifacts: com.google.dagger:hilt-android and related runtime artifacts.
+Copyright: Google LLC and contributors.
+License: Apache-2.0.
+License text: https://www.apache.org/licenses/LICENSE-2.0
+
+Google Play Billing and Google Play services
+Artifacts: com.android.billingclient:billing, com.android.billingclient:billing-ktx, and Google Play services runtime artifacts used transitively by Billing.
+Copyright: Google LLC.
+License: Android Software Development Kit License.
+Terms: https://developer.android.com/studio/terms
+
+M-Lab NDT7 Android client
+Artifact: com.github.m-lab:ndt7-client-android-java:e0cb663613eb252a7793216ad28cf54a35677b8f.
+Copyright: M-Lab and contributors.
+License: Apache-2.0.
+Source and license: https://github.com/m-lab/ndt7-client-android-java and https://www.apache.org/licenses/LICENSE-2.0
+Note: This SHA-pinned Maven artifact does not carry license metadata in its POM, so runcheck keeps this manual notice entry.
+
+OkHttp and Okio
+Artifacts: com.squareup.okhttp3:okhttp and com.squareup.okio:okio-jvm.
+Copyright: Square, Inc. and contributors.
+License: Apache-2.0.
+License text: https://www.apache.org/licenses/LICENSE-2.0
+Additional packaged notice: OkHttp includes public suffix data attribution in its artifact.
+
+Gson
+Artifact: com.google.code.gson:gson.
+Copyright: Google LLC and contributors.
+License: Apache-2.0.
+License text: https://www.apache.org/licenses/LICENSE-2.0
+
+Guava ListenableFuture
+Artifact: com.google.guava:listenablefuture.
+Copyright: Google LLC and contributors.
+License: Apache-2.0, inherited from the Guava parent project metadata.
+License text: https://www.apache.org/licenses/LICENSE-2.0
+
+Manrope font
+Resource: app/src/main/res/font/manrope.ttf.
+Copyright: Copyright 2019 The Manrope Project Authors.
+License: SIL Open Font License 1.1.
+License text: https://openfontlicense.org/open-font-license-official-text/
+
+JetBrains Mono font
+Resource: app/src/main/res/font/jetbrains_mono.ttf.
+Copyright: Copyright 2020 The JetBrains Mono Project Authors.
+License: SIL Open Font License 1.1.
+License text: https://openfontlicense.org/open-font-license-official-text/
+
+Other production Maven dependencies resolved on the release runtime classpath are covered by their Maven POM license metadata and packaged META-INF license resources. The release dependency surface reviewed for this notice did not contain AGPL, GPL, LGPL, MPL, EPL, or CDDL license identifiers.

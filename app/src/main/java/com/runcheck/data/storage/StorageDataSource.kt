@@ -1,9 +1,10 @@
 package com.runcheck.data.storage
 
 import android.app.AppOpsManager
+import android.app.admin.DevicePolicyManager
 import android.app.usage.StorageStatsManager
 import android.content.Context
-import android.content.pm.ApplicationInfo
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Environment
@@ -29,6 +30,8 @@ class StorageDataSource
     ) {
         private val storageStatsManager =
             context.getSystemService(Context.STORAGE_STATS_SERVICE) as? StorageStatsManager
+        private val devicePolicyManager =
+            context.getSystemService(Context.DEVICE_POLICY_SERVICE) as? DevicePolicyManager
 
         suspend fun getStorageInfo(): StorageInfo {
             val mediaBreakdown =
@@ -102,26 +105,33 @@ class StorageDataSource
                 val uuid = StorageManager.UUID_DEFAULT
                 val user = android.os.Process.myUserHandle()
                 val stats = ssm.queryStatsForUser(uuid, user)
-                val appCount =
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        context.packageManager
-                            .getInstalledApplications(PackageManager.ApplicationInfoFlags.of(0L))
-                            .count { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 }
-                    } else {
-                        @Suppress("DEPRECATION")
-                        context.packageManager
-                            .getInstalledApplications(0)
-                            .count { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 }
-                    }
                 AppStats(
                     totalBytes = stats.appBytes + stats.dataBytes + stats.cacheBytes,
                     cacheBytes = stats.cacheBytes,
-                    appCount = appCount,
+                    appCount = countLaunchableApps(),
                 )
             } catch (_: Exception) {
                 null
             }
         }
+
+        private fun countLaunchableApps(): Int? =
+            try {
+                val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+                val packageNames =
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        context.packageManager.queryIntentActivities(
+                            intent,
+                            PackageManager.ResolveInfoFlags.of(0L),
+                        )
+                    } else {
+                        @Suppress("DEPRECATION")
+                        context.packageManager.queryIntentActivities(intent, 0)
+                    }.mapNotNull { resolveInfo -> resolveInfo.activityInfo?.packageName }
+                countDistinctPackageNames(packageNames)
+            } catch (_: RuntimeException) {
+                null
+            }
 
         @Suppress("kotlin:S5324")
         private fun getExternalSdCard(): SdCardInfo? {
@@ -156,7 +166,7 @@ class StorageDataSource
         private data class AppStats(
             val totalBytes: Long,
             val cacheBytes: Long,
-            val appCount: Int,
+            val appCount: Int?,
         )
 
         private data class SdCardInfo(
@@ -167,7 +177,6 @@ class StorageDataSource
         @Suppress("TooGenericExceptionCaught", "CyclomaticComplexMethod")
         private fun getDeviceStorageInfo(): DeviceStorageInfo {
             var fsType: String? = null
-            var encrypted: String? = null
             var volumes = 1
 
             // File system type from /proc/mounts
@@ -185,22 +194,6 @@ class StorageDataSource
                 ReleaseSafeLog.error(TAG, "Failed to read /proc/mounts", e)
             }
 
-            // Encryption status from system property
-            try {
-                val cryptoType = getSystemProperty("ro.crypto.type")
-                val cryptoState = getSystemProperty("ro.crypto.state")
-                encrypted =
-                    when {
-                        cryptoType == "file" || cryptoType == "FBE" -> "FBE"
-                        cryptoType == "block" || cryptoType == "FDE" -> "FDE"
-                        cryptoState == "encrypted" -> "Encrypted"
-                        cryptoState == "unencrypted" -> "None"
-                        else -> null
-                    }
-            } catch (e: ReflectiveOperationException) {
-                ReleaseSafeLog.error(TAG, "Failed to read encryption status", e)
-            }
-
             // Storage volumes via StorageManager
             try {
                 val sm = context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
@@ -211,18 +204,17 @@ class StorageDataSource
 
             return DeviceStorageInfo(
                 fileSystemType = fsType,
-                encryptionStatus = encrypted,
+                encryptionStatus = getStorageEncryptionStatus(),
                 storageVolumes = volumes,
             )
         }
 
-        private fun getSystemProperty(key: String): String? =
+        private fun getStorageEncryptionStatus(): String? =
             try {
-                val clazz = Class.forName("android.os.SystemProperties")
-                val method = clazz.getMethod("get", String::class.java, String::class.java)
-                val value = method.invoke(null, key, "") as String
-                value.takeIf { it.isNotBlank() }
-            } catch (_: Exception) {
+                devicePolicyManager
+                    ?.storageEncryptionStatus
+                    ?.let(::mapStorageEncryptionStatus)
+            } catch (_: RuntimeException) {
                 null
             }
 
@@ -236,3 +228,22 @@ class StorageDataSource
             private const val TAG = "StorageDataSource"
         }
     }
+
+internal fun mapStorageEncryptionStatus(status: Int): String? =
+    when (status) {
+        DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE_PER_USER -> "FBE"
+        DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE -> "Encrypted"
+        DevicePolicyManager.ENCRYPTION_STATUS_INACTIVE -> "Inactive"
+        DevicePolicyManager.ENCRYPTION_STATUS_UNSUPPORTED -> "Unsupported"
+        else -> null
+    }
+
+internal fun countDistinctPackageNames(packageNames: Iterable<String>): Int? {
+    val count =
+        packageNames
+            .map(String::trim)
+            .filter(String::isNotEmpty)
+            .toSet()
+            .size
+    return count.takeIf { it > 0 }
+}

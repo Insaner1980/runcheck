@@ -26,7 +26,7 @@
     <string name="home_storage_card">Storage</string>
     <string name="home_chargers_card">Chargers</string>
     <string name="home_app_usage_card">App Usage</string>
-    <string name="home_pro_title">Unlock runcheck pro</string>
+    <string name="home_pro_title">Unlock runcheck Pro</string>
     <string name="home_chargers_desc">Test &amp; compare your chargers</string>
     <string name="home_health_score">HEALTH SCORE</string>
     <string name="home_device_good_shape">Your device is in %1$s shape.</string>
@@ -51,6 +51,8 @@
     </plurals>
     <string name="insight_battery_degradation_title">Battery draining faster</string>
     <string name="insight_battery_degradation_body">Your battery has been draining %1$s%% faster this week compared to last week.</string>
+    <string name="insight_battery_baseline_anomaly_title">Battery drain looks unusual</string>
+    <string name="insight_battery_baseline_anomaly_body">Recent battery drain was about %1$s%%/h, above your usual %2$s%%/h baseline.</string>
     <string name="insight_app_battery_impact_title">One app is hitting battery unusually hard</string>
     <string name="insight_app_battery_impact_body">%1$s accounted for about %2$s mAh of estimated drain, around %3$s%% of tracked app battery use today.</string>
     <string name="insight_charger_performance_title">One charger is clearly slower</string>
@@ -166,6 +168,8 @@
     <string name="value_milliamps_int">%1$d mA</string>
     <string name="battery_remaining_mah">%1$s · ~%2$d mAh remaining</string>
     <string name="battery_capacity_mah">%1$d / %2$d mAh</string>
+    <string name="battery_estimated_full_capacity">Estimated Full Capacity</string>
+    <string name="battery_estimated_capacity_mah">%1$d mAh estimated</string>
 
     <!-- Battery Usage (#5) -->
     <string name="battery_screen_on">Screen On</string>
@@ -302,6 +306,7 @@
     <string name="network_speed_test_no_results">No speed test results yet</string>
     <string name="unit_mhz">MHz</string>
     <string name="common_cancel">Cancel</string>
+    <string name="common_close">Close</string>
     <string name="common_yes">Yes</string>
     <string name="common_no">No</string>
     <string name="common_on">On</string>
@@ -382,8 +387,8 @@
     <!-- Storage Cache -->
     <string name="storage_cache_total">Cache</string>
     <plurals name="storage_cache_summary">
-        <item quantity="one">%1$s across %2$d app</item>
-        <item quantity="other">%1$s across %2$d apps</item>
+        <item quantity="one">%1$s; %2$d launchable app visible</item>
+        <item quantity="other">%1$s; %2$d launchable apps visible</item>
     </plurals>
 
     <!-- Storage History -->
@@ -497,6 +502,7 @@
     <string name="info_settings_thermal_zones_matters">More thermal zones give runcheck more data points for temperature monitoring. If your device exposes zero zones, thermal readings rely on the battery temperature sensor alone, which is less precise for detecting CPU-related heat issues.</string>
 
     <string name="settings_about">About</string>
+    <string name="settings_open_source_licenses">Open source licenses</string>
     <string name="settings_upgrade_pro">Upgrade to pro</string>
     <string name="settings_upgrade_pro_with_price">Upgrade to pro - %1$s</string>
     <string name="settings_restore_purchase">Restore purchase</string>
@@ -585,14 +591,14 @@
     <string name="settings_play_store_web_url" translatable="false">https://play.google.com/store/apps/details?id=com.runcheck</string>
     <string name="settings_privacy_policy_url" translatable="false">https://github.com/Insaner1980/runcheck/blob/main/docs/privacy-policy.md</string>
     <string name="pro_feature_badge">PRO</string>
-    <string name="pro_feature_locked_message">Upgrade to runcheck pro to use %1$s.</string>
+    <string name="pro_feature_locked_message">Upgrade to runcheck Pro to use %1$s.</string>
     <string name="pro_feature_upgrade_action">Upgrade in Settings</string>
-    <string name="pro_feature_locked_generic">This feature requires runcheck pro</string>
-    <string name="pro_feature_battery_history_message">Week, month, and all-time battery history require runcheck pro.</string>
-    <string name="pro_feature_thermal_log_message">Thermal throttling history requires runcheck pro.</string>
-    <string name="pro_feature_export_message">CSV export requires runcheck pro.</string>
-    <string name="pro_feature_cleanup_message">Storage cleanup tools require runcheck pro.</string>
-    <string name="pro_feature_network_history_message">Signal history and extended speed test data require runcheck pro.</string>
+    <string name="pro_feature_locked_generic">This feature requires runcheck Pro</string>
+    <string name="pro_feature_battery_history_message">Week, month, and all-time battery history require runcheck Pro.</string>
+    <string name="pro_feature_thermal_log_message">Thermal throttling history requires runcheck Pro.</string>
+    <string name="pro_feature_export_message">CSV export requires runcheck Pro.</string>
+    <string name="pro_feature_cleanup_message">Storage cleanup tools require runcheck Pro.</string>
+    <string name="pro_feature_network_history_message">Signal history and extended speed test data require runcheck Pro.</string>
 
     <!-- Widgets -->
     <string name="widget_battery_name">Battery Status</string>
@@ -681,7 +687,7 @@
     <string name="charger_historical_subtitle">Average result from completed charger tests.</string>
     <string name="charger_selection_title">Selected charger</string>
     <string name="charger_selection_none">No charger selected</string>
-    <string name="charger_selection_hint">Choose a saved charger before charging so Runcheck can log the next session to the right profile.</string>
+    <string name="charger_selection_hint">Choose a saved charger before charging so runcheck can log the next session to the right profile.</string>
     <string name="charger_selection_active">The current charging session is being logged to this charger.</string>
     <string name="charger_selection_ready">The next charging session will be saved to this charger.</string>
     <plurals name="charger_sessions">
@@ -884,9 +890,9 @@
     <string name="info_battery_health_percent_matters">This directly tells you how much of the original battery capacity is available. Below 80%, you\'ll notice significantly shorter battery life.</string>
 
     <string name="info_battery_capacity_title">Battery Capacity</string>
-    <string name="info_battery_capacity_explanation">The amount of electrical charge your battery can hold, measured in milliamp-hours (mAh). Compares the design capacity to estimated current capacity.</string>
+    <string name="info_battery_capacity_explanation">The estimated full charge your battery can currently hold, measured in milliamp-hours (mAh). runcheck estimates this from the reported remaining charge and battery percentage when Android exposes those values.</string>
     <string name="info_battery_capacity_range">Varies by device. A typical phone battery is 3000–5000 mAh when new.</string>
-    <string name="info_battery_capacity_matters">Lower capacity means less usage time between charges. The gap between design and estimated capacity shows how much your battery has worn.</string>
+    <string name="info_battery_capacity_matters">Lower capacity means less usage time between charges. Track this estimate over time rather than treating a single reading as an exact manufacturer design capacity.</string>
 
     <string name="info_battery_current_title">Current (mA)</string>
     <string name="info_battery_current_explanation">How much electrical current is flowing in or out of your battery right now. Positive means charging, negative means discharging.</string>
@@ -1193,11 +1199,11 @@
     <!-- Learn Articles - Storage -->
     <string name="learn_storage_slowdown_title">Full Storage &amp; Performance</string>
     <string name="learn_storage_slowdown_preview">Why a nearly-full phone runs slower and what you can do about it.</string>
-    <string name="learn_storage_slowdown_body" formatted="false">## How storage affects speed\n\nModern flash storage (UFS/eMMC) needs free space to operate efficiently. The controller uses free blocks for wear leveling, garbage collection, and write amplification management. Below about 25% free space, these operations become constrained.\n\n## What you\'ll notice\n\nApp launches take longer. Photos take a moment to save. System updates may fail. Apps may crash when they can\'t write temporary data. The overall system feels sluggish.\n\n## Fixing it\n\nStart with obvious wins: large files, stale downloads, leftover APK installers, and oversized app caches. If you have runcheck pro, the Storage cleanup tools can help surface those categories quickly. Review apps you haven\'t used recently and move large photos or videos off the device if space stays tight.</string>
+    <string name="learn_storage_slowdown_body" formatted="false">## How storage affects speed\n\nModern flash storage (UFS/eMMC) needs free space to operate efficiently. The controller uses free blocks for wear leveling, garbage collection, and write amplification management. Below about 25% free space, these operations become constrained.\n\n## What you\'ll notice\n\nApp launches take longer. Photos take a moment to save. System updates may fail. Apps may crash when they can\'t write temporary data. The overall system feels sluggish.\n\n## Fixing it\n\nStart with obvious wins: large files, stale downloads, leftover APK installers, and oversized app caches. If you have runcheck Pro, the Storage cleanup tools can help surface those categories quickly. Review apps you haven\'t used recently and move large photos or videos off the device if space stays tight.</string>
 
     <string name="learn_storage_breakdown_title">Where Your Storage Goes</string>
     <string name="learn_storage_breakdown_preview">Understanding what uses your storage and how to manage each category effectively.</string>
-    <string name="learn_storage_breakdown_body">## The main categories\n\nApps and their data typically use the most space (30–60% on most phones). Photos and videos are usually second. System files take a chunk you cannot fully reclaim. Downloads, documents, and audio make up the rest.\n\n## Hidden storage consumers\n\nApp caches grow over time: social media apps can cache gigabytes of images and videos. Messaging apps store received media. Offline maps and music can use significant space. Old APK installer files often linger in Downloads.\n\n## Management strategies\n\nRegularly review large files and Downloads. If you have runcheck pro, the Storage cleanup tools can surface large files, old downloads, and leftover APKs. When media access is available, the Storage screen\'s media breakdown chart shows where scanned media space is going.</string>
+    <string name="learn_storage_breakdown_body">## The main categories\n\nApps and their data typically use the most space (30–60% on most phones). Photos and videos are usually second. System files take a chunk you cannot fully reclaim. Downloads, documents, and audio make up the rest.\n\n## Hidden storage consumers\n\nApp caches grow over time: social media apps can cache gigabytes of images and videos. Messaging apps store received media. Offline maps and music can use significant space. Old APK installer files often linger in Downloads.\n\n## Management strategies\n\nRegularly review large files and Downloads. If you have runcheck Pro, the Storage cleanup tools can surface large files, old downloads, and leftover APKs. When media access is available, the Storage screen\'s media breakdown chart shows where scanned media space is going.</string>
 
     <!-- Learn Articles - General -->
     <string name="learn_health_score_title">How the Health Score Works</string>
