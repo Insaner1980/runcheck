@@ -8,6 +8,7 @@ import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.pro.ProState
+import com.runcheck.ui.common.UiText
 
 sealed interface HomeUiState {
     data object Loading : HomeUiState
@@ -33,6 +34,6 @@ sealed interface HomeUiState {
     }
 
     data class Error(
-        val message: String,
+        val message: UiText,
     ) : HomeUiState
 }

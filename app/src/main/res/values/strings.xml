@@ -7,7 +7,6 @@
     <string name="navigate_back">Back</string>
     <string name="navigate_menu">Menu</string>
     <string name="a11y_progress_percent">%1$s, %2$d percent</string>
-    <string name="a11y_speed_gauge">%1$s, %2$s %3$s</string>
     <string name="a11y_heat_strip">Battery temperature %1$s, %2$s</string>
     <string name="a11y_chart_trend">%1$s trend chart</string>
     <string name="a11y_chart_summary">%1$s. Range %2$s to %3$s. Latest %4$s. Trend %5$s.</string>
@@ -167,7 +166,6 @@
     <string name="battery_current_maximum">Maximum</string>
     <string name="value_milliamps_int">%1$d mA</string>
     <string name="battery_remaining_mah">%1$s · ~%2$d mAh remaining</string>
-    <string name="battery_capacity_mah">%1$d / %2$d mAh</string>
     <string name="battery_estimated_full_capacity">Estimated Full Capacity</string>
     <string name="battery_estimated_capacity_mah">%1$d mAh estimated</string>
 
@@ -218,16 +216,11 @@
     <!-- Units -->
     <string name="unit_percent">%</string>
     <string name="unit_milliamps">mA</string>
-    <string name="unit_milliamp_hours">mAh</string>
-    <string name="unit_mv">mV</string>
     <string name="unit_celsius">°C</string>
     <string name="unit_dbm">dBm</string>
     <string name="unit_mbps">Mbps</string>
     <string name="unit_ms">ms</string>
     <string name="unit_ghz">GHz</string>
-    <string name="unit_volts">V</string>
-    <string name="unit_watts">W</string>
-    <string name="unit_asu">ASU</string>
     <string name="unit_per_hundred">/100</string>
     <string name="unit_approx_prefix">~%1$s</string>
 
@@ -236,7 +229,6 @@
     <string name="value_signed_percent">%1$s%2$d%%</string>
     <string name="value_voltage_volts">%1$.1f V</string>
     <string name="value_milliamp_hours">%1$d mAh</string>
-    <string name="value_temperature">%1$.1f°C</string>
     <string name="value_percent_per_hour">%1$.1f%%/h</string>
     <string name="value_watts">%1$.1f W</string>
     <string name="value_duration_hours_minutes">%1$dh %2$dm</string>
@@ -244,7 +236,6 @@
     <string name="value_duration_minutes_seconds">%1$dm %2$ds</string>
     <string name="value_duration_seconds">%1$ds</string>
     <string name="unit_fahrenheit">°F</string>
-    <string name="value_temperature_fahrenheit">%1$.1f°F</string>
     <string name="value_headroom_percent">%1$s%%</string>
     <string name="value_label_colon">%1$s: %2$s</string>
     <string name="value_count_parenthetical">(%1$d)</string>
@@ -259,7 +250,6 @@
     <string name="fallback_unknown">Unknown</string>
     <string name="a11y_scanning_files">Scanning files</string>
     <string name="a11y_deleting_files">Deleting files</string>
-    <string name="storage_fill_rate_value">+%1$s/w</string>
     <string name="storage_free_available">%1$s available</string>
     <string name="feedback_email_subject">runcheck Feedback</string>
     <string name="value_with_unit_int">%1$d %2$s</string>
@@ -276,7 +266,6 @@
     <string name="network_latency">Latency</string>
     <string name="network_signal_strength">Signal Strength</string>
     <string name="network_no_connection">No Connection</string>
-    <string name="network_signal_with_asu">%1$s · %2$d %3$s</string>
 
     <!-- Network Detail Screen - Redesign -->
     <string name="network_section_connection_details">Connection Details</string>
@@ -368,7 +357,6 @@
     <string name="storage_used">Used</string>
     <string name="storage_available">Available</string>
     <string name="storage_apps">Apps</string>
-    <string name="storage_media">Media</string>
     <string name="storage_fill_rate">Fill Rate Estimate</string>
     <string name="storage_sd_card">SD Card</string>
     <string name="storage_filesystem">File System</string>
@@ -471,9 +459,6 @@
     <string name="settings_notifications_desc">Alerts for low battery, high temperature, low storage</string>
     <string name="settings_measurement_info">Device Capabilities</string>
     <string name="settings_device_model">%1$s %2$s</string>
-    <string name="settings_api_level">API Level: %1$d</string>
-    <string name="settings_current_reading">Current reading: %1$s</string>
-    <string name="settings_cycle_count">Cycle count: %1$s</string>
     <string name="settings_api_level_label">API Level</string>
     <string name="settings_current_reading_label">Battery Current</string>
     <string name="settings_cycle_count_label">Cycle Count</string>
@@ -560,8 +545,6 @@
     <string name="settings_temp_fahrenheit">Fahrenheit (°F)</string>
     <string name="settings_show_info_cards">Info Cards</string>
     <string name="settings_show_info_cards_desc">Show contextual tips and explanations on detail screens</string>
-    <string name="settings_language">Language</string>
-    <string name="settings_language_system">System default</string>
 
     <!-- Settings: Data Management -->
     <string name="settings_data_section">Data</string>
@@ -582,9 +565,7 @@
     <string name="settings_data_cleared">Data cleared</string>
 
     <!-- Settings: About (extended) -->
-    <string name="settings_android_api_version">API %1$d</string>
     <string name="settings_threshold_percent">%1$d%%</string>
-    <string name="settings_threshold_celsius">%1$d°C</string>
     <string name="settings_feedback">Send Feedback</string>
     <string name="settings_rate">Rate on Play Store</string>
     <string name="settings_privacy_policy">Privacy Policy</string>
@@ -596,7 +577,6 @@
     <string name="pro_feature_locked_generic">This feature requires runcheck Pro</string>
     <string name="pro_feature_battery_history_message">Week, month, and all-time battery history require runcheck Pro.</string>
     <string name="pro_feature_thermal_log_message">Thermal throttling history requires runcheck Pro.</string>
-    <string name="pro_feature_export_message">CSV export requires runcheck Pro.</string>
     <string name="pro_feature_cleanup_message">Storage cleanup tools require runcheck Pro.</string>
     <string name="pro_feature_network_history_message">Signal history and extended speed test data require runcheck Pro.</string>
 
@@ -666,10 +646,8 @@
     <string name="charger_title">Charger Comparison</string>
     <string name="charger_add">Add Charger</string>
     <string name="charger_add_hint">Charger name (e.g. Samsung 25W)</string>
-    <string name="charger_avg_speed">Avg %d mA</string>
     <string name="charger_no_chargers">No chargers saved yet</string>
     <string name="charger_empty_body">Add chargers here, then select one before you start charging to save comparison data.</string>
-    <string name="charger_last_used">Last used: %s</string>
     <string name="charger_last_test">Last test: %s</string>
     <string name="charger_delete">Delete</string>
     <string name="charger_delete_confirm_title">Delete charger?</string>
@@ -738,7 +716,6 @@
     <string name="speed_test_mlab_notice">Speed test powered by M-Lab. Test data contributes to open internet research.</string>
     <string name="speed_test_last_result">Latest Result</string>
     <string name="speed_test_history">History</string>
-    <string name="speed_test_no_results">No speed test results yet</string>
     <string name="speed_test_start_button">Start Test</string>
     <string name="speed_test_run_again">Run Again</string>
 
@@ -757,7 +734,6 @@
     <string name="pro_feature_thermal_logs">Thermal throttling logs</string>
     <string name="pro_feature_remaining_charge_time">Remaining charge time estimates</string>
     <string name="pro_feature_storage_cleanup">Storage cleanup tools</string>
-    <string name="pro_unlock_button">Unlock with Pro</string>
 
     <!-- Pro Thank You -->
     <string name="pro_thank_you_title">Thank you!</string>
@@ -841,7 +817,6 @@
     <string name="chart_expand_action">Fullscreen</string>
     <string name="close_fullscreen_chart">Close fullscreen chart</string>
     <string name="fullscreen_chart_empty_title">No chart data yet</string>
-    <string name="fullscreen_chart_empty">No data for this period</string>
     <string name="fullscreen_chart_empty_history_message">runcheck has not collected enough readings for %1$s yet. Try a shorter period or check back after more data is recorded.</string>
     <string name="fullscreen_chart_empty_session_message">This charging session does not have enough readings yet. Keep charging for a bit longer and reopen the chart.</string>
     <string name="fullscreen_chart_error">Failed to load chart data</string>

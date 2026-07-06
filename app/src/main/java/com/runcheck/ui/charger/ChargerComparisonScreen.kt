@@ -50,6 +50,7 @@ import com.runcheck.domain.model.ChargerSummary
 import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.rememberFormattedDateTime
+import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.ProFeatureLockedState
@@ -95,7 +96,7 @@ fun ChargerComparisonScreen(
                     )
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(stringResource(R.string.common_error_generic))
+                            Text(state.message.resolve())
                             TextButton(onClick = { viewModel.refresh() }) {
                                 Text(stringResource(R.string.common_retry))
                             }

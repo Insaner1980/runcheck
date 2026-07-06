@@ -2,6 +2,7 @@ package com.runcheck.ui.storage
 
 import android.app.RecoverableSecurityException
 import android.app.RemoteAction
+import android.content.Context
 import android.content.IntentSender
 import android.os.Build
 import androidx.activity.result.IntentSenderRequest
@@ -12,6 +13,20 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StorageDeleteRequestTest {
+    @Test
+    fun `top level delete request returns failed for empty selection before creating request`() {
+        val result =
+            buildMediaDeleteRequest(
+                context = mockk<Context>(),
+                uriStrings = emptyList(),
+            )
+
+        assertEquals(
+            MediaDeleteRequestResult.Failed(R.string.cleanup_delete_failed),
+            result,
+        )
+    }
+
     @Test
     fun `returns failed when sdk is below api 30`() {
         val result =

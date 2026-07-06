@@ -10,6 +10,7 @@ import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.model.PlugType
 import com.runcheck.util.TestAppDispatchers
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -75,6 +76,22 @@ class BatteryRepositoryImplTest {
             val repository = createRepository(dao)
 
             val result = repository.getReadingsSince(since = 10L, limit = null).first()
+
+            assertEquals(listOf(123L), result.map { it.timestamp })
+        }
+
+    @Test
+    fun `getReadingsSinceSync filters unusable timestamps after DAO returns rows`() =
+        runTest {
+            val dao: BatteryReadingDao = mockk(relaxed = true)
+            coEvery { dao.getReadingsSinceSync(10L) } returns
+                listOf(
+                    batteryReadingEntity(timestamp = -1L),
+                    batteryReadingEntity(timestamp = 123L),
+                )
+            val repository = createRepository(dao)
+
+            val result = repository.getReadingsSinceSync(since = 10L)
 
             assertEquals(listOf(123L), result.map { it.timestamp })
         }

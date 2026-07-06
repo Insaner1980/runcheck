@@ -8,6 +8,7 @@ import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.MainDispatcherRule
+import com.runcheck.ui.common.UiText
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -97,7 +98,7 @@ class ChargerViewModelTest {
             viewModel.startObserving()
             runCurrent()
 
-            assertEquals(ChargerUiState.Error("charger failed"), viewModel.uiState.value)
+            assertEquals(ChargerUiState.Error(UiText.Dynamic("charger failed")), viewModel.uiState.value)
         }
 
     private fun createViewModel(): ChargerViewModel =

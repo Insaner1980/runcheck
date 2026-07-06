@@ -1,5 +1,6 @@
 package com.runcheck.data.insights
 
+import com.google.gson.Gson
 import com.runcheck.data.db.dao.InsightDao
 import com.runcheck.data.db.entity.InsightEntity
 import com.runcheck.domain.insights.engine.InsightHomeRankingPolicy
@@ -119,6 +120,7 @@ class InsightRepositoryImplTest {
     private fun createRepository(insightDao: InsightDao): InsightRepositoryImpl =
         InsightRepositoryImpl(
             insightDao = insightDao,
+            gson = Gson(),
             homeRankingPolicy = InsightHomeRankingPolicy(),
             transactionRunner = transactionRunner,
             dispatchers = TestAppDispatchers(),

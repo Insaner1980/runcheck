@@ -39,6 +39,39 @@ class DeviceProfileRepositoryImplTest {
         }
 
     @Test
+    fun `stored profile missing optional persisted json fields uses safe defaults`() =
+        runTest {
+            val profileJson =
+                """
+                {
+                  "manufacturer": "Google",
+                  "model": "Pixel 8",
+                  "apiLevel": 34,
+                  "currentNowReliable": true,
+                  "currentNowUnit": "MICROAMPS",
+                  "currentNowSignConvention": "POSITIVE_CHARGING",
+                  "cycleCountAvailable": true
+                }
+                """.trimIndent()
+            val entity =
+                DeviceEntity(
+                    id = "google_pixel 8_34",
+                    manufacturer = "Google",
+                    model = "Pixel 8",
+                    apiLevel = 34,
+                    firstSeen = 1_000L,
+                    profileJson = profileJson,
+                )
+            every { deviceDao.getDevice() } returns flowOf(entity)
+            coEvery { deviceDao.getDeviceSync() } returns entity
+
+            val expected = profileInfo(apiLevel = 34, thermalZonesAvailable = emptyList())
+
+            assertEquals(expected, repository.getProfile().first())
+            assertEquals(expected, repository.getProfileSync())
+        }
+
+    @Test
     fun `refreshProfile persists detected profile and preserves firstSeen`() =
         runTest {
             val detected = deviceProfile(manufacturer = "Samsung", model = "S24", apiLevel = 35)
@@ -101,6 +134,7 @@ class DeviceProfileRepositoryImplTest {
         manufacturer: String = "Google",
         model: String = "Pixel 8",
         apiLevel: Int,
+        thermalZonesAvailable: List<String> = listOf("battery"),
     ): DeviceProfileInfo =
         DeviceProfileInfo(
             manufacturer = manufacturer,
@@ -110,7 +144,7 @@ class DeviceProfileRepositoryImplTest {
             currentNowUnit = CurrentUnit.MICROAMPS,
             currentNowSignConvention = SignConvention.POSITIVE_CHARGING,
             cycleCountAvailable = apiLevel >= 34,
-            thermalZonesAvailable = listOf("battery"),
+            thermalZonesAvailable = thermalZonesAvailable,
             storageHealthAvailable = true,
         )
 }

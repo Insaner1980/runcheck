@@ -13,6 +13,7 @@ import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.MainDispatcherRule
+import com.runcheck.ui.common.UiText
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -119,7 +120,7 @@ class ThermalViewModelTest {
                 viewModel.startObserving()
                 runCurrent()
 
-                assertEquals(ThermalUiState.Error("thermal failed"), viewModel.uiState.value)
+                assertEquals(ThermalUiState.Error(UiText.Dynamic("thermal failed")), viewModel.uiState.value)
             } finally {
                 viewModel.stopObserving()
             }

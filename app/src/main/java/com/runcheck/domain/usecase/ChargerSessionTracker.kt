@@ -131,5 +131,3 @@ class ChargerSessionTracker
             )
         }
     }
-
-private fun List<Int>.averageOrNull(): Int? = takeIf(List<Int>::isNotEmpty)?.average()?.toInt()

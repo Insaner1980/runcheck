@@ -22,6 +22,7 @@ import com.runcheck.domain.model.SignalQuality
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.domain.model.classifyNetworkSignalQuality
 import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.scoring.HealthScoreCalculator
 import com.runcheck.util.enumValueOrDefault
@@ -190,7 +191,7 @@ private fun NetworkReadingEntity.toNetworkState(): NetworkState {
     return NetworkState(
         connectionType = connectionType,
         signalDbm = signalDbm,
-        signalQuality = classifySignal(signalDbm, connectionType),
+        signalQuality = classifyNetworkSignalQuality(signalDbm, connectionType, networkSubtype),
         wifiSpeedMbps = wifiSpeedMbps,
         wifiFrequencyMhz = wifiFrequency,
         carrier = carrier,
@@ -223,42 +224,4 @@ private fun StorageReadingEntity.toStorageState(): StorageState {
         usagePercent = usagePercent,
         appsBytes = appsBytes,
     )
-}
-
-@Suppress("CyclomaticComplexMethod")
-private fun classifySignal(
-    dbm: Int?,
-    type: ConnectionType,
-): SignalQuality {
-    if (type == ConnectionType.NONE) return SignalQuality.NO_SIGNAL
-    if (type == ConnectionType.VPN && dbm == null) return SignalQuality.GOOD
-    if (dbm == null) return SignalQuality.NO_SIGNAL
-
-    return when (type) {
-        ConnectionType.WIFI -> {
-            when {
-                dbm > -50 -> SignalQuality.EXCELLENT
-                dbm > -60 -> SignalQuality.GOOD
-                dbm > -70 -> SignalQuality.FAIR
-                dbm > -80 -> SignalQuality.POOR
-                else -> SignalQuality.NO_SIGNAL
-            }
-        }
-
-        ConnectionType.CELLULAR,
-        ConnectionType.VPN,
-        -> {
-            when {
-                dbm > -80 -> SignalQuality.EXCELLENT
-                dbm > -90 -> SignalQuality.GOOD
-                dbm > -100 -> SignalQuality.FAIR
-                dbm > -110 -> SignalQuality.POOR
-                else -> SignalQuality.NO_SIGNAL
-            }
-        }
-
-        ConnectionType.NONE -> {
-            SignalQuality.NO_SIGNAL
-        }
-    }
 }

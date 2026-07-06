@@ -19,6 +19,7 @@ import com.runcheck.BuildConfig
 import com.runcheck.R
 import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.billing.ProPurchaseRefreshResult
+import com.runcheck.billing.ProPurchaseStatusRefresher
 import com.runcheck.billing.PurchaseEvent
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
@@ -56,7 +57,8 @@ class BillingManager
         private val dispatchers: AppDispatchers,
     ) : PurchasesUpdatedListener,
         com.runcheck.domain.repository.ProStatusProvider,
-        ProPurchaseManager {
+        ProPurchaseManager,
+        ProPurchaseStatusRefresher {
         private val scopeExceptionHandler =
             CoroutineExceptionHandler { _, throwable ->
                 ReleaseSafeLog.error(TAG, "Billing coroutine failed", throwable)
@@ -257,6 +259,13 @@ class BillingManager
         }
 
         override suspend fun refreshPurchaseStatus(): ProPurchaseRefreshResult = queryExistingPurchases()
+
+        override suspend fun refreshPurchaseStatusAfterInitialization(): ProPurchaseRefreshResult {
+            initialize()
+            awaitInitialized()
+            if (isPro()) return ProPurchaseRefreshResult.ACTIVE
+            return refreshPurchaseStatus()
+        }
 
         override fun launchPurchaseFlow(activity: Activity) {
             val productDetails = cachedProductDetails

@@ -63,7 +63,10 @@ class AndroidLintPolicyContractTest {
         assertTrue(
             "Remove only WorkManagerInitializer metadata so ProfileInstaller startup remains available",
             !Regex(
-                pattern = """<provider\s+[^>]*android:name="androidx\.startup\.InitializationProvider"[^>]*tools:node="remove"""",
+                pattern =
+                    """<provider\s+[^>]*""" +
+                        """android:name="androidx\.startup\.InitializationProvider"[^>]*""" +
+                        """tools:node="remove"""",
                 option = RegexOption.DOT_MATCHES_ALL,
             ).containsMatchIn(manifest),
         )

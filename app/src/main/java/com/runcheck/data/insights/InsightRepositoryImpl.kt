@@ -24,6 +24,7 @@ class InsightRepositoryImpl
     @Inject
     constructor(
         private val insightDao: InsightDao,
+        private val gson: Gson,
         private val homeRankingPolicy: InsightHomeRankingPolicy,
         private val transactionRunner: DatabaseTransactionRunner,
         private val dispatchers: AppDispatchers,
@@ -71,7 +72,7 @@ class InsightRepositoryImpl
                 val merged =
                     candidates.map { candidate ->
                         val existingEntry = existingByDedupeKey[candidate.dedupeKey]
-                        candidate.toEntity(existingEntry)
+                        candidate.toEntity(existingEntry, gson)
                     }
                 insightDao.insertAll(merged)
             }
@@ -86,11 +87,11 @@ class InsightRepositoryImpl
                     val now = System.currentTimeMillis()
                     entities
                         .filter { it.expiresAt > now }
-                        .map { it.toDomain() }
+                        .map { it.toDomain(gson) }
                 }
     }
 
-private fun InsightEntity.toDomain(): Insight =
+private fun InsightEntity.toDomain(gson: Gson): Insight =
     Insight(
         id = id,
         ruleId = ruleId,
@@ -99,7 +100,7 @@ private fun InsightEntity.toDomain(): Insight =
         confidence = confidence,
         titleKey = titleKey,
         bodyKey = bodyKey,
-        bodyArgs = bodyArgsJson.toBodyArgs(),
+        bodyArgs = bodyArgsJson.toBodyArgs(gson),
         generatedAt = generatedAt,
         expiresAt = expiresAt,
         target = enumValueOf(target),
@@ -107,7 +108,10 @@ private fun InsightEntity.toDomain(): Insight =
         dismissed = dismissed,
     )
 
-private fun InsightCandidate.toEntity(existing: InsightEntity?): InsightEntity =
+private fun InsightCandidate.toEntity(
+    existing: InsightEntity?,
+    gson: Gson,
+): InsightEntity =
     InsightEntity(
         id = existing?.id ?: 0L,
         ruleId = ruleId,
@@ -117,7 +121,7 @@ private fun InsightCandidate.toEntity(existing: InsightEntity?): InsightEntity =
         confidence = confidence,
         titleKey = titleKey,
         bodyKey = bodyKey,
-        bodyArgsJson = bodyArgs.toJsonArrayString(),
+        bodyArgsJson = bodyArgs.toJsonArrayString(gson),
         generatedAt = generatedAt,
         expiresAt = expiresAt,
         dataWindowStart = dataWindowStart,
@@ -127,15 +131,9 @@ private fun InsightCandidate.toEntity(existing: InsightEntity?): InsightEntity =
         seen = existing?.seen ?: false,
     )
 
-private fun List<String>.toJsonArrayString(): String = InsightBodyArgsJsonCodec.encode(this)
+private val stringListType = object : TypeToken<List<String>>() {}.type
 
-private fun String.toBodyArgs(): List<String> = InsightBodyArgsJsonCodec.decode(this)
+private fun List<String>.toJsonArrayString(gson: Gson): String = gson.toJson(this, stringListType)
 
-private object InsightBodyArgsJsonCodec {
-    private val gson = Gson()
-    private val stringListType = object : TypeToken<List<String>>() {}.type
-
-    fun encode(args: List<String>): String = gson.toJson(args, stringListType)
-
-    fun decode(json: String): List<String> = gson.fromJson<List<String>>(json, stringListType) ?: emptyList()
-}
+private fun String.toBodyArgs(gson: Gson): List<String> =
+    gson.fromJson<List<String>>(this, stringListType) ?: emptyList()

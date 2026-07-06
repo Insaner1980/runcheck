@@ -9,18 +9,13 @@ import com.runcheck.domain.model.ThermalStatus
 import com.runcheck.domain.usecase.TrackThrottlingEventsUseCase
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.shareIn
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.runcheck.domain.repository.ThermalRepository as ThermalRepositoryContract
@@ -35,14 +30,6 @@ class ThermalRepositoryImpl
         private val trackThrottlingEvents: TrackThrottlingEventsUseCase,
         private val dispatchers: AppDispatchers,
     ) : ThermalRepositoryContract {
-        private val repositoryScope =
-            CoroutineScope(
-                SupervisorJob() + dispatchers.io +
-                    CoroutineExceptionHandler { _, throwable ->
-                        ReleaseSafeLog.error(TAG, "Thermal sharing coroutine failed", throwable)
-                    },
-            )
-
         private val thermalStateFlow: Flow<ThermalState> by lazy {
             flow {
                 val profile = deviceProfileProvider.getDeviceProfile()
@@ -64,11 +51,7 @@ class ThermalRepositoryImpl
                         trackThrottlingEvents(state)
                     },
                 )
-            }.shareIn(
-                scope = repositoryScope,
-                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = STOP_TIMEOUT_MS),
-                replay = 1,
-            )
+            }.flowOn(dispatchers.io)
         }
 
         override fun getThermalState(): Flow<ThermalState> = thermalStateFlow
@@ -120,7 +103,6 @@ class ThermalRepositoryImpl
         override suspend fun deleteAll() = thermalReadingDao.deleteAll()
 
         private companion object {
-            const val STOP_TIMEOUT_MS = 0L
             const val TAG = "ThermalRepository"
         }
     }

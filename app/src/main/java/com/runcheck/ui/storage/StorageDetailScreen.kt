@@ -139,8 +139,6 @@ fun StorageDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val loadingDescription = stringResource(R.string.a11y_loading)
-    val cleanupDeleteFailed = stringResource(R.string.cleanup_delete_failed)
-    val cleanupDeletePermissionError = stringResource(R.string.cleanup_delete_permission_error)
     val activity = context.findActivity()
     var mediaPermissionRequested by rememberSaveable { mutableStateOf(false) }
     val mediaPermissions = remember { RuncheckPermissionPolicy.mediaPermissionsForApi() }
@@ -199,12 +197,7 @@ fun StorageDetailScreen(
                 }
 
                 is MediaDeleteRequestResult.Failed -> {
-                    val message =
-                        when (requestResult.messageRes) {
-                            R.string.cleanup_delete_permission_error -> cleanupDeletePermissionError
-                            else -> cleanupDeleteFailed
-                        }
-                    viewModel.onTrashDeleteRequestFailed(message)
+                    viewModel.onTrashDeleteRequestFailed(UiText.Resource(requestResult.messageRes))
                 }
             }
         }
@@ -251,7 +244,7 @@ fun StorageDetailScreen(
                 is StorageUiState.Error -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(stringResource(R.string.common_error_generic))
+                            Text(state.message.resolve())
                             TextButton(onClick = { viewModel.refresh() }) {
                                 Text(stringResource(R.string.common_retry))
                             }

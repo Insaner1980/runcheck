@@ -3,6 +3,7 @@ package com.runcheck.ui.storage
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.runcheck.R
 import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.usecase.GetStorageHistoryUseCase
@@ -13,7 +14,7 @@ import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.common.UiText
-import com.runcheck.ui.common.messageOr
+import com.runcheck.ui.common.messageOrRes
 import com.runcheck.util.appendLiveValue
 import com.runcheck.util.getEnumOrDefault
 import com.runcheck.util.putEnum
@@ -98,7 +99,7 @@ class StorageViewModel
             refresh()
         }
 
-        fun onTrashDeleteRequestFailed(message: String) {
+        fun onTrashDeleteRequestFailed(message: UiText) {
             _uiState.value = StorageUiState.Error(message)
         }
 
@@ -121,7 +122,7 @@ class StorageViewModel
                         .catch { e ->
                             _uiState.update { current ->
                                 (current as? StorageUiState.Success)?.copy(
-                                    historyLoadError = UiText.Dynamic(e.message ?: "Error"),
+                                    historyLoadError = e.messageOrRes(R.string.common_error_generic),
                                 ) ?: current
                             }
                         }.collect { readings ->
@@ -164,7 +165,7 @@ class StorageViewModel
                         )
                     }.sample(333L)
                         .catch { e ->
-                            _uiState.value = StorageUiState.Error(e.messageOr("Unknown error"))
+                            _uiState.value = StorageUiState.Error(e.messageOrRes(R.string.common_error_generic))
                         }.collect { state ->
                             _uiState.value = state
                         }

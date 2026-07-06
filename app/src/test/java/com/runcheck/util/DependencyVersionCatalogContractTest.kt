@@ -32,10 +32,65 @@ class DependencyVersionCatalogContractTest {
         )
     }
 
+    @Test
+    fun `Android toolchain stays on the verified Hilt 1_4 compatible release line`() {
+        val versionsCatalog = rootDir.resolve("gradle/libs.versions.toml").readText()
+        val wrapperProperties = rootDir.resolve("gradle/wrapper/gradle-wrapper.properties").readText()
+
+        val agpVersion = versionsCatalog.versionFor("agp")
+        val hiltAndroidxVersion = versionsCatalog.versionFor("hiltAndroidx")
+        val dependencyAnalysisVersion = versionsCatalog.versionFor("dependencyAnalysis")
+
+        assertTrue(
+            "AGP version $agpVersion is older than the 9.2.1 release line verified with AndroidX Hilt 1.4.0",
+            agpVersion.isAtLeast("9.2.1"),
+        )
+        assertTrue(
+            "AndroidX Hilt version $hiltAndroidxVersion is older than the 1.4.0 release line",
+            hiltAndroidxVersion.isAtLeast("1.4.0"),
+        )
+        assertTrue(
+            "Dependency Analysis version $dependencyAnalysisVersion must support AGP 9.2.1",
+            dependencyAnalysisVersion.isAtLeast("3.16.0"),
+        )
+        assertTrue(
+            "Gradle wrapper must stay on the AGP 9.2 compatible 9.4.1 distribution",
+            wrapperProperties.contains("gradle-9.4.1-bin.zip"),
+        )
+    }
+
+    @Test
+    fun `Detekt stays on the verified AGP 9 compatible plugin line`() {
+        val versionsCatalog = rootDir.resolve("gradle/libs.versions.toml").readText()
+        val detektVersion = versionsCatalog.versionFor("detekt")
+        val composeRulesDetektVersion = versionsCatalog.versionFor("composeRulesDetekt")
+        val detektPluginId = versionsCatalog.pluginIdFor("detekt")
+
+        assertTrue(
+            "Detekt version $detektVersion is older than the AGP 9.1.1 compatible 2.0.0-alpha.3 line",
+            detektVersion == "2.0.0-alpha.3",
+        )
+        assertTrue(
+            "compose-rules Detekt version $composeRulesDetektVersion is not on the Detekt 2 compatible 0.5.9 line",
+            composeRulesDetektVersion == "0.5.9",
+        )
+        assertTrue(
+            "Detekt Gradle plugin id $detektPluginId must use the Detekt 2 dev.detekt id",
+            detektPluginId == "dev.detekt",
+        )
+    }
+
     private fun String.versionFor(alias: String): String {
         val pattern = Regex("""(?m)^$alias\s*=\s*"([^"]+)"""")
         return requireNotNull(pattern.find(this)?.groupValues?.get(1)) {
             "Missing $alias version in libs.versions.toml"
+        }
+    }
+
+    private fun String.pluginIdFor(alias: String): String {
+        val pattern = Regex("""(?m)^$alias\s*=\s*\{\s*id\s*=\s*"([^"]+)"""")
+        return requireNotNull(pattern.find(this)?.groupValues?.get(1)) {
+            "Missing $alias plugin id in libs.versions.toml"
         }
     }
 

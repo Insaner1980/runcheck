@@ -1,6 +1,7 @@
 package com.runcheck.ui.charger
 
 import com.runcheck.domain.model.ChargerSummary
+import com.runcheck.ui.common.UiText
 
 sealed interface ChargerUiState {
     data object Loading : ChargerUiState
@@ -13,6 +14,6 @@ sealed interface ChargerUiState {
     ) : ChargerUiState
 
     data class Error(
-        val message: String,
+        val message: UiText,
     ) : ChargerUiState
 }

@@ -1,6 +1,7 @@
 package com.runcheck.domain.insights.rules
 
 import com.runcheck.domain.insights.analysis.StorageGrowthAnalyzer
+import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.repository.StorageRepository
@@ -72,6 +73,36 @@ class StoragePressureImpactRuleTest {
             val insights = rule.evaluate(now)
 
             assertTrue(insights.isEmpty())
+        }
+
+    @Test
+    fun `returns medium fair bucket insight when storage pressure is degraded but not critical`() =
+        runTest {
+            val dayMs = 24L * 60L * 60L * 1000L
+            val now = 20L * dayMs
+            val totalBytes = 128L * GIB
+            val readings =
+                listOf(
+                    storage(now - 10L * dayMs, totalBytes, 30L * GIB),
+                    storage(now - 8L * dayMs, totalBytes, 28L * GIB),
+                    storage(now - 6L * dayMs, totalBytes, 26L * GIB),
+                    storage(now - 4L * dayMs, totalBytes, 24L * GIB),
+                    storage(now - 2L * dayMs, totalBytes, 22L * GIB),
+                    storage(now, totalBytes, 20L * GIB),
+                )
+
+            val rule =
+                StoragePressureImpactRule(
+                    storageRepository = FakeStorageImpactRepository(readings),
+                    storageGrowthAnalyzer = StorageGrowthAnalyzer(),
+                    healthScoreCalculator = HealthScoreCalculator(),
+                )
+
+            val insight = rule.evaluate(now).single()
+
+            assertEquals("storage_score:fair", insight.dedupeKey)
+            assertEquals(InsightPriority.MEDIUM, insight.priority)
+            assertEquals(listOf("65", "2w"), insight.bodyArgs)
         }
 
     private fun storage(

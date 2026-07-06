@@ -4,15 +4,15 @@ import com.runcheck.domain.model.CurrentUnit
 import com.runcheck.domain.model.SignConvention
 
 data class DeviceProfile(
-    val manufacturer: String,
-    val model: String,
-    val apiLevel: Int,
-    val currentNowReliable: Boolean,
-    val currentNowUnit: CurrentUnit,
-    val currentNowSignConvention: SignConvention,
-    val cycleCountAvailable: Boolean,
-    val thermalZonesAvailable: List<String>,
-    val storageHealthAvailable: Boolean,
+    val manufacturer: String = "",
+    val model: String = "",
+    val apiLevel: Int = 0,
+    val currentNowReliable: Boolean = false,
+    val currentNowUnit: CurrentUnit = CurrentUnit.MILLIAMPS,
+    val currentNowSignConvention: SignConvention = SignConvention.POSITIVE_CHARGING,
+    val cycleCountAvailable: Boolean = false,
+    val thermalZonesAvailable: List<String> = emptyList(),
+    val storageHealthAvailable: Boolean = true,
 ) {
     val deviceId: String
         get() = "${manufacturer}_${model}_$apiLevel".lowercase()

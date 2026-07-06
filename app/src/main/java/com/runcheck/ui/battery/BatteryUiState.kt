@@ -7,6 +7,7 @@ import com.runcheck.domain.model.ScreenUsageStats
 import com.runcheck.domain.model.SleepAnalysis
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.usecase.BatteryStatistics
+import com.runcheck.ui.common.UiText
 
 data class CurrentStats(
     val avg: Int,
@@ -38,6 +39,6 @@ sealed interface BatteryUiState {
     ) : BatteryUiState
 
     data class Error(
-        val message: String,
+        val message: UiText,
     ) : BatteryUiState
 }

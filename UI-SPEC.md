@@ -343,8 +343,8 @@ Subsection title within cards.
 | Color | `onSurfaceVariant` |
 | Semantic | Heading role |
 
-#### AnimatedIntText / AnimatedFloatText
-Count-up animation for numeric values.
+#### AnimatedFloatText
+Count-up animation for decimal numeric values.
 
 | Property | Value |
 |----------|-------|
@@ -713,7 +713,7 @@ All animations respect `MaterialTheme.reducedMotion` (instant when enabled).
 | AreaChart scan line | 240ms | Linear | Scan line fades during final 30% |
 | LiveChart scroll | 150ms | `LinearEasing` | Smooth leftward shift on new data |
 | LiveChart glow pulse | 300ms | Linear | Radius 8→5dp, alpha 0.5→0.3 on new data |
-| AnimatedNumber | 200ms | Linear tween | Count-up/down |
+| AnimatedFloatText | 200ms | Linear tween | Count-up/down |
 | ConfidenceBadge | Spring | Damping 0.6, Medium stiffness | Pop-in on mount |
 | HeatStrip pulse | 2000ms | `LinearEasing` | Alpha 0.7–1.0 loop (critical only) |
 | InfoCard dismiss | 300ms | — | fadeOut + shrinkVertically |

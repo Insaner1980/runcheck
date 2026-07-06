@@ -3,6 +3,7 @@ package com.runcheck.di
 import android.content.Context
 import androidx.work.WorkManager
 import com.runcheck.billing.ProPurchaseManager
+import com.runcheck.billing.ProPurchaseStatusRefresher
 import com.runcheck.data.appusage.AppUsageDataSource
 import com.runcheck.data.billing.BillingManager
 import com.runcheck.data.db.RoomTransactionRunner
@@ -39,6 +40,10 @@ abstract class SystemBindingsModule {
     @Binds
     @Singleton
     abstract fun bindProPurchaseManager(impl: BillingManager): ProPurchaseManager
+
+    @Binds
+    @Singleton
+    abstract fun bindProPurchaseStatusRefresher(impl: BillingManager): ProPurchaseStatusRefresher
 
     @Binds
     @Singleton

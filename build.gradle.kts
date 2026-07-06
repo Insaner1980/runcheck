@@ -1,3 +1,25 @@
+buildscript {
+    // Keep vulnerable Gradle plugin transitives on patched build-time versions.
+    val securityPinnedBuildscriptModules =
+        arrayOf(
+            "com.fasterxml.jackson.core:jackson-annotations:2.22",
+            "com.fasterxml.jackson.core:jackson-core:2.22.0",
+            "com.fasterxml.jackson.core:jackson-databind:2.22.0",
+            "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.22.0",
+            "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.22.0",
+            "com.fasterxml.jackson.module:jackson-module-blackbird:2.22.0",
+            "org.bitbucket.b_c:jose4j:0.9.6",
+            "org.bouncycastle:bcpkix-jdk18on:1.84",
+            "org.bouncycastle:bcprov-jdk18on:1.84",
+            "org.bouncycastle:bcutil-jdk18on:1.84",
+            "org.jdom:jdom2:2.0.6.1",
+        )
+
+    configurations.classpath {
+        resolutionStrategy.force(*securityPinnedBuildscriptModules)
+    }
+}
+
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.compose) apply false
