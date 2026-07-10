@@ -36,9 +36,14 @@ class StorageCleanupRepositoryImpl
                         enablePlaceholders = false,
                     ),
                 pagingSourceFactory = {
-                    CleanupPagingSource { offset, limit ->
-                        mediaStoreScanner.loadCleanupPage(query, category, offset, limit)
-                    }
+                    CleanupPagingSource(
+                        loader = { offset, limit ->
+                            mediaStoreScanner.loadCleanupPage(query, category, offset, limit)
+                        },
+                        registerInvalidation = { onChange ->
+                            mediaStoreScanner.registerCleanupInvalidation(query, category, onChange)
+                        },
+                    )
                 },
             ).flow
 

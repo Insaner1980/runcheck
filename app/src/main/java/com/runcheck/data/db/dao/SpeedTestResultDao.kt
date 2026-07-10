@@ -11,14 +11,11 @@ interface SpeedTestResultDao {
     @Insert
     suspend fun insert(result: SpeedTestResultEntity): Long
 
-    @Query("SELECT * FROM speed_test_results WHERE timestamp <= :now ORDER BY timestamp DESC LIMIT 1")
-    fun getLatestResult(now: Long): Flow<SpeedTestResultEntity?>
+    @Query("SELECT * FROM speed_test_results ORDER BY timestamp DESC LIMIT 1")
+    fun getLatestResult(): Flow<SpeedTestResultEntity?>
 
-    @Query("SELECT * FROM speed_test_results WHERE timestamp <= :now ORDER BY timestamp DESC LIMIT :limit")
-    fun getRecentResults(
-        limit: Int,
-        now: Long,
-    ): Flow<List<SpeedTestResultEntity>>
+    @Query("SELECT * FROM speed_test_results ORDER BY timestamp DESC LIMIT :limit")
+    fun getRecentResults(limit: Int): Flow<List<SpeedTestResultEntity>>
 
     @Query(
         "DELETE FROM speed_test_results WHERE id NOT IN (SELECT id FROM speed_test_results ORDER BY timestamp DESC LIMIT :keepCount)",

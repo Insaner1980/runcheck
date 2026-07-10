@@ -44,14 +44,14 @@ class SpeedTestRepositoryImpl
 
         override fun getLatestResult(): Flow<SpeedTestResult?> =
             speedTestResultDao
-                .getLatestResult(System.currentTimeMillis())
+                .getLatestResult()
                 .map { entity ->
                     entity?.toDomain()?.takeIf { TimestampSanitizer.isUsable(it.timestamp) }
                 }.flowOn(dispatchers.io)
 
         override fun getRecentResults(limit: Int): Flow<List<SpeedTestResult>> =
             speedTestResultDao
-                .getRecentResults(limit, System.currentTimeMillis())
+                .getRecentResults(limit)
                 .map { list ->
                     list
                         .map { it.toDomain() }

@@ -84,7 +84,7 @@ class AppBatteryUsageRepositoryImpl
 
         companion object {
             private const val DEFAULT_COLLECTION_WINDOW_MS = 24L * 60L * 60L * 1000L
-            private const val PAGE_SIZE = 20
+            private const val PAGE_SIZE = 40
         }
     }
 

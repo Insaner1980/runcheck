@@ -426,9 +426,7 @@ class HealthScoreCalculatorTest {
     }
 
     @Test
-    fun `null jitter in speed test defaults to 80 stability score`() {
-        // With null jitter, stability score = 80 (weight 10%)
-        // With low jitter (< 5ms), stability score = 100 (weight 10%)
+    fun `null jitter in speed test is excluded from the weighted score`() {
         val nullJitterScore =
             calculator.calculate(
                 healthyBattery(),
@@ -445,11 +443,10 @@ class HealthScoreCalculatorTest {
                 healthyStorage(),
                 recentSpeedTest = recentSpeedTest(jitterMs = 2),
             )
-        // null jitter gives 80 stability, low jitter gives 100 stability
-        // difference = 20 * 0.10 = 2 points
-        assertTrue(
-            "Null jitter score (${nullJitterScore.networkScore}) should be <= low jitter score (${lowJitterScore.networkScore})",
-            nullJitterScore.networkScore <= lowJitterScore.networkScore,
+        assertEquals(
+            "Missing jitter must not be converted into an assumed stability score",
+            lowJitterScore.networkScore,
+            nullJitterScore.networkScore,
         )
     }
 

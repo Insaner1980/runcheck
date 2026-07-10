@@ -6,6 +6,7 @@ import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.repository.BatteryRepository
 import com.runcheck.domain.repository.ChargerRepository
+import com.runcheck.domain.repository.DatabaseTransactionRunner
 import com.runcheck.domain.repository.UserPreferencesRepository
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -19,6 +20,7 @@ class ChargerSessionTracker
         private val chargerRepository: ChargerRepository,
         private val batteryRepository: BatteryRepository,
         private val userPreferencesRepository: UserPreferencesRepository,
+        private val transactionRunner: DatabaseTransactionRunner,
     ) {
         private val mutex = Mutex()
 
@@ -51,21 +53,23 @@ class ChargerSessionTracker
 
                     isCharging && selectedChargerId != null && activeSession != null &&
                         activeSession.chargerId != selectedChargerId -> {
-                        completeSession(activeSession, state, timestamp)
-                        chargerRepository.insertSession(
-                            ChargingSession(
-                                chargerId = selectedChargerId,
-                                startTime = timestamp,
-                                endTime = null,
-                                startLevel = state.level,
-                                endLevel = null,
-                                avgCurrentMa = null,
-                                maxCurrentMa = null,
-                                avgVoltageMv = null,
-                                avgPowerMw = null,
-                                plugType = state.plugType.name,
-                            ),
-                        )
+                        transactionRunner.runInTransaction {
+                            completeSession(activeSession, state, timestamp)
+                            chargerRepository.insertSession(
+                                ChargingSession(
+                                    chargerId = selectedChargerId,
+                                    startTime = timestamp,
+                                    endTime = null,
+                                    startLevel = state.level,
+                                    endLevel = null,
+                                    avgCurrentMa = null,
+                                    maxCurrentMa = null,
+                                    avgVoltageMv = null,
+                                    avgPowerMw = null,
+                                    plugType = state.plugType.name,
+                                ),
+                            )
+                        }
                     }
 
                     activeSession != null && (!isCharging || selectedChargerId == null) -> {
