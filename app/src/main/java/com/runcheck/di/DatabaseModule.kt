@@ -161,7 +161,30 @@ object DatabaseModule {
                 )""",
                 )
                 db.execSQL(
-                    "INSERT INTO `network_readings_new` SELECT * FROM `network_readings`",
+                    """
+                    INSERT INTO `network_readings_new` (
+                        `id`,
+                        `timestamp`,
+                        `type`,
+                        `signal_dbm`,
+                        `wifi_speed_mbps`,
+                        `wifi_frequency`,
+                        `carrier`,
+                        `network_subtype`,
+                        `latency_ms`
+                    )
+                    SELECT
+                        `id`,
+                        `timestamp`,
+                        `type`,
+                        `signal_dbm`,
+                        `wifi_speed_mbps`,
+                        `wifi_frequency`,
+                        `carrier`,
+                        `network_subtype`,
+                        `latency_ms`
+                    FROM `network_readings`
+                    """.trimIndent(),
                 )
                 db.execSQL("DROP TABLE `network_readings`")
                 db.execSQL("ALTER TABLE `network_readings_new` RENAME TO `network_readings`")

@@ -1,76 +1,169 @@
-# Project-wide package ignores are intentionally avoided here.
-# OSV scans supported lockfiles such as gradle/verification-metadata.xml; add
-# package-specific [[PackageOverrides]] or [[IgnoredVulns]] entries only for
-# verified false positives.
+# OSV treats Gradle dependency-verification metadata as a supported Maven lockfile.
+# This file stores reviewed, temporary exceptions for stale verification-metadata
+# entries that are not present on the current app runtime classpaths. Keep each
+# package override exact and expiring; do not add ecosystem-wide ignores.
 
-[[PackageOverrides]]
-name = "com.fasterxml.jackson.core:jackson-databind"
-version = "2.21.3"
-ecosystem = "Maven"
-vulnerability.ignore = true
-reason = "Build-tool-only OWASP Dependency-Check dependency from Gradle verification metadata; debug/release runtime classpaths did not contain jackson-databind."
+[[IgnoredVulns]]
+id = "GHSA-5jmj-h7xm-6q6v"
+ignoreUntil = 2026-10-02
+reason = "Jackson databind 2.22.0 is the latest Maven Central 2.x release as of 2026-07-02 and OSV still reports this advisory; current exposure is Gradle build tooling only, not app runtime. Recheck when a fixed 2.x release is available."
 
 [[PackageOverrides]]
 name = "ch.qos.logback:logback-core"
 version = "1.3.16"
 ecosystem = "Maven"
 vulnerability.ignore = true
-reason = "Build-tool-only dependency from Gradle verification metadata; debug/release runtime classpaths did not contain logback-core."
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata only; debug/release runtime and root buildscript classpaths did not contain this package on 2026-07-02."
 
 [[PackageOverrides]]
-name = "io[.]netty:netty-(codec|codec-http|codec-http2|common|handler|handler-proxy)"
-nameIsRegex = true
+name = "com.fasterxml.jackson.core:jackson-databind"
+version = "2.21.3"
+ecosystem = "Maven"
+vulnerability.ignore = true
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata after buildscript pin to 2.22.0; debug/release runtime classpaths did not contain jackson-databind on 2026-07-02."
+
+[[PackageOverrides]]
+name = "io.netty:netty-codec"
 version = "4.1.110.Final"
 ecosystem = "Maven"
 vulnerability.ignore = true
-reason = "Build-tool-only dependency from Gradle verification metadata; debug/release runtime classpaths did not contain Netty."
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata only; debug/release runtime and root buildscript classpaths did not contain Netty on 2026-07-02."
 
 [[PackageOverrides]]
-name = "io[.]netty:netty-(codec|codec-http|codec-http2|common|handler|handler-proxy)"
-nameIsRegex = true
+name = "io.netty:netty-codec"
 version = "4.1.93.Final"
 ecosystem = "Maven"
 vulnerability.ignore = true
-reason = "Build-tool-only dependency from Gradle verification metadata; debug/release runtime classpaths did not contain Netty."
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata only; debug/release runtime and root buildscript classpaths did not contain Netty on 2026-07-02."
+
+[[PackageOverrides]]
+name = "io.netty:netty-codec-http"
+version = "4.1.110.Final"
+ecosystem = "Maven"
+vulnerability.ignore = true
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata only; debug/release runtime and root buildscript classpaths did not contain Netty on 2026-07-02."
+
+[[PackageOverrides]]
+name = "io.netty:netty-codec-http"
+version = "4.1.93.Final"
+ecosystem = "Maven"
+vulnerability.ignore = true
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata only; debug/release runtime and root buildscript classpaths did not contain Netty on 2026-07-02."
+
+[[PackageOverrides]]
+name = "io.netty:netty-codec-http2"
+version = "4.1.110.Final"
+ecosystem = "Maven"
+vulnerability.ignore = true
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata only; debug/release runtime and root buildscript classpaths did not contain Netty on 2026-07-02."
+
+[[PackageOverrides]]
+name = "io.netty:netty-codec-http2"
+version = "4.1.93.Final"
+ecosystem = "Maven"
+vulnerability.ignore = true
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata only; debug/release runtime and root buildscript classpaths did not contain Netty on 2026-07-02."
+
+[[PackageOverrides]]
+name = "io.netty:netty-common"
+version = "4.1.110.Final"
+ecosystem = "Maven"
+vulnerability.ignore = true
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata only; debug/release runtime and root buildscript classpaths did not contain Netty on 2026-07-02."
+
+[[PackageOverrides]]
+name = "io.netty:netty-common"
+version = "4.1.93.Final"
+ecosystem = "Maven"
+vulnerability.ignore = true
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata only; debug/release runtime and root buildscript classpaths did not contain Netty on 2026-07-02."
+
+[[PackageOverrides]]
+name = "io.netty:netty-handler"
+version = "4.1.110.Final"
+ecosystem = "Maven"
+vulnerability.ignore = true
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata only; debug/release runtime and root buildscript classpaths did not contain Netty on 2026-07-02."
+
+[[PackageOverrides]]
+name = "io.netty:netty-handler"
+version = "4.1.93.Final"
+ecosystem = "Maven"
+vulnerability.ignore = true
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata only; debug/release runtime and root buildscript classpaths did not contain Netty on 2026-07-02."
+
+[[PackageOverrides]]
+name = "io.netty:netty-handler-proxy"
+version = "4.1.110.Final"
+ecosystem = "Maven"
+vulnerability.ignore = true
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata only; debug/release runtime and root buildscript classpaths did not contain Netty on 2026-07-02."
+
+[[PackageOverrides]]
+name = "io.netty:netty-handler-proxy"
+version = "4.1.93.Final"
+ecosystem = "Maven"
+vulnerability.ignore = true
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata only; debug/release runtime and root buildscript classpaths did not contain Netty on 2026-07-02."
 
 [[PackageOverrides]]
 name = "org.apache.commons:commons-lang3"
 version = "3.16.0"
 ecosystem = "Maven"
 vulnerability.ignore = true
-reason = "Build-tool-only dependency from Gradle verification metadata; debug/release runtime classpaths did not contain commons-lang3."
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata; root buildscript resolves commons-lang3 to 3.20.0 and app runtime did not contain commons-lang3 on 2026-07-02."
 
 [[PackageOverrides]]
 name = "org.apache.httpcomponents:httpclient"
 version = "4.5.6"
 ecosystem = "Maven"
 vulnerability.ignore = true
-reason = "Build-tool-only dependency from Gradle verification metadata."
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata; root buildscript resolves httpclient to 4.5.14 and app runtime did not contain httpclient on 2026-07-02."
 
 [[PackageOverrides]]
 name = "org.bitbucket.b_c:jose4j"
 version = "0.9.5"
 ecosystem = "Maven"
 vulnerability.ignore = true
-reason = "Build-tool-only dependency from Gradle verification metadata."
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata after buildscript pin to 0.9.6; app runtime did not contain jose4j on 2026-07-02."
 
 [[PackageOverrides]]
 name = "org.bouncycastle:bcpkix-jdk18on"
 version = "1.79"
 ecosystem = "Maven"
 vulnerability.ignore = true
-reason = "Build-tool-only dependency from Gradle verification metadata."
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata after buildscript pin to 1.84; app runtime did not contain Bouncy Castle on 2026-07-02."
 
 [[PackageOverrides]]
 name = "org.bouncycastle:bcprov-jdk18on"
 version = "1.79"
 ecosystem = "Maven"
 vulnerability.ignore = true
-reason = "Build-tool-only dependency from Gradle verification metadata."
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata after buildscript pin to 1.84; app runtime did not contain Bouncy Castle on 2026-07-02."
 
 [[PackageOverrides]]
 name = "org.jdom:jdom2"
 version = "2.0.6"
 ecosystem = "Maven"
 vulnerability.ignore = true
-reason = "Build-tool-only dependency from Gradle verification metadata."
+effectiveUntil = 2026-10-02
+reason = "Stale Gradle verification metadata after buildscript pin to 2.0.6.1; app runtime did not contain jdom2 on 2026-07-02."

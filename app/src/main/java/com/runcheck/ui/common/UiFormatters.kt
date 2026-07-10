@@ -21,8 +21,6 @@ import java.util.Locale
 
 private val appEnglishLocale: Locale = Locale.ENGLISH
 
-fun Throwable.messageOr(defaultMessage: String): String = message?.takeUnless(String::isBlank) ?: defaultMessage
-
 fun Throwable.messageOrRes(
     @androidx.annotation.StringRes defaultRes: Int,
 ): UiText =

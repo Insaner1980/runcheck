@@ -95,6 +95,7 @@ import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.common.plugTypeLabel
 import com.runcheck.ui.common.rememberSaveableEnumState
+import com.runcheck.ui.common.resolve
 import com.runcheck.ui.common.temperatureBandLabel
 import com.runcheck.ui.components.AreaChart
 import com.runcheck.ui.components.CardSectionTitle
@@ -185,7 +186,7 @@ fun BatteryDetailScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                         ) {
-                            Text(stringResource(R.string.common_error_generic))
+                            Text(state.message.resolve())
                             TextButton(onClick = { viewModel.refresh() }) {
                                 Text(stringResource(R.string.common_retry))
                             }

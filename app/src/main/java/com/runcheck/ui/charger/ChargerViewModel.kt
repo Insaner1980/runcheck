@@ -2,13 +2,14 @@ package com.runcheck.ui.charger
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.runcheck.R
 import com.runcheck.domain.usecase.AddChargerUseCase
 import com.runcheck.domain.usecase.DeleteChargerUseCase
 import com.runcheck.domain.usecase.GetChargerComparisonUseCase
 import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
-import com.runcheck.ui.common.messageOr
+import com.runcheck.ui.common.messageOrRes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -20,8 +21,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-private const val UNKNOWN_ERROR = "Unknown error"
 
 @HiltViewModel
 class ChargerViewModel
@@ -75,7 +74,7 @@ class ChargerViewModel
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    _uiState.value = ChargerUiState.Error(e.messageOr(UNKNOWN_ERROR))
+                    _uiState.value = ChargerUiState.Error(e.messageOrRes(R.string.common_error_generic))
                 }
             }
         }
@@ -96,7 +95,7 @@ class ChargerViewModel
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
-                        _uiState.value = ChargerUiState.Error(e.messageOr(UNKNOWN_ERROR))
+                        _uiState.value = ChargerUiState.Error(e.messageOrRes(R.string.common_error_generic))
                     }
                 }
         }
@@ -114,7 +113,7 @@ class ChargerViewModel
                             selectedChargerId = selectedChargerId,
                         )
                     }.catch { e ->
-                        _uiState.value = ChargerUiState.Error(e.messageOr(UNKNOWN_ERROR))
+                        _uiState.value = ChargerUiState.Error(e.messageOrRes(R.string.common_error_generic))
                     }.collect { state ->
                         _uiState.value = state
                     }

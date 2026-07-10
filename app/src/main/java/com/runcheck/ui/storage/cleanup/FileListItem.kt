@@ -50,7 +50,6 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
-import com.runcheck.data.storage.loadCleanupThumbnail
 import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.ScannedFile
 import com.runcheck.ui.common.formatStorageSize

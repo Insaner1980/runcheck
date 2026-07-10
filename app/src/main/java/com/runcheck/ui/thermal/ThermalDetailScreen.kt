@@ -152,7 +152,7 @@ fun ThermalDetailScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                         ) {
-                            Text(stringResource(R.string.common_error_generic))
+                            Text(state.message.resolve())
                             TextButton(onClick = { viewModel.refresh() }) {
                                 Text(stringResource(R.string.common_retry))
                             }

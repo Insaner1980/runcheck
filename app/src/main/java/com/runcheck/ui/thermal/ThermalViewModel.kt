@@ -3,6 +3,7 @@ package com.runcheck.ui.thermal
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.runcheck.R
 import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThrottlingEvent
@@ -12,8 +13,7 @@ import com.runcheck.domain.usecase.GetThrottlingHistoryUseCase
 import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
-import com.runcheck.ui.common.UiText
-import com.runcheck.ui.common.messageOr
+import com.runcheck.ui.common.messageOrRes
 import com.runcheck.util.appendLiveValue
 import com.runcheck.util.getEnumOrDefault
 import com.runcheck.util.putEnum
@@ -109,7 +109,7 @@ class ThermalViewModel
                         .catch { e ->
                             _uiState.update { current ->
                                 (current as? ThermalUiState.Success)?.copy(
-                                    historyLoadError = UiText.Dynamic(e.message ?: "Error"),
+                                    historyLoadError = e.messageOrRes(R.string.common_error_generic),
                                 ) ?: current
                             }
                         }.collect { readings ->
@@ -169,7 +169,7 @@ class ThermalViewModel
                         )
                     }.sample(333L)
                         .catch { e ->
-                            _uiState.value = ThermalUiState.Error(e.messageOr("Unknown error"))
+                            _uiState.value = ThermalUiState.Error(e.messageOrRes(R.string.common_error_generic))
                         }.collect { state ->
                             _uiState.value = state
                         }

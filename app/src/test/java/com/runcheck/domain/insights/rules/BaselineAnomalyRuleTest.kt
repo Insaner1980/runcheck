@@ -54,6 +54,27 @@ class BaselineAnomalyRuleTest {
         }
 
     @Test
+    fun `emits medium priority insight when drain ratio is anomalous but below high threshold`() =
+        runTest {
+            val now = DAY_MS * 20
+            val baselineDrops = List(14) { day -> if (day % 2 == 0) 1 else 3 }
+            val readings =
+                baselineDrainDays(now, baselineDrops) +
+                    recentDrainDay(now, dropPerHour = 5)
+            val rule =
+                BaselineAnomalyRule(
+                    batteryRepository = TestBatteryRepository(readings),
+                    batteryDrainAnalyzer = BatteryDrainAnalyzer(),
+                )
+
+            val insight = rule.evaluate(now).single()
+
+            assertEquals("battery_drain:25xplus", insight.dedupeKey)
+            assertEquals(InsightPriority.MEDIUM, insight.priority)
+            assertEquals(listOf("5", "2"), insight.bodyArgs)
+        }
+
+    @Test
     fun `returns empty when recent drain is close to baseline`() =
         runTest {
             val now = DAY_MS * 20
@@ -68,6 +89,19 @@ class BaselineAnomalyRuleTest {
 
             assertTrue(rule.evaluate(now).isEmpty())
         }
+
+    private fun baselineDrainDays(
+        now: Long,
+        dropPerHourByDay: List<Int>,
+    ): List<BatteryReading> {
+        val baselineStart = now - DAY_MS - (dropPerHourByDay.size * DAY_MS)
+        return dropPerHourByDay.flatMapIndexed { day, dropPerHour ->
+            drainWindow(
+                start = baselineStart + (day * DAY_MS),
+                dropPerHour = dropPerHour,
+            )
+        }
+    }
 
     private fun baselineDrainDays(
         now: Long,

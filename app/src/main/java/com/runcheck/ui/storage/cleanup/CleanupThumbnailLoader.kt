@@ -1,4 +1,4 @@
-package com.runcheck.data.storage
+package com.runcheck.ui.storage.cleanup
 
 import android.content.ContentUris
 import android.content.Context

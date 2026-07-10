@@ -72,5 +72,3 @@ class GetChargerComparisonUseCase
             return (durationMinutes * 100 / levelGain).toInt()
         }
     }
-
-private fun List<Int>.averageOrNull(): Int? = takeIf(List<Int>::isNotEmpty)?.average()?.toInt()

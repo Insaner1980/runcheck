@@ -2,6 +2,7 @@ package com.runcheck.data.storage
 
 import android.content.ContentResolver
 import android.content.Context
+import android.database.ContentObserver
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -218,6 +219,26 @@ class MediaStoreScanner
                 }
             }
 
+        internal fun registerCleanupInvalidation(
+            query: CleanupScanQuery,
+            category: MediaCategory,
+            onChange: () -> Unit,
+        ): () -> Unit {
+            val collections = cleanupCollections(query, category).distinct()
+            if (collections.isEmpty()) return {}
+
+            val observer =
+                object : ContentObserver(null) {
+                    override fun onChange(selfChange: Boolean) {
+                        onChange()
+                    }
+                }
+            collections.forEach { collection ->
+                resolver.registerContentObserver(collection, true, observer)
+            }
+            return { resolver.unregisterContentObserver(observer) }
+        }
+
         private fun queryTotalSize(contentUri: Uri): Long =
             try {
                 var total = 0L
@@ -416,7 +437,7 @@ class MediaStoreScanner
                         category = descriptor.category,
                         selection = "${MediaStore.MediaColumns.SIZE} > ?",
                         selectionArgs = arrayOf(thresholdBytes.toString()),
-                        sortOrder = "${MediaStore.MediaColumns.SIZE} DESC",
+                        sortOrder = FILE_PAGE_SORT_ORDER,
                     ),
                 offset = offset,
                 limit = limit,
@@ -439,7 +460,7 @@ class MediaStoreScanner
                         category = MediaCategory.DOWNLOAD,
                         selection = "${MediaStore.MediaColumns.DATE_MODIFIED} < ?",
                         selectionArgs = arrayOf(cutoff.toString()),
-                        sortOrder = "${MediaStore.MediaColumns.SIZE} DESC",
+                        sortOrder = FILE_PAGE_SORT_ORDER,
                     ),
                 offset = offset,
                 limit = limit,
@@ -463,7 +484,7 @@ class MediaStoreScanner
                                 category = MediaCategory.APK,
                                 selection = APK_SELECTION,
                                 selectionArgs = APK_SELECTION_ARGS,
-                                sortOrder = "${MediaStore.MediaColumns.SIZE} DESC",
+                                sortOrder = FILE_PAGE_SORT_ORDER,
                             ),
                         offset = 0,
                         limit = offset + limit,
@@ -471,7 +492,7 @@ class MediaStoreScanner
                     ).filter { seen.add(it.uri) }
             }
             return results
-                .sortedByDescending { it.sizeBytes }
+                .sortedWith(compareByDescending<ScannedFile> { it.sizeBytes }.thenBy { it.uri })
                 .drop(offset)
                 .take(limit)
         }
@@ -638,6 +659,23 @@ class MediaStoreScanner
                 }
             }
 
+        private fun cleanupCollections(
+            query: CleanupScanQuery,
+            category: MediaCategory,
+        ): List<Uri> =
+            when (query.source) {
+                CleanupScanSource.LARGE_FILES -> listOfNotNull(largeFileCollectionFor(category)?.uri)
+                CleanupScanSource.OLD_DOWNLOADS -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        listOf(MediaStore.Downloads.EXTERNAL_CONTENT_URI)
+                    } else {
+                        emptyList()
+                    }
+                }
+
+                CleanupScanSource.APK_FILES -> apkCollections()
+            }
+
         private fun List<CleanupAggregateSummary>.toCleanupSummary(): CleanupSummary =
             CleanupSummary(
                 groups = map { it.group },
@@ -667,6 +705,8 @@ class MediaStoreScanner
         private companion object {
             private const val TAG = "MediaStoreScanner"
             private const val APK_MIME_TYPE = "application/vnd.android.package-archive"
+            private const val FILE_PAGE_SORT_ORDER =
+                "${MediaStore.MediaColumns.SIZE} DESC, ${MediaStore.MediaColumns._ID} ASC"
             private const val APK_SELECTION =
                 "${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ? OR ${MediaStore.MediaColumns.MIME_TYPE} = ?"
             private val APK_SELECTION_ARGS = arrayOf("%.apk", APK_MIME_TYPE)

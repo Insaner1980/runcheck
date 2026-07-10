@@ -22,10 +22,7 @@ class UiFormattersTest {
     }
 
     @Test
-    fun `throwable message helpers prefer non blank messages and fall back otherwise`() {
-        assertEquals("Network failed", IllegalStateException("Network failed").messageOr("Fallback"))
-        assertEquals("Fallback", IllegalStateException("").messageOr("Fallback"))
-
+    fun `throwable message resource helper prefers non blank messages and falls back otherwise`() {
         assertEquals(
             UiText.Dynamic("Network failed"),
             IllegalStateException("Network failed").messageOrRes(R.string.common_error_generic),
@@ -42,6 +39,7 @@ class UiFormattersTest {
         assertEquals(69.8, convertTemperature(21, TemperatureUnit.FAHRENHEIT), 0.0)
         assertEquals(R.string.unit_celsius, temperatureUnitRes(TemperatureUnit.CELSIUS))
         assertEquals(R.string.unit_fahrenheit, temperatureUnitRes(TemperatureUnit.FAHRENHEIT))
+        assertEquals("21.0", formatTemperatureValue(21, TemperatureUnit.CELSIUS))
         assertEquals("69.8", formatTemperatureValue(21, TemperatureUnit.FAHRENHEIT))
     }
 

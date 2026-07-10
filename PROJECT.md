@@ -18,7 +18,7 @@ Android device health diagnostics app built with Kotlin and Jetpack Compose. Sin
 - Widgets: Glance app widgets
 - Speed test backend: M-Lab NDT7
 - Build: Gradle Kotlin DSL
-- Build tooling: Gradle wrapper 9.4.0, AGP 9.1.1, Kotlin Gradle/Compose plugin 2.3.0, Kotlin runtime constraints 2.3.20, KSP 2.3.1, Compose BOM 2026.03.00
+- Build tooling: Gradle wrapper 9.4.0, AGP 9.1.1, Kotlin Gradle/Compose plugin 2.3.0, Kotlin runtime constraints 2.3.20, KSP 2.3.9, Compose BOM 2026.03.00
 - Compile SDK: Android 17 (API 37)
 - Target SDK: Android 17 (API 37)
 - Min SDK: 26
@@ -43,10 +43,13 @@ app/src/main/java/com/runcheck/
 └── util/
 ```
 
-Debug-only insight tooling also lives outside the main source tree:
+Debug/release-specific insight tooling also lives outside the shared main source tree:
 
 - `app/src/debug/java/com/runcheck/debug/insights/` for debug implementations
-- `app/src/main/java/com/runcheck/debug/insights/` for release-safe stubs
+- `app/src/debug/java/com/runcheck/di/InsightDebugModule.kt` for debug Hilt bindings
+- `app/src/release/java/com/runcheck/di/InsightDebugModule.kt` for release Hilt bindings
+- `app/src/main/java/com/runcheck/debug/insights/` for release-safe public stubs used by shared code
+- `app/src/release/java/com/runcheck/SentryInit.kt` for release no-op Sentry initialization
 
 ### Build and dependency source of truth
 
@@ -55,6 +58,7 @@ Debug-only insight tooling also lives outside the main source tree:
 - `settings.gradle.kts` enforces centralized repositories with `RepositoriesMode.FAIL_ON_PROJECT_REPOS`.
 - Approved repositories are `google()`, `mavenCentral()`, and JitPack only for `com.github.m-lab`.
 - The app intentionally uses `org.jetbrains.kotlin.plugin.compose`; do not reintroduce `kotlin-android` unless the AGP/Kotlin integration model changes and is verified.
+- Detekt uses the Detekt 2 plugin id `dev.detekt`; do not apply old Detekt 1 plugin assumptions without checking `gradle/libs.versions.toml` and `app/build.gradle.kts`.
 - `debug.credentials.properties` is ignored local-only input for debug Sentry DSN. It is read through Gradle Providers API and must not be committed.
 - `localeFilters = ["en"]` and `app/src/main/res/xml/locales_config.xml` both encode the English-only product state.
 
@@ -66,25 +70,31 @@ Current version catalog highlights:
 | Android Gradle Plugin | `9.1.1` |
 | Kotlin Gradle / Compose plugin | `2.3.0` |
 | Kotlin runtime constraints | `2.3.20` |
-| KSP | `2.3.1` |
+| KSP | `2.3.9` |
 | Hilt | `2.59.2` |
+| Hilt AndroidX / Hilt Work | `1.3.0` |
 | Room | `2.8.4` |
 | Compose BOM | `2026.03.00` |
 | Navigation Compose | `2.9.7` |
 | Lifecycle | `2.10.0` |
+| Activity Compose | `1.12.3` |
+| Core KTX | `1.18.0` |
 | WorkManager | `2.11.2` |
-| DataStore | `1.2.0` |
+| DataStore | `1.2.1` |
 | Paging | `3.3.6` |
 | Play Billing | `8.3.0` |
 | Glance | `1.1.1` |
 | M-Lab NDT7 client | `e0cb663613eb252a7793216ad28cf54a35677b8f` |
 | OkHttp | `4.12.0` |
+| Gson | `2.11.0` |
+| kotlinx.serialization JSON | `1.8.1` |
 | Sentry debug-only core | `8.43.1` |
+| Dependency Analysis Gradle plugin | `3.15.0` |
 | ktlint rule engine | `1.8.0` |
 | ktlint Gradle plugin | `14.2.0` |
-| Detekt | `1.23.8` |
+| Detekt | `2.0.0-alpha.3` |
 | compose-rules for ktlint | `0.5.9` |
-| compose-rules for Detekt | `0.4.28` |
+| compose-rules for Detekt | `0.5.9` |
 | OWASP Dependency-Check Gradle plugin | `12.2.2` |
 | SonarQube Gradle plugin | `7.3.1.8318` |
 | Compose Stability Analyzer | `0.7.4` |
@@ -93,16 +103,15 @@ Current version catalog highlights:
 
 ### External version review snapshot
 
-Checked on 2026-06-21 against official Android, Kotlin, Compose, and Gradle documentation:
+Checked on 2026-07-02 against official Android, Kotlin, Compose, and Gradle documentation:
 
 - The repo is not on the newest available Android/Gradle ecosystem versions in every area; that is expected and should be reviewed deliberately.
 - AGP 9.1.x official notes list API 37 support and Gradle 9.3.1 minimum compatibility; this repo's Gradle 9.4.0 wrapper satisfies that baseline.
-- AGP 9.2.0 is available upstream and lists Gradle 9.4.1 as its minimum/default Gradle line; AGP 9.3.0 preview is also published and lists Gradle 9.5.0 as its minimum/default Gradle line. This repo currently uses AGP 9.1.1 with Gradle 9.4.0, so AGP upgrades should be evaluated with Android 17 stable SDK behavior, Qodana, CodeQL, Gradle wrapper, dependency verification, and Kotlin plugin behavior together.
+- AGP 9.2.0 lists API 37.0 support and Gradle 9.4.1 as its minimum/default Gradle line; AGP 9.3.0 lists API 37 support and Gradle 9.5.0 as its minimum/default Gradle line. This repo currently uses AGP 9.1.1 with Gradle 9.4.0, so AGP upgrades should be evaluated with Android 17 stable SDK behavior, Qodana, CodeQL, Gradle wrapper, dependency verification, and Kotlin plugin behavior together.
 - Kotlin 2.3.20 is available upstream and the repo already constrains Kotlin stdlib adapter/runtime artifacts to 2.3.20, but the Gradle/Compose plugin remains 2.3.0. Do not treat this as a typo without checking AGP/Qodana/CodeQL runner behavior.
-- CodeQL 2.25.2 added Kotlin support up to 2.3.20. Kotlin 2.4.x still needs a fresh CodeQL compatibility check before adoption.
-- Kotlin 2.4.0 is newer than this repo's Kotlin plugin line, supports Gradle 7.6.3 through 9.5.0 directly, and should be treated as a deliberate migration, not a routine patch bump.
-- Compose BOM `2026.06.00` is available upstream; this repo currently uses `2026.03.00`. Any bump should include Compose UI regression review, compose-rules compatibility, and dependency verification metadata.
-- Gradle 9.6.0 is available upstream; this repo currently uses 9.4.0. Wrapper bumps should be checked against AGP and all local wrappers.
+- Kotlin 2.4.0 is newer than this repo's Kotlin plugin line, and Kotlin's official Gradle compatibility table lists support through Gradle 9.5.0 for current 2.4.0-era features. Treat it as a deliberate migration, not a routine patch bump.
+- Compose BOM controls Compose library versions, but the Compose compiler is managed through the Kotlin plugin in Kotlin 2.0+ projects. Any BOM bump should include Compose UI regression review, compose-rules compatibility, and dependency verification metadata.
+- Gradle 9.6.1 is available upstream; this repo currently uses 9.4.0. Wrapper bumps should be checked against AGP and all local wrappers.
 - Android 17 uses stable API level 37 in this checkout. Android 17 SDK setup expects the Android 17 platform and Android SDK Build-Tools 37.x line to be installed locally.
 
 External references used for this snapshot:
@@ -111,14 +120,13 @@ External references used for this snapshot:
 - Android 17 SDK setup: <https://developer.android.com/about/versions/17/setup-sdk>
 - AGP 9.1 release notes: <https://developer.android.com/build/releases/agp-9-1-0-release-notes>
 - AGP 9.2 release notes: <https://developer.android.com/build/releases/agp-9-2-0-release-notes>
-- AGP 9.3 preview release notes: <https://developer.android.com/build/releases/agp-9-3-0-release-notes>
+- AGP 9.3 release notes: <https://developer.android.com/build/releases/agp-9-3-0-release-notes>
 - Kotlin 2.3.0 release notes: <https://kotlinlang.org/docs/whatsnew23.html>
 - Kotlin 2.3.20 release notes: <https://kotlinlang.org/docs/whatsnew2320.html>
 - Kotlin 2.4.0 release notes: <https://kotlinlang.org/docs/whatsnew24.html>
 - Compose BOM mapping: <https://developer.android.com/develop/ui/compose/bom/bom-mapping>
 - Compose BOM guidance: <https://developer.android.com/develop/ui/compose/bom>
 - Gradle current release notes: <https://docs.gradle.org/current/release-notes.html>
-- CodeQL 2.25.2 Kotlin 2.3.20 support changelog: <https://github.blog/changelog/2026-04-15-codeql-2-25-2-adds-kotlin-2-3-20-support-and-other-updates/>
 
 ### Current authoritative files
 
@@ -282,7 +290,6 @@ Additional WorkManager-backed trial behavior:
 Supporting monitor components include:
 
 - `BootReceiver`
-- `ScreenStateReceiver`
 - `ScreenStateTracker`
 - `MonitoringAlertStateStore`
 - `NotificationHelper`
@@ -869,7 +876,7 @@ Manifest and network posture:
 - Manifest package visibility is limited to an `ACTION_MAIN` + `CATEGORY_LAUNCHER` `<queries>` intent for launcher-app visibility; the app does not request `QUERY_ALL_PACKAGES`.
 - `androidx.startup.InitializationProvider` remains merged for non-WorkManager App Startup components; `androidx.work.WorkManagerInitializer` is removed so WorkManager uses `RuncheckApp`'s explicit `Configuration.Provider`.
 - Main launcher activity is exported by design.
-- App widgets are exported with `android.permission.BIND_APPWIDGET`.
+- App widget receivers are not exported and are protected with `android.permission.BIND_APPWIDGET`.
 - `RealTimeMonitorService` is not exported and uses `foregroundServiceType="specialUse"` with a declared special-use subtype.
 - FileProvider is not exported and exposes only cache path `exports/` as `csv_exports`.
 
@@ -938,8 +945,8 @@ Single dark theme — no light mode, no AMOLED toggle, no dynamic colors.
 | AccentAmber | `#E8C44A` | `tertiary` | Fair status, warnings |
 | AccentOrange | `#F5963A` | — | Poor status |
 | AccentRed | `#F06040` | `error` | Critical status, destructive actions |
-| AccentLime | `#C8E636` | — | Storage documents category |
-| AccentYellow | `#F5D03A` | — | Storage downloads category |
+| AccentLime | `#C8E636` | — | Storage video category |
+| AccentYellow | `#F5D03A` | — | Storage audio category |
 
 **Text:**
 
@@ -1051,7 +1058,7 @@ Icon source files in `icons/` directory (SVG masters + 512px PNG exports).
 
 Current test surface:
 
-- Unit tests: 58 Kotlin files under `app/src/test/java/com/runcheck/`
+- Unit tests: 83 Kotlin files under `app/src/test/java/com/runcheck/`
 - Instrumented tests: 1 Kotlin file under `app/src/androidTest/java/com/runcheck/`
 - Android test assets include exported Room schemas for migration tests; current exported assets cover versions 6-10.
 - Shared coroutine main dispatcher rule lives in `ui/MainDispatcherRule.kt`.
@@ -1086,13 +1093,15 @@ Useful narrow commands:
 .\gradlew --no-daemon :app:compileDebugKotlin :app:compileDebugUnitTestKotlin --no-configuration-cache
 .\tools\pc.ps1 -PlanOnly
 .\tools\sentry.ps1 -PlanOnly
-Get-ChildItem tools -Filter *.ps1 | ForEach-Object { & $_.FullName -PlanOnly }
+.\tools\dc.ps1 -PlanOnly
+.\tools\sc.ps1 -PlanOnly -Full
+.\tools\sonar.ps1 -PlanOnly
 ```
 
 Report-reading convention:
 
 - "lue lint-tulokset" means read `reports/ktlint.txt`, `reports/detekt.txt`, and `reports/lint.txt`.
-- "lue security-tulokset" means read `reports/security-summary.txt`, `reports/semgrep-kotlin.txt`, `reports/semgrep-secrets.txt`, `reports/gitleaks.txt`, `reports/trufflehog.txt`, `reports/dependency-verification.txt`, `reports/osv.txt`, and `reports/security-deps.txt`.
+- "lue security-tulokset" means read `reports/security-summary.txt` first when present, then the reports generated by the chosen security mode: `reports/semgrep-kotlin.txt`, `reports/semgrep-secrets.txt`, `reports/gitleaks.txt`, `reports/trufflehog.txt`, `reports/dependency-verification.txt`, `reports/osv.txt`, and `reports/security-deps.txt` for the full `sc -Full` path.
 
 ---
 
@@ -1105,12 +1114,12 @@ GitHub Actions workflows in `.github/workflows/`:
 | `codeql.yml` | CodeQL security analysis (`java-kotlin`, manual `assembleDebug`) | Active |
 | `security.yml` | Semgrep SAST on PRs/main plus OWASP Dependency-Check on weekly/manual runs | Active; Semgrep is the push/PR code-scanning path. OWASP is kept out of push/PR code scanning because cold NVD updates can stall or return 503s; scheduled/manual runs use cache, bounded retries, a job timeout, a shorter non-blocking OWASP step timeout, and upload the report as an Actions artifact when produced |
 | `sonar.yml` | SonarCloud scan through Gradle (`assembleDebug`, `:app:jacocoDebugUnitTestReport`, `sonar`) | Active |
-| `qodana.yml` | JetBrains Qodana main-branch scan (`v2026.1`) | Uses the JVM Community linter because the 2026.1 Android linter rejects AGP 9.1.x during IDE import |
-| `qodana_code_quality.yml` | JetBrains Qodana action (`v2026.1`) for `main`, `releases/*`, PRs, and manual dispatch | Uses the JVM Community linter because the 2026.1 Android linter rejects AGP 9.1.x during IDE import |
+| `qodana.yml` | JetBrains Qodana main-branch scan through `JetBrains/qodana-action` pinned at `v2026.1.3` | Uses the `jetbrains/qodana-jvm-community:2026.1` linter from `qodana.yaml` because the 2026.1 Android linter rejects AGP 9.1.x during IDE import |
+| `qodana_code_quality.yml` | JetBrains Qodana action pinned at `v2026.1.3` for `main`, `releases/*`, PRs, and manual dispatch | Uses the `jetbrains/qodana-jvm-community:2026.1` linter from `qodana.yaml` because the 2026.1 Android linter rejects AGP 9.1.x during IDE import |
 
 External services:
 - **SonarCloud** — continuous code quality (`Insaner1980_runcheck`, org `insaner1980`). CI path is `.github/workflows/sonar.yml`; local path is `tools/sonar.ps1`.
-- **Qodana Cloud** — org "Finnvek Dev", project "runcheck"; CI workflows currently run without `QODANA_TOKEN` because the available GitHub Actions secret is declined by Qodana Cloud license verification. Re-enable Cloud upload only after installing a valid Qodana Cloud project token.
+- **Qodana Cloud** — org "Finnvek Dev", project "runcheck"; current workflow files do not pass `QODANA_TOKEN`, so they should be read as local/action-based Qodana analysis unless a token is added later.
 
 Local PowerShell wrappers:
 
@@ -1181,8 +1190,8 @@ Rules are Hilt multibindings into `Set<InsightRule>`. `InsightEngine` filters ge
 
 ### Known Tool Limitations
 
-- **Qodana:** Qodana Android linter 2026.1 currently rejects this repo's AGP 9.1.x during IDE import (`Latest supported version is AGP 9.0.0`). The workflows therefore run `jetbrains/qodana-jvm-community:2026.1` until JetBrains publishes an Android linter compatible with this AGP line. Re-test Qodana on every AGP/Gradle bump.
-- **CodeQL:** GitHub CodeQL 2.25.2 supports Kotlin up to 2.3.20, but Kotlin 2.4.x is beyond the known-supported line in the current review snapshot. Check the actual CodeQL Action runner version before Kotlin plugin upgrades.
+- **Qodana:** `qodana.yaml` documents that the Qodana Android linter 2026.1 rejects this repo's AGP 9.1.x during IDE import (`Latest supported version is AGP 9.0.0`). The workflows therefore run `jetbrains/qodana-jvm-community:2026.1` until JetBrains publishes or the project verifies an Android linter compatible with this AGP line. Re-test Qodana on every AGP/Gradle bump.
+- **CodeQL:** `.github/workflows/codeql.yml` pins `github/codeql-action/init` and `analyze` to `v4.36.2` and builds with `assembleDebug --no-configuration-cache`. Check the actual CodeQL Action runner and Kotlin extractor support before Kotlin plugin upgrades.
 - **Sonar:** AGP 9 support has had scanner-side compatibility churn. Keep `tools/sonar.ps1` and `.github/workflows/sonar.yml` verified when changing AGP, Gradle, or Kotlin.
 - **OWASP Dependency-Check:** NVD updates can take a very long time or return transient 503 responses, so PRs and ordinary main pushes run Semgrep/CodeQL/Qodana while Dependency-Check is reserved for weekly scheduled or manual runs with cache, bounded retries, a job timeout, and a shorter non-blocking OWASP step timeout. Dependency-Check reports are uploaded as Actions artifacts instead of GitHub Code scanning SARIF so stale dependency analyses do not keep fixed Dependabot issues open.
 

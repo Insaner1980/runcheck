@@ -11,6 +11,7 @@ import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.repository.BatteryRepository
 import com.runcheck.domain.repository.ChargerRepository
+import com.runcheck.domain.repository.DatabaseTransactionRunner
 import com.runcheck.domain.repository.UserPreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -27,7 +28,13 @@ class ChargerSessionTrackerTest {
             val chargerRepository = FakeChargerRepository()
             val batteryRepository = FakeBatteryRepository()
             val preferencesRepository = FakeUserPreferencesRepository(selectedChargerId = 7L)
-            val tracker = ChargerSessionTracker(chargerRepository, batteryRepository, preferencesRepository)
+            val tracker =
+                ChargerSessionTracker(
+                    chargerRepository,
+                    batteryRepository,
+                    preferencesRepository,
+                    transactionRunner,
+                )
 
             tracker.onBatteryState(chargingBatteryState(level = 42), timestamp = 1_000L)
 
@@ -68,7 +75,13 @@ class ChargerSessionTrackerTest {
                         ),
                 )
             val preferencesRepository = FakeUserPreferencesRepository(selectedChargerId = 7L)
-            val tracker = ChargerSessionTracker(chargerRepository, batteryRepository, preferencesRepository)
+            val tracker =
+                ChargerSessionTracker(
+                    chargerRepository,
+                    batteryRepository,
+                    preferencesRepository,
+                    transactionRunner,
+                )
 
             tracker.onBatteryState(
                 state = chargingBatteryState(level = 78, status = ChargingStatus.NOT_CHARGING),
@@ -85,6 +98,46 @@ class ChargerSessionTrackerTest {
             assertEquals(5033, completed.avgVoltageMv)
             assertEquals(11_120, completed.avgPowerMw)
         }
+
+    @Test
+    fun `switching chargers completes and starts sessions in one transaction`() =
+        runTest {
+            val chargerRepository =
+                FakeChargerRepository().apply {
+                    activeSession = activeSession(chargerId = 7L)
+                }
+            val transactionRunner = RecordingTransactionRunner()
+            val tracker =
+                ChargerSessionTracker(
+                    chargerRepository,
+                    FakeBatteryRepository(),
+                    FakeUserPreferencesRepository(selectedChargerId = 8L),
+                    transactionRunner,
+                )
+
+            tracker.onBatteryState(chargingBatteryState(level = 50), timestamp = 5_000L)
+
+            assertEquals(1, transactionRunner.runCount)
+            assertEquals(7L, chargerRepository.completedSession?.chargerId)
+            assertEquals(8L, chargerRepository.activeSession?.chargerId)
+        }
+
+    private val transactionRunner = DatabaseTransactionRunner { block -> block() }
+
+    private fun activeSession(chargerId: Long) =
+        ChargingSession(
+            id = 11L,
+            chargerId = chargerId,
+            startTime = 1_000L,
+            endTime = null,
+            startLevel = 20,
+            endLevel = null,
+            avgCurrentMa = null,
+            maxCurrentMa = null,
+            avgVoltageMv = null,
+            avgPowerMw = null,
+            plugType = PlugType.USB.name,
+        )
 
     private fun chargingBatteryState(
         level: Int,
@@ -118,6 +171,15 @@ class ChargerSessionTrackerTest {
         cycleCount = null,
         healthPct = null,
     )
+}
+
+private class RecordingTransactionRunner : DatabaseTransactionRunner {
+    var runCount = 0
+
+    override suspend fun runInTransaction(block: suspend () -> Unit) {
+        runCount += 1
+        block()
+    }
 }
 
 private class FakeChargerRepository : ChargerRepository {

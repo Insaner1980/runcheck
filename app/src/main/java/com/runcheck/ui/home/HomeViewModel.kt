@@ -3,6 +3,7 @@ package com.runcheck.ui.home
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.runcheck.R
 import com.runcheck.domain.insights.policy.visibleForProAccess
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.HealthScore
@@ -21,7 +22,7 @@ import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.pro.ProStateProvider
 import com.runcheck.pro.ProStatus
 import com.runcheck.pro.TrialManager
-import com.runcheck.ui.common.messageOr
+import com.runcheck.ui.common.messageOrRes
 import com.runcheck.util.getBooleanOrDefault
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
@@ -243,7 +244,7 @@ class HomeViewModel
                         )
                     }.sample(DISPLAY_UPDATE_INTERVAL_MS)
                         .catch { e ->
-                            _uiState.value = HomeUiState.Error(e.messageOr("Unknown error"))
+                            _uiState.value = HomeUiState.Error(e.messageOrRes(R.string.common_error_generic))
                         }.collect { state ->
                             maybeTrackChargerSession(state.batteryState)
                             _uiState.value = state

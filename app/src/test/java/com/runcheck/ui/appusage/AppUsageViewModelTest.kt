@@ -9,6 +9,7 @@ import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.RefreshAppUsageSnapshotUseCase
 import com.runcheck.ui.MainDispatcherRule
+import com.runcheck.ui.common.UiText
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -80,7 +81,7 @@ class AppUsageViewModelTest {
 
             val state = viewModel.uiState.value
             assertTrue(state is AppUsageUiState.Error)
-            assertEquals("usage failed", (state as AppUsageUiState.Error).message)
+            assertEquals(UiText.Dynamic("usage failed"), (state as AppUsageUiState.Error).message)
         }
 
     private fun createViewModel(): AppUsageViewModel =

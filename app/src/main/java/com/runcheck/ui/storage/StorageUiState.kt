@@ -20,6 +20,6 @@ sealed interface StorageUiState {
     ) : StorageUiState
 
     data class Error(
-        val message: String,
+        val message: UiText,
     ) : StorageUiState
 }

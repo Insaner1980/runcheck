@@ -34,7 +34,7 @@ interface AppBatteryUsageDao {
         FROM app_battery_usage AS usage
         WHERE usage.timestamp >= :since
         GROUP BY usage.package_name
-        ORDER BY foreground_time_ms DESC
+        ORDER BY foreground_time_ms DESC, package_name ASC
     """,
     )
     fun getAggregatedUsageSince(since: Long): PagingSource<Int, AppBatteryUsageEntity>

@@ -2,10 +2,11 @@ package com.runcheck.ui.insights
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.runcheck.R
 import com.runcheck.domain.insights.policy.visibleForProAccess
 import com.runcheck.domain.repository.InsightRepository
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
-import com.runcheck.ui.common.messageOr
+import com.runcheck.ui.common.messageOrRes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,7 +52,7 @@ class InsightsViewModel
                         isPro = isPro,
                     )
                 }.catch { error ->
-                    _uiState.value = InsightsUiState.Error(error.messageOr("Unknown error"))
+                    _uiState.value = InsightsUiState.Error(error.messageOrRes(R.string.common_error_generic))
                 }.collect { state ->
                     _uiState.value = state
                     maybeMarkSeen(state)

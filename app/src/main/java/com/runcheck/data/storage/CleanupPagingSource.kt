@@ -6,11 +6,18 @@ import com.runcheck.domain.model.ScannedFile
 
 internal class CleanupPagingSource(
     private val loader: suspend (offset: Int, limit: Int) -> List<ScannedFile>,
+    registerInvalidation: (onChange: () -> Unit) -> (() -> Unit),
 ) : PagingSource<Int, ScannedFile>() {
+    init {
+        val unregister = registerInvalidation(::invalidate)
+        registerInvalidatedCallback(unregister)
+    }
+
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, ScannedFile> {
         val offset = params.key ?: 0
         return try {
             val items = loader(offset, params.loadSize)
+            if (invalid) return LoadResult.Invalid()
             val nextKey = if (items.size < params.loadSize) null else offset + items.size
             LoadResult.Page(
                 data = items,
@@ -24,8 +31,6 @@ internal class CleanupPagingSource(
 
     override fun getRefreshKey(state: PagingState<Int, ScannedFile>): Int? {
         val anchorPosition = state.anchorPosition ?: return null
-        val anchorPage = state.closestPageToPosition(anchorPosition) ?: return null
-        return anchorPage.prevKey?.plus(state.config.pageSize)
-            ?: anchorPage.nextKey?.minus(state.config.pageSize)
+        return (anchorPosition - state.config.initialLoadSize / 2).coerceAtLeast(0)
     }
 }

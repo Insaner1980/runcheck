@@ -27,6 +27,6 @@ sealed interface ThermalUiState {
     ) : ThermalUiState
 
     data class Error(
-        val message: String,
+        val message: UiText,
     ) : ThermalUiState
 }

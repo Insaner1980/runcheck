@@ -1,5 +1,7 @@
 package com.runcheck.ui.appusage
 
+import com.runcheck.ui.common.UiText
+
 sealed interface AppUsageUiState {
     data object Loading : AppUsageUiState
 
@@ -11,6 +13,6 @@ sealed interface AppUsageUiState {
     ) : AppUsageUiState
 
     data class Error(
-        val message: String,
+        val message: UiText,
     ) : AppUsageUiState
 }

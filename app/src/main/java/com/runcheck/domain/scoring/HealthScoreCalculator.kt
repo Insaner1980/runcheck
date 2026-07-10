@@ -157,18 +157,18 @@ class HealthScoreCalculator
             network: NetworkState,
             speedTest: SpeedTestResult,
         ): Int {
-            val signalScore = signalQualityScore(network.signalQuality)
-            val latencyScore = latencyPingScore(speedTest.pingMs)
-            val downloadScore = downloadSpeedScore(speedTest.downloadMbps, network.connectionType)
-            val stabilityScore = jitterStabilityScore(speedTest.jitterMs)
-
+            val scoreComponents =
+                buildList {
+                    add(signalQualityScore(network.signalQuality) to 40)
+                    add(latencyPingScore(speedTest.pingMs) to 30)
+                    add(downloadSpeedScore(speedTest.downloadMbps, network.connectionType) to 20)
+                    speedTest.jitterMs?.let { jitterMs ->
+                        add(jitterStabilityScore(jitterMs) to 10)
+                    }
+                }
+            val totalWeight = scoreComponents.sumOf { it.second }
             val weightedScore =
-                (
-                    signalScore * 0.40f +
-                        latencyScore * 0.30f +
-                        downloadScore * 0.20f +
-                        stabilityScore * 0.10f
-                ).toInt()
+                scoreComponents.sumOf { (score, weight) -> score * weight } / totalWeight
 
             return weightedScore.coerceIn(0, 100)
         }
@@ -210,9 +210,8 @@ class HealthScoreCalculator
             return (downloadRatio * 100).toInt()
         }
 
-        private fun jitterStabilityScore(jitterMs: Int?): Int =
+        private fun jitterStabilityScore(jitterMs: Int): Int =
             when {
-                jitterMs == null -> 80
                 jitterMs < 5 -> 100
                 jitterMs < 15 -> 85
                 jitterMs < 30 -> 65

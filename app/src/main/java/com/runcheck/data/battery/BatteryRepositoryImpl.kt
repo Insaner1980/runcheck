@@ -105,11 +105,8 @@ class BatteryRepositoryImpl
                     batteryReadingDao.getReadingsSince(since)
                 }
             return readingsFlow
-                .map { entities ->
-                    entities
-                        .map { it.toDomain() }
-                        .filter { TimestampSanitizer.isUsable(it.timestamp) }
-                }.flowOn(dispatchers.io)
+                .map { entities -> entities.toUsableDomainReadings() }
+                .flowOn(dispatchers.io)
         }
 
         override suspend fun saveReading(state: BatteryState) {
@@ -142,7 +139,7 @@ class BatteryRepositoryImpl
         override suspend fun getAllReadings(): List<BatteryReading> = batteryReadingDao.getAll().map { it.toDomain() }
 
         override suspend fun getReadingsSinceSync(since: Long): List<BatteryReading> =
-            batteryReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
+            batteryReadingDao.getReadingsSinceSync(since).toUsableDomainReadings()
 
         override suspend fun deleteOlderThan(cutoff: Long) {
             try {
@@ -194,6 +191,9 @@ private fun BatteryReadingEntity.toDomain() =
         cycleCount = cycleCount,
         healthPct = healthPct,
     )
+
+private fun List<BatteryReadingEntity>.toUsableDomainReadings(): List<BatteryReading> =
+    map { it.toDomain() }.filter { TimestampSanitizer.isUsable(it.timestamp) }
 
 internal fun estimateFullCapacityMah(
     remainingMah: Int?,

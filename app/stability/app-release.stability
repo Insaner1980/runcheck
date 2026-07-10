@@ -645,16 +645,6 @@ public fun com.runcheck.ui.components.AnimatedFloatText(value: kotlin.Float, mod
     - suffix: STABLE (String is immutable)
 
 @Composable
-public fun com.runcheck.ui.components.AnimatedIntText(value: kotlin.Int, modifier: androidx.compose.ui.Modifier, style: androidx.compose.ui.text.TextStyle, suffix: kotlin.String): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - value: STABLE (primitive type)
-    - modifier: STABLE (marked @Stable or @Immutable)
-    - style: STABLE (marked @Stable or @Immutable)
-    - suffix: STABLE (String is immutable)
-
-@Composable
 public fun com.runcheck.ui.components.AreaChart(data: kotlin.collections.List<kotlin.Float>, modifier: androidx.compose.ui.Modifier, lineColor: androidx.compose.ui.graphics.Color, animate: kotlin.Boolean, contentDescription: kotlin.String?): kotlin.Unit
   skippable: false
   restartable: true
@@ -2000,6 +1990,13 @@ internal fun com.runcheck.ui.settings.NotificationsSection(context: android.cont
     - onSetNotifChargeComplete: STABLE (function type)
 
 @Composable
+private fun com.runcheck.ui.settings.OpenSourceLicensesDialog(onDismiss: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - onDismiss: STABLE (function type)
+
+@Composable
 internal fun com.runcheck.ui.settings.ProSection(uiState: com.runcheck.ui.settings.SettingsUiState, onPurchasePro: kotlin.Function0<kotlin.Unit>, onRefreshPurchaseStatus: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
@@ -2632,6 +2629,22 @@ private fun com.runcheck.ui.thermal.thermalStatusLabel(status: com.runcheck.doma
   restartable: true
   params:
     - status: STABLE (class with no mutable properties)
+
+@Composable
+private fun com.runcheck.widget.BatteryWidget.BatteryWidgetContent(context: android.content.Context, snapshot: com.runcheck.widget.BatteryWidgetSnapshot): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - context: RUNTIME (requires runtime check)
+    - snapshot: STABLE (class with no mutable properties)
+
+@Composable
+private fun com.runcheck.widget.HealthWidget.HealthWidgetContent(context: android.content.Context, snapshot: com.runcheck.widget.HealthWidgetSnapshot): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - context: RUNTIME (requires runtime check)
+    - snapshot: STABLE (class with no mutable properties)
 
 @Composable
 private fun com.runcheck.widget.MiniIndicator(label: kotlin.String, value: kotlin.String): kotlin.Unit

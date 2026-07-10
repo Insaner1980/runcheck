@@ -200,15 +200,15 @@ fun validatedLatencyPort(
 
 fun isReleaseArtifactTaskName(name: String): Boolean =
     name == "copyReleaseArtifacts" ||
-    (
-        name.endsWith("Release") &&
-            (
-                name.startsWith("assemble") ||
-                    name.startsWith("bundle") ||
-                    name.startsWith("package") ||
-                    name.startsWith("publish")
-            )
-    ) ||
+        (
+            name.endsWith("Release") &&
+                (
+                    name.startsWith("assemble") ||
+                        name.startsWith("bundle") ||
+                        name.startsWith("package") ||
+                        name.startsWith("publish")
+                )
+        ) ||
         name in
         setOf(
             "packageReleaseBundle",
@@ -707,9 +707,6 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
 
-    // Baseline Profile
-    runtimeOnly(libs.profileinstaller)
-
     // Gson
     implementation(libs.gson)
 
@@ -724,6 +721,9 @@ dependencies {
     // Glance (home screen widgets)
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
+
+    // Baseline Profile
+    runtimeOnly(libs.profileinstaller)
 
     // Sentry on vain debug-diagnostiikkaa. Release-luokkapolku tarkistetaan tools\sentry.ps1-komennolla.
     debugImplementation(libs.sentry.android.core)

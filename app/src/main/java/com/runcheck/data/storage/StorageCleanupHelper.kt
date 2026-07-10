@@ -4,10 +4,10 @@ import android.app.PendingIntent
 import android.content.Context
 import android.net.Uri
 import android.os.Build
-import android.provider.MediaStore
 import com.runcheck.domain.model.StorageDeleteFailure
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
+import com.runcheck.util.createMediaStoreDeleteRequest
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -68,11 +68,7 @@ class StorageCleanupHelper
             fun createDeleteRequest(
                 context: Context,
                 uriStrings: List<String>,
-            ): PendingIntent? {
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || uriStrings.isEmpty()) return null
-                val uris = uriStrings.map { Uri.parse(it) }
-                return MediaStore.createDeleteRequest(context.contentResolver, uris)
-            }
+            ): PendingIntent? = createMediaStoreDeleteRequest(context, uriStrings)
 
             private const val TAG = "StorageCleanupHelper"
             private const val RECOVERABLE_SECURITY_EXCEPTION =

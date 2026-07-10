@@ -94,6 +94,7 @@ import com.runcheck.ui.common.formatPercent
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.common.plugTypeLabel
+import com.runcheck.ui.common.resolve
 import com.runcheck.ui.common.scoreLabel
 import com.runcheck.ui.common.signalQualityLabel
 import com.runcheck.ui.common.temperatureBandLabel
@@ -197,7 +198,7 @@ fun HomeScreen(
                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                     ) {
                         Text(
-                            text = stringResource(R.string.common_error_generic),
+                            text = state.message.resolve(),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         TextButton(onClick = { viewModel.refresh() }) {

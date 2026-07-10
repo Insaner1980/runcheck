@@ -14,10 +14,22 @@
     <suppress>
         <notes><![CDATA[
         The package group prefix com.github.* is not GitHub Enterprise Server. These suppress incorrect
-        CPE matches reported against M-Lab ndt7 and Compose Stability runtime Maven artifacts.
+        GitHub Enterprise Server matches reported against M-Lab ndt7 and Compose Stability runtime Maven artifacts.
         ]]></notes>
-        <packageUrl regex="true">^pkg:maven/(com\.github\.m-lab/ndt7-client-android-java@1\.0\.0|com\.github\.skydoves/compose-stability-runtime-android@0\.7\.4)$</packageUrl>
-        <cpe>cpe:/a:github:github:1.0.0</cpe>
-        <cpe>cpe:/a:github:github:0.7.4</cpe>
+        <packageUrl regex="true">^pkg:maven/(com\.github\.m-lab/ndt7-client-android-java@e0cb663613eb252a7793216ad28cf54a35677b8f|com\.github\.skydoves/compose-stability-runtime-android@0\.7\.4)$</packageUrl>
+        <cve>CVE-2012-2055</cve>
+        <cve>CVE-2020-10517</cve>
+        <cve>CVE-2020-10518</cve>
+        <cve>CVE-2020-10519</cve>
+    </suppress>
+    <suppress until="2026-08-31Z">
+        <notes><![CDATA[
+        Kotlin CVE-2026-53914 affects Kotlin before 2.4.20 via unsafe build-cache metadata
+        deserialization. As of 2026-07-05, Maven Central only has 2.4.20-Beta1 and no stable
+        2.4.20 Kotlin runtime. Gradle build cache is disabled in gradle.properties as the
+        project mitigation; revisit this suppression when stable Kotlin 2.4.20 or newer is available.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib(-jdk7|-jdk8)?@2\.3\.20$</packageUrl>
+        <cve>CVE-2026-53914</cve>
     </suppress>
 </suppressions>

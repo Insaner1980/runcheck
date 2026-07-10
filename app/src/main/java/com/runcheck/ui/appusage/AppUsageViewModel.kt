@@ -4,12 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.runcheck.R
 import com.runcheck.domain.usecase.GetAppBatteryUsageSummaryUseCase
 import com.runcheck.domain.usecase.GetAppBatteryUsageUseCase
 import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.RefreshAppUsageSnapshotUseCase
-import com.runcheck.ui.common.messageOr
+import com.runcheck.ui.common.messageOrRes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,7 +27,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private const val APP_USAGE_LOOKBACK_MS = 24 * 60 * 60 * 1000L
-private const val UNKNOWN_ERROR = "Unknown error"
 
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -92,7 +92,7 @@ class AppUsageViewModel
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
-                        _uiState.value = AppUsageUiState.Error(e.messageOr(UNKNOWN_ERROR))
+                        _uiState.value = AppUsageUiState.Error(e.messageOrRes(R.string.common_error_generic))
                     }
                 }
         }
@@ -107,7 +107,7 @@ class AppUsageViewModel
                         pagingEnabled.value = true
                         getAppBatteryUsageSummary(since)
                             .catch { e ->
-                                _uiState.value = AppUsageUiState.Error(e.messageOr(UNKNOWN_ERROR))
+                                _uiState.value = AppUsageUiState.Error(e.messageOrRes(R.string.common_error_generic))
                             }.collect { summary ->
                                 _uiState.value =
                                     AppUsageUiState.Success(
@@ -118,7 +118,7 @@ class AppUsageViewModel
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
-                        _uiState.value = AppUsageUiState.Error(e.messageOr(UNKNOWN_ERROR))
+                        _uiState.value = AppUsageUiState.Error(e.messageOrRes(R.string.common_error_generic))
                     }
                 }
         }

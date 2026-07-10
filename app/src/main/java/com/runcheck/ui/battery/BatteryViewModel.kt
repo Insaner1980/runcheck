@@ -3,6 +3,7 @@ package com.runcheck.ui.battery
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.runcheck.R
 import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.ChargingStatus
@@ -17,7 +18,7 @@ import com.runcheck.domain.usecase.GetBatteryStatisticsUseCase
 import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
-import com.runcheck.ui.common.messageOr
+import com.runcheck.ui.common.messageOrRes
 import com.runcheck.util.ReleaseSafeLog
 import com.runcheck.util.appendLiveValue
 import com.runcheck.util.getEnumOrDefault
@@ -133,7 +134,7 @@ class BatteryViewModel
                     }.sample(333L)
                         .catch { e ->
                             ReleaseSafeLog.error("BatteryVM", "Battery data failed", e)
-                            _uiState.value = BatteryUiState.Error(e.messageOr("Unknown error"))
+                            _uiState.value = BatteryUiState.Error(e.messageOrRes(R.string.common_error_generic))
                         }.collect { state ->
                             _uiState.value = state
                         }
