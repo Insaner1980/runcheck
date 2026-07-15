@@ -10,6 +10,8 @@ interface ThrottlingRepository {
 
     suspend fun insert(event: ThrottlingEvent): Long
 
+    suspend fun getOpenEvent(): ThrottlingEvent?
+
     suspend fun updateSnapshot(
         id: Long,
         thermalStatus: String,

@@ -202,8 +202,8 @@ class ScreenStateTracker
                         .takeUnless { it == INVALID_LEVEL },
                 screenOnDurationMs = prefs.getLong(KEY_SCREEN_ON_DURATION_MS, 0L),
                 screenOffDurationMs = prefs.getLong(KEY_SCREEN_OFF_DURATION_MS, 0L),
-                screenOnDrainPct = prefs.getFloat(KEY_SCREEN_ON_DRAIN_PCT, 0f),
-                screenOffDrainPct = prefs.getFloat(KEY_SCREEN_OFF_DRAIN_PCT, 0f),
+                screenOnDrainPct = boundedDrainPct(prefs.getFloat(KEY_SCREEN_ON_DRAIN_PCT, 0f)),
+                screenOffDrainPct = boundedDrainPct(prefs.getFloat(KEY_SCREEN_OFF_DRAIN_PCT, 0f)),
                 deepSleepDurationMs = prefs.getLong(KEY_DEEP_SLEEP_DURATION_MS, 0L),
                 heldAwakeDurationMs = prefs.getLong(KEY_HELD_AWAKE_DURATION_MS, 0L),
                 lastIdleCheckTime = prefs.getLong(KEY_LAST_IDLE_CHECK_TIME, now),
@@ -311,13 +311,13 @@ class ScreenStateTracker
                 if (state.screenOn) {
                     state.copy(
                         screenOnDurationMs = state.screenOnDurationMs + elapsed,
-                        screenOnDrainPct = state.screenOnDrainPct + drain,
+                        screenOnDrainPct = boundedDrainPct(state.screenOnDrainPct + drain),
                     )
                 } else {
                     val flushed = flushIdleTime(state, now)
                     flushed.copy(
                         screenOffDurationMs = flushed.screenOffDurationMs + elapsed,
-                        screenOffDrainPct = flushed.screenOffDrainPct + drain,
+                        screenOffDrainPct = boundedDrainPct(flushed.screenOffDrainPct + drain),
                     )
                 }
 
@@ -454,8 +454,8 @@ class ScreenStateTracker
                     } ?: 0f
                 val screenOnDuration = screenOnDurationMs + if (screenOn) elapsed else 0L
                 val screenOffDuration = screenOffDurationMs + if (!screenOn) elapsed else 0L
-                val screenOnDrain = screenOnDrainPct + if (screenOn) currentDrain else 0f
-                val screenOffDrain = screenOffDrainPct + if (!screenOn) currentDrain else 0f
+                val screenOnDrain = boundedDrainPct(screenOnDrainPct + if (screenOn) currentDrain else 0f)
+                val screenOffDrain = boundedDrainPct(screenOffDrainPct + if (!screenOn) currentDrain else 0f)
                 val idleElapsed = if (!screenOn) (now - lastIdleCheckTime).coerceAtLeast(0L) else 0L
                 val deepSleepDuration = deepSleepDurationMs + if (!screenOn && lastIdleState) idleElapsed else 0L
                 val heldAwakeDuration = heldAwakeDurationMs + if (!screenOn && !lastIdleState) idleElapsed else 0L
@@ -480,6 +480,7 @@ class ScreenStateTracker
         )
 
         companion object {
+            private const val MAX_DRAIN_PCT = 100f
             private const val MIN_SLEEP_ANALYSIS_DURATION_MS = 60_000L
             private const val PREFS_NAME = "screen_state_tracker"
             private const val INVALID_LEVEL = -1
@@ -503,5 +504,7 @@ class ScreenStateTracker
             private const val KEY_LAST_IDLE_CHECK_TIME = "last_idle_check_time"
             private const val KEY_LAST_IDLE_STATE = "last_idle_state"
             private const val KEY_LAST_CHARGING_STATUS = "last_charging_status"
+
+            private fun boundedDrainPct(value: Float): Float = value.coerceIn(0f, MAX_DRAIN_PCT)
         }
     }

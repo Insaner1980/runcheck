@@ -70,6 +70,63 @@ class ScreenStateTrackerTest {
     }
 
     @Test
+    fun `recreation attributes elapsed drain to the persisted screen state before reconciling`() {
+        val persistedAt = System.currentTimeMillis() - 5 * 60_000L
+        prefs
+            .edit()
+            .putBoolean("screen_on", false)
+            .putLong("last_transition_time", persistedAt)
+            .putInt("last_transition_level", 60)
+            .putLong("screen_on_duration_ms", 0L)
+            .putLong("screen_off_duration_ms", 0L)
+            .putFloat("screen_on_drain_pct", 0f)
+            .putFloat("screen_off_drain_pct", 0f)
+            .putLong("deep_sleep_duration_ms", 0L)
+            .putLong("held_awake_duration_ms", 0L)
+            .putLong("last_idle_check_time", persistedAt)
+            .putBoolean("last_idle_state", false)
+            .putString("last_charging_status", ChargingStatus.DISCHARGING.name)
+            .commit()
+        every { powerManager.isInteractive } returns true
+        every { batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) } returns 58
+
+        val stats = ScreenStateTracker(context).getScreenUsageStats()
+
+        assertNotNull(stats)
+        requireNotNull(stats)
+        assertTrue(stats.screenOffDurationMs >= 5 * 60_000L)
+        assertEquals(2f, stats.screenOffDrainPct, 0.01f)
+        assertTrue(prefs.getBoolean("screen_on", false))
+        assertTrue(prefs.getLong("last_transition_time", 0L) >= persistedAt)
+    }
+
+    @Test
+    fun `screen drain is capped at total battery capacity`() {
+        val now = System.currentTimeMillis() - 2 * 60_000L
+        prefs
+            .edit()
+            .putBoolean("screen_on", false)
+            .putLong("last_transition_time", now)
+            .putInt("last_transition_level", 100)
+            .putLong("screen_on_duration_ms", 0L)
+            .putLong("screen_off_duration_ms", 2 * 60_000L)
+            .putFloat("screen_on_drain_pct", 0f)
+            .putFloat("screen_off_drain_pct", 99f)
+            .putLong("deep_sleep_duration_ms", 0L)
+            .putLong("held_awake_duration_ms", 0L)
+            .putLong("last_idle_check_time", now)
+            .putBoolean("last_idle_state", false)
+            .putString("last_charging_status", ChargingStatus.DISCHARGING.name)
+            .commit()
+        every { batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) } returns 95
+
+        val stats = ScreenStateTracker(context).getScreenUsageStats()
+
+        assertNotNull(stats)
+        assertEquals(100f, requireNotNull(stats).screenOffDrainPct, 0.01f)
+    }
+
+    @Test
     fun `charging status change clears persisted usage and sleep data`() {
         val now = System.currentTimeMillis()
         prefs

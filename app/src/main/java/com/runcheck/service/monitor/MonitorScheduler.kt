@@ -1,6 +1,5 @@
 package com.runcheck.service.monitor
 
-import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
@@ -37,11 +36,6 @@ class MonitorScheduler
                 PeriodicWorkRequestBuilder<HealthMaintenanceWorker>(
                     interval.minutes.toLong(),
                     TimeUnit.MINUTES,
-                ).setConstraints(
-                    Constraints
-                        .Builder()
-                        .setRequiresBatteryNotLow(true)
-                        .build(),
                 ).build()
 
             workManager.enqueueUniquePeriodicWork(
@@ -54,11 +48,6 @@ class MonitorScheduler
                 PeriodicWorkRequestBuilder<InsightGenerationWorker>(
                     INSIGHT_INTERVAL_HOURS,
                     TimeUnit.HOURS,
-                ).setConstraints(
-                    Constraints
-                        .Builder()
-                        .setRequiresBatteryNotLow(true)
-                        .build(),
                 ).build()
 
             workManager.enqueueUniquePeriodicWork(

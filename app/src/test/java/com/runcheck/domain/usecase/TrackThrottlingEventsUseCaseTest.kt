@@ -26,6 +26,7 @@ class TrackThrottlingEventsUseCaseTest {
 
         coEvery { foregroundAppProvider.getCurrentForegroundApp() } returns "com.example.app"
         coEvery { throttlingRepository.insert(any()) } returns 1L
+        coEvery { throttlingRepository.getOpenEvent() } returns null
 
         useCase = TrackThrottlingEventsUseCase(throttlingRepository, foregroundAppProvider)
     }
@@ -106,6 +107,45 @@ class TrackThrottlingEventsUseCaseTest {
             // Only one insert, and no snapshot updates since status did not worsen
             coVerify(exactly = 1) { throttlingRepository.insert(any()) }
             coVerify(exactly = 0) { throttlingRepository.updateSnapshot(any(), any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `existing open event is restored instead of inserting duplicate after restart`() =
+        runTest {
+            coEvery { throttlingRepository.getOpenEvent() } returns
+                ThrottlingEvent(
+                    id = 7L,
+                    timestamp = System.currentTimeMillis() - 5_000L,
+                    thermalStatus = "SEVERE",
+                    batteryTempC = 40f,
+                    cpuTempC = 75f,
+                    foregroundApp = null,
+                    durationMs = null,
+                )
+
+            useCase(thermalState(ThermalStatus.SEVERE))
+
+            coVerify(exactly = 0) { throttlingRepository.insert(any()) }
+        }
+
+    @Test
+    fun `existing open event is closed by first non-throttling sample after restart`() =
+        runTest {
+            coEvery { throttlingRepository.getOpenEvent() } returns
+                ThrottlingEvent(
+                    id = 7L,
+                    timestamp = System.currentTimeMillis() - 5_000L,
+                    thermalStatus = "CRITICAL",
+                    batteryTempC = 45f,
+                    cpuTempC = 90f,
+                    foregroundApp = null,
+                    durationMs = null,
+                )
+
+            useCase(thermalState(ThermalStatus.NONE))
+
+            coVerify(exactly = 1) { throttlingRepository.updateDuration(7L, match { it >= 5_000L }) }
+            coVerify(exactly = 0) { throttlingRepository.insert(any()) }
         }
 
     @Test

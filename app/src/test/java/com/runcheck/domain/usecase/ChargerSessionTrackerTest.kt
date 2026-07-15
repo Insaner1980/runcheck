@@ -16,6 +16,7 @@ import com.runcheck.domain.repository.UserPreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -120,6 +121,35 @@ class ChargerSessionTrackerTest {
             assertEquals(1, transactionRunner.runCount)
             assertEquals(7L, chargerRepository.completedSession?.chargerId)
             assertEquals(8L, chargerRepository.activeSession?.chargerId)
+        }
+
+    @Test
+    fun `ignores an older observation processed after a newer session end`() =
+        runTest {
+            val chargerRepository =
+                FakeChargerRepository().apply {
+                    activeSession = activeSession(chargerId = 7L)
+                }
+            val tracker =
+                ChargerSessionTracker(
+                    chargerRepository,
+                    FakeBatteryRepository(),
+                    FakeUserPreferencesRepository(selectedChargerId = 7L),
+                    transactionRunner,
+                )
+
+            val olderObservation =
+                launch {
+                    tracker.onBatteryState(chargingBatteryState(level = 49), timestamp = 4_000L)
+                }
+            tracker.onBatteryState(
+                chargingBatteryState(level = 50, status = ChargingStatus.NOT_CHARGING),
+                timestamp = 5_000L,
+            )
+            olderObservation.join()
+
+            assertNull(chargerRepository.activeSession)
+            assertEquals(5_000L, chargerRepository.completedSession?.endTime)
         }
 
     private val transactionRunner = DatabaseTransactionRunner { block -> block() }

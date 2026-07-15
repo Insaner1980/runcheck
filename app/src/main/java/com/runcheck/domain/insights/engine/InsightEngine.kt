@@ -12,17 +12,15 @@ class InsightEngine
         private val insightRepository: InsightRepository,
     ) {
         suspend fun generateInsights(now: Long = System.currentTimeMillis()) {
-            insightRepository.deleteExpired(now)
-
-            rules.forEach { rule ->
-                val candidates =
-                    rule
-                        .evaluate(now)
-                        .filter { it.confidence >= MINIMUM_CONFIDENCE }
-                insightRepository.replaceRuleResults(rule.ruleId, candidates)
-            }
-
-            insightRepository.deleteExpired(now)
+            val candidatesByRule =
+                rules.associate { rule ->
+                    val candidates =
+                        rule
+                            .evaluate(now)
+                            .filter { it.confidence >= MINIMUM_CONFIDENCE }
+                    rule.ruleId to candidates
+                }
+            insightRepository.replaceGenerationResults(candidatesByRule, now)
         }
 
         companion object {

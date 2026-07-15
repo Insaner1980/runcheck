@@ -22,7 +22,7 @@ class RuncheckDatabaseMigrationTest {
         )
 
     @Test
-    fun migrate6To8_preservesDataAndValidatesSchema() {
+    fun migrate6To8_validatesSchemaWithExistingData() {
         helper.createDatabase(TEST_DB, 6).apply {
             insertAppBatteryUsageFixture()
             close()
@@ -68,7 +68,7 @@ class RuncheckDatabaseMigrationTest {
     }
 
     @Test
-    fun migrate6To9_preservesDataThroughFullChain() {
+    fun migrate6To9_validatesFullSchemaChainWithExistingData() {
         helper.createDatabase(TEST_DB, 6).apply {
             insertAppBatteryUsageFixture()
             close()

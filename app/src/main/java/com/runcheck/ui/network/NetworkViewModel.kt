@@ -103,11 +103,12 @@ class NetworkViewModel
         }
 
         fun startSpeedTest() {
-            if (_speedTestState.value.isRunning) return
+            if (_speedTestState.value.isRunning || _speedTestState.value.showCellularWarning) return
             proceedWithSpeedTest(allowCellular = false)
         }
 
         fun confirmCellularSpeedTest() {
+            if (!_speedTestState.value.showCellularWarning || _speedTestState.value.isRunning) return
             updateSpeedTestState { copy(showCellularWarning = false) }
             proceedWithSpeedTest(allowCellular = true)
         }

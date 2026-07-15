@@ -25,7 +25,7 @@ class InsightRepositoryImplTest {
     private val transactionRunner = DatabaseTransactionRunner { block -> block() }
 
     @Test
-    fun `replaceRuleResults preserves seen and dismissed state for matching dedupe keys`() =
+    fun `replaceGenerationResults preserves seen and dismissed state for matching dedupe keys`() =
         runTest {
             val insightDao: InsightDao = mockk(relaxed = true)
             val repository = createRepository(insightDao)
@@ -45,16 +45,19 @@ class InsightRepositoryImplTest {
                     ),
                 )
 
-            repository.replaceRuleResults(
-                ruleId = "battery_rule",
-                candidates =
-                    listOf(
-                        insightCandidate(
-                            ruleId = "battery_rule",
-                            dedupeKey = "same",
-                            bodyArgs = listOf("42", "fast"),
-                        ),
+            repository.replaceGenerationResults(
+                candidatesByRule =
+                    mapOf(
+                        "battery_rule" to
+                            listOf(
+                                insightCandidate(
+                                    ruleId = "battery_rule",
+                                    dedupeKey = "same",
+                                    bodyArgs = listOf("42", "fast"),
+                                ),
+                            ),
                     ),
+                now = 500L,
             )
 
             val inserted = slot<List<InsightEntity>>()

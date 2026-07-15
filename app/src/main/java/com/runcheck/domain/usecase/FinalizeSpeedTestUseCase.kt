@@ -15,8 +15,10 @@ class FinalizeSpeedTestUseCase
             result: SpeedTestResult,
             freeHistoryLimit: Int,
         ) {
-            speedTestRepository.saveResult(result)
-            val maxHistory = if (proStatusProvider.isPro()) Int.MAX_VALUE else freeHistoryLimit
-            speedTestRepository.trimResults(maxHistory)
+            if (proStatusProvider.isPro()) {
+                speedTestRepository.saveResult(result)
+            } else {
+                speedTestRepository.saveResultAndTrim(result, freeHistoryLimit)
+            }
         }
     }

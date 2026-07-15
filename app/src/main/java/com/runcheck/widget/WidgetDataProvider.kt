@@ -160,17 +160,15 @@ internal interface WidgetDataEntryPoint {
     fun proStatusProvider(): ProStatusProvider
 }
 
-private fun BatteryReadingEntity.toBatteryWidgetSnapshot(): BatteryWidgetSnapshot =
+internal fun BatteryReadingEntity.toBatteryWidgetSnapshot(): BatteryWidgetSnapshot =
     BatteryWidgetSnapshot(
         level = level,
         temperatureC = temperatureC,
-        currentMa = currentMa,
+        currentMa = currentMa.takeIf { parsedCurrentConfidence() != Confidence.UNAVAILABLE },
     )
 
 private fun BatteryReadingEntity.toBatteryState(): BatteryState {
-    val confidence =
-        runCatching { Confidence.valueOf(currentConfidence) }
-            .getOrDefault(Confidence.UNAVAILABLE)
+    val confidence = parsedCurrentConfidence()
 
     return BatteryState(
         level = level,
@@ -185,6 +183,10 @@ private fun BatteryReadingEntity.toBatteryState(): BatteryState {
         healthPercent = healthPct,
     )
 }
+
+private fun BatteryReadingEntity.parsedCurrentConfidence(): Confidence =
+    runCatching { Confidence.valueOf(currentConfidence) }
+        .getOrDefault(Confidence.UNAVAILABLE)
 
 private fun NetworkReadingEntity.toNetworkState(): NetworkState {
     val connectionType = enumValueOrDefault(type, ConnectionType.NONE)

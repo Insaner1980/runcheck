@@ -55,11 +55,13 @@ class AppBatteryUsageRepositoryImpl
             }
 
             val endTime = System.currentTimeMillis()
+            val earliestStartTime = endTime - DEFAULT_COLLECTION_WINDOW_MS
             val startTime =
                 userPreferencesRepository
                     .getAppUsageLastCollectedAt()
                     ?.coerceAtMost(endTime)
-                    ?: (endTime - DEFAULT_COLLECTION_WINDOW_MS)
+                    ?.coerceAtLeast(earliestStartTime)
+                    ?: earliestStartTime
 
             val usage = appUsageDataSource.getUsageSince(startTime, endTime)
             if (usage.isNotEmpty()) {

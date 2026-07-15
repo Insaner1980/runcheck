@@ -38,6 +38,13 @@ class BatteryRepositoryImplTest {
     }
 
     @Test
+    fun `estimateFullCapacityMah handles the one percent boundary without rounding`() {
+        assertEquals(500, estimateFullCapacityMah(5, 1))
+        assertEquals(20_000, estimateFullCapacityMah(200, 1))
+        assertEquals(null, estimateFullCapacityMah(201, 1))
+    }
+
+    @Test
     fun `saveReading stores null current when confidence is unavailable`() =
         runTest {
             val dao: BatteryReadingDao = mockk(relaxed = true)

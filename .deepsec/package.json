@@ -5,8 +5,8 @@
     "deepsec": "deepsec",
     "deepsec:scan": "deepsec scan --project-id runcheck",
     "deepsec:scan:custom": "deepsec scan --project-id runcheck --matchers android-exported-component,android-kotlin-security-surface,fileprovider-broad-path,android-uri-share-without-clipdata,outbound-network-surface,release-telemetry-surface,sensitive-android-log",
-    "deepsec:process": "deepsec process --project-id runcheck",
-    "deepsec:revalidate": "deepsec revalidate --project-id runcheck --min-severity HIGH",
+    "deepsec:process": "deepsec process --project-id runcheck --model gpt-5.6",
+    "deepsec:revalidate": "deepsec revalidate --project-id runcheck --model gpt-5.6 --min-severity HIGH",
     "deepsec:export": "deepsec export --project-id runcheck --format md-dir --out ./findings",
     "deepsec:report": "pnpm run deepsec:scan && pnpm run deepsec:process && pnpm run deepsec:export",
     "deepsec:report:custom": "pnpm run deepsec:scan:custom && pnpm run deepsec:process && pnpm run deepsec:export"

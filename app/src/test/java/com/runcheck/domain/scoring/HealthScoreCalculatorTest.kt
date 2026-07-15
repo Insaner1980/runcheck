@@ -207,19 +207,18 @@ class HealthScoreCalculatorTest {
     }
 
     @Test
-    fun `good thermal reading is not automatically perfect`() {
+    fun `missing CPU temperature does not penalize thermal score`() {
         val score =
             calculator.calculate(
                 healthyBattery(),
                 healthyNetwork(),
                 healthyThermal().copy(
-                    batteryTempC = 33.6f,
                     cpuTempC = null,
                     thermalStatus = ThermalStatus.NONE,
                 ),
                 healthyStorage(),
             )
-        assertTrue("Expected thermal score below 100, got ${score.thermalScore}", score.thermalScore < 100)
+        assertEquals(100, score.thermalScore)
     }
 
     @Test

@@ -336,7 +336,7 @@ Pull-to-refresh -kääre.
    - Est. Bandwidth Down/Up, Metered, VPN
    - Divider
    - CardSectionTitle: "IP ADDRESS & DNS"
-   - MetricRow: IPv4 (copyable), IPv6 (copyable, maxLines=1), DNS 1–2 (copyable), MTU
+   - MetricRow: IPv4 (copyable), IPv6 (copyable, maxLines=1), all DNS servers (copyable), MTU
 6. **SignalHistoryCard**
    - CardSectionTitle: "SIGNAL HISTORY"
    - FilterChip: Signal / Latency

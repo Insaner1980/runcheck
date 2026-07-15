@@ -30,6 +30,8 @@ class ThrottlingRepositoryImpl
 
         override suspend fun insert(event: ThrottlingEvent): Long = throttlingEventDao.insert(event.toEntity())
 
+        override suspend fun getOpenEvent(): ThrottlingEvent? = throttlingEventDao.getOpenEvent()?.toDomain()
+
         override suspend fun updateSnapshot(
             id: Long,
             thermalStatus: String,

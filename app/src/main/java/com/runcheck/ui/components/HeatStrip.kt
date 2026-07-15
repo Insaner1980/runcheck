@@ -1,6 +1,5 @@
 package com.runcheck.ui.components
 
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -19,6 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
 import com.runcheck.R
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.ui.common.formatTemperature
@@ -32,10 +32,10 @@ fun HeatStrip(
     temperatureC: Float,
     modifier: Modifier = Modifier,
     temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS,
-    minTemp: Float = 15f,
-    maxTemp: Float = 50f,
+    minTempC: Float = 15f,
+    maxTempC: Float = 50f,
 ) {
-    val normalizedTemp = ((temperatureC - minTemp) / (maxTemp - minTemp)).coerceIn(0f, 1f)
+    val normalizedTemp = ((temperatureC - minTempC) / (maxTempC - minTempC)).coerceIn(0f, 1f)
     val isCritical = temperatureC > 42f
     val reducedMotion = MaterialTheme.reducedMotion
     val stripContentDescription =
@@ -45,16 +45,16 @@ fun HeatStrip(
             temperatureBandLabel(temperatureC),
         )
 
-    val pulseAlpha =
+    val pulseProgress =
         if (isCritical && !reducedMotion) {
             val infiniteTransition = rememberInfiniteTransition(label = "heat_pulse")
             infiniteTransition
                 .animateFloat(
-                    initialValue = 0.7f,
+                    initialValue = 0f,
                     targetValue = 1f,
                     animationSpec =
                         infiniteRepeatable(
-                            animation = tween(durationMillis = MotionTokens.CONTINUOUS, easing = LinearEasing),
+                            animation = tween(durationMillis = MotionTokens.CONTINUOUS, easing = MotionTokens.EaseOut),
                             repeatMode = RepeatMode.Reverse,
                         ),
                     label = "heat_alpha",
@@ -71,11 +71,11 @@ fun HeatStrip(
 
     // Color stops aligned with statusColorForTemperature thresholds (35/40/45°C)
     // with ±1°C soft transition zones for smooth blending
-    val range = maxTemp - minTemp
+    val rangeC = maxTempC - minTempC
 
-    fun tempToStop(tempC: Float) = ((tempC - minTemp) / range).coerceIn(0f, 1f)
+    fun tempToStop(tempC: Float) = ((tempC - minTempC) / rangeC).coerceIn(0f, 1f)
 
-    val transitionHalf = 1f / range // ~1°C in normalized units
+    val transitionHalf = 1f / rangeC // ~1°C in normalized units
 
     Canvas(
         modifier =
@@ -102,18 +102,25 @@ fun HeatStrip(
                             1f to criticalColor,
                         ),
                 ),
-            alpha = if (isCritical) pulseAlpha else 1f,
         )
 
         val indicatorX = normalizedTemp * size.width
+        val indicatorCenter =
+            androidx.compose.ui.geometry.Offset(
+                indicatorX.coerceIn(8.dp.toPx(), size.width - 8.dp.toPx()),
+                size.height / 2,
+            )
+        if (isCritical && !reducedMotion) {
+            drawCircle(
+                color = criticalColor.copy(alpha = lerp(0.26f, 0.08f, pulseProgress)),
+                radius = lerp(9f, 13f, pulseProgress).dp.toPx(),
+                center = indicatorCenter,
+            )
+        }
         drawCircle(
             color = indicatorColor,
             radius = 8.dp.toPx(),
-            center =
-                androidx.compose.ui.geometry.Offset(
-                    indicatorX.coerceIn(8.dp.toPx(), size.width - 8.dp.toPx()),
-                    size.height / 2,
-                ),
+            center = indicatorCenter,
         )
     }
 }

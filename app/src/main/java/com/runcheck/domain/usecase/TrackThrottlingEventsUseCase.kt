@@ -30,7 +30,7 @@ class TrackThrottlingEventsUseCase
 
         suspend operator fun invoke(state: ThermalState) {
             mutex.withLock {
-                val current = activeEvent
+                val current = activeEvent ?: restoreOpenEvent()
                 when {
                     // Start new event
                     state.thermalStatus >= THROTTLING_THRESHOLD && current == null -> {
@@ -81,6 +81,15 @@ class TrackThrottlingEventsUseCase
                 }
             }
         }
+
+        private suspend fun restoreOpenEvent(): ActiveThrottlingEvent? =
+            throttlingRepository.getOpenEvent()?.let { event ->
+                ActiveThrottlingEvent(
+                    id = event.id,
+                    startTimeMs = event.timestamp,
+                    peakStatus = ThermalStatus.valueOf(event.thermalStatus),
+                ).also { activeEvent = it }
+            }
 
         private data class ActiveThrottlingEvent(
             val id: Long,

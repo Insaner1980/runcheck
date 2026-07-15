@@ -1,8 +1,6 @@
 package com.runcheck.ui.components
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -56,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import com.runcheck.R
 import com.runcheck.ui.chart.qualityZoneColorForValue
+import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.chartAxisTextStyle
 import com.runcheck.ui.theme.chartTooltipTextStyle
 import com.runcheck.ui.theme.reducedMotion
@@ -107,19 +106,14 @@ private data class TrendChartStyle(
     val tooltipTextStyle: TextStyle,
 )
 
-private const val GRID_FADE_DURATION_MS = 200
 private const val INITIAL_SWEEP_DURATION_MS = 1000
-private const val TRANSITION_SWEEP_DURATION_MS = 800
 private const val SWEEP_SCAN_FADE_DELAY_MS = 700
 private const val SWEEP_SCAN_FADE_DURATION_MS = 300
 private const val TRANSITION_SCAN_FADE_DELAY_MS = 560
 private const val TRANSITION_SCAN_FADE_DURATION_MS = 240
-private const val EMPHASIS_DURATION_MS = 200
 private const val FADE_OUT_DURATION_MS = 300
 private const val TRANSITION_OVERLAP_MS = 200
 private const val SCAN_LINE_START_ALPHA = 0.5f
-
-private val SweepEasing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f)
 
 private fun buildTrendLineGradientStops(
     data: List<Float>,
@@ -217,7 +211,7 @@ fun TrendChart(
             emphasisAlpha.snapTo(0f)
             scanLineAlpha.snapTo(if (data.isNotEmpty()) SCAN_LINE_START_ALPHA else 0f)
 
-            gridAlpha.animateTo(1f, tween(GRID_FADE_DURATION_MS, easing = FastOutSlowInEasing))
+            gridAlpha.animateTo(1f, tween(MotionTokens.SHORT, easing = MotionTokens.EaseOut))
             if (data.isEmpty()) {
                 sweepProgress.snapTo(1f)
                 scanLineAlpha.snapTo(0f)
@@ -228,10 +222,10 @@ fun TrendChart(
                 delay(SWEEP_SCAN_FADE_DELAY_MS.toLong())
                 scanLineAlpha.animateTo(0f, tween(SWEEP_SCAN_FADE_DURATION_MS))
             }
-            sweepProgress.animateTo(1f, tween(INITIAL_SWEEP_DURATION_MS, easing = SweepEasing))
+            sweepProgress.animateTo(1f, tween(INITIAL_SWEEP_DURATION_MS, easing = MotionTokens.SweepEasing))
             scanLineAlpha.snapTo(0f)
             emphasisData = data
-            emphasisAlpha.animateTo(1f, tween(EMPHASIS_DURATION_MS, easing = FastOutSlowInEasing))
+            emphasisAlpha.animateTo(1f, tween(MotionTokens.SHORT, easing = MotionTokens.EaseOut))
             settledData = data
             return@LaunchedEffect
         }
@@ -259,7 +253,7 @@ fun TrendChart(
             launch {
                 fadeOutAlpha.animateTo(
                     0f,
-                    tween(FADE_OUT_DURATION_MS, easing = FastOutSlowInEasing),
+                    tween(FADE_OUT_DURATION_MS, easing = MotionTokens.EaseOut),
                 )
             }
             delay(TRANSITION_OVERLAP_MS.toLong())
@@ -278,10 +272,10 @@ fun TrendChart(
             delay(TRANSITION_SCAN_FADE_DELAY_MS.toLong())
             scanLineAlpha.animateTo(0f, tween(TRANSITION_SCAN_FADE_DURATION_MS))
         }
-        sweepProgress.animateTo(1f, tween(TRANSITION_SWEEP_DURATION_MS, easing = SweepEasing))
+        sweepProgress.animateTo(1f, tween(MotionTokens.SWEEP, easing = MotionTokens.SweepEasing))
         scanLineAlpha.snapTo(0f)
         emphasisData = data
-        emphasisAlpha.animateTo(1f, tween(EMPHASIS_DURATION_MS, easing = FastOutSlowInEasing))
+        emphasisAlpha.animateTo(1f, tween(MotionTokens.SHORT, easing = MotionTokens.EaseOut))
         settledData = data
     }
 
@@ -712,11 +706,13 @@ fun TrendChart(
 
             // Draw scan line
             if (scanLineAlpha.value > 0f && data.isNotEmpty() && sweepProgress.value < 1f) {
-                drawLine(
-                    color = lineColor.copy(alpha = scanLineAlpha.value),
-                    start = Offset(sweepX.coerceAtMost(chartLeft + chartWidth), chartTop),
-                    end = Offset(sweepX.coerceAtMost(chartLeft + chartWidth), chartTop + chartHeight),
-                    strokeWidth = 1.5.dp.toPx(),
+                drawSweepHead(
+                    x = sweepX.coerceAtMost(chartLeft + chartWidth),
+                    top = chartTop,
+                    bottom = chartTop + chartHeight,
+                    color = lineColor,
+                    alpha = scanLineAlpha.value,
+                    leftBound = chartLeft,
                 )
             }
 

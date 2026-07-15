@@ -178,18 +178,14 @@ internal fun IpDnsCard(
     NetworkPanel {
         CardSectionTitle(text = stringResource(R.string.network_section_ip_dns))
 
-        networkState.ipAddresses.firstOrNull { it.contains('.') }?.let {
-            MetricRow(label = stringResource(R.string.network_ipv4), value = it, copyable = true)
-        }
-        networkState.ipAddresses.firstOrNull { it.contains(':') }?.let {
-            MetricRow(label = stringResource(R.string.network_ipv6), value = it, maxLines = 1, copyable = true)
-        }
-        networkState.dnsServers.getOrNull(0)?.let {
-            MetricRow(label = stringResource(R.string.network_dns_1), value = it, copyable = true)
-        }
-        networkState.dnsServers.getOrNull(1)?.let {
-            MetricRow(label = stringResource(R.string.network_dns_2), value = it, copyable = true)
-        }
+        val (ipv4Addresses, ipv6Addresses) = groupIpAddresses(networkState.ipAddresses)
+        NetworkAddressRows(addresses = ipv4Addresses, baseLabel = stringResource(R.string.network_ipv4))
+        NetworkAddressRows(
+            addresses = ipv6Addresses,
+            baseLabel = stringResource(R.string.network_ipv6),
+            maxLines = 1,
+        )
+        NetworkAddressRows(addresses = networkState.dnsServers, baseLabel = stringResource(R.string.network_dns))
         networkState.mtuBytes?.let {
             MetricRow(
                 label = stringResource(R.string.network_mtu),
@@ -199,6 +195,27 @@ internal fun IpDnsCard(
         }
     }
 }
+
+@Composable
+private fun NetworkAddressRows(
+    addresses: List<String>,
+    baseLabel: String,
+    maxLines: Int = Int.MAX_VALUE,
+) {
+    addresses.forEachIndexed { index, address ->
+        val label =
+            if (addresses.size == 1) {
+                baseLabel
+            } else {
+                stringResource(R.string.network_address_indexed, baseLabel, index + 1)
+            }
+        MetricRow(label = label, value = address, maxLines = maxLines, copyable = true)
+    }
+}
+
+internal fun groupIpAddresses(addresses: List<String>): Pair<List<String>, List<String>> =
+    addresses.filter { address -> '.' in address && ':' !in address } to
+        addresses.filter { address -> ':' in address }
 
 @Composable
 internal fun NetworkPanel(

@@ -17,7 +17,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -92,11 +92,15 @@ class MonitorSchedulerTest {
             TimeUnit.HOURS.toMillis(6),
             insightRequest.captured.workSpec.intervalDuration,
         )
-        assertTrue(
+        assertFalse(
+            healthMonitorRequest.captured.workSpec.constraints
+                .requiresBatteryNotLow(),
+        )
+        assertFalse(
             maintenanceRequest.captured.workSpec.constraints
                 .requiresBatteryNotLow(),
         )
-        assertTrue(
+        assertFalse(
             insightRequest.captured.workSpec.constraints
                 .requiresBatteryNotLow(),
         )

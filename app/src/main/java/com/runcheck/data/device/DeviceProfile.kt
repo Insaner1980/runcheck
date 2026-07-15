@@ -8,7 +8,7 @@ data class DeviceProfile(
     val model: String = "",
     val apiLevel: Int = 0,
     val currentNowReliable: Boolean = false,
-    val currentNowUnit: CurrentUnit = CurrentUnit.MILLIAMPS,
+    val currentNowUnit: CurrentUnit = CurrentUnit.MICROAMPS,
     val currentNowSignConvention: SignConvention = SignConvention.POSITIVE_CHARGING,
     val cycleCountAvailable: Boolean = false,
     val thermalZonesAvailable: List<String> = emptyList(),

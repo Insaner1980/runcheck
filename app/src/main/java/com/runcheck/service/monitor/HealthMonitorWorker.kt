@@ -52,15 +52,16 @@ class HealthMonitorWorker
                     throw e
                 } catch (e: Exception) {
                     ReleaseSafeLog.error(TAG, "Failed to load notification preferences", e)
-                    return Result.retry()
+                    return resultForCoreFailure()
                 }
 
             var coreFailure =
                 collectStep("battery") {
                     val state = batteryRepository.getBatteryState().first()
+                    val observedAt = System.currentTimeMillis()
                     batteryState = state
                     batteryRepository.saveReading(state)
-                    chargerSessionTracker.onBatteryState(state)
+                    chargerSessionTracker.onBatteryState(state, observedAt)
                 }
 
             coreFailure = collectStep("network") {
@@ -146,7 +147,18 @@ class HealthMonitorWorker
                 recordSuccessfulWorkerHeartbeat()
             }
 
-            return if (coreFailure) Result.retry() else Result.success()
+            return if (coreFailure) resultForCoreFailure() else Result.success()
+        }
+
+        private fun resultForCoreFailure(): Result {
+            if (runAttemptCount < MAX_RETRY_ATTEMPTS) {
+                return Result.retry()
+            }
+            ReleaseSafeLog.warn(
+                TAG,
+                "Core collection failed after $runAttemptCount retries; awaiting next periodic run",
+            )
+            return Result.success()
         }
 
         private suspend fun recordSuccessfulWorkerHeartbeat() {
@@ -187,6 +199,7 @@ class HealthMonitorWorker
 
         companion object {
             const val WORK_NAME = "health_monitor"
+            private const val MAX_RETRY_ATTEMPTS = 3
             private const val TAG = "HealthMonitorWorker"
         }
     }

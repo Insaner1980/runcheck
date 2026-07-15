@@ -17,6 +17,9 @@ interface ThrottlingEventDao {
     @Query("SELECT * FROM throttling_events WHERE timestamp >= :since ORDER BY timestamp DESC")
     suspend fun getEventsSinceSync(since: Long): List<ThrottlingEventEntity>
 
+    @Query("SELECT * FROM throttling_events WHERE duration_ms IS NULL ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getOpenEvent(): ThrottlingEventEntity?
+
     @Query(
         """
         UPDATE throttling_events

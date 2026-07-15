@@ -12,6 +12,8 @@ import com.runcheck.domain.model.SignConvention
 import com.runcheck.util.AppDispatchers
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -30,15 +32,15 @@ class GenericBatterySourceTest {
     }
 
     @Test
-    fun `normalizeCurrent keeps milliamps as-is`() {
+    fun `normalizeCurrent uses microamps when a legacy profile says milliamps`() {
         val source =
             createTestSource(
                 unit = CurrentUnit.MILLIAMPS,
                 convention = SignConvention.POSITIVE_CHARGING,
             )
 
-        assertEquals(500, source.testNormalizeCurrent(500))
-        assertEquals(-200, source.testNormalizeCurrent(-200))
+        assertEquals(500, source.testNormalizeCurrent(500_000))
+        assertEquals(-200, source.testNormalizeCurrent(-200_000))
     }
 
     @Test
@@ -50,8 +52,8 @@ class GenericBatterySourceTest {
             )
 
         // Negative convention: negate the value
-        assertEquals(-500, source.testNormalizeCurrent(500))
-        assertEquals(200, source.testNormalizeCurrent(-200))
+        assertEquals(-500, source.testNormalizeCurrent(500_000))
+        assertEquals(200, source.testNormalizeCurrent(-200_000))
     }
 
     @Test
@@ -91,14 +93,15 @@ class GenericBatterySourceTest {
     }
 
     @Test
-    fun `normalizeCurrent falls back to runtime microamp heuristic for large readings`() {
+    fun `normalizeCurrent uses microamps for small readings from a legacy milliamps profile`() {
         val source =
             createTestSource(
                 unit = CurrentUnit.MILLIAMPS,
                 convention = SignConvention.POSITIVE_CHARGING,
             )
 
-        assertEquals(5000, source.testNormalizeCurrent(5_000_000))
+        assertEquals(10, source.testNormalizeCurrent(10_000))
+        assertEquals(-10, source.testNormalizeCurrent(-10_000))
     }
 
     @Test
@@ -163,11 +166,32 @@ class GenericBatterySourceTest {
         assertEquals(PlugType.NONE, source.testMapPlugType(-1))
     }
 
+    @Test
+    fun `charge counter emits only positive values`() =
+        runTest {
+            val positiveSource =
+                createTestSource(
+                    unit = CurrentUnit.MICROAMPS,
+                    convention = SignConvention.POSITIVE_CHARGING,
+                    chargeCounterRaw = 1_234_000,
+                )
+            val negativeSource =
+                createTestSource(
+                    unit = CurrentUnit.MICROAMPS,
+                    convention = SignConvention.POSITIVE_CHARGING,
+                    chargeCounterRaw = -1_000,
+                )
+
+            assertEquals(1_234, positiveSource.getChargeCounter().first())
+            assertEquals(null, negativeSource.getChargeCounter().first())
+        }
+
     private fun createTestSource(
         unit: CurrentUnit,
         convention: SignConvention,
         reliable: Boolean = true,
         isCharging: Boolean = false,
+        chargeCounterRaw: Int = 0,
     ): TestableGenericBatterySource {
         val profile =
             DeviceProfile(
@@ -184,6 +208,8 @@ class GenericBatterySourceTest {
         val batteryManager =
             mockk<BatteryManager>(relaxed = true) {
                 every { this@mockk.isCharging } returns isCharging
+                every { getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER) } returns
+                    chargeCounterRaw
             }
         val mockContext: Context =
             mockk {

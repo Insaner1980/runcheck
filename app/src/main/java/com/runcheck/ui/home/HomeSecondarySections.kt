@@ -158,6 +158,7 @@ private fun RowScope.NetworkGridCard(
     state: HomeUiState.Success,
     onClick: () -> Unit,
 ) {
+    val isConnected = state.networkState.isConnected
     GridCard(
         icon = Icons.Outlined.SignalCellularAlt,
         title = stringResource(R.string.home_network_card),
@@ -168,8 +169,18 @@ private fun RowScope.NetworkGridCard(
                 networkSubtype = state.networkState.networkSubtype,
             ),
         subtitleColor = MaterialTheme.colorScheme.onSurface,
-        statusLabel = signalQualityLabel(state.networkState.signalQuality),
-        iconTint = statusColorForSignalQuality(state.networkState.signalQuality),
+        statusLabel =
+            if (isConnected) {
+                signalQualityLabel(state.networkState.signalQuality)
+            } else {
+                stringResource(R.string.score_unrated)
+            },
+        iconTint =
+            if (isConnected) {
+                statusColorForSignalQuality(state.networkState.signalQuality)
+            } else {
+                MaterialTheme.statusColors.unavailable
+            },
         iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
         onClick = onClick,
         modifier = Modifier.weight(1f),

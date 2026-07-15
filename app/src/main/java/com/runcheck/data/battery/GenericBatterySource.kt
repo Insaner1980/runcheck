@@ -6,12 +6,10 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import androidx.core.content.ContextCompat
-import com.runcheck.data.device.DeviceCapabilityManager
 import com.runcheck.data.device.DeviceProfile
 import com.runcheck.domain.model.BatteryHealth
 import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.Confidence
-import com.runcheck.domain.model.CurrentUnit
 import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.SignConvention
@@ -112,11 +110,7 @@ open class GenericBatterySource(
         }
 
     protected fun normalizeCurrent(raw: Int): Int {
-        val milliamps =
-            when (resolveCurrentUnit(raw)) {
-                CurrentUnit.MICROAMPS -> raw / 1000
-                CurrentUnit.MILLIAMPS -> raw
-            }
+        val milliamps = raw / 1000
         return when (profile.currentNowSignConvention) {
             SignConvention.POSITIVE_CHARGING -> milliamps
             SignConvention.NEGATIVE_CHARGING -> -milliamps
@@ -136,21 +130,6 @@ open class GenericBatterySource(
             !profile.currentNowReliable -> Confidence.LOW
             else -> Confidence.HIGH
         }
-
-    private fun resolveCurrentUnit(raw: Int): CurrentUnit {
-        if (profile.currentNowUnit == CurrentUnit.MICROAMPS) {
-            return CurrentUnit.MICROAMPS
-        }
-
-        // Capability detection happens once and can be ambiguous when the first
-        // samples are near zero. Re-check obviously large readings at runtime so
-        // high-current µA devices do not get stuck with 1000x inflated values.
-        return if (abs(raw) > DeviceCapabilityManager.MICROAMP_THRESHOLD) {
-            CurrentUnit.MICROAMPS
-        } else {
-            CurrentUnit.MILLIAMPS
-        }
-    }
 
     override fun getVoltage(): Flow<Int> =
         batteryChangedSharedFlow.map { intent ->
@@ -209,7 +188,7 @@ open class GenericBatterySource(
                     try {
                         batteryManager
                             .getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
-                            .takeUnless { it == Int.MIN_VALUE || it == 0 }
+                            .takeIf { it > 0 }
                     } catch (_: Exception) {
                         null
                     }

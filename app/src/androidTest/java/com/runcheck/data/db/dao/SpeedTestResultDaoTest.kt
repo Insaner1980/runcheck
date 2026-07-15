@@ -47,6 +47,32 @@ class SpeedTestResultDaoTest {
             }
         }
 
+    @Test
+    fun deleteOldResults_keepsNewestResultsAndProtectedInsertion() =
+        runBlocking {
+            val database =
+                Room
+                    .inMemoryDatabaseBuilder(
+                        InstrumentationRegistry.getInstrumentation().targetContext,
+                        RuncheckDatabase::class.java,
+                    ).allowMainThreadQueries()
+                    .build()
+
+            try {
+                val dao = database.speedTestResultDao()
+                dao.insert(speedTestResultEntity(timestamp = 4_000L))
+                dao.insert(speedTestResultEntity(timestamp = 3_000L))
+                dao.insert(speedTestResultEntity(timestamp = 2_000L))
+                val insertedId = dao.insert(speedTestResultEntity(timestamp = 1_000L))
+
+                dao.deleteOldResults(keepCount = 3, protectedId = insertedId)
+
+                assertEquals(listOf(1_000L, 3_000L, 4_000L), dao.getAll().map { it.timestamp })
+            } finally {
+                database.close()
+            }
+        }
+
     private fun speedTestResultEntity(timestamp: Long) =
         SpeedTestResultEntity(
             timestamp = timestamp,

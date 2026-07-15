@@ -25,7 +25,7 @@ sealed interface SpeedTestProgress {
         val uploadMbps: Double,
         val pingMs: Int,
         val jitterMs: Int?,
-        val serverName: String,
+        val serverName: String?,
         val serverLocation: String?,
         val connectionInfo: SpeedTestConnectionInfo,
     ) : SpeedTestProgress

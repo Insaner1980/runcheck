@@ -269,7 +269,7 @@ Three periodic WorkManager jobs are scheduled through `MonitorScheduler`:
 - `HealthMaintenanceWorker`
   - unique work name: `health_maintenance`
   - interval: current `MonitoringInterval` preference
-  - constrained with `requiresBatteryNotLow`
+  - has no battery-level constraint so maintenance cannot be deferred indefinitely on a persistently low-battery device
   - collects per-app usage snapshots
   - cleans up old readings
   - refreshes widgets best-effort; widget refresh failure does not force a retry
@@ -277,7 +277,7 @@ Three periodic WorkManager jobs are scheduled through `MonitorScheduler`:
   - unique work name: `insight_generation`
   - evaluates persisted Room history through the Insights Engine
   - refreshes the Home insights surface every 6 hours
-  - stays battery-conscious with `requiresBatteryNotLow` constraints
+  - has no battery-level constraint so insight refresh cannot be deferred indefinitely on a persistently low-battery device
   - retries only on `SQLException`; cancellation is rethrown
 
 Additional WorkManager-backed trial behavior:
@@ -330,7 +330,7 @@ Battery current reliability:
 
 - `DeviceCapabilityManager.validateCurrentNow()` reads `BATTERY_PROPERTY_CURRENT_NOW` three times with 300ms spacing.
 - A current source is considered reliable only when readings are non-zero, changing, and plausible.
-- Runtime current normalization distinguishes microamps from milliamps with `MICROAMP_THRESHOLD = 25_000`.
+- Runtime current normalization converts `BATTERY_PROPERTY_CURRENT_NOW` from microamps to milliamps.
 - Plausible normalized current must be in `0..10000` mA during capability validation.
 - Current sign is aligned with charging state so charging values are positive and discharging values are negative.
 - Remaining battery capacity uses `BATTERY_PROPERTY_CHARGE_COUNTER` only when Android returns a positive value.
@@ -384,9 +384,10 @@ Scoring details:
 
 - Battery score penalizes health state, battery temperature, voltage, and optional health percentage.
 - Network score is `0` when disconnected.
+- The UI presents a disconnected network category as `Unrated`; the internal zero is not shown as a measured, critical result.
 - Without a recent speed test, network score is based on signal quality and latency.
 - With a speed test less than 1 hour old, network score weighs signal 40%, latency/ping 30%, download speed 20%, and jitter/stability 10%.
-- Thermal score penalizes battery temperature, missing/known CPU temperature, and Android thermal status.
+- Thermal score penalizes battery temperature, known CPU temperature, and Android thermal status; a missing CPU temperature is neutral.
 - Storage score penalizes usage percent, with sharp penalties at high utilization.
 
 ---
@@ -454,8 +455,8 @@ Battery-specific supporting behavior:
 - Design capacity is intentionally absent from the UI because no stable public design-capacity source is used.
 - Current stats are tracked in-memory and reset on status change
 - Session and history charts can open a fullscreen landscape chart route
-- History charts use "Instrument Sweep" animation (3-phase: grid fade → oscilloscope sweep → emphasis)
-- Live current/power charts use smooth scroll interpolation + glow pulse on new data
+- History charts use "Instrument Sweep" animation (grid fade → illuminated sweep reveal → latest-value emphasis)
+- Live charts use eased scroll interpolation and a single settling halo on new data; live current remains signed around a visible zero reference
 - Battery screen also consumes dismissed educational/info cards
 - Charger session tracking runs both from Home live observation and from `HealthMonitorWorker` so charge sessions can be updated in foreground and background.
 

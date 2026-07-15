@@ -15,15 +15,13 @@ class DeviceProfileTest {
     }
 
     @Test
-    fun `microamps unit for high readings`() {
-        // Readings above 10000 should be interpreted as microamps
+    fun `DeviceProfile preserves microamps unit`() {
         val profile = createProfile(currentNowUnit = CurrentUnit.MICROAMPS)
         assertEquals(CurrentUnit.MICROAMPS, profile.currentNowUnit)
     }
 
     @Test
-    fun `milliamps unit for low readings`() {
-        // Readings below 10000 should be interpreted as milliamps
+    fun `DeviceProfile preserves legacy milliamps unit`() {
         val profile = createProfile(currentNowUnit = CurrentUnit.MILLIAMPS)
         assertEquals(CurrentUnit.MILLIAMPS, profile.currentNowUnit)
     }

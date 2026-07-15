@@ -1,7 +1,6 @@
 package com.runcheck.ui.components
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
@@ -14,7 +13,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -50,19 +50,22 @@ fun SegmentedBar(
     val bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
 
     // Animate the overall progress from 0 to 1
-    val animatedProgress by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec =
-            if (reducedMotion) {
-                tween(0)
-            } else {
-                tween(
-                    durationMillis = MotionTokens.SWEEP,
-                    easing = MotionTokens.EaseOut,
-                )
-            },
-        label = "segBarProgress",
-    )
+    val animatedProgress = remember { Animatable(if (reducedMotion) 1f else 0f) }
+    LaunchedEffect(segments, reducedMotion) {
+        if (reducedMotion) {
+            animatedProgress.snapTo(1f)
+        } else {
+            animatedProgress.snapTo(0f)
+            animatedProgress.animateTo(
+                targetValue = 1f,
+                animationSpec =
+                    tween(
+                        durationMillis = MotionTokens.SWEEP,
+                        easing = MotionTokens.EaseOut,
+                    ),
+            )
+        }
+    }
 
     val a11yDesc = segments.joinToString(", ") { "${it.label}: ${it.formattedValue}" }
 
@@ -92,7 +95,7 @@ fun SegmentedBar(
 
         val minSegmentWidth = 4.dp.toPx()
         val totalGapWidth = (nonZeroSegments.size - 1).coerceAtLeast(0) * gapPx
-        val availableWidth = (totalWidth - totalGapWidth) * animatedProgress
+        val availableWidth = (totalWidth - totalGapWidth) * animatedProgress.value
 
         // Calculate proportional widths
         val rawWidths = nonZeroSegments.map { (it.value.toFloat() / total) * availableWidth }

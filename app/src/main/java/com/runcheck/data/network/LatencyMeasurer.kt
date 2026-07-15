@@ -1,17 +1,19 @@
 package com.runcheck.data.network
 
+import android.net.Network
 import androidx.annotation.WorkerThread
 import com.runcheck.BuildConfig
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withTimeoutOrNull
 import java.net.InetSocketAddress
-import java.net.Socket
+import java.nio.channels.SocketChannel
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.abs
 import kotlin.math.ceil
+import kotlin.math.roundToInt
 
 private const val LATENCY_TIMEOUT_MS = 1_500L
 private const val LATENCY_SAMPLE_COUNT = 5
@@ -29,15 +31,15 @@ class LatencyMeasurer
             val jitterMs: Int?,
         )
 
-        suspend fun measureLatency(): LatencyResult? {
+        suspend fun measureLatency(network: Network? = null): LatencyResult? {
             return withTimeoutOrNull(LATENCY_TOTAL_TIMEOUT_MS) {
                 val results =
                     buildList {
                         repeat(LATENCY_SAMPLE_COUNT) {
                             val latency =
                                 withTimeoutOrNull(LATENCY_TIMEOUT_MS) {
-                                    withContext(dispatchers.io) {
-                                        measureTcpConnect()
+                                    runInterruptible(dispatchers.io) {
+                                        measureTcpConnect(network)
                                     }
                                 }
                             if (latency != null) {
@@ -47,7 +49,7 @@ class LatencyMeasurer
                     }
                 if (results.isEmpty()) return@withTimeoutOrNull null
 
-                val pingMs = results.minOrNull() ?: return@withTimeoutOrNull null
+                val pingMs = aggregateLatencySamples(results) ?: return@withTimeoutOrNull null
                 val jitterMs =
                     if (results.size >= MIN_JITTER_SAMPLE_COUNT) {
                         computeRfc3550Jitter(results)
@@ -59,12 +61,16 @@ class LatencyMeasurer
         }
 
         @WorkerThread
-        private fun measureTcpConnect(): Int? =
+        private fun measureTcpConnect(network: Network?): Int? =
             try {
-                Socket().use { socket ->
+                SocketChannel.open().socket().use { socket ->
+                    val address =
+                        network?.getByName(BuildConfig.LATENCY_HOST)
+                            ?: java.net.InetAddress.getByName(BuildConfig.LATENCY_HOST)
+                    network?.bindSocket(socket)
                     val startTime = System.nanoTime()
                     socket.connect(
-                        InetSocketAddress(BuildConfig.LATENCY_HOST, BuildConfig.LATENCY_PORT),
+                        InetSocketAddress(address, BuildConfig.LATENCY_PORT),
                         LATENCY_TIMEOUT_MS.toInt(),
                     )
                     val endTime = System.nanoTime()
@@ -95,3 +101,6 @@ class LatencyMeasurer
             private const val TAG = "LatencyMeasurer"
         }
     }
+
+internal fun aggregateLatencySamples(samplesMs: List<Int>): Int? =
+    samplesMs.takeIf { it.isNotEmpty() }?.average()?.roundToInt()
