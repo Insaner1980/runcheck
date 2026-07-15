@@ -132,12 +132,21 @@ class NetworkDataSource
                         }
                     }
 
-                connectivityManager.registerDefaultNetworkCallback(callback)
-                ContextCompat.registerReceiver(
-                    context,
-                    locationModeReceiver,
-                    IntentFilter(LocationManager.MODE_CHANGED_ACTION),
-                    ContextCompat.RECEIVER_NOT_EXPORTED,
+                registerCallbackWithReceiverRollback(
+                    registerReceiver = {
+                        ContextCompat.registerReceiver(
+                            context,
+                            locationModeReceiver,
+                            IntentFilter(LocationManager.MODE_CHANGED_ACTION),
+                            ContextCompat.RECEIVER_NOT_EXPORTED,
+                        )
+                    },
+                    registerCallback = {
+                        connectivityManager.registerDefaultNetworkCallback(callback)
+                    },
+                    unregisterReceiver = {
+                        context.unregisterReceiver(locationModeReceiver)
+                    },
                 )
 
                 val wifiCallback =
@@ -221,29 +230,27 @@ class NetworkDataSource
                     else -> ConnectionType.NONE
                 }
 
-            // Try NetworkCapabilities first, fall back to specific sources
-            // NetworkCapabilities.getSignalStrength() requires API 29
-            val rawSignalDbm =
+            // NetworkCapabilities uses bearer-specific units. Only WiFi defines them as RSSI dBm.
+            val capabilitiesWifiSignalDbm =
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     capabilities.signalStrength
                 } else {
                     Int.MIN_VALUE
                 }
-            var signalDbm: Int? = rawSignalDbm.takeUnless { it == Int.MIN_VALUE }
             val signalAsu: Int? = if (isCellular) getCellularSignalAsu() else null
-            if (signalDbm == null && isCellular) {
-                signalDbm = getCellularSignalDbm()
-            }
 
             val wifiInfo = if (isWifi && canReadWifiDetails) getWifiDetails(capabilities) else null
 
             // For WiFi, get RSSI even without location permission (RSSI doesn't require it)
             val wifiSignal = if (isWifi && wifiInfo == null) getWifiSignalOnly(capabilities) else null
-
-            // For WiFi, use RSSI if NetworkCapabilities didn't provide signal
-            if (isWifi && signalDbm == null) {
-                signalDbm = wifiInfo?.rssi ?: wifiSignal?.rssi
-            }
+            val signalDbm =
+                selectSignalDbmForTransport(
+                    isWifi = isWifi,
+                    isCellular = isCellular,
+                    capabilitiesWifiSignalDbm = capabilitiesWifiSignalDbm,
+                    wifiSignalDbm = wifiInfo?.rssi ?: wifiSignal?.rssi,
+                    cellularSignalDbm = if (isCellular) getCellularSignalDbm() else null,
+                )
             val cellInfo = if (isCellular) getCellularDetails() else null
             val signalQuality =
                 classifyNetworkSignalQuality(
@@ -747,3 +754,33 @@ internal fun resolveVpnState(
     hasVpnTransport: Boolean,
     hasNotVpnCapability: Boolean,
 ): Boolean = hasVpnTransport && !hasNotVpnCapability
+
+internal fun selectSignalDbmForTransport(
+    isWifi: Boolean,
+    isCellular: Boolean,
+    capabilitiesWifiSignalDbm: Int,
+    wifiSignalDbm: Int?,
+    cellularSignalDbm: Int?,
+): Int? =
+    when {
+        isWifi -> capabilitiesWifiSignalDbm.validWifiSignalDbm() ?: wifiSignalDbm
+        isCellular -> cellularSignalDbm
+        else -> null
+    }
+
+private fun Int.validWifiSignalDbm(): Int? = takeUnless { it == Int.MIN_VALUE || it == -127 || it == 0 }
+
+@Suppress("TooGenericExceptionCaught")
+internal inline fun registerCallbackWithReceiverRollback(
+    registerReceiver: () -> Unit,
+    registerCallback: () -> Unit,
+    unregisterReceiver: () -> Unit,
+) {
+    registerReceiver()
+    try {
+        registerCallback()
+    } catch (error: RuntimeException) {
+        runCatching(unregisterReceiver)
+        throw error
+    }
+}

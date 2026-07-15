@@ -83,6 +83,20 @@ class AppBatteryUsageRepositoryImplTest {
         }
 
     @Test
+    fun `collectUsageSnapshot limits stale collection window to 24 hours`() =
+        runTest {
+            val startTime = slot<Long>()
+            val endTime = slot<Long>()
+            every { appUsageDataSource.hasUsageStatsPermission() } returns true
+            coEvery { userPreferencesRepository.getAppUsageLastCollectedAt() } returns 0L
+            coEvery { appUsageDataSource.getUsageSince(capture(startTime), capture(endTime)) } returns emptyList()
+
+            repository.collectUsageSnapshot()
+
+            assertEquals(24L * 60L * 60L * 1000L, endTime.captured - startTime.captured)
+        }
+
+    @Test
     fun `delete methods delegate to dao`() =
         runTest {
             repository.deleteOlderThan(100L)

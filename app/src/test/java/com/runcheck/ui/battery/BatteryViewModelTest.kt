@@ -60,13 +60,19 @@ class BatteryViewModelTest {
         currentMa: Int = -400,
         chargingStatus: ChargingStatus = ChargingStatus.DISCHARGING,
         confidence: Confidence = Confidence.HIGH,
+        plugType: PlugType =
+            if (chargingStatus == ChargingStatus.CHARGING || chargingStatus == ChargingStatus.FULL) {
+                PlugType.USB
+            } else {
+                PlugType.NONE
+            },
     ) = BatteryState(
         level = level,
         voltageMv = 3900,
         temperatureC = 30f,
         currentMa = MeasuredValue(value = currentMa, confidence = confidence),
         chargingStatus = chargingStatus,
-        plugType = if (chargingStatus == ChargingStatus.CHARGING) PlugType.USB else PlugType.NONE,
+        plugType = plugType,
         health = BatteryHealth.GOOD,
         technology = "Li-ion",
     )
@@ -104,6 +110,7 @@ class BatteryViewModelTest {
             )
         every { observeProAccess() } returns flowOf(false)
         every { manageUserPreferences.observePreferences() } returns flowOf(UserPreferences())
+        every { manageUserPreferences.observeSelectedChargerId() } returns flowOf(null)
         every { manageInfoCardDismissals.observeDismissedCardIds() } returns flowOf(emptySet())
     }
 
@@ -195,6 +202,7 @@ class BatteryViewModelTest {
             assertEquals(-500, stats.min) // min of -300 and -500
             assertEquals(-300, stats.max) // max of -300 and -500
             assertEquals(2, stats.sampleCount)
+            assertEquals(listOf(-300f, -500f), state2.liveCurrentMa)
 
             // Third emission: verify accumulation continues
             batteryFlow.emit(makeBatteryState(currentMa = -200))
@@ -252,6 +260,136 @@ class BatteryViewModelTest {
             assertEquals(1800, stats.max)
             assertEquals(2, stats.sampleCount)
             viewModel.stopObserving()
+        }
+
+    @Test
+    fun `stats stay intact through plugged status flaps`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val batteryFlow = MutableSharedFlow<BatteryState>()
+            every { getBatteryState() } returns batteryFlow
+
+            viewModel = createViewModel()
+            try {
+                viewModel.startObserving()
+                advanceBatterySample()
+
+                batteryFlow.emit(
+                    makeBatteryState(
+                        currentMa = 1500,
+                        chargingStatus = ChargingStatus.CHARGING,
+                        plugType = PlugType.USB,
+                    ),
+                )
+                advanceBatterySample()
+                batteryFlow.emit(
+                    makeBatteryState(
+                        currentMa = 1200,
+                        chargingStatus = ChargingStatus.FULL,
+                        plugType = PlugType.USB,
+                    ),
+                )
+                advanceBatterySample()
+                batteryFlow.emit(
+                    makeBatteryState(
+                        currentMa = 1000,
+                        chargingStatus = ChargingStatus.NOT_CHARGING,
+                        plugType = PlugType.USB,
+                    ),
+                )
+                advanceBatterySample()
+
+                val stats = (viewModel.uiState.value as BatteryUiState.Success).currentStats
+                requireNotNull(stats)
+                assertEquals(3, stats.sampleCount)
+                assertEquals(1233, stats.avg)
+                assertEquals(1000, stats.min)
+                assertEquals(1500, stats.max)
+            } finally {
+                viewModel.stopObserving()
+            }
+        }
+
+    @Test
+    fun `stats reset when the selected charger changes`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val batteryFlow = MutableSharedFlow<BatteryState>()
+            val selectedChargerFlow = MutableStateFlow(1L)
+            every { getBatteryState() } returns batteryFlow
+            every { manageUserPreferences.observeSelectedChargerId() } returns selectedChargerFlow
+
+            viewModel = createViewModel()
+            try {
+                viewModel.startObserving()
+                advanceBatterySample()
+
+                batteryFlow.emit(makeBatteryState(currentMa = 1500, chargingStatus = ChargingStatus.CHARGING))
+                advanceBatterySample()
+                batteryFlow.emit(makeBatteryState(currentMa = 1800, chargingStatus = ChargingStatus.CHARGING))
+                advanceBatterySample()
+
+                selectedChargerFlow.value = 2L
+                advanceBatterySample()
+
+                val statsAfterSwap = (viewModel.uiState.value as BatteryUiState.Success).currentStats
+                assertNull("Stats should reset when charger identity changes", statsAfterSwap)
+
+                batteryFlow.emit(makeBatteryState(currentMa = 2200, chargingStatus = ChargingStatus.CHARGING))
+                advanceBatterySample()
+                batteryFlow.emit(makeBatteryState(currentMa = 2000, chargingStatus = ChargingStatus.CHARGING))
+                advanceBatterySample()
+
+                val stats = (viewModel.uiState.value as BatteryUiState.Success).currentStats
+                requireNotNull(stats)
+                assertEquals(2, stats.sampleCount)
+                assertEquals(2000, stats.min)
+                assertEquals(2200, stats.max)
+            } finally {
+                viewModel.stopObserving()
+            }
+        }
+
+    @Test
+    fun `stats reset when the connected power source changes`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val batteryFlow = MutableSharedFlow<BatteryState>()
+            every { getBatteryState() } returns batteryFlow
+
+            viewModel = createViewModel()
+            try {
+                viewModel.startObserving()
+                advanceBatterySample()
+
+                batteryFlow.emit(
+                    makeBatteryState(
+                        currentMa = 1500,
+                        chargingStatus = ChargingStatus.CHARGING,
+                        plugType = PlugType.USB,
+                    ),
+                )
+                advanceBatterySample()
+                batteryFlow.emit(
+                    makeBatteryState(
+                        currentMa = 1800,
+                        chargingStatus = ChargingStatus.CHARGING,
+                        plugType = PlugType.USB,
+                    ),
+                )
+                advanceBatterySample()
+
+                batteryFlow.emit(
+                    makeBatteryState(
+                        currentMa = 2500,
+                        chargingStatus = ChargingStatus.CHARGING,
+                        plugType = PlugType.AC,
+                    ),
+                )
+                advanceBatterySample()
+
+                val statsAfterSwap = (viewModel.uiState.value as BatteryUiState.Success).currentStats
+                assertNull("Stats should reset when the power source changes", statsAfterSwap)
+            } finally {
+                viewModel.stopObserving()
+            }
         }
 
     @Test

@@ -1,6 +1,5 @@
 package com.runcheck.ui.components
 
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -14,6 +13,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.Dp
@@ -41,7 +42,7 @@ fun MiniBar(
             if (isReducedMotion) {
                 tween(durationMillis = 0)
             } else {
-                tween(durationMillis = animationDuration, easing = FastOutSlowInEasing)
+                tween(durationMillis = animationDuration, easing = MotionTokens.EaseOut)
             },
         label = "miniBar",
     )
@@ -67,9 +68,12 @@ fun MiniBar(
         Box(
             modifier =
                 Modifier
-                    .fillMaxWidth(fraction = animatedProgress)
+                    .fillMaxWidth()
                     .height(height)
-                    .background(fillColor, shape = pillShape),
+                    .graphicsLayer {
+                        scaleX = animatedProgress
+                        transformOrigin = TransformOrigin(0f, 0.5f)
+                    }.background(fillColor, shape = pillShape),
         )
     }
 }

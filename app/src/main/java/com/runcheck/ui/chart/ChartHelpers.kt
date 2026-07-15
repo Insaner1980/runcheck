@@ -491,7 +491,7 @@ fun networkHistoryMetricLabel(metric: NetworkHistoryMetric): String =
 fun thermalQualityZones(temperatureUnit: TemperatureUnit): List<ChartQualityZone> {
     val colors = MaterialTheme.statusColors
 
-    fun convert(c: Float) = if (temperatureUnit == TemperatureUnit.FAHRENHEIT) c * 9f / 5f + 32f else c
+    fun convert(celsius: Float) = convertTemperature(celsius, temperatureUnit).toFloat()
     return listOf(
         ChartQualityZone(minValue = convert(0f), maxValue = convert(35f), color = colors.healthy.copy(alpha = 0.06f)),
         ChartQualityZone(minValue = convert(35f), maxValue = convert(42f), color = colors.fair.copy(alpha = 0.06f)),

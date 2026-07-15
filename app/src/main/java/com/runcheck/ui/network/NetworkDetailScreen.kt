@@ -240,8 +240,18 @@ private fun NetworkHeroSection(
     liveSignalDbm: List<Float> = emptyList(),
     onInfoClick: (String) -> Unit = {},
 ) {
-    val qualityLabel = signalQualityLabel(networkState.signalQuality)
-    val qualityColor = statusColorForSignalQuality(networkState.signalQuality)
+    val qualityLabel =
+        if (networkState.isConnected) {
+            signalQualityLabel(networkState.signalQuality)
+        } else {
+            stringResource(R.string.score_unrated)
+        }
+    val qualityColor =
+        if (networkState.isConnected) {
+            statusColorForSignalQuality(networkState.signalQuality)
+        } else {
+            MaterialTheme.statusColors.unavailable
+        }
 
     Card(
         modifier = Modifier.fillMaxWidth(),

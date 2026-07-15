@@ -50,35 +50,43 @@ class InsightRepositoryImpl
 
         override suspend fun clearAll() = insightDao.deleteAll()
 
-        override suspend fun replaceRuleResults(
-            ruleId: String,
-            candidates: List<InsightCandidate>,
+        override suspend fun replaceGenerationResults(
+            candidatesByRule: Map<String, List<InsightCandidate>>,
+            now: Long,
         ) {
             transactionRunner.runInTransaction {
-                if (candidates.isEmpty()) {
-                    insightDao.deleteByRule(ruleId)
-                    return@runInTransaction
+                insightDao.deleteExpired(now)
+                candidatesByRule.forEach { (ruleId, candidates) ->
+                    replaceRuleResults(ruleId, candidates)
                 }
-
-                val existing = insightDao.getByRule(ruleId)
-                val existingByDedupeKey = existing.associateBy { it.dedupeKey }
-                val incomingKeys = candidates.map { it.dedupeKey }.toSet()
-                val staleIds = existing.filter { it.dedupeKey !in incomingKeys }.map { it.id }
-
-                if (staleIds.isNotEmpty()) {
-                    insightDao.deleteByIds(staleIds)
-                }
-
-                val merged =
-                    candidates.map { candidate ->
-                        val existingEntry = existingByDedupeKey[candidate.dedupeKey]
-                        candidate.toEntity(existingEntry, gson)
-                    }
-                insightDao.insertAll(merged)
             }
         }
 
-        override suspend fun deleteExpired(now: Long) = insightDao.deleteExpired(now)
+        private suspend fun replaceRuleResults(
+            ruleId: String,
+            candidates: List<InsightCandidate>,
+        ) {
+            if (candidates.isEmpty()) {
+                insightDao.deleteByRule(ruleId)
+                return
+            }
+
+            val existing = insightDao.getByRule(ruleId)
+            val existingByDedupeKey = existing.associateBy { it.dedupeKey }
+            val incomingKeys = candidates.map { it.dedupeKey }.toSet()
+            val staleIds = existing.filter { it.dedupeKey !in incomingKeys }.map { it.id }
+
+            if (staleIds.isNotEmpty()) {
+                insightDao.deleteByIds(staleIds)
+            }
+
+            val merged =
+                candidates.map { candidate ->
+                    val existingEntry = existingByDedupeKey[candidate.dedupeKey]
+                    candidate.toEntity(existingEntry, gson)
+                }
+            insightDao.insertAll(merged)
+        }
 
         private fun observeActiveInsights(): Flow<List<Insight>> =
             insightDao

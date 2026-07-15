@@ -70,8 +70,8 @@ class InsightRuleMultibindingContractTest {
             ).filter { engineText.contains(it) }
 
         assertEquals(emptyList<String>(), forbiddenOrderOperations)
-        assertTrue(engineText.contains("rules.forEach { rule ->"))
-        assertTrue(engineText.contains("replaceRuleResults(rule.ruleId, candidates)"))
+        assertTrue(engineText.contains("rules.associate { rule ->"))
+        assertTrue(engineText.contains("replaceGenerationResults(candidatesByRule, now)"))
     }
 
     private fun insightRuleImplementations(): List<String> = insightRuleSources().map { it.className }

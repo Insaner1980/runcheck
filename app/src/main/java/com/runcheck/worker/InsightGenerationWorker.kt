@@ -19,6 +19,8 @@ class InsightGenerationWorker
         @Assisted workerParams: WorkerParameters,
         private val insightEngine: InsightEngine,
     ) : CoroutineWorker(appContext, workerParams) {
+        // WorkManager needs an explicit terminal result for unexpected non-cancellation failures.
+        @Suppress("TooGenericExceptionCaught")
         override suspend fun doWork(): Result =
             try {
                 insightEngine.generateInsights()
@@ -28,6 +30,9 @@ class InsightGenerationWorker
             } catch (e: SQLException) {
                 ReleaseSafeLog.error(TAG, "Insight generation failed", e)
                 Result.retry()
+            } catch (e: Exception) {
+                ReleaseSafeLog.error(TAG, "Insight generation failed", e)
+                Result.failure()
             }
 
         companion object {

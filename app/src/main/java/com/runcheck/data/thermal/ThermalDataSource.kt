@@ -43,14 +43,12 @@ class ThermalDataSource
                             trySend(temp)
                         }
                     }
-                val stickyIntent =
-                    ContextCompat.registerReceiver(
-                        context,
-                        receiver,
-                        IntentFilter(Intent.ACTION_BATTERY_CHANGED),
-                        ContextCompat.RECEIVER_NOT_EXPORTED,
-                    )
-                stickyIntent?.let { receiver.onReceive(context, it) }
+                ContextCompat.registerReceiver(
+                    context,
+                    receiver,
+                    IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+                    ContextCompat.RECEIVER_NOT_EXPORTED,
+                )
                 awaitClose { context.unregisterReceiver(receiver) }
             }
 

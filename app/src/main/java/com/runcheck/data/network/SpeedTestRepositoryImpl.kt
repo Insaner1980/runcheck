@@ -5,6 +5,7 @@ import com.runcheck.data.db.entity.SpeedTestResultEntity
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.SpeedTestProgress
 import com.runcheck.domain.model.SpeedTestResult
+import com.runcheck.domain.repository.DatabaseTransactionRunner
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.TimestampSanitizer
 import kotlinx.coroutines.flow.Flow
@@ -21,25 +22,24 @@ class SpeedTestRepositoryImpl
         private val speedTestService: SpeedTestService,
         private val speedTestResultDao: SpeedTestResultDao,
         private val dispatchers: AppDispatchers,
+        private val transactionRunner: DatabaseTransactionRunner,
     ) : SpeedTestRepositoryContract {
         override fun runSpeedTest(allowCellular: Boolean): Flow<SpeedTestProgress> =
             speedTestService.runSpeedTest(allowCellular = allowCellular)
 
         override suspend fun saveResult(result: SpeedTestResult) {
-            val entity =
-                SpeedTestResultEntity(
-                    timestamp = TimestampSanitizer.clampToNow(result.timestamp),
-                    downloadMbps = result.downloadMbps,
-                    uploadMbps = result.uploadMbps,
-                    pingMs = result.pingMs,
-                    jitterMs = result.jitterMs,
-                    serverName = result.serverName,
-                    serverLocation = result.serverLocation,
-                    connectionType = result.connectionType.name,
-                    networkSubtype = result.networkSubtype,
-                    signalDbm = result.signalDbm,
-                )
-            speedTestResultDao.insert(entity)
+            speedTestResultDao.insert(result.toEntity())
+        }
+
+        override suspend fun saveResultAndTrim(
+            result: SpeedTestResult,
+            keepCount: Int,
+        ) {
+            require(keepCount > 0) { "keepCount must be positive" }
+            transactionRunner.runInTransaction {
+                val insertedId = speedTestResultDao.insert(result.toEntity())
+                speedTestResultDao.deleteOldResults(keepCount, insertedId)
+            }
         }
 
         override fun getLatestResult(): Flow<SpeedTestResult?> =
@@ -58,11 +58,23 @@ class SpeedTestRepositoryImpl
                         .filter { TimestampSanitizer.isUsable(it.timestamp) }
                 }.flowOn(dispatchers.io)
 
-        override suspend fun trimResults(keepCount: Int) = speedTestResultDao.deleteOldResults(keepCount)
-
         override suspend fun deleteOlderThan(cutoff: Long) = speedTestResultDao.deleteOlderThan(cutoff)
 
         override suspend fun deleteAll() = speedTestResultDao.deleteAll()
+
+        private fun SpeedTestResult.toEntity(): SpeedTestResultEntity =
+            SpeedTestResultEntity(
+                timestamp = TimestampSanitizer.clampToNow(timestamp),
+                downloadMbps = downloadMbps,
+                uploadMbps = uploadMbps,
+                pingMs = pingMs,
+                jitterMs = jitterMs,
+                serverName = serverName,
+                serverLocation = serverLocation,
+                connectionType = connectionType.name,
+                networkSubtype = networkSubtype,
+                signalDbm = signalDbm,
+            )
 
         private fun SpeedTestResultEntity.toDomain(): SpeedTestResult =
             SpeedTestResult(

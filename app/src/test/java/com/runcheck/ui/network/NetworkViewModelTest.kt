@@ -239,6 +239,51 @@ class NetworkViewModelTest {
         }
 
     @Test
+    fun `cellular confirmation is scoped to one retry and does not leak to the next session`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            every { getMeasuredNetworkState() } returns MutableStateFlow(testNetworkState)
+            val allowCellularCalls = mutableListOf<Boolean>()
+            val cellularConnection =
+                SpeedTestConnectionInfo(
+                    connectionType = ConnectionType.CELLULAR,
+                    networkSubtype = "5G NR",
+                    signalDbm = -85,
+                )
+            every { runSpeedTest(any()) } answers {
+                val allowCellular = firstArg<Boolean>()
+                allowCellularCalls += allowCellular
+                if (allowCellular) {
+                    flowOf(SpeedTestProgress.Failed("Test stopped"))
+                } else {
+                    flowOf(SpeedTestProgress.CellularConfirmationRequired(cellularConnection))
+                }
+            }
+
+            viewModel = createViewModel()
+            viewModel.startSpeedTest()
+            runCurrent()
+
+            assertTrue(viewModel.speedTestState.value.showCellularWarning)
+            assertEquals(listOf(false), allowCellularCalls)
+
+            viewModel.confirmCellularSpeedTest()
+            runCurrent()
+
+            assertFalse(viewModel.speedTestState.value.showCellularWarning)
+            assertEquals(listOf(false, true), allowCellularCalls)
+
+            viewModel.confirmCellularSpeedTest()
+            runCurrent()
+            assertEquals(listOf(false, true), allowCellularCalls)
+
+            viewModel.startSpeedTest()
+            runCurrent()
+
+            assertTrue(viewModel.speedTestState.value.showCellularWarning)
+            assertEquals(listOf(false, true, false), allowCellularCalls)
+        }
+
+    @Test
     fun `speed test error produces Failed phase`() =
         runTest(mainDispatcherRule.testDispatcher) {
             every { getMeasuredNetworkState() } returns MutableStateFlow(testNetworkState)
@@ -272,12 +317,15 @@ class NetworkViewModelTest {
         }
 
     @Test
-    fun `speed test Failed progress event produces Failed phase`() =
+    fun `partial speed test failure does not finalize a result`() =
         runTest(mainDispatcherRule.testDispatcher) {
             every { getMeasuredNetworkState() } returns MutableStateFlow(testNetworkState)
 
-            val speedTestFlow = MutableSharedFlow<SpeedTestProgress>()
-            every { runSpeedTest(any()) } returns speedTestFlow
+            every { runSpeedTest(any()) } returns
+                flowOf(
+                    SpeedTestProgress.DownloadPhase(currentMbps = 85.5, progress = 0.5f),
+                    SpeedTestProgress.Failed("Server unavailable"),
+                )
 
             viewModel = createViewModel()
             viewModel.startObserving()
@@ -286,12 +334,11 @@ class NetworkViewModelTest {
             viewModel.startSpeedTest()
             runCurrent()
 
-            speedTestFlow.emit(SpeedTestProgress.Failed("Server unavailable"))
-            runCurrent()
-
             val speedState = viewModel.speedTestState.value
             assertTrue(speedState.phase is SpeedTestPhase.Failed)
             assertFalse(speedState.isRunning)
+            assertEquals(85.5, speedState.downloadMbps, 0.01)
+            coVerify(exactly = 0) { finalizeSpeedTest(any(), any()) }
             viewModel.stopObserving()
         }
 

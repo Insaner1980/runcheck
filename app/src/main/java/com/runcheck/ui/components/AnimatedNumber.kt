@@ -24,7 +24,11 @@ fun AnimatedFloatText(
 
     val animatedValue by animateFloatAsState(
         targetValue = value,
-        animationSpec = tween(durationMillis = if (reducedMotion) 0 else MotionTokens.SHORT),
+        animationSpec =
+            tween(
+                durationMillis = if (reducedMotion) 0 else MotionTokens.SHORT,
+                easing = MotionTokens.EaseOut,
+            ),
         label = "float_anim",
     )
 

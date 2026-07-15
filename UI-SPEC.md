@@ -554,6 +554,7 @@ Used on Home grid metrics.
 - Background: `surfaceVariant.copy(alpha = 0.5f)`.
 - Minimum segment width: 4dp.
 - Overall reveal animation: 800ms with `MotionTokens.EaseOut`.
+- Reveal restarts from zero when the segment data changes.
 - Reduced motion: snap to final state.
 - Semantics role: image with joined labels.
 
@@ -598,10 +599,11 @@ Used on Home grid metrics.
 - Gradient aligns status colors around 35C, 40C, and 45C transitions.
 - Indicator: on-surface/white circle, radius 8dp, clamped inside strip.
 - Critical pulse:
-  - Alpha animates 0.7 to 1.0.
+  - The gradient remains stable; only the indicator halo animates.
+  - Halo radius animates 9dp to 13dp while alpha fades 0.26 to 0.08.
   - Reverse repeat.
   - Duration 2000ms.
-  - Easing: linear.
+  - Easing: `MotionTokens.EaseOut`.
   - Disabled when reduced motion is true.
 
 ### 7.12 StatusDot
@@ -617,9 +619,9 @@ Used on Home grid metrics.
 - Text style: `labelMedium`.
 - Background/text colors from confidence color mapping.
 - Scale animation:
-  - Starts at 0.
+  - Starts at 0.92.
   - Springs to 1.
-  - Damping ratio: 0.6.
+  - Damping ratio: 0.8.
   - Stiffness: medium.
   - Reduced motion snaps to 1.
 
@@ -850,7 +852,7 @@ Drawing details:
 - Quality zone fill: zone color alpha multiplied by grid alpha.
 - Area fill top alpha: interpolates 0.08 to 0.30 based on average normalized Y.
 - Area fill bottom alpha: 0.02.
-- Scan line stroke: 1.5dp.
+- Sweep head: 1.5dp line with a 32dp draw-phase illumination trail.
 - Last value emphasis:
   - Glow radius 6dp, color alpha `0.3 * emphasis`.
   - Dot radius 3dp, alpha `emphasis`.
@@ -887,7 +889,7 @@ Drawing details:
 - Vertical padding: 10 percent of chart height.
 - Fill top alpha: interpolates 0.08 to 0.25.
 - Fill bottom alpha: 0.02.
-- Scan line stroke: 1.5dp.
+- Sweep head: 1.5dp line with the shared 32dp illumination trail.
 
 ### 8.3 LiveChart
 
@@ -905,12 +907,12 @@ Drawing details:
 - Area fill alpha: 0.20 to 0.02.
 - Line stroke: 1.5dp, round cap/join.
 - Current dot:
-  - Glow radius animates 8dp to 5dp.
-  - Glow alpha animates 0.5 to 0.3.
+  - Glow radius settles from 11dp to 5dp.
+  - Glow alpha settles from 0.40 to 0.12.
   - Duration 300ms.
-  - Inner dot radius 3dp.
+  - Inner dot radius settles from 2.5dp to 3dp.
 - Append scroll:
-  - New point offset animates to 0 over 150ms, linear.
+  - New point offset animates to 0 over 150ms with `MotionTokens.EaseOut`.
   - Reduced motion snaps to 0.
 - Semantics role: image.
 
@@ -1033,6 +1035,7 @@ Health category bar:
 - Segment corner radius: 4dp.
 - Labels appear after 4dp.
 - Labels: `labelSmall`.
+- A disconnected network segment and label use the unavailable color instead of a critical status color.
 
 Health breakdown row:
 
@@ -1041,6 +1044,7 @@ Health breakdown row:
 - Vertical padding: 12dp.
 - Status dot before text.
 - Status dot trailing gap: 8dp.
+- A disconnected network row shows `Unrated` with the unavailable status color instead of `0%` with critical styling.
 - Numeric value: `titleMedium` with JetBrains Mono.
 
 Battery hero card on Home:
@@ -1294,6 +1298,7 @@ Speed test hero:
   - Duration 1700ms.
   - Reverse repeat.
   - Easing `MotionTokens.EaseOut`.
+  - Infinite transition exists only while the hero is idle.
   - Disabled when reduced motion is true.
 - Non-idle background alpha: 0.08.
 - Gauge stroke: 16dp.
@@ -1304,6 +1309,7 @@ Speed test hero:
   - Rotating arc start around 145 degrees.
   - Sweep 112 degrees.
   - Duration 1800ms linear.
+  - Infinite transition exists only during the Ping phase.
 - Failed arc: start 135 degrees, sweep 72 degrees, error color.
 - Download/upload/completed arc:
   - Start 135 degrees.

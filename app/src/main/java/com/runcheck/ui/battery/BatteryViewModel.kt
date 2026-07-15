@@ -9,6 +9,7 @@ import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.usecase.BatteryScreenInsightsUseCase
 import com.runcheck.domain.usecase.ChargerSessionTracker
@@ -59,18 +60,18 @@ class BatteryViewModel
             }
         private var loadJob: Job? = null
 
-        // Current stats tracking (in-memory, resets on charging status change)
+        // Current stats tracking (in-memory, resets on power-source or selected-charger changes)
         private var currentSum: Long = 0L
         private var currentCount: Int = 0
         private var currentMin: Int = Int.MAX_VALUE
         private var currentMax: Int = Int.MIN_VALUE
-        private var lastChargingStatus: ChargingStatus? = null
+        private var lastPlugType: PlugType? = null
+        private var lastSelectedChargerId: Long? = null
         private var lastTrackedSessionStatus: ChargingStatus? = null
         private var lastTrackedSessionAt: Long = 0L
 
         // Live chart ring buffers (keep last 60 values ≈ ~1-5 min depending on sample rate)
         private val liveCurrentMa = mutableListOf<Float>()
-        private val livePowerW = mutableListOf<Float>()
         private val liveTempC = mutableListOf<Float>()
         private val liveLevel = mutableListOf<Float>()
         private val liveVoltage = mutableListOf<Float>()
@@ -130,7 +131,16 @@ class BatteryViewModel
                         manageUserPreferences.observePreferences(),
                         manageInfoCardDismissals.observeDismissedCardIds(),
                     ) { state, history, isPro, preferences, dismissedCards ->
-                        processBatteryUpdate(state, history, isPro, preferences, dismissedCards)
+                        BatteryUpdate(state, history, isPro, preferences, dismissedCards)
+                    }.combine(manageUserPreferences.observeSelectedChargerId()) { update, selectedChargerId ->
+                        processBatteryUpdate(
+                            state = update.state,
+                            history = update.history,
+                            isPro = update.isPro,
+                            preferences = update.preferences,
+                            dismissedCards = update.dismissedCards,
+                            selectedChargerId = selectedChargerId,
+                        )
                     }.sample(333L)
                         .catch { e ->
                             ReleaseSafeLog.error("BatteryVM", "Battery data failed", e)
@@ -147,20 +157,18 @@ class BatteryViewModel
             isPro: Boolean,
             preferences: UserPreferences,
             dismissedCards: Set<String>,
+            selectedChargerId: Long?,
         ): BatteryUiState.Success {
-            if (state != lastObservedBatteryState) {
-                if (lastChargingStatus != null && lastChargingStatus != state.chargingStatus) {
-                    resetCurrentStats()
-                }
-                lastChargingStatus = state.chargingStatus
+            if (currentStatsSessionChanged(state, selectedChargerId)) {
+                resetCurrentStats()
+            }
 
+            if (state != lastObservedBatteryState) {
                 batteryScreenInsights.updateChargingStatus(state.chargingStatus)
                 maybeTrackChargerSession(state)
 
                 if (state.currentMa.confidence != Confidence.UNAVAILABLE) {
-                    liveCurrentMa.appendLiveValue(kotlin.math.abs(state.currentMa.value).toFloat())
-                    val powerW = kotlin.math.abs(state.currentMa.value / 1000f * state.voltageMv / 1000f)
-                    livePowerW.appendLiveValue(powerW)
+                    liveCurrentMa.appendLiveValue(state.currentMa.value.toFloat())
 
                     val currentMa = state.currentMa.value
                     currentSum += currentMa
@@ -204,11 +212,27 @@ class BatteryViewModel
                 dismissedInfoCards = dismissedCards,
                 showInfoCards = preferences.showInfoCards,
                 liveCurrentMa = liveCurrentMa.toList(),
-                livePowerW = livePowerW.toList(),
                 liveTempC = liveTempC.toList(),
                 liveLevel = liveLevel.toList(),
                 liveVoltage = liveVoltage.toList(),
             )
+        }
+
+        private fun currentStatsSessionChanged(
+            state: BatteryState,
+            selectedChargerId: Long?,
+        ): Boolean {
+            val previousPlugType = lastPlugType
+            val powerSourceChanged = previousPlugType != null && previousPlugType != state.plugType
+            val selectedChargerChanged =
+                previousPlugType != null &&
+                    lastSelectedChargerId != selectedChargerId &&
+                    (previousPlugType != PlugType.NONE || state.plugType != PlugType.NONE)
+
+            lastPlugType = state.plugType
+            lastSelectedChargerId = selectedChargerId
+
+            return powerSourceChanged || selectedChargerChanged
         }
 
         private suspend fun maybeTrackChargerSession(state: BatteryState) {
@@ -221,6 +245,14 @@ class BatteryViewModel
                 lastTrackedSessionAt = now
             }
         }
+
+        private data class BatteryUpdate(
+            val state: BatteryState,
+            val history: List<BatteryReading>,
+            val isPro: Boolean,
+            val preferences: UserPreferences,
+            val dismissedCards: Set<String>,
+        )
 
         fun dismissInfoCard(id: String) {
             viewModelScope.launch { manageInfoCardDismissals.dismissCard(id) }

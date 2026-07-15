@@ -23,12 +23,15 @@ class ChargerSessionTracker
         private val transactionRunner: DatabaseTransactionRunner,
     ) {
         private val mutex = Mutex()
+        private var lastProcessedTimestamp = Long.MIN_VALUE
 
         suspend fun onBatteryState(
             state: BatteryState,
             timestamp: Long = System.currentTimeMillis(),
         ) {
             mutex.withLock {
+                if (timestamp < lastProcessedTimestamp) return@withLock
+
                 val selectedChargerId = userPreferencesRepository.getSelectedChargerId()
                 val activeSession = chargerRepository.getActiveSession()
                 val isCharging = state.chargingStatus == ChargingStatus.CHARGING
@@ -76,6 +79,8 @@ class ChargerSessionTracker
                         completeSession(activeSession, state, timestamp)
                     }
                 }
+
+                lastProcessedTimestamp = timestamp
             }
         }
 

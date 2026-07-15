@@ -32,7 +32,6 @@ sealed interface BatteryUiState {
         val dismissedInfoCards: Set<String> = emptySet(),
         val showInfoCards: Boolean = true,
         val liveCurrentMa: List<Float> = emptyList(),
-        val livePowerW: List<Float> = emptyList(),
         val liveTempC: List<Float> = emptyList(),
         val liveLevel: List<Float> = emptyList(),
         val liveVoltage: List<Float> = emptyList(),

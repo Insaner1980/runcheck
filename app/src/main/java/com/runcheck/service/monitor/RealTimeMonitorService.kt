@@ -14,6 +14,7 @@ import androidx.core.app.NotificationCompat
 import com.runcheck.R
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.ChargingStatus
+import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.repository.BatteryRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
@@ -214,15 +215,8 @@ class RealTimeMonitorService : Service() {
         val bodyLines = mutableListOf<String>()
 
         // Title: level + status
-        val statusLabel =
-            when (battery.chargingStatus) {
-                ChargingStatus.CHARGING -> getString(R.string.charging_status_charging)
-                ChargingStatus.FULL -> getString(R.string.charging_status_full)
-                ChargingStatus.DISCHARGING -> getString(R.string.charging_status_discharging)
-                ChargingStatus.NOT_CHARGING -> getString(R.string.charging_status_not_charging)
-            }
         titleParts.add("${battery.level}%")
-        titleParts.add(statusLabel)
+        titleParts.add(chargingStatusLabel(battery.chargingStatus))
 
         if (prefs.liveNotifTemperature) {
             titleParts.add(formatTemperature(this, battery.temperatureC, prefs.temperatureUnit))
@@ -230,24 +224,7 @@ class RealTimeMonitorService : Service() {
 
         // Body lines
         if (prefs.liveNotifCurrent) {
-            val currentMa = battery.currentMa.value
-            val voltageMv = battery.voltageMv
-            val powerW =
-                currentMa.let { ma ->
-                    val watts = kotlin.math.abs(ma) * voltageMv / 1_000_000f
-                    if (watts > 0.01f) watts else null
-                }
-            val currentLine =
-                if (powerW != null) {
-                    getString(
-                        R.string.live_notif_current_with_power,
-                        currentMa,
-                        formatDecimal(powerW, 1),
-                    )
-                } else {
-                    getString(R.string.live_notif_current, currentMa)
-                }
-            bodyLines.add(currentLine)
+            addCurrentLine(battery, bodyLines)
         }
 
         if (prefs.liveNotifDrainRate) {
@@ -289,6 +266,38 @@ class RealTimeMonitorService : Service() {
             .setContentIntent(contentIntent)
             .setShowWhen(false)
             .build()
+    }
+
+    private fun chargingStatusLabel(status: ChargingStatus): String =
+        when (status) {
+            ChargingStatus.CHARGING -> getString(R.string.charging_status_charging)
+            ChargingStatus.FULL -> getString(R.string.charging_status_full)
+            ChargingStatus.DISCHARGING -> getString(R.string.charging_status_discharging)
+            ChargingStatus.NOT_CHARGING -> getString(R.string.charging_status_not_charging)
+        }
+
+    private fun addCurrentLine(
+        battery: BatteryState,
+        bodyLines: MutableList<String>,
+    ) {
+        battery.currentForLiveNotification()?.let { currentMa ->
+            val powerW =
+                currentMa.let { ma ->
+                    val watts = kotlin.math.abs(ma) * battery.voltageMv / 1_000_000f
+                    if (watts > 0.01f) watts else null
+                }
+            val currentLine =
+                if (powerW != null) {
+                    getString(
+                        R.string.live_notif_current_with_power,
+                        currentMa,
+                        formatDecimal(powerW, 1),
+                    )
+                } else {
+                    getString(R.string.live_notif_current, currentMa)
+                }
+            bodyLines.add(currentLine)
+        }
     }
 
     private fun createInitialNotification(): Notification {
@@ -335,3 +344,6 @@ class RealTimeMonitorService : Service() {
             private set
     }
 }
+
+internal fun BatteryState.currentForLiveNotification(): Int? =
+    currentMa.takeIf { it.confidence != Confidence.UNAVAILABLE }?.value

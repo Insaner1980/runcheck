@@ -93,6 +93,7 @@
     <string name="score_good">Good</string>
     <string name="score_fair">Fair</string>
     <string name="score_poor">Poor</string>
+    <string name="score_unrated">Unrated</string>
 
     <!-- Thermal Labels -->
     <string name="thermal_cool">Cool</string>
@@ -115,6 +116,8 @@
     <string name="battery_charging_section">Charging</string>
     <string name="battery_current_section">Battery Current</string>
     <string name="battery_current">Current</string>
+    <string name="battery_live_current">Live current</string>
+    <string name="a11y_battery_live_current_chart">Live battery current trend. Positive values mean charging; negative values mean discharging.</string>
     <string name="battery_status">Status</string>
     <string name="battery_plug_type">Type</string>
     <string name="battery_health">Battery Health</string>
@@ -175,9 +178,9 @@
     <string name="battery_usage_section">Battery Usage</string>
 
     <!-- Sleep Analysis (#8) -->
-    <string name="battery_deep_sleep">Deep Sleep</string>
-    <string name="battery_held_awake">Held Awake</string>
-    <string name="battery_sleep_analysis">Sleep Analysis</string>
+    <string name="battery_deep_sleep">Device Idle</string>
+    <string name="battery_held_awake">Active Screen-off</string>
+    <string name="battery_sleep_analysis">Screen-off Analysis</string>
 
     <!-- Long-term Statistics (#9) -->
     <string name="battery_stats_section">Statistics</string>
@@ -281,8 +284,8 @@
     <string name="network_vpn">VPN</string>
     <string name="network_ipv4">IPv4</string>
     <string name="network_ipv6">IPv6</string>
-    <string name="network_dns_1">DNS 1</string>
-    <string name="network_dns_2">DNS 2</string>
+    <string name="network_dns">DNS</string>
+    <string name="network_address_indexed">%1$s %2$d</string>
     <string name="network_mtu">MTU</string>
     <string name="network_history_metric_signal">Signal</string>
     <string name="network_history_metric_latency">Latency</string>
@@ -703,9 +706,11 @@
     <string name="speed_test_phase_upload">Testing upload…</string>
     <string name="speed_test_failed">Speed test failed</string>
     <string name="speed_test_error_no_internet">No internet connection available.</string>
+    <string name="speed_test_error_connection_not_validated">Your network is connected but has no verified internet access.</string>
     <string name="speed_test_error_server_unreachable">Could not reach the speed test server.</string>
     <string name="speed_test_error_timeout">The speed test timed out. Try again.</string>
     <string name="speed_test_error_connection_changed">Your connection changed during the speed test. Try again.</string>
+    <string name="speed_test_error_already_running">A speed test is already running.</string>
     <string name="speed_test_error_generic">Unable to complete the speed test.</string>
     <string name="speed_test_no_history">No saved speed tests yet. Run a test to start building history.</string>
     <string name="speed_test_cellular_warning">This test will use approximately 20–50 MB of mobile data</string>
@@ -895,10 +900,10 @@
     <string name="info_battery_screen_on_off_range">Screen-off drain should be much lower than screen-on. If screen-off drain is above 2%/h, something is keeping your phone awake.</string>
     <string name="info_battery_screen_on_off_matters">Large screen-off drain usually means a background app or service is consuming power. This helps identify hidden battery drainers.</string>
 
-    <string name="info_battery_deep_sleep_title">Deep Sleep / Held Awake</string>
-    <string name="info_battery_deep_sleep_explanation">Tracks how much screen-off time your phone spends in low-power sleep versus being kept awake by background activity. It does not measure Android Doze state directly.</string>
-    <string name="info_battery_deep_sleep_range">A healthy phone should spend most of its screen-off time in deep sleep. High \'held awake\' time means something is preventing sleep.</string>
-    <string name="info_battery_deep_sleep_matters">Deep sleep dramatically reduces battery drain. If your phone is held awake for extended periods, background apps or wake locks are likely the cause.</string>
+    <string name="info_battery_deep_sleep_title">Device Idle / Active Screen-off</string>
+    <string name="info_battery_deep_sleep_explanation">Tracks how much screen-off time your phone spends in Android device idle mode versus outside that mode. Device idle is a low-power state, but it is not a direct measurement of CPU deep sleep.</string>
+    <string name="info_battery_deep_sleep_range">More device idle time generally indicates that Android can apply its screen-off power-saving restrictions. Active screen-off time can also include normal maintenance windows.</string>
+    <string name="info_battery_deep_sleep_matters">Low device idle time can accompany background activity, but this measurement alone does not identify an app or prove that a wake lock prevented CPU sleep.</string>
 
     <string name="info_battery_remaining_title">Remaining Time</string>
     <string name="info_battery_remaining_explanation">An estimate of how long your battery will last based on the current drain rate. This is calculated from recent usage patterns, not a fixed value.</string>
@@ -1095,7 +1100,7 @@
     <string name="info_card_charging_habits_headline">Charging tip</string>
     <string name="info_card_charging_habits_body" formatted="false">Partial charges are fine. The main thing to avoid is heat while charging, especially during gaming, navigation, or direct sun. Spending less time sitting warm at 100% can also reduce wear.</string>
     <string name="info_card_screen_off_drain_headline">High background drain detected</string>
-    <string name="info_card_screen_off_drain_body">Your battery is draining faster than normal with the screen off. This usually means background activity is keeping the phone awake. Compare the Screen Off and Sleep Analysis sections below, and review recent app activity if the pattern continues.</string>
+    <string name="info_card_screen_off_drain_body">Your battery is draining faster than normal with the screen off. This usually means background activity is keeping the phone awake. Compare the Screen Off and Screen-off Analysis sections below, and review recent app activity if the pattern continues.</string>
 
     <!-- Info Cards - Thermal -->
     <string name="info_card_thermal_throttling_headline">Why your phone slows down when it\'s hot</string>
@@ -1135,7 +1140,7 @@
 
     <string name="learn_battery_drain_title">Understanding Battery Drain</string>
     <string name="learn_battery_drain_preview">What causes high drain, how to read drain rates, and practical tips to extend battery life.</string>
-    <string name="learn_battery_drain_body" formatted="false">## What is drain rate?\n\nDrain rate measures how fast your battery percentage is dropping, usually expressed as percent per hour (%/h). Light use might show 0.5–1%/h, while gaming or navigation can hit 10%/h or more.\n\n## Common drain causes\n\nThe screen is the biggest power consumer, followed by cellular radio (especially with weak signal), GPS, and CPU-intensive apps. Background processes like sync, location services, and push notifications also contribute.\n\n## Screen on vs. screen off\n\nComparing screen-on and screen-off drain rates helps identify problems. If your phone drains fast with the screen off, background activity is likely keeping it awake. Check the Screen Off and Sleep Analysis sections together to see whether the phone is spending enough time in low-power sleep.</string>
+    <string name="learn_battery_drain_body" formatted="false">## What is drain rate?\n\nDrain rate measures how fast your battery percentage is dropping, usually expressed as percent per hour (%/h). Light use might show 0.5–1%/h, while gaming or navigation can hit 10%/h or more.\n\n## Common drain causes\n\nThe screen is the biggest power consumer, followed by cellular radio (especially with weak signal), GPS, and CPU-intensive apps. Background processes like sync, location services, and push notifications also contribute.\n\n## Screen on vs. screen off\n\nComparing screen-on and screen-off drain rates helps identify problems. If your phone drains fast with the screen off, background activity may be involved. Check the Screen Off and Screen-off Analysis sections together to see whether Android enters device idle mode.</string>
 
     <string name="learn_battery_charging_title">Charging Myths &amp; Best Practices</string>
     <string name="learn_battery_charging_preview">Separate fact from fiction about charging habits and learn what actually extends battery life.</string>
@@ -1183,7 +1188,7 @@
     <!-- Learn Articles - General -->
     <string name="learn_health_score_title">How the Health Score Works</string>
     <string name="learn_health_score_preview">How runcheck calculates the overall health score from battery, network, thermal, and storage data.</string>
-    <string name="learn_health_score_body" formatted="false">## What it measures\n\nThe health score combines four categories: battery, network, thermal, and storage. Battery score looks at battery health flags, temperature, voltage, and health percentage when available. Network score uses signal quality and latency, and it can also use a recent speed test. Thermal score uses battery temperature, CPU temperature if available, and Android\'s thermal status. Storage score is based on overall storage usage percentage.\n\n## How it\'s calculated\n\nEach category starts near an ideal range and loses points as readings move into less healthy ranges. The overall score weights battery at 40%, network at 25%, thermal at 25%, and storage at 10%. A recent speed test can refine the network score, but the score still works without one.\n\n## Score ranges\n\n90–100: Excellent — your device is in great shape. 70–89: Good — normal wear and minor issues. 50–69: Fair — noticeable issues that could be addressed. Below 50: Poor — significant problems affecting daily use.\n\n## Improving your score\n\nThe score highlights which category needs attention. Check the matching detail screen to see which input is dragging the score down. Some factors, like long-term battery wear, may need hardware repair, while others, like signal quality or storage pressure, can often be improved immediately.</string>
+    <string name="learn_health_score_body" formatted="false">## What it measures\n\nThe health score combines four categories: battery, network, thermal, and storage. Battery score looks at battery health flags, temperature, voltage, and health percentage when available. Network score uses signal quality and latency, and it can also use a recent speed test. Thermal score uses battery temperature, CPU temperature if available, and Android\'s thermal status. Storage score is based on overall storage usage percentage.\n\n## How it\'s calculated\n\nEach category starts near an ideal range and loses points as readings move into less healthy ranges. The overall score weights battery at 40%, network at 25%, thermal at 25%, and storage at 10%. A recent speed test can refine the network score, but the score still works without one. When the device is disconnected, there is no current network signal to rate, so the network category is shown as Unrated instead of presenting the internal zero as a measured result.\n\n## Score ranges\n\n90–100: Excellent — your device is in great shape. 70–89: Good — normal wear and minor issues. 50–69: Fair — noticeable issues that could be addressed. Below 50: Poor — significant problems affecting daily use.\n\n## Improving your score\n\nThe score highlights which category needs attention. Check the matching detail screen to see which input is dragging the score down. Some factors, like long-term battery wear, may need hardware repair, while others, like signal quality or storage pressure, can often be improved immediately.</string>
 
     <string name="learn_sw_vs_hw_title">Software vs Hardware Problems</string>
     <string name="learn_sw_vs_hw_preview">How to tell if your phone\'s issues are from software (fixable) or hardware (needs repair).</string>
@@ -1191,7 +1196,7 @@
 
     <string name="learn_background_monitoring_title">Keeping Background Monitoring Active</string>
     <string name="learn_background_monitoring_preview">Why some phones stop runcheck from collecting data in the background, and how to fix it.</string>
-    <string name="learn_background_monitoring_body" formatted="false">## Why monitoring stops\n\nMany Android manufacturers add aggressive battery management that goes beyond stock Android. These systems can stop runcheck from collecting data in the background, even when Android\'s own battery optimization is disabled. If you see gaps in your history charts or a stale monitoring warning on the home screen, your phone\'s power management is likely the cause.\n\n## Samsung (One UI)\n\nSamsung puts apps into "Sleeping" and "Deep sleeping" lists that severely limit background work.\n\nTo fix: Open Settings → Battery → Background usage limits. Make sure runcheck is NOT in the Sleeping apps or Deep sleeping apps lists. You can also add it to the Never sleeping apps list to prevent Samsung from restricting it in the future. Adaptive Battery can also interfere — if problems persist, try disabling it temporarily under Settings → Battery → Adaptive Battery.\n\n## Xiaomi (MIUI / HyperOS)\n\nXiaomi has some of the most aggressive background restrictions of any manufacturer. Apps need explicit autostart permission, and battery saver can still stop them.\n\nTo fix: Open Settings → Apps → Manage apps → find runcheck → enable Autostart. Then go to Settings → Battery → runcheck → set to No restrictions. On older MIUI versions, also check Settings → Battery → Battery saver → turn off or add runcheck as an exception. Without the Autostart permission, runcheck may also not start after a reboot. If alert notifications are not appearing, also check Settings → Apps → Manage apps → runcheck → Notifications and make sure notifications are enabled — Xiaomi has a separate notification toggle that is independent of Android\'s standard notification permission.\n\n## OnePlus / Oppo / Realme (OxygenOS / ColorOS)\n\nThese brands (all part of BBK Electronics) share similar aggressive battery management. They can also reset your optimization settings after firmware updates.\n\nTo fix: Open Settings → Battery → Battery optimization → find runcheck → select Don\'t optimize. After any firmware update, check that this setting is still in place — these phones are known to reset app exemptions during OTA updates.\n\n## General Android\n\nOn any Android phone, you can check the standard battery optimization setting: Settings → Battery → Battery optimization → find runcheck → select Don\'t optimize. runcheck also shows the current status in Settings → Monitoring.\n\n## Other manufacturers\n\nIf your phone brand is not listed above, visit dontkillmyapp.com for device-specific instructions. That site maintains up-to-date guides for virtually every Android manufacturer.\n\n## After making changes\n\nOnce you have adjusted the settings, open runcheck and pull down to refresh on the home screen. The stale monitoring warning should disappear after the next background check completes. If problems persist, try restarting your phone after applying the changes.</string>
+    <string name="learn_background_monitoring_body" formatted="false">## Why monitoring stops\n\nMany Android manufacturers add aggressive battery management that goes beyond stock Android. These systems can stop runcheck from collecting data in the background, even when Android\'s own battery optimization is disabled. If you see gaps in your history charts or a stale monitoring warning on the home screen, your phone\'s power management is likely the cause.\n\n## Samsung (One UI)\n\nSamsung puts apps into "Sleeping" and "Deep sleeping" lists that severely limit background work.\n\nTo fix: Open Settings → Battery → Background usage limits. Make sure runcheck is NOT in the Sleeping apps or Deep sleeping apps lists. You can also add it to the Never sleeping apps list to prevent Samsung from restricting it in the future. Adaptive Battery can also interfere — if problems persist, try disabling it temporarily under Settings → Battery → Adaptive Battery.\n\n## Xiaomi (MIUI / HyperOS)\n\nXiaomi has some of the most aggressive background restrictions of any manufacturer. Apps need explicit autostart permission, and battery saver can still stop them.\n\nTo fix: Open Settings → Apps → Manage apps → find runcheck → enable Autostart. Then go to Settings → Battery → runcheck → set to No restrictions. On older MIUI versions, also check Settings → Battery → Battery saver → turn off or add runcheck as an exception. Without the Autostart permission, runcheck may also not start after a reboot. If alert notifications are not appearing, also check Settings → Apps → Manage apps → runcheck → Notifications and make sure notifications are enabled — Xiaomi has a separate notification toggle that is independent of Android\'s standard notification permission.\n\n## OnePlus / Oppo / Realme (OxygenOS / ColorOS)\n\nThese brands (all part of BBK Electronics) share similar aggressive battery management. They can also reset your optimization settings after firmware updates.\n\nTo fix: Open Settings → Battery → Battery optimization → find runcheck → select Don\'t optimize. After any firmware update, check that this setting is still in place — these phones are known to reset app exemptions during OTA updates.\n\n## General Android\n\nOn any Android phone, you can check the standard battery optimization setting: Settings → Battery → Battery optimization → find runcheck → select Don\'t optimize. runcheck also shows the current status in Settings → Monitoring.\n\n## Other manufacturers\n\nIf your phone brand is not listed above, visit dontkillmyapp.com for device-specific instructions. That site maintains up-to-date guides for virtually every Android manufacturer.\n\n## After making changes\n\nOnce you have adjusted the settings, open runcheck. The stale monitoring warning clears after a later successful background check; Android or your phone manufacturer may still delay that check. If it remains, review the relevant manufacturer settings again or restart your phone.</string>
 
     <!-- Settings - monitoring help link -->
     <string name="settings_monitoring_help">Monitoring not working?</string>

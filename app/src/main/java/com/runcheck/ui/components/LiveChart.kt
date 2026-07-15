@@ -1,7 +1,6 @@
 package com.runcheck.ui.components
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
@@ -35,6 +34,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
 import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.reducedMotion
@@ -56,6 +56,7 @@ import kotlinx.coroutines.launch
  * @param yMin Optional fixed minimum for Y axis. Auto-scaled from data if null.
  * @param yMax Optional fixed maximum for Y axis. Auto-scaled from data if null.
  * @param label Optional label shown top-left (e.g., "Current" or "Power").
+ * @param referenceValue Optional horizontal reference line included in the Y-axis range.
  * @param accessibilityDescription Content description for screen readers.
  */
 @Composable
@@ -69,6 +70,7 @@ fun LiveChart(
     yMin: Float? = null,
     yMax: Float? = null,
     label: String? = null,
+    referenceValue: Float? = null,
     accessibilityDescription: String? = null,
 ) {
     val visibleData =
@@ -111,6 +113,7 @@ fun LiveChart(
             maxPoints = maxPoints,
             yMin = yMin,
             yMax = yMax,
+            referenceValue = referenceValue,
             accessibilityDescription = accessibilityDescription,
             reducedMotion = reducedMotion,
             modifier =
@@ -128,6 +131,7 @@ private fun LiveChartCanvas(
     maxPoints: Int,
     yMin: Float?,
     yMax: Float?,
+    referenceValue: Float?,
     accessibilityDescription: String?,
     modifier: Modifier = Modifier,
     reducedMotion: Boolean = false,
@@ -141,8 +145,12 @@ private fun LiveChartCanvas(
     val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
 
     // Compute Y range
-    val computedMin = yMin ?: data.min()
-    val computedMax = yMax ?: data.max()
+    val computedMin =
+        referenceValue?.let { minOf(yMin ?: data.min(), it) }
+            ?: (yMin ?: data.min())
+    val computedMax =
+        referenceValue?.let { maxOf(yMax ?: data.max(), it) }
+            ?: (yMax ?: data.max())
     val range = (computedMax - computedMin).coerceAtLeast(0.1f)
     // Add 10% padding
     val paddedMin = computedMin - range * 0.1f
@@ -158,8 +166,7 @@ private fun LiveChartCanvas(
     var previousData by remember { mutableStateOf<List<Float>>(emptyList()) }
 
     // Glow pulse animation state
-    val glowPulseAlpha = remember { Animatable(0.3f) }
-    val glowPulseRadius = remember { Animatable(5f) }
+    val pointEmphasis = remember { Animatable(1f) }
 
     LaunchedEffect(data, canvasWidth, reducedMotion, maxPoints) {
         val hadVisibleChart = previousData.size >= 2
@@ -169,8 +176,7 @@ private fun LiveChartCanvas(
 
         if (reducedMotion || !hadVisibleChart || !hasVisibleChart || !dataChanged) {
             animatedScrollOffset.snapTo(0f)
-            glowPulseAlpha.snapTo(0.3f)
-            glowPulseRadius.snapTo(5f)
+            pointEmphasis.snapTo(1f)
             previousData = data.toList()
             return@LaunchedEffect
         }
@@ -180,18 +186,21 @@ private fun LiveChartCanvas(
             animatedScrollOffset.stop()
             animatedScrollOffset.snapTo(animatedScrollOffset.value + (newPointCount * stepX))
             launch {
-                animatedScrollOffset.animateTo(0f, tween(MotionTokens.SCROLL, easing = LinearEasing))
+                animatedScrollOffset.animateTo(
+                    0f,
+                    tween(MotionTokens.SCROLL, easing = MotionTokens.EaseOut),
+                )
             }
         } else {
             animatedScrollOffset.snapTo(0f)
         }
 
-        glowPulseAlpha.stop()
-        glowPulseRadius.stop()
-        glowPulseAlpha.snapTo(0.5f)
-        glowPulseRadius.snapTo(8f)
-        launch { glowPulseAlpha.animateTo(0.3f, tween(MotionTokens.MEDIUM)) }
-        glowPulseRadius.animateTo(5f, tween(MotionTokens.MEDIUM))
+        pointEmphasis.stop()
+        pointEmphasis.snapTo(0f)
+        pointEmphasis.animateTo(
+            1f,
+            tween(MotionTokens.MEDIUM, easing = MotionTokens.EaseOut),
+        )
 
         previousData = data.toList()
     }
@@ -217,6 +226,10 @@ private fun LiveChartCanvas(
         val chartBottom = size.height
         val chartWidth = chartRight - chartLeft
         val chartHeight = chartBottom - chartTop
+        val referenceY =
+            referenceValue?.let { value ->
+                chartBottom - ((value - paddedMin) / paddedRange) * chartHeight
+            }
 
         // Draw horizontal grid lines (3 lines: 25%, 50%, 75%)
         for (fraction in listOf(0.25f, 0.5f, 0.75f)) {
@@ -226,6 +239,15 @@ private fun LiveChartCanvas(
                 start = Offset(chartLeft, y),
                 end = Offset(chartRight, y),
                 strokeWidth = 0.5f.dp.toPx(),
+            )
+        }
+
+        referenceY?.let { y ->
+            drawLine(
+                color = gridColor.copy(alpha = 0.65f),
+                start = Offset(chartLeft, y),
+                end = Offset(chartRight, y),
+                strokeWidth = 1.dp.toPx(),
             )
         }
 
@@ -248,8 +270,9 @@ private fun LiveChartCanvas(
         fillPath.addPath(linePath)
         val lastX = totalOffsetX + (data.size - 1) * stepX
         val firstX = totalOffsetX
-        fillPath.lineTo(lastX, chartBottom)
-        fillPath.lineTo(firstX, chartBottom)
+        val fillBaselineY = referenceY ?: chartBottom
+        fillPath.lineTo(lastX, fillBaselineY)
+        fillPath.lineTo(firstX, fillBaselineY)
         fillPath.close()
 
         // Draw gradient fill
@@ -282,16 +305,15 @@ private fun LiveChartCanvas(
             val dotNorm = (lastValue - paddedMin) / paddedRange
             val dotY = chartBottom - dotNorm * chartHeight
 
-            // Animated pulse glow (replaces static outer glow)
+            val emphasisRemaining = 1f - pointEmphasis.value
             drawCircle(
-                color = lineColor.copy(alpha = glowPulseAlpha.value),
-                radius = glowPulseRadius.value.dp.toPx(),
+                color = lineColor.copy(alpha = 0.12f + emphasisRemaining * 0.28f),
+                radius = lerp(5f, 11f, emphasisRemaining).dp.toPx(),
                 center = Offset(dotX, dotY),
             )
-            // Inner dot
             drawCircle(
                 color = lineColor,
-                radius = 3.dp.toPx(),
+                radius = lerp(2.5f, 3f, pointEmphasis.value).dp.toPx(),
                 center = Offset(dotX, dotY),
             )
         }

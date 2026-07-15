@@ -241,7 +241,7 @@ class HealthScoreCalculator
             }
 
         private fun thermalCpuTempPenalty(cpuTempC: Float?): Int {
-            if (cpuTempC == null) return 2
+            if (cpuTempC == null) return 0
             return when {
                 cpuTempC < 50 -> 0
                 cpuTempC < 60 -> 5

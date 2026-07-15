@@ -329,6 +329,7 @@ private fun HomeContent(
 
             HealthScoreCard(
                 healthScore = state.healthScore,
+                isNetworkConnected = state.networkState.isConnected,
                 batteryTempC = state.thermalState.batteryTempC,
                 onNavigateToBattery = onNavigateToBattery,
                 onNavigateToThermal = onNavigateToThermal,
@@ -504,6 +505,7 @@ private fun MonitoringStaleWarning(onLearnWhy: () -> Unit) {
 @Composable
 private fun HealthScoreCard(
     healthScore: HealthScore,
+    isNetworkConnected: Boolean,
     batteryTempC: Float,
     onNavigateToBattery: () -> Unit,
     onNavigateToThermal: () -> Unit,
@@ -608,6 +610,7 @@ private fun HealthScoreCard(
                 batteryScore = healthScore.batteryScore,
                 thermalScore = healthScore.thermalScore,
                 networkScore = healthScore.networkScore,
+                isNetworkConnected = isNetworkConnected,
                 storageScore = healthScore.storageScore,
                 batteryLabel = batteryLabel,
                 thermalLabel = thermalLabel,
@@ -634,8 +637,14 @@ private fun HealthScoreCard(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
             HealthBreakdownRow(
                 label = networkLabel,
-                value = formatPercent(healthScore.networkScore),
+                value =
+                    if (isNetworkConnected) {
+                        formatPercent(healthScore.networkScore)
+                    } else {
+                        stringResource(R.string.score_unrated)
+                    },
                 status = HealthScore.statusFromScore(healthScore.networkScore),
+                isRated = isNetworkConnected,
                 onClick = onNavigateToNetwork,
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
@@ -742,8 +751,14 @@ private fun HealthBreakdownRow(
     value: String,
     status: HealthStatus,
     onClick: () -> Unit,
+    isRated: Boolean = true,
 ) {
-    val statusText = healthStatusLabel(status)
+    val statusText =
+        if (isRated) {
+            healthStatusLabel(status)
+        } else {
+            stringResource(R.string.score_unrated)
+        }
     val clickLabel = label
     Row(
         modifier =
@@ -757,7 +772,7 @@ private fun HealthBreakdownRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         StatusDot(
-            color = statusColor(status),
+            color = if (isRated) statusColor(status) else MaterialTheme.statusColors.unavailable,
             modifier = Modifier.padding(end = MaterialTheme.spacing.sm),
         )
         Text(
@@ -953,6 +968,7 @@ private fun HealthCategoryBar(
     batteryScore: Int,
     thermalScore: Int,
     networkScore: Int,
+    isNetworkConnected: Boolean,
     storageScore: Int,
     batteryLabel: String,
     thermalLabel: String,
@@ -965,7 +981,12 @@ private fun HealthCategoryBar(
         listOf(
             batteryLabel to statusColorFromScore(batteryScore, statusColors),
             thermalLabel to statusColorFromScore(thermalScore, statusColors),
-            networkLabel to statusColorFromScore(networkScore, statusColors),
+            networkLabel to
+                if (isNetworkConnected) {
+                    statusColorFromScore(networkScore, statusColors)
+                } else {
+                    statusColors.unavailable
+                },
             storageLabel to statusColorFromScore(storageScore, statusColors),
         )
 

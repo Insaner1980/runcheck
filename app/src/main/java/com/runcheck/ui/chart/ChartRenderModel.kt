@@ -6,6 +6,7 @@ import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.model.ThermalReading
+import com.runcheck.ui.common.convertTemperature
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.formatLocalizedDateTime
 import com.runcheck.ui.components.ChartXLabel
@@ -160,12 +161,7 @@ fun buildThermalHistoryChartModel(
             }.downsamplePairs(maxPoints)
     val chartData = chartPoints.map { it.second }
     val chartTimestamps = chartPoints.map { it.first }
-    val displayData =
-        if (temperatureUnit == TemperatureUnit.FAHRENHEIT) {
-            chartData.map { it * 9f / 5f + 32f }
-        } else {
-            chartData
-        }
+    val displayData = chartData.map { convertTemperature(it, temperatureUnit).toFloat() }
     val unit = if (temperatureUnit == TemperatureUnit.CELSIUS) " °C" else " °F"
     val min = displayData.minOrNull()
     val max = displayData.maxOrNull()

@@ -15,29 +15,27 @@ class DeviceCapabilityManagerTest {
     }
 
     @Test
-    fun `inferUnit returns MILLIAMPS when all readings are below threshold`() {
+    fun `inferUnit returns MICROAMPS when all readings are below former threshold`() {
         val readings = listOf(500, -300, 1000)
-        assertEquals(CurrentUnit.MILLIAMPS, DeviceCapabilityManager.inferUnit(readings))
+        assertEquals(CurrentUnit.MICROAMPS, DeviceCapabilityManager.inferUnit(readings))
     }
 
     @Test
-    fun `inferUnit returns MILLIAMPS for readings exactly at threshold`() {
-        // Threshold is 25000; values at exactly 25000 are not above it
-        val readings = listOf(25_000, -5000)
-        assertEquals(CurrentUnit.MILLIAMPS, DeviceCapabilityManager.inferUnit(readings))
+    fun `inferUnit returns MICROAMPS for readings at former threshold`() {
+        val readings = listOf(25_000, -25_000)
+        assertEquals(CurrentUnit.MICROAMPS, DeviceCapabilityManager.inferUnit(readings))
     }
 
     @Test
-    fun `inferUnit returns MICROAMPS when one reading just exceeds threshold`() {
+    fun `inferUnit returns MICROAMPS when one reading exceeds former threshold`() {
         val readings = listOf(25_001, -5000)
         assertEquals(CurrentUnit.MICROAMPS, DeviceCapabilityManager.inferUnit(readings))
     }
 
     @Test
-    fun `inferUnit returns MILLIAMPS for 120W fast charging in mA`() {
-        // 120W at 10V = 12A = 12000 mA — must not be misclassified as µA
+    fun `inferUnit returns MICROAMPS for high current readings`() {
         val readings = listOf(12_000, 11_500, 12_200)
-        assertEquals(CurrentUnit.MILLIAMPS, DeviceCapabilityManager.inferUnit(readings))
+        assertEquals(CurrentUnit.MICROAMPS, DeviceCapabilityManager.inferUnit(readings))
     }
 
     @Test
@@ -48,8 +46,8 @@ class DeviceCapabilityManagerTest {
     }
 
     @Test
-    fun `inferUnit returns MILLIAMPS for empty readings`() {
-        assertEquals(CurrentUnit.MILLIAMPS, DeviceCapabilityManager.inferUnit(emptyList()))
+    fun `inferUnit returns MICROAMPS for empty readings`() {
+        assertEquals(CurrentUnit.MICROAMPS, DeviceCapabilityManager.inferUnit(emptyList()))
     }
 
     @Test
@@ -60,9 +58,39 @@ class DeviceCapabilityManagerTest {
     }
 
     @Test
-    fun `inferUnit returns MILLIAMPS for all-zero readings`() {
+    fun `inferUnit returns MICROAMPS for all-zero readings`() {
         val readings = listOf(0, 0, 0)
-        assertEquals(CurrentUnit.MILLIAMPS, DeviceCapabilityManager.inferUnit(readings))
+        assertEquals(CurrentUnit.MICROAMPS, DeviceCapabilityManager.inferUnit(readings))
+    }
+
+    // -- current reliability tests --
+
+    @Test
+    fun `steady plausible microamp current is reliable`() {
+        assertEquals(
+            true,
+            DeviceCapabilityManager.isCurrentNowReliable(listOf(500_000, 500_000, 500_000)),
+        )
+    }
+
+    @Test
+    fun `plausibility is evaluated after microamp normalization`() {
+        assertEquals(
+            true,
+            DeviceCapabilityManager.isCurrentNowReliable(listOf(10_000_000, 10_000_000, 10_000_000)),
+        )
+        assertEquals(
+            false,
+            DeviceCapabilityManager.isCurrentNowReliable(listOf(10_001_000, 10_001_000, 10_001_000)),
+        )
+    }
+
+    @Test
+    fun `small negative microamp readings are normalized before plausibility evaluation`() {
+        assertEquals(
+            true,
+            DeviceCapabilityManager.isCurrentNowReliable(listOf(-10_000, -9_000, -11_000)),
+        )
     }
 
     // -- inferSignConvention tests --

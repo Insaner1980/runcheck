@@ -21,4 +21,7 @@ data class NetworkState(
     val mtuBytes: Int? = null,
     val wifiBssid: String? = null,
     val wifiStandard: String? = null,
-)
+) {
+    val isConnected: Boolean
+        get() = connectionType != ConnectionType.NONE
+}

@@ -79,6 +79,7 @@ class ThermalViewModel
 
         fun startObserving() {
             if (loadJob?.isActive == true) return
+            resetSessionMeasurements()
             loadThermalData()
             loadHistory()
         }
@@ -98,6 +99,22 @@ class ThermalViewModel
         fun dismissInfoCard(id: String) {
             viewModelScope.launch {
                 manageInfoCardDismissals.dismissCard(id)
+            }
+        }
+
+        private fun resetSessionMeasurements() {
+            sessionMinTemp = null
+            sessionMaxTemp = null
+            liveTempC.clear()
+            liveHeadroom.clear()
+            lastObservedThermalState = null
+            _uiState.update { current ->
+                (current as? ThermalUiState.Success)?.copy(
+                    sessionMinTemp = null,
+                    sessionMaxTemp = null,
+                    liveTempC = emptyList(),
+                    liveHeadroom = emptyList(),
+                ) ?: current
             }
         }
 

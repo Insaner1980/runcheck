@@ -318,15 +318,10 @@ private fun SpeedTestHero(
     val reducedMotion = MaterialTheme.reducedMotion
     val pulseScale: Float
     val pulseAlpha: Float
-    val rotation: Float
-    if (reducedMotion) {
-        pulseScale = 1f
-        pulseAlpha = 0.12f
-        rotation = 0f
-    } else {
-        val infiniteTransition = rememberInfiniteTransition(label = "speed_test_hero")
+    if (!reducedMotion && state.phase == SpeedTestPhase.Idle) {
+        val idleTransition = rememberInfiniteTransition(label = "speed_test_idle")
         pulseScale =
-            infiniteTransition
+            idleTransition
                 .animateFloat(
                     initialValue = 0.96f,
                     targetValue = 1.04f,
@@ -338,7 +333,7 @@ private fun SpeedTestHero(
                     label = "speed_test_pulse_scale",
                 ).value
         pulseAlpha =
-            infiniteTransition
+            idleTransition
                 .animateFloat(
                     initialValue = 0.12f,
                     targetValue = 0.26f,
@@ -349,8 +344,15 @@ private fun SpeedTestHero(
                         ),
                     label = "speed_test_pulse_alpha",
                 ).value
-        rotation =
-            infiniteTransition
+    } else {
+        pulseScale = 1f
+        pulseAlpha = 0.12f
+    }
+
+    val rotation =
+        if (!reducedMotion && state.phase == SpeedTestPhase.Ping) {
+            val pingTransition = rememberInfiniteTransition(label = "speed_test_ping")
+            pingTransition
                 .animateFloat(
                     initialValue = 0f,
                     targetValue = 360f,
@@ -360,7 +362,9 @@ private fun SpeedTestHero(
                         ),
                     label = "speed_test_rotation",
                 ).value
-    }
+        } else {
+            0f
+        }
 
     val accent = MaterialTheme.colorScheme.primary
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface

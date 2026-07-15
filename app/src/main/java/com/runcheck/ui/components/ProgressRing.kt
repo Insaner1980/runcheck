@@ -1,6 +1,5 @@
 package com.runcheck.ui.components
 
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -42,7 +41,7 @@ fun ProgressRing(
             if (isReducedMotion) {
                 tween(durationMillis = 0)
             } else {
-                tween(durationMillis = animationDuration, easing = FastOutSlowInEasing)
+                tween(durationMillis = animationDuration, easing = MotionTokens.EaseOut)
             },
         label = "progressRing",
     )

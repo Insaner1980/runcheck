@@ -9,11 +9,14 @@ interface SpeedTestRepository {
 
     suspend fun saveResult(result: SpeedTestResult)
 
+    suspend fun saveResultAndTrim(
+        result: SpeedTestResult,
+        keepCount: Int,
+    )
+
     fun getLatestResult(): Flow<SpeedTestResult?>
 
     fun getRecentResults(limit: Int): Flow<List<SpeedTestResult>>
-
-    suspend fun trimResults(keepCount: Int)
 
     suspend fun deleteOlderThan(cutoff: Long)
 

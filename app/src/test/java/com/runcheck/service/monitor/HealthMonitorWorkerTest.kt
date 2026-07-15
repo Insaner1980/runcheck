@@ -105,13 +105,50 @@ class HealthMonitorWorkerTest {
             coVerify(exactly = 0) { storageRepository.saveReading(any()) }
         }
 
+    @Test
+    fun `doWork persists successful readings when thermal collection fails`() =
+        runTest {
+            val worker =
+                createWorker(
+                    thermalStateFlow = flow { error("thermal failed") },
+                )
+
+            val result = worker.doWork()
+
+            assertEquals(ListenableWorker.Result.retry(), result)
+            coVerify(exactly = 1) { batteryRepository.saveReading(sampleBatteryState) }
+            coVerify(exactly = 1) { networkRepository.saveReading(any()) }
+            coVerify(exactly = 0) { thermalRepository.saveReading(any()) }
+            coVerify(exactly = 1) { storageRepository.saveReading(sampleStorageState) }
+            coVerify(exactly = 0) { monitoringAlertStateStore.update(any(), any()) }
+        }
+
+    @Test
+    fun `doWork stops retrying a persistently broken sensor`() =
+        runTest {
+            val worker =
+                createWorker(
+                    runAttemptCount = 3,
+                    thermalStateFlow = flow { error("thermal failed") },
+                )
+
+            val result = worker.doWork()
+
+            assertEquals(ListenableWorker.Result.success(), result)
+            coVerify(exactly = 1) { batteryRepository.saveReading(sampleBatteryState) }
+            coVerify(exactly = 1) { storageRepository.saveReading(sampleStorageState) }
+            coVerify(exactly = 0) { monitoringStatusRepository.setLastWorkerHeartbeatAt(any()) }
+        }
+
     private fun createWorker(
+        runAttemptCount: Int = 0,
         preferencesFlow: Flow<UserPreferences> = flowOf(UserPreferences()),
         batteryStateFlow: Flow<BatteryState> = flowOf(sampleBatteryState),
         networkStateFlow: Flow<NetworkState> = flowOf(sampleNetworkState),
         thermalStateFlow: Flow<ThermalState> = flowOf(sampleThermalState),
         storageStateFlow: Flow<StorageState> = flowOf(sampleStorageState),
     ): HealthMonitorWorker {
+        every { workerParameters.runAttemptCount } returns runAttemptCount
         every { userPreferencesRepository.getPreferences() } returns preferencesFlow
         every { batteryRepository.getBatteryState() } returns batteryStateFlow
         every { networkRepository.getNetworkState() } returns networkStateFlow

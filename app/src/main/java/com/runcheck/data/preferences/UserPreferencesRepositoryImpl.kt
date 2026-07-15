@@ -51,7 +51,10 @@ class UserPreferencesRepositoryImpl
                 val stored = prefs[KEY_DISMISSED_INFO_CARDS] ?: emptySet()
                 val normalized = normalizeDismissedCardIds(stored)
                 if (normalized != stored) {
-                    context.dataStore.edit { it[KEY_DISMISSED_INFO_CARDS] = normalized }
+                    context.dataStore.edit { currentPrefs ->
+                        val current = currentPrefs[KEY_DISMISSED_INFO_CARDS] ?: emptySet()
+                        currentPrefs[KEY_DISMISSED_INFO_CARDS] = normalizeDismissedCardIds(current)
+                    }
                 }
                 emit(normalized)
             }

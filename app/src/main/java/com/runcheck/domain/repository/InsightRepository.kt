@@ -17,10 +17,8 @@ interface InsightRepository {
 
     suspend fun clearAll()
 
-    suspend fun replaceRuleResults(
-        ruleId: String,
-        candidates: List<InsightCandidate>,
+    suspend fun replaceGenerationResults(
+        candidatesByRule: Map<String, List<InsightCandidate>>,
+        now: Long,
     )
-
-    suspend fun deleteExpired(now: Long)
 }

@@ -59,7 +59,7 @@ fun ConfidenceBadge(
             Confidence.UNAVAILABLE -> stringResource(R.string.confidence_unavailable)
         }
 
-    var targetScale by remember { mutableFloatStateOf(0f) }
+    var targetScale by remember { mutableFloatStateOf(if (reducedMotion) 1f else 0.92f) }
     LaunchedEffect(Unit) { targetScale = 1f }
 
     val animatedScale by animateFloatAsState(
@@ -69,7 +69,7 @@ fun ConfidenceBadge(
                 snap()
             } else {
                 spring(
-                    dampingRatio = 0.6f,
+                    dampingRatio = 0.8f,
                     stiffness = Spring.StiffnessMedium,
                 )
             },

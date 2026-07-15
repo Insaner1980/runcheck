@@ -14,6 +14,11 @@ import javax.inject.Inject
 
 private const val LATENCY_INTERVAL_MS = 30_000L
 
+private data class TypedLatency(
+    val connectionType: ConnectionType,
+    val latencyMs: Int?,
+)
+
 class GetMeasuredNetworkStateUseCase
     @Inject
     constructor(
@@ -31,8 +36,8 @@ class GetMeasuredNetworkStateUseCase
                     .distinctUntilChanged()
                     .flatMapLatest { connectionType ->
                         flow {
+                            emit(TypedLatency(connectionType, null))
                             if (connectionType == ConnectionType.NONE) {
-                                emit(null)
                                 return@flow
                             }
                             // Measure immediately, then repeat periodically
@@ -43,13 +48,14 @@ class GetMeasuredNetworkStateUseCase
                                     } catch (_: Exception) {
                                         null
                                     }
-                                emit(latency)
+                                emit(TypedLatency(connectionType, latency))
                                 kotlinx.coroutines.delay(LATENCY_INTERVAL_MS)
                             }
                         }
                     }
 
-            return combine(networkStateFlow, latencyFlow) { state, latency ->
+            return combine(networkStateFlow, latencyFlow) { state, typedLatency ->
+                val latency = typedLatency.latencyMs.takeIf { typedLatency.connectionType == state.connectionType }
                 state.copy(latencyMs = latency)
             }
         }

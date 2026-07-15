@@ -27,6 +27,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.CoroutineContext
 
+@Suppress("LargeClass") // A single MediaStore boundary shares the resolver and API-level guards.
 @Singleton
 class MediaStoreScanner
     @Inject
@@ -664,7 +665,10 @@ class MediaStoreScanner
             category: MediaCategory,
         ): List<Uri> =
             when (query.source) {
-                CleanupScanSource.LARGE_FILES -> listOfNotNull(largeFileCollectionFor(category)?.uri)
+                CleanupScanSource.LARGE_FILES -> {
+                    listOfNotNull(largeFileCollectionFor(category)?.uri)
+                }
+
                 CleanupScanSource.OLD_DOWNLOADS -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         listOf(MediaStore.Downloads.EXTERNAL_CONTENT_URI)
@@ -673,7 +677,9 @@ class MediaStoreScanner
                     }
                 }
 
-                CleanupScanSource.APK_FILES -> apkCollections()
+                CleanupScanSource.APK_FILES -> {
+                    apkCollections()
+                }
             }
 
         private fun List<CleanupAggregateSummary>.toCleanupSummary(): CleanupSummary =

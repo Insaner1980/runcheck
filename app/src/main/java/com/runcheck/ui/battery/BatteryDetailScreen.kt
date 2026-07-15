@@ -662,6 +662,26 @@ private fun BatteryChargingSection( // NOSONAR
             ConfidenceBadge(confidence = battery.currentMa.confidence)
         }
 
+        if (battery.currentMa.confidence != Confidence.UNAVAILABLE &&
+            state.liveCurrentMa.size >= 2
+        ) {
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            LiveChart(
+                data = state.liveCurrentMa,
+                currentValueLabel =
+                    stringResource(
+                        R.string.value_milliamps_int,
+                        battery.currentMa.value,
+                    ),
+                label = stringResource(R.string.battery_live_current),
+                lineColor = MaterialTheme.colorScheme.primary,
+                referenceValue = 0f,
+                accessibilityDescription =
+                    stringResource(R.string.a11y_battery_live_current_chart),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
         chargingSessionSummary?.let { summary ->
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
             CardSectionTitle(text = stringResource(R.string.battery_session_title))

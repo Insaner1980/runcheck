@@ -222,6 +222,8 @@ private class FakeThrottlingRepository : ThrottlingRepository {
 
     override suspend fun insert(event: ThrottlingEvent): Long = 0L
 
+    override suspend fun getOpenEvent(): ThrottlingEvent? = null
+
     override suspend fun updateSnapshot(
         id: Long,
         thermalStatus: String,

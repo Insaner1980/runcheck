@@ -17,6 +17,7 @@ import com.runcheck.ui.common.UiText
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -86,6 +87,38 @@ class ThermalViewModelTest {
         }
 
     @Test
+    fun `screen re-entry starts a new thermal session from its first emission`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val thermalFlow = MutableStateFlow(thermalState(tempC = 34f, headroom = 0.6f))
+            every { getThermalState() } returns thermalFlow
+            viewModel = createViewModel()
+
+            try {
+                viewModel.startObserving()
+                advanceThermalSample()
+                thermalFlow.value = thermalState(tempC = 38f, headroom = 0.4f)
+                advanceThermalSample()
+                viewModel.stopObserving()
+
+                viewModel.startObserving()
+                val resetState = viewModel.uiState.value as ThermalUiState.Success
+                assertEquals(null, resetState.sessionMinTemp)
+                assertEquals(null, resetState.sessionMaxTemp)
+                assertTrue(resetState.liveTempC.isEmpty())
+                assertTrue(resetState.liveHeadroom.isEmpty())
+                advanceThermalSample()
+
+                val state = viewModel.uiState.value as ThermalUiState.Success
+                assertEquals(38f, state.sessionMinTemp ?: 0f, 0.01f)
+                assertEquals(38f, state.sessionMaxTemp ?: 0f, 0.01f)
+                assertEquals(listOf(38f), state.liveTempC)
+                assertEquals(listOf(0.4f), state.liveHeadroom)
+            } finally {
+                viewModel.stopObserving()
+            }
+        }
+
+    @Test
     fun `history period selection persists and reloads history`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val thermalFlow = MutableStateFlow(thermalState(tempC = 35f))
@@ -124,6 +157,29 @@ class ThermalViewModelTest {
             } finally {
                 viewModel.stopObserving()
             }
+        }
+
+    @Test
+    fun `stopObserving cancels the thermal state collection`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            var collectionCancelled = false
+            every { getThermalState() } returns
+                flow {
+                    try {
+                        emit(thermalState(tempC = 34f, headroom = 0.6f))
+                        awaitCancellation()
+                    } finally {
+                        collectionCancelled = true
+                    }
+                }
+            viewModel = createViewModel()
+
+            viewModel.startObserving()
+            advanceThermalSample()
+            viewModel.stopObserving()
+            runCurrent()
+
+            assertTrue(collectionCancelled)
         }
 
     private fun createViewModel(savedStateHandle: SavedStateHandle = SavedStateHandle()): ThermalViewModel =
