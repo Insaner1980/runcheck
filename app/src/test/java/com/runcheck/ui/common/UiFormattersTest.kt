@@ -1,6 +1,7 @@
 package com.runcheck.ui.common
 
 import com.runcheck.R
+import com.runcheck.domain.model.HealthStatus
 import com.runcheck.domain.model.TemperatureUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -9,6 +10,14 @@ import org.junit.Test
 import java.util.Locale
 
 class UiFormattersTest {
+    @Test
+    fun `health status labels map from the shared status enum`() {
+        assertEquals(R.string.status_healthy, healthStatusLabelRes(HealthStatus.HEALTHY))
+        assertEquals(R.string.status_fair, healthStatusLabelRes(HealthStatus.FAIR))
+        assertEquals(R.string.status_poor, healthStatusLabelRes(HealthStatus.POOR))
+        assertEquals(R.string.status_critical, healthStatusLabelRes(HealthStatus.CRITICAL))
+    }
+
     @Test
     fun `format decimal uses app English locale when device locale differs`() {
         val originalLocale = Locale.getDefault()

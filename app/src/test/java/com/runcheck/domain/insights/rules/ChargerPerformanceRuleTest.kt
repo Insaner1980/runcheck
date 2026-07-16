@@ -160,6 +160,52 @@ class ChargerPerformanceRuleTest {
             assertTrue(insights.isEmpty())
         }
 
+    @Test
+    fun `returns empty when mixed charging modes make the observed power ranges overlap`() =
+        runTest {
+            val dayMs = 24L * 60L * 60L * 1000L
+            val now = 60L * dayMs
+            val chargers =
+                listOf(
+                    ChargerProfile(id = 1L, name = "Mixed Mode", created = now - 30L * dayMs),
+                    ChargerProfile(id = 2L, name = "Stable Charger", created = now - 25L * dayMs),
+                )
+            val sessions =
+                listOf(
+                    session(1L, now - 12L * dayMs, 40_000),
+                    session(1L, now - 8L * dayMs, 10_000),
+                    session(2L, now - 6L * dayMs, 20_000),
+                    session(2L, now - 2L * dayMs, 20_000),
+                )
+
+            val rule = ChargerPerformanceRule(FakeChargerRepository(chargers, sessions))
+
+            assertTrue(rule.evaluate(now).isEmpty())
+        }
+
+    @Test
+    fun `ignores non-positive power samples instead of dividing by zero`() =
+        runTest {
+            val dayMs = 24L * 60L * 60L * 1000L
+            val now = 60L * dayMs
+            val chargers =
+                listOf(
+                    ChargerProfile(id = 1L, name = "Valid Charger", created = now - 30L * dayMs),
+                    ChargerProfile(id = 2L, name = "Invalid Samples", created = now - 25L * dayMs),
+                )
+            val sessions =
+                listOf(
+                    session(1L, now - 12L * dayMs, 30_000),
+                    session(1L, now - 8L * dayMs, 30_000),
+                    session(2L, now - 6L * dayMs, 0),
+                    session(2L, now - 2L * dayMs, -1_000),
+                )
+
+            val rule = ChargerPerformanceRule(FakeChargerRepository(chargers, sessions))
+
+            assertTrue(rule.evaluate(now).isEmpty())
+        }
+
     private fun session(
         chargerId: Long,
         endTime: Long,

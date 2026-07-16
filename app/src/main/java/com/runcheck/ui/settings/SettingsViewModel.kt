@@ -86,6 +86,18 @@ class SettingsViewModel
             }
             fetchProPriceIfNeeded(force = true)
             viewModelScope.launch {
+                val pendingStatus = UiText.Resource(R.string.billing_purchase_pending)
+                proPurchaseManager.hasPendingPurchase.collect { hasPendingPurchase ->
+                    _uiState.update { current ->
+                        when {
+                            hasPendingPurchase -> current.copy(billingStatus = pendingStatus)
+                            current.billingStatus == pendingStatus -> current.copy(billingStatus = null)
+                            else -> current
+                        }
+                    }
+                }
+            }
+            viewModelScope.launch {
                 proPurchaseManager.purchaseEvents.collect { event ->
                     when (event) {
                         is PurchaseEvent.Pending -> {

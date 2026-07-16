@@ -7,6 +7,7 @@ data class HealthScore(
     val thermalScore: Int,
     val storageScore: Int,
     val status: HealthStatus,
+    val diagnostics: HealthScoreDiagnostics,
 ) {
     companion object {
         fun statusFromScore(score: Int): HealthStatus =
@@ -18,3 +19,45 @@ data class HealthScore(
             }
     }
 }
+
+data class HealthScoreDiagnostics(
+    val battery: BatteryScoreDiagnostics,
+    val network: NetworkScoreDiagnostics,
+    val thermal: ThermalScoreDiagnostics,
+    val storage: StorageScoreDiagnostics,
+)
+
+data class BatteryScoreDiagnostics(
+    val healthPenalty: Int,
+    val temperaturePenalty: Int,
+    val voltagePenalty: Int,
+    val capacityPenalty: Int,
+)
+
+data class NetworkScoreDiagnostics(
+    val mode: NetworkScoreMode,
+    val signalScore: Int,
+    val liveLatencyPenalty: Int?,
+    val speedTestPingScore: Int?,
+    val speedTestDownloadScore: Int?,
+    val speedTestJitterScore: Int?,
+    val speedTestAgeMillis: Long?,
+    val speedTestWeightPercent: Int,
+)
+
+enum class NetworkScoreMode {
+    DISCONNECTED,
+    LIVE,
+    SPEED_TEST,
+    FADING_SPEED_TEST,
+}
+
+data class ThermalScoreDiagnostics(
+    val batteryTemperaturePenalty: Int,
+    val cpuTemperaturePenalty: Int,
+    val statusPenalty: Int,
+)
+
+data class StorageScoreDiagnostics(
+    val usagePenalty: Int,
+)

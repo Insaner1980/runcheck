@@ -260,7 +260,7 @@ class InsightEngine @Inject constructor(
 **Why this rule first:** It uses data from one table only (battery readings). No cross-table joins, no complex correlation logic. Simple average comparison that validates the entire architecture end-to-end.
 
 **Logic:**
-1. Query average drain rate (%/h) during screen-on time for the current 7-day window.
+1. Query average drain rate (%/h) across observed discharging intervals for the current 7-day window.
 2. Query the same for the previous 7-day window.
 3. If current drain is more than 15% higher than previous AND both windows have at least 20 readings each, generate an insight.
 4. Confidence = `min(1.0f, min(currentCount, previousCount) / 40f)` — scales with data availability.

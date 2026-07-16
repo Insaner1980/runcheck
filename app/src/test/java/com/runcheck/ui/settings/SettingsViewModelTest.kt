@@ -27,6 +27,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -192,6 +193,39 @@ class SettingsViewModelTest {
         }
 
     @Test
+    fun `refresh purchase status clearly reports when no purchase is found`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val viewModel = createViewModel()
+            runCurrent()
+
+            viewModel.refreshPurchaseStatus()
+            runCurrent()
+
+            assertEquals(
+                UiText.Resource(R.string.settings_restore_not_found),
+                viewModel.uiState.value.billingStatus,
+            )
+        }
+
+    @Test
+    fun `refresh purchase status reports a transient billing outage`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            coEvery {
+                proPurchaseManager.refreshPurchaseStatus()
+            } returns ProPurchaseRefreshResult.UNAVAILABLE
+            val viewModel = createViewModel()
+            runCurrent()
+
+            viewModel.refreshPurchaseStatus()
+            runCurrent()
+
+            assertEquals(
+                UiText.Resource(R.string.settings_restore_unavailable),
+                viewModel.uiState.value.billingStatus,
+            )
+        }
+
+    @Test
     fun `export data blocks non pro users before creating export files`() =
         runTest(mainDispatcherRule.testDispatcher) {
             every { isProUser() } returns false
@@ -267,6 +301,26 @@ class SettingsViewModelTest {
             )
 
             purchaseEvents.emit(PurchaseEvent.Canceled)
+            runCurrent()
+            assertEquals(null, viewModel.uiState.value.billingStatus)
+        }
+
+    @Test
+    fun `pending billing status follows tracked purchase state and clears after cancellation`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val hasPendingPurchase = MutableStateFlow(false)
+            every { proPurchaseManager.hasPendingPurchase } returns hasPendingPurchase
+            val viewModel = createViewModel()
+            runCurrent()
+
+            hasPendingPurchase.value = true
+            runCurrent()
+            assertEquals(
+                UiText.Resource(R.string.billing_purchase_pending),
+                viewModel.uiState.value.billingStatus,
+            )
+
+            hasPendingPurchase.value = false
             runCurrent()
             assertEquals(null, viewModel.uiState.value.billingStatus)
         }

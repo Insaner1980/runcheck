@@ -433,17 +433,6 @@ private val appIconCache =
             key: String,
             value: Bitmap,
         ): Int = value.byteCount / 1024
-
-        override fun entryRemoved(
-            evicted: Boolean,
-            key: String,
-            oldValue: Bitmap,
-            newValue: Bitmap?,
-        ) {
-            if (evicted && oldValue !== newValue && !oldValue.isRecycled) {
-                oldValue.recycle()
-            }
-        }
     }
 
 private const val MAX_APP_ICON_CACHE_KB = 8 * 1024

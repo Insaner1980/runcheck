@@ -51,6 +51,7 @@ class BatteryWidget : GlanceAppWidget() {
             when (val state = widgetState) {
                 WidgetRenderState.Empty -> WidgetEmptyContent(context)
                 WidgetRenderState.Locked -> WidgetLockedContent(context, R.string.widget_battery_name)
+                WidgetRenderState.Stale -> WidgetStaleContent(context)
                 is WidgetRenderState.Content -> BatteryWidgetContent(context, state.snapshot)
             }
         }

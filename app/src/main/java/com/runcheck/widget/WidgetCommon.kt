@@ -89,3 +89,32 @@ internal fun WidgetEmptyContent(context: Context) {
         }
     }
 }
+
+@Composable
+internal fun WidgetStaleContent(context: Context) {
+    GlanceTheme {
+        Column(
+            modifier = widgetContainerModifier(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = context.getString(R.string.widget_stale_data_title),
+                style =
+                    TextStyle(
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = GlanceTheme.colors.onSurface,
+                    ),
+            )
+            Text(
+                text = context.getString(R.string.widget_stale_data_message),
+                style =
+                    TextStyle(
+                        fontSize = 12.sp,
+                        color = GlanceTheme.colors.onSurfaceVariant,
+                    ),
+            )
+        }
+    }
+}

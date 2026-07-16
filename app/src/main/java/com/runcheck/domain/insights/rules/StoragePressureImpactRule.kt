@@ -7,6 +7,7 @@ import com.runcheck.domain.insights.model.InsightCandidate
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.insights.model.InsightType
+import com.runcheck.domain.model.HealthScore
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.repository.StorageRepository
 import com.runcheck.domain.scoring.HealthScoreCalculator
@@ -54,7 +55,7 @@ class StoragePressureImpactRule
         ): InsightCandidate =
             InsightCandidate(
                 ruleId = ruleId,
-                dedupeKey = "storage_score:${storageScore.toScoreBucket()}",
+                dedupeKey = "storage_score:${HealthScore.statusFromScore(storageScore).name.lowercase()}",
                 type = InsightType.STORAGE,
                 priority = resolvePriority(storageScore, daysUntilFull),
                 confidence = (readingCount / CONFIDENCE_SAMPLE_COUNT.toFloat()).coerceIn(0f, 1f),
@@ -77,13 +78,6 @@ class StoragePressureImpactRule
                     daysUntilFull <= HIGH_PRIORITY_DAYS -> InsightPriority.HIGH
 
                 else -> InsightPriority.MEDIUM
-            }
-
-        private fun Int.toScoreBucket(): String =
-            when {
-                this <= 20 -> "critical"
-                this <= 45 -> "poor"
-                else -> "fair"
             }
 
         companion object {

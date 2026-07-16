@@ -51,7 +51,6 @@
 - Implemented rules:
   - `BatteryDegradationTrendRule`
   - `BaselineAnomalyRule`
-  - `AppBatteryImpactRule`
   - `ChargerPerformanceRule`
   - `StoragePressureProjectionRule`
   - `RecurringThermalThrottlingRule`
@@ -61,6 +60,8 @@
   - `HeatAcceleratedBatteryWearRule`
   - `StoragePressureImpactRule`
   - `ThermalPatternDetectionRule`
+
+`AppBatteryImpactRule` is intentionally inactive because ordinary third-party apps cannot access reliable per-app battery statistics, and foreground duration alone is not a defensible mAh attribution signal.
 - Insights are generally available, but insights targeting Pro-only destinations are filtered for free users:
   - `APP_USAGE`
   - `CHARGER`

@@ -238,33 +238,35 @@ internal fun StorageDetailsCard(
 }
 
 @Composable
-internal fun StorageSdCardCard(storage: StorageState) {
+internal fun StorageRemovableStorageCard(storage: StorageState) {
     val context = LocalContext.current
 
     StoragePanel {
         CardSectionTitle(
             text =
                 androidx.compose.ui.res
-                    .stringResource(R.string.storage_sd_card),
+                    .stringResource(R.string.storage_removable),
         )
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-        storage.sdCardTotalBytes?.let { total ->
-            MetricRow(
-                label =
-                    androidx.compose.ui.res
-                        .stringResource(R.string.storage_total),
-                value = formatStorageSize(context, total),
-            )
-        }
-        storage.sdCardAvailableBytes?.let { available ->
-            MetricRow(
-                label =
-                    androidx.compose.ui.res
-                        .stringResource(R.string.storage_available),
-                value = formatStorageSize(context, available),
-                showDivider = false,
-            )
-        }
+        MetricRow(
+            label =
+                androidx.compose.ui.res
+                    .stringResource(R.string.storage_total),
+            value =
+                storage.removableStorageTotalBytes?.let { formatStorageSize(context, it) }
+                    ?: androidx.compose.ui.res
+                        .stringResource(R.string.fallback_unknown),
+        )
+        MetricRow(
+            label =
+                androidx.compose.ui.res
+                    .stringResource(R.string.storage_available),
+            value =
+                storage.removableStorageAvailableBytes?.let { formatStorageSize(context, it) }
+                    ?: androidx.compose.ui.res
+                        .stringResource(R.string.fallback_unknown),
+            showDivider = false,
+        )
     }
 }
 

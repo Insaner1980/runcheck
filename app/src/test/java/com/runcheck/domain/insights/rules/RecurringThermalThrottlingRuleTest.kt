@@ -95,7 +95,38 @@ class RecurringThermalThrottlingRuleTest {
 
             assertTrue(insights.isEmpty())
         }
+
+    @Test
+    fun `does not count future event toward recurrence minimum`() =
+        runTest {
+            val dayMs = 24L * 60L * 60L * 1000L
+            val now = 14L * dayMs
+            val events =
+                listOf(
+                    throttlingEvent(id = 1L, timestamp = now - 7L * dayMs),
+                    throttlingEvent(id = 2L, timestamp = now - 1L * dayMs),
+                    throttlingEvent(id = 3L, timestamp = now + 1L),
+                )
+            val rule = RecurringThermalThrottlingRule(FakeThrottlingRepository(events))
+
+            val insights = rule.evaluate(now)
+
+            assertTrue(insights.isEmpty())
+        }
 }
+
+private fun throttlingEvent(
+    id: Long,
+    timestamp: Long,
+) = ThrottlingEvent(
+    id = id,
+    timestamp = timestamp,
+    thermalStatus = "SEVERE",
+    batteryTempC = 43f,
+    cpuTempC = null,
+    foregroundApp = null,
+    durationMs = 60L * 1000L,
+)
 
 private class FakeThrottlingRepository(
     private val events: List<ThrottlingEvent>,

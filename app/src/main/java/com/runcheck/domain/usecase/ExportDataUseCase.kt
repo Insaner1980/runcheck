@@ -140,7 +140,7 @@ class ExportDataUseCase
                 for (r in readings) {
                     appendLine(
                         "${formatTimestamp(r.timestamp)},${r.totalBytes},${r.availableBytes}," +
-                            "${r.appsBytes},${r.mediaBytes}",
+                            "${r.appsBytes?.toString().orEmpty()},${r.mediaBytes}",
                     )
                 }
             }

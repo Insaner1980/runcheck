@@ -15,23 +15,25 @@ class InsightHomeRankingPolicy
         ): List<Insight> {
             if (limit <= 0 || insights.isEmpty()) return emptyList()
 
+            val effectiveLimit = minOf(limit, MAX_HOME_INSIGHTS)
+            val rankedInsights = insights.sortedWith(HOME_RANKING)
             val selected = mutableListOf<Insight>()
             val usedBuckets = mutableSetOf<String>()
 
-            for (insight in insights) {
+            for (insight in rankedInsights) {
                 val bucket = bucketFor(insight)
                 if (!usedBuckets.add(bucket)) continue
 
                 selected += insight
-                if (selected.size == limit) return selected
+                if (selected.size == effectiveLimit) return selected
             }
 
-            if (selected.size == insights.size || selected.size == limit) return selected
+            if (selected.size == rankedInsights.size || selected.size == effectiveLimit) return selected
 
-            for (insight in insights) {
+            for (insight in rankedInsights) {
                 if (insight in selected) continue
                 selected += insight
-                if (selected.size == limit) break
+                if (selected.size == effectiveLimit) break
             }
 
             return selected
@@ -42,4 +44,14 @@ class InsightHomeRankingPolicy
                 InsightTarget.NONE -> "type:${insight.type.name}"
                 else -> "target:${insight.target.name}"
             }
+
+        private companion object {
+            const val MAX_HOME_INSIGHTS = 3
+
+            val HOME_RANKING: Comparator<Insight> =
+                compareBy<Insight> { it.priority.sortOrder }
+                    .thenByDescending { it.confidence }
+                    .thenByDescending { it.generatedAt }
+                    .thenBy { it.id }
+        }
     }

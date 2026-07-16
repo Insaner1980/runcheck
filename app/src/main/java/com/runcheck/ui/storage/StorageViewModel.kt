@@ -89,7 +89,13 @@ class StorageViewModel
         fun emptyTrash() {
             viewModelScope.launch {
                 if (!isProUser()) return@launch
-                val uris = storageCleanup.getTrashedUris()
+                val uris =
+                    try {
+                        storageCleanup.getTrashedUris()
+                    } catch (_: SecurityException) {
+                        onTrashDeleteRequestFailed(UiText.Resource(R.string.cleanup_delete_permission_error))
+                        return@launch
+                    }
                 if (uris.isEmpty()) return@launch
                 _trashDeleteRequestUris.emit(uris)
             }

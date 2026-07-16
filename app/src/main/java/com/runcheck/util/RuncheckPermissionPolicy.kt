@@ -60,9 +60,8 @@ object RuncheckPermissionPolicy {
         }
 
         val hasFullAccess =
-            isGranted(Manifest.permission.READ_MEDIA_IMAGES) &&
-                isGranted(Manifest.permission.READ_MEDIA_VIDEO) &&
-                isGranted(Manifest.permission.READ_MEDIA_AUDIO)
+            isGranted(Manifest.permission.READ_MEDIA_IMAGES) ||
+                isGranted(Manifest.permission.READ_MEDIA_VIDEO)
         if (hasFullAccess) return MediaAccessState.FULL
 
         return if (isGranted(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)) {
@@ -71,6 +70,17 @@ object RuncheckPermissionPolicy {
             MediaAccessState.MISSING
         }
     }
+
+    fun shouldOpenMediaSettings(
+        permissionRequested: Boolean,
+        mediaAccessState: MediaAccessState,
+        missingPermissions: List<String>,
+        shouldShowRationale: (String) -> Boolean,
+    ): Boolean =
+        permissionRequested &&
+            mediaAccessState != MediaAccessState.PARTIAL_VISUAL &&
+            missingPermissions.isNotEmpty() &&
+            missingPermissions.none(shouldShowRationale)
 
     fun isNotificationRuntimePermissionRequired(apiLevel: Int = Build.VERSION.SDK_INT): Boolean =
         apiLevel >= Build.VERSION_CODES.TIRAMISU

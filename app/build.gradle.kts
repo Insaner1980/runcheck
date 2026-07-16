@@ -1,3 +1,4 @@
+import com.android.build.api.variant.BuildConfigField
 import org.gradle.api.configuration.BuildFeatures
 import org.gradle.api.tasks.testing.Test
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
@@ -314,12 +315,6 @@ android {
                 "SENTRY_DSN",
                 quotedBuildConfigValue(debugCredential("sentry.dsn", "RUNCHECK_SENTRY_DSN", "SENTRY_DSN")),
             )
-            val debugProProductId =
-                validatedPlayProductId(
-                    "RUNCHECK_PRO_PRODUCT_ID",
-                    providers.environmentVariable("RUNCHECK_PRO_PRODUCT_ID").getOrElse(defaultProProductId),
-                )
-            buildConfigField("String", "PRO_PRODUCT_ID", quotedBuildConfigValue(debugProProductId))
             val debugLatencyHost =
                 validatedLatencyHost(
                     "RUNCHECK_LATENCY_HOST",
@@ -398,6 +393,25 @@ android {
         // Write HTML + XML reports for CI/local review
         htmlReport = true
         xmlReport = true
+    }
+}
+
+androidComponents {
+    onVariants(selector().withBuildType("debug")) { variant ->
+        val debugProProductId =
+            BuildConfigField(
+                "String",
+                quotedBuildConfigValue(
+                    validatedPlayProductId(
+                        "RUNCHECK_PRO_PRODUCT_ID",
+                        providers
+                            .environmentVariable("RUNCHECK_PRO_PRODUCT_ID")
+                            .getOrElse(defaultProProductId),
+                    ),
+                ),
+                "Debug-only Google Play product ID override.",
+            )
+        variant.buildConfigFields?.put("PRO_PRODUCT_ID", debugProProductId)
     }
 }
 

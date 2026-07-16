@@ -60,7 +60,7 @@ class BatteryDegradationTrendRule
             return listOf(
                 InsightCandidate(
                     ruleId = ruleId,
-                    dedupeKey = "$currentWindowStart:$now",
+                    dedupeKey = "battery_degradation:${comparison.percentIncrease.toIncreaseBucket()}",
                     type = InsightType.BATTERY,
                     priority = InsightPriority.HIGH,
                     confidence = confidence,
@@ -75,6 +75,14 @@ class BatteryDegradationTrendRule
                 ),
             )
         }
+
+        private fun Int.toIncreaseBucket(): String =
+            when {
+                this >= 200 -> "200plus"
+                this >= 100 -> "100plus"
+                this >= 50 -> "50plus"
+                else -> "15plus"
+            }
 
         companion object {
             const val RULE_ID = "battery_degradation_trend"

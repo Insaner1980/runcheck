@@ -1,5 +1,6 @@
 package com.runcheck.ui.storage.cleanup
 
+import android.os.Build
 import androidx.lifecycle.SavedStateHandle
 import androidx.paging.PagingData
 import com.runcheck.R
@@ -10,6 +11,7 @@ import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.ScannedFile
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.usecase.IsProUserUseCase
+import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.MainDispatcherRule
 import com.runcheck.ui.common.UiText
@@ -17,7 +19,11 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -36,7 +42,9 @@ class CleanupViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val storageCleanup: StorageCleanupUseCase = mockk()
+    private val observeProAccess: ObserveProAccessUseCase = mockk()
     private val isProUser: IsProUserUseCase = mockk()
+    private val proAccessFlow = MutableStateFlow(true)
 
     private val testFiles =
         listOf(
@@ -85,9 +93,9 @@ class CleanupViewModelTest {
             appCount = null,
             mediaBreakdown = null,
             trashInfo = null,
-            sdCardAvailable = false,
-            sdCardTotalBytes = null,
-            sdCardAvailableBytes = null,
+            removableStorageAvailable = false,
+            removableStorageTotalBytes = null,
+            removableStorageAvailableBytes = null,
             fileSystemType = null,
             encryptionStatus = null,
             storageVolumes = 1,
@@ -97,7 +105,8 @@ class CleanupViewModelTest {
     fun setup() {
         coEvery { storageCleanup.getCurrentStorageState() } returns storageState
         coEvery { storageCleanup.findExistingUris(any()) } returns emptySet()
-        every { isProUser() } returns true
+        every { observeProAccess() } returns proAccessFlow
+        every { isProUser() } answers { proAccessFlow.value }
     }
 
     private fun createSummary(files: List<ScannedFile>): CleanupSummary {
@@ -126,9 +135,9 @@ class CleanupViewModelTest {
             val category = secondArg<MediaCategory>()
             flowOf(PagingData.from(files.filter { it.category == category }))
         }
-        coEvery { storageCleanup.getCleanupGroupUris(any(), any()) } answers {
+        coEvery { storageCleanup.getCleanupGroupFileSizes(any(), any()) } answers {
             val category = secondArg<MediaCategory>()
-            files.filter { it.category == category }.map { it.uri }.toSet()
+            files.filter { it.category == category }.associate { it.uri to it.sizeBytes }
         }
     }
 
@@ -142,14 +151,28 @@ class CleanupViewModelTest {
         return CleanupViewModel(
             savedStateHandle = savedStateHandle,
             storageCleanup = storageCleanup,
+            observeProAccess = observeProAccess,
             isProUser = isProUser,
         )
     }
+
+    private fun pendingDeleteState(files: List<ScannedFile>): Map<String, Any> =
+        mapOf(
+            "type" to "LARGE_FILES",
+            "cleanup_pending_delete_uris" to ArrayList(files.map { it.uri }),
+            "cleanup_pending_selected_groups" to arrayListOf<String>(),
+            "cleanup_pending_selected_uris" to ArrayList(files.map { it.uri }),
+            "cleanup_pending_deselected_uris" to arrayListOf<String>(),
+            "cleanup_pending_metadata_uris" to ArrayList(files.map { it.uri }),
+            "cleanup_pending_uri_categories" to ArrayList(files.map { it.category.name }),
+            "cleanup_pending_uri_sizes" to files.map { it.sizeBytes }.toLongArray(),
+        )
 
     @Test
     fun `cleanup scan returns pro locked error for non pro users`() =
         runTest(mainDispatcherRule.testDispatcher) {
             every { isProUser() } returns false
+            proAccessFlow.value = false
 
             val viewModel = createViewModel()
             advanceUntilIdle()
@@ -255,6 +278,54 @@ class CleanupViewModelTest {
         }
 
     @Test
+    fun `trial expiry revokes cleanup results without recreating view model`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+            assertTrue(viewModel.uiState.value is CleanupUiState.Results)
+
+            proAccessFlow.value = false
+            runCurrent()
+
+            assertEquals(
+                CleanupUiState.Error(UiText.Resource(R.string.pro_feature_locked_generic)),
+                viewModel.uiState.value,
+            )
+        }
+
+    @Test
+    fun `whole group selection applies to files as their pages load`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.toggleGroupSelection(MediaCategory.VIDEO)
+
+            assertTrue(viewModel.isSelected(testFiles[0]))
+            assertTrue(viewModel.isSelected(testFiles[1]))
+            val state = viewModel.uiState.value as CleanupUiState.Results
+            assertEquals(2, state.groups.first { it.category == MediaCategory.VIDEO }.selectedCount)
+        }
+
+    @Test
+    fun `filter change clears selection from the previous query`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+            viewModel.toggleSelection(testFiles[0])
+            viewModel.toggleGroupSelection(MediaCategory.IMAGE)
+
+            viewModel.setFilter(2)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as CleanupUiState.Results
+            assertEquals(0, state.selectedCount)
+            assertEquals(0L, state.selectedSize)
+            assertFalse(viewModel.isSelected(testFiles[0]))
+            assertFalse(viewModel.isSelected(testFiles[2]))
+        }
+
+    @Test
     fun `empty scan result produces Empty state`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val viewModel = createViewModel(files = emptyList())
@@ -275,6 +346,7 @@ class CleanupViewModelTest {
                 CleanupViewModel(
                     savedStateHandle = savedStateHandle,
                     storageCleanup = storageCleanup,
+                    observeProAccess = observeProAccess,
                     isProUser = isProUser,
                 )
             advanceUntilIdle()
@@ -288,12 +360,30 @@ class CleanupViewModelTest {
         }
 
     @Test
-    fun `delete success triggers re-scan`() =
+    fun `android 10 delete waits for explicit confirmation`() =
         runTest(mainDispatcherRule.testDispatcher) {
+            coEvery { storageCleanup.deleteLegacy(any()) } returns setOf(testFiles[0].uri)
             val viewModel = createViewModel()
             advanceUntilIdle()
-
             viewModel.toggleSelection(testFiles[0])
+
+            viewModel.requestDelete(apiLevel = 29)
+            advanceUntilIdle()
+
+            assertEquals(1, viewModel.legacyDeleteConfirmationCount.value)
+            coVerify(exactly = 0) { storageCleanup.deleteLegacy(any()) }
+
+            viewModel.confirmLegacyDelete()
+            advanceUntilIdle()
+
+            assertEquals(null, viewModel.legacyDeleteConfirmationCount.value)
+            coVerify(exactly = 1) { storageCleanup.deleteLegacy(listOf(testFiles[0].uri)) }
+        }
+
+    @Test
+    fun `delete success triggers re-scan`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val viewModel = createViewModel(savedStateValues = pendingDeleteState(listOf(testFiles[0])))
             advanceUntilIdle()
 
             viewModel.onDeleteConfirmed()
@@ -309,6 +399,130 @@ class CleanupViewModelTest {
             val stateAfterRescan = viewModel.uiState.value
             assertTrue(stateAfterRescan is CleanupUiState.Results)
             coVerify(atLeast = 2) { storageCleanup.getCleanupSummary(any()) }
+        }
+
+    @Test
+    fun `android delete requests are split at the platform URI limit`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val files =
+                (1..2_001).map { index ->
+                    ScannedFile(
+                        uri = "content://media/video/$index",
+                        displayName = "video-$index.mp4",
+                        sizeBytes = index.toLong(),
+                        mimeType = "video/mp4",
+                        dateModified = 0L,
+                        category = MediaCategory.VIDEO,
+                    )
+                }
+            val viewModel = createViewModel(files = files)
+            advanceUntilIdle()
+            viewModel.toggleGroupSelection(MediaCategory.VIDEO)
+
+            val firstRequest =
+                async(start = CoroutineStart.UNDISPATCHED) {
+                    viewModel.deleteRequestUris.first()
+                }
+            viewModel.requestDelete(apiLevel = Build.VERSION_CODES.R)
+            assertEquals(2_000, firstRequest.await().size)
+
+            val secondRequest =
+                async(start = CoroutineStart.UNDISPATCHED) {
+                    viewModel.deleteRequestUris.first()
+                }
+            viewModel.onDeleteConfirmed()
+            assertEquals(1, secondRequest.await().size)
+
+            viewModel.onDeleteConfirmed()
+            advanceTimeBy(200L)
+            runCurrent()
+
+            assertEquals(
+                CleanupUiState.Success(files.sumOf { it.sizeBytes }),
+                viewModel.uiState.value,
+            )
+        }
+
+    @Test
+    fun `recreated process counts only files deleted from approved request`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            coEvery { storageCleanup.findExistingUris(any()) } returns setOf(testFiles[1].uri)
+            val recreatedViewModel =
+                createViewModel(savedStateValues = pendingDeleteState(testFiles.take(2)))
+            advanceUntilIdle()
+
+            assertEquals(CleanupUiState.Deleting(2), recreatedViewModel.uiState.value)
+            recreatedViewModel.onDeleteConfirmed()
+            advanceTimeBy(200L)
+            runCurrent()
+
+            assertEquals(
+                CleanupUiState.Success(testFiles[0].sizeBytes),
+                recreatedViewModel.uiState.value,
+            )
+        }
+
+    @Test
+    fun `delete verification access failure is not counted as freed space`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            coEvery { storageCleanup.findExistingUris(any()) } throws SecurityException("revoked")
+            val recreatedViewModel =
+                createViewModel(savedStateValues = pendingDeleteState(listOf(testFiles[0])))
+            advanceUntilIdle()
+
+            recreatedViewModel.onDeleteConfirmed()
+            advanceTimeBy(200L)
+            runCurrent()
+
+            assertEquals(
+                CleanupUiState.Error(UiText.Resource(R.string.cleanup_delete_permission_error)),
+                recreatedViewModel.uiState.value,
+            )
+        }
+
+    @Test
+    fun `partial delete keeps the remaining files selected after rescan`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+            viewModel.toggleGroupSelection(MediaCategory.VIDEO)
+            viewModel.requestDelete(apiLevel = 30)
+            advanceUntilIdle()
+
+            val remainingFiles = testFiles.drop(1)
+            coEvery { storageCleanup.findExistingUris(any()) } returns setOf(testFiles[1].uri)
+            coEvery { storageCleanup.getCleanupSummary(any()) } returns createSummary(remainingFiles)
+            every { storageCleanup.getCleanupItems(any(), any()) } answers {
+                val category = secondArg<MediaCategory>()
+                flowOf(PagingData.from(remainingFiles.filter { it.category == category }))
+            }
+            coEvery { storageCleanup.getCleanupGroupFileSizes(any(), any()) } answers {
+                val category = secondArg<MediaCategory>()
+                remainingFiles.filter { it.category == category }.associate { it.uri to it.sizeBytes }
+            }
+
+            viewModel.onDeleteConfirmed()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as CleanupUiState.Results
+            assertEquals(1, state.selectedCount)
+            assertEquals(testFiles[1].sizeBytes, state.selectedSize)
+            assertTrue(viewModel.isSelected(testFiles[1]))
+        }
+
+    @Test
+    fun `recreated process restores selection when delete request is cancelled`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val recreatedViewModel =
+                createViewModel(savedStateValues = pendingDeleteState(listOf(testFiles[0])))
+            advanceUntilIdle()
+            recreatedViewModel.onDeleteCancelled()
+            advanceUntilIdle()
+
+            val state = recreatedViewModel.uiState.value as CleanupUiState.Results
+            assertEquals(1, state.selectedCount)
+            assertEquals(testFiles[0].sizeBytes, state.selectedSize)
+            assertTrue(recreatedViewModel.isSelected(testFiles[0]))
         }
 
     @Test
@@ -375,7 +589,7 @@ class CleanupViewModelTest {
             assertEquals(2, viewModel.getSelectedFilterIndex())
             coVerify {
                 storageCleanup.getCleanupSummary(
-                    match { query -> query.filterValue == 100L * 1024 * 1024 },
+                    match { query -> query.filterValue == 100L * 1_000_000 },
                 )
             }
         }

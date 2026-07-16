@@ -423,7 +423,7 @@ Trial and Pro UI handled on Home:
 - Top-level Insights summary available to all users, with the full list available from the dedicated Insights screen
 - Insight targets for Pro-only destinations such as Charger Comparison and App Usage are hidden for free users and visible for trial/Pro users
 - Monitoring stale state is derived from the last worker heartbeat and becomes stale after more than 3x the configured monitoring interval.
-- Home marks currently displayed unseen insight rows as seen through `InsightRepository.markAllSeen()`.
+- Home marks only its currently displayed unseen insight rows as seen through `InsightRepository.markSeen(ids)`.
 
 ---
 
@@ -562,9 +562,9 @@ Main sections:
 - Media permission card when needed
 - Media breakdown segmented bar
 - Cleanup tools section
-- Storage history chart with quality zones (0–70% healthy, 70–90% fair, 90–100% critical)
+- Storage history chart; used-space history is percentage-based with the UI-SPEC storage zones, while available-space history uses SI gigabytes
 - Storage detail metrics
-- Optional SD card section
+- Optional removable-storage section
 - Educational/info cards
 
 Permission behavior:
@@ -578,7 +578,8 @@ Storage-specific data behavior:
 - Aggregate app/data/cache bytes use `StorageStatsManager.queryStatsForUser(...)` and may be null without usage access or when Android denies the call.
 - App count means distinct launchable packages visible to this app through `ACTION_MAIN` + `CATEGORY_LAUNCHER`, not all installed packages on the device.
 - Encryption status comes from `DevicePolicyManager.storageEncryptionStatus`.
-- File-system type is read from `/proc/mounts` for `/data`; storage volume count uses `StorageManager.storageVolumes`.
+- File-system type is read from `/proc/mounts` for `/data`; the storage volume count includes mounted and read-only-mounted `StorageManager.storageVolumes` entries.
+- Removable storage is reported only for mounted, non-primary, non-emulated volumes. Adopted storage is therefore not mislabeled as a portable SD card, and multiple portable volumes are aggregated only when every capacity read succeeds.
 
 Cleanup tool entry points:
 
@@ -619,9 +620,13 @@ UI and data behavior:
 - Paging-backed item loading per group
 - Paging page size: 40
 - API 30+ delete flow uses system delete request / intent sender
-- Android 10 and below legacy delete path uses `StorageCleanupHelper.deleteLegacy`
+- API 30+ delete flow splits selections into system requests of at most 2,000 URIs and verifies the final MediaStore state before reporting freed bytes
+- Android 9 and below deletion uses `StorageCleanupHelper.deleteLegacy` after an app confirmation dialog.
+- Android 10 uses the same legacy delete call after app confirmation, then launches the per-item
+  `RecoverableSecurityException` consent action for non-owned MediaStore items before retrying.
 - Old Downloads and APK cleanup are version-restricted to API 30+ in `CleanupViewModel`
 - APK cleanup preselects all groups by default
+- Old Downloads keeps one scan-start timestamp across its summary, pages, and group-selection resolution so age boundaries do not drift during a scan
 - Selected filter is stored through `SavedStateHandle`
 - Route is Pro-gated in the ViewModel; non-Pro users receive a locked error state before scanning
 - Storage, thermal, network, and battery trend sections share `HistoryPeriodFilterChipRow`, `HistoryLoadErrorMessage`, and `ChartStatsRow` for period chips, history-load failures, and min/avg/max chart stats.
@@ -894,8 +899,8 @@ Declared permission surface:
 | `RECEIVE_BOOT_COMPLETED` | Reschedule monitoring after boot/package replacement/unlock |
 | `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO`, `READ_MEDIA_VISUAL_USER_SELECTED` | Android 13+ media breakdown/cleanup, including Android 14+ selected visual media state |
 | `READ_EXTERNAL_STORAGE` maxSdk 32 | Android 12 and below media fallback |
-| `WRITE_EXTERNAL_STORAGE` maxSdk 28 | Legacy delete fallback |
-| `PACKAGE_USAGE_STATS` | App Usage, per-app battery feature, and aggregate app/cache storage stats through `StorageStatsManager` |
+| `WRITE_EXTERNAL_STORAGE` maxSdk 28 | Android 9 and below legacy delete fallback |
+| `PACKAGE_USAGE_STATS` | App Usage foreground time and aggregate app/cache storage stats through `StorageStatsManager` |
 | `READ_BASIC_PHONE_STATE` | Android 13+ cellular network generation fallback |
 
 Runtime permission decisions are centralized in `RuncheckPermissionPolicy` for Wi-Fi detail location permissions, Android-version-specific media permission lists, Android 14+ partial visual media access, and Android 13+ notification permission checks.
@@ -1176,7 +1181,6 @@ Current Insights rule set:
 
 - `BatteryDegradationTrendRule`
 - `BaselineAnomalyRule`
-- `AppBatteryImpactRule`
 - `ChargerPerformanceRule`
 - `StoragePressureProjectionRule`
 - `RecurringThermalThrottlingRule`
@@ -1187,7 +1191,9 @@ Current Insights rule set:
 - `StoragePressureImpactRule`
 - `ThermalPatternDetectionRule`
 
-Rules are Hilt multibindings into `Set<InsightRule>`. `InsightEngine` filters generated candidates below 0.6 confidence, replaces results per rule, preserves existing seen/dismissed state for matching dedupe keys, and deletes expired rows before and after generation.
+Rules are Hilt multibindings into `Set<InsightRule>`. `InsightEngine` filters generated candidates below 0.6 confidence and replaces results per rule. Matching dedupe keys preserve existing seen/dismissed state, and dismissed rows remain as dedupe tombstones when a candidate is temporarily absent or expired so regeneration cannot resurrect them. Expired undismissed rows are deleted during generation.
+
+`AppBatteryImpactRule` is intentionally not part of the production rule set. Android does not expose other apps' battery statistics to ordinary third-party apps, and runcheck does not manufacture per-app mAh attribution from foreground time alone.
 
 ### Known Tool Limitations
 

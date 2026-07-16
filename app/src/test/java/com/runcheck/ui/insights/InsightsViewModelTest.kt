@@ -45,7 +45,7 @@ class InsightsViewModelTest {
             val state = viewModel.uiState.value
             assertTrue(state is InsightsUiState.Success)
             assertEquals(1, (state as InsightsUiState.Success).insights.size)
-            coVerify(exactly = 1) { insightRepository.markAllSeen() }
+            coVerify(exactly = 1) { insightRepository.markSeen(setOf(1L)) }
         }
 
     @Test
@@ -72,6 +72,7 @@ class InsightsViewModelTest {
             val state = viewModel.uiState.value as InsightsUiState.Success
             assertEquals(listOf(InsightTarget.BATTERY), state.insights.map { it.target })
             assertEquals(1, state.unseenInsightCount)
+            coVerify(exactly = 1) { insightRepository.markSeen(setOf(1L)) }
         }
 
     @Test

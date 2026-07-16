@@ -101,6 +101,7 @@ Current runtime systems:
 - Widgets are backed by Room snapshots and treated as a Pro feature
 - Trial state currently counts as Pro access through `ProState.isPro`
 - Home now includes a rule-driven Insights surface backed by Room-persisted insight rows; Home shows a curated subset of up to three items and the full list lives in the dedicated Insights screen
+- `AppBatteryImpactRule` is intentionally excluded from production because foreground duration alone cannot support defensible per-app mAh attribution
 - Debug-only insight seeding and manual regeneration live behind debug source-set wiring and must stay release-inaccessible
 
 State restoration conventions:

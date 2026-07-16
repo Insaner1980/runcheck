@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.os.LocaleList
 import android.text.format.DateFormat
 import android.text.format.Formatter
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
@@ -12,6 +13,8 @@ import com.runcheck.R
 import com.runcheck.domain.model.BatteryHealth
 import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.HealthScore
+import com.runcheck.domain.model.HealthStatus
 import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.SignalQuality
 import com.runcheck.domain.model.TemperatureUnit
@@ -133,12 +136,18 @@ fun formatTemperature(
     )
 
 @Composable
-fun scoreLabel(score: Int): String =
-    when {
-        score >= 90 -> stringResource(R.string.score_excellent)
-        score >= 70 -> stringResource(R.string.score_good)
-        score >= 50 -> stringResource(R.string.score_fair)
-        else -> stringResource(R.string.score_poor)
+fun scoreLabel(score: Int): String = healthStatusLabel(HealthScore.statusFromScore(score))
+
+@Composable
+fun healthStatusLabel(status: HealthStatus): String = stringResource(healthStatusLabelRes(status))
+
+@StringRes
+fun healthStatusLabelRes(status: HealthStatus): Int =
+    when (status) {
+        HealthStatus.HEALTHY -> R.string.status_healthy
+        HealthStatus.FAIR -> R.string.status_fair
+        HealthStatus.POOR -> R.string.status_poor
+        HealthStatus.CRITICAL -> R.string.status_critical
     }
 
 @Composable

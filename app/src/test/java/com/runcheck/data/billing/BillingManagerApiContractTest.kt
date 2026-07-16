@@ -23,6 +23,20 @@ class BillingManagerApiContractTest {
     }
 
     @Test
+    fun `auto reconnect is not raced by a manual disconnect reconnect`() {
+        val disconnectCallback =
+            Regex(
+                "override fun onBillingServiceDisconnected\\(\\) \\{(?<body>.*?)\\n\\s*}",
+                RegexOption.DOT_MATCHES_ALL,
+            ).find(billingManagerSource)?.groups?.get("body")?.value.orEmpty()
+
+        assertFalse(
+            "Automatic service reconnection should own disconnect recovery without a competing delayed startConnection",
+            disconnectCallback.contains("scheduleReconnect()"),
+        )
+    }
+
+    @Test
     fun `production BillingManager does not suppress all Billing deprecations`() {
         assertFalse(
             "BillingManager should not hide future Billing API drift with a class-level DEPRECATION suppression",

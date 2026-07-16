@@ -1,6 +1,7 @@
 package com.runcheck.ui.home
 
 import androidx.lifecycle.SavedStateHandle
+import com.runcheck.domain.insights.engine.InsightHomeRankingPolicy
 import com.runcheck.domain.insights.model.Insight
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
@@ -14,6 +15,7 @@ import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.SignalQuality
+import com.runcheck.domain.model.SpeedTestResult
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
@@ -24,6 +26,7 @@ import com.runcheck.domain.scoring.HealthScoreCalculator
 import com.runcheck.domain.usecase.ChargerSessionTracker
 import com.runcheck.domain.usecase.GetBatteryStateUseCase
 import com.runcheck.domain.usecase.GetNetworkStateUseCase
+import com.runcheck.domain.usecase.GetSpeedTestHistoryUseCase
 import com.runcheck.domain.usecase.GetStorageStateUseCase
 import com.runcheck.domain.usecase.GetThermalStateUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
@@ -59,6 +62,7 @@ class HomeViewModelTest {
     private val getNetworkState: GetNetworkStateUseCase = mockk()
     private val getThermalState: GetThermalStateUseCase = mockk()
     private val getStorageState: GetStorageStateUseCase = mockk()
+    private val getSpeedTestHistory: GetSpeedTestHistoryUseCase = mockk()
     private val insightRepository: InsightRepository = mockk(relaxed = true)
     private val monitoringStatusRepository: MonitoringStatusRepository = mockk(relaxed = true)
     private val proStateProvider: ProStateProvider = mockk()
@@ -114,7 +118,7 @@ class HomeViewModelTest {
         every { getNetworkState() } returns flowOf(testNetwork)
         every { getThermalState() } returns flowOf(testThermal)
         every { getStorageState() } returns flowOf(testStorage)
-        every { insightRepository.getHomeInsights(any()) } returns flowOf(emptyList())
+        every { getSpeedTestHistory.getLatest() } returns flowOf(null)
         every { insightRepository.getActiveInsights() } returns flowOf(emptyList())
         every { insightRepository.getUnseenCount() } returns flowOf(0)
         every { proStateProvider.proState } returns proStateFlow
@@ -138,7 +142,9 @@ class HomeViewModelTest {
             getNetworkState = getNetworkState,
             getThermalState = getThermalState,
             getStorageState = getStorageState,
+            getSpeedTestHistory = getSpeedTestHistory,
             insightRepository = insightRepository,
+            insightHomeRankingPolicy = InsightHomeRankingPolicy(),
             monitoringStatusRepository = monitoringStatusRepository,
             proStateProvider = proStateProvider,
             trialManager = trialManager,
@@ -437,10 +443,9 @@ class HomeViewModelTest {
                     seen = false,
                     dismissed = false,
                 )
-            every { insightRepository.getHomeInsights(any()) } returns flowOf(listOf(insight))
             every { insightRepository.getActiveInsights() } returns flowOf(listOf(insight))
             every { insightRepository.getUnseenCount() } returns flowOf(1)
-            coEvery { insightRepository.markAllSeen() } returns Unit
+            coEvery { insightRepository.markSeen(any()) } returns Unit
 
             viewModel = createViewModel()
             viewModel.startObserving()
@@ -449,22 +454,58 @@ class HomeViewModelTest {
             val state = viewModel.uiState.value as HomeUiState.Success
             assertEquals(1, state.insights.size)
             assertEquals(1, state.unseenInsightCount)
-            coVerify(exactly = 1) { insightRepository.markAllSeen() }
+            coVerify(exactly = 1) { insightRepository.markSeen(setOf(7L)) }
 
+            viewModel.stopObserving()
+        }
+
+    @Test
+    fun `recent speed test contributes to the visible home network score`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val speedTest =
+                SpeedTestResult(
+                    timestamp = System.currentTimeMillis() - 60_000L,
+                    downloadMbps = 1.0,
+                    uploadMbps = 1.0,
+                    pingMs = 600,
+                    jitterMs = 60,
+                    serverName = null,
+                    serverLocation = null,
+                    connectionType = ConnectionType.WIFI,
+                    networkSubtype = null,
+                    signalDbm = -55,
+                )
+            every { getSpeedTestHistory.getLatest() } returns flowOf(speedTest)
+
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceAll()
+
+            val success = viewModel.uiState.value as HomeUiState.Success
+            val expected =
+                healthScoreCalculator.calculate(
+                    battery = testBattery,
+                    network = testNetwork,
+                    thermal = testThermal,
+                    storage = testStorage,
+                    recentSpeedTest = speedTest,
+                    nowMillis = System.currentTimeMillis(),
+                )
+            assertEquals(expected.networkScore, success.healthScore.networkScore)
             viewModel.stopObserving()
         }
 
     @Test
     fun `home filters pro-only insights for free users`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            val batteryInsight = testInsight(1L, InsightTarget.BATTERY)
-            val appUsageInsight = testInsight(2L, InsightTarget.APP_USAGE)
-            val chargerInsight = testInsight(3L, InsightTarget.CHARGER)
-            every { insightRepository.getHomeInsights(any()) } returns
-                flowOf(listOf(batteryInsight, appUsageInsight, chargerInsight))
+            val appUsageInsight = testInsight(1L, InsightTarget.APP_USAGE)
+            val chargerInsight = testInsight(2L, InsightTarget.CHARGER)
+            val batteryInsight = testInsight(3L, InsightTarget.BATTERY)
+            val thermalInsight = testInsight(4L, InsightTarget.THERMAL)
+            val networkInsight = testInsight(5L, InsightTarget.NETWORK)
             every { insightRepository.getActiveInsights() } returns
-                flowOf(listOf(batteryInsight, appUsageInsight, chargerInsight))
-            every { insightRepository.getUnseenCount() } returns flowOf(3)
+                flowOf(listOf(appUsageInsight, chargerInsight, batteryInsight, thermalInsight, networkInsight))
+            every { insightRepository.getUnseenCount() } returns flowOf(5)
             proStateFlow.value = ProState(status = ProStatus.TRIAL_EXPIRED)
 
             viewModel = createViewModel()
@@ -472,9 +513,13 @@ class HomeViewModelTest {
             advanceAll()
 
             val state = viewModel.uiState.value as HomeUiState.Success
-            assertEquals(listOf(InsightTarget.BATTERY), state.insights.map { it.target })
-            assertEquals(1, state.totalInsightCount)
-            assertEquals(1, state.unseenInsightCount)
+            assertEquals(
+                listOf(InsightTarget.BATTERY, InsightTarget.THERMAL, InsightTarget.NETWORK),
+                state.insights.map { it.target },
+            )
+            assertEquals(3, state.totalInsightCount)
+            assertEquals(3, state.unseenInsightCount)
+            coVerify(exactly = 1) { insightRepository.markSeen(setOf(3L, 4L, 5L)) }
 
             viewModel.stopObserving()
         }

@@ -17,7 +17,11 @@ class RecurringThermalThrottlingRule
         override val ruleId: String = RULE_ID
 
         override suspend fun evaluate(now: Long): List<InsightCandidate> {
-            val events = throttlingRepository.getEventsSinceSync(now - LOOKBACK_MS)
+            val windowStart = now - LOOKBACK_MS
+            val events =
+                throttlingRepository
+                    .getEventsSinceSync(windowStart)
+                    .filter { event -> event.timestamp <= now }
             if (events.isEmpty()) return emptyList()
 
             val severeEvents =
@@ -58,7 +62,7 @@ class RecurringThermalThrottlingRule
                         ),
                     generatedAt = now,
                     expiresAt = now + TTL_MS,
-                    dataWindowStart = now - LOOKBACK_MS,
+                    dataWindowStart = windowStart,
                     dataWindowEnd = now,
                     target = InsightTarget.THERMAL,
                 ),

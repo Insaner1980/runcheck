@@ -47,10 +47,10 @@ class StorageCleanupRepositoryImpl
                 },
             ).flow
 
-        override suspend fun getCleanupGroupUris(
+        override suspend fun getCleanupGroupFileSizes(
             query: CleanupScanQuery,
             category: MediaCategory,
-        ): Set<String> = mediaStoreScanner.getCleanupGroupUris(query, category)
+        ): Map<String, Long> = mediaStoreScanner.getCleanupGroupFileSizes(query, category)
 
         override suspend fun findExistingUris(uriStrings: Collection<String>): Set<String> =
             mediaStoreScanner.findExistingUris(uriStrings)

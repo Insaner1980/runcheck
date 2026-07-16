@@ -1,13 +1,19 @@
 package com.runcheck.domain.scoring
 
 import com.runcheck.domain.model.BatteryHealth
+import com.runcheck.domain.model.BatteryScoreDiagnostics
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.HealthScore
+import com.runcheck.domain.model.HealthScoreDiagnostics
+import com.runcheck.domain.model.NetworkScoreDiagnostics
+import com.runcheck.domain.model.NetworkScoreMode
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SignalQuality
 import com.runcheck.domain.model.SpeedTestResult
+import com.runcheck.domain.model.StorageScoreDiagnostics
 import com.runcheck.domain.model.StorageState
+import com.runcheck.domain.model.ThermalScoreDiagnostics
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
 import javax.inject.Inject
@@ -22,39 +28,75 @@ class HealthScoreCalculator
             network: NetworkState,
             thermal: ThermalState,
             storage: StorageState,
-            recentSpeedTest: SpeedTestResult? = null,
+        ): HealthScore =
+            calculate(
+                battery = battery,
+                network = network,
+                thermal = thermal,
+                storage = storage,
+                recentSpeedTest = null,
+                nowMillis = 0L,
+            )
+
+        fun calculate(
+            battery: BatteryState,
+            network: NetworkState,
+            thermal: ThermalState,
+            storage: StorageState,
+            recentSpeedTest: SpeedTestResult?,
+            nowMillis: Long,
         ): HealthScore {
-            val batteryScore = calculateBatteryScore(battery)
-            val networkScore = calculateNetworkScore(network, recentSpeedTest)
-            val thermalScore = calculateThermalScore(thermal)
-            val storageScore = calculateStorageScore(storage)
+            val batteryResult = calculateBatteryScore(battery)
+            val networkResult = calculateNetworkScore(network, recentSpeedTest, nowMillis)
+            val thermalResult = calculateThermalScore(thermal)
+            val storageResult = calculateStorageScoreResult(storage)
 
             val overallScore =
-                (
-                    batteryScore * BATTERY_WEIGHT +
-                        networkScore * NETWORK_WEIGHT +
-                        thermalScore * THERMAL_WEIGHT +
-                        storageScore * STORAGE_WEIGHT
-                ).toInt().coerceIn(0, 100)
+                roundedWeightedAverage(
+                    batteryResult.score * BATTERY_WEIGHT +
+                        networkResult.score * NETWORK_WEIGHT +
+                        thermalResult.score * THERMAL_WEIGHT +
+                        storageResult.score * STORAGE_WEIGHT,
+                )
 
             return HealthScore(
                 overallScore = overallScore,
-                batteryScore = batteryScore,
-                networkScore = networkScore,
-                thermalScore = thermalScore,
-                storageScore = storageScore,
+                batteryScore = batteryResult.score,
+                networkScore = networkResult.score,
+                thermalScore = thermalResult.score,
+                storageScore = storageResult.score,
                 status = HealthScore.statusFromScore(overallScore),
+                diagnostics =
+                    HealthScoreDiagnostics(
+                        battery = batteryResult.diagnostics,
+                        network = networkResult.diagnostics,
+                        thermal = thermalResult.diagnostics,
+                        storage = storageResult.diagnostics,
+                    ),
             )
         }
 
-        private fun calculateBatteryScore(battery: BatteryState): Int {
+        private fun calculateBatteryScore(battery: BatteryState): BatteryScoreResult {
+            val healthPenalty = batteryHealthPenalty(battery.health)
+            val temperaturePenalty = batteryTemperaturePenalty(battery.temperatureC)
+            val voltagePenalty = batteryVoltagePenalty(battery.voltageMv)
+            val capacityPenalty = batteryCapacityPenalty(battery.healthPercent)
             val score =
                 100 -
-                    batteryHealthPenalty(battery.health) -
-                    batteryTemperaturePenalty(battery.temperatureC) -
-                    batteryVoltagePenalty(battery.voltageMv) -
-                    batteryCapacityPenalty(battery.healthPercent)
-            return score.coerceIn(0, 100)
+                    healthPenalty -
+                    temperaturePenalty -
+                    voltagePenalty -
+                    capacityPenalty
+            return BatteryScoreResult(
+                score = score.coerceIn(0, 100),
+                diagnostics =
+                    BatteryScoreDiagnostics(
+                        healthPenalty = healthPenalty,
+                        temperaturePenalty = temperaturePenalty,
+                        voltagePenalty = voltagePenalty,
+                        capacityPenalty = capacityPenalty,
+                    ),
+            )
         }
 
         private fun batteryHealthPenalty(health: BatteryHealth): Int =
@@ -105,30 +147,56 @@ class HealthScoreCalculator
         private fun calculateNetworkScore(
             network: NetworkState,
             recentSpeedTest: SpeedTestResult? = null,
-        ): Int {
-            if (network.connectionType == ConnectionType.NONE) return 0
-
-            val now = System.currentTimeMillis()
-            // Check if speed test is recent (< 1 hour)
-            val hasRecentSpeedTest =
-                recentSpeedTest != null &&
-                    recentSpeedTest.timestamp in 0..now &&
-                    (now - recentSpeedTest.timestamp) < SPEED_TEST_MAX_AGE_MS
-
-            // With speed test: signal 40%, latency 30%, download 20%, stability 10%
-            // Without speed test: signal + latency only (re-weighted)
-            return if (hasRecentSpeedTest) {
-                calculateNetworkScoreWithSpeedTest(network, recentSpeedTest)
-            } else {
-                calculateNetworkScoreBasic(network)
+            nowMillis: Long,
+        ): NetworkScoreResult {
+            if (network.connectionType == ConnectionType.NONE) {
+                return NetworkScoreResult(
+                    score = 0,
+                    diagnostics =
+                        NetworkScoreDiagnostics(
+                            mode = NetworkScoreMode.DISCONNECTED,
+                            signalScore = 0,
+                            liveLatencyPenalty = null,
+                            speedTestPingScore = null,
+                            speedTestDownloadScore = null,
+                            speedTestJitterScore = null,
+                            speedTestAgeMillis = null,
+                            speedTestWeightPercent = 0,
+                        ),
+                )
             }
+
+            val basicResult = calculateNetworkScoreBasic(network)
+            val speedTest = recentSpeedTest ?: return basicResult
+            if (speedTest.connectionType != network.connectionType) return basicResult
+            val speedTestAgeMs = nowMillis - speedTest.timestamp
+            if (speedTestAgeMs !in 0 until SPEED_TEST_MAX_AGE_MS) return basicResult
+
+            val speedTestResult = calculateNetworkScoreWithSpeedTest(network, speedTest, speedTestAgeMs)
+            if (speedTestAgeMs <= SPEED_TEST_FADE_START_MS) return speedTestResult
+
+            // Ease the expiring measurement into the live-only score so the strict
+            // one-hour cutoff cannot cause a visible step change at the boundary.
+            val remainingMillis = SPEED_TEST_MAX_AGE_MS - speedTestAgeMs
+            val blendedScore =
+                divideRounded(
+                    basicResult.score * SPEED_TEST_FADE_DURATION_MS +
+                        (speedTestResult.score - basicResult.score) * remainingMillis,
+                    SPEED_TEST_FADE_DURATION_MS,
+                ).coerceIn(0, 100).toInt()
+            return speedTestResult.copy(
+                score = blendedScore,
+                diagnostics =
+                    speedTestResult.diagnostics.copy(
+                        mode = NetworkScoreMode.FADING_SPEED_TEST,
+                        speedTestWeightPercent =
+                            divideRounded(remainingMillis * 100L, SPEED_TEST_FADE_DURATION_MS).toInt(),
+                    ),
+            )
         }
 
-        private fun calculateNetworkScoreBasic(network: NetworkState): Int {
-            var score = 100
-
-            // Signal quality impact — uses Android's own level (matches status bar)
-            score -=
+        private fun calculateNetworkScoreBasic(network: NetworkState): NetworkScoreResult {
+            val signalPenalty =
                 when (network.signalQuality) {
                     SignalQuality.EXCELLENT -> 0
                     SignalQuality.GOOD -> 5
@@ -137,9 +205,8 @@ class HealthScoreCalculator
                     SignalQuality.NO_SIGNAL -> 70
                 }
 
-            // Latency impact
-            network.latencyMs?.let { latency ->
-                score -=
+            val latencyPenalty =
+                network.latencyMs?.let { latency ->
                     when {
                         latency < 50 -> 0
                         latency < 100 -> 5
@@ -148,29 +215,59 @@ class HealthScoreCalculator
                         latency < 1000 -> 35
                         else -> 50
                     }
-            }
+                }
 
-            return score.coerceIn(0, 100)
+            return NetworkScoreResult(
+                score = (100 - signalPenalty - (latencyPenalty ?: 0)).coerceIn(0, 100),
+                diagnostics =
+                    NetworkScoreDiagnostics(
+                        mode = NetworkScoreMode.LIVE,
+                        signalScore = 100 - signalPenalty,
+                        liveLatencyPenalty = latencyPenalty,
+                        speedTestPingScore = null,
+                        speedTestDownloadScore = null,
+                        speedTestJitterScore = null,
+                        speedTestAgeMillis = null,
+                        speedTestWeightPercent = 0,
+                    ),
+            )
         }
 
         private fun calculateNetworkScoreWithSpeedTest(
             network: NetworkState,
             speedTest: SpeedTestResult,
-        ): Int {
+            speedTestAgeMs: Long,
+        ): NetworkScoreResult {
+            val signalScore = signalQualityScore(network.signalQuality)
+            val pingScore = latencyPingScore(speedTest.pingMs)
+            val downloadScore = downloadSpeedScore(speedTest.downloadMbps, network.connectionType)
+            val jitterScore = speedTest.jitterMs?.let(::jitterStabilityScore)
             val scoreComponents =
                 buildList {
-                    add(signalQualityScore(network.signalQuality) to 40)
-                    add(latencyPingScore(speedTest.pingMs) to 30)
-                    add(downloadSpeedScore(speedTest.downloadMbps, network.connectionType) to 20)
-                    speedTest.jitterMs?.let { jitterMs ->
-                        add(jitterStabilityScore(jitterMs) to 10)
+                    add(signalScore to 40)
+                    add(pingScore to 30)
+                    add(downloadScore to 20)
+                    jitterScore?.let { score ->
+                        add(score to 10)
                     }
                 }
             val totalWeight = scoreComponents.sumOf { it.second }
-            val weightedScore =
-                scoreComponents.sumOf { (score, weight) -> score * weight } / totalWeight
+            val weightedScore = scoreComponents.sumOf { (score, weight) -> score * weight } / totalWeight
 
-            return weightedScore.coerceIn(0, 100)
+            return NetworkScoreResult(
+                score = weightedScore.coerceIn(0, 100),
+                diagnostics =
+                    NetworkScoreDiagnostics(
+                        mode = NetworkScoreMode.SPEED_TEST,
+                        signalScore = signalScore,
+                        liveLatencyPenalty = null,
+                        speedTestPingScore = pingScore,
+                        speedTestDownloadScore = downloadScore,
+                        speedTestJitterScore = jitterScore,
+                        speedTestAgeMillis = speedTestAgeMs,
+                        speedTestWeightPercent = 100,
+                    ),
+            )
         }
 
         private fun signalQualityScore(quality: SignalQuality): Int =
@@ -219,13 +316,24 @@ class HealthScoreCalculator
                 else -> 20
             }
 
-        private fun calculateThermalScore(thermal: ThermalState): Int {
+        private fun calculateThermalScore(thermal: ThermalState): ThermalScoreResult {
+            val batteryTemperaturePenalty = thermalBatteryTempPenalty(thermal.batteryTempC)
+            val cpuTemperaturePenalty = thermalCpuTempPenalty(thermal.cpuTempC)
+            val statusPenalty = thermalStatusPenalty(thermal.thermalStatus)
             val score =
                 100 -
-                    thermalBatteryTempPenalty(thermal.batteryTempC) -
-                    thermalCpuTempPenalty(thermal.cpuTempC) -
-                    thermalStatusPenalty(thermal.thermalStatus)
-            return score.coerceIn(0, 100)
+                    batteryTemperaturePenalty -
+                    cpuTemperaturePenalty -
+                    statusPenalty
+            return ThermalScoreResult(
+                score = score.coerceIn(0, 100),
+                diagnostics =
+                    ThermalScoreDiagnostics(
+                        batteryTemperaturePenalty = batteryTemperaturePenalty,
+                        cpuTemperaturePenalty = cpuTemperaturePenalty,
+                        statusPenalty = statusPenalty,
+                    ),
+            )
         }
 
         private fun thermalBatteryTempPenalty(tempC: Float): Int =
@@ -262,31 +370,63 @@ class HealthScoreCalculator
                 ThermalStatus.SHUTDOWN -> 95
             }
 
-        fun calculateStorageScore(storage: StorageState): Int {
-            var score = 100
+        fun calculateStorageScore(storage: StorageState): Int = calculateStorageScoreResult(storage).score
 
-            // Usage percentage impact
-            val usagePct = storage.usagePercent
-            score -=
+        private fun calculateStorageScoreResult(storage: StorageState): StorageScoreResult {
+            val usagePenalty =
                 when {
-                    usagePct < 10 -> 4
-                    usagePct < 25 -> 2
-                    usagePct < 50 -> 0
-                    usagePct < 70 -> 5
-                    usagePct < 80 -> 15
-                    usagePct < 90 -> 35
-                    usagePct < 95 -> 55
+                    storage.usagePercent < 10 -> 4
+                    storage.usagePercent < 25 -> 2
+                    storage.usagePercent < 50 -> 0
+                    storage.usagePercent < 70 -> 5
+                    storage.usagePercent < 75 -> 15
+                    storage.usagePercent < 85 -> 35
+                    storage.usagePercent < 95 -> 55
                     else -> 80
                 }
 
-            return score.coerceIn(0, 100)
+            return StorageScoreResult(
+                score = (100 - usagePenalty).coerceIn(0, 100),
+                diagnostics = StorageScoreDiagnostics(usagePenalty = usagePenalty),
+            )
         }
 
+        private fun roundedWeightedAverage(weightedScore: Int): Int =
+            ((weightedScore + TOTAL_WEIGHT / 2) / TOTAL_WEIGHT).coerceIn(0, 100)
+
+        private fun divideRounded(
+            numerator: Long,
+            denominator: Long,
+        ): Long = (numerator + denominator / 2) / denominator
+
+        private data class BatteryScoreResult(
+            val score: Int,
+            val diagnostics: BatteryScoreDiagnostics,
+        )
+
+        private data class NetworkScoreResult(
+            val score: Int,
+            val diagnostics: NetworkScoreDiagnostics,
+        )
+
+        private data class ThermalScoreResult(
+            val score: Int,
+            val diagnostics: ThermalScoreDiagnostics,
+        )
+
+        private data class StorageScoreResult(
+            val score: Int,
+            val diagnostics: StorageScoreDiagnostics,
+        )
+
         companion object {
-            private const val BATTERY_WEIGHT = 0.40f
-            private const val NETWORK_WEIGHT = 0.25f
-            private const val THERMAL_WEIGHT = 0.25f
-            private const val STORAGE_WEIGHT = 0.10f
+            private const val BATTERY_WEIGHT = 40
+            private const val NETWORK_WEIGHT = 25
+            private const val THERMAL_WEIGHT = 25
+            private const val STORAGE_WEIGHT = 10
+            private const val TOTAL_WEIGHT = 100
             private const val SPEED_TEST_MAX_AGE_MS = 3_600_000L // 1 hour
+            private const val SPEED_TEST_FADE_DURATION_MS = 300_000L // 5 minutes
+            private const val SPEED_TEST_FADE_START_MS = SPEED_TEST_MAX_AGE_MS - SPEED_TEST_FADE_DURATION_MS
         }
     }

@@ -14,6 +14,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -158,6 +159,33 @@ class ProManagerTest {
 
         assertEquals(TimeUnit.DAYS.toMillis(1) + 1_000L, delayMs)
     }
+
+    @Test
+    fun `purchase loss cannot reactivate a trial past its deadline`() =
+        runTest(testDispatcher) {
+            val expiredTrialStart =
+                System.currentTimeMillis() -
+                    TimeUnit.DAYS.toMillis(TrialManager.TRIAL_DURATION_DAYS.toLong()) -
+                    1_000L
+            coEvery { trialManager.initialize() } returns false
+            trialStateFlow.value =
+                TrialState(
+                    isActive = true,
+                    daysRemaining = 1,
+                    startTimestamp = expiredTrialStart,
+                )
+            isProUserFlow.value = true
+
+            proManager.initialize()
+            runCurrent()
+            assertEquals(ProStatus.PRO_PURCHASED, proManager.proState.value.status)
+
+            isProUserFlow.value = false
+            runCurrent()
+
+            assertEquals(ProStatus.TRIAL_EXPIRED, proManager.proState.value.status)
+            assertFalse(proManager.isPro())
+        }
 
     @Test
     fun `initialize waits for purchase status before marking pro status ready`() =

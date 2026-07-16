@@ -34,8 +34,60 @@ class BatteryDegradationTrendRuleTest {
             assertEquals(InsightType.BATTERY, insight.type)
             assertEquals(InsightPriority.HIGH, insight.priority)
             assertEquals(InsightTarget.BATTERY, insight.target)
+            assertEquals("battery_degradation:200plus", insight.dedupeKey)
             assertEquals(listOf("200"), insight.bodyArgs)
             assertTrue(insight.confidence >= 0.5f)
+        }
+
+    @Test
+    fun `keeps dedupe key stable when evaluation time moves within the same finding`() =
+        runTest {
+            val now = WINDOW_MS * 3
+            val previousWindowStart = now - (WINDOW_MS * 2)
+            val currentWindowStart = now - WINDOW_MS
+            val readings =
+                windowReadings(previousWindowStart, startLevel = 100, dropPerSample = 1) +
+                    windowReadings(currentWindowStart, startLevel = 100, dropPerSample = 3)
+            val rule =
+                BatteryDegradationTrendRule(
+                    batteryRepository = TestBatteryRepository(readings),
+                    batteryDrainAnalyzer = BatteryDrainAnalyzer(),
+                )
+
+            val firstKey = rule.evaluate(now).single().dedupeKey
+            val nextRunKey = rule.evaluate(now + 1).single().dedupeKey
+
+            assertEquals(firstKey, nextRunKey)
+        }
+
+    @Test
+    fun `changes dedupe key when degradation moves to another severity bucket`() =
+        runTest {
+            val now = WINDOW_MS * 3
+            val previousWindowStart = now - (WINDOW_MS * 2)
+            val currentWindowStart = now - WINDOW_MS
+            val previousReadings = windowReadings(previousWindowStart, startLevel = 100, dropPerSample = 1)
+            val moderateRule =
+                BatteryDegradationTrendRule(
+                    batteryRepository =
+                        TestBatteryRepository(
+                            previousReadings +
+                                windowReadings(currentWindowStart, startLevel = 100, dropPerSample = 2),
+                        ),
+                    batteryDrainAnalyzer = BatteryDrainAnalyzer(),
+                )
+            val severeRule =
+                BatteryDegradationTrendRule(
+                    batteryRepository =
+                        TestBatteryRepository(
+                            previousReadings +
+                                windowReadings(currentWindowStart, startLevel = 100, dropPerSample = 3),
+                        ),
+                    batteryDrainAnalyzer = BatteryDrainAnalyzer(),
+                )
+
+            assertEquals("battery_degradation:100plus", moderateRule.evaluate(now).single().dedupeKey)
+            assertEquals("battery_degradation:200plus", severeRule.evaluate(now).single().dedupeKey)
         }
 
     @Test
@@ -65,6 +117,29 @@ class BatteryDegradationTrendRuleTest {
             val readings =
                 windowReadings(previousWindowStart, startLevel = 100, dropPerSample = 2) +
                     windowReadings(currentWindowStart, startLevel = 100, dropPerSample = 2)
+            val rule =
+                BatteryDegradationTrendRule(
+                    batteryRepository = TestBatteryRepository(readings),
+                    batteryDrainAnalyzer = BatteryDrainAnalyzer(),
+                )
+
+            assertTrue(rule.evaluate(now).isEmpty())
+        }
+
+    @Test
+    fun `does not treat charging transition as battery drain`() =
+        runTest {
+            val now = WINDOW_MS * 3
+            val previousWindowStart = now - (WINDOW_MS * 2)
+            val currentWindowStart = now - WINDOW_MS
+            val currentReadings = windowReadings(currentWindowStart, startLevel = 50, dropPerSample = 0)
+            val readings =
+                windowReadings(previousWindowStart, startLevel = 100, dropPerSample = 1) +
+                    batteryReading(
+                        timestamp = currentWindowStart + 1,
+                        level = 100,
+                    ).copy(status = "CHARGING") +
+                    currentReadings
             val rule =
                 BatteryDegradationTrendRule(
                     batteryRepository = TestBatteryRepository(readings),

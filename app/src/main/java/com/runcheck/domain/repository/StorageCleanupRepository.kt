@@ -17,10 +17,10 @@ interface StorageCleanupRepository {
         category: MediaCategory,
     ): Flow<PagingData<ScannedFile>>
 
-    suspend fun getCleanupGroupUris(
+    suspend fun getCleanupGroupFileSizes(
         query: CleanupScanQuery,
         category: MediaCategory,
-    ): Set<String>
+    ): Map<String, Long>
 
     suspend fun findExistingUris(uriStrings: Collection<String>): Set<String>
 

@@ -24,11 +24,11 @@ interface InsightDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(insights: List<InsightEntity>)
 
-    @Query("DELETE FROM insights WHERE expires_at <= :now")
+    @Query("DELETE FROM insights WHERE dismissed = 0 AND expires_at <= :now")
     suspend fun deleteExpired(now: Long)
 
-    @Query("DELETE FROM insights WHERE rule_id = :ruleId")
-    suspend fun deleteByRule(ruleId: String)
+    @Query("DELETE FROM insights WHERE rule_id = :ruleId AND dismissed = 0")
+    suspend fun deleteUndismissedByRule(ruleId: String)
 
     @Query("DELETE FROM insights WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<Long>)
@@ -36,8 +36,8 @@ interface InsightDao {
     @Query("UPDATE insights SET dismissed = 1 WHERE id = :id")
     suspend fun dismiss(id: Long)
 
-    @Query("UPDATE insights SET seen = 1 WHERE seen = 0")
-    suspend fun markAllSeen()
+    @Query("UPDATE insights SET seen = 1 WHERE id IN (:ids) AND dismissed = 0 AND seen = 0")
+    suspend fun markSeen(ids: Set<Long>)
 
     @Query("SELECT COUNT(*) FROM insights WHERE dismissed = 0 AND expires_at > :now")
     suspend fun countActive(now: Long): Int

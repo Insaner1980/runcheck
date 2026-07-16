@@ -74,7 +74,7 @@ class InsightsViewModel
 
             lastSeenInsightIds = unseenIds
             viewModelScope.launch {
-                insightRepository.markAllSeen()
+                insightRepository.markSeen(unseenIds)
             }
         }
     }

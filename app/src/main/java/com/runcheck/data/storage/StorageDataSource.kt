@@ -10,15 +10,21 @@ import android.os.Build
 import android.os.Environment
 import android.os.StatFs
 import android.os.storage.StorageManager
+import android.os.storage.StorageVolume
 import com.runcheck.domain.model.MediaBreakdown
 import com.runcheck.domain.model.TrashInfo
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.withContext
+import java.io.BufferedReader
 import java.io.File
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private const val DATA_MOUNT_POINT = "/data"
+private val MOUNT_FIELD_SEPARATOR = Regex("\\s+")
 
 @Singleton
 class StorageDataSource
@@ -30,6 +36,8 @@ class StorageDataSource
     ) {
         private val storageStatsManager =
             context.getSystemService(Context.STORAGE_STATS_SERVICE) as? StorageStatsManager
+        private val storageManager =
+            context.getSystemService(Context.STORAGE_SERVICE) as? StorageManager
         private val devicePolicyManager =
             context.getSystemService(Context.DEVICE_POLICY_SERVICE) as? DevicePolicyManager
 
@@ -50,23 +58,30 @@ class StorageDataSource
             return withContext(dispatchers.io) {
                 val ssm = storageStatsManager
                 val uuid = StorageManager.UUID_DEFAULT
-                val totalBytes =
-                    try {
-                        ssm?.getTotalBytes(uuid) ?: StatFs(Environment.getDataDirectory().path).totalBytes
-                    } catch (_: Exception) {
-                        StatFs(Environment.getDataDirectory().path).totalBytes
-                    }
-                val freeBytes =
-                    try {
-                        ssm?.getFreeBytes(uuid) ?: StatFs(Environment.getDataDirectory().path).availableBytes
-                    } catch (_: Exception) {
-                        StatFs(Environment.getDataDirectory().path).availableBytes
-                    }
+                val primarySpace =
+                    queryPrimaryStorageSpace(
+                        storageStatsQuery =
+                            ssm?.let { manager ->
+                                {
+                                    StorageSpace(
+                                        totalBytes = manager.getTotalBytes(uuid),
+                                        availableBytes = manager.getFreeBytes(uuid),
+                                    )
+                                }
+                            },
+                        statFsQuery = {
+                            val stat = StatFs(Environment.getDataDirectory().path)
+                            StorageSpace(totalBytes = stat.totalBytes, availableBytes = stat.availableBytes)
+                        },
+                    )
+                val totalBytes = primarySpace.totalBytes
+                val freeBytes = primarySpace.availableBytes
                 val usedBytes = totalBytes - freeBytes
 
                 val hasUsageStats = hasUsageStatsPermission()
                 val appStats = if (hasUsageStats) calculateAppStats() else null
-                val sdCard = getExternalSdCard()
+                val appCount = countLaunchableApps()
+                val removableStorage = getRemovableStorage()
                 val deviceInfo = getDeviceStorageInfo()
 
                 StorageInfo(
@@ -75,12 +90,12 @@ class StorageDataSource
                     usedBytes = usedBytes,
                     appsBytes = appStats?.totalBytes,
                     totalCacheBytes = appStats?.cacheBytes,
-                    appCount = appStats?.appCount,
+                    appCount = appCount,
                     mediaBreakdown = mediaBreakdown,
                     trashInfo = trashInfo,
-                    sdCardAvailable = sdCard != null,
-                    sdCardTotalBytes = sdCard?.totalBytes,
-                    sdCardAvailableBytes = sdCard?.availableBytes,
+                    removableStorageAvailable = removableStorage != null,
+                    removableStorageTotalBytes = removableStorage?.totalBytes,
+                    removableStorageAvailableBytes = removableStorage?.availableBytes,
                     fileSystemType = deviceInfo.fileSystemType,
                     encryptionStatus = deviceInfo.encryptionStatus,
                     storageVolumes = deviceInfo.storageVolumes,
@@ -101,18 +116,21 @@ class StorageDataSource
 
         private fun calculateAppStats(): AppStats? {
             val ssm = storageStatsManager ?: return null
-            return try {
-                val uuid = StorageManager.UUID_DEFAULT
-                val user = android.os.Process.myUserHandle()
-                val stats = ssm.queryStatsForUser(uuid, user)
-                AppStats(
-                    totalBytes = stats.appBytes + stats.dataBytes + stats.cacheBytes,
-                    cacheBytes = stats.cacheBytes,
-                    appCount = countLaunchableApps(),
-                )
-            } catch (_: Exception) {
-                null
-            }
+            val bytes =
+                queryAggregateAppStats {
+                    val uuid = StorageManager.UUID_DEFAULT
+                    val user = android.os.Process.myUserHandle()
+                    val stats = ssm.queryStatsForUser(uuid, user)
+                    AppStorageByteBreakdown(
+                        appBytes = stats.appBytes,
+                        dataBytes = stats.dataBytes,
+                        cacheBytes = stats.cacheBytes,
+                    )
+                } ?: return null
+            return AppStats(
+                totalBytes = bytes.totalBytes,
+                cacheBytes = bytes.cacheBytes,
+            )
         }
 
         private fun countLaunchableApps(): Int? =
@@ -134,16 +152,37 @@ class StorageDataSource
             }
 
         @Suppress("kotlin:S5324")
-        private fun getExternalSdCard(): SdCardInfo? {
-            val externalDirs = context.getExternalFilesDirs(null)
-            if (externalDirs.size < 2) return null
-            val sdCardDir = externalDirs[1] ?: return null
-            return try {
-                val stat = StatFs(sdCardDir.path)
-                SdCardInfo(totalBytes = stat.totalBytes, availableBytes = stat.availableBytes)
-            } catch (_: Exception) {
-                null
-            }
+        private fun getRemovableStorage(): RemovableStorageInfo? {
+            val sm = storageManager ?: return null
+            val directories =
+                try {
+                    selectMountedPortableStorageDirectories(
+                        context.getExternalFilesDirs(null).mapNotNull { directory ->
+                            directory ?: return@mapNotNull null
+                            val volume = sm.getStorageVolume(directory) ?: return@mapNotNull null
+                            volume.toCandidate(directory)
+                        },
+                    )
+                } catch (_: RuntimeException) {
+                    return null
+                }
+            if (directories.isEmpty()) return null
+
+            val space =
+                aggregateStorageSpaces(
+                    directories.map { directory ->
+                        try {
+                            val stat = StatFs(directory.path)
+                            StorageSpace(stat.totalBytes, stat.availableBytes)
+                        } catch (_: RuntimeException) {
+                            null
+                        }
+                    },
+                )
+            return RemovableStorageInfo(
+                totalBytes = space?.totalBytes,
+                availableBytes = space?.availableBytes,
+            )
         }
 
         data class StorageInfo(
@@ -155,9 +194,9 @@ class StorageDataSource
             val appCount: Int?,
             val mediaBreakdown: MediaBreakdown?,
             val trashInfo: TrashInfo?,
-            val sdCardAvailable: Boolean,
-            val sdCardTotalBytes: Long?,
-            val sdCardAvailableBytes: Long?,
+            val removableStorageAvailable: Boolean,
+            val removableStorageTotalBytes: Long?,
+            val removableStorageAvailableBytes: Long?,
             val fileSystemType: String?,
             val encryptionStatus: String?,
             val storageVolumes: Int,
@@ -166,38 +205,29 @@ class StorageDataSource
         private data class AppStats(
             val totalBytes: Long,
             val cacheBytes: Long,
-            val appCount: Int?,
         )
 
-        private data class SdCardInfo(
-            val totalBytes: Long,
-            val availableBytes: Long,
+        private data class RemovableStorageInfo(
+            val totalBytes: Long?,
+            val availableBytes: Long?,
         )
 
         @Suppress("TooGenericExceptionCaught", "CyclomaticComplexMethod")
         private fun getDeviceStorageInfo(): DeviceStorageInfo {
-            var fsType: String? = null
-            var volumes = 1
+            var volumes = 0
 
             // File system type from /proc/mounts
-            try {
-                File("/proc/mounts").useLines { lines ->
-                    for (line in lines) {
-                        val parts = line.split(" ")
-                        if (parts.size >= 3 && parts[1] == "/data") {
-                            fsType = parts[2]
-                            break
-                        }
-                    }
-                }
-            } catch (e: java.io.IOException) {
-                ReleaseSafeLog.error(TAG, "Failed to read /proc/mounts", e)
-            }
+            val fsType =
+                readDataFileSystemType(
+                    openMounts = { File("/proc/mounts").bufferedReader() },
+                    onFailure = { error ->
+                        ReleaseSafeLog.error(TAG, "Failed to read /proc/mounts", error)
+                    },
+                )
 
             // Storage volumes via StorageManager
             try {
-                val sm = context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
-                volumes = sm.storageVolumes.size
+                volumes = storageManager?.storageVolumes?.count { it.state.isMountedStorageState() } ?: 0
             } catch (e: RuntimeException) {
                 ReleaseSafeLog.error(TAG, "Failed to count storage volumes", e)
             }
@@ -229,21 +259,131 @@ class StorageDataSource
         }
     }
 
+internal fun parseDataFileSystemType(lines: Sequence<String>): String? {
+    for (line in lines) {
+        val fields = line.trim().split(MOUNT_FIELD_SEPARATOR, limit = 4)
+        if (fields.size >= 3 && fields[1] == DATA_MOUNT_POINT) return fields[2]
+    }
+    return null
+}
+
+internal fun readDataFileSystemType(
+    openMounts: () -> BufferedReader,
+    onFailure: (Exception) -> Unit = {},
+): String? =
+    try {
+        openMounts().useLines(::parseDataFileSystemType)
+    } catch (error: IOException) {
+        onFailure(error)
+        null
+    } catch (error: SecurityException) {
+        onFailure(error)
+        null
+    }
+
+@Suppress("DEPRECATION")
 internal fun mapStorageEncryptionStatus(status: Int): String? =
     when (status) {
         DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE_PER_USER -> "FBE"
         DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE -> "Encrypted"
+        DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE_DEFAULT_KEY -> "Encrypted (default key)"
+        DevicePolicyManager.ENCRYPTION_STATUS_ACTIVATING -> "Activating"
         DevicePolicyManager.ENCRYPTION_STATUS_INACTIVE -> "Inactive"
         DevicePolicyManager.ENCRYPTION_STATUS_UNSUPPORTED -> "Unsupported"
         else -> null
     }
 
-internal fun countDistinctPackageNames(packageNames: Iterable<String>): Int? {
-    val count =
-        packageNames
-            .map(String::trim)
-            .filter(String::isNotEmpty)
-            .toSet()
-            .size
-    return count.takeIf { it > 0 }
+internal fun countDistinctPackageNames(packageNames: Iterable<String>): Int =
+    packageNames
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+        .toSet()
+        .size
+
+internal data class StorageVolumeCandidate(
+    val directory: File,
+    val isPrimary: Boolean,
+    val isRemovable: Boolean,
+    val isEmulated: Boolean,
+    val state: String,
+)
+
+internal data class StorageSpace(
+    val totalBytes: Long,
+    val availableBytes: Long,
+)
+
+internal fun selectMountedPortableStorageDirectories(candidates: Iterable<StorageVolumeCandidate>): List<File> =
+    candidates
+        .filter { candidate ->
+            !candidate.isPrimary &&
+                candidate.isRemovable &&
+                !candidate.isEmulated &&
+                candidate.state.isMountedStorageState()
+        }.distinctBy { it.directory.absolutePath }
+        .map(StorageVolumeCandidate::directory)
+
+internal fun aggregateStorageSpaces(spaces: Iterable<StorageSpace?>): StorageSpace? {
+    var totalBytes = 0L
+    var availableBytes = 0L
+    for (space in spaces) {
+        space ?: return null
+        if (!space.isValid()) return null
+        try {
+            totalBytes = Math.addExact(totalBytes, space.totalBytes)
+            availableBytes = Math.addExact(availableBytes, space.availableBytes)
+        } catch (_: ArithmeticException) {
+            return null
+        }
+    }
+    return StorageSpace(totalBytes = totalBytes, availableBytes = availableBytes)
 }
+
+internal fun queryPrimaryStorageSpace(
+    storageStatsQuery: (() -> StorageSpace)?,
+    statFsQuery: () -> StorageSpace,
+): StorageSpace {
+    val storageStatsSpace =
+        try {
+            storageStatsQuery?.invoke()
+        } catch (_: Exception) {
+            null
+        }
+    return storageStatsSpace?.takeIf(StorageSpace::isValid) ?: statFsQuery()
+}
+
+private fun StorageSpace.isValid(): Boolean = totalBytes >= 0L && availableBytes in 0L..totalBytes
+
+private fun String.isMountedStorageState(): Boolean =
+    this == Environment.MEDIA_MOUNTED || this == Environment.MEDIA_MOUNTED_READ_ONLY
+
+private fun StorageVolume.toCandidate(directory: File) =
+    StorageVolumeCandidate(
+        directory = directory,
+        isPrimary = isPrimary,
+        isRemovable = isRemovable,
+        isEmulated = isEmulated,
+        state = state,
+    )
+
+internal data class AggregateAppStats(
+    val totalBytes: Long,
+    val cacheBytes: Long,
+)
+
+internal data class AppStorageByteBreakdown(
+    val appBytes: Long,
+    val dataBytes: Long,
+    val cacheBytes: Long,
+)
+
+internal fun queryAggregateAppStats(query: () -> AppStorageByteBreakdown): AggregateAppStats? =
+    try {
+        val bytes = query()
+        AggregateAppStats(
+            totalBytes = bytes.appBytes + bytes.dataBytes,
+            cacheBytes = bytes.cacheBytes,
+        )
+    } catch (_: Exception) {
+        null
+    }

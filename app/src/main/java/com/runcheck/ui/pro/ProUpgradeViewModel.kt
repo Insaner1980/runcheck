@@ -49,7 +49,6 @@ class ProUpgradeViewModel
                         it.copy(
                             proState = proState,
                             purchaseCompleted = initialLoadDone && wasNotPro && proState.isPro,
-                            purchasePending = false,
                         )
                     }
                     initialLoadDone = true
@@ -72,6 +71,11 @@ class ProUpgradeViewModel
                 }
             }
             viewModelScope.launch {
+                proPurchaseManager.hasPendingPurchase.collect { hasPendingPurchase ->
+                    _uiState.update { it.copy(purchasePending = hasPendingPurchase) }
+                }
+            }
+            viewModelScope.launch {
                 proPurchaseManager.purchaseEvents.collect { event ->
                     when (event) {
                         is PurchaseEvent.Pending -> {
@@ -84,14 +88,13 @@ class ProUpgradeViewModel
                             _uiState.update {
                                 it.copy(
                                     purchaseError = UiText.Dynamic(event.debugMessage),
-                                    purchasePending = false,
                                 )
                             }
                         }
 
                         is PurchaseEvent.AlreadyOwned -> {
                             _uiState.update {
-                                it.copy(purchaseError = null, purchasePending = false)
+                                it.copy(purchaseError = null)
                             }
                         }
 

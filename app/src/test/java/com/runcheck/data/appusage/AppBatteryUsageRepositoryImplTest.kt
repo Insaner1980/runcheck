@@ -53,16 +53,20 @@ class AppBatteryUsageRepositoryImplTest {
             repository.collectUsageSnapshot()
 
             coVerify(exactly = 0) { appUsageDataSource.getUsageSince(any(), any()) }
-            coVerify(exactly = 0) { appBatteryUsageDao.insertAll(any()) }
+            coVerify(exactly = 0) { appBatteryUsageDao.replaceSnapshotsAfter(any(), any()) }
         }
 
     @Test
     fun `collectUsageSnapshot stores snapshots and advances last collection time`() =
         runTest {
             val inserted = slot<List<AppBatteryUsageEntity>>()
+            val queryStart = slot<Long>()
+            val queryEnd = slot<Long>()
+            val advancedAt = slot<Long>()
+            val previousCollectionTime = System.currentTimeMillis() - 1_000L
             every { appUsageDataSource.hasUsageStatsPermission() } returns true
-            coEvery { userPreferencesRepository.getAppUsageLastCollectedAt() } returns 100L
-            coEvery { appUsageDataSource.getUsageSince(any(), any()) } returns
+            coEvery { userPreferencesRepository.getAppUsageLastCollectedAt() } returns previousCollectionTime
+            coEvery { appUsageDataSource.getUsageSince(capture(queryStart), capture(queryEnd)) } returns
                 listOf(
                     AppUsageSnapshot(
                         packageName = "com.example",
@@ -73,13 +77,18 @@ class AppBatteryUsageRepositoryImplTest {
 
             repository.collectUsageSnapshot()
 
-            coVerify(exactly = 1) { appBatteryUsageDao.insertAll(capture(inserted)) }
+            coVerify(exactly = 1) {
+                appBatteryUsageDao.replaceSnapshotsAfter(previousCollectionTime, capture(inserted))
+            }
             val stored = inserted.captured.single()
             assertEquals("com.example", stored.packageName)
             assertEquals("Example", stored.appLabel)
             assertEquals(1_200L, stored.foregroundTimeMs)
             assertEquals(null, stored.estimatedDrainMah)
-            coVerify(exactly = 1) { userPreferencesRepository.setAppUsageLastCollectedAt(any()) }
+            assertEquals(queryEnd.captured, stored.timestamp)
+            assertEquals(previousCollectionTime, queryStart.captured)
+            coVerify(exactly = 1) { userPreferencesRepository.setAppUsageLastCollectedAt(capture(advancedAt)) }
+            assertEquals(queryEnd.captured, advancedAt.captured)
         }
 
     @Test
@@ -94,6 +103,21 @@ class AppBatteryUsageRepositoryImplTest {
             repository.collectUsageSnapshot()
 
             assertEquals(24L * 60L * 60L * 1000L, endTime.captured - startTime.captured)
+            coVerify(exactly = 1) { appBatteryUsageDao.replaceSnapshotsAfter(startTime.captured, emptyList()) }
+            coVerify(exactly = 1) { userPreferencesRepository.setAppUsageLastCollectedAt(endTime.captured) }
+        }
+
+    @Test
+    fun `collectUsageSnapshot does not advance collection time when usage query is unavailable`() =
+        runTest {
+            every { appUsageDataSource.hasUsageStatsPermission() } returns true
+            coEvery { userPreferencesRepository.getAppUsageLastCollectedAt() } returns 100L
+            coEvery { appUsageDataSource.getUsageSince(any(), any()) } returns null
+
+            repository.collectUsageSnapshot()
+
+            coVerify(exactly = 0) { appBatteryUsageDao.replaceSnapshotsAfter(any(), any()) }
+            coVerify(exactly = 0) { userPreferencesRepository.setAppUsageLastCollectedAt(any()) }
         }
 
     @Test
