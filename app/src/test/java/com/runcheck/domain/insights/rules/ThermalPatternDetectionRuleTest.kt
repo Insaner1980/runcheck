@@ -96,4 +96,24 @@ class ThermalPatternDetectionRuleTest {
 
             assertTrue(rule.evaluate(now).isEmpty())
         }
+
+    @Test
+    fun `does not count future reading toward thermal pattern minimum`() =
+        runTest {
+            val now = 100L * INSIGHT_TEST_HOUR_MS
+            val readings =
+                listOf(
+                    thermalReading(now - 30L * INSIGHT_TEST_HOUR_MS, 34.0f, 1),
+                    thermalReading(now - 24L * INSIGHT_TEST_HOUR_MS, 35.0f, 1),
+                    thermalReading(now - 18L * INSIGHT_TEST_HOUR_MS, 39.6f, 2),
+                    thermalReading(now - 12L * INSIGHT_TEST_HOUR_MS, 39.8f, 2),
+                    thermalReading(now - 6L * INSIGHT_TEST_HOUR_MS, 40.0f, 2),
+                    thermalReading(now + 1L, 40.2f, 2),
+                )
+            val rule = ThermalPatternDetectionRule(TestThermalRepository(readings))
+
+            val insights = rule.evaluate(now)
+
+            assertTrue(insights.isEmpty())
+        }
 }

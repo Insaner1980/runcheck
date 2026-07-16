@@ -56,18 +56,31 @@ class ChargerPerformanceRule
                     filter { it.chargerId != best.chargerId }.maxByOrNull { it.lastUsed ?: 0L }
                 }
 
-            return if (bestCharger != null && weakestCharger != null) {
+            return if (
+                bestCharger != null &&
+                weakestCharger != null &&
+                bestCharger.minPowerMw > 0 &&
+                percentSlower(weakestCharger.maxPowerMw, bestCharger.minPowerMw) >= MINIMUM_SLOWER_PERCENT
+            ) {
                 ChargerPerformanceComparison(
                     bestCharger = bestCharger,
                     weakestCharger = weakestCharger,
-                    percentSlower =
-                        ((1f - weakestCharger.avgPowerMw.toFloat() / bestCharger.avgPowerMw.toFloat()) * 100f)
-                            .roundToInt(),
+                    percentSlower = percentSlower(weakestCharger.avgPowerMw, bestCharger.avgPowerMw),
                 )
             } else {
                 null
             }
         }
+
+        private fun percentSlower(
+            slowerPowerMw: Int,
+            fasterPowerMw: Int,
+        ): Int =
+            if (fasterPowerMw > 0) {
+                ((1.0 - slowerPowerMw.toDouble() / fasterPowerMw.toDouble()) * 100.0).roundToInt()
+            } else {
+                0
+            }
 
         private fun ChargerPerformanceComparison.toCandidate(now: Long): InsightCandidate =
             InsightCandidate(
@@ -108,23 +121,30 @@ class ChargerPerformanceRule
             sessions: List<ChargingSession>,
         ): ChargerPerformanceSummary? {
             val powerSamples =
-                sessions.mapNotNull { session ->
-                    session.avgPowerMw ?: session.avgCurrentMa?.let { currentMa ->
-                        session.avgVoltageMv?.let { voltageMv ->
-                            (currentMa * voltageMv) / 1000
-                        }
-                    }
-                }
+                sessions.mapNotNull { it.positivePowerMw() }
             if (powerSamples.size < MINIMUM_SESSION_COUNT_PER_CHARGER) return null
 
             return ChargerPerformanceSummary(
                 chargerId = charger.id,
                 name = charger.name,
                 avgPowerMw = powerSamples.average().roundToInt(),
+                minPowerMw = powerSamples.min(),
+                maxPowerMw = powerSamples.max(),
                 sampleCount = powerSamples.size,
                 lastUsed = sessions.maxOfOrNull { it.endTime ?: it.startTime },
             )
         }
+
+        private fun ChargingSession.positivePowerMw(): Int? =
+            avgPowerMw
+                ?.takeIf { it > 0 }
+                ?: avgCurrentMa?.let { currentMa ->
+                    avgVoltageMv?.let { voltageMv ->
+                        (currentMa.toLong() * voltageMv.toLong() / 1000L)
+                            .takeIf { it in 1..Int.MAX_VALUE.toLong() }
+                            ?.toInt()
+                    }
+                }
 
         companion object {
             const val RULE_ID = "charger_performance"
@@ -146,6 +166,8 @@ private data class ChargerPerformanceSummary(
     val chargerId: Long,
     val name: String,
     val avgPowerMw: Int,
+    val minPowerMw: Int,
+    val maxPowerMw: Int,
     val sampleCount: Int,
     val lastUsed: Long?,
 )

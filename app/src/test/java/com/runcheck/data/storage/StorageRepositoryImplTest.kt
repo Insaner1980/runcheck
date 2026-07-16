@@ -46,7 +46,7 @@ class StorageRepositoryImplTest {
             assertEquals(2_000L, state.appsBytes)
             assertEquals(500L, state.totalCacheBytes)
             assertEquals(12, state.appCount)
-            assertEquals(true, state.sdCardAvailable)
+            assertEquals(true, state.removableStorageAvailable)
             assertEquals("FBE", state.encryptionStatus)
             assertEquals(2, state.storageVolumes)
         }
@@ -101,6 +101,33 @@ class StorageRepositoryImplTest {
             coVerify(exactly = 1) { storageReadingDao.deleteAll() }
         }
 
+    @Test
+    fun `unavailable app bytes remain unavailable through persistence mapping`() =
+        runTest {
+            val inserted = slot<StorageReadingEntity>()
+            coEvery { storageReadingDao.insert(capture(inserted)) } returns Unit
+
+            repository.saveReading(
+                StorageState(
+                    totalBytes = 10_000L,
+                    availableBytes = 4_000L,
+                    usedBytes = 6_000L,
+                    usagePercent = 60f,
+                    appsBytes = null,
+                ),
+            )
+
+            every { storageReadingDao.getReadingsSince(10L) } returns flowOf(listOf(inserted.captured))
+            assertEquals(
+                null,
+                repository
+                    .getReadingsSince(10L)
+                    .first()
+                    .single()
+                    .appsBytes,
+            )
+        }
+
     private fun storageInfo(): StorageDataSource.StorageInfo =
         StorageDataSource.StorageInfo(
             totalBytes = 10_000L,
@@ -111,9 +138,9 @@ class StorageRepositoryImplTest {
             appCount = 12,
             mediaBreakdown = null,
             trashInfo = null,
-            sdCardAvailable = true,
-            sdCardTotalBytes = 8_000L,
-            sdCardAvailableBytes = 2_000L,
+            removableStorageAvailable = true,
+            removableStorageTotalBytes = 8_000L,
+            removableStorageAvailableBytes = 2_000L,
             fileSystemType = "ext4",
             encryptionStatus = "FBE",
             storageVolumes = 2,

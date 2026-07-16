@@ -59,6 +59,9 @@ class ProManager
                         trialManager.trialState,
                         proPurchaseManager.isProUser,
                     ) { trial, isPurchased ->
+                        val trialIsActive =
+                            trial.isActive &&
+                                isTrialWithinPeriod(trial.startTimestamp, System.currentTimeMillis())
                         when {
                             isPurchased -> {
                                 ProState(
@@ -69,7 +72,7 @@ class ProManager
                                 )
                             }
 
-                            trial.isActive -> {
+                            trialIsActive -> {
                                 ProState(
                                     status = ProStatus.TRIAL_ACTIVE,
                                     trialDaysRemaining = trial.daysRemaining,
@@ -131,8 +134,16 @@ internal fun trialExpiryRefreshDelayMs(
     trialStartTimestamp: Long,
     now: Long,
 ): Long {
-    val expiresAt = trialStartTimestamp + TimeUnit.DAYS.toMillis(TrialManager.TRIAL_DURATION_DAYS.toLong())
+    val expiresAt = trialExpiresAtMs(trialStartTimestamp)
     return (expiresAt - now).coerceAtLeast(0L) + TRIAL_EXPIRY_REFRESH_GRACE_MS
 }
+
+private fun isTrialWithinPeriod(
+    trialStartTimestamp: Long,
+    now: Long,
+): Boolean = trialStartTimestamp > 0L && now < trialExpiresAtMs(trialStartTimestamp)
+
+private fun trialExpiresAtMs(trialStartTimestamp: Long): Long =
+    trialStartTimestamp + TimeUnit.DAYS.toMillis(TrialManager.TRIAL_DURATION_DAYS.toLong())
 
 private const val TRIAL_EXPIRY_REFRESH_GRACE_MS = 1_000L

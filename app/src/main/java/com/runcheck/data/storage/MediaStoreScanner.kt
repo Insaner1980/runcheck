@@ -6,6 +6,7 @@ import android.database.ContentObserver
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
 import com.runcheck.R
 import com.runcheck.domain.model.CleanupGroupSummary
@@ -42,9 +43,9 @@ class MediaStoreScanner
             withContext(dispatchers.io) {
                 val coroutineContext = currentCoroutineContext()
                 MediaBreakdown(
-                    imagesBytes = queryTotalSize(MediaStore.Images.Media.EXTERNAL_CONTENT_URI),
-                    videosBytes = queryTotalSize(MediaStore.Video.Media.EXTERNAL_CONTENT_URI),
-                    audioBytes = queryTotalSize(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI),
+                    imagesBytes = queryMediaCategorySize(MediaStore.Images.Media.EXTERNAL_CONTENT_URI),
+                    videosBytes = queryMediaCategorySize(MediaStore.Video.Media.EXTERNAL_CONTENT_URI),
+                    audioBytes = queryMediaCategorySize(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI),
                     documentsBytes = queryDocumentsSize(coroutineContext),
                     downloadsBytes = queryDownloadsSize(),
                 )
@@ -96,6 +97,8 @@ class MediaStoreScanner
                     }
             } catch (error: CancellationException) {
                 throw error
+            } catch (error: SecurityException) {
+                throw error
             } catch (error: Exception) {
                 ReleaseSafeLog.error(TAG, "Failed to query trashed media for $collection", error)
             }
@@ -111,30 +114,39 @@ class MediaStoreScanner
 
                 for (collection in MEDIA_COLLECTIONS) {
                     coroutineContext.ensureActive()
-                    val bundle =
-                        Bundle().apply {
-                            putInt(MediaStore.QUERY_ARG_MATCH_TRASHED, MediaStore.MATCH_ONLY)
-                        }
-                    try {
-                        resolver
-                            .query(collection, arrayOf(MediaStore.MediaColumns._ID), bundle, null)
-                            ?.use { cursor ->
-                                val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
-                                while (cursor.moveToNext()) {
-                                    coroutineContext.ensureActive()
-                                    uris.add(
-                                        android.content.ContentUris.withAppendedId(collection, cursor.getLong(idCol)),
-                                    )
-                                }
-                            }
-                    } catch (error: CancellationException) {
-                        throw error
-                    } catch (error: Exception) {
-                        ReleaseSafeLog.error(TAG, "Failed to query trashed URIs for $collection", error)
-                    }
+                    uris += queryTrashedUris(collection, coroutineContext)
                 }
 
                 uris
+            }
+
+        private fun queryTrashedUris(
+            collection: Uri,
+            coroutineContext: CoroutineContext,
+        ): List<Uri> =
+            try {
+                val bundle =
+                    Bundle().apply {
+                        putInt(MediaStore.QUERY_ARG_MATCH_TRASHED, MediaStore.MATCH_ONLY)
+                    }
+                buildList {
+                    resolver
+                        .query(collection, arrayOf(MediaStore.MediaColumns._ID), bundle, null)
+                        ?.use { cursor ->
+                            val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
+                            while (cursor.moveToNext()) {
+                                coroutineContext.ensureActive()
+                                add(android.content.ContentUris.withAppendedId(collection, cursor.getLong(idCol)))
+                            }
+                        }
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: SecurityException) {
+                throw error
+            } catch (error: Exception) {
+                ReleaseSafeLog.error(TAG, "Failed to query trashed URIs for $collection", error)
+                emptyList()
             }
 
         suspend fun findExistingUris(uriStrings: Collection<String>): Set<String> =
@@ -145,19 +157,13 @@ class MediaStoreScanner
                 buildSet {
                     uriStrings.forEach { uriString ->
                         coroutineContext.ensureActive()
-                        try {
-                            resolver
-                                .query(Uri.parse(uriString), arrayOf(MediaStore.MediaColumns._ID), null, null, null)
-                                ?.use { cursor ->
-                                    if (cursor.moveToFirst()) {
-                                        add(uriString)
-                                    }
+                        resolver
+                            .query(Uri.parse(uriString), arrayOf(MediaStore.MediaColumns._ID), null, null, null)
+                            ?.use { cursor ->
+                                if (cursor.moveToFirst()) {
+                                    add(uriString)
                                 }
-                        } catch (error: CancellationException) {
-                            throw error
-                        } catch (_: Exception) {
-                            // Treat inaccessible or missing rows as deleted to avoid overstating failures.
-                        }
+                            }
                     }
                 }
             }
@@ -166,9 +172,21 @@ class MediaStoreScanner
             withContext(dispatchers.io) {
                 val coroutineContext = currentCoroutineContext()
                 when (query.source) {
-                    CleanupScanSource.LARGE_FILES -> getLargeFilesSummary(query.filterValue, coroutineContext)
-                    CleanupScanSource.OLD_DOWNLOADS -> getOldDownloadsSummary(query.filterValue, coroutineContext)
-                    CleanupScanSource.APK_FILES -> getApkSummary(coroutineContext)
+                    CleanupScanSource.LARGE_FILES -> {
+                        getLargeFilesSummary(query.filterValue, coroutineContext)
+                    }
+
+                    CleanupScanSource.OLD_DOWNLOADS -> {
+                        getOldDownloadsSummary(
+                            olderThanMs = query.filterValue,
+                            startedAtMillis = query.startedAtMillis,
+                            coroutineContext = coroutineContext,
+                        )
+                    }
+
+                    CleanupScanSource.APK_FILES -> {
+                        getApkSummary(coroutineContext)
+                    }
                 }
             }
 
@@ -186,7 +204,13 @@ class MediaStoreScanner
                     }
 
                     CleanupScanSource.OLD_DOWNLOADS -> {
-                        loadOldDownloadsPage(offset, limit, query.filterValue, coroutineContext)
+                        loadOldDownloadsPage(
+                            offset = offset,
+                            limit = limit,
+                            olderThanMs = query.filterValue,
+                            startedAtMillis = query.startedAtMillis,
+                            coroutineContext = coroutineContext,
+                        )
                     }
 
                     CleanupScanSource.APK_FILES -> {
@@ -195,15 +219,15 @@ class MediaStoreScanner
                 }
             }
 
-        suspend fun getCleanupGroupUris(
+        suspend fun getCleanupGroupFileSizes(
             query: CleanupScanQuery,
             category: MediaCategory,
-        ): Set<String> =
+        ): Map<String, Long> =
             withContext(dispatchers.io) {
                 val coroutineContext = currentCoroutineContext()
                 when (query.source) {
                     CleanupScanSource.LARGE_FILES -> {
-                        queryUrisForLargeFileCategory(
+                        queryFileSizesForLargeFileCategory(
                             category,
                             query.filterValue,
                             coroutineContext,
@@ -211,11 +235,15 @@ class MediaStoreScanner
                     }
 
                     CleanupScanSource.OLD_DOWNLOADS -> {
-                        queryOldDownloadUris(query.filterValue, coroutineContext)
+                        queryOldDownloadFileSizes(
+                            olderThanMs = query.filterValue,
+                            startedAtMillis = query.startedAtMillis,
+                            coroutineContext = coroutineContext,
+                        )
                     }
 
                     CleanupScanSource.APK_FILES -> {
-                        queryApkUris(coroutineContext)
+                        queryApkFileSizes(coroutineContext)
                     }
                 }
             }
@@ -240,15 +268,25 @@ class MediaStoreScanner
             return { resolver.unregisterContentObserver(observer) }
         }
 
-        private fun queryTotalSize(contentUri: Uri): Long =
+        private fun queryMediaCategorySize(contentUri: Uri): Long {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return queryTotalSize(contentUri)
+            val selection = mediaBreakdownSelection()
+            return queryTotalSize(contentUri, selection.sql, selection.args)
+        }
+
+        private fun queryTotalSize(
+            contentUri: Uri,
+            selection: String? = null,
+            selectionArgs: Array<String>? = null,
+        ): Long =
             try {
                 var total = 0L
                 resolver
                     .query(
                         contentUri,
                         arrayOf(MediaStore.MediaColumns.SIZE),
-                        null,
-                        null,
+                        selection,
+                        selectionArgs,
                         null,
                     )?.use { cursor ->
                         val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
@@ -279,13 +317,14 @@ class MediaStoreScanner
 
             for (mimePattern in docMimeTypes) {
                 coroutineContext.ensureActive()
+                val selection = mediaBreakdownSelection(mimePattern)
                 try {
                     resolver
                         .query(
                             uri,
                             arrayOf(MediaStore.MediaColumns.SIZE),
-                            "${MediaStore.MediaColumns.MIME_TYPE} LIKE ?",
-                            arrayOf(mimePattern),
+                            selection.sql,
+                            selection.args,
                             null,
                         )?.use { cursor ->
                             val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
@@ -313,14 +352,15 @@ class MediaStoreScanner
             thresholdBytes: Long,
             coroutineContext: CoroutineContext,
         ): CleanupSummary {
+            val selection = largeFileSelection(thresholdBytes)
             val groups =
                 buildList {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         queryAggregateSummary(
                             collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI,
                             category = MediaCategory.DOWNLOAD,
-                            selection = "${MediaStore.MediaColumns.SIZE} > ?",
-                            selectionArgs = arrayOf(thresholdBytes.toString()),
+                            selection = selection.sql,
+                            selectionArgs = selection.args,
                             coroutineContext = coroutineContext,
                         )?.let(::add)
                     }
@@ -329,8 +369,8 @@ class MediaStoreScanner
                         queryAggregateSummary(
                             collection = descriptor.uri,
                             category = descriptor.category,
-                            selection = "${MediaStore.MediaColumns.SIZE} > ?",
-                            selectionArgs = arrayOf(thresholdBytes.toString()),
+                            selection = selection.sql,
+                            selectionArgs = selection.args,
                             coroutineContext = coroutineContext,
                         )?.let(::add)
                     }
@@ -341,32 +381,30 @@ class MediaStoreScanner
 
         private fun getOldDownloadsSummary(
             olderThanMs: Long,
+            startedAtMillis: Long,
             coroutineContext: CoroutineContext,
         ): CleanupSummary {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return CleanupSummary(emptyList(), 0, 0L, 0L)
-            val cutoff = (System.currentTimeMillis() - olderThanMs) / 1000
-            val selection = "${MediaStore.MediaColumns.DATE_MODIFIED} < ?"
-            val selectionArgs = arrayOf(cutoff.toString())
+            val selection = oldDownloadSelection(olderThanMs, startedAtMillis)
             val group =
                 queryAggregateSummary(
                     collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI,
                     category = MediaCategory.DOWNLOAD,
-                    selection = selection,
-                    selectionArgs = selectionArgs,
+                    selection = selection.sql,
+                    selectionArgs = selection.args,
                     coroutineContext = coroutineContext,
                 )
             return listOfNotNull(group).toCleanupSummary()
         }
 
         private fun getApkSummary(coroutineContext: CoroutineContext): CleanupSummary {
-            val collections = apkCollections()
             val groups =
-                collections.mapNotNull { uri ->
+                apkCollectionQueries().mapNotNull { query ->
                     queryAggregateSummary(
-                        collection = uri,
+                        collection = query.collection,
                         category = MediaCategory.APK,
-                        selection = APK_SELECTION,
-                        selectionArgs = APK_SELECTION_ARGS,
+                        selection = query.selection,
+                        selectionArgs = query.selectionArgs,
                         coroutineContext = coroutineContext,
                     )
                 }
@@ -417,6 +455,8 @@ class MediaStoreScanner
                     }
             } catch (error: CancellationException) {
                 throw error
+            } catch (error: SecurityException) {
+                throw error
             } catch (error: Exception) {
                 ReleaseSafeLog.error(TAG, "Failed to aggregate cleanup summary for $category", error)
                 null
@@ -431,13 +471,14 @@ class MediaStoreScanner
             coroutineContext: CoroutineContext,
         ): List<ScannedFile> {
             val descriptor = largeFileCollectionFor(category) ?: return emptyList()
+            val selection = largeFileSelection(thresholdBytes)
             return queryPagedFiles(
                 query =
                     PagedFileQuery(
                         collection = descriptor.uri,
                         category = descriptor.category,
-                        selection = "${MediaStore.MediaColumns.SIZE} > ?",
-                        selectionArgs = arrayOf(thresholdBytes.toString()),
+                        selection = selection.sql,
+                        selectionArgs = selection.args,
                         sortOrder = FILE_PAGE_SORT_ORDER,
                     ),
                 offset = offset,
@@ -450,17 +491,18 @@ class MediaStoreScanner
             offset: Int,
             limit: Int,
             olderThanMs: Long,
+            startedAtMillis: Long,
             coroutineContext: CoroutineContext,
         ): List<ScannedFile> {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return emptyList()
-            val cutoff = (System.currentTimeMillis() - olderThanMs) / 1000
+            val selection = oldDownloadSelection(olderThanMs, startedAtMillis)
             return queryPagedFiles(
                 query =
                     PagedFileQuery(
                         collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI,
                         category = MediaCategory.DOWNLOAD,
-                        selection = "${MediaStore.MediaColumns.DATE_MODIFIED} < ?",
-                        selectionArgs = arrayOf(cutoff.toString()),
+                        selection = selection.sql,
+                        selectionArgs = selection.args,
                         sortOrder = FILE_PAGE_SORT_ORDER,
                     ),
                 offset = offset,
@@ -476,15 +518,15 @@ class MediaStoreScanner
         ): List<ScannedFile> {
             val seen = mutableSetOf<String>()
             val results = mutableListOf<ScannedFile>()
-            for (uri in apkCollections()) {
+            for (apkQuery in apkCollectionQueries()) {
                 results +=
                     queryPagedFiles(
                         query =
                             PagedFileQuery(
-                                collection = uri,
+                                collection = apkQuery.collection,
                                 category = MediaCategory.APK,
-                                selection = APK_SELECTION,
-                                selectionArgs = APK_SELECTION_ARGS,
+                                selection = apkQuery.selection,
+                                selectionArgs = apkQuery.selectionArgs,
                                 sortOrder = FILE_PAGE_SORT_ORDER,
                             ),
                         offset = 0,
@@ -498,47 +540,60 @@ class MediaStoreScanner
                 .take(limit)
         }
 
-        private fun queryUrisForLargeFileCategory(
+        private fun queryFileSizesForLargeFileCategory(
             category: MediaCategory,
             thresholdBytes: Long,
             coroutineContext: CoroutineContext,
-        ): Set<String> {
-            val descriptor = largeFileCollectionFor(category) ?: return emptySet()
-            return queryUris(
+        ): Map<String, Long> {
+            val descriptor = largeFileCollectionFor(category) ?: return emptyMap()
+            val selection = largeFileSelection(thresholdBytes)
+            return queryFileSizes(
                 collection = descriptor.uri,
-                selection = "${MediaStore.MediaColumns.SIZE} > ?",
-                selectionArgs = arrayOf(thresholdBytes.toString()),
+                selection = selection.sql,
+                selectionArgs = selection.args,
                 coroutineContext = coroutineContext,
             )
         }
 
-        private fun queryOldDownloadUris(
+        private fun queryOldDownloadFileSizes(
             olderThanMs: Long,
+            startedAtMillis: Long,
             coroutineContext: CoroutineContext,
-        ): Set<String> {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return emptySet()
-            val cutoff = (System.currentTimeMillis() - olderThanMs) / 1000
-            return queryUris(
+        ): Map<String, Long> {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return emptyMap()
+            val selection = oldDownloadSelection(olderThanMs, startedAtMillis)
+            return queryFileSizes(
                 collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI,
-                selection = "${MediaStore.MediaColumns.DATE_MODIFIED} < ?",
-                selectionArgs = arrayOf(cutoff.toString()),
+                selection = selection.sql,
+                selectionArgs = selection.args,
                 coroutineContext = coroutineContext,
             )
         }
 
-        private fun queryApkUris(coroutineContext: CoroutineContext): Set<String> {
-            val uris = mutableSetOf<String>()
-            for (uri in apkCollections()) {
-                uris +=
-                    queryUris(
-                        collection = uri,
-                        selection = APK_SELECTION,
-                        selectionArgs = APK_SELECTION_ARGS,
+        private fun queryApkFileSizes(coroutineContext: CoroutineContext): Map<String, Long> {
+            val fileSizes = mutableMapOf<String, Long>()
+            for (query in apkCollectionQueries()) {
+                fileSizes +=
+                    queryFileSizes(
+                        collection = query.collection,
+                        selection = query.selection,
+                        selectionArgs = query.selectionArgs,
                         coroutineContext = coroutineContext,
                     )
             }
-            return uris
+            return fileSizes
         }
+
+        private fun apkCollectionQueries(): List<ApkCollectionQuery> =
+            apkCollections().map { collection ->
+                val selection =
+                    apkFileSelection(
+                        excludeDownloads =
+                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                                collection == externalFilesUri,
+                    )
+                ApkCollectionQuery(collection, selection.sql, selection.args)
+            }
 
         private fun queryPagedFiles(
             query: PagedFileQuery,
@@ -599,43 +654,49 @@ class MediaStoreScanner
                 } ?: emptyList()
             } catch (error: CancellationException) {
                 throw error
+            } catch (error: SecurityException) {
+                throw error
             } catch (error: Exception) {
                 ReleaseSafeLog.error(TAG, "Failed to query paged cleanup items for ${query.category}", error)
                 emptyList()
             }
 
-        private fun queryUris(
+        private fun queryFileSizes(
             collection: Uri,
             selection: String,
             selectionArgs: Array<String>,
             coroutineContext: CoroutineContext,
-        ): Set<String> =
+        ): Map<String, Long> =
             try {
                 resolver
                     .query(
                         collection,
-                        arrayOf(MediaStore.MediaColumns._ID),
+                        arrayOf(MediaStore.MediaColumns._ID, MediaStore.MediaColumns.SIZE),
                         selection,
                         selectionArgs,
                         null,
                     )?.use { cursor ->
                         val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
-                        buildSet {
+                        val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+                        buildMap {
                             while (cursor.moveToNext()) {
                                 coroutineContext.ensureActive()
-                                add(
+                                put(
                                     android.content.ContentUris
                                         .withAppendedId(collection, cursor.getLong(idCol))
                                         .toString(),
+                                    cursor.getLong(sizeCol),
                                 )
                             }
                         }
-                    } ?: emptySet()
+                    } ?: emptyMap()
             } catch (error: CancellationException) {
                 throw error
+            } catch (error: SecurityException) {
+                throw error
             } catch (error: Exception) {
-                ReleaseSafeLog.error(TAG, "Failed to query cleanup URIs for $collection", error)
-                emptySet()
+                ReleaseSafeLog.error(TAG, "Failed to query cleanup file sizes for $collection", error)
+                emptyMap()
             }
 
         private fun largeFileCollections(): List<CollectionDescriptor> =
@@ -695,6 +756,12 @@ class MediaStoreScanner
             val category: MediaCategory,
         )
 
+        private class ApkCollectionQuery(
+            val collection: Uri,
+            val selection: String,
+            val selectionArgs: Array<String>,
+        )
+
         private class PagedFileQuery(
             val collection: Uri,
             val category: MediaCategory,
@@ -710,12 +777,8 @@ class MediaStoreScanner
 
         private companion object {
             private const val TAG = "MediaStoreScanner"
-            private const val APK_MIME_TYPE = "application/vnd.android.package-archive"
             private const val FILE_PAGE_SORT_ORDER =
                 "${MediaStore.MediaColumns.SIZE} DESC, ${MediaStore.MediaColumns._ID} ASC"
-            private const val APK_SELECTION =
-                "${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ? OR ${MediaStore.MediaColumns.MIME_TYPE} = ?"
-            private val APK_SELECTION_ARGS = arrayOf("%.apk", APK_MIME_TYPE)
             private val MEDIA_COLLECTIONS =
                 listOf(
                     MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
@@ -732,3 +795,65 @@ class MediaStoreScanner
                 )
         }
     }
+
+internal data class MediaBreakdownSelection(
+    val sql: String,
+    val args: Array<String>,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is MediaBreakdownSelection) return false
+
+        return sql == other.sql && args.contentEquals(other.args)
+    }
+
+    override fun hashCode(): Int = 31 * sql.hashCode() + args.contentHashCode()
+}
+
+internal fun mediaBreakdownSelection(
+    mimePattern: String? = null,
+    downloadDirectory: String = Environment.DIRECTORY_DOWNLOADS,
+): MediaBreakdownSelection {
+    val nonDownloadPath =
+        "${MediaStore.MediaColumns.RELATIVE_PATH} IS NULL OR " +
+            "${MediaStore.MediaColumns.RELATIVE_PATH} NOT LIKE ?"
+    val downloadPathPattern = "$downloadDirectory/%"
+    return if (mimePattern == null) {
+        MediaBreakdownSelection(nonDownloadPath, arrayOf(downloadPathPattern))
+    } else {
+        MediaBreakdownSelection(
+            "${MediaStore.MediaColumns.MIME_TYPE} LIKE ? AND ($nonDownloadPath)",
+            arrayOf(mimePattern, downloadPathPattern),
+        )
+    }
+}
+
+internal fun apkFileSelection(excludeDownloads: Boolean): MediaBreakdownSelection {
+    val baseSelection =
+        "${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ? OR ${MediaStore.MediaColumns.MIME_TYPE} = ?"
+    val baseArgs = arrayOf("%.apk", "application/vnd.android.package-archive")
+    if (!excludeDownloads) return MediaBreakdownSelection(baseSelection, baseArgs)
+
+    val notDownload =
+        "${MediaStore.DownloadColumns.IS_DOWNLOAD} IS NULL OR " +
+            "${MediaStore.DownloadColumns.IS_DOWNLOAD} != 1"
+    return MediaBreakdownSelection(
+        "($baseSelection) AND ($notDownload)",
+        baseArgs,
+    )
+}
+
+internal fun oldDownloadSelection(
+    olderThanMs: Long,
+    startedAtMillis: Long,
+): MediaBreakdownSelection =
+    MediaBreakdownSelection(
+        "${MediaStore.MediaColumns.DATE_MODIFIED} < ?",
+        arrayOf(((startedAtMillis - olderThanMs) / 1000).toString()),
+    )
+
+internal fun largeFileSelection(thresholdBytes: Long): MediaBreakdownSelection =
+    MediaBreakdownSelection(
+        "${MediaStore.MediaColumns.SIZE} > ?",
+        arrayOf(thresholdBytes.toString()),
+    )

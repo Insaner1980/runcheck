@@ -201,7 +201,7 @@ class ChartRenderModelTest {
     }
 
     @Test
-    fun `storage history chart builder maps used space metric`() {
+    fun `storage history chart builder maps used space to percentage`() {
         val storageModel =
             buildStorageHistoryChartModel(
                 history =
@@ -219,7 +219,30 @@ class ChartRenderModelTest {
                 maxPoints = 10,
             )
 
-        assertEquals(listOf(3f), storageModel.chartData)
+        assertEquals(listOf(60f), storageModel.chartData)
+        assertEquals("%", storageModel.unit)
+    }
+
+    @Test
+    fun `storage history chart builder maps available space to SI gigabytes`() {
+        val storageModel =
+            buildStorageHistoryChartModel(
+                history =
+                    listOf(
+                        StorageReading(
+                            timestamp = 1_000L,
+                            totalBytes = 5_000_000_000L,
+                            availableBytes = 2_000_000_000L,
+                            appsBytes = 1_000_000_000L,
+                            mediaBytes = 1_000_000_000L,
+                        ),
+                    ),
+                metric = StorageHistoryMetric.AVAILABLE_SPACE,
+                period = HistoryPeriod.HOUR,
+                maxPoints = 10,
+            )
+
+        assertEquals(listOf(2f), storageModel.chartData)
         assertEquals(" GB", storageModel.unit)
     }
 

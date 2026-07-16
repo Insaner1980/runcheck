@@ -18,6 +18,7 @@ import com.runcheck.domain.repository.StorageRepository as StorageRepositoryCont
 
 private const val STORAGE_REFRESH_INTERVAL_MS = 30_000L
 private const val FILL_RATE_LOOKBACK_MS = 7L * 24 * 60 * 60 * 1000
+private const val UNAVAILABLE_STORAGE_BYTES = -1L
 
 @Singleton
 class StorageRepositoryImpl
@@ -57,9 +58,9 @@ class StorageRepositoryImpl
                             appCount = info.appCount,
                             mediaBreakdown = info.mediaBreakdown,
                             trashInfo = info.trashInfo,
-                            sdCardAvailable = info.sdCardAvailable,
-                            sdCardTotalBytes = info.sdCardTotalBytes,
-                            sdCardAvailableBytes = info.sdCardAvailableBytes,
+                            removableStorageAvailable = info.removableStorageAvailable,
+                            removableStorageTotalBytes = info.removableStorageTotalBytes,
+                            removableStorageAvailableBytes = info.removableStorageAvailableBytes,
                             fileSystemType = info.fileSystemType,
                             encryptionStatus = info.encryptionStatus,
                             storageVolumes = info.storageVolumes,
@@ -81,7 +82,7 @@ class StorageRepositoryImpl
                         timestamp = System.currentTimeMillis(),
                         totalBytes = state.totalBytes,
                         availableBytes = state.availableBytes,
-                        appsBytes = state.appsBytes ?: 0L,
+                        appsBytes = state.appsBytes ?: UNAVAILABLE_STORAGE_BYTES,
                         mediaBytes =
                             state.mediaBreakdown?.let {
                                 it.imagesBytes + it.videosBytes + it.audioBytes + it.documentsBytes +
@@ -134,6 +135,6 @@ private fun StorageReadingEntity.toDomain() =
         timestamp = timestamp,
         totalBytes = totalBytes,
         availableBytes = availableBytes,
-        appsBytes = appsBytes,
+        appsBytes = appsBytes.takeIf { it >= 0L },
         mediaBytes = mediaBytes,
     )

@@ -5,8 +5,10 @@ import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.HealthScore
 import com.runcheck.domain.model.HealthStatus
 import com.runcheck.domain.model.MeasuredValue
+import com.runcheck.domain.model.NetworkScoreMode
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.SignalQuality
@@ -18,9 +20,14 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import kotlin.math.roundToInt
 
 class HealthScoreCalculatorTest {
     private lateinit var calculator: HealthScoreCalculator
+
+    private companion object {
+        const val TEST_NOW_MILLIS = 10_000_000L
+    }
 
     @Before
     fun setup() {
@@ -146,20 +153,37 @@ class HealthScoreCalculatorTest {
     fun `overall score is weighted average`() {
         val score =
             calculator.calculate(
-                healthyBattery(),
-                healthyNetwork(),
-                healthyThermal(),
-                healthyStorage(),
+                healthyBattery().copy(healthPercent = 80),
+                healthyNetwork().copy(signalQuality = SignalQuality.FAIR, latencyMs = 250),
+                healthyThermal().copy(batteryTempC = 36f),
+                healthyStorage().copy(usagePercent = 75f),
             )
-        // Overall should be roughly the weighted average of sub-scores
-        val expectedApprox =
+        val expected =
             (
-                score.batteryScore * 0.35 +
-                    score.networkScore * 0.20 +
+                score.batteryScore * 0.40 +
+                    score.networkScore * 0.25 +
                     score.thermalScore * 0.25 +
-                    score.storageScore * 0.20
-            ).toInt()
-        assertEquals(expectedApprox, score.overallScore)
+                    score.storageScore * 0.10
+            ).roundToInt()
+        assertEquals(expected, score.overallScore)
+    }
+
+    @Test
+    fun `overall score rounds half points up before tier classification`() {
+        val score =
+            calculator.calculate(
+                healthyBattery(),
+                healthyNetwork().copy(connectionType = ConnectionType.NONE),
+                healthyThermal(),
+                healthyStorage().copy(usagePercent = 60f),
+            )
+
+        assertEquals(100, score.batteryScore)
+        assertEquals(0, score.networkScore)
+        assertEquals(100, score.thermalScore)
+        assertEquals(95, score.storageScore)
+        assertEquals(75, score.overallScore)
+        assertEquals(HealthStatus.HEALTHY, score.status)
     }
 
     @Test
@@ -188,6 +212,67 @@ class HealthScoreCalculatorTest {
         assertTrue(score.networkScore in 0..100)
         assertTrue(score.thermalScore in 0..100)
         assertTrue(score.storageScore in 0..100)
+    }
+
+    @Test
+    fun `diagnostics preserve component penalties and network scoring mode`() {
+        val score =
+            calculator.calculate(
+                healthyBattery().copy(
+                    health = BatteryHealth.OVERHEAT,
+                    temperatureC = 48f,
+                    healthPercent = 80,
+                ),
+                healthyNetwork().copy(
+                    signalQuality = SignalQuality.POOR,
+                    latencyMs = 600,
+                ),
+                healthyThermal().copy(
+                    batteryTempC = 46f,
+                    cpuTempC = 75f,
+                    thermalStatus = ThermalStatus.CRITICAL,
+                ),
+                healthyStorage().copy(usagePercent = 96f),
+            )
+
+        assertEquals(40, score.diagnostics.battery.healthPenalty)
+        assertEquals(40, score.diagnostics.battery.temperaturePenalty)
+        assertEquals(12, score.diagnostics.battery.capacityPenalty)
+        assertEquals(NetworkScoreMode.LIVE, score.diagnostics.network.mode)
+        assertEquals(65, score.diagnostics.network.signalScore)
+        assertEquals(35, score.diagnostics.network.liveLatencyPenalty)
+        assertEquals(60, score.diagnostics.thermal.batteryTemperaturePenalty)
+        assertEquals(30, score.diagnostics.thermal.cpuTemperaturePenalty)
+        assertEquals(65, score.diagnostics.thermal.statusPenalty)
+        assertEquals(80, score.diagnostics.storage.usagePenalty)
+    }
+
+    @Test
+    fun `fixed inputs and explicit time produce identical complete results`() {
+        val speedTest = recentSpeedTest(timestamp = TEST_NOW_MILLIS - 3_450_000L)
+
+        val first =
+            calculator.calculate(
+                healthyBattery(),
+                healthyNetwork(),
+                healthyThermal(),
+                healthyStorage(),
+                recentSpeedTest = speedTest,
+                nowMillis = TEST_NOW_MILLIS,
+            )
+        val second =
+            calculator.calculate(
+                healthyBattery(),
+                healthyNetwork(),
+                healthyThermal(),
+                healthyStorage(),
+                recentSpeedTest = speedTest,
+                nowMillis = TEST_NOW_MILLIS,
+            )
+
+        assertEquals(first, second)
+        assertEquals(NetworkScoreMode.FADING_SPEED_TEST, first.diagnostics.network.mode)
+        assertEquals(50, first.diagnostics.network.speedTestWeightPercent)
     }
 
     @Test
@@ -291,9 +376,10 @@ class HealthScoreCalculatorTest {
         pingMs: Int = 20,
         jitterMs: Int? = 3,
         connectionType: ConnectionType = ConnectionType.WIFI,
+        timestamp: Long = TEST_NOW_MILLIS - 60_000L,
     ) = SpeedTestResult(
         id = 1,
-        timestamp = System.currentTimeMillis() - 60_000L, // 1 minute ago — well within 1-hour window
+        timestamp = timestamp,
         downloadMbps = downloadMbps,
         uploadMbps = uploadMbps,
         pingMs = pingMs,
@@ -319,6 +405,7 @@ class HealthScoreCalculatorTest {
                         pingMs = 15,
                         jitterMs = 2,
                     ),
+                nowMillis = TEST_NOW_MILLIS,
             )
         // WiFi excellent signal, fast download, low ping, low jitter — should be very high
         assertTrue(
@@ -347,6 +434,7 @@ class HealthScoreCalculatorTest {
                         jitterMs = 40,
                         connectionType = ConnectionType.CELLULAR,
                     ),
+                nowMillis = TEST_NOW_MILLIS,
             )
         // Poor signal, slow download relative to 20 Mbps expectation, high ping, high jitter
         assertTrue(
@@ -364,6 +452,7 @@ class HealthScoreCalculatorTest {
                 healthyThermal(),
                 healthyStorage(),
                 recentSpeedTest = recentSpeedTest(jitterMs = 2),
+                nowMillis = TEST_NOW_MILLIS,
             )
 
         val highJitterScore =
@@ -373,6 +462,7 @@ class HealthScoreCalculatorTest {
                 healthyThermal(),
                 healthyStorage(),
                 recentSpeedTest = recentSpeedTest(jitterMs = 60),
+                nowMillis = TEST_NOW_MILLIS,
             )
 
         assertTrue(
@@ -386,7 +476,7 @@ class HealthScoreCalculatorTest {
         val staleSpeedTest =
             SpeedTestResult(
                 id = 1,
-                timestamp = System.currentTimeMillis() - 7_200_000L, // 2 hours ago — exceeds 1-hour window
+                timestamp = TEST_NOW_MILLIS - 7_200_000L, // 2 hours ago — exceeds 1-hour window
                 downloadMbps = 100.0,
                 uploadMbps = 50.0,
                 pingMs = 5,
@@ -405,6 +495,7 @@ class HealthScoreCalculatorTest {
                 healthyThermal(),
                 healthyStorage(),
                 recentSpeedTest = staleSpeedTest,
+                nowMillis = TEST_NOW_MILLIS,
             )
 
         val scoreWithout =
@@ -414,6 +505,7 @@ class HealthScoreCalculatorTest {
                 healthyThermal(),
                 healthyStorage(),
                 recentSpeedTest = null,
+                nowMillis = TEST_NOW_MILLIS,
             )
 
         // Both should use basic scoring, yielding the same network score
@@ -433,6 +525,7 @@ class HealthScoreCalculatorTest {
                 healthyThermal(),
                 healthyStorage(),
                 recentSpeedTest = recentSpeedTest(jitterMs = null),
+                nowMillis = TEST_NOW_MILLIS,
             )
         val lowJitterScore =
             calculator.calculate(
@@ -441,12 +534,121 @@ class HealthScoreCalculatorTest {
                 healthyThermal(),
                 healthyStorage(),
                 recentSpeedTest = recentSpeedTest(jitterMs = 2),
+                nowMillis = TEST_NOW_MILLIS,
             )
         assertEquals(
             "Missing jitter must not be converted into an assumed stability score",
             lowJitterScore.networkScore,
             nullJitterScore.networkScore,
         )
+    }
+
+    @Test
+    fun `missing jitter redistributes its weight across available speed test components`() {
+        val now = 10_000_000L
+        val score =
+            calculator.calculate(
+                healthyBattery(),
+                healthyNetwork().copy(signalQuality = SignalQuality.FAIR),
+                healthyThermal(),
+                healthyStorage(),
+                recentSpeedTest =
+                    recentSpeedTest(
+                        downloadMbps = 10.0,
+                        pingMs = 120,
+                        jitterMs = null,
+                        timestamp = now - 60_000L,
+                    ),
+                nowMillis = now,
+            )
+
+        assertEquals(
+            "Available weights 40 + 30 + 20 must be normalized to 100 percent",
+            58,
+            score.networkScore,
+        )
+    }
+
+    @Test
+    fun `speed test influence expires continuously at the one hour boundary`() {
+        val now = 10_000_000L
+        val speedTest =
+            recentSpeedTest(
+                downloadMbps = 1.0,
+                pingMs = 600,
+                jitterMs = 60,
+                timestamp = now - 3_600_000L,
+            )
+        val network = healthyNetwork().copy(signalQuality = SignalQuality.GOOD, latencyMs = 80)
+
+        val justBeforeExpiry =
+            calculator.calculate(
+                healthyBattery(),
+                network,
+                healthyThermal(),
+                healthyStorage(),
+                recentSpeedTest = speedTest,
+                nowMillis = now - 1L,
+            )
+        val atExpiry =
+            calculator.calculate(
+                healthyBattery(),
+                network,
+                healthyThermal(),
+                healthyStorage(),
+                recentSpeedTest = speedTest,
+                nowMillis = now,
+            )
+        val withoutSpeedTest =
+            calculator.calculate(
+                healthyBattery(),
+                network,
+                healthyThermal(),
+                healthyStorage(),
+                recentSpeedTest = null,
+                nowMillis = now,
+            )
+
+        assertTrue(
+            "The score must not visibly jump at 60 minutes",
+            kotlin.math.abs(justBeforeExpiry.networkScore - atExpiry.networkScore) <= 1,
+        )
+        assertEquals(withoutSpeedTest.networkScore, atExpiry.networkScore)
+    }
+
+    @Test
+    fun `recent speed test from another connection type is ignored`() {
+        val now = 10_000_000L
+        val network = healthyNetwork().copy(connectionType = ConnectionType.WIFI, latencyMs = 80)
+        val cellularSpeedTest =
+            recentSpeedTest(
+                downloadMbps = 1.0,
+                pingMs = 600,
+                jitterMs = 60,
+                connectionType = ConnectionType.CELLULAR,
+                timestamp = now - 60_000L,
+            )
+
+        val score =
+            calculator.calculate(
+                healthyBattery(),
+                network,
+                healthyThermal(),
+                healthyStorage(),
+                recentSpeedTest = cellularSpeedTest,
+                nowMillis = now,
+            )
+        val basicScore =
+            calculator.calculate(
+                healthyBattery(),
+                network,
+                healthyThermal(),
+                healthyStorage(),
+                recentSpeedTest = null,
+                nowMillis = now,
+            )
+
+        assertEquals(basicScore.networkScore, score.networkScore)
     }
 
     // ---------------------------------------------------------------
@@ -731,6 +933,36 @@ class HealthScoreCalculatorTest {
             65,
             score.storageScore,
         )
+    }
+
+    @Test
+    fun `storage score status changes at documented utilization thresholds`() {
+        val expectations =
+            listOf(
+                Triple(74.999f, 85, HealthStatus.HEALTHY),
+                Triple(75f, 65, HealthStatus.FAIR),
+                Triple(84.999f, 65, HealthStatus.FAIR),
+                Triple(85f, 45, HealthStatus.POOR),
+                Triple(94.999f, 45, HealthStatus.POOR),
+                Triple(95f, 20, HealthStatus.CRITICAL),
+            )
+
+        expectations.forEach { (usagePercent, expectedScore, expectedStatus) ->
+            val score =
+                calculator.calculate(
+                    healthyBattery(),
+                    healthyNetwork(),
+                    healthyThermal(),
+                    healthyStorage().copy(usagePercent = usagePercent),
+                )
+
+            assertEquals(
+                "Storage usage $usagePercent% should map to score $expectedScore",
+                expectedScore,
+                score.storageScore,
+            )
+            assertEquals(expectedStatus, HealthScore.statusFromScore(score.storageScore))
+        }
     }
 
     @Test

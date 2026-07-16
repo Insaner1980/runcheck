@@ -185,15 +185,22 @@ fun buildStorageHistoryChartModel(
 ): ChartRenderModel {
     val chartPoints =
         history
-            .map { reading ->
+            .mapNotNull { reading ->
                 val value =
                     when (metric) {
                         StorageHistoryMetric.USED_SPACE -> {
-                            (reading.totalBytes - reading.availableBytes).toFloat() / (1024f * 1024f * 1024f)
+                            if (reading.totalBytes <= 0L) return@mapNotNull null
+                            val availableBytes = reading.availableBytes.coerceIn(0L, reading.totalBytes)
+                            ((reading.totalBytes - availableBytes).toDouble() / reading.totalBytes.toDouble() * 100.0)
+                                .toFloat()
                         }
 
                         StorageHistoryMetric.AVAILABLE_SPACE -> {
-                            reading.availableBytes.toFloat() / (1024f * 1024f * 1024f)
+                            if (reading.availableBytes < 0L) return@mapNotNull null
+                            reading.availableBytes
+                                .toDouble()
+                                .div(BYTES_PER_GB)
+                                .toFloat()
                         }
                     }
                 reading.timestamp to value
@@ -206,11 +213,12 @@ fun buildStorageHistoryChartModel(
     return ChartRenderModel(
         chartData = chartData,
         chartTimestamps = chartTimestamps,
-        unit = " GB",
+        unit = if (metric == StorageHistoryMetric.USED_SPACE) "%" else " GB",
         yLabels = if (min != null && max != null) buildNetworkYLabels(min, max) else emptyList(),
         xLabels = if (chartTimestamps.size >= 2) buildNetworkXLabels(chartTimestamps, period) else emptyList(),
         tooltipDecimals = 1,
     )
 }
 
+private const val BYTES_PER_GB = 1_000_000_000.0
 private const val DEFAULT_TOOLTIP_TIME_SKELETON = "HmMMMd"

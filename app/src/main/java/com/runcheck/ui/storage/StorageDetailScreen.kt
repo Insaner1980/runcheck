@@ -151,6 +151,7 @@ fun StorageDetailScreen(
     var mediaAccessState by remember {
         mutableStateOf(currentMediaAccessState())
     }
+    var hasResumed by remember { mutableStateOf(false) }
     var missingMediaPermissions by remember {
         mutableStateOf(
             mediaPermissions.filter { permission ->
@@ -164,16 +165,24 @@ fun StorageDetailScreen(
             mediaPermissions.filter { permission ->
                 ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED
             }
+        if (hasResumed) {
+            viewModel.refresh()
+        } else {
+            hasResumed = true
+        }
         onPauseOrDispose { }
     }
     val shouldOpenMediaSettings =
-        mediaPermissionRequested &&
-            mediaAccessState != MediaAccessState.FULL &&
-            activity?.let { hostActivity ->
-                missingMediaPermissions.none { permission ->
+        activity?.let { hostActivity ->
+            RuncheckPermissionPolicy.shouldOpenMediaSettings(
+                permissionRequested = mediaPermissionRequested,
+                mediaAccessState = mediaAccessState,
+                missingPermissions = missingMediaPermissions,
+                shouldShowRationale = { permission ->
                     ActivityCompat.shouldShowRequestPermissionRationale(hostActivity, permission)
-                }
-            } == true
+                },
+            )
+        } == true
 
     // Trash confirmation dialog
     var showTrashConfirmDialog by rememberSaveable { mutableStateOf(false) }
@@ -207,11 +216,9 @@ fun StorageDetailScreen(
     val mediaPermissionLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestMultiplePermissions(),
-        ) { results ->
+        ) {
             mediaAccessState = currentMediaAccessState()
-            if (results.values.any { it }) {
-                viewModel.refresh()
-            }
+            viewModel.refresh()
         }
 
     LifecycleStartStopEffect(
@@ -256,6 +263,7 @@ fun StorageDetailScreen(
                     StorageContent(
                         state = state,
                         mediaAccessState = mediaAccessState,
+                        hasAllMediaPermissions = missingMediaPermissions.isEmpty(),
                         shouldOpenMediaSettings = shouldOpenMediaSettings,
                         onRequestMediaPermissions = {
                             if (shouldOpenMediaSettings) {
@@ -320,6 +328,7 @@ private fun TrashConfirmDialog(
 private fun StorageContent(
     state: StorageUiState.Success,
     mediaAccessState: MediaAccessState,
+    hasAllMediaPermissions: Boolean,
     shouldOpenMediaSettings: Boolean,
     onRequestMediaPermissions: () -> Unit,
     onRefresh: () -> Unit,
@@ -359,6 +368,7 @@ private fun StorageContent(
                 state = state,
                 storage = storage,
                 mediaAccessState = mediaAccessState,
+                hasAllMediaPermissions = hasAllMediaPermissions,
                 shouldOpenMediaSettings = shouldOpenMediaSettings,
                 onRequestMediaPermissions = onRequestMediaPermissions,
                 onDismissInfoCard = onDismissInfoCard,
@@ -398,13 +408,13 @@ private fun StorageOverviewSection( // NOSONAR
     state: StorageUiState.Success,
     storage: StorageState,
     mediaAccessState: MediaAccessState,
+    hasAllMediaPermissions: Boolean,
     shouldOpenMediaSettings: Boolean,
     onRequestMediaPermissions: () -> Unit,
     onDismissInfoCard: (String) -> Unit,
     onNavigateToLearnArticle: (String) -> Unit,
     onInfoClick: (String) -> Unit,
 ) {
-    val hasMediaPermissions = mediaAccessState == MediaAccessState.FULL
     StorageHeroCard(
         storage = storage,
         liveUsagePercent = state.liveUsagePercent,
@@ -428,7 +438,7 @@ private fun StorageOverviewSection( // NOSONAR
         )
     }
 
-    if (!hasMediaPermissions) {
+    if (!hasAllMediaPermissions) {
         StorageMediaPermissionCard(
             partialAccess = mediaAccessState == MediaAccessState.PARTIAL_VISUAL,
             shouldOpenSettings = shouldOpenMediaSettings,
@@ -436,13 +446,13 @@ private fun StorageOverviewSection( // NOSONAR
         )
     }
 
-    if (hasMediaPermissions) {
+    if (hasAllMediaPermissions) {
         storage.mediaBreakdown?.let { breakdown ->
             StorageMediaBreakdownCard(breakdown = breakdown, usedBytes = storage.usedBytes)
         }
     }
 
-    if (hasMediaPermissions && storage.mediaBreakdown != null) {
+    if (hasAllMediaPermissions && storage.mediaBreakdown != null) {
         InfoCard(
             id = InfoCardCatalog.StorageOverview.id,
             headline = stringResource(InfoCardCatalog.StorageOverview.headlineRes),
@@ -502,8 +512,8 @@ private fun StorageFooterSection(
     Column {
         StorageDetailsCard(storage = storage, onInfoClick = onInfoClick)
 
-        if (storage.sdCardAvailable) {
-            StorageSdCardCard(storage = storage)
+        if (storage.removableStorageAvailable) {
+            StorageRemovableStorageCard(storage = storage)
         }
 
         StorageQuickActionsCard()
@@ -568,6 +578,8 @@ private fun StorageMediaPermissionCard(
                         stringResource(
                             if (shouldOpenSettings) {
                                 R.string.storage_media_permission_open_settings
+                            } else if (partialAccess) {
+                                R.string.storage_media_permission_manage_selection
                             } else {
                                 R.string.storage_media_permission_grant
                             },

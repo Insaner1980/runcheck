@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -71,6 +72,7 @@ fun CleanupScreen(
     viewModel: CleanupViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val legacyDeleteConfirmationCount by viewModel.legacyDeleteConfirmationCount.collectAsStateWithLifecycle()
     val cleanupType = viewModel.cleanupType
     val context = LocalContext.current
 
@@ -81,6 +83,17 @@ fun CleanupScreen(
         ) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 viewModel.onDeleteConfirmed()
+            } else {
+                viewModel.onDeleteCancelled()
+            }
+        }
+
+    val legacyConsentLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartIntentSenderForResult(),
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                viewModel.onLegacyDeleteConsentGranted()
             } else {
                 viewModel.onDeleteCancelled()
             }
@@ -102,6 +115,40 @@ fun CleanupScreen(
                 }
             }
         }
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.legacyDeleteConsentRequests.collect { pendingIntent ->
+            legacyConsentLauncher.launch(
+                IntentSenderRequest.Builder(pendingIntent.intentSender).build(),
+            )
+        }
+    }
+
+    legacyDeleteConfirmationCount?.let { count ->
+        AlertDialog(
+            onDismissRequest = viewModel::onDeleteCancelled,
+            title = { Text(stringResource(R.string.cleanup_delete_confirm_title)) },
+            text = {
+                Text(
+                    pluralStringResource(
+                        R.plurals.cleanup_delete_confirm_message,
+                        count,
+                        count,
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = viewModel::confirmLegacyDelete) {
+                    Text(stringResource(R.string.common_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::onDeleteCancelled) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+        )
     }
 
     Box(modifier = modifier.fillMaxSize()) {

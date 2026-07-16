@@ -90,6 +90,38 @@ class BaselineAnomalyRuleTest {
             assertTrue(rule.evaluate(now).isEmpty())
         }
 
+    @Test
+    fun `returns empty when sample deviation keeps noisy baseline below anomaly threshold`() =
+        runTest {
+            val now = DAY_MS * 20
+            val readings =
+                baselineDrainDays(now, listOf(1, 1, 1, 1, 1, 3, 3)) +
+                    recentDrainDay(now, dropPerHour = 4)
+            val rule =
+                BaselineAnomalyRule(
+                    batteryRepository = TestBatteryRepository(readings),
+                    batteryDrainAnalyzer = BatteryDrainAnalyzer(),
+                )
+
+            assertTrue(rule.evaluate(now).isEmpty())
+        }
+
+    @Test
+    fun `returns empty when current window has too few fully discharging pairs`() =
+        runTest {
+            val now = DAY_MS * 20
+            val readings =
+                baselineDrainDays(now, dropPerHour = 1, dayCount = 14) +
+                    interruptedDrainWindow(start = now - DAY_MS, dropPerHour = 5)
+            val rule =
+                BaselineAnomalyRule(
+                    batteryRepository = TestBatteryRepository(readings),
+                    batteryDrainAnalyzer = BatteryDrainAnalyzer(),
+                )
+
+            assertTrue(rule.evaluate(now).isEmpty())
+        }
+
     private fun baselineDrainDays(
         now: Long,
         dropPerHourByDay: List<Int>,
@@ -136,6 +168,30 @@ class BaselineAnomalyRuleTest {
                 level = 100 - (index * dropPerHour),
             )
         }
+
+    private fun interruptedDrainWindow(
+        start: Long,
+        dropPerHour: Int,
+    ): List<BatteryReading> {
+        val statuses =
+            listOf(
+                "CHARGING",
+                "DISCHARGING",
+                "DISCHARGING",
+                "CHARGING",
+                "DISCHARGING",
+                "CHARGING",
+                "DISCHARGING",
+                "CHARGING",
+                "DISCHARGING",
+            )
+        return statuses.mapIndexed { index, status ->
+            batteryReading(
+                timestamp = start + (index * HOUR_MS),
+                level = 100 - (index * dropPerHour),
+            ).copy(status = status)
+        }
+    }
 
     private companion object {
         private const val HOUR_MS = 60L * 60L * 1000L

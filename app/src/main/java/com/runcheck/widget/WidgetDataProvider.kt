@@ -16,14 +16,16 @@ import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.MeasuredValue
+import com.runcheck.domain.model.MonitoringFreshnessPolicy
+import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.PlugType
-import com.runcheck.domain.model.SignalQuality
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
 import com.runcheck.domain.model.classifyNetworkSignalQuality
 import com.runcheck.domain.repository.ProStatusProvider
+import com.runcheck.domain.repository.UserPreferencesRepository
 import com.runcheck.domain.scoring.HealthScoreCalculator
 import com.runcheck.util.enumValueOrDefault
 import dagger.hilt.EntryPoint
@@ -44,10 +46,19 @@ internal data class HealthWidgetSnapshot(
     val batteryLevel: Int,
 )
 
+internal data class HealthWidgetReadings(
+    val battery: BatteryReadingEntity?,
+    val network: NetworkReadingEntity?,
+    val thermal: ThermalReadingEntity?,
+    val storage: StorageReadingEntity?,
+)
+
 internal sealed interface WidgetRenderState<out T> {
     data object Locked : WidgetRenderState<Nothing>
 
     data object Empty : WidgetRenderState<Nothing>
+
+    data object Stale : WidgetRenderState<Nothing>
 
     data class Content<T>(
         val snapshot: T,
@@ -71,64 +82,33 @@ internal object WidgetDataProvider {
 
     fun observeHealthWidgetState(context: Context): Flow<WidgetRenderState<HealthWidgetSnapshot>> {
         val ep = entryPoint(context)
+        val accessFlow =
+            combine(
+                ep.proStatusProvider().isProUser,
+                ep.userPreferencesRepository().getPreferences(),
+            ) { isPro, preferences -> isPro to preferences.monitoringInterval }
         return combine(
-            ep.proStatusProvider().isProUser,
+            accessFlow,
             ep.batteryReadingDao().getLatestReading(),
             ep.networkReadingDao().getLatestReading(),
             ep.thermalReadingDao().getLatestReading(),
             ep.storageReadingDao().getLatestReading(),
-        ) { isPro, batteryReading, networkReading, thermalReading, storageReading ->
-            if (!isPro) {
-                return@combine WidgetRenderState.Locked
-            }
-            val battery =
-                batteryReading?.toBatteryState()
-                    ?: return@combine WidgetRenderState.Empty
-            val network = networkReading?.toNetworkState() ?: DEFAULT_NETWORK
-            val thermal = thermalReading?.toThermalState() ?: DEFAULT_THERMAL
-            val storage = storageReading?.toStorageState() ?: DEFAULT_STORAGE
-
-            val score =
-                ep.healthScoreCalculator().calculate(
-                    battery = battery,
-                    network = network,
-                    thermal = thermal,
-                    storage = storage,
-                )
-
-            WidgetRenderState.Content(
-                HealthWidgetSnapshot(
-                    overallScore = score.overallScore,
-                    batteryLevel = battery.level,
-                ),
+        ) { access, batteryReading, networkReading, thermalReading, storageReading ->
+            healthWidgetRenderState(
+                isPro = access.first,
+                monitoringInterval = access.second,
+                readings =
+                    HealthWidgetReadings(
+                        battery = batteryReading,
+                        network = networkReading,
+                        thermal = thermalReading,
+                        storage = storageReading,
+                    ),
+                nowMillis = System.currentTimeMillis(),
+                calculator = ep.healthScoreCalculator(),
             )
         }
     }
-
-    // Neutral defaults for when no reading exists yet — must NOT penalize
-    // the health score. ConnectionType.NONE → network score 0 which tanks
-    // the overall score even though the device may be perfectly fine.
-    private val DEFAULT_NETWORK =
-        NetworkState(
-            connectionType = ConnectionType.WIFI,
-            signalDbm = null,
-            signalQuality = SignalQuality.GOOD,
-        )
-
-    private val DEFAULT_THERMAL =
-        ThermalState(
-            batteryTempC = 25f,
-            thermalStatus = ThermalStatus.NONE,
-            isThrottling = false,
-        )
-
-    private val DEFAULT_STORAGE =
-        StorageState(
-            totalBytes = 1L,
-            availableBytes = 1L,
-            usedBytes = 0L,
-            usagePercent = 0f,
-        )
 
     private fun entryPoint(context: Context): WidgetDataEntryPoint =
         EntryPointAccessors.fromApplication(
@@ -158,7 +138,61 @@ internal interface WidgetDataEntryPoint {
     fun healthScoreCalculator(): HealthScoreCalculator
 
     fun proStatusProvider(): ProStatusProvider
+
+    fun userPreferencesRepository(): UserPreferencesRepository
 }
+
+internal fun healthWidgetRenderState(
+    isPro: Boolean,
+    monitoringInterval: MonitoringInterval,
+    readings: HealthWidgetReadings,
+    nowMillis: Long,
+    calculator: HealthScoreCalculator,
+): WidgetRenderState<HealthWidgetSnapshot> {
+    if (!isPro) return WidgetRenderState.Locked
+    val batteryReading = readings.battery
+    val networkReading = readings.network
+    val thermalReading = readings.thermal
+    val storageReading = readings.storage
+    if (batteryReading == null || networkReading == null || thermalReading == null || storageReading == null) {
+        return WidgetRenderState.Empty
+    }
+
+    val timestamps =
+        listOf(
+            batteryReading.timestamp,
+            networkReading.timestamp,
+            thermalReading.timestamp,
+            storageReading.timestamp,
+        )
+    val oldestTimestamp = timestamps.min()
+    val newestTimestamp = timestamps.max()
+    val staleThresholdMillis = MonitoringFreshnessPolicy.staleAfterMillis(monitoringInterval.minutes)
+    val isInvalidOrStale =
+        oldestTimestamp < 0L ||
+            newestTimestamp > nowMillis ||
+            newestTimestamp - oldestTimestamp > HEALTH_INPUT_WINDOW_MS ||
+            nowMillis - oldestTimestamp > staleThresholdMillis
+    if (isInvalidOrStale) return WidgetRenderState.Stale
+
+    val battery = batteryReading.toBatteryState()
+    val score =
+        calculator.calculate(
+            battery = battery,
+            network = networkReading.toNetworkState(),
+            thermal = thermalReading.toThermalState(),
+            storage = storageReading.toStorageState(),
+        )
+
+    return WidgetRenderState.Content(
+        HealthWidgetSnapshot(
+            overallScore = score.overallScore,
+            batteryLevel = battery.level,
+        ),
+    )
+}
+
+private const val HEALTH_INPUT_WINDOW_MS = 120_000L
 
 internal fun BatteryReadingEntity.toBatteryWidgetSnapshot(): BatteryWidgetSnapshot =
     BatteryWidgetSnapshot(

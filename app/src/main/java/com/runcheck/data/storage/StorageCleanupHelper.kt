@@ -30,9 +30,9 @@ class StorageCleanupHelper
          * API 29 and below: Deletes files one by one without system dialog.
          * Returns the set of URIs successfully deleted.
          *
-         * On API 29 (scoped storage without createDeleteRequest), non-owned files
-         * throw RecoverableSecurityException. These are skipped and deletion
-         * continues with remaining files — the caller handles partial results.
+         * On API 29 (scoped storage without createDeleteRequest), a
+         * RecoverableSecurityException is propagated so the UI can request
+         * per-item user consent before retrying the deletion.
          */
         suspend fun deleteLegacy(uriStrings: Collection<String>): Set<String> =
             withContext(dispatchers.io) {
@@ -45,14 +45,8 @@ class StorageCleanupHelper
                             deletedUris += uriString
                         }
                     } catch (error: SecurityException) {
+                        handleLegacyDeleteSecurityException(error)
                         skippedCount++
-                        val message =
-                            if (isRecoverableDeleteSecurityException(error)) {
-                                "Skipping non-owned file (API 29 scoped storage)"
-                            } else {
-                                "Skipping file due to security restriction"
-                            }
-                        ReleaseSafeLog.warn(TAG, message, error)
                     }
                 }
                 if (deletedUris.isEmpty() && skippedCount > 0) {
@@ -78,4 +72,19 @@ class StorageCleanupHelper
         private fun isRecoverableDeleteSecurityException(error: SecurityException): Boolean =
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
                 error.javaClass.name == RECOVERABLE_SECURITY_EXCEPTION
+
+        private fun handleLegacyDeleteSecurityException(error: SecurityException) {
+            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q &&
+                isRecoverableDeleteSecurityException(error)
+            ) {
+                throw error
+            }
+            val message =
+                if (isRecoverableDeleteSecurityException(error)) {
+                    "Skipping non-owned file (API 29 scoped storage)"
+                } else {
+                    "Skipping file due to security restriction"
+                }
+            ReleaseSafeLog.warn(TAG, message, error)
+        }
     }

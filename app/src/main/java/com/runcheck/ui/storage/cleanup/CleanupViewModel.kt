@@ -1,5 +1,6 @@
 package com.runcheck.ui.storage.cleanup
 
+import android.app.PendingIntent
 import android.os.Build
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -13,9 +14,11 @@ import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.ScannedFile
 import com.runcheck.domain.model.StorageDeleteFailure
 import com.runcheck.domain.usecase.IsProUserUseCase
+import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.common.UiText
 import com.runcheck.util.ReleaseSafeLog
+import com.runcheck.util.api29RecoverableDeleteAction
 import com.runcheck.util.getEnumOrDefault
 import com.runcheck.util.getIntOrDefault
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,16 +32,19 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
+@Suppress("LargeClass") // Owns one cleanup screen state machine, including persisted delete consent.
 class CleanupViewModel
     @Inject
     constructor(
         private val savedStateHandle: SavedStateHandle,
         private val storageCleanup: StorageCleanupUseCase,
+        private val observeProAccess: ObserveProAccessUseCase,
         private val isProUser: IsProUserUseCase,
     ) : ViewModel() {
         val cleanupType: CleanupType =
@@ -49,6 +55,14 @@ class CleanupViewModel
 
         private val _deleteRequestUris = MutableSharedFlow<List<String>>()
         val deleteRequestUris: SharedFlow<List<String>> = _deleteRequestUris.asSharedFlow()
+
+        private val _legacyDeleteConsentRequests = MutableSharedFlow<PendingIntent>()
+        val legacyDeleteConsentRequests: SharedFlow<PendingIntent> =
+            _legacyDeleteConsentRequests.asSharedFlow()
+
+        private val _legacyDeleteConfirmationCount = MutableStateFlow<Int?>(null)
+        val legacyDeleteConfirmationCount: StateFlow<Int?> =
+            _legacyDeleteConfirmationCount.asStateFlow()
 
         private var selectedFilter: Int
             get() = savedStateHandle.getIntOrDefault(SELECTED_FILTER_KEY, cleanupType.defaultFilterIndex)
@@ -62,18 +76,90 @@ class CleanupViewModel
         private var maxFileSizeBytes: Long = 0L
         private var currentStorageTotal: Long = 1L
         private var currentStorageUsed: Long = 0L
-        private var pendingDeleteUris: Set<String> = emptySet()
+        private var pendingDeleteUris: Set<String>
+            get() = savedStateHandle.get<ArrayList<String>>(PENDING_DELETE_URIS_KEY)?.toSet().orEmpty()
+            set(value) {
+                savedStateHandle[PENDING_DELETE_URIS_KEY] = ArrayList(value)
+            }
+        private var activeDeleteRequestUris: Set<String>
+            get() = savedStateHandle.get<ArrayList<String>>(ACTIVE_DELETE_URIS_KEY)?.toSet().orEmpty()
+            set(value) {
+                savedStateHandle[ACTIVE_DELETE_URIS_KEY] = ArrayList(value)
+            }
+        private var confirmedDeleteRequestUris: Set<String>
+            get() = savedStateHandle.get<ArrayList<String>>(CONFIRMED_DELETE_URIS_KEY)?.toSet().orEmpty()
+            set(value) {
+                savedStateHandle[CONFIRMED_DELETE_URIS_KEY] = ArrayList(value)
+            }
         private var currentQuery: CleanupScanQuery? = null
         private var pagerFlows: Map<MediaCategory, Flow<PagingData<ScannedFile>>> = emptyMap()
         private var pagerGeneration: Int = 0
         private var selectedGroups: Set<MediaCategory> = emptySet()
         private var explicitSelectedUris: Set<String> = emptySet()
         private var explicitDeselectedUris: Set<String> = emptySet()
-        private var pendingSelectionSnapshot: CleanupSelectionSnapshot? = null
+        private var selectionToRestoreAfterScan: CleanupSelectionSnapshot? = null
+        private var pendingSelectionSnapshot: CleanupSelectionSnapshot?
+            get() {
+                val selectedGroupNames =
+                    savedStateHandle.get<ArrayList<String>>(PENDING_SELECTED_GROUPS_KEY)
+                        ?: return null
+                val metadataUris =
+                    savedStateHandle.get<ArrayList<String>>(PENDING_METADATA_URIS_KEY).orEmpty()
+                val categoryNames =
+                    savedStateHandle.get<ArrayList<String>>(PENDING_URI_CATEGORIES_KEY).orEmpty()
+                val sizes = savedStateHandle.get<LongArray>(PENDING_URI_SIZES_KEY) ?: longArrayOf()
+                val uriMetadata =
+                    metadataUris
+                        .mapIndexedNotNull { index, uri ->
+                            val category =
+                                categoryNames
+                                    .getOrNull(index)
+                                    ?.let { MediaCategory.valueOf(it) }
+                                    ?: return@mapIndexedNotNull null
+                            uri to (category to sizes.getOrElse(index) { 0L })
+                        }.toMap()
+                return CleanupSelectionSnapshot(
+                    selectedGroups = selectedGroupNames.map { MediaCategory.valueOf(it) }.toSet(),
+                    explicitSelectedUris =
+                        savedStateHandle.get<ArrayList<String>>(PENDING_SELECTED_URIS_KEY)?.toSet().orEmpty(),
+                    explicitDeselectedUris =
+                        savedStateHandle.get<ArrayList<String>>(PENDING_DESELECTED_URIS_KEY)?.toSet().orEmpty(),
+                    uriMetadata = uriMetadata,
+                )
+            }
+            set(value) {
+                if (value == null) {
+                    savedStateHandle.remove<ArrayList<String>>(PENDING_SELECTED_GROUPS_KEY)
+                    savedStateHandle.remove<ArrayList<String>>(PENDING_SELECTED_URIS_KEY)
+                    savedStateHandle.remove<ArrayList<String>>(PENDING_DESELECTED_URIS_KEY)
+                    savedStateHandle.remove<ArrayList<String>>(PENDING_METADATA_URIS_KEY)
+                    savedStateHandle.remove<ArrayList<String>>(PENDING_URI_CATEGORIES_KEY)
+                    savedStateHandle.remove<LongArray>(PENDING_URI_SIZES_KEY)
+                    return
+                }
+                val metadataEntries = value.uriMetadata.entries.toList()
+                savedStateHandle[PENDING_SELECTED_GROUPS_KEY] = ArrayList(value.selectedGroups.map(MediaCategory::name))
+                savedStateHandle[PENDING_SELECTED_URIS_KEY] = ArrayList(value.explicitSelectedUris)
+                savedStateHandle[PENDING_DESELECTED_URIS_KEY] = ArrayList(value.explicitDeselectedUris)
+                savedStateHandle[PENDING_METADATA_URIS_KEY] = ArrayList(metadataEntries.map { it.key })
+                savedStateHandle[PENDING_URI_CATEGORIES_KEY] =
+                    ArrayList(metadataEntries.map { it.value.first.name })
+                savedStateHandle[PENDING_URI_SIZES_KEY] = metadataEntries.map { it.value.second }.toLongArray()
+            }
         private var scanJob: Job? = null
 
         init {
-            scan()
+            viewModelScope.launch {
+                observeProAccess()
+                    .distinctUntilChanged()
+                    .collect { isPro ->
+                        if (isPro) {
+                            scan()
+                        } else {
+                            revokeProAccess()
+                        }
+                    }
+            }
         }
 
         fun setFilter(index: Int) {
@@ -101,6 +187,13 @@ class CleanupViewModel
                     _uiState.value = CleanupUiState.Scanning()
                     try {
                         performScan()
+                        pendingDeleteUris.takeIf { it.isNotEmpty() }?.let { uris ->
+                            if (savedStateHandle.get<Boolean>(PENDING_LEGACY_CONFIRMATION_KEY) == true) {
+                                _legacyDeleteConfirmationCount.value = uris.size
+                            } else {
+                                _uiState.value = CleanupUiState.Deleting(uris.size)
+                            }
+                        }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
@@ -139,6 +232,7 @@ class CleanupViewModel
                 selectedGroups = emptySet()
                 explicitSelectedUris = emptySet()
                 explicitDeselectedUris = emptySet()
+                selectionToRestoreAfterScan = null
                 _uiState.value = CleanupUiState.Empty
                 return
             }
@@ -173,6 +267,8 @@ class CleanupViewModel
                 }
             explicitSelectedUris = emptySet()
             explicitDeselectedUris = emptySet()
+            selectionToRestoreAfterScan?.restore()
+            selectionToRestoreAfterScan = null
 
             emitResults()
         }
@@ -225,7 +321,11 @@ class CleanupViewModel
             _uiState.value = state.copy(groups = newGroups)
         }
 
-        fun requestDelete() {
+        fun requestDelete(apiLevel: Int = Build.VERSION.SDK_INT) {
+            if (!isProUser()) {
+                revokeProAccess()
+                return
+            }
             val state = _uiState.value as? CleanupUiState.Results ?: return
             if (state.selectedCount == 0) return
 
@@ -233,82 +333,198 @@ class CleanupViewModel
                 val uris = resolveSelectedUris()
                 if (uris.isEmpty()) return@launch
                 pendingDeleteUris = uris.toSet()
+                activeDeleteRequestUris = emptySet()
+                confirmedDeleteRequestUris = emptySet()
                 pendingSelectionSnapshot = snapshotSelection()
-                _uiState.value = CleanupUiState.Deleting(uris.size)
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    _deleteRequestUris.emit(uris)
+                if (apiLevel >= Build.VERSION_CODES.R) {
+                    _uiState.value = CleanupUiState.Deleting(uris.size)
+                    emitNextDeleteRequest()
                 } else {
-                    performLegacyDelete(uris)
+                    savedStateHandle[PENDING_LEGACY_CONFIRMATION_KEY] = true
+                    _legacyDeleteConfirmationCount.value = uris.size
                 }
             }
+        }
+
+        fun confirmLegacyDelete() {
+            if (!isProUser()) {
+                revokeProAccess()
+                return
+            }
+            val uris = pendingDeleteUris.toList()
+            if (uris.isEmpty()) return
+            savedStateHandle[PENDING_LEGACY_CONFIRMATION_KEY] = false
+            _legacyDeleteConfirmationCount.value = null
+            _uiState.value = CleanupUiState.Deleting(uris.size)
+            viewModelScope.launch { performLegacyDelete(uris) }
+        }
+
+        fun onLegacyDeleteConsentGranted() {
+            if (!isProUser()) {
+                revokeProAccess()
+                return
+            }
+            val uris = pendingDeleteUris.toList()
+            if (uris.isEmpty()) return
+            viewModelScope.launch { performLegacyDelete(uris) }
         }
 
         private suspend fun performLegacyDelete(uris: List<String>) {
             try {
                 val deletedUris = storageCleanup.deleteLegacy(uris)
-                if (deletedUris.isNotEmpty()) {
-                    onDeleteSuccess(freedBytesFor(deletedUris))
-                } else {
-                    restorePendingSelection(UiText.Resource(R.string.cleanup_delete_failed))
-                }
+                completeLegacyDelete(deletedUris, UiText.Resource(R.string.cleanup_delete_failed))
             } catch (error: StorageDeleteFailure) {
-                if (error.deletedUris.isNotEmpty()) {
-                    onDeleteSuccess(freedBytesFor(error.deletedUris))
-                } else {
-                    restorePendingSelection(
-                        UiText.Resource(
-                            if (error.recoverable) {
-                                R.string.cleanup_delete_permission_error
-                            } else {
-                                R.string.cleanup_delete_failed
-                            },
-                        ),
-                    )
-                }
+                handleLegacyDeleteFailure(error)
             } catch (error: SecurityException) {
-                val message =
-                    if (isRecoverableDeleteSecurityException(error)) {
-                        "Delete permission denied (recoverable)"
-                    } else {
-                        "Delete permission denied"
-                    }
-                ReleaseSafeLog.error("CleanupVM", message, error)
-                restorePendingSelection(UiText.Resource(R.string.cleanup_delete_permission_error))
+                handleLegacyDeleteSecurityException(error)
             } catch (error: Exception) {
                 ReleaseSafeLog.error("CleanupVM", "Delete failed", error)
                 restorePendingSelection(UiText.Resource(R.string.cleanup_delete_failed))
             }
         }
 
+        private fun completeLegacyDelete(
+            deletedUris: Set<String>,
+            emptyResultMessage: UiText,
+        ) {
+            if (deletedUris.isEmpty()) {
+                restorePendingSelection(emptyResultMessage)
+                return
+            }
+            onDeleteSuccess(
+                freedBytes = freedBytesFor(deletedUris),
+                remainingSelectedUris = pendingDeleteUris - deletedUris,
+            )
+        }
+
+        private fun handleLegacyDeleteFailure(error: StorageDeleteFailure) {
+            val message =
+                UiText.Resource(
+                    if (error.recoverable) {
+                        R.string.cleanup_delete_permission_error
+                    } else {
+                        R.string.cleanup_delete_failed
+                    },
+                )
+            completeLegacyDelete(error.deletedUris, message)
+        }
+
+        private suspend fun handleLegacyDeleteSecurityException(error: SecurityException) {
+            val consentRequest =
+                if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+                    api29RecoverableDeleteAction(error)
+                } else {
+                    null
+                }
+            if (consentRequest != null) {
+                _legacyDeleteConsentRequests.emit(consentRequest)
+                return
+            }
+            val message =
+                if (isRecoverableDeleteSecurityException(error)) {
+                    "Delete permission denied (recoverable)"
+                } else {
+                    "Delete permission denied"
+                }
+            ReleaseSafeLog.error("CleanupVM", message, error)
+            restorePendingSelection(UiText.Resource(R.string.cleanup_delete_permission_error))
+        }
+
         fun onDeleteConfirmed() {
+            if (!isProUser()) {
+                revokeProAccess()
+                return
+            }
             viewModelScope.launch {
-                delay(200)
-                onDeleteSuccess(verifiedDeletedBytes())
+                scanJob?.join()
+                if (activeDeleteRequestUris.isEmpty() && confirmedDeleteRequestUris.isEmpty()) {
+                    finishDeleteAttempt()
+                    return@launch
+                }
+                if (activeDeleteRequestUris.isNotEmpty()) {
+                    confirmedDeleteRequestUris += activeDeleteRequestUris
+                    activeDeleteRequestUris = emptySet()
+                }
+                if (pendingDeleteUris.any { it !in confirmedDeleteRequestUris }) {
+                    emitNextDeleteRequest()
+                } else {
+                    finishDeleteAttempt()
+                }
             }
         }
 
         fun onDeleteCancelled() {
-            pendingDeleteUris = emptySet()
-            pendingSelectionSnapshot?.restore()
-            pendingSelectionSnapshot = null
-            emitResults()
+            viewModelScope.launch {
+                scanJob?.join()
+                savedStateHandle[PENDING_LEGACY_CONFIRMATION_KEY] = false
+                _legacyDeleteConfirmationCount.value = null
+                activeDeleteRequestUris = emptySet()
+                if (confirmedDeleteRequestUris.isEmpty()) {
+                    pendingDeleteUris = emptySet()
+                    pendingSelectionSnapshot?.restore()
+                    pendingSelectionSnapshot = null
+                    emitResults()
+                } else {
+                    finishDeleteAttempt()
+                }
+            }
         }
 
         fun onDeleteFailed(message: UiText) {
-            restorePendingSelection(message)
+            if (confirmedDeleteRequestUris.isEmpty()) {
+                restorePendingSelection(message)
+            } else {
+                viewModelScope.launch { finishDeleteAttempt() }
+            }
         }
 
         private companion object {
             private const val SELECTED_FILTER_KEY = "cleanup_selected_filter"
+            private const val PENDING_DELETE_URIS_KEY = "cleanup_pending_delete_uris"
+            private const val ACTIVE_DELETE_URIS_KEY = "cleanup_active_delete_uris"
+            private const val CONFIRMED_DELETE_URIS_KEY = "cleanup_confirmed_delete_uris"
+            private const val PENDING_SELECTED_GROUPS_KEY = "cleanup_pending_selected_groups"
+            private const val PENDING_SELECTED_URIS_KEY = "cleanup_pending_selected_uris"
+            private const val PENDING_DESELECTED_URIS_KEY = "cleanup_pending_deselected_uris"
+            private const val PENDING_METADATA_URIS_KEY = "cleanup_pending_metadata_uris"
+            private const val PENDING_URI_CATEGORIES_KEY = "cleanup_pending_uri_categories"
+            private const val PENDING_URI_SIZES_KEY = "cleanup_pending_uri_sizes"
+            private const val PENDING_LEGACY_CONFIRMATION_KEY = "cleanup_pending_legacy_confirmation"
             private const val RECOVERABLE_SECURITY_EXCEPTION =
                 "android.app.RecoverableSecurityException"
+            private const val MAX_DELETE_REQUEST_SIZE = 2_000
         }
 
-        private fun onDeleteSuccess(freedBytes: Long) {
+        private fun revokeProAccess() {
+            scanJob?.cancel()
+            scanJob = null
+            groupedFiles = emptyList()
+            pagerFlows = emptyMap()
+            currentQuery = null
+            selectedGroups = emptySet()
+            explicitSelectedUris = emptySet()
+            explicitDeselectedUris = emptySet()
+            pendingDeleteUris = emptySet()
+            activeDeleteRequestUris = emptySet()
+            confirmedDeleteRequestUris = emptySet()
+            pendingSelectionSnapshot = null
+            selectionToRestoreAfterScan = null
+            savedStateHandle[PENDING_LEGACY_CONFIRMATION_KEY] = false
+            _legacyDeleteConfirmationCount.value = null
+            _uiState.value = CleanupUiState.Error(UiText.Resource(R.string.pro_feature_locked_generic))
+        }
+
+        private fun onDeleteSuccess(
+            freedBytes: Long,
+            remainingSelectedUris: Set<String> = emptySet(),
+        ) {
             viewModelScope.launch {
                 _uiState.value = CleanupUiState.Success(freedBytes)
+                selectionToRestoreAfterScan =
+                    pendingSelectionSnapshot?.remainingSelection(remainingSelectedUris)
                 pendingDeleteUris = emptySet()
+                activeDeleteRequestUris = emptySet()
+                confirmedDeleteRequestUris = emptySet()
                 pendingSelectionSnapshot = null
                 delay(1800)
                 scan() // re-scan to show updated list
@@ -380,11 +596,45 @@ class CleanupViewModel
             return uris.sumOf { uri -> fileSizeByUri[uri] ?: 0L }
         }
 
-        private suspend fun verifiedDeletedBytes(): Long {
+        private suspend fun verifyDeleteResult(): VerifiedDeleteResult {
             val uris = pendingDeleteUris
-            if (uris.isEmpty()) return 0L
+            if (uris.isEmpty()) return VerifiedDeleteResult(0L, emptySet())
             val remainingUris = storageCleanup.findExistingUris(uris)
-            return freedBytesFor(uris - remainingUris)
+            val persistedMetadata = pendingSelectionSnapshot?.uriMetadata.orEmpty()
+            val freedBytes =
+                (uris - remainingUris).sumOf { uri ->
+                    persistedMetadata[uri]?.second ?: fileSizeByUri[uri] ?: 0L
+                }
+            return VerifiedDeleteResult(freedBytes, remainingUris)
+        }
+
+        private suspend fun emitNextDeleteRequest() {
+            val nextBatch =
+                pendingDeleteUris
+                    .asSequence()
+                    .filterNot { it in confirmedDeleteRequestUris }
+                    .take(MAX_DELETE_REQUEST_SIZE)
+                    .toSet()
+            if (nextBatch.isEmpty()) {
+                finishDeleteAttempt()
+                return
+            }
+            activeDeleteRequestUris = nextBatch
+            _deleteRequestUris.emit(nextBatch.toList())
+        }
+
+        private suspend fun finishDeleteAttempt() {
+            try {
+                delay(200)
+                val result = verifyDeleteResult()
+                onDeleteSuccess(result.freedBytes, result.remainingUris)
+            } catch (error: SecurityException) {
+                ReleaseSafeLog.error("CleanupVM", "Delete result access denied", error)
+                restorePendingSelection(UiText.Resource(R.string.cleanup_delete_permission_error))
+            } catch (error: Exception) {
+                ReleaseSafeLog.error("CleanupVM", "Delete result verification failed", error)
+                restorePendingSelection(UiText.Resource(R.string.cleanup_delete_failed))
+            }
         }
 
         // Helper to avoid smart-cast issues
@@ -414,8 +664,12 @@ class CleanupViewModel
                     .filter { uri -> fileCategoryByUri[uri] !in selectedGroups }
                     .toMutableSet()
             selectedGroups.forEach { category ->
-                val groupUris = storageCleanup.getCleanupGroupUris(query, category)
-                explicitSelections += groupUris.filterNot { it in explicitDeselectedUris }
+                val groupFileSizes = storageCleanup.getCleanupGroupFileSizes(query, category)
+                groupFileSizes.forEach { (uri, sizeBytes) ->
+                    fileSizeByUri[uri] = sizeBytes
+                    fileCategoryByUri[uri] = category
+                }
+                explicitSelections += groupFileSizes.keys.filterNot { it in explicitDeselectedUris }
             }
             return explicitSelections.toList()
         }
@@ -429,6 +683,8 @@ class CleanupViewModel
 
         private fun restorePendingSelection(message: UiText) {
             pendingDeleteUris = emptySet()
+            activeDeleteRequestUris = emptySet()
+            confirmedDeleteRequestUris = emptySet()
             pendingSelectionSnapshot?.restore()
             pendingSelectionSnapshot = null
             _uiState.value = CleanupUiState.Error(message)
@@ -439,17 +695,22 @@ class CleanupViewModel
                 selectedGroups = selectedGroups,
                 explicitSelectedUris = explicitSelectedUris,
                 explicitDeselectedUris = explicitDeselectedUris,
+                uriMetadata =
+                    (pendingDeleteUris + explicitDeselectedUris)
+                        .mapNotNull { uri ->
+                            val category = fileCategoryByUri[uri] ?: return@mapNotNull null
+                            uri to (category to (fileSizeByUri[uri] ?: 0L))
+                        }.toMap(),
             )
 
         private fun isVersionRestrictedCleanup(): Boolean =
             cleanupType in setOf(CleanupType.OLD_DOWNLOADS, CleanupType.APK_FILES)
 
         private fun defaultFilterValue(): Long =
-            when (cleanupType) {
-                CleanupType.LARGE_FILES -> 50L * 1024 * 1024
-                CleanupType.OLD_DOWNLOADS -> 30L * 86_400_000
-                CleanupType.APK_FILES -> 0L
-            }
+            cleanupType.filterOptions
+                .getOrNull(cleanupType.defaultFilterIndex)
+                ?.value
+                ?: 0L
 
         private fun CleanupType.toScanSource(): CleanupScanSource =
             when (this) {
@@ -462,11 +723,33 @@ class CleanupViewModel
             val selectedGroups: Set<MediaCategory>,
             val explicitSelectedUris: Set<String>,
             val explicitDeselectedUris: Set<String>,
+            val uriMetadata: Map<String, Pair<MediaCategory, Long>>,
         )
+
+        private data class VerifiedDeleteResult(
+            val freedBytes: Long,
+            val remainingUris: Set<String>,
+        )
+
+        private fun CleanupSelectionSnapshot.remainingSelection(
+            remainingUris: Set<String>,
+        ): CleanupSelectionSnapshot? {
+            if (remainingUris.isEmpty()) return null
+            return CleanupSelectionSnapshot(
+                selectedGroups = emptySet(),
+                explicitSelectedUris = remainingUris,
+                explicitDeselectedUris = emptySet(),
+                uriMetadata = uriMetadata.filterKeys { it in remainingUris },
+            )
+        }
 
         private fun CleanupSelectionSnapshot.restore() {
             this@CleanupViewModel.selectedGroups = this.selectedGroups
             this@CleanupViewModel.explicitSelectedUris = this.explicitSelectedUris
             this@CleanupViewModel.explicitDeselectedUris = this.explicitDeselectedUris
+            uriMetadata.forEach { (uri, metadata) ->
+                this@CleanupViewModel.fileCategoryByUri[uri] = metadata.first
+                this@CleanupViewModel.fileSizeByUri[uri] = metadata.second
+            }
         }
     }

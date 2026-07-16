@@ -1,7 +1,6 @@
 package com.runcheck.di
 
 import com.runcheck.domain.insights.engine.InsightRule
-import com.runcheck.domain.insights.rules.AppBatteryImpactRule
 import com.runcheck.domain.insights.rules.BaselineAnomalyRule
 import com.runcheck.domain.insights.rules.BatteryDegradationTrendRule
 import com.runcheck.domain.insights.rules.ChargerPerformanceRule
@@ -25,10 +24,6 @@ interface InsightsModule {
     @Binds
     @IntoSet
     fun bindBatteryDegradationTrendRule(rule: BatteryDegradationTrendRule): InsightRule
-
-    @Binds
-    @IntoSet
-    fun bindAppBatteryImpactRule(rule: AppBatteryImpactRule): InsightRule
 
     @Binds
     @IntoSet

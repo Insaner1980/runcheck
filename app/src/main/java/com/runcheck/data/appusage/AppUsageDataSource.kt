@@ -1,6 +1,7 @@
 package com.runcheck.data.appusage
 
 import android.app.AppOpsManager
+import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.pm.PackageManager
@@ -26,30 +27,30 @@ class AppUsageDataSource
         suspend fun getUsageSince(
             startTimeMs: Long,
             endTimeMs: Long,
-        ): List<AppUsageSnapshot> =
+        ): List<AppUsageSnapshot>? =
             withContext(dispatchers.io) {
                 if (endTimeMs <= startTimeMs || !hasUsageStatsPermission()) {
                     return@withContext emptyList()
                 }
 
-                val stats =
-                    usageStatsManager
-                        ?.queryUsageStats(
-                            UsageStatsManager.INTERVAL_DAILY,
-                            startTimeMs,
-                            endTimeMs,
-                        ).orEmpty()
+                val manager = usageStatsManager ?: return@withContext null
+                val eventQueryStart = (startTimeMs - EVENT_STATE_LOOKBACK_MS).coerceAtLeast(0L)
+                val usageEvents = manager.queryEvents(eventQueryStart, endTimeMs) ?: return@withContext null
+                val foregroundUsage =
+                    aggregateForegroundUsage(
+                        events = usageEvents.toActivityEvents(),
+                        startTimeMs = startTimeMs,
+                        endTimeMs = endTimeMs,
+                    )
 
                 val packageManager = context.packageManager
-                stats
+                foregroundUsage
                     .asSequence()
-                    .filter { stat ->
-                        stat.packageName.isNotBlank() && stat.totalTimeInForeground > 0L
-                    }.map { stat ->
+                    .map { (packageName, foregroundTimeMs) ->
                         AppUsageSnapshot(
-                            packageName = stat.packageName,
-                            appLabel = resolveAppLabel(packageManager, stat.packageName),
-                            foregroundTimeMs = stat.totalTimeInForeground,
+                            packageName = packageName,
+                            appLabel = resolveAppLabel(packageManager, packageName),
+                            foregroundTimeMs = foregroundTimeMs,
                         )
                     }.sortedByDescending { it.foregroundTimeMs }
                     .toList()
@@ -127,6 +128,137 @@ class AppUsageDataSource
         )
 
         companion object {
+            private const val EVENT_STATE_LOOKBACK_MS = 24L * 60L * 60L * 1000L
             private const val RECENT_USAGE_LOOKBACK_MS = 2 * 60 * 1000L
+        }
+    }
+
+internal data class UsageActivityEvent(
+    val timestamp: Long,
+    val packageName: String?,
+    val className: String?,
+    val type: UsageActivityEventType,
+)
+
+internal enum class UsageActivityEventType {
+    RESUMED,
+    PAUSED,
+    STOPPED,
+    DEVICE_SHUTDOWN,
+    DEVICE_STARTUP,
+}
+
+internal fun aggregateForegroundUsage(
+    events: List<UsageActivityEvent>,
+    startTimeMs: Long,
+    endTimeMs: Long,
+): Map<String, Long> {
+    if (endTimeMs <= startTimeMs) return emptyMap()
+
+    val packageStates = mutableMapOf<String, PackageForegroundState>()
+    val foregroundUsage = mutableMapOf<String, Long>()
+    var lastEventAt = events.minOfOrNull(UsageActivityEvent::timestamp) ?: startTimeMs
+    var resumeOrder = 0L
+    events.sortedBy(UsageActivityEvent::timestamp).forEach { event ->
+        if (event.timestamp >= endTimeMs) return@forEach
+        accrueForegroundInterval(
+            packageStates = packageStates,
+            foregroundUsage = foregroundUsage,
+            intervalStartMs = lastEventAt,
+            intervalEndMs = event.timestamp,
+            windowStartMs = startTimeMs,
+            windowEndMs = endTimeMs,
+        )
+        lastEventAt = event.timestamp
+        if (event.type == UsageActivityEventType.DEVICE_SHUTDOWN ||
+            event.type == UsageActivityEventType.DEVICE_STARTUP
+        ) {
+            packageStates.clear()
+            return@forEach
+        }
+
+        // Keep every named usage-event package, including removed, system, and launcher packages.
+        val packageName = event.packageName?.takeIf(String::isNotBlank) ?: return@forEach
+        val state = packageStates.getOrPut(packageName) { PackageForegroundState() }
+        val activityKey = event.className ?: packageName
+        when (event.type) {
+            UsageActivityEventType.RESUMED -> {
+                state.activeActivities += activityKey
+                state.lastResumeOrder = ++resumeOrder
+            }
+
+            UsageActivityEventType.PAUSED,
+            UsageActivityEventType.STOPPED,
+            -> {
+                state.activeActivities -= activityKey
+                if (state.activeActivities.isEmpty()) {
+                    packageStates -= packageName
+                }
+            }
+
+            UsageActivityEventType.DEVICE_SHUTDOWN,
+            UsageActivityEventType.DEVICE_STARTUP,
+            -> {
+                Unit
+            }
+        }
+    }
+
+    accrueForegroundInterval(
+        packageStates = packageStates,
+        foregroundUsage = foregroundUsage,
+        intervalStartMs = lastEventAt,
+        intervalEndMs = endTimeMs,
+        windowStartMs = startTimeMs,
+        windowEndMs = endTimeMs,
+    )
+    return foregroundUsage
+}
+
+private data class PackageForegroundState(
+    val activeActivities: MutableSet<String> = mutableSetOf(),
+    var lastResumeOrder: Long = 0L,
+)
+
+private fun accrueForegroundInterval(
+    packageStates: Map<String, PackageForegroundState>,
+    foregroundUsage: MutableMap<String, Long>,
+    intervalStartMs: Long,
+    intervalEndMs: Long,
+    windowStartMs: Long,
+    windowEndMs: Long,
+) {
+    val foregroundPackage = packageStates.maxByOrNull { it.value.lastResumeOrder }?.key ?: return
+    val clippedStart = intervalStartMs.coerceAtLeast(windowStartMs)
+    val clippedEnd = intervalEndMs.coerceAtMost(windowEndMs)
+    val durationMs = (clippedEnd - clippedStart).coerceAtLeast(0L)
+    if (durationMs > 0L) {
+        foregroundUsage[foregroundPackage] = foregroundUsage.getOrDefault(foregroundPackage, 0L) + durationMs
+    }
+}
+
+private fun UsageEvents.toActivityEvents(): List<UsageActivityEvent> =
+    buildList {
+        val event = UsageEvents.Event()
+        while (hasNextEvent() && getNextEvent(event)) {
+            val type =
+                when (event.eventType) {
+                    UsageEvents.Event.ACTIVITY_RESUMED -> UsageActivityEventType.RESUMED
+                    UsageEvents.Event.ACTIVITY_PAUSED -> UsageActivityEventType.PAUSED
+                    UsageEvents.Event.ACTIVITY_STOPPED -> UsageActivityEventType.STOPPED
+                    UsageEvents.Event.DEVICE_SHUTDOWN -> UsageActivityEventType.DEVICE_SHUTDOWN
+                    UsageEvents.Event.DEVICE_STARTUP -> UsageActivityEventType.DEVICE_STARTUP
+                    else -> null
+                }
+            if (type != null) {
+                add(
+                    UsageActivityEvent(
+                        timestamp = event.timeStamp,
+                        packageName = event.packageName,
+                        className = event.className,
+                        type = type,
+                    ),
+                )
+            }
         }
     }

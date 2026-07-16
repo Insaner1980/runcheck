@@ -20,10 +20,10 @@ enum class CleanupType {
         when (this) {
             LARGE_FILES -> {
                 listOf(
-                    FilterOption(R.string.cleanup_filter_10mb, 10L * 1024 * 1024),
-                    FilterOption(R.string.cleanup_filter_50mb, 50L * 1024 * 1024),
-                    FilterOption(R.string.cleanup_filter_100mb, 100L * 1024 * 1024),
-                    FilterOption(R.string.cleanup_filter_500mb, 500L * 1024 * 1024),
+                    FilterOption(R.string.cleanup_filter_10mb, 10L * BYTES_PER_MEGABYTE),
+                    FilterOption(R.string.cleanup_filter_50mb, 50L * BYTES_PER_MEGABYTE),
+                    FilterOption(R.string.cleanup_filter_100mb, 100L * BYTES_PER_MEGABYTE),
+                    FilterOption(R.string.cleanup_filter_500mb, 500L * BYTES_PER_MEGABYTE),
                 )
             }
 
@@ -53,6 +53,10 @@ enum class CleanupType {
         }
 
     val preselectAll: Boolean get() = this == APK_FILES
+
+    private companion object {
+        const val BYTES_PER_MEGABYTE = 1_000_000L
+    }
 }
 
 data class FilterOption(

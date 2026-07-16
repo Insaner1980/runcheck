@@ -6,6 +6,8 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import com.runcheck.domain.model.HealthScore
+import com.runcheck.domain.model.HealthStatus
 import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.SignalQuality
 
@@ -45,15 +47,19 @@ val LocalStatusColors = staticCompositionLocalOf { RuncheckStatusColors }
 
 @Composable
 @ReadOnlyComposable
-fun statusColorForPercent(percent: Int): Color {
-    val colors = MaterialTheme.statusColors
-    return when {
-        percent >= 75 -> colors.healthy
-        percent >= 50 -> colors.fair
-        percent >= 25 -> colors.poor
-        else -> colors.critical
+fun statusColorForPercent(percent: Int): Color = statusColor(HealthScore.statusFromScore(percent))
+
+@Composable
+@ReadOnlyComposable
+fun statusColor(status: HealthStatus): Color = MaterialTheme.statusColors.forHealthStatus(status)
+
+fun StatusColors.forHealthStatus(status: HealthStatus): Color =
+    when (status) {
+        HealthStatus.HEALTHY -> healthy
+        HealthStatus.FAIR -> fair
+        HealthStatus.POOR -> poor
+        HealthStatus.CRITICAL -> critical
     }
-}
 
 @Composable
 @ReadOnlyComposable

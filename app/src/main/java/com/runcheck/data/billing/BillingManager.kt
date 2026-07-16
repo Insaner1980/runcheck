@@ -94,7 +94,7 @@ class BillingManager
         fun initialize() {
             // Debug builds always have Pro enabled for development
             if (BuildConfig.DEBUG) {
-                updateProState(true)
+                _isProUser.value = true
                 _billingAvailable.value = true
                 initComplete.complete(Unit)
                 return
@@ -169,7 +169,6 @@ class BillingManager
 
                     override fun onBillingServiceDisconnected() {
                         _billingAvailable.value = false
-                        scheduleReconnect()
                     }
                 },
             )
@@ -360,7 +359,7 @@ class BillingManager
             }
         }
 
-        private suspend fun syncPurchases(
+        internal suspend fun syncPurchases(
             purchases: List<Purchase>,
             emitEvents: Boolean,
         ): ProPurchaseRefreshResult {
@@ -387,6 +386,7 @@ class BillingManager
                 }
 
                 pending.isNotEmpty() -> {
+                    updateProState(false)
                     if (emitEvents) _purchaseEvents.tryEmit(PurchaseEvent.Pending)
                     ProPurchaseRefreshResult.NOT_ACTIVE
                 }

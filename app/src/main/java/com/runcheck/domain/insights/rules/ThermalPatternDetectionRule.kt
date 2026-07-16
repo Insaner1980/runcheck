@@ -21,7 +21,10 @@ class ThermalPatternDetectionRule
         override suspend fun evaluate(now: Long): List<InsightCandidate> = buildCandidate(now)?.let(::listOf).orEmpty()
 
         private suspend fun buildCandidate(now: Long): InsightCandidate? {
-            val readings = thermalRepository.getReadingsSinceSync(now - LOOKBACK_MS)
+            val readings =
+                thermalRepository
+                    .getReadingsSinceSync(now - LOOKBACK_MS)
+                    .filter { reading -> reading.timestamp <= now }
             if (readings.size < MINIMUM_READING_COUNT) return null
 
             val hotReadings = readings.filter(::isHotReading)

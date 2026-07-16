@@ -1503,7 +1503,7 @@ Storage details and quick actions:
 - Details card uses `MetricRow`.
 - Dividers separate rows except the final row.
 - Quick action card uses `ListRow`s with dividers.
-- SD card card uses same panel grammar when present.
+- Removable-storage card uses the same panel grammar when present and shows `Unknown` when a detected volume's capacity cannot be read.
 
 ### 9.7 Cleanup Screens
 

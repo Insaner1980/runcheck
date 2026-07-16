@@ -4,6 +4,7 @@ import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
 import com.runcheck.data.db.entity.AppBatteryUsageEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -14,6 +15,17 @@ interface AppBatteryUsageDao {
 
     @Insert
     suspend fun insertAll(usages: List<AppBatteryUsageEntity>)
+
+    @Transaction
+    suspend fun replaceSnapshotsAfter(
+        timestamp: Long,
+        usages: List<AppBatteryUsageEntity>,
+    ) {
+        deleteAfter(timestamp)
+        if (usages.isNotEmpty()) {
+            insertAll(usages)
+        }
+    }
 
     @Query(
         """
@@ -62,6 +74,9 @@ interface AppBatteryUsageDao {
 
     @Query("DELETE FROM app_battery_usage WHERE timestamp < :cutoff")
     suspend fun deleteOlderThan(cutoff: Long)
+
+    @Query("DELETE FROM app_battery_usage WHERE timestamp > :timestamp")
+    suspend fun deleteAfter(timestamp: Long)
 
     @Query("DELETE FROM app_battery_usage")
     suspend fun deleteAll()

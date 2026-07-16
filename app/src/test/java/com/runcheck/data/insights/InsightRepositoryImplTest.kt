@@ -3,7 +3,6 @@ package com.runcheck.data.insights
 import com.google.gson.Gson
 import com.runcheck.data.db.dao.InsightDao
 import com.runcheck.data.db.entity.InsightEntity
-import com.runcheck.domain.insights.engine.InsightHomeRankingPolicy
 import com.runcheck.domain.insights.model.InsightCandidate
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
@@ -71,6 +70,58 @@ class InsightRepositoryImplTest {
         }
 
     @Test
+    fun `dismissed insight survives an empty generation and stays dismissed when it returns`() =
+        runTest {
+            val insightDao: InsightDao = mockk(relaxed = true)
+            val repository = createRepository(insightDao)
+            val dismissed =
+                insightEntity(
+                    id = 5L,
+                    ruleId = "battery_rule",
+                    dedupeKey = "same",
+                    dismissed = true,
+                    seen = true,
+                )
+            coEvery { insightDao.getByRule("battery_rule") } returns listOf(dismissed)
+
+            repository.replaceGenerationResults(
+                candidatesByRule = mapOf("battery_rule" to emptyList()),
+                now = 500L,
+            )
+            repository.replaceGenerationResults(
+                candidatesByRule =
+                    mapOf(
+                        "battery_rule" to
+                            listOf(
+                                insightCandidate(
+                                    ruleId = "battery_rule",
+                                    dedupeKey = "same",
+                                ),
+                            ),
+                    ),
+                now = 600L,
+            )
+
+            val inserted = slot<List<InsightEntity>>()
+            coVerify(exactly = 1) { insightDao.deleteUndismissedByRule("battery_rule") }
+            coVerify(exactly = 0) { insightDao.deleteByIds(listOf(5L)) }
+            coVerify(exactly = 1) { insightDao.insertAll(capture(inserted)) }
+            assertEquals(5L, inserted.captured.single().id)
+            assertEquals(true, inserted.captured.single().dismissed)
+        }
+
+    @Test
+    fun `markSeen updates only the supplied insight ids`() =
+        runTest {
+            val insightDao: InsightDao = mockk(relaxed = true)
+            val repository = createRepository(insightDao)
+
+            repository.markSeen(setOf(2L, 4L))
+
+            coVerify(exactly = 1) { insightDao.markSeen(setOf(2L, 4L)) }
+        }
+
+    @Test
     fun `getActiveInsights filters expired rows and decodes body args`() =
         runTest {
             val insightDao: InsightDao = mockk(relaxed = true)
@@ -124,7 +175,6 @@ class InsightRepositoryImplTest {
         InsightRepositoryImpl(
             insightDao = insightDao,
             gson = Gson(),
-            homeRankingPolicy = InsightHomeRankingPolicy(),
             transactionRunner = transactionRunner,
             dispatchers = TestAppDispatchers(),
         )

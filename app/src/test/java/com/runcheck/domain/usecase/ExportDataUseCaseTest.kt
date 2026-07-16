@@ -513,6 +513,34 @@ class ExportDataUseCaseTest {
             assertTrue("Should contain media bytes", dataLine.contains("30000000000"))
         }
 
+    @Test
+    fun `storage export leaves unavailable app bytes empty instead of writing zero`() =
+        runTest {
+            coEvery { storageRepository.getAllReadings() } returns
+                listOf(
+                    StorageReading(
+                        timestamp = 1_700_000_000_000L,
+                        totalBytes = 128_000_000_000L,
+                        availableBytes = 64_000_000_000L,
+                        appsBytes = null,
+                        mediaBytes = 30_000_000_000L,
+                    ),
+                )
+
+            val dataLine =
+                useCase
+                    .exportStorageCsv()
+                    .lines()
+                    .drop(1)
+                    .first { it.isNotBlank() }
+
+            assertEquals(5, dataLine.split(',').size)
+            assertTrue(
+                "Unavailable apps bytes should be an empty CSV field: $dataLine",
+                dataLine.contains(",,30000000000"),
+            )
+        }
+
     // --- CSV escaping edge case: carriage return ---
 
     @Test

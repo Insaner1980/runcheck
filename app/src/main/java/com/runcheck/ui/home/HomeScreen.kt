@@ -93,6 +93,7 @@ import com.runcheck.ui.common.connectionDisplayLabel
 import com.runcheck.ui.common.formatPercent
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.formatTemperature
+import com.runcheck.ui.common.healthStatusLabel
 import com.runcheck.ui.common.plugTypeLabel
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.common.scoreLabel
@@ -115,6 +116,7 @@ import com.runcheck.ui.pro.PostExpirationUpgradeCard
 import com.runcheck.ui.pro.TrialHomeCard
 import com.runcheck.ui.pro.TrialWelcomeSheet
 import com.runcheck.ui.theme.MotionTokens
+import com.runcheck.ui.theme.forHealthStatus
 import com.runcheck.ui.theme.heroCardColor
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
@@ -125,6 +127,7 @@ import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.runcheckHeroCardColors
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.statusColor
 import com.runcheck.ui.theme.statusColorForPercent
 import com.runcheck.ui.theme.statusColorForSignalQuality
 import com.runcheck.ui.theme.statusColorForStoragePercent
@@ -793,15 +796,6 @@ private fun HealthBreakdownRow(
 }
 
 @Composable
-private fun healthStatusLabel(status: HealthStatus): String =
-    when (status) {
-        HealthStatus.HEALTHY -> stringResource(R.string.status_healthy)
-        HealthStatus.FAIR -> stringResource(R.string.status_fair)
-        HealthStatus.POOR -> stringResource(R.string.status_poor)
-        HealthStatus.CRITICAL -> stringResource(R.string.status_critical)
-    }
-
-@Composable
 private fun HomeBatteryChargeIcon(
     level: Int,
     isCharging: Boolean,
@@ -953,17 +947,6 @@ private fun HomeBatteryChargeIcon(
 }
 
 @Composable
-private fun statusColor(status: HealthStatus): Color {
-    val colors = MaterialTheme.statusColors
-    return when (status) {
-        HealthStatus.HEALTHY -> colors.healthy
-        HealthStatus.FAIR -> colors.fair
-        HealthStatus.POOR -> colors.poor
-        HealthStatus.CRITICAL -> colors.critical
-    }
-}
-
-@Composable
 private fun HealthCategoryBar(
     batteryScore: Int,
     thermalScore: Int,
@@ -979,15 +962,15 @@ private fun HealthCategoryBar(
     val statusColors = MaterialTheme.statusColors
     val scores =
         listOf(
-            batteryLabel to statusColorFromScore(batteryScore, statusColors),
-            thermalLabel to statusColorFromScore(thermalScore, statusColors),
+            batteryLabel to statusColors.forHealthStatus(HealthScore.statusFromScore(batteryScore)),
+            thermalLabel to statusColors.forHealthStatus(HealthScore.statusFromScore(thermalScore)),
             networkLabel to
                 if (isNetworkConnected) {
-                    statusColorFromScore(networkScore, statusColors)
+                    statusColors.forHealthStatus(HealthScore.statusFromScore(networkScore))
                 } else {
                     statusColors.unavailable
                 },
-            storageLabel to statusColorFromScore(storageScore, statusColors),
+            storageLabel to statusColors.forHealthStatus(HealthScore.statusFromScore(storageScore)),
         )
 
     Column(modifier = modifier) {
@@ -1023,14 +1006,3 @@ private fun HealthCategoryBar(
         }
     }
 }
-
-private fun statusColorFromScore(
-    score: Int,
-    colors: com.runcheck.ui.theme.StatusColors,
-): Color =
-    when {
-        score >= 75 -> colors.healthy
-        score >= 50 -> colors.fair
-        score >= 25 -> colors.poor
-        else -> colors.critical
-    }

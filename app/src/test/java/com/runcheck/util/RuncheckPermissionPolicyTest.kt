@@ -104,12 +104,10 @@ class RuncheckPermissionPolicyTest {
     }
 
     @Test
-    fun `android 14 all media grants are full access`() {
+    fun `android 14 full visual grant does not require other media grants`() {
         val granted =
             setOf(
                 Manifest.permission.READ_MEDIA_IMAGES,
-                Manifest.permission.READ_MEDIA_VIDEO,
-                Manifest.permission.READ_MEDIA_AUDIO,
             )
 
         assertEquals(
@@ -117,6 +115,22 @@ class RuncheckPermissionPolicyTest {
             RuncheckPermissionPolicy.mediaAccessStateForApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 it in granted
             },
+        )
+    }
+
+    @Test
+    fun `android 14 partial visual access keeps media reselection available`() {
+        assertFalse(
+            RuncheckPermissionPolicy.shouldOpenMediaSettings(
+                permissionRequested = true,
+                mediaAccessState = MediaAccessState.PARTIAL_VISUAL,
+                missingPermissions =
+                    listOf(
+                        Manifest.permission.READ_MEDIA_IMAGES,
+                        Manifest.permission.READ_MEDIA_VIDEO,
+                    ),
+                shouldShowRationale = { false },
+            ),
         )
     }
 

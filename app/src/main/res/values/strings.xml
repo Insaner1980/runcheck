@@ -58,7 +58,7 @@
     <string name="insight_charger_performance_body">%1$s is charging about %2$s%% slower than your best saved charger.</string>
     <string name="insight_storage_pressure_title">Storage may fill up soon</string>
     <string name="insight_storage_pressure_body">At the current growth rate, free space could run out in about %1$s.</string>
-    <string name="insight_storage_impact_title">Storage pressure is lowering device health</string>
+    <string name="insight_storage_impact_title">Storage pressure coincides with lower storage health</string>
     <string name="insight_storage_impact_body">Storage health is down to %1$s/100, and free space may run out in about %2$s at the current growth rate.</string>
     <string name="insight_thermal_pattern_title">Heat has stayed elevated recently</string>
     <string name="insight_thermal_pattern_body">Recent thermal readings were elevated about %1$s%% of the time, averaging around %2$s°C battery temperature.</string>
@@ -68,9 +68,9 @@
     <string name="insight_app_usage_body">%1$s accounted for %2$s%% of tracked foreground use in the last day, about %3$s.</string>
     <string name="insight_network_signal_pattern_title">Weak cellular signal pattern detected</string>
     <string name="insight_network_signal_pattern_body">Cellular signal was weak in %1$s%% of recent checks, averaging %2$s dBm.</string>
-    <string name="insight_network_drain_title">Weak signal is likely increasing battery drain</string>
+    <string name="insight_network_drain_title">Weak signal coincides with higher battery drain</string>
     <string name="insight_network_drain_body">During weak cellular coverage, battery drain ran about %1$s%% higher than during stronger signal windows (around %2$s dBm).</string>
-    <string name="insight_heat_battery_wear_title">Heat is stressing battery performance</string>
+    <string name="insight_heat_battery_wear_title">Higher battery drain coincides with heat</string>
     <string name="insight_heat_battery_wear_body">During hotter periods, battery drain ran about %1$s%% higher, with battery temperature peaking around %2$s°C.</string>
     <string name="home_free_suffix">free</string>
     <string name="home_status_summary">%1$s · %2$s · %3$s</string>
@@ -88,11 +88,6 @@
     <string name="status_poor">Poor</string>
     <string name="status_critical">Critical</string>
 
-    <!-- Health Score Labels (descriptive text for the numeric score) -->
-    <string name="score_excellent">Excellent</string>
-    <string name="score_good">Good</string>
-    <string name="score_fair">Fair</string>
-    <string name="score_poor">Poor</string>
     <string name="score_unrated">Unrated</string>
 
     <!-- Thermal Labels -->
@@ -298,6 +293,7 @@
     <string name="network_speed_test_no_results">No speed test results yet</string>
     <string name="unit_mhz">MHz</string>
     <string name="common_cancel">Cancel</string>
+    <string name="common_delete">Delete</string>
     <string name="common_close">Close</string>
     <string name="common_yes">Yes</string>
     <string name="common_no">No</string>
@@ -361,7 +357,7 @@
     <string name="storage_available">Available</string>
     <string name="storage_apps">Apps</string>
     <string name="storage_fill_rate">Fill Rate Estimate</string>
-    <string name="storage_sd_card">SD Card</string>
+    <string name="storage_removable">Removable Storage</string>
     <string name="storage_filesystem">File System</string>
     <string name="storage_encryption">Encryption</string>
     <string name="storage_volumes">Storage Volumes</string>
@@ -392,8 +388,9 @@
     <string name="storage_media_permission_title">Allow media access for storage tools</string>
     <string name="storage_media_permission_message">Grant media access only if you want accurate photos, videos, audio, downloads, and cleanup suggestions. runcheck uses this data only on your device.</string>
     <string name="storage_media_permission_partial_title">Limited media access</string>
-    <string name="storage_media_permission_partial_message">Only selected photos and videos are visible to runcheck. Allow full media access in Android settings for accurate storage breakdown and cleanup suggestions.</string>
+    <string name="storage_media_permission_partial_message">Only selected photos and videos are visible to runcheck. Manage your selection or allow full access for accurate storage breakdown and cleanup suggestions.</string>
     <string name="storage_media_permission_grant">Grant permission</string>
+    <string name="storage_media_permission_manage_selection">Manage selection</string>
     <string name="storage_media_permission_open_settings">Open app settings</string>
     <string name="storage_large_files">Large Files</string>
     <string name="storage_large_files_desc">Files larger than 50 MB</string>
@@ -430,6 +427,11 @@
     <string name="cleanup_not_supported_version_title">Not supported on this Android version</string>
     <string name="cleanup_not_supported_version_message">Old Downloads and APK Files cleanup requires Android 11 or newer.</string>
     <string name="cleanup_delete_failed">Could not delete the selected files.</string>
+    <string name="cleanup_delete_confirm_title">Delete selected files?</string>
+    <plurals name="cleanup_delete_confirm_message">
+        <item quantity="one">This will permanently delete %1$d selected file. This cannot be undone.</item>
+        <item quantity="other">This will permanently delete %1$d selected files. This cannot be undone.</item>
+    </plurals>
     <string name="cleanup_delete_permission_error">Android blocked deletion for one or more files.</string>
     <plurals name="cleanup_free_action">
         <item quantity="one">Free %1$s \u00B7 %2$d item</item>
@@ -589,6 +591,7 @@
     <string name="widget_health_name">Device Health</string>
     <string name="widget_health_description">Shows overall health score with category indicators</string>
     <string name="widget_health_score_label">Health Score</string>
+    <string name="widget_health_score_with_status">%1$s · %2$s</string>
     <string name="widget_battery_short_label">Bat</string>
     <string name="widget_percent_value">%1$d%%</string>
     <string name="widget_temperature_value">%1$.1f°C</string>
@@ -599,6 +602,8 @@
     <string name="widget_preview_battery_current" translatable="false">-450 mA</string>
     <string name="widget_no_data_title">No data yet</string>
     <string name="widget_no_data_message">Open runcheck to collect readings</string>
+    <string name="widget_stale_data_title">Data out of date</string>
+    <string name="widget_stale_data_message">Open runcheck to refresh the health score</string>
 
     <!-- Database -->
     <string name="database_reset_notice">History data was reset due to a database update. Monitoring will continue normally.</string>
@@ -1188,7 +1193,7 @@
     <!-- Learn Articles - General -->
     <string name="learn_health_score_title">How the Health Score Works</string>
     <string name="learn_health_score_preview">How runcheck calculates the overall health score from battery, network, thermal, and storage data.</string>
-    <string name="learn_health_score_body" formatted="false">## What it measures\n\nThe health score combines four categories: battery, network, thermal, and storage. Battery score looks at battery health flags, temperature, voltage, and health percentage when available. Network score uses signal quality and latency, and it can also use a recent speed test. Thermal score uses battery temperature, CPU temperature if available, and Android\'s thermal status. Storage score is based on overall storage usage percentage.\n\n## How it\'s calculated\n\nEach category starts near an ideal range and loses points as readings move into less healthy ranges. The overall score weights battery at 40%, network at 25%, thermal at 25%, and storage at 10%. A recent speed test can refine the network score, but the score still works without one. When the device is disconnected, there is no current network signal to rate, so the network category is shown as Unrated instead of presenting the internal zero as a measured result.\n\n## Score ranges\n\n90–100: Excellent — your device is in great shape. 70–89: Good — normal wear and minor issues. 50–69: Fair — noticeable issues that could be addressed. Below 50: Poor — significant problems affecting daily use.\n\n## Improving your score\n\nThe score highlights which category needs attention. Check the matching detail screen to see which input is dragging the score down. Some factors, like long-term battery wear, may need hardware repair, while others, like signal quality or storage pressure, can often be improved immediately.</string>
+    <string name="learn_health_score_body" formatted="false">## What it measures\n\nThe health score combines four categories: battery, network, thermal, and storage. Battery score looks at battery health flags, temperature, voltage, and health percentage when available. Network score uses signal quality and latency, and it can also use a recent speed test. Thermal score uses battery temperature, CPU temperature if available, and Android\'s thermal status. Storage score is based on overall storage usage percentage.\n\n## How it\'s calculated\n\nEach category starts near an ideal range and loses points as readings move into less healthy ranges. The overall score weights battery at 40%, network at 25%, thermal at 25%, and storage at 10%. A recent speed test can refine the network score, but the score still works without one. When the device is disconnected, there is no current network signal to rate, so the network category is shown as Unrated instead of presenting the internal zero as a measured result.\n\n## Score ranges\n\n75–100: Healthy — your device is in good shape. 50–74: Fair — noticeable issues that could be addressed. 25–49: Poor — significant issues are affecting device health. 0–24: Critical — multiple or severe problems need attention.\n\n## Improving your score\n\nThe score highlights which category needs attention. Check the matching detail screen to see which input is dragging the score down. Some factors, like long-term battery wear, may need hardware repair, while others, like signal quality or storage pressure, can often be improved immediately.</string>
 
     <string name="learn_sw_vs_hw_title">Software vs Hardware Problems</string>
     <string name="learn_sw_vs_hw_preview">How to tell if your phone\'s issues are from software (fixable) or hardware (needs repair).</string>

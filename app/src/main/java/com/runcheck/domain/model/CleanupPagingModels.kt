@@ -22,4 +22,5 @@ enum class CleanupScanSource {
 data class CleanupScanQuery(
     val source: CleanupScanSource,
     val filterValue: Long,
+    val startedAtMillis: Long = System.currentTimeMillis(),
 )

@@ -15,6 +15,7 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.provideContent
+import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
@@ -26,6 +27,10 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.runcheck.R
+import com.runcheck.domain.model.HealthScore
+import com.runcheck.ui.common.healthStatusLabelRes
+import com.runcheck.ui.theme.RuncheckStatusColors
+import com.runcheck.ui.theme.forHealthStatus
 
 class HealthWidget : GlanceAppWidget() {
     companion object {
@@ -52,6 +57,7 @@ class HealthWidget : GlanceAppWidget() {
             when (val state = widgetState) {
                 WidgetRenderState.Empty -> WidgetEmptyContent(context)
                 WidgetRenderState.Locked -> WidgetLockedContent(context, R.string.widget_health_name)
+                WidgetRenderState.Stale -> WidgetStaleContent(context)
                 is WidgetRenderState.Content -> HealthWidgetContent(context, state.snapshot)
             }
         }
@@ -63,8 +69,13 @@ class HealthWidget : GlanceAppWidget() {
         snapshot: HealthWidgetSnapshot,
     ) {
         val healthScoreLabel = context.getString(R.string.widget_health_score_label)
+        val status = HealthScore.statusFromScore(snapshot.overallScore)
+        val statusLabel = context.getString(healthStatusLabelRes(status))
+        val scoreLabel = context.getString(R.string.widget_health_score_with_status, healthScoreLabel, statusLabel)
         val batteryLabel = context.getString(R.string.widget_battery_short_label)
         val batteryValue = context.getString(R.string.widget_percent_value, snapshot.batteryLevel)
+        val statusColor = RuncheckStatusColors.forHealthStatus(status)
+        val statusColorProvider = ColorProvider(statusColor, statusColor)
 
         GlanceTheme {
             val size = LocalSize.current
@@ -79,15 +90,15 @@ class HealthWidget : GlanceAppWidget() {
                         TextStyle(
                             fontSize = if (size.width >= LARGE.width) 48.sp else 40.sp,
                             fontWeight = FontWeight.Bold,
-                            color = GlanceTheme.colors.onSurface,
+                            color = statusColorProvider,
                         ),
                 )
                 Text(
-                    text = healthScoreLabel,
+                    text = scoreLabel,
                     style =
                         TextStyle(
                             fontSize = 12.sp,
-                            color = GlanceTheme.colors.onSurfaceVariant,
+                            color = statusColorProvider,
                         ),
                 )
                 Spacer(modifier = GlanceModifier.height(8.dp))

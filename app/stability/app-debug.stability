@@ -572,6 +572,13 @@ public fun com.runcheck.ui.common.formatTemperature(valueCelsius: kotlin.Float, 
     - fractionDigits: STABLE (primitive type)
 
 @Composable
+public fun com.runcheck.ui.common.healthStatusLabel(status: com.runcheck.domain.model.HealthStatus): kotlin.String
+  skippable: true
+  restartable: true
+  params:
+    - status: STABLE (class with no mutable properties)
+
+@Composable
 public fun com.runcheck.ui.common.plugTypeLabel(plugType: com.runcheck.domain.model.PlugType): kotlin.String
   skippable: true
   restartable: true
@@ -1346,13 +1353,6 @@ private fun com.runcheck.ui.home.WideHomeGridSection(state: com.runcheck.ui.home
     - onNavigateToProUpgrade: STABLE (function type)
 
 @Composable
-private fun com.runcheck.ui.home.healthStatusLabel(status: com.runcheck.domain.model.HealthStatus): kotlin.String
-  skippable: true
-  restartable: true
-  params:
-    - status: STABLE (class with no mutable properties)
-
-@Composable
 public fun com.runcheck.ui.home.insights.InsightRow(insight: com.runcheck.domain.insights.model.Insight, onClick: kotlin.Function0<kotlin.Unit>?, onDismiss: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
   skippable: false
   restartable: true
@@ -1402,13 +1402,6 @@ internal fun com.runcheck.ui.home.insights.resolveInsightTitle(insight: com.runc
   restartable: true
   params:
     - insight: RUNTIME (requires runtime check)
-
-@Composable
-private fun com.runcheck.ui.home.statusColor(status: com.runcheck.domain.model.HealthStatus): androidx.compose.ui.graphics.Color
-  skippable: true
-  restartable: true
-  params:
-    - status: STABLE (class with no mutable properties)
 
 @Composable
 public fun com.runcheck.ui.insights.InsightsScreen(onBack: kotlin.Function0<kotlin.Unit>, navigationHandlers: com.runcheck.ui.home.insights.InsightNavigationHandlers, modifier: androidx.compose.ui.Modifier, viewModel: com.runcheck.ui.insights.InsightsViewModel): kotlin.Unit
@@ -2155,12 +2148,13 @@ internal fun com.runcheck.ui.storage.StorageCleanupToolsSection(storage: com.run
     - onEmptyTrash: STABLE (function type)
 
 @Composable
-private fun com.runcheck.ui.storage.StorageContent(state: com.runcheck.ui.storage.StorageUiState.Success, mediaAccessState: com.runcheck.util.MediaAccessState, shouldOpenMediaSettings: kotlin.Boolean, onRequestMediaPermissions: kotlin.Function0<kotlin.Unit>, onRefresh: kotlin.Function0<kotlin.Unit>, onNavigateToCleanup: kotlin.Function1<com.runcheck.ui.storage.cleanup.CleanupType, kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, onEmptyTrash: kotlin.Function0<kotlin.Unit>, onDismissInfoCard: kotlin.Function1<kotlin.String, kotlin.Unit>, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.storage.StorageContent(state: com.runcheck.ui.storage.StorageUiState.Success, mediaAccessState: com.runcheck.util.MediaAccessState, hasAllMediaPermissions: kotlin.Boolean, shouldOpenMediaSettings: kotlin.Boolean, onRequestMediaPermissions: kotlin.Function0<kotlin.Unit>, onRefresh: kotlin.Function0<kotlin.Unit>, onNavigateToCleanup: kotlin.Function1<com.runcheck.ui.storage.cleanup.CleanupType, kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, onEmptyTrash: kotlin.Function0<kotlin.Unit>, onDismissInfoCard: kotlin.Function1<kotlin.String, kotlin.Unit>, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
     - state: RUNTIME (requires runtime check)
     - mediaAccessState: STABLE (class with no mutable properties)
+    - hasAllMediaPermissions: STABLE (primitive type)
     - shouldOpenMediaSettings: STABLE (primitive type)
     - onRequestMediaPermissions: STABLE (function type)
     - onRefresh: STABLE (function type)
@@ -2237,13 +2231,14 @@ private fun com.runcheck.ui.storage.StorageMediaPermissionCard(partialAccess: ko
     - onAction: STABLE (function type)
 
 @Composable
-private fun com.runcheck.ui.storage.StorageOverviewSection(state: com.runcheck.ui.storage.StorageUiState.Success, storage: com.runcheck.domain.model.StorageState, mediaAccessState: com.runcheck.util.MediaAccessState, shouldOpenMediaSettings: kotlin.Boolean, onRequestMediaPermissions: kotlin.Function0<kotlin.Unit>, onDismissInfoCard: kotlin.Function1<kotlin.String, kotlin.Unit>, onNavigateToLearnArticle: kotlin.Function1<kotlin.String, kotlin.Unit>, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.storage.StorageOverviewSection(state: com.runcheck.ui.storage.StorageUiState.Success, storage: com.runcheck.domain.model.StorageState, mediaAccessState: com.runcheck.util.MediaAccessState, hasAllMediaPermissions: kotlin.Boolean, shouldOpenMediaSettings: kotlin.Boolean, onRequestMediaPermissions: kotlin.Function0<kotlin.Unit>, onDismissInfoCard: kotlin.Function1<kotlin.String, kotlin.Unit>, onNavigateToLearnArticle: kotlin.Function1<kotlin.String, kotlin.Unit>, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
     - state: RUNTIME (requires runtime check)
     - storage: STABLE (class with no mutable properties)
     - mediaAccessState: STABLE (class with no mutable properties)
+    - hasAllMediaPermissions: STABLE (primitive type)
     - shouldOpenMediaSettings: STABLE (primitive type)
     - onRequestMediaPermissions: STABLE (function type)
     - onDismissInfoCard: STABLE (function type)
@@ -2265,7 +2260,7 @@ internal fun com.runcheck.ui.storage.StorageQuickActionsCard(): kotlin.Unit
   params:
 
 @Composable
-internal fun com.runcheck.ui.storage.StorageSdCardCard(storage: com.runcheck.domain.model.StorageState): kotlin.Unit
+internal fun com.runcheck.ui.storage.StorageRemovableStorageCard(storage: com.runcheck.domain.model.StorageState): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -2505,6 +2500,13 @@ public fun com.runcheck.ui.theme.spacing(): com.runcheck.ui.theme.Spacing
   params:
 
 @Composable
+public fun com.runcheck.ui.theme.statusColor(status: com.runcheck.domain.model.HealthStatus): androidx.compose.ui.graphics.Color
+  skippable: true
+  restartable: true
+  params:
+    - status: STABLE (class with no mutable properties)
+
+@Composable
 public fun com.runcheck.ui.theme.statusColorForPercent(percent: kotlin.Int): androidx.compose.ui.graphics.Color
   skippable: true
   restartable: true
@@ -2682,6 +2684,13 @@ internal fun com.runcheck.widget.WidgetLockedContent(context: android.content.Co
   params:
     - context: RUNTIME (requires runtime check)
     - widgetNameResId: STABLE (primitive type)
+
+@Composable
+internal fun com.runcheck.widget.WidgetStaleContent(context: android.content.Context): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - context: RUNTIME (requires runtime check)
 
 @Composable
 internal fun com.runcheck.widget.widgetContainerModifier(): androidx.glance.GlanceModifier

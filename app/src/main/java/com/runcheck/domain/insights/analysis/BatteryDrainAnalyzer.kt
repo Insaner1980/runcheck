@@ -22,10 +22,7 @@ class BatteryDrainAnalyzer
             dischargingStatuses: Set<String> = DEFAULT_DISCHARGING_STATUSES,
         ): Float? {
             val dischargingPairs =
-                readings
-                    .sortedBy { it.timestamp }
-                    .zipWithNext()
-                    .filter { (_, current) -> current.status in dischargingStatuses }
+                readings.dischargingPairs(dischargingStatuses)
             if (dischargingPairs.isEmpty()) return null
 
             val totalDrainPct =

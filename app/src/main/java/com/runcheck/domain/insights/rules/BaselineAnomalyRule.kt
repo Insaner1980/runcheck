@@ -1,6 +1,7 @@
 package com.runcheck.domain.insights.rules
 
 import com.runcheck.domain.insights.analysis.BatteryDrainAnalyzer
+import com.runcheck.domain.insights.analysis.dischargingPairs
 import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.model.InsightCandidate
 import com.runcheck.domain.insights.model.InsightPriority
@@ -97,7 +98,7 @@ class BaselineAnomalyRule
             val baselineRate = baselineRates.average().toFloat()
             if (baselineRate <= 0f) return null
 
-            val standardDeviation = baselineRates.standardDeviation().coerceAtLeast(MINIMUM_STANDARD_DEVIATION)
+            val standardDeviation = baselineRates.sampleStandardDeviation().coerceAtLeast(MINIMUM_STANDARD_DEVIATION)
             val zScore = (currentRate - baselineRate) / standardDeviation
             val rateRatio = currentRate / baselineRate
 
@@ -107,18 +108,13 @@ class BaselineAnomalyRule
             }
         }
 
-        private fun List<BatteryReading>.dischargingPairCount(): Int =
-            sortedBy { it.timestamp }
-                .zipWithNext()
-                .count { (_, current) -> current.status in BatteryDrainAnalyzer.DEFAULT_DISCHARGING_STATUSES }
+        private fun List<BatteryReading>.dischargingPairCount(): Int = dischargingPairs().size
 
-        private fun List<Float>.standardDeviation(): Float {
+        private fun List<Float>.sampleStandardDeviation(): Float {
+            if (size < 2) return 0f
             val mean = average()
-            val variance =
-                map { rate -> (rate - mean).pow(2) }
-                    .average()
-                    .toFloat()
-            return sqrt(variance)
+            val squaredDeviationSum = sumOf { rate -> (rate - mean).pow(2) }
+            return sqrt(squaredDeviationSum / (size - 1)).toFloat()
         }
 
         private fun resolvePriority(

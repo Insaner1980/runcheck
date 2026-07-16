@@ -4,10 +4,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.runcheck.R
+import com.runcheck.domain.insights.engine.InsightHomeRankingPolicy
 import com.runcheck.domain.insights.policy.visibleForProAccess
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.HealthScore
+import com.runcheck.domain.model.MonitoringFreshnessPolicy
 import com.runcheck.domain.model.NetworkState
+import com.runcheck.domain.model.SpeedTestResult
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.repository.InsightRepository
@@ -16,6 +19,7 @@ import com.runcheck.domain.scoring.HealthScoreCalculator
 import com.runcheck.domain.usecase.ChargerSessionTracker
 import com.runcheck.domain.usecase.GetBatteryStateUseCase
 import com.runcheck.domain.usecase.GetNetworkStateUseCase
+import com.runcheck.domain.usecase.GetSpeedTestHistoryUseCase
 import com.runcheck.domain.usecase.GetStorageStateUseCase
 import com.runcheck.domain.usecase.GetThermalStateUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
@@ -49,7 +53,9 @@ class HomeViewModel
         private val getNetworkState: GetNetworkStateUseCase,
         private val getThermalState: GetThermalStateUseCase,
         private val getStorageState: GetStorageStateUseCase,
+        private val getSpeedTestHistory: GetSpeedTestHistoryUseCase,
         private val insightRepository: InsightRepository,
+        private val insightHomeRankingPolicy: InsightHomeRankingPolicy,
         private val monitoringStatusRepository: MonitoringStatusRepository,
         private val proStateProvider: ProStateProvider,
         private val trialManager: TrialManager,
@@ -130,11 +136,12 @@ class HomeViewModel
             loadJob =
                 viewModelScope.launch {
                     val preferencesFlow = manageUserPreferences.observePreferences()
+                    val freshnessTicker = monitoringFreshnessTicker()
                     val monitoringStaleFlow =
                         combine(
                             monitoringStatusRepository.observeLastWorkerHeartbeatAt(),
                             preferencesFlow,
-                            monitoringFreshnessTicker(),
+                            freshnessTicker,
                         ) { lastHeartbeatAt, preferences, now ->
                             isMonitoringStale(
                                 lastHeartbeatAt = lastHeartbeatAt,
@@ -143,13 +150,20 @@ class HomeViewModel
                             )
                         }.distinctUntilChanged()
 
+                    val speedTestScoreContextFlow =
+                        combine(
+                            getSpeedTestHistory.getLatest(),
+                            freshnessTicker,
+                        ) { speedTest, now -> SpeedTestScoreContext(speedTest, now) }
+
                     val dataFlow =
                         combine(
                             getBatteryState(),
                             getNetworkState(),
                             getThermalState(),
                             getStorageState(),
-                        ) { battery, network, thermal, storage ->
+                            speedTestScoreContextFlow,
+                        ) { battery, network, thermal, storage, speedTestContext ->
                             DataSnapshot(
                                 battery = battery,
                                 network = network,
@@ -161,21 +175,17 @@ class HomeViewModel
                                         network = network,
                                         thermal = thermal,
                                         storage = storage,
+                                        recentSpeedTest = speedTestContext.speedTest,
+                                        nowMillis = speedTestContext.nowMillis,
                                     ),
                             )
                         }
 
                     val insightFlow =
                         combine(
-                            insightRepository.getHomeInsights(limit = MAX_HOME_INSIGHTS),
                             insightRepository.getActiveInsights(),
                             insightRepository.getUnseenCount(),
-                        ) { insights, activeInsights, _ ->
-                            InsightSnapshot(
-                                insights = insights,
-                                activeInsights = activeInsights,
-                            )
-                        }
+                        ) { activeInsights, _ -> activeInsights }
 
                     combine(
                         dataFlow,
@@ -183,7 +193,7 @@ class HomeViewModel
                         proStateProvider.proState,
                         preferencesFlow,
                         monitoringStaleFlow,
-                    ) { data, insightSnapshot, proState, preferences, monitoringStale ->
+                    ) { data, activeInsights, proState, preferences, monitoringStale ->
                         val showWelcomeSheet =
                             proState.status == ProStatus.TRIAL_ACTIVE &&
                                 !trialManager.isWelcomeShown()
@@ -222,8 +232,12 @@ class HomeViewModel
                             }
 
                         val isPro = proState.isPro
-                        val visibleInsights = insightSnapshot.insights.visibleForProAccess(isPro)
-                        val visibleActiveInsights = insightSnapshot.activeInsights.visibleForProAccess(isPro)
+                        val visibleActiveInsights = activeInsights.visibleForProAccess(isPro)
+                        val visibleInsights =
+                            insightHomeRankingPolicy.selectHomeInsights(
+                                insights = visibleActiveInsights,
+                                limit = MAX_HOME_INSIGHTS,
+                            )
 
                         HomeUiState.Success(
                             healthScore = data.health,
@@ -267,7 +281,7 @@ class HomeViewModel
 
             lastSeenInsightIds = unseenIds
             viewModelScope.launch {
-                insightRepository.markAllSeen()
+                insightRepository.markSeen(unseenIds)
             }
         }
 
@@ -286,8 +300,7 @@ class HomeViewModel
             now: Long,
         ): Boolean {
             if (lastHeartbeatAt == null) return false
-            val intervalMs = intervalMinutes * 60_000L
-            return now - lastHeartbeatAt > intervalMs * STALE_THRESHOLD_MULTIPLIER
+            return now - lastHeartbeatAt > MonitoringFreshnessPolicy.staleAfterMillis(intervalMinutes)
         }
 
         private suspend fun maybeTrackChargerSession(state: BatteryState) {
@@ -309,9 +322,9 @@ class HomeViewModel
             val health: HealthScore,
         )
 
-        private data class InsightSnapshot(
-            val insights: List<com.runcheck.domain.insights.model.Insight>,
-            val activeInsights: List<com.runcheck.domain.insights.model.Insight>,
+        private data class SpeedTestScoreContext(
+            val speedTest: SpeedTestResult?,
+            val nowMillis: Long,
         )
 
         companion object {
@@ -319,7 +332,6 @@ class HomeViewModel
             private const val DISPLAY_UPDATE_INTERVAL_MS = 333L
             private const val CHARGER_SESSION_TRACK_INTERVAL_MS = 15_000L
             private const val MONITORING_STALE_CHECK_INTERVAL_MS = 15_000L
-            private const val STALE_THRESHOLD_MULTIPLIER = 3
             private const val KEY_EXPIRATION_MODAL_SHOWN = "expiration_modal_shown"
         }
     }

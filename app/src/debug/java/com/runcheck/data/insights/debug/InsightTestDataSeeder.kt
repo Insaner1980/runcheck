@@ -61,52 +61,34 @@ class InsightTestDataSeeder
 
         private suspend fun seedBatteryReadings(now: Long) {
             val windowMs = 7L * DAY_MS
-            val intervalMs = 6L * HOUR_MS
-            val samplesPerWindow = 28
-            val previousStart = now - (windowMs * 2)
+            val previousIntervalMs = 4L * HOUR_MS
+            val currentIntervalMs = 6L * HOUR_MS
+            val previousStart = now - (windowMs * 2) - DAY_MS
             val currentStart = now - windowMs
 
             insertBatteryWindow(
                 start = previousStart,
-                samples = samplesPerWindow,
-                intervalMs = intervalMs,
+                samples = 48,
+                intervalMs = previousIntervalMs,
                 startLevel = 96,
                 endLevel = 82,
             )
             insertBatteryWindow(
                 start = currentStart,
                 levels =
-                    listOf(
-                        81,
-                        80,
-                        79,
-                        78,
-                        77,
-                        76,
-                        75,
-                        74,
-                        73,
-                        72,
-                        71,
-                        70,
-                        69,
-                        68,
-                        67,
-                        66,
-                        65,
-                        64,
-                        62,
-                        60,
-                        58,
-                        56,
-                        52,
-                        48,
-                        44,
-                        40,
-                        36,
-                        32,
-                    ),
-                intervalMs = intervalMs,
+                    List(20) { 100 } +
+                        listOf(
+                            100,
+                            99,
+                            98,
+                            97,
+                            97,
+                            78,
+                            59,
+                            40,
+                            21,
+                        ),
+                intervalMs = currentIntervalMs,
             )
         }
 
@@ -129,8 +111,10 @@ class InsightTestDataSeeder
             listOf(
                 chargingSession(fastChargerId, now - (12L * DAY_MS), 31_000),
                 chargingSession(fastChargerId, now - (8L * DAY_MS), 30_000),
+                chargingSession(fastChargerId, now - (4L * DAY_MS), 32_000),
                 chargingSession(deskChargerId, now - (6L * DAY_MS), 18_000),
                 chargingSession(deskChargerId, now - (2L * DAY_MS), 17_000),
+                chargingSession(deskChargerId, now - DAY_MS, 18_500),
             ).forEach { session ->
                 chargerDao.insertSession(session)
             }
@@ -193,7 +177,7 @@ class InsightTestDataSeeder
             val currentStart = now - (7L * DAY_MS)
             val intervalMs = 6L * HOUR_MS
             val cellularSignals =
-                listOf(-96, -98, -97, -95, -113, -116, -118, -115)
+                listOf(-112, -98, -97, -95, -113, -116, -118, -115)
             cellularSignals.forEachIndexed { index, signalDbm ->
                 networkReadingDao.insert(
                     NetworkReadingEntity(
@@ -240,7 +224,7 @@ class InsightTestDataSeeder
             val intervalMs = 6L * HOUR_MS
             val profile =
                 listOf(
-                    Triple(34.0f, 58.0f, ThermalStatus.LIGHT),
+                    Triple(40.5f, 68.0f, ThermalStatus.MODERATE),
                     Triple(33.7f, 57.0f, ThermalStatus.NONE),
                     Triple(34.4f, 59.0f, ThermalStatus.LIGHT),
                     Triple(34.2f, 58.5f, ThermalStatus.LIGHT),
@@ -311,28 +295,28 @@ class InsightTestDataSeeder
                         packageName = "com.demo.streambox",
                         appLabel = "StreamBox",
                         foregroundTimeMs = 2L * HOUR_MS,
-                        estimatedDrainMah = 220f,
+                        estimatedDrainMah = null,
                     ),
                     AppBatteryUsageEntity(
                         timestamp = now - (4L * HOUR_MS),
                         packageName = "com.demo.streambox",
                         appLabel = "StreamBox",
                         foregroundTimeMs = 2L * HOUR_MS + (30L * MINUTE_MS),
-                        estimatedDrainMah = 280f,
+                        estimatedDrainMah = null,
                     ),
                     AppBatteryUsageEntity(
                         timestamp = now - (11L * HOUR_MS),
                         packageName = "com.demo.mailbox",
                         appLabel = "Mailbox",
                         foregroundTimeMs = 45L * MINUTE_MS,
-                        estimatedDrainMah = 36f,
+                        estimatedDrainMah = null,
                     ),
                     AppBatteryUsageEntity(
                         timestamp = now - (7L * HOUR_MS),
                         packageName = "com.demo.maps",
                         appLabel = "City Maps",
                         foregroundTimeMs = 30L * MINUTE_MS,
-                        estimatedDrainMah = 32f,
+                        estimatedDrainMah = null,
                     ),
                 ),
             )

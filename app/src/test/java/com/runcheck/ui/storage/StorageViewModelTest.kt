@@ -1,6 +1,7 @@
 package com.runcheck.ui.storage
 
 import androidx.lifecycle.SavedStateHandle
+import com.runcheck.R
 import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.UserPreferences
@@ -12,6 +13,7 @@ import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.MainDispatcherRule
+import com.runcheck.ui.common.UiText
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -20,6 +22,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -64,6 +68,53 @@ class StorageViewModelTest {
 
             coVerify(exactly = 0) { storageCleanup.getTrashedUris() }
         }
+
+    @Test
+    fun `empty trash emits no delete request when trash is empty`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            prepareProStorageState()
+            coEvery { storageCleanup.getTrashedUris() } returns emptyList()
+            val viewModel = createViewModel()
+
+            viewModel.emptyTrash()
+            runCurrent()
+
+            assertTrue(viewModel.trashDeleteRequestUris.replayCache.isEmpty())
+        }
+
+    @Test
+    fun `empty trash reports permission error when access is revoked during query`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            prepareProStorageState()
+            coEvery { storageCleanup.getTrashedUris() } throws SecurityException("revoked")
+            val viewModel = createViewModel()
+
+            viewModel.emptyTrash()
+            runCurrent()
+
+            assertEquals(
+                StorageUiState.Error(UiText.Resource(R.string.cleanup_delete_permission_error)),
+                viewModel.uiState.value,
+            )
+            assertTrue(viewModel.trashDeleteRequestUris.replayCache.isEmpty())
+        }
+
+    private fun prepareProStorageState() {
+        every { getStorageState() } returns
+            flowOf(
+                StorageState(
+                    totalBytes = 1L,
+                    availableBytes = 1L,
+                    usedBytes = 0L,
+                    usagePercent = 0f,
+                ),
+            )
+        every { observeProAccess() } returns flowOf(true)
+        every { isProUser() } returns true
+        every { manageInfoCardDismissals.observeDismissedCardIds() } returns flowOf(emptySet())
+        every { manageUserPreferences.observePreferences() } returns flowOf(UserPreferences())
+        every { getStorageHistory(HistoryPeriod.WEEK) } returns flowOf(emptyList())
+    }
 
     private fun createViewModel(): StorageViewModel =
         StorageViewModel(

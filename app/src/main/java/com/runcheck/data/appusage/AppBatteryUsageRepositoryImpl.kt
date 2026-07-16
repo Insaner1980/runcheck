@@ -15,6 +15,8 @@ import com.runcheck.util.AppDispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,6 +29,8 @@ class AppBatteryUsageRepositoryImpl
         private val userPreferencesRepository: UserPreferencesRepository,
         private val dispatchers: AppDispatchers,
     ) : AppBatteryUsageRepository {
+        private val collectionMutex = Mutex()
+
         override fun getAggregatedUsageSince(since: Long): Flow<PagingData<AppBatteryUsage>> =
             Pager(
                 config =
@@ -49,36 +53,37 @@ class AppBatteryUsageRepositoryImpl
         override suspend fun getUsageSinceSync(since: Long): List<AppBatteryUsage> =
             appBatteryUsageDao.getUsageSinceSync(since).map { it.toDomain() }
 
-        override suspend fun collectUsageSnapshot() {
-            if (!appUsageDataSource.hasUsageStatsPermission()) {
-                return
-            }
+        override suspend fun collectUsageSnapshot(): Unit =
+            collectionMutex.withLock {
+                if (!appUsageDataSource.hasUsageStatsPermission()) {
+                    return
+                }
 
-            val endTime = System.currentTimeMillis()
-            val earliestStartTime = endTime - DEFAULT_COLLECTION_WINDOW_MS
-            val startTime =
-                userPreferencesRepository
-                    .getAppUsageLastCollectedAt()
-                    ?.coerceAtMost(endTime)
-                    ?.coerceAtLeast(earliestStartTime)
-                    ?: earliestStartTime
+                val endTime = System.currentTimeMillis()
+                val earliestStartTime = endTime - DEFAULT_COLLECTION_WINDOW_MS
+                val startTime =
+                    userPreferencesRepository
+                        .getAppUsageLastCollectedAt()
+                        ?.coerceAtMost(endTime)
+                        ?.coerceAtLeast(earliestStartTime)
+                        ?: earliestStartTime
 
-            val usage = appUsageDataSource.getUsageSince(startTime, endTime)
-            if (usage.isNotEmpty()) {
-                appBatteryUsageDao.insertAll(
-                    usage.map { snapshot ->
-                        AppBatteryUsageEntity(
-                            timestamp = endTime,
-                            packageName = snapshot.packageName,
-                            appLabel = snapshot.appLabel,
-                            foregroundTimeMs = snapshot.foregroundTimeMs,
-                            estimatedDrainMah = null,
-                        )
-                    },
+                val usage = appUsageDataSource.getUsageSince(startTime, endTime) ?: return@withLock
+                appBatteryUsageDao.replaceSnapshotsAfter(
+                    timestamp = startTime,
+                    usages =
+                        usage.map { snapshot ->
+                            AppBatteryUsageEntity(
+                                timestamp = endTime,
+                                packageName = snapshot.packageName,
+                                appLabel = snapshot.appLabel,
+                                foregroundTimeMs = snapshot.foregroundTimeMs,
+                                estimatedDrainMah = null,
+                            )
+                        },
                 )
+                userPreferencesRepository.setAppUsageLastCollectedAt(endTime)
             }
-            userPreferencesRepository.setAppUsageLastCollectedAt(endTime)
-        }
 
         override suspend fun deleteOlderThan(cutoff: Long) = appBatteryUsageDao.deleteOlderThan(cutoff)
 

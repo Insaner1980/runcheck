@@ -7,7 +7,9 @@ internal fun List<BatteryReading>.dischargingPairs(
 ): List<Pair<BatteryReading, BatteryReading>> =
     sortedBy { it.timestamp }
         .zipWithNext()
-        .filter { (_, current) -> current.status in dischargingStatuses }
+        .filter { (previous, current) ->
+            previous.status in dischargingStatuses && current.status in dischargingStatuses
+        }
 
 internal fun Pair<BatteryReading, BatteryReading>.toDrainSample(): DrainSample? {
     val (previous, current) = this

@@ -40,20 +40,52 @@ class InsightHomeRankingPolicyTest {
         assertEquals(listOf(1L, 3L, 2L), selected.map { it.id })
     }
 
+    @Test
+    fun `caps selection at three even when requested limit is higher`() {
+        val insights =
+            InsightTarget.entries
+                .filterNot { it == InsightTarget.NONE }
+                .mapIndexed { index, target ->
+                    insight(id = index + 1L, target = target, type = InsightType.CROSS_CATEGORY)
+                }
+
+        val selected = policy.selectHomeInsights(insights, limit = 10)
+
+        assertEquals(3, selected.size)
+    }
+
+    @Test
+    fun `orders by ranking fields and uses id as deterministic final tie breaker`() {
+        val insights =
+            listOf(
+                insight(id = 4, priority = InsightPriority.MEDIUM, confidence = 1f, generatedAt = 500L),
+                insight(id = 3, priority = InsightPriority.HIGH, confidence = 0.8f, generatedAt = 500L),
+                insight(id = 2, priority = InsightPriority.HIGH, confidence = 0.9f, generatedAt = 400L),
+                insight(id = 1, priority = InsightPriority.HIGH, confidence = 0.9f, generatedAt = 400L),
+            )
+
+        val selected = policy.selectHomeInsights(insights, limit = 3)
+
+        assertEquals(listOf(1L, 2L, 3L), selected.map { it.id })
+    }
+
     private fun insight(
         id: Long,
-        target: InsightTarget,
-        type: InsightType,
+        target: InsightTarget = InsightTarget.BATTERY,
+        type: InsightType = InsightType.BATTERY,
+        priority: InsightPriority = InsightPriority.HIGH,
+        confidence: Float = 0.9f,
+        generatedAt: Long = 100L - id,
     ) = Insight(
         id = id,
         ruleId = "rule-$id",
         type = type,
-        priority = InsightPriority.HIGH,
-        confidence = 0.9f,
+        priority = priority,
+        confidence = confidence,
         titleKey = "title_$id",
         bodyKey = "body_$id",
         bodyArgs = emptyList(),
-        generatedAt = 100L - id,
+        generatedAt = generatedAt,
         expiresAt = 1_000L,
         target = target,
         seen = false,

@@ -29,10 +29,10 @@ class StorageCleanupUseCase
             category: MediaCategory,
         ): Flow<PagingData<ScannedFile>> = storageCleanupRepository.getCleanupItems(query, category)
 
-        suspend fun getCleanupGroupUris(
+        suspend fun getCleanupGroupFileSizes(
             query: CleanupScanQuery,
             category: MediaCategory,
-        ): Set<String> = storageCleanupRepository.getCleanupGroupUris(query, category)
+        ): Map<String, Long> = storageCleanupRepository.getCleanupGroupFileSizes(query, category)
 
         suspend fun findExistingUris(uriStrings: Collection<String>): Set<String> =
             storageCleanupRepository.findExistingUris(uriStrings)
