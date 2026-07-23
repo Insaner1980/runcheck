@@ -3,8 +3,8 @@ buildscript {
     val securityPinnedBuildscriptModules =
         arrayOf(
             "com.fasterxml.jackson.core:jackson-annotations:2.22",
-            "com.fasterxml.jackson.core:jackson-core:2.22.0",
-            "com.fasterxml.jackson.core:jackson-databind:2.22.0",
+            "com.fasterxml.jackson.core:jackson-core:2.22.1",
+            "com.fasterxml.jackson.core:jackson-databind:2.22.1",
             "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.22.1",
             "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.22.0",
             "com.fasterxml.jackson.module:jackson-module-blackbird:2.22.0",
