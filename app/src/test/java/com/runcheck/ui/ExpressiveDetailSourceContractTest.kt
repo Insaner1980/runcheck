@@ -62,6 +62,8 @@ class ExpressiveDetailSourceContractTest {
 
         val learn = source("learn/LearnScreen.kt")
         assertTrue(learn.contains("ExpressiveSingleChoiceSelector("))
+        assertTrue(learn.contains("LearnArticleCatalog.generalArticles"))
+        assertTrue(learn.contains("R.string.learn_topic_general"))
 
         val pro = source("pro/ProUpgradeScreen.kt")
         assertTrue(pro.contains("ExpressiveDetailScaffold("))

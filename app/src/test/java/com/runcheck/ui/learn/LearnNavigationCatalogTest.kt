@@ -2,6 +2,7 @@ package com.runcheck.ui.learn
 
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.navigation.Screen
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -58,6 +59,28 @@ class LearnNavigationCatalogTest {
         assertTrue(
             "Expected contextual learn content for all detail topics, but found none for: $emptyTopics",
             emptyTopics.isEmpty(),
+        )
+    }
+
+    @Test
+    fun learnSurfaces_exposeEveryCatalogArticleExactlyOnce() {
+        val topicArticles = LearnArticleCatalog.sections.flatMap(LearnTopicSection::articles)
+        val reachableArticles = topicArticles + LearnArticleCatalog.generalArticles
+
+        assertEquals(5, LearnArticleCatalog.sections.size)
+        assertEquals(LearnArticleCatalog.articles.size, reachableArticles.size)
+        assertEquals(
+            LearnArticleCatalog.articles.map(LearnArticle::id).toSet(),
+            reachableArticles.map(LearnArticle::id).toSet(),
+        )
+        assertTrue(LearnArticleCatalog.generalArticles.all { article -> article.topic == null })
+        assertEquals(
+            listOf(
+                LearnArticleIds.HEALTH_SCORE,
+                LearnArticleIds.SOFTWARE_VS_HARDWARE,
+                LearnArticleIds.BACKGROUND_MONITORING,
+            ),
+            LearnArticleCatalog.generalArticles.map(LearnArticle::id),
         )
     }
 }

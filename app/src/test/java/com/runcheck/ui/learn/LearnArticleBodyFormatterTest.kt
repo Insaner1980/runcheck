@@ -62,7 +62,8 @@ class LearnArticleBodyFormatterTest {
         assertNotNull(article)
         assertEquals(
             LearnArticleCatalog.articles.size,
-            LearnArticleCatalog.sections.sumOf { it.articles.size },
+            LearnArticleCatalog.sections.sumOf { it.articles.size } +
+                LearnArticleCatalog.generalArticles.size,
         )
         assertEquals(
             LearnArticleCatalog.sections.first { it.topic == LearnTopic.BATTERY }.articles,

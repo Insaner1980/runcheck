@@ -1832,7 +1832,8 @@ Learn list:
   Privacy in that order.
 - Privacy contains a dedicated data-and-privacy article. The existing general
   health score, software-versus-hardware, and background-monitoring articles
-  remain directly addressable but are not relabeled as Privacy.
+  are not relabeled as Privacy. They remain directly addressable and are also
+  reachable from an always-visible `General` section below the selected topic.
 - Detail-screen links open Learn with the matching topic preselected.
 - `LazyColumn`.
 - Horizontal padding: 16dp, owned by the scaffold.

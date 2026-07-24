@@ -83,6 +83,31 @@ fun LearnScreen(
                 }
             }
 
+            item(
+                key = "general_spacer",
+                contentType = "learn_section_spacer",
+            ) {
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+            }
+
+            item(
+                key = "header_general",
+                contentType = "learn_header",
+            ) {
+                CardSectionTitle(text = stringResource(R.string.learn_topic_general))
+            }
+
+            items(
+                items = LearnArticleCatalog.generalArticles,
+                key = { article -> article.id },
+                contentType = { "learn_article" },
+            ) { article ->
+                LearnArticleCard(
+                    article = article,
+                    onClick = { onNavigateToArticle(article.id) },
+                )
+            }
+
             item(key = "bottom_spacing") {
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
             }

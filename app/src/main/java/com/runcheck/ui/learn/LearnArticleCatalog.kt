@@ -169,6 +169,8 @@ object LearnArticleCatalog {
                 ?.let { topicArticles -> LearnTopicSection(topic = topic, articles = topicArticles) }
         }
 
+    internal val generalArticles: List<LearnArticle> = articles.filter { it.topic == null }
+
     init {
         articles.forEach { article ->
             check(
@@ -193,6 +195,12 @@ object LearnArticleCatalog {
                 sectionArticles.toSet() == categorizedArticles.toSet(),
         ) {
             "Learn topic sections are out of sync with the article catalog"
+        }
+        check(
+            sectionArticles.size + generalArticles.size == articles.size &&
+                (sectionArticles + generalArticles).toSet() == articles.toSet(),
+        ) {
+            "Learn topic and General surfaces do not expose the complete article catalog"
         }
     }
 
