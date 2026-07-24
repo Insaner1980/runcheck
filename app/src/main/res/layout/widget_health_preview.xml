@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#133040"
+    android:background="@color/widget_background"
     android:gravity="center"
     android:orientation="vertical"
     android:padding="12dp">
@@ -11,7 +11,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/widget_preview_health_score"
-        android:textColor="#E8E8ED"
+        android:textColor="@color/widget_on_surface"
         android:textSize="40sp"
         android:textStyle="bold" />
 
@@ -19,7 +19,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/widget_health_score_label"
-        android:textColor="#90A8B0"
+        android:textColor="@color/widget_on_surface_variant"
         android:textSize="12sp" />
 
     <Space
@@ -30,13 +30,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/widget_preview_battery_percent"
-        android:textColor="#E8E8ED"
+        android:textColor="@color/widget_on_surface"
         android:textSize="11sp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/widget_battery_short_label"
-        android:textColor="#90A8B0"
+        android:textColor="@color/widget_on_surface_variant"
         android:textSize="10sp" />
 </LinearLayout>

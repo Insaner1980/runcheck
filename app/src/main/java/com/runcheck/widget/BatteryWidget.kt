@@ -25,6 +25,20 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.runcheck.R
+import com.runcheck.ui.navigation.Screen
+
+internal enum class WidgetLayout {
+    COMPACT,
+    STANDARD,
+    EXPANDED,
+}
+
+internal fun batteryWidgetLayoutFor(size: DpSize): WidgetLayout =
+    when {
+        size.width >= 250.dp && size.height >= 100.dp -> WidgetLayout.EXPANDED
+        size.width >= 180.dp && size.height >= 60.dp -> WidgetLayout.STANDARD
+        else -> WidgetLayout.COMPACT
+    }
 
 class BatteryWidget : GlanceAppWidget() {
     companion object {
@@ -46,12 +60,14 @@ class BatteryWidget : GlanceAppWidget() {
             val widgetState by
                 WidgetDataProvider
                     .observeBatteryWidgetState(context)
-                    .collectAsState(initial = WidgetRenderState.Locked)
+                    .collectAsState(initial = WidgetRenderState.Loading)
 
             when (val state = widgetState) {
-                WidgetRenderState.Empty -> WidgetEmptyContent(context)
+                WidgetRenderState.Empty -> WidgetEmptyContent(context, Screen.Battery.route)
+                WidgetRenderState.Loading -> WidgetLoadingContent(context, Screen.Battery.route)
                 WidgetRenderState.Locked -> WidgetLockedContent(context, R.string.widget_battery_name)
-                WidgetRenderState.Stale -> WidgetStaleContent(context)
+                WidgetRenderState.Stale -> WidgetStaleContent(context, Screen.Battery.route)
+                WidgetRenderState.Unavailable -> WidgetUnavailableContent(context, Screen.Battery.route)
                 is WidgetRenderState.Content -> BatteryWidgetContent(context, state.snapshot)
             }
         }
@@ -69,9 +85,9 @@ class BatteryWidget : GlanceAppWidget() {
                 context.getString(R.string.widget_current_value, it)
             }
 
-        GlanceTheme {
+        RuncheckWidgetTheme {
             Column(
-                modifier = widgetContainerModifier(),
+                modifier = widgetContainerModifier(context, Screen.Battery.route),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(
@@ -80,6 +96,7 @@ class BatteryWidget : GlanceAppWidget() {
                 ) {
                     Text(
                         text = levelText,
+                        maxLines = 1,
                         style =
                             TextStyle(
                                 fontSize = 28.sp,
@@ -91,6 +108,7 @@ class BatteryWidget : GlanceAppWidget() {
                     Column {
                         Text(
                             text = tempText,
+                            maxLines = 1,
                             style =
                                 TextStyle(
                                     fontSize = 12.sp,
@@ -100,6 +118,7 @@ class BatteryWidget : GlanceAppWidget() {
                         currentDisplay?.let {
                             Text(
                                 text = it,
+                                maxLines = 1,
                                 style =
                                     TextStyle(
                                         fontSize = 12.sp,
@@ -109,11 +128,12 @@ class BatteryWidget : GlanceAppWidget() {
                         }
                     }
                 }
-                val size = androidx.glance.LocalSize.current
-                if (size.width >= MEDIUM.width) {
+                val layout = batteryWidgetLayoutFor(androidx.glance.LocalSize.current)
+                if (layout != WidgetLayout.COMPACT) {
                     Spacer(modifier = GlanceModifier.height(4.dp))
                     Text(
                         text = context.getString(R.string.widget_battery_name),
+                        maxLines = 1,
                         style =
                             TextStyle(
                                 fontSize = 11.sp,

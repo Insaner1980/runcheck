@@ -112,6 +112,7 @@ import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.components.selectDetailInfoBanner
+import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.storage.MediaDeleteRequestResult
 import com.runcheck.ui.theme.categoryColor
 import com.runcheck.ui.theme.numericFontFamily
@@ -419,6 +420,9 @@ private fun StorageOverviewSection( // NOSONAR
         storage = storage,
         liveUsagePercent = state.liveUsagePercent,
         onInfoClick = onInfoClick,
+        onNavigateToCacheArticle = {
+            onNavigateToLearnArticle(LearnArticleIds.STORAGE_CACHE_LIMITS)
+        },
     )
 
     val selectedBanner =
@@ -604,6 +608,7 @@ private fun StorageHeroCard(
     storage: StorageState,
     liveUsagePercent: List<Float>,
     onInfoClick: (String) -> Unit = {},
+    onNavigateToCacheArticle: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val usedFormatted = formatStorageSize(context, storage.usedBytes)
@@ -750,6 +755,9 @@ private fun StorageHeroCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                TextButton(onClick = onNavigateToCacheArticle) {
+                    Text(text = stringResource(R.string.storage_cache_learn_more))
+                }
             }
         }
     }

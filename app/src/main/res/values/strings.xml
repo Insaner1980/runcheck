@@ -435,6 +435,7 @@
 
     <!-- Storage Cache -->
     <string name="storage_cache_total">Cache</string>
+    <string name="storage_cache_learn_more">Why runcheck cannot clear other apps’ caches</string>
     <plurals name="storage_cache_summary">
         <item quantity="one">%1$s; %2$d launchable app visible</item>
         <item quantity="other">%1$s; %2$d launchable apps visible</item>
@@ -473,6 +474,7 @@
     <!-- Storage Quick Actions -->
     <string name="storage_quick_actions">Quick Actions</string>
     <string name="storage_open_settings">Storage Settings</string>
+    <string name="storage_open_app_info">runcheck App Info</string>
     <string name="storage_free_up_space">Free Up Space</string>
     <string name="storage_usage_access">Usage Access</string>
 
@@ -661,13 +663,21 @@
     <string name="widget_battery_description">Shows battery level, temperature, and current</string>
     <string name="widget_health_name">Device Health</string>
     <string name="widget_health_description">Shows overall health score with category indicators</string>
+    <string name="widget_quick_glance_name">Quick Glance</string>
+    <string name="widget_quick_glance_description">Shows health score, battery, free storage, and temperature</string>
     <string name="widget_health_score_label">Health Score</string>
     <string name="widget_health_score_with_status">%1$s · %2$s</string>
+    <string name="widget_battery_label">Battery</string>
     <string name="widget_battery_short_label">Bat</string>
     <string name="widget_percent_value">%1$d%%</string>
     <string name="widget_temperature_value">%1$.1f°C</string>
     <string name="widget_current_value">%1$d mA</string>
+    <string name="widget_score_with_status">%1$d · %2$s</string>
+    <string name="widget_free_storage_label">Free storage</string>
+    <string name="widget_temperature_label">Temperature</string>
     <string name="widget_preview_health_score" translatable="false">82</string>
+    <string name="widget_preview_quick_health" translatable="false">82 · Healthy</string>
+    <string name="widget_preview_storage_free" translatable="false">48 GB</string>
     <string name="widget_preview_battery_percent" translatable="false">85%</string>
     <string name="widget_preview_battery_temperature" translatable="false">32.5°C</string>
     <string name="widget_preview_battery_current" translatable="false">-450 mA</string>
@@ -675,6 +685,10 @@
     <string name="widget_no_data_message">Open runcheck to collect readings</string>
     <string name="widget_stale_data_title">Data out of date</string>
     <string name="widget_stale_data_message">Open runcheck to refresh the health score</string>
+    <string name="widget_loading_title">Loading</string>
+    <string name="widget_loading_message">Reading the latest device snapshot</string>
+    <string name="widget_unavailable_title">Data unavailable</string>
+    <string name="widget_unavailable_message">Open runcheck and try again</string>
 
     <!-- Database -->
     <string name="database_reset_notice">History data was reset due to a database update. Monitoring will continue normally.</string>
@@ -1130,7 +1144,7 @@
     <string name="info_storage_cache_title">Cache</string>
     <string name="info_storage_cache_explanation">Temporary data stored by apps to speed up loading times. Includes downloaded images, compiled code, and offline data.</string>
     <string name="info_storage_cache_range">1–5 GB is typical. Social media and streaming apps tend to accumulate the most cache.</string>
-    <string name="info_storage_cache_matters">Clearing cache frees space but apps will reload data from the internet, which may briefly slow them down. It\'s safe to clear and can recover significant space.</string>
+    <string name="info_storage_cache_matters">runcheck can measure aggregate cache storage but cannot clear another app\'s cache. Android\'s App info screens provide the system-controlled cache action when an app supports it.</string>
 
     <string name="info_storage_apps_title">Apps Total</string>
     <string name="info_storage_apps_explanation">The total storage used by all installed applications, including their data and cache.</string>
@@ -1262,6 +1276,10 @@
     <string name="learn_storage_breakdown_preview">Understanding what uses your storage and how to manage each category effectively.</string>
     <string name="learn_storage_breakdown_body">## The main categories\n\nApps and their data typically use the most space (30–60% on most phones). Photos and videos are usually second. System files take a chunk you cannot fully reclaim. Downloads, documents, and audio make up the rest.\n\n## Hidden storage consumers\n\nApp caches grow over time: social media apps can cache gigabytes of images and videos. Messaging apps store received media. Offline maps and music can use significant space. Old APK installer files often linger in Downloads.\n\n## Management strategies\n\nRegularly review large files and Downloads. If you have runcheck Pro, the Storage cleanup tools can surface large files, old downloads, and leftover APKs. When media access is available, the Storage screen\'s media breakdown chart shows where scanned media space is going.</string>
 
+    <string name="learn_storage_cache_limits_title">Why Cleaner Apps Cannot Clear Every Cache</string>
+    <string name="learn_storage_cache_limits_preview">What Android allows, what runcheck measures, and where cache controls actually live.</string>
+    <string name="learn_storage_cache_limits_body">## Android protects app data\n\nEach Android app runs in its own sandbox. Another ordinary app cannot safely delete files inside that sandbox, including cached files. This boundary protects accounts, offline downloads, and other private app data from being changed without the app owner\'s control.\n\n## What runcheck can do\n\nWith Usage Access, runcheck can measure aggregate cache storage as read-only diagnostic data. It cannot clear other apps’ caches. Its cleanup tools remain limited to user-visible MediaStore files such as large media, old downloads, leftover APK installers, and trash that Android explicitly lets you review and delete.\n\n## Where cache controls live\n\nUse Android Settings → Apps → choose an app → Storage &amp; cache when you need the system-provided cache action. Android may label or place this control differently depending on the manufacturer. Clearing a cache can free temporary space, but the app may download or rebuild the same data later.\n\n## Be cautious with cleaner claims\n\nA cleaner that promises one-tap access to every app\'s private cache would need privileges unavailable to an ordinary Play-distributed app, or risky workarounds such as Accessibility, root, or hidden APIs. runcheck does not use those workarounds.</string>
+
     <!-- Learn Articles - Privacy -->
     <string name="learn_privacy_data_title">Your Data and Privacy</string>
     <string name="learn_privacy_data_preview">What runcheck reads on your device, what stays local, and when network requests can occur.</string>
@@ -1274,7 +1292,7 @@
 
     <string name="learn_sw_vs_hw_title">Software vs Hardware Problems</string>
     <string name="learn_sw_vs_hw_preview">How to tell if your phone\'s issues are from software (fixable) or hardware (needs repair).</string>
-    <string name="learn_sw_vs_hw_body">## Software problems\n\nSoftware issues are usually fixable without repair: high drain from a misbehaving app, slow performance from full storage, poor network from bad settings, overheating from a stuck background process. These often appear suddenly after an app update or setting change.\n\n## Hardware problems\n\nHardware issues require physical repair or replacement: battery health staying low, a swollen battery, persistent overheating at idle even after troubleshooting, or Wi-Fi/cellular problems that follow the phone across different networks and resets.\n\n## How to tell the difference\n\nUse runcheck\'s data over time. Software problems often show sudden changes: drain rate spikes after installing an app, or temperature jumps after an OS update. Hardware problems usually show gradual trends or repeat even after resets: battery health slowly declining, thermal performance consistently worsening, or the same radio issue appearing everywhere.\n\n## What to do\n\nFor software: try safe mode to rule out apps, clear caches, and check for OS updates. For hardware: check warranty status and visit an authorized repair center. Battery replacement is usually the most cost-effective repair for an aging phone.</string>
+    <string name="learn_sw_vs_hw_body">## Software problems\n\nSoftware issues are usually fixable without repair: high drain from a misbehaving app, slow performance from full storage, poor network from bad settings, overheating from a stuck background process. These often appear suddenly after an app update or setting change.\n\n## Hardware problems\n\nHardware issues require physical repair or replacement: battery health staying low, a swollen battery, persistent overheating at idle even after troubleshooting, or Wi-Fi/cellular problems that follow the phone across different networks and resets.\n\n## How to tell the difference\n\nUse runcheck\'s data over time. Software problems often show sudden changes: drain rate spikes after installing an app, or temperature jumps after an OS update. Hardware problems usually show gradual trends or repeat even after resets: battery health slowly declining, thermal performance consistently worsening, or the same radio issue appearing everywhere.\n\n## What to do\n\nFor software: try safe mode to rule out apps, use Android\'s App info storage controls when a specific app cache is the problem, and check for OS updates. For hardware: check warranty status and visit an authorized repair center. Battery replacement is usually the most cost-effective repair for an aging phone.</string>
 
     <string name="learn_background_monitoring_title">Keeping Background Monitoring Active</string>
     <string name="learn_background_monitoring_preview">Why some phones stop runcheck from collecting data in the background, and how to fix it.</string>

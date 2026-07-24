@@ -296,6 +296,22 @@ internal fun StorageQuickActionsCard() {
         ListRow(
             label =
                 androidx.compose.ui.res
+                    .stringResource(R.string.storage_open_app_info),
+            icon = Icons.Outlined.Settings,
+            onClick = {
+                context.startActivity(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = android.net.Uri.fromParts("package", context.packageName, null)
+                    },
+                )
+            },
+        )
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+        )
+        ListRow(
+            label =
+                androidx.compose.ui.res
                     .stringResource(R.string.storage_free_up_space),
             icon = Icons.Outlined.FolderOpen,
             onClick = {

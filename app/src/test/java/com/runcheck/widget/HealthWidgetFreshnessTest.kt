@@ -53,6 +53,36 @@ class HealthWidgetFreshnessTest {
         assertEquals(WidgetRenderState.Stale, state)
     }
 
+    @Test
+    fun `missing shared reading is disclosed as empty`() {
+        val state =
+            healthWidgetRenderState(
+                isPro = true,
+                monitoringInterval = MonitoringInterval.FIFTEEN,
+                readings =
+                    HealthWidgetReadings(
+                        battery = batteryReading(NOW_MILLIS),
+                        network = networkReading(NOW_MILLIS),
+                        thermal = thermalReading(NOW_MILLIS),
+                        storage = null,
+                    ),
+                nowMillis = NOW_MILLIS,
+                calculator = calculator,
+            )
+
+        assertEquals(WidgetRenderState.Empty, state)
+    }
+
+    @Test
+    fun `fresh shared snapshot includes quick glance storage and temperature`() {
+        val state = renderState(0L, 0L, 0L, 0L)
+
+        assertTrue(state is WidgetRenderState.Content)
+        val snapshot = (state as WidgetRenderState.Content).snapshot
+        assertEquals(60L, snapshot.availableStorageBytes)
+        assertEquals(25f, snapshot.temperatureC)
+    }
+
     private fun renderState(
         batteryOffset: Long,
         networkOffset: Long,

@@ -337,12 +337,15 @@ Supporting monitor components include:
 
 ### Widgets
 
-Two Glance widgets are present:
+Three responsive Glance widgets are present:
 
-- Battery widget
-- Health score widget
+- Battery widget with level, temperature, and available current
+- Health Score widget with the shared calculated score and battery level
+- 4×2 Quick Glance widget with health score, battery, free storage, and temperature
 
-Widget data is read from the latest Room snapshots. Widget access is treated as a Pro feature.
+All three use one launcher/system-driven day/night `ColorProviders` palette; they do not read the app's persisted `ThemeMode`. Quick Glance reads the Health widget's existing coherent Room snapshot pipeline after that snapshot is extended with storage and thermal values, so no second health-score calculation exists. Its cells deep-link to Home, Battery, Storage, and Thermal through the validated direct-route policy.
+
+Widget access is treated as a Pro feature and the Pro flow gates DAO subscriptions and score calculation. Widget surfaces explicitly represent loading, locked, empty, stale, unavailable, and fresh content. `RuncheckWidgets.updateAll()` refreshes all three receivers.
 
 ---
 
@@ -605,6 +608,7 @@ Permission behavior:
 Storage-specific data behavior:
 
 - Aggregate app/data/cache bytes use `StorageStatsManager.queryStatsForUser(...)` and may be null without usage access or when Android denies the call.
+- Aggregate cache is read-only diagnostic data. runcheck cannot clear other apps' caches; the cache guidance links to the in-app explanation and Android's Storage/App info settings.
 - App count means distinct launchable packages visible to this app through `ACTION_MAIN` + `CATEGORY_LAUNCHER`, not all installed packages on the device.
 - Encryption status comes from `DevicePolicyManager.storageEncryptionStatus`.
 - File-system type is read from `/proc/mounts` for `/data`; the storage volume count includes mounted and read-only-mounted `StorageManager.storageVolumes` entries.
@@ -700,8 +704,9 @@ Screens:
 Behavior:
 
 - Articles are grouped by topic
-- Current catalog size: 15 articles
-- Current topics: Battery, Temperature, Network, Storage, General
+- Current catalog size: 17 articles
+- Current topics: Battery, Network, Thermal, Storage, Privacy, plus an always-visible General section
+- Storage includes an article explaining Android app sandboxes, runcheck's read-only cache measurement, system App info controls, and why Accessibility, root, or hidden-API cleaner workarounds are not used
 - Article detail renders structured body text from catalog resources
 - Some articles expose cross-link buttons into app routes
 - Cross-link routes are validated at startup, and legacy article IDs can alias to canonical IDs.

@@ -124,6 +124,15 @@ object LearnArticleCatalog {
                 crossLinkRoute = Screen.Storage.route,
             ),
             LearnArticle(
+                id = LearnArticleIds.STORAGE_CACHE_LIMITS,
+                topic = LearnTopic.STORAGE,
+                titleRes = R.string.learn_storage_cache_limits_title,
+                previewRes = R.string.learn_storage_cache_limits_preview,
+                bodyRes = R.string.learn_storage_cache_limits_body,
+                readTimeMinutes = 3,
+                crossLinkRoute = Screen.Storage.route,
+            ),
+            LearnArticle(
                 id = LearnArticleIds.PRIVACY_DATA,
                 topic = LearnTopic.PRIVACY,
                 titleRes = R.string.learn_privacy_data_title,

@@ -22,11 +22,13 @@ Watch battery temperature and Android thermal status. Get alerts before your dev
 **Storage Overview**
 See total, used, and available storage at a glance. Track app and media space usage with fill rate estimates.
 
+runcheck can measure aggregate app cache as read-only diagnostic data, but it cannot clear other apps' caches. Android's Storage and App info screens remain the system-controlled place for cache actions. runcheck's cleanup tools only surface user-visible large media, old downloads, leftover APK installers, and MediaStore trash for review.
+
 **Smart Alerts**
 Receive notifications for low battery, high temperature, low storage, and charging complete events.
 
 **Home Screen Widgets [Pro]**
-Add battery status and health score widgets to your home screen for at-a-glance monitoring.
+Add Battery Status, Health Score, or the 4×2 Quick Glance widget with health score, battery, free storage, and temperature. Widget colors follow your launcher or system day/night theme.
 
 **Pro Features**
 - Extended history (week, month, all time)
@@ -77,11 +79,13 @@ Tarkkaile akun lämpötilaa ja Androidin lämpötilatilaa. Saa hälytykset ennen
 **Tallennustilan yleiskatsaus**
 Näe kokonais-, käytetty ja vapaa tallennustila yhdellä silmäyksellä.
 
+runcheck voi mitata sovellusten välimuistin kokonaismäärän vain luku -diagnostiikkana, mutta se ei voi tyhjentää muiden sovellusten välimuisteja. Androidin tallennustila- ja sovellustietonäkymät tarjoavat järjestelmän hallitsemat välimuistitoiminnot. runcheckin siivoustyökalut näyttävät tarkistettaviksi vain käyttäjälle näkyviä suuria mediatiedostoja, vanhoja latauksia, jäljelle jääneitä APK-asennustiedostoja ja MediaStore-roskakorin.
+
 **Älykkäät hälytykset**
 Ilmoitukset matalasta akusta, korkeasta lämpötilasta, vähäisestä tallennustilasta ja latauksen valmistumisesta.
 
 **Kotinäyttöwidgetit [Pro]**
-Lisää akun tila ja kuntopisteet kotinäytölle.
+Lisää Akun tila-, Kuntopisteet- tai 4×2 Quick Glance -widget, jossa näkyvät kuntopisteet, akku, vapaa tallennustila ja lämpötila. Widgetin värit seuraavat launcherin tai järjestelmän päivä-/yöteemaa.
 
 **Pro-ominaisuudet**
 - Laajennettu historia (viikko, kuukausi, kaikki)

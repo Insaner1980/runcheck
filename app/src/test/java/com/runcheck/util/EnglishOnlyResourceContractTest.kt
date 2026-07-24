@@ -35,6 +35,7 @@ class EnglishOnlyResourceContractTest {
                 .use { paths ->
                     paths
                         .filter { it.isDirectory() && it.name.startsWith("values-") }
+                        .filter { isLocaleValuesDirectoryName(it.name) }
                         .map { appDir.relativize(it).toString() }
                         .sorted()
                         .toList()
@@ -92,6 +93,17 @@ class EnglishOnlyResourceContractTest {
         assertEquals(emptyList<String>(), casingViolations)
     }
 
+    @Test
+    fun `locale qualifier detection permits day night and layout qualifiers`() {
+        assertTrue(isLocaleValuesDirectoryName("values-fi"))
+        assertTrue(isLocaleValuesDirectoryName("values-en-rGB"))
+        assertTrue(isLocaleValuesDirectoryName("values-b+zh+Hans+CN"))
+        assertTrue(!isLocaleValuesDirectoryName("values-night"))
+        assertTrue(!isLocaleValuesDirectoryName("values-land"))
+        assertTrue(!isLocaleValuesDirectoryName("values-sw600dp"))
+        assertTrue(!isLocaleValuesDirectoryName("values-v31"))
+    }
+
     private fun findAppDir(): Path {
         val start = Paths.get("").toAbsolutePath()
         return generateSequence(start) { it.parent }
@@ -99,3 +111,34 @@ class EnglishOnlyResourceContractTest {
             .first { Files.exists(it.resolve("src/main/res")) && Files.exists(it.resolve("build.gradle.kts")) }
     }
 }
+
+internal fun isLocaleValuesDirectoryName(name: String): Boolean {
+    val firstQualifier = name.removePrefix("values-").substringBefore('-')
+    return firstQualifier.startsWith("b+") ||
+        (
+            firstQualifier.matches(Regex("[a-z]{2,3}")) &&
+                firstQualifier !in nonLocaleAlphabeticQualifiers
+        )
+}
+
+private val nonLocaleAlphabeticQualifiers =
+    setOf(
+        "car",
+        "desk",
+        "land",
+        "long",
+        "night",
+        "notlong",
+        "notnight",
+        "notround",
+        "port",
+        "round",
+        "television",
+        "watch",
+        "widecg",
+        "nowidecg",
+        "highdr",
+        "lowdr",
+        "appliance",
+        "vrheadset",
+    )

@@ -29,8 +29,16 @@ import androidx.glance.text.TextStyle
 import com.runcheck.R
 import com.runcheck.domain.model.HealthScore
 import com.runcheck.ui.common.healthStatusLabelRes
+import com.runcheck.ui.navigation.Screen
 import com.runcheck.ui.theme.RuncheckStatusColors
 import com.runcheck.ui.theme.forHealthStatus
+
+internal fun healthWidgetLayoutFor(size: DpSize): WidgetLayout =
+    when {
+        size.width >= 250.dp && size.height >= 150.dp -> WidgetLayout.EXPANDED
+        size.width >= 180.dp && size.height >= 110.dp -> WidgetLayout.STANDARD
+        else -> WidgetLayout.COMPACT
+    }
 
 class HealthWidget : GlanceAppWidget() {
     companion object {
@@ -52,12 +60,14 @@ class HealthWidget : GlanceAppWidget() {
             val widgetState by
                 WidgetDataProvider
                     .observeHealthWidgetState(context)
-                    .collectAsState(initial = WidgetRenderState.Locked)
+                    .collectAsState(initial = WidgetRenderState.Loading)
 
             when (val state = widgetState) {
-                WidgetRenderState.Empty -> WidgetEmptyContent(context)
+                WidgetRenderState.Empty -> WidgetEmptyContent(context, Screen.Home.route)
+                WidgetRenderState.Loading -> WidgetLoadingContent(context, Screen.Home.route)
                 WidgetRenderState.Locked -> WidgetLockedContent(context, R.string.widget_health_name)
-                WidgetRenderState.Stale -> WidgetStaleContent(context)
+                WidgetRenderState.Stale -> WidgetStaleContent(context, Screen.Home.route)
+                WidgetRenderState.Unavailable -> WidgetUnavailableContent(context, Screen.Home.route)
                 is WidgetRenderState.Content -> HealthWidgetContent(context, state.snapshot)
             }
         }
@@ -77,15 +87,16 @@ class HealthWidget : GlanceAppWidget() {
         val statusColor = RuncheckStatusColors.forHealthStatus(status)
         val statusColorProvider = ColorProvider(statusColor, statusColor)
 
-        GlanceTheme {
+        RuncheckWidgetTheme {
             val size = LocalSize.current
             Column(
-                modifier = widgetContainerModifier(),
+                modifier = widgetContainerModifier(context, Screen.Home.route),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = snapshot.overallScore.toString(),
+                    maxLines = 1,
                     style =
                         TextStyle(
                             fontSize = if (size.width >= LARGE.width) 48.sp else 40.sp,
@@ -95,6 +106,7 @@ class HealthWidget : GlanceAppWidget() {
                 )
                 Text(
                     text = scoreLabel,
+                    maxLines = 1,
                     style =
                         TextStyle(
                             fontSize = 12.sp,
@@ -124,6 +136,7 @@ private fun MiniIndicator(
     ) {
         Text(
             text = value,
+            maxLines = 1,
             style =
                 TextStyle(
                     fontSize = 11.sp,
@@ -133,6 +146,7 @@ private fun MiniIndicator(
         )
         Text(
             text = label,
+            maxLines = 1,
             style =
                 TextStyle(
                     fontSize = 10.sp,

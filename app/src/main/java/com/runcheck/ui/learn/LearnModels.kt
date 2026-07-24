@@ -26,6 +26,7 @@ object LearnArticleIds {
     const val NETWORK_SPEED_TESTS = "network_speed_tests"
     const val STORAGE_SLOWDOWN = "storage_slowdown"
     const val STORAGE_BREAKDOWN = "storage_breakdown"
+    const val STORAGE_CACHE_LIMITS = "storage_cache_limits"
     const val PRIVACY_DATA = "privacy_data"
     const val HEALTH_SCORE = "health_score"
     const val SOFTWARE_VS_HARDWARE = "sw_vs_hw"

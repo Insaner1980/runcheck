@@ -32,8 +32,13 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 
 internal data class BatteryWidgetSnapshot(
     val level: Int,
@@ -44,6 +49,8 @@ internal data class BatteryWidgetSnapshot(
 internal data class HealthWidgetSnapshot(
     val overallScore: Int,
     val batteryLevel: Int,
+    val availableStorageBytes: Long,
+    val temperatureC: Float,
 )
 
 internal data class HealthWidgetReadings(
@@ -54,11 +61,15 @@ internal data class HealthWidgetReadings(
 )
 
 internal sealed interface WidgetRenderState<out T> {
+    data object Loading : WidgetRenderState<Nothing>
+
     data object Locked : WidgetRenderState<Nothing>
 
     data object Empty : WidgetRenderState<Nothing>
 
     data object Stale : WidgetRenderState<Nothing>
+
+    data object Unavailable : WidgetRenderState<Nothing>
 
     data class Content<T>(
         val snapshot: T,
@@ -68,46 +79,41 @@ internal sealed interface WidgetRenderState<out T> {
 internal object WidgetDataProvider {
     fun observeBatteryWidgetState(context: Context): Flow<WidgetRenderState<BatteryWidgetSnapshot>> {
         val ep = entryPoint(context)
-        return combine(
-            ep.proStatusProvider().isProUser,
-            ep.batteryReadingDao().getLatestReading(),
-        ) { isPro, latestReading ->
-            when {
-                !isPro -> WidgetRenderState.Locked
-                latestReading == null -> WidgetRenderState.Empty
-                else -> WidgetRenderState.Content(latestReading.toBatteryWidgetSnapshot())
+        return proGatedWidgetState(ep.proStatusProvider().isProUser) {
+            ep.batteryReadingDao().getLatestReading().map { latestReading ->
+                when (latestReading) {
+                    null -> WidgetRenderState.Empty
+                    else -> WidgetRenderState.Content(latestReading.toBatteryWidgetSnapshot())
+                }
             }
-        }
+        }.catch { emit(WidgetRenderState.Unavailable) }
     }
 
     fun observeHealthWidgetState(context: Context): Flow<WidgetRenderState<HealthWidgetSnapshot>> {
         val ep = entryPoint(context)
-        val accessFlow =
+        return proGatedWidgetState(ep.proStatusProvider().isProUser) {
             combine(
-                ep.proStatusProvider().isProUser,
                 ep.userPreferencesRepository().getPreferences(),
-            ) { isPro, preferences -> isPro to preferences.monitoringInterval }
-        return combine(
-            accessFlow,
-            ep.batteryReadingDao().getLatestReading(),
-            ep.networkReadingDao().getLatestReading(),
-            ep.thermalReadingDao().getLatestReading(),
-            ep.storageReadingDao().getLatestReading(),
-        ) { access, batteryReading, networkReading, thermalReading, storageReading ->
-            healthWidgetRenderState(
-                isPro = access.first,
-                monitoringInterval = access.second,
-                readings =
-                    HealthWidgetReadings(
-                        battery = batteryReading,
-                        network = networkReading,
-                        thermal = thermalReading,
-                        storage = storageReading,
-                    ),
-                nowMillis = System.currentTimeMillis(),
-                calculator = ep.healthScoreCalculator(),
-            )
-        }
+                ep.batteryReadingDao().getLatestReading(),
+                ep.networkReadingDao().getLatestReading(),
+                ep.thermalReadingDao().getLatestReading(),
+                ep.storageReadingDao().getLatestReading(),
+            ) { preferences, batteryReading, networkReading, thermalReading, storageReading ->
+                healthWidgetRenderState(
+                    isPro = true,
+                    monitoringInterval = preferences.monitoringInterval,
+                    readings =
+                        HealthWidgetReadings(
+                            battery = batteryReading,
+                            network = networkReading,
+                            thermal = thermalReading,
+                            storage = storageReading,
+                        ),
+                    nowMillis = System.currentTimeMillis(),
+                    calculator = ep.healthScoreCalculator(),
+                )
+            }
+        }.catch { emit(WidgetRenderState.Unavailable) }
     }
 
     private fun entryPoint(context: Context): WidgetDataEntryPoint =
@@ -121,6 +127,7 @@ internal object RuncheckWidgets {
     suspend fun updateAll(context: Context) {
         BatteryWidget().updateAll(context)
         HealthWidget().updateAll(context)
+        QuickGlanceWidget().updateAll(context)
     }
 }
 
@@ -188,9 +195,20 @@ internal fun healthWidgetRenderState(
         HealthWidgetSnapshot(
             overallScore = score.overallScore,
             batteryLevel = battery.level,
+            availableStorageBytes = storageReading.availableBytes,
+            temperatureC = thermalReading.batteryTempC,
         ),
     )
 }
+
+@OptIn(ExperimentalCoroutinesApi::class)
+internal fun <T> proGatedWidgetState(
+    isProFlow: Flow<Boolean>,
+    snapshotState: () -> Flow<WidgetRenderState<T>>,
+): Flow<WidgetRenderState<T>> =
+    isProFlow.flatMapLatest { isPro ->
+        if (isPro) snapshotState() else flowOf(WidgetRenderState.Locked)
+    }
 
 private const val HEALTH_INPUT_WINDOW_MS = 120_000L
 

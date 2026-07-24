@@ -39,7 +39,7 @@ Dependency injection: Hilt. Database: Room. UI: Jetpack Compose + Material 3.
 - UI: Jetpack Compose + Material 3
 - Theme: Material 3 Expressive with persisted `SYSTEM`, `LIGHT`, and `DARK` modes
 - Background work: WorkManager
-- Widgets: Glance
+- Widgets: Glance; Battery, Health Score, and 4×2 Quick Glance
 - Speed test: M-Lab NDT7 (`ndt7-client-android`)
 - Build: Gradle Kotlin DSL
 - Compile SDK: Android 17 (API 37)
@@ -107,7 +107,9 @@ Current runtime systems:
 - `WeeklyReportWorker` retries while Pro state is unready, then reads only the previous completed local Monday-to-Monday interval, posts through the low-importance reports channel, records notification-denied periods as handled without catch-up, and schedules the next occurrence after terminal handling
 - App Usage's `Not used` mode is domain-Pro-gated and derives 30/60/90-day candidates from launcher-visible user apps plus `UsageStats`; bounded `StorageStatsManager` lookups run on `AppDispatchers.IO`, tolerate per-app failures, and cache only within one screen refresh session
 - `RealTimeMonitorService` is an opt-in live notification foreground service and must stay user-controlled from Settings
-- Widgets are backed by Room snapshots and treated as a Pro feature
+- Battery, Health Score, and 4×2 Quick Glance widgets are backed by the existing Room health snapshot sources and treated as a Pro feature; free users are gated before snapshot or health-score work
+- Widgets follow launcher/system day/night colors independently of the app's persisted `ThemeMode`; Quick Glance cells deep-link to Home, Battery, Storage, and Thermal
+- Storage may measure aggregate app cache as read-only data but cannot clear other apps' caches; cleanup remains limited to the existing MediaStore-backed categories and trash flow
 - Trial state currently counts as Pro access through `ProState.isPro`
 - `AppShellViewModel` combines Room insight state with Pro readiness for the four-item top-level navigation bar; the Insights badge counts visible unseen items, protected external routes wait for the initial Pro state, external routes rebuild their documented parent root without restoring stale child stacks, and Export renders the shared locked state until access is confirmed
 - Home now includes a rule-driven Insights surface backed by Room-persisted insight rows; Home shows a curated subset of up to three items and the full list lives in the dedicated Insights screen

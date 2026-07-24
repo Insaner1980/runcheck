@@ -1477,6 +1477,8 @@ Storage hero:
 - Metrics row gap: 16dp.
 - Cache storage is explicitly described as a read-only measurement: runcheck can
   measure it but cannot clear other apps' caches.
+- A text action after the cache note opens the Storage Learn article that
+  explains the Android sandbox boundary and system-owned cache controls.
 
 Media breakdown:
 
@@ -1514,6 +1516,8 @@ Storage details and quick actions:
 - Details card uses `MetricRow`.
 - Dividers separate rows except the final row.
 - Quick action card uses `ListRow`s with dividers.
+- Quick actions open Android Storage settings and runcheck's App info screen;
+  no in-app action claims to clear another app's cache.
 - Removable-storage card uses the same panel grammar when present and shows `Unknown` when a detected volume's capacity cannot be read.
 - At most one eligible information banner is shown using the shared
   severity-then-catalog-order policy.
@@ -2240,6 +2244,29 @@ Locked content:
   while preparing, and launches the existing Android share flow when the URIs
   are ready.
 
+### 9.17 App Widgets
+
+- Battery, Health Score, and Quick Glance share one Glance `ColorProviders`
+  palette with explicit launcher/system day and night colors. The app's manual
+  `ThemeMode` does not override widget colors.
+- Every widget has responsive compact, standard, and expanded size policies;
+  user-visible widget text is bounded with `maxLines` so narrow launchers
+  truncate instead of overflowing.
+- Quick Glance targets 4×2 and presents a 2×2 grid in this accessibility order:
+  Health Score, Battery, Free storage, Temperature.
+- The four Quick Glance cells open Home, Battery, Storage, and Thermal,
+  respectively, through the same validated direct-route extra consumed by
+  `MainActivity`.
+- Widget states are Loading, Pro locked, Empty, Stale, Unavailable, and fresh
+  content. State titles and supporting text expose status without relying on
+  color.
+- Free users are gated before Room snapshot subscriptions or health-score
+  calculation. Quick Glance extends the Health widget's coherent snapshot with
+  storage and thermal values rather than owning another score pipeline.
+- Receiver declarations are non-exported, require
+  `android.permission.BIND_APPWIDGET`, and provide XML metadata plus day/night
+  preview layouts.
+
 ---
 
 ## 10. Accessibility and Semantics
@@ -2248,6 +2275,9 @@ Current accessibility behaviors in code:
 
 - Shared touch target token is 48dp.
 - Many rows use `defaultMinSize(minHeight = 48.dp)`.
+- Quick Glance cells keep row-major TalkBack order and pair every value with a
+  visible label; health also includes the textual Healthy/Fair/Poor/Critical
+  status.
 - Icon buttons use Material defaults or explicit 48dp sizes.
 - Status is paired with text labels, icons, or semantic descriptions.
 - Charts expose content descriptions summarizing min, max, latest, and trend.
