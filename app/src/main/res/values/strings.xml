@@ -666,6 +666,7 @@
     <string name="widget_quick_glance_name">Quick Glance</string>
     <string name="widget_quick_glance_description">Shows health score, battery, free storage, and temperature</string>
     <string name="widget_health_score_label">Health Score</string>
+    <string name="widget_health_compact_label">Health</string>
     <string name="widget_health_score_with_status">%1$s · %2$s</string>
     <string name="widget_battery_label">Battery</string>
     <string name="widget_battery_short_label">Bat</string>
@@ -674,7 +675,9 @@
     <string name="widget_current_value">%1$d mA</string>
     <string name="widget_score_with_status">%1$d · %2$s</string>
     <string name="widget_free_storage_label">Free storage</string>
+    <string name="widget_free_storage_compact_label">Free</string>
     <string name="widget_temperature_label">Temperature</string>
+    <string name="widget_temperature_compact_label">Temp</string>
     <string name="widget_preview_health_score" translatable="false">82</string>
     <string name="widget_preview_quick_health" translatable="false">82 · Healthy</string>
     <string name="widget_preview_storage_free" translatable="false">48 GB</string>

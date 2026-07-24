@@ -56,12 +56,18 @@ internal data class QuickGlancePresentation(
     val cellPaddingDp: Int,
     val valueFontSp: Int,
     val labelFontSp: Int,
-    val maxDisplayCharacters: Int,
+    val minimumValueFontSp: Int,
+    val minimumLabelFontSp: Int,
+    val fontScale: Float,
+    val cellTextWidthDp: Float,
     val valueMaxLines: Int = 1,
     val labelMaxLines: Int = 1,
 ) {
     fun availableCellHeightDp(size: DpSize): Float =
         (size.height.value - outerPaddingDp * 2f) / QUICK_GLANCE_ROW_COUNT
+
+    fun availableCellTextWidthDp(size: DpSize): Float =
+        quickGlanceCellTextWidthDp(size, outerPaddingDp, cellPaddingDp)
 
     fun requiredCellContentHeightDp(fontScale: Float): Float =
         cellPaddingDp * 2f +
@@ -71,6 +77,7 @@ internal data class QuickGlancePresentation(
 internal data class QuickGlanceCellValue(
     val label: String,
     val value: String,
+    val compactLabel: String = label,
 )
 
 internal data class QuickGlanceCellModel(
@@ -78,6 +85,8 @@ internal data class QuickGlanceCellModel(
     val displayLabel: String,
     val displayValue: String,
     val accessibilityLabel: String,
+    val valueFontSp: Int,
+    val labelFontSp: Int,
 )
 
 internal fun quickGlanceLayoutFor(size: DpSize): QuickGlanceLayout =
@@ -94,23 +103,40 @@ internal fun quickGlancePresentationFor(
     val layout = quickGlanceLayoutFor(size)
     val typography =
         when {
-            fontScale >= 1.75f && layout == QuickGlanceLayout.EXPANDED -> Triple(14, 10, 18)
-            fontScale >= 1.75f -> Triple(8, 7, 12)
-            fontScale >= 1.2f && layout == QuickGlanceLayout.EXPANDED -> Triple(16, 10, 18)
-            fontScale >= 1.2f -> Triple(12, 8, 14)
-            layout == QuickGlanceLayout.EXPANDED -> Triple(18, 10, 20)
-            layout == QuickGlanceLayout.STANDARD -> Triple(16, 10, 18)
-            else -> Triple(15, 9, 16)
+            fontScale >= 1.75f && layout == QuickGlanceLayout.EXPANDED -> 14 to 10
+            fontScale >= 1.75f && layout == QuickGlanceLayout.STANDARD -> 9 to 7
+            fontScale >= 1.75f -> 8 to 7
+            fontScale >= 1.2f && layout == QuickGlanceLayout.EXPANDED -> 16 to 10
+            fontScale >= 1.2f -> 12 to 8
+            layout == QuickGlanceLayout.EXPANDED -> 18 to 10
+            layout == QuickGlanceLayout.STANDARD -> 16 to 10
+            else -> 15 to 9
         }
     return QuickGlancePresentation(
         layout = layout,
-        outerPaddingDp = 12,
-        cellPaddingDp = 4,
+        outerPaddingDp = QUICK_GLANCE_OUTER_PADDING_DP,
+        cellPaddingDp = QUICK_GLANCE_CELL_PADDING_DP,
         valueFontSp = typography.first,
         labelFontSp = typography.second,
-        maxDisplayCharacters = typography.third,
+        minimumValueFontSp = QUICK_GLANCE_MINIMUM_FONT_SP,
+        minimumLabelFontSp = QUICK_GLANCE_MINIMUM_FONT_SP,
+        fontScale = fontScale,
+        cellTextWidthDp =
+            quickGlanceCellTextWidthDp(
+                size = size,
+                outerPaddingDp = QUICK_GLANCE_OUTER_PADDING_DP,
+                cellPaddingDp = QUICK_GLANCE_CELL_PADDING_DP,
+            ),
     )
 }
+
+private fun quickGlanceCellTextWidthDp(
+    size: DpSize,
+    outerPaddingDp: Int,
+    cellPaddingDp: Int,
+): Float =
+    (size.width.value - outerPaddingDp * 2f) / QUICK_GLANCE_COLUMN_COUNT -
+        cellPaddingDp * 2f
 
 internal fun quickGlanceCellModels(
     values: Map<QuickGlanceMetric, QuickGlanceCellValue>,
@@ -118,16 +144,112 @@ internal fun quickGlanceCellModels(
 ): List<QuickGlanceCellModel> =
     QuickGlanceMetric.entries.map { metric ->
         val cell = requireNotNull(values[metric]) { "Missing Quick Glance value for $metric" }
+        val visibleCopy = cell.visibleCopy(metric, presentation.layout)
+        val value =
+            fitWidgetTextToWidth(
+                text = visibleCopy.value,
+                preferredFontSizeSp = presentation.valueFontSp,
+                minimumFontSizeSp = presentation.minimumValueFontSp,
+                fontScale = presentation.fontScale,
+                widthDp = presentation.cellTextWidthDp,
+            )
+        val label =
+            fitWidgetTextToWidth(
+                text = visibleCopy.label,
+                preferredFontSizeSp = presentation.labelFontSp,
+                minimumFontSizeSp = presentation.minimumLabelFontSp,
+                fontScale = presentation.fontScale,
+                widthDp = presentation.cellTextWidthDp,
+            )
         QuickGlanceCellModel(
             metric = metric,
-            displayLabel = cell.label.ellipsizeForWidget(presentation.maxDisplayCharacters),
-            displayValue = cell.value.ellipsizeForWidget(presentation.maxDisplayCharacters),
+            displayLabel = label.text,
+            displayValue = value.text,
             accessibilityLabel = "${cell.label}, ${cell.value}",
+            valueFontSp = value.fontSizeSp,
+            labelFontSp = label.fontSizeSp,
         )
     }
 
-private fun String.ellipsizeForWidget(maxCharacters: Int): String =
-    if (length <= maxCharacters) this else take(maxCharacters - 1) + "…"
+private data class QuickGlanceVisibleCopy(
+    val label: String,
+    val value: String,
+)
+
+private data class FittedWidgetText(
+    val text: String,
+    val fontSizeSp: Int,
+)
+
+private fun QuickGlanceCellValue.visibleCopy(
+    metric: QuickGlanceMetric,
+    layout: QuickGlanceLayout,
+): QuickGlanceVisibleCopy {
+    if (layout != QuickGlanceLayout.COMPACT) {
+        return QuickGlanceVisibleCopy(label = label, value = value)
+    }
+    if (metric == QuickGlanceMetric.HEALTH && value.contains(HEALTH_STATUS_SEPARATOR)) {
+        val score = value.substringBefore(HEALTH_STATUS_SEPARATOR).trim()
+        val status = value.substringAfter(HEALTH_STATUS_SEPARATOR).trim()
+        return QuickGlanceVisibleCopy(label = "$score $compactLabel", value = status)
+    }
+    return QuickGlanceVisibleCopy(label = compactLabel, value = value)
+}
+
+private fun fitWidgetTextToWidth(
+    text: String,
+    preferredFontSizeSp: Int,
+    minimumFontSizeSp: Int,
+    fontScale: Float,
+    widthDp: Float,
+): FittedWidgetText {
+    for (fontSizeSp in preferredFontSizeSp downTo minimumFontSizeSp) {
+        if (estimateWidgetTextWidthDp(text, fontSizeSp, fontScale) <= widthDp) {
+            return FittedWidgetText(text = text, fontSizeSp = fontSizeSp)
+        }
+    }
+    return FittedWidgetText(
+        text = text.ellipsizeToWidgetWidth(minimumFontSizeSp, fontScale, widthDp),
+        fontSizeSp = minimumFontSizeSp,
+    )
+}
+
+private fun String.ellipsizeToWidgetWidth(
+    fontSizeSp: Int,
+    fontScale: Float,
+    widthDp: Float,
+): String {
+    if (estimateWidgetTextWidthDp(this, fontSizeSp, fontScale) <= widthDp) return this
+    var prefix = dropLast(1)
+    while (prefix.isNotEmpty()) {
+        val candidate = "$prefix…"
+        if (estimateWidgetTextWidthDp(candidate, fontSizeSp, fontScale) <= widthDp) return candidate
+        prefix = prefix.dropLast(1)
+    }
+    return "…"
+}
+
+internal fun estimateWidgetTextWidthDp(
+    text: String,
+    fontSizeSp: Int,
+    fontScale: Float,
+): Float =
+    text.sumOf { character -> character.conservativeEmWidth().toDouble() }.toFloat() *
+        fontSizeSp *
+        fontScale *
+        WIDGET_TEXT_WIDTH_SAFETY_FACTOR
+
+private fun Char.conservativeEmWidth(): Float =
+    when {
+        isDigit() -> 0.62f
+        isUpperCase() -> 0.70f
+        isLowerCase() -> 0.62f
+        isWhitespace() -> 0.38f
+        this == '%' -> 0.82f
+        this == '°' -> 0.55f
+        this == '·' -> 0.50f
+        else -> 0.55f
+    }
 
 class QuickGlanceWidget : GlanceAppWidget() {
     companion object {
@@ -187,21 +309,25 @@ private fun QuickGlanceContent(
                         QuickGlanceCellValue(
                             label = context.getString(R.string.widget_health_score_label),
                             value = healthValue,
+                            compactLabel = context.getString(R.string.widget_health_compact_label),
                         ),
                     QuickGlanceMetric.BATTERY to
                         QuickGlanceCellValue(
                             label = context.getString(R.string.widget_battery_label),
                             value = batteryValue,
+                            compactLabel = context.getString(R.string.widget_battery_label),
                         ),
                     QuickGlanceMetric.STORAGE to
                         QuickGlanceCellValue(
                             label = context.getString(R.string.widget_free_storage_label),
                             value = storageValue,
+                            compactLabel = context.getString(R.string.widget_free_storage_compact_label),
                         ),
                     QuickGlanceMetric.TEMPERATURE to
                         QuickGlanceCellValue(
                             label = context.getString(R.string.widget_temperature_label),
                             value = temperatureValue,
+                            compactLabel = context.getString(R.string.widget_temperature_compact_label),
                         ),
                 ),
             presentation = presentation,
@@ -268,7 +394,7 @@ private fun QuickGlanceCell(
             maxLines = presentation.valueMaxLines,
             style =
                 TextStyle(
-                    fontSize = presentation.valueFontSp.sp,
+                    fontSize = model.valueFontSp.sp,
                     fontWeight = FontWeight.Bold,
                     color = GlanceTheme.colors.onSurface,
                 ),
@@ -278,7 +404,7 @@ private fun QuickGlanceCell(
             maxLines = presentation.labelMaxLines,
             style =
                 TextStyle(
-                    fontSize = presentation.labelFontSp.sp,
+                    fontSize = model.labelFontSp.sp,
                     color = GlanceTheme.colors.onSurfaceVariant,
                 ),
         )
@@ -290,3 +416,9 @@ class QuickGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
 }
 
 private const val QUICK_GLANCE_ROW_COUNT = 2f
+private const val QUICK_GLANCE_COLUMN_COUNT = 2f
+private const val QUICK_GLANCE_OUTER_PADDING_DP = 12
+private const val QUICK_GLANCE_CELL_PADDING_DP = 4
+private const val QUICK_GLANCE_MINIMUM_FONT_SP = 5
+private const val WIDGET_TEXT_WIDTH_SAFETY_FACTOR = 1.1f
+private const val HEALTH_STATUS_SEPARATOR = "·"

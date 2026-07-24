@@ -38,6 +38,7 @@ internal data class BatteryWidgetPresentation(
     val outerPaddingDp: Int,
     val valueFontSp: Int,
     val detailFontSp: Int,
+    val titleFontSp: Int,
     val showCurrent: Boolean,
     val showTitle: Boolean,
     val valueMaxLines: Int = 1,
@@ -47,8 +48,18 @@ internal data class BatteryWidgetPresentation(
         val valueLineHeight = valueFontSp * fontScale * WIDGET_TEXT_LINE_HEIGHT_MULTIPLIER
         val detailLines = if (showCurrent) 2 else 1
         val detailHeight = detailFontSp * fontScale * WIDGET_TEXT_LINE_HEIGHT_MULTIPLIER * detailLines
-        return maxOf(valueLineHeight, detailHeight)
+        val titleHeight =
+            if (showTitle) {
+                BATTERY_TITLE_SPACING_DP +
+                    titleFontSp * fontScale * WIDGET_TEXT_LINE_HEIGHT_MULTIPLIER
+            } else {
+                0f
+            }
+        return maxOf(valueLineHeight, detailHeight) + titleHeight
     }
+
+    fun requiredTotalHeightDp(fontScale: Float): Float =
+        outerPaddingDp * 2f + requiredContentHeightDp(fontScale)
 }
 
 internal fun batteryWidgetLayoutFor(size: DpSize): WidgetLayout =
@@ -58,14 +69,25 @@ internal fun batteryWidgetLayoutFor(size: DpSize): WidgetLayout =
         else -> WidgetLayout.COMPACT
     }
 
-internal fun batteryWidgetPresentationFor(size: DpSize): BatteryWidgetPresentation =
-    when (val layout = batteryWidgetLayoutFor(size)) {
+internal fun batteryWidgetPresentationFor(
+    size: DpSize,
+    fontScale: Float,
+): BatteryWidgetPresentation {
+    val layout = batteryWidgetLayoutFor(size)
+    val typography =
+        when {
+            fontScale >= 1.75f -> Triple(14, 8, 8)
+            fontScale >= 1.2f -> Triple(20, 10, 9)
+            else -> Triple(28, 12, 11)
+        }
+    return when (layout) {
         WidgetLayout.COMPACT ->
             BatteryWidgetPresentation(
                 layout = layout,
                 outerPaddingDp = 8,
-                valueFontSp = 24,
-                detailFontSp = 10,
+                valueFontSp = typography.first.coerceAtMost(24),
+                detailFontSp = typography.second.coerceAtMost(10),
+                titleFontSp = typography.third,
                 showCurrent = false,
                 showTitle = false,
             )
@@ -73,21 +95,45 @@ internal fun batteryWidgetPresentationFor(size: DpSize): BatteryWidgetPresentati
             BatteryWidgetPresentation(
                 layout = layout,
                 outerPaddingDp = 8,
-                valueFontSp = 28,
-                detailFontSp = 12,
-                showCurrent = true,
+                valueFontSp = typography.first,
+                detailFontSp = typography.second,
+                titleFontSp = typography.third,
+                showCurrent = fontScale < 1.75f,
                 showTitle = false,
             )
         WidgetLayout.EXPANDED ->
             BatteryWidgetPresentation(
                 layout = layout,
                 outerPaddingDp = 12,
-                valueFontSp = 28,
-                detailFontSp = 12,
+                valueFontSp = typography.first,
+                detailFontSp = typography.second,
+                titleFontSp = typography.third,
                 showCurrent = true,
                 showTitle = true,
             )
     }
+}
+
+internal data class BatteryWidgetTextModel(
+    val level: String,
+    val temperature: String,
+    val current: String?,
+    val title: String?,
+)
+
+internal fun batteryWidgetTextModel(
+    level: String,
+    temperature: String,
+    current: String?,
+    title: String,
+    presentation: BatteryWidgetPresentation,
+): BatteryWidgetTextModel =
+    BatteryWidgetTextModel(
+        level = level,
+        temperature = temperature,
+        current = current.takeIf { presentation.showCurrent },
+        title = title.takeIf { presentation.showTitle },
+    )
 
 class BatteryWidget : GlanceAppWidget() {
     companion object {
@@ -127,13 +173,16 @@ class BatteryWidget : GlanceAppWidget() {
         context: Context,
         snapshot: BatteryWidgetSnapshot,
     ) {
-        val presentation = batteryWidgetPresentationFor(androidx.glance.LocalSize.current)
-        val levelText = context.getString(R.string.widget_percent_value, snapshot.level)
-        val tempText = context.getString(R.string.widget_temperature_value, snapshot.temperatureC)
-        val currentDisplay =
-            snapshot.currentMa?.takeIf { presentation.showCurrent }?.let {
-                context.getString(R.string.widget_current_value, it)
-            }
+        val fontScale = context.resources.configuration.fontScale
+        val presentation = batteryWidgetPresentationFor(androidx.glance.LocalSize.current, fontScale)
+        val text =
+            batteryWidgetTextModel(
+                level = context.getString(R.string.widget_percent_value, snapshot.level),
+                temperature = context.getString(R.string.widget_temperature_value, snapshot.temperatureC),
+                current = snapshot.currentMa?.let { context.getString(R.string.widget_current_value, it) },
+                title = context.getString(R.string.widget_battery_name),
+                presentation = presentation,
+            )
 
         RuncheckWidgetTheme {
             Column(
@@ -150,7 +199,7 @@ class BatteryWidget : GlanceAppWidget() {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = levelText,
+                        text = text.level,
                         maxLines = presentation.valueMaxLines,
                         style =
                             TextStyle(
@@ -162,7 +211,7 @@ class BatteryWidget : GlanceAppWidget() {
                     Spacer(modifier = GlanceModifier.width(8.dp))
                     Column {
                         Text(
-                            text = tempText,
+                            text = text.temperature,
                             maxLines = presentation.detailMaxLines,
                             style =
                                 TextStyle(
@@ -170,7 +219,7 @@ class BatteryWidget : GlanceAppWidget() {
                                     color = GlanceTheme.colors.onSurfaceVariant,
                                 ),
                         )
-                        currentDisplay?.let {
+                        text.current?.let {
                             Text(
                                 text = it,
                                 maxLines = presentation.detailMaxLines,
@@ -186,11 +235,11 @@ class BatteryWidget : GlanceAppWidget() {
                 if (presentation.showTitle) {
                     Spacer(modifier = GlanceModifier.height(4.dp))
                     Text(
-                        text = context.getString(R.string.widget_battery_name),
+                        text = requireNotNull(text.title),
                         maxLines = 1,
                         style =
                             TextStyle(
-                                fontSize = 11.sp,
+                                fontSize = presentation.titleFontSp.sp,
                                 color = GlanceTheme.colors.onSurfaceVariant,
                             ),
                     )
@@ -203,3 +252,5 @@ class BatteryWidget : GlanceAppWidget() {
 class BatteryWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = BatteryWidget()
 }
+
+private const val BATTERY_TITLE_SPACING_DP = 4f

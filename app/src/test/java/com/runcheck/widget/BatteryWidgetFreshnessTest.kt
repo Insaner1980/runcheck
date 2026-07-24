@@ -53,18 +53,39 @@ class BatteryWidgetFreshnessTest {
     }
 
     @Test
-    fun `minimum battery presentation fits its declared bounds and touch target`() {
+    fun `minimum battery presentation fits its declared bounds at supported font scales`() {
         val minimumSize = DpSize(110.dp, 72.dp)
-        val presentation = batteryWidgetPresentationFor(minimumSize)
 
-        assertEquals(WidgetLayout.COMPACT, presentation.layout)
-        assertTrue(minimumSize.height.value >= 48f)
-        assertTrue(
-            presentation.requiredContentHeightDp(fontScale = 1f) <=
-                minimumSize.height.value - presentation.outerPaddingDp * 2f,
-        )
-        assertEquals(1, presentation.valueMaxLines)
-        assertEquals(1, presentation.detailMaxLines)
+        listOf(1f, 1.3f, 2f).forEach { fontScale ->
+            val presentation = batteryWidgetPresentationFor(minimumSize, fontScale)
+
+            assertEquals(WidgetLayout.COMPACT, presentation.layout)
+            assertTrue(minimumSize.height.value >= 48f)
+            assertTrue(
+                "Battery content and padding must fit at fontScale $fontScale",
+                presentation.requiredTotalHeightDp(fontScale) <= minimumSize.height.value,
+            )
+            assertEquals(1, presentation.valueMaxLines)
+            assertEquals(1, presentation.detailMaxLines)
+        }
+    }
+
+    @Test
+    fun `minimum battery presentation keeps production level and temperature compact`() {
+        val presentation = batteryWidgetPresentationFor(DpSize(110.dp, 72.dp), fontScale = 2f)
+        val text =
+            batteryWidgetTextModel(
+                level = "80%",
+                temperature = "25.0°C",
+                current = "100 mA",
+                title = "Battery Status",
+                presentation = presentation,
+            )
+
+        assertEquals("80%", text.level)
+        assertEquals("25.0°C", text.temperature)
+        assertEquals(null, text.current)
+        assertEquals(null, text.title)
     }
 
     private fun batteryReading(timestamp: Long) =

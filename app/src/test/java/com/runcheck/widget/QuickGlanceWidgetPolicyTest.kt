@@ -1,10 +1,13 @@
 package com.runcheck.widget
 
+import android.text.format.Formatter
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.runcheck.R
 import com.runcheck.service.monitor.NotificationHelper
 import com.runcheck.ui.navigation.Screen
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -79,6 +82,55 @@ class QuickGlanceWidgetPolicyTest {
     }
 
     @Test
+    fun `actual quick glance metric copy fits the available cell width at supported sizes and font scales`() {
+        val context = RuntimeEnvironment.getApplication()
+        val values = productionMetricValues()
+        assertEquals("80 · Healthy", values.getValue(QuickGlanceMetric.HEALTH).value)
+
+        listOf(
+            DpSize(180.dp, 120.dp),
+            DpSize(320.dp, 120.dp),
+            DpSize(600.dp, 240.dp),
+        ).forEach { size ->
+            listOf(1f, 1.3f, 2f).forEach { fontScale ->
+                val presentation = quickGlancePresentationFor(size, fontScale)
+                val models = quickGlanceCellModels(values, presentation)
+                val widthBudget = presentation.availableCellTextWidthDp(size)
+
+                models.forEach { model ->
+                    assertTrue(
+                        "${model.metric} value must fit $widthBudget dp at $size / $fontScale",
+                        estimateWidgetTextWidthDp(
+                            text = model.displayValue,
+                            fontSizeSp = model.valueFontSp,
+                            fontScale = fontScale,
+                        ) <= widthBudget,
+                    )
+                    assertTrue(
+                        "${model.metric} label must fit $widthBudget dp at $size / $fontScale",
+                        estimateWidgetTextWidthDp(
+                            text = model.displayLabel,
+                            fontSizeSp = model.labelFontSp,
+                            fontScale = fontScale,
+                        ) <= widthBudget,
+                    )
+                    assertFalse(model.displayValue.endsWith("…"))
+                    assertFalse(model.displayLabel.endsWith("…"))
+                }
+
+                val health = models.first()
+                val visibleHealthCopy = "${health.displayLabel} ${health.displayValue}"
+                assertTrue(visibleHealthCopy.contains("80"))
+                assertTrue(visibleHealthCopy.contains(context.getString(R.string.status_healthy)))
+                assertEquals(
+                    "Health Score, 80 · Healthy",
+                    health.accessibilityLabel,
+                )
+            }
+        }
+    }
+
+    @Test
     fun `quick glance models preserve row major TalkBack labels while visible text ellipsizes`() {
         val presentation = quickGlancePresentationFor(DpSize(180.dp, 120.dp), fontScale = 2f)
         val models =
@@ -109,7 +161,9 @@ class QuickGlanceWidgetPolicyTest {
         )
         assertTrue(models[2].displayValue.endsWith("…"))
         assertTrue(models[3].displayValue.endsWith("…"))
-        assertEquals("80 Healthy", models.first().displayValue)
+        assertTrue(
+            "${models.first().displayLabel} ${models.first().displayValue}".contains("Healthy"),
+        )
     }
 
     @Test
@@ -124,5 +178,36 @@ class QuickGlanceWidgetPolicyTest {
         intents.forEach { (metric, intent) ->
             assertEquals(metric.route, intent.getStringExtra(NotificationHelper.EXTRA_NAVIGATE_TO))
         }
+    }
+
+    private fun productionMetricValues(): Map<QuickGlanceMetric, QuickGlanceCellValue> {
+        val context = RuntimeEnvironment.getApplication()
+        val healthy = context.getString(R.string.status_healthy)
+        return mapOf(
+            QuickGlanceMetric.HEALTH to
+                QuickGlanceCellValue(
+                    label = context.getString(R.string.widget_health_score_label),
+                    value = context.getString(R.string.widget_score_with_status, 80, healthy),
+                    compactLabel = context.getString(R.string.widget_health_compact_label),
+                ),
+            QuickGlanceMetric.BATTERY to
+                QuickGlanceCellValue(
+                    label = context.getString(R.string.widget_battery_label),
+                    value = context.getString(R.string.widget_percent_value, 80),
+                    compactLabel = context.getString(R.string.widget_battery_label),
+                ),
+            QuickGlanceMetric.STORAGE to
+                QuickGlanceCellValue(
+                    label = context.getString(R.string.widget_free_storage_label),
+                    value = Formatter.formatShortFileSize(context, 123_000_000_000L),
+                    compactLabel = context.getString(R.string.widget_free_storage_compact_label),
+                ),
+            QuickGlanceMetric.TEMPERATURE to
+                QuickGlanceCellValue(
+                    label = context.getString(R.string.widget_temperature_label),
+                    value = context.getString(R.string.widget_temperature_value, 25f),
+                    compactLabel = context.getString(R.string.widget_temperature_compact_label),
+                ),
+        )
     }
 }

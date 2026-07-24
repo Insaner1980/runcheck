@@ -36,8 +36,11 @@ class WidgetRegistrationContractTest {
 
         assertTrue(info.contains("""android:minWidth="110dp""""))
         assertTrue(info.contains("""android:minHeight="72dp""""))
+        assertTrue(info.contains("""android:targetCellHeight="2""""))
+        assertFalse(info.contains("""android:targetCellHeight="1""""))
         assertTrue(battery.contains("DpSize(110.dp, 72.dp)"))
-        assertTrue(battery.contains("batteryWidgetPresentationFor"))
+        assertTrue(battery.contains("batteryWidgetPresentationFor(androidx.glance.LocalSize.current, fontScale)"))
+        assertTrue(battery.contains("context.resources.configuration.fontScale"))
     }
 
     @Test

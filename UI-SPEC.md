@@ -2254,12 +2254,16 @@ Locked content:
   truncate instead of overflowing.
 - The Battery widget's declared minimum is 110×72dp. Its compact policy uses
   8dp outer padding and shows level plus temperature so the content and root
-  action fit the minimum height; wider policies add current and the title.
+  action fit the minimum height at font scales 1.0, 1.3, and 2.0; wider
+  policies add current and the title. Its Android 12 default is 2×2 cells so
+  `targetCellHeight` agrees with the two-cell height budget.
 - Quick Glance targets 4×2 and presents a 2×2 grid in this accessibility order:
   Health Score, Battery, Free storage, Temperature.
 - Quick Glance selects explicit typography budgets for 1.0, 1.3, and 2.0 font
-  scales. Visible cell text stays on one line and may be ellipsized, while each
-  cell keeps the complete label and value in its content description.
+  scales. Compact cells use shorter metric labels and a conservative
+  glyph-width estimate to select a fitting font; visible text stays on one line
+  and may be ellipsized, while each cell keeps the complete label and value in
+  its content description.
 - The four Quick Glance cells open Home, Battery, Storage, and Thermal,
   respectively, through the same validated direct-route extra consumed by
   `MainActivity`.
