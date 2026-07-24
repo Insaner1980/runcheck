@@ -41,19 +41,25 @@ fun WeeklyReportContent(
             ReportSection(
                 title = stringResource(R.string.weekly_report_battery),
                 lines =
-                    listOf(
-                        report.battery.averageDischargePercentPerHour?.let {
-                            stringResource(R.string.weekly_report_discharge_rate, it)
-                        } ?: stringResource(R.string.weekly_report_metric_unavailable),
-                        stringResource(
-                            R.string.weekly_report_charge_changes,
-                            report.battery.chargePercentChange,
-                            report.battery.dischargePercentChange,
-                        ),
-                        report.battery.healthPercentChange?.let {
-                            stringResource(R.string.weekly_report_health_change, it)
-                        } ?: stringResource(R.string.weekly_report_health_unavailable),
-                    ),
+                    when (batteryProjection(report.battery)) {
+                        WeeklyReportMetricProjection.Unavailable ->
+                            listOf(stringResource(R.string.weekly_report_metric_unavailable))
+
+                        WeeklyReportMetricProjection.Available ->
+                            listOf(
+                                report.battery.averageDischargePercentPerHour?.let {
+                                    stringResource(R.string.weekly_report_discharge_rate, it)
+                                } ?: stringResource(R.string.weekly_report_metric_unavailable),
+                                stringResource(
+                                    R.string.weekly_report_charge_changes,
+                                    report.battery.chargePercentChange,
+                                    report.battery.dischargePercentChange,
+                                ),
+                                report.battery.healthPercentChange?.let {
+                                    stringResource(R.string.weekly_report_health_change, it)
+                                } ?: stringResource(R.string.weekly_report_health_unavailable),
+                            )
+                    },
             )
         }
         item {
@@ -71,15 +77,21 @@ fun WeeklyReportContent(
             ReportSection(
                 title = stringResource(R.string.weekly_report_thermal),
                 lines =
-                    listOf(
-                        stringResource(
-                            R.string.weekly_report_throttling_events,
-                            report.thermal.throttlingEventCount,
-                        ),
-                        report.thermal.highestThermalStatus?.let {
-                            stringResource(R.string.weekly_report_highest_thermal_status, it)
-                        } ?: stringResource(R.string.weekly_report_metric_unavailable),
-                    ),
+                    when (thermalProjection(report.thermal)) {
+                        WeeklyReportMetricProjection.Unavailable ->
+                            listOf(stringResource(R.string.weekly_report_metric_unavailable))
+
+                        WeeklyReportMetricProjection.Available ->
+                            listOf(
+                                stringResource(
+                                    R.string.weekly_report_throttling_events,
+                                    report.thermal.throttlingEventCount,
+                                ),
+                                report.thermal.highestThermalStatus?.let {
+                                    stringResource(R.string.weekly_report_highest_thermal_status, it)
+                                } ?: stringResource(R.string.weekly_report_metric_unavailable),
+                            )
+                    },
             )
         }
         item {
@@ -113,15 +125,20 @@ fun WeeklyReportContent(
             }
         } else {
             items(report.topApps, key = { it.packageName }) { app ->
+                val foregroundLine =
+                    stringResource(
+                        R.string.weekly_report_foreground_minutes,
+                        (app.foregroundTimeMs / 60_000.0).roundToInt(),
+                    )
+                val endpointAttributedLine =
+                    if (app.availability == WeeklyReportAvailability.ESTIMATED) {
+                        stringResource(R.string.weekly_report_app_usage_endpoint_attributed)
+                    } else {
+                        null
+                    }
                 ReportSection(
                     title = app.appLabel?.takeIf(String::isNotBlank) ?: app.packageName,
-                    lines =
-                        listOf(
-                            stringResource(
-                                R.string.weekly_report_foreground_minutes,
-                                (app.foregroundTimeMs / 60_000.0).roundToInt(),
-                            ),
-                        ),
+                    lines = listOfNotNull(foregroundLine, endpointAttributedLine),
                 )
             }
         }

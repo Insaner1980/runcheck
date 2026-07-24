@@ -103,9 +103,9 @@ Current runtime systems:
 - WorkManager runs `HealthMonitorWorker` for snapshot collection + alert evaluation
 - WorkManager runs `HealthMaintenanceWorker` for app-usage refresh, cleanup, and widget refresh
 - WorkManager runs `InsightGenerationWorker` on the monitoring scheduler lifecycle to generate persisted Home insights from Room history; rule evaluation completes before all generated rule results are replaced in one Room transaction
-- `WeeklyReportScheduler` maintains one unique one-time `weekly_report` job for the next local Monday at 09:00 while the preference and Pro access are active; app startup, boot/package replacement, timezone changes, preference changes, and Pro changes reconcile the schedule
-- `WeeklyReportWorker` reads only the previous completed local Monday-to-Monday interval, posts through the low-importance reports channel, records notification-denied periods as handled without catch-up, and schedules the next occurrence after terminal handling
-- App Usage's `Not used` mode is domain-Pro-gated and derives 30/60/90-day candidates from launcher-visible user apps plus `UsageStats`; bounded `StorageStatsManager` lookups run on `AppDispatchers.IO`, tolerate per-app failures, and are cached for one screen refresh
+- `WeeklyReportScheduler` waits for confirmed Pro readiness before reconciling its unique one-time `weekly_report` job for the next local Monday at 09:00; routine reconciliation keeps pending/running work, while a timezone change explicitly replaces its target
+- `WeeklyReportWorker` retries while Pro state is unready, then reads only the previous completed local Monday-to-Monday interval, posts through the low-importance reports channel, records notification-denied periods as handled without catch-up, and schedules the next occurrence after terminal handling
+- App Usage's `Not used` mode is domain-Pro-gated and derives 30/60/90-day candidates from launcher-visible user apps plus `UsageStats`; bounded `StorageStatsManager` lookups run on `AppDispatchers.IO`, tolerate per-app failures, and cache only within one screen refresh session
 - `RealTimeMonitorService` is an opt-in live notification foreground service and must stay user-controlled from Settings
 - Widgets are backed by Room snapshots and treated as a Pro feature
 - Trial state currently counts as Pro access through `ProState.isPro`

@@ -54,6 +54,12 @@ internal fun aggregateWeeklyReport(
                     packageName = packageName,
                     appLabel = rows.lastOrNull()?.appLabel,
                     foregroundTimeMs = rows.sumOf { it.foregroundTimeMs },
+                    availability =
+                        if (rows.any { it.crossesPeriodStart(period) }) {
+                            WeeklyReportAvailability.ESTIMATED
+                        } else {
+                            WeeklyReportAvailability.AVAILABLE
+                        },
                 )
             }.sortedByDescending { it.foregroundTimeMs }
             .take(MAX_TOP_APPS)
@@ -76,7 +82,8 @@ internal fun aggregateWeeklyReport(
     val coverageAvailability =
         when {
             sampleTimes.isEmpty() -> WeeklyReportAvailability.UNAVAILABLE
-            monitoredDays >= DAYS_IN_WEEK -> WeeklyReportAvailability.AVAILABLE
+            monitoredDays >= DAYS_IN_WEEK && source.appUsage.none { it.crossesPeriodStart(period) } ->
+                WeeklyReportAvailability.AVAILABLE
             else -> WeeklyReportAvailability.ESTIMATED
         }
     val coverage =
@@ -157,12 +164,7 @@ private fun aggregateStorage(source: WeeklyReportSourceData): WeeklyStorageSumma
 }
 
 private fun aggregateThermal(source: WeeklyReportSourceData): WeeklyThermalSummary {
-    val throttlingCount =
-        if (source.throttlingEventTimestamps.isNotEmpty()) {
-            source.throttlingEventTimestamps.size
-        } else {
-            source.thermalReadings.count { it.throttling }
-        }
+    val throttlingCount = source.throttlingEventTimestamps.size
     return WeeklyThermalSummary(
         throttlingEventCount = throttlingCount,
         highestThermalStatus = source.thermalReadings.maxOfOrNull { it.thermalStatus },
@@ -199,6 +201,11 @@ private fun median(values: List<Double>): Double? {
         sorted[middle]
     }
 }
+
+private fun com.runcheck.domain.model.AppBatteryUsage.crossesPeriodStart(
+    period: WeeklyReportPeriod,
+): Boolean =
+    foregroundTimeMs > 0L && timestamp - period.startInclusive.toEpochMilli() < foregroundTimeMs
 
 private const val MILLIS_PER_HOUR = 60.0 * 60.0 * 1000.0
 private const val MAX_BATTERY_SAMPLE_GAP_MS = 4L * 60L * 60L * 1000L

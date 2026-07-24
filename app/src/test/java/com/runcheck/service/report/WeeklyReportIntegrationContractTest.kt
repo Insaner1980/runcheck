@@ -20,7 +20,16 @@ class WeeklyReportIntegrationContractTest {
 
         assertTrue(source.contains("weeklyReportScheduler"))
         assertTrue(source.contains("weeklyReportEnabled"))
+        assertTrue(source.contains("proStatusReady"))
         assertTrue(source.contains("distinctUntilChanged"))
+    }
+
+    @Test
+    fun `timezone receiver uses the explicit reschedule path`() {
+        val receiver = File("src/main/java/com/runcheck/service/monitor/BootReceiver.kt").readText()
+
+        assertTrue(receiver.contains("ACTION_TIMEZONE_CHANGED"))
+        assertTrue(receiver.contains("rescheduleForTimezoneChange"))
     }
 
     @Test

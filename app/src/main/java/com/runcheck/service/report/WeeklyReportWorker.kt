@@ -60,6 +60,7 @@ class WeeklyReportWorker
         @Suppress("TooGenericExceptionCaught")
         override suspend fun doWork(): Result =
             try {
+                if (!proStatusProvider.isProStatusReady) return Result.retry()
                 val period =
                     WeeklyReportPeriod.previousCompleted(
                         timeProvider.clock.instant(),

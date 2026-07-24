@@ -14,6 +14,7 @@ import io.mockk.coJustRun
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -86,13 +87,29 @@ class WeeklyReportWorkerTest {
             coVerify(exactly = 0) { scheduler.ensureScheduled() }
         }
 
-    private fun worker(canNotify: Boolean) =
+    @Test
+    fun `unready Pro state retries before reading a possibly false entitlement`() =
+        runTest {
+            val worker = worker(canNotify = true, proReady = false)
+
+            val result = worker.doWork()
+
+            assertEquals(ListenableWorker.Result.retry(), result)
+            verify(exactly = 0) { preferences.getPreferences() }
+            coVerify(exactly = 0) { generateReport(any()) }
+            coVerify(exactly = 0) { scheduler.scheduleNextAfterCurrent() }
+        }
+
+    private fun worker(
+        canNotify: Boolean,
+        proReady: Boolean = true,
+    ) =
         WeeklyReportWorker(
             context,
             params,
             preferences,
             generateReport,
-            WorkerProStatus(true),
+            WorkerProStatus(value = true, ready = proReady),
             notifier,
             scheduler,
             WeeklyReportNotificationGate { canNotify },
@@ -103,9 +120,11 @@ class WeeklyReportWorkerTest {
 
 private class WorkerProStatus(
     private val value: Boolean,
+    private val ready: Boolean = true,
 ) : ProStatusProvider {
     override val isProUser: Flow<Boolean> = flowOf(value)
-    override val isProStatusReady: Boolean = true
+    override val isProStatusReady: Boolean
+        get() = ready
 
     override fun isPro(): Boolean = value
 }

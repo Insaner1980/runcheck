@@ -42,6 +42,13 @@ class WeeklyReportScheduler
 
         suspend fun ensureScheduled() {
             schedule(
+                existingWorkPolicy = ExistingWorkPolicy.KEEP,
+                cancelWhenDisabled = true,
+            )
+        }
+
+        suspend fun rescheduleForTimezoneChange() {
+            schedule(
                 existingWorkPolicy = ExistingWorkPolicy.REPLACE,
                 cancelWhenDisabled = true,
             )
@@ -58,6 +65,7 @@ class WeeklyReportScheduler
             existingWorkPolicy: ExistingWorkPolicy,
             cancelWhenDisabled: Boolean,
         ) {
+            if (!proStatusProvider.isProStatusReady) return
             val preferences = preferencesRepository.getPreferences().first()
             if (!preferences.weeklyReportEnabled || !proStatusProvider.isPro()) {
                 if (cancelWhenDisabled) {

@@ -36,7 +36,7 @@ class WeeklyReportSchedulerTest {
             every {
                 workManager.enqueueUniqueWork(
                     WeeklyReportWorker.WORK_NAME,
-                    ExistingWorkPolicy.REPLACE,
+                    ExistingWorkPolicy.KEEP,
                     capture(request),
                 )
             } returns operation
@@ -131,13 +131,88 @@ class WeeklyReportSchedulerTest {
             verify(exactly = 1) { workManager.cancelUniqueWork(WeeklyReportWorker.WORK_NAME) }
             coVerify(exactly = 0) { preferencesRepository.setWeeklyReportEnabled(false) }
         }
+
+    @Test
+    fun `unready cold start does not cancel Pro report before state restores`() =
+        runTest {
+            every { preferencesRepository.getPreferences() } returns
+                flowOf(UserPreferences(weeklyReportEnabled = true))
+            val proStatus = SchedulerProStatus(value = false, ready = false)
+            val scheduler =
+                WeeklyReportScheduler(
+                    workManager,
+                    preferencesRepository,
+                    proStatus,
+                    Clock.systemUTC(),
+                    { ZoneId.of("UTC") },
+                )
+
+            scheduler.ensureScheduled()
+
+            verify(exactly = 0) { workManager.cancelUniqueWork(WeeklyReportWorker.WORK_NAME) }
+            verify(exactly = 0) { workManager.enqueueUniqueWork(any(), any(), any<OneTimeWorkRequest>()) }
+
+            proStatus.value = true
+            proStatus.ready = true
+            every {
+                workManager.enqueueUniqueWork(
+                    WeeklyReportWorker.WORK_NAME,
+                    ExistingWorkPolicy.KEEP,
+                    any<OneTimeWorkRequest>(),
+                )
+            } returns operation
+
+            scheduler.ensureScheduled()
+
+            verify(exactly = 1) {
+                workManager.enqueueUniqueWork(
+                    WeeklyReportWorker.WORK_NAME,
+                    ExistingWorkPolicy.KEEP,
+                    any<OneTimeWorkRequest>(),
+                )
+            }
+        }
+
+    @Test
+    fun `timezone change explicitly replaces the existing target`() =
+        runTest {
+            every { preferencesRepository.getPreferences() } returns
+                flowOf(UserPreferences(weeklyReportEnabled = true))
+            every {
+                workManager.enqueueUniqueWork(
+                    WeeklyReportWorker.WORK_NAME,
+                    ExistingWorkPolicy.REPLACE,
+                    any<OneTimeWorkRequest>(),
+                )
+            } returns operation
+            val scheduler =
+                WeeklyReportScheduler(
+                    workManager,
+                    preferencesRepository,
+                    SchedulerProStatus(true),
+                    Clock.systemUTC(),
+                    { ZoneId.of("UTC") },
+                )
+
+            scheduler.rescheduleForTimezoneChange()
+
+            verify(exactly = 1) {
+                workManager.enqueueUniqueWork(
+                    WeeklyReportWorker.WORK_NAME,
+                    ExistingWorkPolicy.REPLACE,
+                    any<OneTimeWorkRequest>(),
+                )
+            }
+        }
 }
 
 private class SchedulerProStatus(
-    private val value: Boolean,
+    var value: Boolean,
+    var ready: Boolean = true,
 ) : ProStatusProvider {
     override val isProUser: Flow<Boolean> = flowOf(value)
-    override val isProStatusReady: Boolean = true
+    override val isProStatusReady: Boolean
+        get() = ready
 
     override fun isPro(): Boolean = value
 }

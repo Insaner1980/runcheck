@@ -84,6 +84,7 @@ data class WeeklyAppUsageSummary(
     val packageName: String,
     val appLabel: String?,
     val foregroundTimeMs: Long,
+    val availability: WeeklyReportAvailability,
 )
 
 data class WeeklyReport(

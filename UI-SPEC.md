@@ -1698,7 +1698,8 @@ App usage item:
 - Last-use copy distinguishes a recorded date from "No recorded use in N days";
   an absent UsageStats row is not presented as proof that the app was never used.
 - Storage size is shown when available. Per-app size failures keep the remaining
-  list visible and add a concise partial-results note.
+  list visible and add a concise size-specific partial-results note; label-only
+  failures instead explain that package names are used.
 - Each candidate exposes a 48dp-minimum uninstall action that launches the
   system `ACTION_DELETE` flow. Returning to the screen forces a fresh query.
 

@@ -41,3 +41,24 @@ sealed interface UnusedAppsUiState {
         val message: UiText,
     ) : UnusedAppsUiState
 }
+
+internal enum class UnusedAppsPartialErrorKind {
+    NONE,
+    STORAGE_ONLY,
+    LABELS_ONLY,
+    STORAGE_AND_LABELS,
+}
+
+internal fun classifyUnusedAppsPartialErrors(
+    errors: Set<UnusedAppError>,
+): UnusedAppsPartialErrorKind {
+    val hasStorageError =
+        UnusedAppError.STORAGE_PERMISSION in errors || UnusedAppError.STORAGE_IO in errors
+    val hasLabelError = UnusedAppError.PACKAGE_LABEL in errors
+    return when {
+        hasStorageError && hasLabelError -> UnusedAppsPartialErrorKind.STORAGE_AND_LABELS
+        hasStorageError -> UnusedAppsPartialErrorKind.STORAGE_ONLY
+        hasLabelError -> UnusedAppsPartialErrorKind.LABELS_ONLY
+        else -> UnusedAppsPartialErrorKind.NONE
+    }
+}

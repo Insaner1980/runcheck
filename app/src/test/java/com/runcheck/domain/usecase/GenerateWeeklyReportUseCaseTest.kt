@@ -83,7 +83,7 @@ class GenerateWeeklyReportUseCaseTest {
             assertEquals(4.0, result.report.battery.chargePercentChange, 0.001)
             assertEquals(-1, result.report.battery.healthPercentChange)
             assertEquals(-6_000L, result.report.storage.availableBytesChange)
-            assertEquals(1, result.report.thermal.throttlingEventCount)
+            assertEquals(0, result.report.thermal.throttlingEventCount)
             assertEquals(4, result.report.thermal.highestThermalStatus)
             assertEquals(70.0, requireNotNull(result.report.speed.medianDownloadMbps), 0.001)
             assertEquals(15.0, requireNotNull(result.report.speed.medianUploadMbps), 0.001)
@@ -164,6 +164,28 @@ class GenerateWeeklyReportUseCaseTest {
 
             assertEquals(7, result.report.coverage.monitoredDays)
             assertEquals(WeeklyReportAvailability.AVAILABLE, result.report.coverage.availability)
+        }
+
+    @Test
+    fun `app usage crossing the period boundary is explicitly estimated`() =
+        runTest {
+            val start = period.startInclusive.toEpochMilli()
+            val result =
+                GenerateWeeklyReportUseCase(
+                    FakeWeeklyReportRepository(
+                        WeeklyReportSourceData(
+                            batteryReadings =
+                                (0 until 7).map { day ->
+                                    battery(start + day * 24L * 60L * 60L * 1000L, 80, null)
+                                },
+                            appUsage = listOf(app(start + 60_000L, "example.crossing", "Crossing", 120_000L)),
+                        ),
+                    ),
+                    FakeWeeklyReportProStatus(true),
+                )(period) as WeeklyReportGenerationResult.Available
+
+            assertEquals(WeeklyReportAvailability.ESTIMATED, result.report.coverage.availability)
+            assertEquals(WeeklyReportAvailability.ESTIMATED, result.report.topApps.single().availability)
         }
 
     private fun battery(

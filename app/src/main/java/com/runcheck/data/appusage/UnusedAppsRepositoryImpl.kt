@@ -36,21 +36,18 @@ class UnusedAppsRepositoryImpl
         @param:ApplicationContext private val context: Context,
         private val dispatchers: AppDispatchers,
     ) : UnusedAppsRepository {
-        private val cacheMutex = Mutex()
-        private val cache = mutableMapOf<UnusedAppsPeriod, UnusedAppsResult>()
+        private val refreshCache = UnusedAppsRefreshCache<UnusedAppsResult>()
 
         override suspend fun getUnusedApps(
             period: UnusedAppsPeriod,
             observedAt: Instant,
             forceRefresh: Boolean,
         ): UnusedAppsResult =
-            cacheMutex.withLock {
-                if (!forceRefresh) {
-                    cache[period]?.let { return@withLock it }
-                }
-                val result = load(period, observedAt)
-                cache[period] = result
-                result
+            refreshCache.getOrLoad(
+                key = UnusedAppsCacheKey(period, observedAt),
+                forceRefresh = forceRefresh,
+            ) {
+                load(period, observedAt)
             }
 
         private suspend fun load(
@@ -203,6 +200,33 @@ class UnusedAppsRepositoryImpl
             }
         }
     }
+
+internal data class UnusedAppsCacheKey(
+    val period: UnusedAppsPeriod,
+    val observedAt: Instant,
+)
+
+internal class UnusedAppsRefreshCache<T> {
+    private val mutex = Mutex()
+    private val values = mutableMapOf<UnusedAppsCacheKey, T>()
+    private var activeObservedAt: Instant? = null
+
+    suspend fun getOrLoad(
+        key: UnusedAppsCacheKey,
+        forceRefresh: Boolean,
+        load: suspend () -> T,
+    ): T =
+        mutex.withLock {
+            if (activeObservedAt != key.observedAt) {
+                values.clear()
+                activeObservedAt = key.observedAt
+            }
+            if (!forceRefresh) {
+                values[key]?.let { return@withLock it }
+            }
+            load().also { values[key] = it }
+        }
+}
 
 internal fun storageErrorFor(error: Exception): UnusedAppError =
     if (error is SecurityException) {

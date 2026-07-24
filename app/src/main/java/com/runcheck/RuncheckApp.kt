@@ -80,8 +80,9 @@ class RuncheckApp :
             combine(
                 userPreferencesRepository.get().getPreferences().map { it.weeklyReportEnabled },
                 proManager.get().isProUser,
-            ) { weeklyReportEnabled, isPro ->
-                weeklyReportEnabled to isPro
+                proManager.get().proStatusReady,
+            ) { weeklyReportEnabled, isPro, isReady ->
+                Triple(weeklyReportEnabled, isPro, isReady)
             }.distinctUntilChanged().collect {
                 weeklyReportScheduler.get().ensureScheduled()
             }

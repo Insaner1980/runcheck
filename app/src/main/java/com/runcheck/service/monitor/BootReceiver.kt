@@ -61,7 +61,11 @@ class BootReceiver : BroadcastReceiver() {
             try {
                 screenStateRepository.initialize()
                 monitorScheduler.ensureScheduled()
-                weeklyReportScheduler.ensureScheduled()
+                if (action == Intent.ACTION_TIMEZONE_CHANGED) {
+                    weeklyReportScheduler.rescheduleForTimezoneChange()
+                } else {
+                    weeklyReportScheduler.ensureScheduled()
+                }
                 restartLiveNotificationIfEnabled(context)
             } catch (e: CancellationException) {
                 throw e

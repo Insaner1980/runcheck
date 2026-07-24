@@ -308,7 +308,8 @@ Additional one-time weekly reporting behavior:
 - `WeeklyReportWorker`
   - unique work name: `weekly_report`
   - scheduled as one one-time job for the next local Monday at 09:00; no periodic or retry chain is maintained
-  - reconciled at app startup, boot/package replacement, timezone change, weekly-report preference changes, and Pro-state changes
+  - waits for confirmed Pro readiness before reconciling at app startup, boot/package replacement, weekly-report preference changes, and Pro-state changes; an unready state does not cancel work
+  - routine reconciliation keeps due/running work, while timezone change explicitly replaces the local-time target
   - canceled when the toggle is off or Pro access is inactive; Pro expiry preserves the user's toggle selection
   - reads the previous completed local Monday 00:00 to Monday 00:00 interval with an exclusive end
   - notification denial or a disabled reports channel records that interval as handled, so permission restoration does not create a catch-up notification
@@ -662,7 +663,7 @@ UI and data behavior:
 
 ## App Usage
 
-App Usage is Pro-gated. The Usage mode is backed by paging; the Not used mode is a separately loaded, one-refresh-cached candidate list.
+App Usage is Pro-gated. The Usage mode is backed by paging; the Not used mode is a separately loaded candidate list cached only for its current screen-refresh observation time.
 
 Behavior:
 
@@ -675,8 +676,8 @@ Behavior:
 - Not used queries only launcher-visible apps through `ACTION_MAIN` + `CATEGORY_LAUNCHER`; `QUERY_ALL_PACKAGES` is not declared
 - System apps, updated system apps, the runcheck package, and apps installed inside the selected interval are excluded
 - Missing `UsageStats` rows remain honest candidates with "No recorded use" wording rather than being treated as proof that an app was never used
-- Per-app `StorageStatsManager` reads are bounded, run on `AppDispatchers.IO`, and retain partial results when an app disappears or a size lookup fails
-- App labels fall back to package names, uninstall uses `ACTION_DELETE`, and returning from the uninstall/settings flow forces a fresh query
+- Per-app `StorageStatsManager` reads are bounded, run on `AppDispatchers.IO`, and retain partial results when an app disappears or a size lookup fails; label-only failures do not imply a missing size
+- App labels fall back to package names, uninstall uses `ACTION_DELETE`, and returning from the uninstall/settings flow or a permission change forces a fresh query
 - The domain use case checks Pro access before repository work, so free users never trigger the aggregate or package scan
 
 Background support:

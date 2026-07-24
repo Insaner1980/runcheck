@@ -186,7 +186,7 @@ private fun AppUsageContent(
         if (currentAccess && (justGrantedAccess || appItems.itemCount == 0)) {
             currentOnRefresh()
         }
-        if (selectedMode == AppUsageMode.NOT_USED && (justGrantedAccess || uninstallPending)) {
+        if (selectedMode == AppUsageMode.NOT_USED) {
             onLoadUnusedApps(unusedPeriod, true)
             uninstallPending = false
         }
@@ -487,8 +487,17 @@ private fun LazyListScope.unusedAppsItems(
         is UnusedAppsUiState.Success -> {
             if (state.partialErrors.isNotEmpty()) {
                 item {
+                    val messageRes =
+                        when (classifyUnusedAppsPartialErrors(state.partialErrors)) {
+                            UnusedAppsPartialErrorKind.STORAGE_ONLY -> R.string.app_usage_unused_partial_sizes
+                            UnusedAppsPartialErrorKind.LABELS_ONLY -> R.string.app_usage_unused_partial_labels
+                            UnusedAppsPartialErrorKind.STORAGE_AND_LABELS ->
+                                R.string.app_usage_unused_partial_details
+
+                            UnusedAppsPartialErrorKind.NONE -> return@item
+                        }
                     Text(
-                        text = context.getString(R.string.app_usage_unused_partial_sizes),
+                        text = context.getString(messageRes),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

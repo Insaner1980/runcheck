@@ -132,6 +132,36 @@ class AppUsageViewModelTest {
             assertTrue(viewModel.unusedAppsState.value is UnusedAppsUiState.Success)
         }
 
+    @Test
+    fun `permission revocation replaces cached candidates on forced refresh`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            coEvery { getUnusedApps(any(), any(), false) } returns
+                UnusedAppsQueryResult.Available(
+                    UnusedAppsResult(
+                        usageAccess = UsageAccess.GRANTED,
+                        period = UnusedAppsPeriod.DAYS_30,
+                        observedAt = Instant.EPOCH,
+                    ),
+                )
+            coEvery { getUnusedApps(any(), any(), true) } returns
+                UnusedAppsQueryResult.Available(
+                    UnusedAppsResult(
+                        usageAccess = UsageAccess.REQUIRED,
+                        period = UnusedAppsPeriod.DAYS_30,
+                        observedAt = Instant.EPOCH,
+                    ),
+                )
+            val viewModel = createViewModel()
+
+            viewModel.loadUnusedApps(UnusedAppsPeriod.DAYS_30, forceRefresh = false)
+            runCurrent()
+            viewModel.loadUnusedApps(UnusedAppsPeriod.DAYS_30, forceRefresh = true)
+            runCurrent()
+
+            assertTrue(viewModel.unusedAppsState.value is UnusedAppsUiState.PermissionRequired)
+            coVerify(exactly = 1) { getUnusedApps(UnusedAppsPeriod.DAYS_30, any(), true) }
+        }
+
     private fun createViewModel(): AppUsageViewModel =
         AppUsageViewModel(
             getAppBatteryUsage = getAppBatteryUsage,

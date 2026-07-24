@@ -1293,6 +1293,8 @@
     <string name="app_usage_unused_requires_pro">Not used apps are available with Pro.</string>
     <string name="app_usage_unused_period_days">%1$d days</string>
     <string name="app_usage_unused_partial_sizes">Some app sizes are unavailable. Usage evidence remains unchanged.</string>
+    <string name="app_usage_unused_partial_labels">Some app names are unavailable. Package names are shown instead.</string>
+    <string name="app_usage_unused_partial_details">Some app names or sizes are unavailable. Usage evidence remains unchanged.</string>
     <string name="app_usage_unused_none_title">No candidates found</string>
     <string name="app_usage_unused_none_message">No eligible launcher apps lacked recorded use in the last %1$d days.</string>
     <string name="app_usage_unused_last_recorded">Last recorded use: %1$s</string>
@@ -1300,6 +1302,7 @@
     <string name="app_usage_unused_size_mb">%1$d MB</string>
     <string name="app_usage_unused_size_unavailable">Size unavailable</string>
     <string name="app_usage_unused_uninstall">Uninstall</string>
+    <string name="weekly_report_app_usage_endpoint_attributed">Usage is attributed to the sample endpoint and may include activity before this report period.</string>
     <string name="export_screen_message">Create CSV files for your runcheck measurements and share them with another app.</string>
     <string name="export_action">Create and share export</string>
 </resources>

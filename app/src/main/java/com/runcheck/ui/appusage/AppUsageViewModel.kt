@@ -63,6 +63,7 @@ class AppUsageViewModel
         private var proObserverJob: Job? = null
         private var loadJob: Job? = null
         private var unusedAppsJob: Job? = null
+        private var unusedAppsObservedAt: Instant? = null
 
         fun refresh() {
             if (isProUser()) {
@@ -114,12 +115,18 @@ class AppUsageViewModel
             period: UnusedAppsPeriod,
             forceRefresh: Boolean,
         ) {
+            val observedAt =
+                if (forceRefresh) {
+                    Instant.now().also { unusedAppsObservedAt = it }
+                } else {
+                    unusedAppsObservedAt ?: Instant.now().also { unusedAppsObservedAt = it }
+                }
             unusedAppsJob?.cancel()
             unusedAppsJob =
                 viewModelScope.launch {
                     _unusedAppsState.value = UnusedAppsUiState.Loading
                     try {
-                        when (val result = getUnusedApps(period, Instant.now(), forceRefresh)) {
+                        when (val result = getUnusedApps(period, observedAt, forceRefresh)) {
                             UnusedAppsQueryResult.Locked -> {
                                 _unusedAppsState.value = UnusedAppsUiState.Locked
                             }
