@@ -56,6 +56,7 @@ import com.runcheck.R
 import com.runcheck.ui.chart.qualityZoneColorForValue
 import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.chartAxisTextStyle
+import com.runcheck.ui.theme.chartColors
 import com.runcheck.ui.theme.chartTooltipTextStyle
 import com.runcheck.ui.theme.reducedMotion
 import kotlinx.coroutines.delay
@@ -143,8 +144,8 @@ fun TrendChart(
     data: List<Float>,
     modifier: Modifier = Modifier,
     chartHeight: Dp = 200.dp,
-    lineColor: Color = MaterialTheme.colorScheme.primary,
-    fillColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+    lineColor: Color = MaterialTheme.chartColors.line,
+    fillColor: Color = MaterialTheme.chartColors.fill,
     contentDescription: String? = null,
     // Axis labels
     yLabels: List<ChartYLabel>? = null,
@@ -160,6 +161,7 @@ fun TrendChart(
     onExpandClick: (() -> Unit)? = null,
 ) {
     val reducedMotion = MaterialTheme.reducedMotion
+    val chartColors = MaterialTheme.chartColors
 
     // Phase 1: Grid + axes fade in (0→1 over 200ms)
     val gridAlpha = remember { Animatable(if (reducedMotion) 1f else 0f) }
@@ -338,12 +340,12 @@ fun TrendChart(
                 )
             }
         }
-    val labelStyle = chartStyle.axisTextStyle.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+    val labelStyle = chartStyle.axisTextStyle.copy(color = chartColors.axis)
     val tooltipLabelStyle = chartStyle.tooltipTextStyle.copy(color = MaterialTheme.colorScheme.onSurface)
 
-    val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+    val gridColor = chartColors.grid.copy(alpha = 0.2f)
     val tooltipBgColor = MaterialTheme.colorScheme.surfaceContainer
-    val tooltipLineColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+    val tooltipLineColor = chartColors.selectedPoint.copy(alpha = 0.5f)
     val measuredYLabels =
         remember(yLabels, labelStyle, textMeasurer) {
             yLabels?.map { it to textMeasurer.measure(it.label, labelStyle) }.orEmpty()
@@ -724,13 +726,13 @@ fun TrendChart(
 
                 // Glow circle (outer)
                 drawCircle(
-                    color = lineColor.copy(alpha = 0.3f * emphasisAlpha.value),
+                    color = chartColors.glow.copy(alpha = 0.3f * emphasisAlpha.value),
                     radius = 6.dp.toPx(),
                     center = Offset(lastX, lastY),
                 )
                 // Solid dot (inner)
                 drawCircle(
-                    color = lineColor.copy(alpha = emphasisAlpha.value),
+                    color = chartColors.selectedPoint.copy(alpha = emphasisAlpha.value),
                     radius = 3.dp.toPx(),
                     center = Offset(lastX, lastY),
                 )

@@ -24,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
+import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.ExpressiveEmptyState
@@ -45,6 +46,11 @@ fun InsightsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedFilter by rememberSaveable { mutableStateOf(InsightFilter.ALL) }
     val loadingDescription = stringResource(R.string.a11y_loading)
+
+    LifecycleStartStopEffect(
+        onStart = viewModel::onScreenVisible,
+        onStop = viewModel::onScreenHidden,
+    )
 
     Column(modifier = modifier.fillMaxSize()) {
         PrimaryTopBar(title = stringResource(R.string.insights_screen_title))

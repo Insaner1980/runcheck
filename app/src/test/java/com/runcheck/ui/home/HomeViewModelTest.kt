@@ -452,6 +452,7 @@ class HomeViewModelTest {
             advanceAll()
 
             val state = viewModel.uiState.value as HomeUiState.Success
+            assertTrue(state.measurementTimestampMillis > 0L)
             assertEquals(1, state.insights.size)
             assertEquals(1, state.unseenInsightCount)
             coVerify(exactly = 1) { insightRepository.markSeen(setOf(7L)) }
@@ -514,12 +515,12 @@ class HomeViewModelTest {
 
             val state = viewModel.uiState.value as HomeUiState.Success
             assertEquals(
-                listOf(InsightTarget.BATTERY, InsightTarget.THERMAL, InsightTarget.NETWORK),
+                listOf(InsightTarget.BATTERY),
                 state.insights.map { it.target },
             )
             assertEquals(3, state.totalInsightCount)
             assertEquals(3, state.unseenInsightCount)
-            coVerify(exactly = 1) { insightRepository.markSeen(setOf(3L, 4L, 5L)) }
+            coVerify(exactly = 1) { insightRepository.markSeen(setOf(3L)) }
 
             viewModel.stopObserving()
         }

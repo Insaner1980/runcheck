@@ -48,8 +48,8 @@
     <string name="home_pro_title">Unlock runcheck Pro</string>
     <string name="home_chargers_desc">Test &amp; compare your chargers</string>
     <string name="home_health_score">HEALTH SCORE</string>
-    <string name="home_health_snapshot">Current device snapshot</string>
-    <string name="home_health_confidence">Score uses available device-reported signals</string>
+    <string name="home_health_measured_at">Measured %1$s</string>
+    <string name="home_health_confidence_label">Battery current confidence</string>
     <string name="home_storage_used">%1$d%% used</string>
     <string name="home_device_good_shape">Your device is in %1$s shape.</string>
     <string name="home_temp_elevated">Temperature is slightly elevated.</string>
@@ -59,6 +59,8 @@
     <string name="home_pro_history_desc">History, charger testing, export &amp; more</string>
     <string name="home_insights_section_title">Insights</string>
     <string name="home_insights_view_all">View all</string>
+    <string name="home_insights_empty_title">No active insights</string>
+    <string name="home_insights_empty_body">Open Insights to review new device health findings when they appear.</string>
     <string name="home_insights_title">Pro unlocked</string>
     <string name="home_insights_desc">Extended history, widgets, exports, and throttling tools are active.</string>
     <plurals name="home_insights_unseen_count">

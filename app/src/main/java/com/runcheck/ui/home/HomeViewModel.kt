@@ -156,28 +156,42 @@ class HomeViewModel
                             freshnessTicker,
                         ) { speedTest, now -> SpeedTestScoreContext(speedTest, now) }
 
-                    val dataFlow =
+                    val deviceSnapshotFlow =
                         combine(
                             getBatteryState(),
                             getNetworkState(),
                             getThermalState(),
                             getStorageState(),
-                            speedTestScoreContextFlow,
-                        ) { battery, network, thermal, storage, speedTestContext ->
-                            DataSnapshot(
+                        ) { battery, network, thermal, storage ->
+                            DeviceSnapshot(
                                 battery = battery,
                                 network = network,
                                 thermal = thermal,
                                 storage = storage,
+                                measurementTimestampMillis = System.currentTimeMillis(),
+                            )
+                        }
+
+                    val dataFlow =
+                        combine(
+                            deviceSnapshotFlow,
+                            speedTestScoreContextFlow,
+                        ) { device, speedTestContext ->
+                            DataSnapshot(
+                                battery = device.battery,
+                                network = device.network,
+                                thermal = device.thermal,
+                                storage = device.storage,
                                 health =
                                     healthScoreCalculator.calculate(
-                                        battery = battery,
-                                        network = network,
-                                        thermal = thermal,
-                                        storage = storage,
+                                        battery = device.battery,
+                                        network = device.network,
+                                        thermal = device.thermal,
+                                        storage = device.storage,
                                         recentSpeedTest = speedTestContext.speedTest,
                                         nowMillis = speedTestContext.nowMillis,
                                     ),
+                                measurementTimestampMillis = device.measurementTimestampMillis,
                             )
                         }
 
@@ -245,6 +259,7 @@ class HomeViewModel
                             networkState = data.network,
                             thermalState = data.thermal,
                             storageState = data.storage,
+                            measurementTimestampMillis = data.measurementTimestampMillis,
                             insights = visibleInsights,
                             totalInsightCount = visibleActiveInsights.size,
                             unseenInsightCount = visibleActiveInsights.count { !it.seen },
@@ -320,6 +335,15 @@ class HomeViewModel
             val thermal: ThermalState,
             val storage: StorageState,
             val health: HealthScore,
+            val measurementTimestampMillis: Long,
+        )
+
+        private data class DeviceSnapshot(
+            val battery: BatteryState,
+            val network: NetworkState,
+            val thermal: ThermalState,
+            val storage: StorageState,
+            val measurementTimestampMillis: Long,
         )
 
         private data class SpeedTestScoreContext(
@@ -328,7 +352,7 @@ class HomeViewModel
         )
 
         companion object {
-            private const val MAX_HOME_INSIGHTS = 3
+            private const val MAX_HOME_INSIGHTS = 1
             private const val DISPLAY_UPDATE_INTERVAL_MS = 333L
             private const val CHARGER_SESSION_TRACK_INTERVAL_MS = 15_000L
             private const val MONITORING_STALE_CHECK_INTERVAL_MS = 15_000L

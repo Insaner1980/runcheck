@@ -26,7 +26,8 @@ class InsightsViewModel
         private val _uiState = MutableStateFlow<InsightsUiState>(InsightsUiState.Loading)
         val uiState: StateFlow<InsightsUiState> = _uiState.asStateFlow()
 
-        private var lastSeenInsightIds: Set<Long> = emptySet()
+        private val submittedSeenInsightIds = mutableSetOf<Long>()
+        private var screenVisible = false
 
         init {
             observeInsights()
@@ -36,6 +37,15 @@ class InsightsViewModel
             viewModelScope.launch {
                 insightRepository.dismiss(id)
             }
+        }
+
+        fun onScreenVisible() {
+            screenVisible = true
+            (uiState.value as? InsightsUiState.Success)?.let(::maybeMarkSeen)
+        }
+
+        fun onScreenHidden() {
+            screenVisible = false
         }
 
         private fun observeInsights() {
@@ -55,7 +65,9 @@ class InsightsViewModel
                     _uiState.value = InsightsUiState.Error(error.messageOrRes(R.string.common_error_generic))
                 }.collect { state ->
                     _uiState.value = state
-                    maybeMarkSeen(state)
+                    if (screenVisible) {
+                        maybeMarkSeen(state)
+                    }
                 }
             }
         }
@@ -65,14 +77,11 @@ class InsightsViewModel
                 state.insights
                     .filterNot { it.seen }
                     .map { it.id }
+                    .filterNot(submittedSeenInsightIds::contains)
                     .toSet()
-            if (unseenIds.isEmpty()) {
-                lastSeenInsightIds = emptySet()
-                return
-            }
-            if (unseenIds == lastSeenInsightIds) return
+            if (unseenIds.isEmpty()) return
 
-            lastSeenInsightIds = unseenIds
+            submittedSeenInsightIds += unseenIds
             viewModelScope.launch {
                 insightRepository.markSeen(unseenIds)
             }

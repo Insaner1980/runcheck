@@ -19,6 +19,7 @@ sealed interface HomeUiState {
         val networkState: NetworkState,
         val thermalState: ThermalState,
         val storageState: StorageState,
+        val measurementTimestampMillis: Long,
         val insights: List<Insight> = emptyList(),
         val totalInsightCount: Int = 0,
         val unseenInsightCount: Int = 0,

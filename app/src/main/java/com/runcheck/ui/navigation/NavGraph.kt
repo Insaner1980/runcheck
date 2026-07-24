@@ -63,6 +63,7 @@ import com.runcheck.ui.storage.cleanup.CleanupScreen
 import com.runcheck.ui.theme.LocalReducedMotion
 import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.thermal.ThermalDetailScreen
+import com.runcheck.ui.tools.CleanupEntryScreen
 import com.runcheck.ui.tools.ExportEntryScreen
 import com.runcheck.ui.tools.ToolsScreen
 import com.runcheck.ui.tools.WeeklyReportEntryScreen
@@ -199,7 +200,9 @@ fun RuncheckNavHost(
             composable(Screen.Tools.route) {
                 ToolsScreen(
                     onNavigateToSpeedTest = { navController.navigateSingleTop(Screen.SpeedTest.route) },
-                    onNavigateToStorageCleanup = { navController.navigateSingleTop(Screen.Storage.route) },
+                    onNavigateToStorageCleanup = {
+                        navController.navigateSingleTop(toolsStorageCleanupRoute())
+                    },
                     onNavigateToCharger = { navController.navigateSingleTop(Screen.Charger.route) },
                     onNavigateToAppUsage = { navController.navigateSingleTop(Screen.AppUsage.route) },
                     onNavigateToLearn = { navController.navigateSingleTop(Screen.Learn.route) },
@@ -291,7 +294,16 @@ fun RuncheckNavHost(
                 route = Screen.Cleanup.ROUTE,
                 arguments = listOf(navArgument("type") { type = NavType.StringType }),
             ) {
-                CleanupScreen(onBack = { navController.popBackStack() })
+                CleanupEntryScreen(
+                    proStatusReady = appShellState.proStatusReady,
+                    hasProAccess = appShellState.hasProAccess,
+                    onBack = { navController.popBackStack() },
+                    onUpgradeToPro = {
+                        navController.navigateSingleTop(Screen.ProUpgrade.route)
+                    },
+                ) {
+                    CleanupScreen(onBack = { navController.popBackStack() })
+                }
             }
             composable(Screen.Charger.route) {
                 ChargerComparisonScreen(

@@ -72,9 +72,9 @@ class AppShellSourceContractTest {
         val tools = appDir.resolve("src/main/java/com/runcheck/ui/tools/ToolEntryScreens.kt").readText()
 
         assertTrue(tools.contains("ProFeatureLockedState("))
-        assertTrue(tools.contains("ExportAccessState.WAITING_FOR_PRO_STATUS"))
-        assertTrue(tools.contains("ExportAccessState.LOCKED"))
-        assertTrue(tools.contains("ExportAccessState.AVAILABLE"))
+        assertTrue(tools.contains("ProtectedFeatureAccessState.WAITING_FOR_PRO_STATUS"))
+        assertTrue(tools.contains("ProtectedFeatureAccessState.LOCKED"))
+        assertTrue(tools.contains("ProtectedFeatureAccessState.AVAILABLE"))
     }
 
     private fun findAppDir(): Path {

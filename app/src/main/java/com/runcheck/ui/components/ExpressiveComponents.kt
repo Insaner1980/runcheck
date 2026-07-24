@@ -39,6 +39,7 @@ import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -279,7 +280,11 @@ fun ExpressiveEmptyState(
             imageVector = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
+            modifier =
+                Modifier.sizeIn(
+                    minWidth = MaterialTheme.uiTokens.touchTarget,
+                    minHeight = MaterialTheme.uiTokens.touchTarget,
+                ),
         )
         Text(
             text = title,
@@ -375,6 +380,7 @@ fun AppDisplayName(
     appLabel: String?,
     packageName: String,
     modifier: Modifier = Modifier,
+    style: TextStyle = MaterialTheme.typography.titleMedium,
 ) {
     Text(
         text =
@@ -384,7 +390,7 @@ fun AppDisplayName(
                 unknownAppLabel = stringResource(R.string.app_unknown_name),
             ),
         modifier = modifier,
-        style = MaterialTheme.typography.titleMedium,
+        style = style,
         color = MaterialTheme.colorScheme.onSurface,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,

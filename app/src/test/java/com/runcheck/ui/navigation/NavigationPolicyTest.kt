@@ -161,22 +161,31 @@ class NavigationPolicyTest {
     }
 
     @Test
-    fun `Export waits for Pro readiness before resolving locked or available content`() {
+    fun `protected feature waits for Pro readiness before resolving locked or available content`() {
         assertEquals(
-            ExportAccessState.WAITING_FOR_PRO_STATUS,
-            exportAccessState(proStatusReady = false, hasProAccess = false),
+            ProtectedFeatureAccessState.WAITING_FOR_PRO_STATUS,
+            protectedFeatureAccessState(proStatusReady = false, hasProAccess = false),
         )
         assertEquals(
-            ExportAccessState.WAITING_FOR_PRO_STATUS,
-            exportAccessState(proStatusReady = false, hasProAccess = true),
+            ProtectedFeatureAccessState.WAITING_FOR_PRO_STATUS,
+            protectedFeatureAccessState(proStatusReady = false, hasProAccess = true),
         )
         assertEquals(
-            ExportAccessState.LOCKED,
-            exportAccessState(proStatusReady = true, hasProAccess = false),
+            ProtectedFeatureAccessState.LOCKED,
+            protectedFeatureAccessState(proStatusReady = true, hasProAccess = false),
         )
         assertEquals(
-            ExportAccessState.AVAILABLE,
-            exportAccessState(proStatusReady = true, hasProAccess = true),
+            ProtectedFeatureAccessState.AVAILABLE,
+            protectedFeatureAccessState(proStatusReady = true, hasProAccess = true),
         )
+    }
+
+    @Test
+    fun `Tools cleanup opens the protected large files cleanup destination`() {
+        val route = toolsStorageCleanupRoute()
+
+        assertEquals(Screen.Cleanup("LARGE_FILES").route, route)
+        assertTrue(route.requiresReadyProStatus())
+        assertSame(TopLevelDestination.Tools, coldStartParentFor(route))
     }
 }

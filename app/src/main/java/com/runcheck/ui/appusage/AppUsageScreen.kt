@@ -377,6 +377,7 @@ private fun AppUsageItem(
                         AppDisplayName(
                             appLabel = app.appLabel,
                             packageName = app.packageName,
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                         Text(
                             text =

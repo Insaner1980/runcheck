@@ -486,7 +486,9 @@ Used on Home grid metrics.
 - Main icon: `IconCircle(size = 36.dp, iconSize = 20.dp)`.
 - Icon/text gap: 8dp.
 - Title: `titleMedium`, `onSurfaceVariant`.
-- Subtitle: `headlineSmall`, JetBrains Mono.
+- Measurement subtitle (default): `headlineSmall`, JetBrains Mono.
+- Prose subtitle: `bodyMedium`; the Tools bento cards select this style while
+  existing numeric Home cards retain the measurement default.
 - Status label: `labelMedium`.
 - Locked overlay: `scrim.copy(alpha = 0.18f)`.
 - Pro badge overlay: top end, 12dp padding.
@@ -805,7 +807,9 @@ Fullscreen chart controls:
 one component boundary:
 
 - `ExpressiveDetailScaffold` combines the shared detail top bar, constrained
-  content, and 16dp horizontal content padding.
+  content, and 16dp horizontal content padding. Task 4 uses it for the interim
+  Weekly Report and Export entries plus the protected Cleanup loading/locked
+  path; the complete detail-screen migration remains the Task 5 boundary.
 - `ExpressiveSingleChoiceSelector<T>` renders equal-width single-choice
   segmented options and is used by Insights filters and the Settings theme
   selector.
@@ -816,15 +820,18 @@ one component boundary:
 - `StatusPill` maps a text label and optional outlined icon to an opaque semantic
   status container/foreground pair. It never conveys status through color alone.
 - `LearnTopicLink` is the shared full-width related-content link.
-- `ExpressiveEmptyState` provides an icon, title, and supporting message.
+- `ExpressiveEmptyState` provides an icon, title, and supporting message; its
+  icon minimum size comes from `UiTokens.touchTarget`.
 - `RuncheckLoadingIndicator` owns the experimental morphing loading indicator.
   Reduced motion renders a fixed determinate shape instead of continuous morphing.
 - `RuncheckWavyProgress` owns the circular wavy progress API. It uses the
   1200ms ring token and removes wave amplitude and speed under reduced motion.
 - `AppDisplayName` trims a real app label and otherwise derives a readable
-  package-tail fallback.
+  package-tail fallback. Callers may preserve their existing text style; App
+  Usage uses `bodyMedium`.
 - `ChartTheme` owns the chart color composition local selected by
-  `RuncheckTheme`.
+  `RuncheckTheme`; `TrendChart` consumes its line, fill, grid, axis,
+  selected-point, and glow roles.
 
 ---
 
@@ -838,8 +845,8 @@ Inputs:
 
 - `data: List<Float>`
 - `chartHeight`, default 200dp
-- `lineColor`, default primary
-- `fillColor`, default primary alpha 0.15
+- `lineColor`, default `MaterialTheme.chartColors.line`
+- `fillColor`, default `MaterialTheme.chartColors.fill`
 - Optional y-labels, x-labels, grid, quality zones, tooltip formatter,
   expand handler, presentation mode.
 
@@ -1072,9 +1079,11 @@ First viewport:
   padding.
 - The overall score is rendered inside a 148dp determinate
   `RuncheckWavyProgress`; the semantic description reports the score out of 100.
-- A text `StatusPill` identifies Healthy, Fair, Poor, or Critical alongside
-  "Current device snapshot" and the explicit note that the score uses available
-  device-reported signals.
+- A text `StatusPill` identifies Healthy, Fair, Poor, or Critical alongside the
+  localized timestamp captured when the four live device-state flows emit.
+- `ConfidenceBadge` shows the actual `batteryState.currentMa.confidence` level
+  and is labelled as battery-current confidence rather than overall-score
+  confidence.
 - The hero does not repeat the four category breakdown rows.
 
 Home grid:
@@ -1090,6 +1099,8 @@ Home insights card:
 
 - Home passes at most one ranked insight to the shared card and always exposes
   the Insights link.
+- With no active insight, the section and View all action stay visible and the
+  shared `ExpressiveEmptyState` replaces the row.
 - The unseen count remains visible next to the section heading.
 - Only `TrialHomeCard` for an active trial follows the insight. Home no longer
   owns quick tools, charger comparison, purchased-Pro, or expired-trial cards.
@@ -1749,8 +1760,10 @@ Structure:
 
 Insight rows pair the priority color with a High/Medium/Low text
 `StatusPill`, show the localized generated timestamp, and keep existing
-dismissal and destination behavior. Displaying the screen marks visible unseen
-rows as seen through `InsightsViewModel`, which clears the app-shell badge.
+dismissal and destination behavior. `LifecycleStartStopEffect` tells
+`InsightsViewModel` when the top-level screen is started/stopped. Only while
+started are visible unseen rows submitted as seen; insights arriving off-screen
+remain unseen until the next visible transition, preserving the app-shell badge.
 
 ### 9.10a Tools
 
@@ -1759,8 +1772,13 @@ rows as seen through `InsightsViewModel`, which clears the app-shell badge.
   Speed icon, M-Lab NDT7 context, and a 56dp "Run speed test" CTA.
 - The Device tools section is a two-by-two `GridCard` bento:
   Storage cleanup, Charger Comparison, App Battery Usage, and Weekly Report.
+- Bento subtitles are prose and therefore use `bodyMedium`, not the numeric
+  measurement subtitle style.
 - All four Pro tools stay visible for Free users, expose the standard locked
   semantics and `PRO` badge, and open their existing protected destination.
+- Storage cleanup opens the protected `cleanup/LARGE_FILES` destination
+  directly. Before constructing `CleanupScreen`, the entry waits for Pro state
+  and shows `ProFeatureLockedState` to Free users.
 - Learn uses `LearnTopicLink`.
 - Export is a secondary `ListRow`; Free users see the same `ProBadgePill` and
   reach the standard Export locked state.

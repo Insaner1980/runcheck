@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.ui.theme.numericFontFamily
@@ -26,6 +27,11 @@ import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.uiTokens
+
+enum class GridCardSubtitleStyle {
+    MEASUREMENT,
+    BODY,
+}
 
 @Composable
 fun GridCard(
@@ -40,6 +46,7 @@ fun GridCard(
     iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     iconBackgroundColor: Color = Color.Unspecified,
     locked: Boolean = false,
+    subtitleStyle: GridCardSubtitleStyle = GridCardSubtitleStyle.MEASUREMENT,
 ) {
     val tokens = MaterialTheme.uiTokens
     val lockedStateDesc = if (locked) stringResource(R.string.a11y_locked_pro_feature) else null
@@ -50,6 +57,15 @@ fun GridCard(
     val startPadding = if (hasStatus) MaterialTheme.spacing.base else MaterialTheme.spacing.md
     val statusStripModifier = if (hasStatus) Modifier.statusStrip(color = statusColor) else Modifier
     val resolvedStatusLabelColor = if (hasStatus) statusColor else MaterialTheme.colorScheme.onSurfaceVariant
+    val resolvedSubtitleStyle: TextStyle =
+        when (subtitleStyle) {
+            GridCardSubtitleStyle.MEASUREMENT ->
+                MaterialTheme.typography.headlineSmall.copy(
+                    fontFamily = MaterialTheme.numericFontFamily,
+                )
+
+            GridCardSubtitleStyle.BODY -> MaterialTheme.typography.bodyMedium
+        }
 
     Card(
         onClick = onClick,
@@ -96,10 +112,7 @@ fun GridCard(
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.xxs))
                 Text(
                     text = subtitle,
-                    style =
-                        MaterialTheme.typography.headlineSmall.copy(
-                            fontFamily = MaterialTheme.numericFontFamily,
-                        ),
+                    style = resolvedSubtitleStyle,
                     color = subtitleColor,
                 )
                 if (statusLabel != null) {

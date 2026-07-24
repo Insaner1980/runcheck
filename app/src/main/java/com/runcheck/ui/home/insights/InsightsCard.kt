@@ -17,6 +17,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import com.runcheck.R
 import com.runcheck.domain.insights.model.Insight
+import com.runcheck.ui.components.ExpressiveEmptyState
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.theme.BadgeShape
 import com.runcheck.ui.theme.spacing
@@ -31,7 +32,6 @@ fun InsightsCard(
     modifier: Modifier = Modifier,
 ) {
     val insights = state.insights
-    if (insights.isEmpty()) return
 
     Column(
         modifier = modifier,
@@ -50,22 +50,31 @@ fun InsightsCard(
             }
         }
 
-        insights.forEach { insight ->
-            val navigationAction =
-                resolveInsightNavigationAction(
-                    insight = insight,
-                    isPro = state.isPro,
-                    navigationHandlers = navigationHandlers,
-                )
-
-            InsightRow(
-                insight = insight,
-                onClick = navigationAction.onClick,
-                onDismiss = { onDismissInsight(insight.id) },
+        if (homeInsightsSectionShowsEmptyState(insights)) {
+            ExpressiveEmptyState(
+                title = stringResource(R.string.home_insights_empty_title),
+                message = stringResource(R.string.home_insights_empty_body),
             )
+        } else {
+            insights.forEach { insight ->
+                val navigationAction =
+                    resolveInsightNavigationAction(
+                        insight = insight,
+                        isPro = state.isPro,
+                        navigationHandlers = navigationHandlers,
+                    )
+
+                InsightRow(
+                    insight = insight,
+                    onClick = navigationAction.onClick,
+                    onDismiss = { onDismissInsight(insight.id) },
+                )
+            }
         }
     }
 }
+
+internal fun homeInsightsSectionShowsEmptyState(insights: List<Insight>): Boolean = insights.isEmpty()
 
 data class InsightsCardState(
     val insights: List<Insight>,

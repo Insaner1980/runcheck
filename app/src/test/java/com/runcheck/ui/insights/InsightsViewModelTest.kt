@@ -11,6 +11,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -28,7 +29,7 @@ class InsightsViewModelTest {
     private val observeProAccess: ObserveProAccessUseCase = mockk()
 
     @Test
-    fun `loads active insights and marks unseen entries as seen`() =
+    fun `loads active insights without marking unseen entries before screen is visible`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val insight = testInsight(seen = false)
             every { insightRepository.getActiveInsights() } returns flowOf(listOf(insight))
@@ -45,7 +46,47 @@ class InsightsViewModelTest {
             val state = viewModel.uiState.value
             assertTrue(state is InsightsUiState.Success)
             assertEquals(1, (state as InsightsUiState.Success).insights.size)
+            coVerify(exactly = 0) { insightRepository.markSeen(any()) }
+
+            viewModel.onScreenVisible()
+            runCurrent()
+
             coVerify(exactly = 1) { insightRepository.markSeen(setOf(1L)) }
+        }
+
+    @Test
+    fun `new insights arriving off screen stay unseen until next visible transition`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val activeInsights = MutableStateFlow(listOf(testInsight(id = 1L, seen = false)))
+            every { insightRepository.getActiveInsights() } returns activeInsights
+            every { insightRepository.getUnseenCount() } returns flowOf(2)
+            every { observeProAccess() } returns flowOf(true)
+
+            val viewModel =
+                InsightsViewModel(
+                    insightRepository = insightRepository,
+                    observeProAccess = observeProAccess,
+                )
+            runCurrent()
+
+            viewModel.onScreenVisible()
+            runCurrent()
+            coVerify(exactly = 1) { insightRepository.markSeen(setOf(1L)) }
+
+            viewModel.onScreenHidden()
+            activeInsights.value =
+                listOf(
+                    testInsight(id = 1L, seen = true),
+                    testInsight(id = 2L, seen = false),
+                )
+            runCurrent()
+
+            coVerify(exactly = 0) { insightRepository.markSeen(setOf(2L)) }
+
+            viewModel.onScreenVisible()
+            runCurrent()
+
+            coVerify(exactly = 1) { insightRepository.markSeen(setOf(2L)) }
         }
 
     @Test
@@ -72,7 +113,7 @@ class InsightsViewModelTest {
             val state = viewModel.uiState.value as InsightsUiState.Success
             assertEquals(listOf(InsightTarget.BATTERY), state.insights.map { it.target })
             assertEquals(1, state.unseenInsightCount)
-            coVerify(exactly = 1) { insightRepository.markSeen(setOf(1L)) }
+            coVerify(exactly = 0) { insightRepository.markSeen(any()) }
         }
 
     @Test

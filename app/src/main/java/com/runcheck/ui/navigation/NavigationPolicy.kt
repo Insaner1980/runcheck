@@ -1,25 +1,29 @@
 package com.runcheck.ui.navigation
 
+import com.runcheck.ui.storage.cleanup.CleanupType
+
 enum class TopLevelNavigationAction {
     SWITCH,
     RESELECT,
 }
 
-enum class ExportAccessState {
+enum class ProtectedFeatureAccessState {
     WAITING_FOR_PRO_STATUS,
     LOCKED,
     AVAILABLE,
 }
 
-fun exportAccessState(
+fun protectedFeatureAccessState(
     proStatusReady: Boolean,
     hasProAccess: Boolean,
-): ExportAccessState =
+): ProtectedFeatureAccessState =
     when {
-        !proStatusReady -> ExportAccessState.WAITING_FOR_PRO_STATUS
-        hasProAccess -> ExportAccessState.AVAILABLE
-        else -> ExportAccessState.LOCKED
+        !proStatusReady -> ProtectedFeatureAccessState.WAITING_FOR_PRO_STATUS
+        hasProAccess -> ProtectedFeatureAccessState.AVAILABLE
+        else -> ProtectedFeatureAccessState.LOCKED
     }
+
+fun toolsStorageCleanupRoute(): String = Screen.Cleanup(CleanupType.LARGE_FILES.name).route
 
 fun topLevelDestinationFor(route: String?): TopLevelDestination? =
     topLevelDestinations.firstOrNull { it.screen.route == route }

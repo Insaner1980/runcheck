@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import com.runcheck.R
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.GridCard
+import com.runcheck.ui.components.GridCardSubtitleStyle
 import com.runcheck.ui.components.LearnTopicLink
 import com.runcheck.ui.components.ListRow
 import com.runcheck.ui.components.PrimaryTopBar
@@ -160,6 +161,7 @@ private fun RowScope.ToolGridCard(
         subtitle = subtitle,
         statusLabel = if (locked) stringResource(R.string.pro_feature_badge) else null,
         locked = locked,
+        subtitleStyle = GridCardSubtitleStyle.BODY,
         onClick = onClick,
         modifier = Modifier.weight(1f),
     )

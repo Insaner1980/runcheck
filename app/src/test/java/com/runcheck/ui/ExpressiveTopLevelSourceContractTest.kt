@@ -29,6 +29,19 @@ class ExpressiveTopLevelSourceContractTest {
         assertTrue(source.contains("LoadingIndicator("))
         assertTrue(source.contains("CircularWavyProgressIndicator("))
         assertTrue(source.contains("MaterialTheme.reducedMotion"))
+        assertTrue(source.contains("MaterialTheme.uiTokens.touchTarget"))
+
+        val toolEntries =
+            appDir
+                .resolve("src/main/java/com/runcheck/ui/tools/ToolEntryScreens.kt")
+                .readText()
+        assertTrue(toolEntries.contains("ExpressiveDetailScaffold("))
+
+        val trendChart =
+            appDir
+                .resolve("src/main/java/com/runcheck/ui/components/TrendChart.kt")
+                .readText()
+        assertTrue(trendChart.contains("MaterialTheme.chartColors"))
     }
 
     @Test
@@ -38,6 +51,8 @@ class ExpressiveTopLevelSourceContractTest {
 
         assertTrue(home.contains("HomeHealthHero("))
         assertTrue(home.contains("RuncheckWavyProgress("))
+        assertTrue(home.contains("rememberFormattedDateTime("))
+        assertTrue(home.contains("ConfidenceBadge("))
         assertTrue(secondary.contains("BatteryGridCard("))
         assertFalse(home.contains("BatteryHeroCard("))
         assertFalse(home.contains("HomeQuickToolsSection("))
@@ -52,6 +67,7 @@ class ExpressiveTopLevelSourceContractTest {
         assertTrue(tools.contains("RuncheckActionCard("))
         assertTrue(tools.contains("ToolsBentoGrid("))
         assertTrue(tools.contains("locked = !hasProAccess"))
+        assertTrue(tools.contains("subtitleStyle = GridCardSubtitleStyle.BODY"))
         assertTrue(tools.contains("LearnTopicLink("))
     }
 
@@ -63,6 +79,19 @@ class ExpressiveTopLevelSourceContractTest {
         assertTrue(insights.contains("RuncheckLoadingIndicator("))
         assertTrue(insights.contains("ExpressiveEmptyState("))
         assertFalse(insights.contains("DetailTopBar("))
+
+        val homeInsights =
+            appDir
+                .resolve("src/main/java/com/runcheck/ui/home/insights/InsightsCard.kt")
+                .readText()
+        assertFalse(homeInsights.contains("if (insights.isEmpty()) return"))
+        assertTrue(homeInsights.contains("ExpressiveEmptyState("))
+
+        val appUsage =
+            appDir
+                .resolve("src/main/java/com/runcheck/ui/appusage/AppUsageScreen.kt")
+                .readText()
+        assertTrue(appUsage.contains("style = MaterialTheme.typography.bodyMedium"))
     }
 
     @Test

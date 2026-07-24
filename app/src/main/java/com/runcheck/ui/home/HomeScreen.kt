@@ -34,12 +34,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
+import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.HealthScore
 import com.runcheck.domain.model.HealthStatus
 import com.runcheck.pro.ProStatus
 import com.runcheck.ui.common.LifecycleStartStopEffect
+import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.common.scoreLabel
+import com.runcheck.ui.components.ConfidenceBadge
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.InfoBanner
 import com.runcheck.ui.components.PrimaryTopBar
@@ -225,7 +228,11 @@ private fun HomeContent(
                 )
             }
 
-            HomeHealthHero(healthScore = state.healthScore)
+            HomeHealthHero(
+                healthScore = state.healthScore,
+                measurementTimestampMillis = state.measurementTimestampMillis,
+                measurementConfidence = state.batteryState.currentMa.confidence,
+            )
 
             HomeGridSection(
                 state = state,
@@ -263,6 +270,8 @@ private fun HomeContent(
 @Composable
 private fun HomeHealthHero(
     healthScore: HealthScore,
+    measurementTimestampMillis: Long,
+    measurementConfidence: Confidence,
     modifier: Modifier = Modifier,
 ) {
     val score = healthScore.overallScore.coerceIn(0, 100)
@@ -298,6 +307,8 @@ private fun HomeHealthHero(
                         HealthHeroSummary(
                             statusLabel = statusLabel,
                             status = status,
+                            measurementTimestampMillis = measurementTimestampMillis,
+                            measurementConfidence = measurementConfidence,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -314,6 +325,8 @@ private fun HomeHealthHero(
                         HealthHeroSummary(
                             statusLabel = statusLabel,
                             status = status,
+                            measurementTimestampMillis = measurementTimestampMillis,
+                            measurementConfidence = measurementConfidence,
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -353,8 +366,12 @@ private fun HealthScoreRing(
 private fun HealthHeroSummary(
     statusLabel: String,
     status: HealthStatus,
+    measurementTimestampMillis: Long,
+    measurementConfidence: Confidence,
     modifier: Modifier = Modifier,
 ) {
+    val formattedMeasurementTime =
+        rememberFormattedDateTime(measurementTimestampMillis, "MMMdhm")
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
@@ -364,15 +381,25 @@ private fun HealthHeroSummary(
             tone = status.toStatusTone(),
         )
         Text(
-            text = stringResource(R.string.home_health_snapshot),
+            text =
+                stringResource(
+                    R.string.home_health_measured_at,
+                    formattedMeasurementTime,
+                ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Text(
-            text = stringResource(R.string.home_health_confidence),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.home_health_confidence_label),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            ConfidenceBadge(confidence = measurementConfidence)
+        }
     }
 }
 
