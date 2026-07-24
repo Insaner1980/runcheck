@@ -36,6 +36,7 @@ class ProManager
         private val _proState = MutableStateFlow(ProState())
         override val proState: StateFlow<ProState> = _proState.asStateFlow()
         private val _isProStatusReady = MutableStateFlow(false)
+        override val proStatusReady: StateFlow<Boolean> = _isProStatusReady.asStateFlow()
         override val isProStatusReady: Boolean
             get() = _isProStatusReady.value
         override val isProUser: Flow<Boolean> =

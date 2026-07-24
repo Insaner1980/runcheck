@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -33,7 +32,6 @@ import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.DataUsage
 import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.SignalCellularAlt
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.Star
@@ -44,7 +42,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -148,7 +145,6 @@ fun HomeScreen(
     onNavigateToSpeedTest: () -> Unit,
     onNavigateToAppUsage: () -> Unit,
     onNavigateToInsights: () -> Unit,
-    onNavigateToSettings: () -> Unit,
     onNavigateToProUpgrade: () -> Unit,
     modifier: Modifier = Modifier,
     onNavigateToLearn: () -> Unit = {},
@@ -164,18 +160,7 @@ fun HomeScreen(
     )
 
     Column(modifier = modifier.fillMaxSize()) {
-        PrimaryTopBar(
-            title = stringResource(R.string.app_name),
-            actions = {
-                IconButton(onClick = onNavigateToSettings) {
-                    Icon(
-                        imageVector = Icons.Outlined.Settings,
-                        contentDescription = stringResource(R.string.settings_title),
-                        tint = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            },
-        )
+        PrimaryTopBar(title = stringResource(R.string.app_name))
 
         when (val state = uiState) {
             is HomeUiState.Loading -> {
@@ -308,8 +293,7 @@ private fun HomeContent(
                 Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = MaterialTheme.spacing.base)
-                    .navigationBarsPadding(),
+                    .padding(horizontal = MaterialTheme.spacing.base),
         ) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
 

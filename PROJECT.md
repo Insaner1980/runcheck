@@ -189,24 +189,31 @@ Important runtime data flows:
 
 ## Navigation
 
-Push-based navigation from a single Home screen. No bottom nav, no tabs.
+The edge-to-edge root `Scaffold` owns a four-item Material 3 `NavigationBar`.
+Home, Insights, Tools, and Settings are the only top-level destinations. The
+bar is hidden on pushed detail and task destinations so those screens retain a
+real back stack and their existing top bars.
 
 ```text
-Home
-├── Insights
+Home [top level]
 ├── Battery Detail
-│   ├── Charger Comparison [PRO]
 │   └── Fullscreen Chart
 ├── Network Detail
-│   ├── Speed Test
 │   └── Fullscreen Chart
 ├── Thermal Detail
+└── Storage Detail
+Insights [top level]
+Tools [top level]
+├── Speed Test
 ├── Storage Detail
 │   └── Cleanup/{type}
+├── Charger Comparison [PRO]
 ├── App Usage [PRO]
 ├── Learn
 │   └── Learn Article
-├── Settings
+├── Weekly Report
+└── Export [PRO]
+Settings [top level]
 └── Pro Upgrade
 ```
 
@@ -214,6 +221,7 @@ Defined routes in code:
 
 - `home`
 - `insights`
+- `tools`
 - `battery`
 - `charger`
 - `network`
@@ -224,6 +232,8 @@ Defined routes in code:
 - `app_usage`
 - `learn`
 - `learn/{articleId}`
+- `weekly_report`
+- `export`
 - `fullscreen_chart/{source}/{metric}/{period}`
 - `settings`
 - `pro_upgrade`
@@ -233,9 +243,13 @@ State restoration details:
 - `rememberSaveable` is used for screen-local UI state such as sheet visibility and metric chip selections.
 - `SavedStateHandle` is used for route-backed or deep state that must survive recreation, including battery/network history period, cleanup filter selection, and fullscreen chart metric/period.
 - Free-tier entry into `charger` and `app_usage` routes redirects to `pro_upgrade`.
-- Direct notification/deep-link routes are limited to argument-free destinations in `Screen.directRoutes`.
+- Top-level switches use `launchSingleTop`, restore saved state, and pop up to the graph start destination with state saving; reselecting the active item returns to its root.
+- Direct notification/deep-link routes restore their documented top-level parent before opening the requested destination. Weekly Report belongs to Tools, and protected routes wait for the first Pro status before routing.
+- Direct notification/deep-link routes accept the argument-free destinations in `Screen.directRoutes` plus validated cleanup, Learn article, and fullscreen chart route patterns.
+- The Insights navigation item shows the count of visible unseen Room-backed insights; Pro-only insight visibility is evaluated only after Pro status is ready.
 - Learn article cross-links are validated against direct routes at catalog initialization time.
 - Fullscreen chart args are route-backed, but selection changes are returned to Battery/Network through `FullscreenChartResult` keys on the previous back stack entry.
+- Weekly Report and Export currently have explicit route entry screens; their feature redesigns are owned by later tasks.
 
 ---
 

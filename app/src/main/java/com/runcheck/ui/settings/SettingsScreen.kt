@@ -78,7 +78,7 @@ import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.ContentContainer
-import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.PrimaryTopBar
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.components.info.InfoSheetHost
@@ -103,7 +103,6 @@ internal const val DISABLED_CONTENT_ALPHA = 0.38f
 
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onNavigateToLearnArticle: (String) -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
@@ -230,7 +229,7 @@ fun SettingsScreen(
     val showResetThresholdsDialogState = rememberSaveable { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize()) {
-        DetailTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
+        PrimaryTopBar(title = stringResource(R.string.settings_title))
 
         ContentContainer {
             Column(

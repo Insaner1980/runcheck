@@ -6,6 +6,18 @@
     <!-- Navigation -->
     <string name="navigate_back">Back</string>
     <string name="navigate_menu">Menu</string>
+    <string name="navigation_home">Home</string>
+    <string name="navigation_insights">Insights</string>
+    <string name="navigation_tools">Tools</string>
+    <string name="navigation_settings">Settings</string>
+    <plurals name="navigation_insights_unseen">
+        <item quantity="one">%1$d unseen insight</item>
+        <item quantity="other">%1$d unseen insights</item>
+    </plurals>
+    <string name="weekly_report_title">Weekly Report</string>
+    <string name="weekly_report_empty">No weekly report is available yet.</string>
+    <string name="export_title">Export</string>
+    <string name="export_settings_hint">CSV export remains available in Settings under Data.</string>
     <string name="a11y_progress_percent">%1$s, %2$d percent</string>
     <string name="a11y_heat_strip">Battery temperature %1$s, %2$s</string>
     <string name="a11y_chart_trend">%1$s trend chart</string>

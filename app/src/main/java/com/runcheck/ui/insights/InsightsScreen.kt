@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -24,7 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ContentContainer
-import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.PrimaryTopBar
 import com.runcheck.ui.home.insights.InsightNavigationHandlers
 import com.runcheck.ui.home.insights.InsightRow
 import com.runcheck.ui.home.insights.resolveInsightNavigationAction
@@ -32,7 +31,6 @@ import com.runcheck.ui.theme.spacing
 
 @Composable
 fun InsightsScreen(
-    onBack: () -> Unit,
     navigationHandlers: InsightNavigationHandlers,
     modifier: Modifier = Modifier,
     viewModel: InsightsViewModel = hiltViewModel(),
@@ -40,10 +38,7 @@ fun InsightsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(modifier = modifier.fillMaxSize()) {
-        DetailTopBar(
-            title = stringResource(R.string.insights_screen_title),
-            onBack = onBack,
-        )
+        PrimaryTopBar(title = stringResource(R.string.insights_screen_title))
 
         when (val state = uiState) {
             InsightsUiState.Loading -> {
@@ -83,8 +78,7 @@ fun InsightsScreen(
                         modifier =
                             Modifier
                                 .verticalScroll(rememberScrollState())
-                                .padding(horizontal = 24.dp)
-                                .navigationBarsPadding(),
+                                .padding(horizontal = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
                     ) {
                         Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))

@@ -2158,6 +2158,21 @@ Locked content:
 - Pro-gated destinations show `ProFeatureLockedState` or a Pro callout rather
   than custom locked UI.
 
+### 9.16 App Shell Navigation
+
+- The edge-to-edge root scaffold owns one Material 3 navigation bar with Home,
+  Insights, Tools, and Settings in that order.
+- Navigation items use outlined icons. The Insights item may show a badge for
+  visible unseen Room-backed insights, including an accessible count label.
+- The bar appears only at top-level roots. Pushed destinations keep their
+  existing top bars and consume scaffold content insets without adding a second
+  navigation-bar inset.
+- Switching top-level destinations preserves their state. Reselecting the
+  active destination returns to that destination's root.
+- Weekly Report notifications restore Tools as their parent. Protected external
+  routes wait for Pro status before routing so a cold start cannot expose gated
+  content during billing initialization.
+
 ---
 
 ## 10. Accessibility and Semantics
@@ -2209,8 +2224,9 @@ direction matters.
 
 Current navigation destinations:
 
-- Home.
-- Insights.
+- Home [top level].
+- Insights [top level].
+- Tools [top level].
 - Battery Detail.
 - Charger Comparison.
 - Fullscreen Chart.
@@ -2222,27 +2238,32 @@ Current navigation destinations:
 - App Usage.
 - Learn.
 - Learn Article.
-- Settings.
+- Weekly Report.
+- Export.
+- Settings [top level].
 - Pro Upgrade.
 
-Current top-level Home destinations:
+Current top-level destinations:
 
-- Battery.
-- Network.
-- Thermal.
-- Storage.
-- App Usage.
+- Home.
 - Insights.
-- Learn.
+- Tools.
 - Settings.
-- Pro Upgrade.
 
 Current nested destinations:
 
-- Battery -> Charger Comparison.
-- Battery -> Fullscreen Chart.
-- Network -> Speed Test.
-- Network -> Fullscreen Chart.
+- Home -> Battery -> Fullscreen Chart.
+- Home -> Network -> Fullscreen Chart.
+- Home -> Thermal.
+- Home -> Storage.
+- Tools -> Speed Test.
+- Tools -> Storage -> Cleanup by type.
+- Tools -> Charger Comparison.
+- Tools -> App Usage.
+- Tools -> Learn -> Learn Article.
+- Tools -> Weekly Report.
+- Tools -> Export.
+- Settings -> Pro Upgrade.
 - Storage -> Cleanup by type.
 - Learn -> Learn Article.
 

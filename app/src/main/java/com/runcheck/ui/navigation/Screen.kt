@@ -2,10 +2,13 @@ package com.runcheck.ui.navigation
 
 sealed class Screen(
     val route: String,
+    val topLevel: Boolean = false,
 ) {
-    data object Home : Screen("home")
+    data object Home : Screen("home", topLevel = true)
 
-    data object Insights : Screen("insights")
+    data object Insights : Screen("insights", topLevel = true)
+
+    data object Tools : Screen("tools", topLevel = true)
 
     data object Battery : Screen("battery")
 
@@ -17,13 +20,17 @@ sealed class Screen(
 
     data object Storage : Screen("storage")
 
-    data object Settings : Screen("settings")
+    data object Settings : Screen("settings", topLevel = true)
 
     data object Charger : Screen("charger")
 
     data object AppUsage : Screen("app_usage")
 
     data object ProUpgrade : Screen("pro_upgrade")
+
+    data object WeeklyReport : Screen("weekly_report")
+
+    data object Export : Screen("export")
 
     data class Cleanup(
         val type: String,
@@ -60,6 +67,7 @@ sealed class Screen(
             setOf(
                 Home.route,
                 Insights.route,
+                Tools.route,
                 Battery.route,
                 Network.route,
                 SpeedTest.route,
@@ -69,14 +77,24 @@ sealed class Screen(
                 Charger.route,
                 AppUsage.route,
                 ProUpgrade.route,
+                WeeklyReport.route,
+                Export.route,
                 Learn.route,
             )
         }
+        private val directRoutePatterns: Set<String> =
+            setOf(
+                Cleanup.ROUTE,
+                LearnArticle.ROUTE,
+                FullscreenChart.ROUTE,
+            )
 
         val learnCrossLinkRoutes: Set<String>
             get() = directRoutes
 
-        fun isDirectRoute(route: String): Boolean = route in directRoutes
+        fun isDirectRoute(route: String): Boolean =
+            route in directRoutes ||
+                directRoutePatterns.any(route::matchesRoutePattern)
 
         fun isValidLearnCrossLinkRoute(route: String): Boolean = isDirectRoute(route)
     }
