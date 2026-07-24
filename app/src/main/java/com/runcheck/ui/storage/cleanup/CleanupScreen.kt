@@ -5,11 +5,9 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,11 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -57,6 +52,9 @@ import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.ExpressiveEmptyState
+import com.runcheck.ui.components.ExpressiveSingleChoiceSelector
+import com.runcheck.ui.components.RuncheckLoadingIndicator
 import com.runcheck.ui.storage.MediaDeleteRequestResult
 import com.runcheck.ui.storage.buildMediaDeleteRequest
 import com.runcheck.ui.theme.runcheckCardColors
@@ -226,24 +224,15 @@ private fun CleanupScreenBody(
                 .fillMaxSize()
                 .padding(horizontal = MaterialTheme.spacing.base),
     ) {
-        // Filter chips
+        // Connected filter selector
         if (cleanupType.filterOptions.isNotEmpty()) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-            ) {
-                cleanupType.filterOptions.forEachIndexed { index, option ->
-                    FilterChip(
-                        selected = selectedFilterIndex == index,
-                        onClick = { onFilterSelect(index) },
-                        label = { Text(stringResource(option.labelRes)) },
-                    )
-                }
-            }
+            ExpressiveSingleChoiceSelector(
+                options = cleanupType.filterOptions.indices.toList(),
+                selected = selectedFilterIndex.coerceIn(cleanupType.filterOptions.indices),
+                labelFor = { index -> stringResource(cleanupType.filterOptions[index].labelRes) },
+                onSelect = onFilterSelect,
+            )
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
         }
 
@@ -262,7 +251,7 @@ private fun CleanupScreenBody(
                             },
                     contentAlignment = Alignment.Center,
                 ) {
-                    CircularProgressIndicator()
+                    RuncheckLoadingIndicator(contentDescription = scanningDescription)
                 }
             }
 
@@ -271,18 +260,10 @@ private fun CleanupScreenBody(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = stringResource(R.string.cleanup_no_files),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = stringResource(R.string.cleanup_no_files_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    ExpressiveEmptyState(
+                        title = stringResource(R.string.cleanup_no_files),
+                        message = stringResource(R.string.cleanup_no_files_desc),
+                    )
                 }
             }
 
@@ -338,7 +319,7 @@ private fun CleanupScreenBody(
                             },
                     contentAlignment = Alignment.Center,
                 ) {
-                    CircularProgressIndicator()
+                    RuncheckLoadingIndicator(contentDescription = deletingDescription)
                 }
             }
 
@@ -485,7 +466,9 @@ private fun LazyListScope.expandedGroupItems(
                         .padding(vertical = MaterialTheme.spacing.base),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator()
+                RuncheckLoadingIndicator(
+                    contentDescription = stringResource(R.string.a11y_loading),
+                )
             }
         }
     } else if (lazyItems != null) {

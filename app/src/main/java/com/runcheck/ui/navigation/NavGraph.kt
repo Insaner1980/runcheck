@@ -46,6 +46,7 @@ import com.runcheck.R
 import com.runcheck.ui.appusage.AppUsageScreen
 import com.runcheck.ui.battery.BatteryDetailScreen
 import com.runcheck.ui.charger.ChargerComparisonScreen
+import com.runcheck.ui.export.ExportScreen
 import com.runcheck.ui.fullscreen.FullscreenChartResult
 import com.runcheck.ui.fullscreen.FullscreenChartScreen
 import com.runcheck.ui.home.HomeScreen
@@ -53,6 +54,7 @@ import com.runcheck.ui.home.insights.InsightNavigationHandlers
 import com.runcheck.ui.insights.InsightsScreen
 import com.runcheck.ui.learn.LearnArticleDetailScreen
 import com.runcheck.ui.learn.LearnScreen
+import com.runcheck.ui.learn.LearnTopic
 import com.runcheck.ui.network.NetworkDetailScreen
 import com.runcheck.ui.network.NetworkViewModel
 import com.runcheck.ui.network.SpeedTestScreen
@@ -231,6 +233,9 @@ fun RuncheckNavHost(
                     onNavigateToLearnArticle = { articleId ->
                         navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
                     },
+                    onNavigateToLearnTopic = {
+                        navController.navigateSingleTop(Screen.LearnTopic(LearnTopic.BATTERY.name).route)
+                    },
                     fullscreenResultSource = resultSource,
                     fullscreenResultMetric = resultMetric,
                     fullscreenResultPeriod = resultPeriod,
@@ -259,6 +264,9 @@ fun RuncheckNavHost(
                     onNavigateToLearnArticle = { articleId ->
                         navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
                     },
+                    onNavigateToLearnTopic = {
+                        navController.navigateSingleTop(Screen.LearnTopic(LearnTopic.NETWORK.name).route)
+                    },
                     fullscreenResultMetric = resultMetric,
                     fullscreenResultPeriod = resultPeriod,
                     onConsumeFullscreenResult = {
@@ -276,6 +284,9 @@ fun RuncheckNavHost(
                     onNavigateToLearnArticle = { articleId ->
                         navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
                     },
+                    onNavigateToLearnTopic = {
+                        navController.navigateSingleTop(Screen.LearnTopic(LearnTopic.THERMAL.name).route)
+                    },
                 )
             }
             composable(Screen.Storage.route) {
@@ -287,6 +298,9 @@ fun RuncheckNavHost(
                     onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
                     onNavigateToLearnArticle = { articleId ->
                         navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
+                    },
+                    onNavigateToLearnTopic = {
+                        navController.navigateSingleTop(Screen.LearnTopic(LearnTopic.STORAGE.name).route)
                     },
                 )
             }
@@ -379,7 +393,9 @@ fun RuncheckNavHost(
                     hasProAccess = appShellState.hasProAccess,
                     onBack = { navController.popBackStack() },
                     onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
-                )
+                ) {
+                    ExportScreen(onBack = { navController.popBackStack() })
+                }
             }
             composable(Screen.Learn.route) {
                 LearnScreen(
@@ -387,6 +403,22 @@ fun RuncheckNavHost(
                     onNavigateToArticle = { articleId ->
                         navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
                     },
+                )
+            }
+            composable(
+                route = Screen.LearnTopic.ROUTE,
+                arguments = listOf(navArgument("topic") { type = NavType.StringType }),
+            ) {
+                val topic =
+                    it.arguments
+                        ?.getString("topic")
+                        ?.let { value -> runCatching { LearnTopic.valueOf(value) }.getOrNull() }
+                LearnScreen(
+                    onBack = { navController.popBackStack() },
+                    onNavigateToArticle = { articleId ->
+                        navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
+                    },
+                    initialTopic = topic,
                 )
             }
             composable(

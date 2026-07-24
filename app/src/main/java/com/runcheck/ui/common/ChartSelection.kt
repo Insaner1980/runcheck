@@ -1,20 +1,12 @@
 package com.runcheck.ui.common
 
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import com.runcheck.ui.chart.FullscreenChartSource
+import com.runcheck.ui.components.ExpressiveSingleChoiceSelector
 import com.runcheck.ui.fullscreen.parseFullscreenChartSource
-import com.runcheck.ui.theme.spacing
 
 @Composable
 fun <T> EnumFilterChipRow(
@@ -24,21 +16,13 @@ fun <T> EnumFilterChipRow(
     labelFor: @Composable (T) -> String,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-    ) {
-        values.forEach { value ->
-            FilterChip(
-                selected = selected == value,
-                onClick = { onSelect(value) },
-                label = { Text(labelFor(value)) },
-            )
-        }
-    }
+    ExpressiveSingleChoiceSelector(
+        options = values.toList(),
+        selected = selected,
+        labelFor = labelFor,
+        onSelect = onSelect,
+        modifier = modifier,
+    )
 }
 
 @Composable

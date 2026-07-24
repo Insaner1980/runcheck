@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -114,23 +115,28 @@ fun CleanupBottomBar(
 
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-                    Button(
-                        onClick = onDelete,
+                    HorizontalFloatingToolbar(
+                        expanded = true,
                         modifier = Modifier.fillMaxWidth(),
-                        colors =
-                            ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                            ),
                     ) {
-                        Text(
-                            pluralStringResource(
-                                R.plurals.cleanup_free_action,
-                                selectedCount,
-                                formatStorageSize(context, selectedSize),
-                                selectedCount,
-                            ),
-                        )
+                        Button(
+                            onClick = onDelete,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors =
+                                ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                ),
+                        ) {
+                            Text(
+                                pluralStringResource(
+                                    R.plurals.cleanup_free_action,
+                                    selectedCount,
+                                    formatStorageSize(context, selectedSize),
+                                    selectedCount,
+                                ),
+                            )
+                        }
                     }
                 }
             }

@@ -42,6 +42,14 @@ sealed class Screen(
 
     data object Learn : Screen("learn")
 
+    data class LearnTopic(
+        val topic: String,
+    ) : Screen("learn/topic/$topic") {
+        companion object {
+            const val ROUTE = "learn/topic/{topic}"
+        }
+    }
+
     data class LearnArticle(
         val articleId: String,
     ) : Screen("learn/$articleId") {
@@ -85,6 +93,7 @@ sealed class Screen(
         private val directRoutePatterns: Set<String> =
             setOf(
                 Cleanup.ROUTE,
+                LearnTopic.ROUTE,
                 LearnArticle.ROUTE,
                 FullscreenChart.ROUTE,
             )

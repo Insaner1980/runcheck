@@ -50,6 +50,7 @@ fun coldStartParentFor(route: String): TopLevelDestination? =
                     Screen.Export.route,
                 ) ||
                 route.matchesRoutePattern(Screen.Cleanup.ROUTE) ||
+                route.matchesRoutePattern(Screen.LearnTopic.ROUTE) ||
                 route.matchesRoutePattern(Screen.LearnArticle.ROUTE) -> TopLevelDestination.Tools
 
             route == Screen.ProUpgrade.route -> TopLevelDestination.Settings

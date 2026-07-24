@@ -18,15 +18,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -51,13 +50,15 @@ import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.common.resolve
-import com.runcheck.ui.components.ContentContainer
-import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.ExpressiveDetailScaffold
+import com.runcheck.ui.components.ExpressiveEmptyState
 import com.runcheck.ui.components.ProFeatureLockedState
+import com.runcheck.ui.components.RuncheckLoadingIndicator
 import com.runcheck.ui.theme.RuncheckPillShape
 import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 import kotlin.math.max
 
 @Composable
@@ -77,68 +78,59 @@ fun ChargerComparisonScreen(
         onStop = viewModel::stopObserving,
     )
 
-    Column(modifier = modifier.fillMaxSize()) {
-        ContentContainer {
-            when (val state = uiState) {
-                is ChargerUiState.Loading -> {
-                    DetailTopBar(
-                        title = stringResource(R.string.charger_title),
-                        onBack = onBack,
+    ExpressiveDetailScaffold(
+        title = stringResource(R.string.charger_title),
+        onBack = onBack,
+        modifier = modifier,
+    ) {
+        when (val state = uiState) {
+            is ChargerUiState.Loading -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    RuncheckLoadingIndicator(
+                        contentDescription = stringResource(R.string.a11y_loading),
                     )
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
                 }
+            }
 
-                is ChargerUiState.Error -> {
-                    DetailTopBar(
-                        title = stringResource(R.string.charger_title),
-                        onBack = onBack,
-                    )
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(state.message.resolve())
-                            TextButton(onClick = { viewModel.refresh() }) {
-                                Text(stringResource(R.string.common_retry))
-                            }
+            is ChargerUiState.Error -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(state.message.resolve())
+                        TextButton(onClick = { viewModel.refresh() }) {
+                            Text(stringResource(R.string.common_retry))
                         }
                     }
                 }
+            }
 
-                is ChargerUiState.Success -> {
-                    ChargerContent(
-                        state = state,
-                        onBack = onBack,
-                        onAddClick = { showAddDialog = true },
-                        onSelectCharger = { viewModel.selectCharger(it) },
-                        onClearSelectedCharger = { viewModel.clearSelectedCharger() },
-                        onDeleteRequest = {
-                            pendingDeleteChargerId = it.chargerId
-                            pendingDeleteChargerName = it.chargerName
-                        },
-                    )
-                }
+            is ChargerUiState.Success -> {
+                ChargerContent(
+                    state = state,
+                    onAddClick = { showAddDialog = true },
+                    onSelectCharger = { viewModel.selectCharger(it) },
+                    onClearSelectedCharger = { viewModel.clearSelectedCharger() },
+                    onDeleteRequest = {
+                        pendingDeleteChargerId = it.chargerId
+                        pendingDeleteChargerName = it.chargerName
+                    },
+                )
+            }
 
-                ChargerUiState.Locked -> {
-                    val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
-                    LaunchedEffect(Unit) {
-                        currentOnUpgradeToPro()
-                    }
-                    DetailTopBar(
-                        title = stringResource(R.string.charger_title),
-                        onBack = onBack,
-                    )
-                    ProFeatureLockedState(
-                        title = stringResource(R.string.charger_title),
-                        message =
-                            stringResource(
-                                R.string.pro_feature_locked_message,
-                                stringResource(R.string.charger_title),
-                            ),
-                        actionLabel = stringResource(R.string.pro_feature_upgrade_action),
-                        onAction = onUpgradeToPro,
-                    )
+            ChargerUiState.Locked -> {
+                val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
+                LaunchedEffect(Unit) {
+                    currentOnUpgradeToPro()
                 }
+                ProFeatureLockedState(
+                    title = stringResource(R.string.charger_title),
+                    message =
+                        stringResource(
+                            R.string.pro_feature_locked_message,
+                            stringResource(R.string.charger_title),
+                        ),
+                    actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+                    onAction = onUpgradeToPro,
+                )
             }
         }
     }
@@ -170,57 +162,36 @@ fun ChargerComparisonScreen(
 @Composable
 private fun ChargerContent(
     state: ChargerUiState.Success,
-    onBack: () -> Unit,
     onAddClick: () -> Unit,
     onSelectCharger: (Long) -> Unit,
     onClearSelectedCharger: () -> Unit,
     onDeleteRequest: (ChargerSummary) -> Unit,
 ) {
     val selectedCharger = state.chargers.firstOrNull { it.chargerId == state.selectedChargerId }
+    val tokens = MaterialTheme.uiTokens
 
-    Scaffold(
-        topBar = {
-            DetailTopBar(
-                title = stringResource(R.string.charger_title),
-                onBack = onBack,
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddClick,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Add,
-                    contentDescription = stringResource(R.string.charger_add),
-                )
-            }
-        },
-    ) { paddingValues ->
+    Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = MaterialTheme.spacing.base),
+            modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
         ) {
             item {
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
             }
 
-            item {
-                SelectedChargerCard(
-                    chargerName = selectedCharger?.chargerName,
-                    hasActiveSession = selectedCharger?.hasActiveSession == true,
-                    onClearSelectedCharger = onClearSelectedCharger,
-                )
+            if (state.chargers.isNotEmpty()) {
+                item {
+                    SelectedChargerCard(
+                        chargerName = selectedCharger?.chargerName,
+                        hasActiveSession = selectedCharger?.hasActiveSession == true,
+                        onClearSelectedCharger = onClearSelectedCharger,
+                    )
+                }
             }
 
             if (state.chargers.isEmpty()) {
                 item {
-                    EmptyStateCard()
+                    EmptyStateCard(onAddClick = onAddClick)
                 }
             } else {
                 val chargersWithHistory =
@@ -256,8 +227,30 @@ private fun ChargerContent(
             }
 
             item {
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            tokens.primaryButtonHeight + MaterialTheme.spacing.xl,
+                        ),
+                )
             }
+        }
+
+        if (state.chargers.isNotEmpty()) {
+            ExtendedFloatingActionButton(
+                onClick = onAddClick,
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(MaterialTheme.spacing.base),
+                icon = {
+                    Icon(
+                        imageVector = Icons.Outlined.Add,
+                        contentDescription = null,
+                    )
+                },
+                text = { Text(stringResource(R.string.charger_add)) },
+            )
         }
     }
 }
@@ -304,19 +297,16 @@ private fun SelectedChargerCard(
 }
 
 @Composable
-private fun EmptyStateCard() {
+private fun EmptyStateCard(onAddClick: () -> Unit) {
     InfoCardContainer {
-        Text(
-            text = stringResource(R.string.charger_no_chargers),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+        ExpressiveEmptyState(
+            title = stringResource(R.string.charger_no_chargers),
+            message = stringResource(R.string.charger_empty_body),
+            icon = Icons.Outlined.Add,
         )
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-        Text(
-            text = stringResource(R.string.charger_empty_body),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Button(onClick = onAddClick, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.charger_add))
+        }
     }
 }
 

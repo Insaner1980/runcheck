@@ -7,10 +7,10 @@ object LearnArticleCatalog {
     private val topicOrder =
         listOf(
             LearnTopic.BATTERY,
-            LearnTopic.TEMPERATURE,
+            LearnTopic.THERMAL,
             LearnTopic.NETWORK,
             LearnTopic.STORAGE,
-            LearnTopic.GENERAL,
+            LearnTopic.PRIVACY,
         )
 
     val articles: List<LearnArticle> =
@@ -53,7 +53,7 @@ object LearnArticleCatalog {
             ),
             LearnArticle(
                 id = LearnArticleIds.THERMAL_NORMAL_TEMPS,
-                topic = LearnTopic.TEMPERATURE,
+                topic = LearnTopic.THERMAL,
                 titleRes = R.string.learn_thermal_normal_temps_title,
                 previewRes = R.string.learn_thermal_normal_temps_preview,
                 bodyRes = R.string.learn_thermal_normal_temps_body,
@@ -62,7 +62,7 @@ object LearnArticleCatalog {
             ),
             LearnArticle(
                 id = LearnArticleIds.THERMAL_THROTTLING,
-                topic = LearnTopic.TEMPERATURE,
+                topic = LearnTopic.THERMAL,
                 titleRes = R.string.learn_thermal_throttling_title,
                 previewRes = R.string.learn_thermal_throttling_preview,
                 bodyRes = R.string.learn_thermal_throttling_body,
@@ -71,7 +71,7 @@ object LearnArticleCatalog {
             ),
             LearnArticle(
                 id = LearnArticleIds.THERMAL_FEEDBACK,
-                topic = LearnTopic.TEMPERATURE,
+                topic = LearnTopic.THERMAL,
                 titleRes = R.string.learn_thermal_feedback_title,
                 previewRes = R.string.learn_thermal_feedback_preview,
                 bodyRes = R.string.learn_thermal_feedback_body,
@@ -125,7 +125,7 @@ object LearnArticleCatalog {
             ),
             LearnArticle(
                 id = LearnArticleIds.HEALTH_SCORE,
-                topic = LearnTopic.GENERAL,
+                topic = LearnTopic.PRIVACY,
                 titleRes = R.string.learn_health_score_title,
                 previewRes = R.string.learn_health_score_preview,
                 bodyRes = R.string.learn_health_score_body,
@@ -134,7 +134,7 @@ object LearnArticleCatalog {
             ),
             LearnArticle(
                 id = LearnArticleIds.SOFTWARE_VS_HARDWARE,
-                topic = LearnTopic.GENERAL,
+                topic = LearnTopic.PRIVACY,
                 titleRes = R.string.learn_sw_vs_hw_title,
                 previewRes = R.string.learn_sw_vs_hw_preview,
                 bodyRes = R.string.learn_sw_vs_hw_body,
@@ -143,7 +143,7 @@ object LearnArticleCatalog {
             ),
             LearnArticle(
                 id = LearnArticleIds.BACKGROUND_MONITORING,
-                topic = LearnTopic.GENERAL,
+                topic = LearnTopic.PRIVACY,
                 titleRes = R.string.learn_background_monitoring_title,
                 previewRes = R.string.learn_background_monitoring_preview,
                 bodyRes = R.string.learn_background_monitoring_body,

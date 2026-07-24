@@ -3,6 +3,7 @@ package com.runcheck.ui.network
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -22,7 +23,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -31,7 +31,6 @@ import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -76,9 +75,9 @@ import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.AnimatedFloatText
-import com.runcheck.ui.components.ContentContainer
-import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.ExpressiveDetailScaffold
 import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.RuncheckLoadingIndicator
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
@@ -108,48 +107,46 @@ fun SpeedTestScreen(
         onStop = viewModel::stopObserving,
     )
 
-    Column(modifier = modifier.fillMaxSize()) {
-        DetailTopBar(
-            title = stringResource(R.string.speed_test_title),
-            onBack = onBack,
-        )
-
-        ContentContainer {
-            when (val netState = networkUiState) {
-                is NetworkUiState.Loading -> {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .semantics {
-                                    contentDescription = loadingDescription
-                                    liveRegion = LiveRegionMode.Polite
-                                },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
+    ExpressiveDetailScaffold(
+        title = stringResource(R.string.speed_test_title),
+        onBack = onBack,
+        modifier = modifier,
+    ) {
+        when (val netState = networkUiState) {
+            is NetworkUiState.Loading -> {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .semantics {
+                                contentDescription = loadingDescription
+                                liveRegion = LiveRegionMode.Polite
+                            },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    RuncheckLoadingIndicator(contentDescription = loadingDescription)
                 }
+            }
 
-                is NetworkUiState.Error -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = netState.message.resolve(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                }
-
-                is NetworkUiState.Success -> {
-                    SpeedTestContent(
-                        networkState = netState.networkState,
-                        speedTestState = speedTestState,
-                        onStartSpeedTest = { viewModel.startSpeedTest() },
-                        onConfirmCellular = { viewModel.confirmCellularSpeedTest() },
-                        onDismissCellular = { viewModel.dismissCellularWarning() },
+            is NetworkUiState.Error -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = netState.message.resolve(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
+            }
+
+            is NetworkUiState.Success -> {
+                SpeedTestContent(
+                    networkState = netState.networkState,
+                    speedTestState = speedTestState,
+                    onStartSpeedTest = { viewModel.startSpeedTest() },
+                    onStopSpeedTest = { viewModel.stopSpeedTest() },
+                    onConfirmCellular = { viewModel.confirmCellularSpeedTest() },
+                    onDismissCellular = { viewModel.dismissCellularWarning() },
+                )
             }
         }
     }
@@ -160,6 +157,7 @@ private fun SpeedTestContent(
     networkState: NetworkState,
     speedTestState: SpeedTestUiState,
     onStartSpeedTest: () -> Unit,
+    onStopSpeedTest: () -> Unit,
     onConfirmCellular: () -> Unit,
     onDismissCellular: () -> Unit,
 ) {
@@ -170,8 +168,7 @@ private fun SpeedTestContent(
         modifier =
             Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = MaterialTheme.spacing.base),
+                .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -181,8 +178,8 @@ private fun SpeedTestContent(
 
         SpeedTestHero(
             state = speedTestState,
-            enabled = hasConnection && !speedTestState.isRunning,
-            onStart = onStartSpeedTest,
+            enabled = hasConnection || speedTestState.isRunning,
+            onAction = if (speedTestState.isRunning) onStopSpeedTest else onStartSpeedTest,
         )
 
         Text(
@@ -313,7 +310,7 @@ private fun NetworkContextPanel(networkState: NetworkState) {
 private fun SpeedTestHero(
     state: SpeedTestUiState,
     enabled: Boolean,
-    onStart: () -> Unit,
+    onAction: () -> Unit,
 ) {
     val reducedMotion = MaterialTheme.reducedMotion
     val pulseScale: Float
@@ -415,10 +412,24 @@ private fun SpeedTestHero(
             is SpeedTestPhase.Failed -> ""
         }
     val ringActionLabel =
-        heroInstructionText(
-            hasConnection = enabled || state.isRunning,
-            phase = state.phase,
-        )
+        if (state.isRunning) {
+            stringResource(R.string.speed_test_stop)
+        } else {
+            heroInstructionText(
+                hasConnection = enabled,
+                phase = state.phase,
+            )
+        }
+    val actionCorner by animateDpAsState(
+        targetValue = if (state.isRunning) 32.dp else 124.dp,
+        animationSpec =
+            tween(
+                durationMillis = if (reducedMotion) 0 else MotionTokens.SHORT,
+                easing = MotionTokens.EaseOut,
+            ),
+        label = "speed_test_action_corner",
+    )
+    val actionShape = RoundedCornerShape(actionCorner)
 
     Box(
         modifier =
@@ -432,7 +443,7 @@ private fun SpeedTestHero(
                 Modifier
                     .size(248.dp)
                     .scale(if (state.phase == SpeedTestPhase.Idle) pulseScale else 1f)
-                    .clip(CircleShape)
+                    .clip(actionShape)
                     .background(accent.copy(alpha = if (state.phase == SpeedTestPhase.Idle) pulseAlpha else 0.08f)),
         )
 
@@ -440,11 +451,11 @@ private fun SpeedTestHero(
             modifier =
                 Modifier
                     .size(248.dp)
-                    .clip(CircleShape)
+                    .clip(actionShape)
                     .semantics {
                         role = Role.Button
                         contentDescription = ringActionLabel
-                    }.clickable(enabled = enabled) { onStart() },
+                    }.clickable(enabled = enabled) { onAction() },
         ) {
             val stroke = 16.dp.toPx()
             val outerStroke = 2.dp.toPx()
@@ -631,6 +642,17 @@ private fun SpeedTestHero(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (state.isRunning) {
+                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+                        Text(
+                            text = stringResource(R.string.speed_test_stop),
+                            style =
+                                MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                ),
+                            color = accent,
+                        )
+                    }
                 }
             }
         }
@@ -1158,6 +1180,7 @@ private fun SpeedTestContentPreview() {
                         ),
                 ),
             onStartSpeedTest = {},
+            onStopSpeedTest = {},
             onConfirmCellular = {},
             onDismissCellular = {},
         )

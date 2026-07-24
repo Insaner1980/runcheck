@@ -20,6 +20,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -338,6 +339,33 @@ class NetworkViewModelTest {
             assertTrue(speedState.phase is SpeedTestPhase.Failed)
             assertFalse(speedState.isRunning)
             assertEquals(85.5, speedState.downloadMbps, 0.01)
+            coVerify(exactly = 0) { finalizeSpeedTest(any(), any()) }
+            viewModel.stopObserving()
+        }
+
+    @Test
+    fun `stopping a running speed test cancels collection and returns to idle`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            every { getMeasuredNetworkState() } returns MutableStateFlow(testNetworkState)
+            every { runSpeedTest(any()) } returns
+                flow {
+                    emit(SpeedTestProgress.PingPhase(pingMs = 12, jitterMs = 2))
+                    awaitCancellation()
+                }
+
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceNetworkSample()
+            viewModel.startSpeedTest()
+            runCurrent()
+
+            assertTrue(viewModel.speedTestState.value.isRunning)
+
+            viewModel.stopSpeedTest()
+            runCurrent()
+
+            assertFalse(viewModel.speedTestState.value.isRunning)
+            assertEquals(SpeedTestPhase.Idle, viewModel.speedTestState.value.phase)
             coVerify(exactly = 0) { finalizeSpeedTest(any(), any()) }
             viewModel.stopObserving()
         }

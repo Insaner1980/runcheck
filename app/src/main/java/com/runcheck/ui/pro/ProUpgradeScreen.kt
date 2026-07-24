@@ -45,8 +45,7 @@ import com.runcheck.R
 import com.runcheck.pro.ProFeature
 import com.runcheck.pro.ProStatus
 import com.runcheck.ui.common.resolve
-import com.runcheck.ui.components.ContentContainer
-import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.ExpressiveDetailScaffold
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.uiTokens
@@ -60,30 +59,27 @@ fun ProUpgradeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    Column(modifier = modifier.fillMaxSize()) {
-        DetailTopBar(
-            title = stringResource(R.string.pro_upgrade_title),
-            onBack = onBack,
-        )
-
-        ContentContainer {
-            if (uiState.purchaseCompleted) {
-                PurchaseThankYouContent(
-                    onDismiss = {
-                        viewModel.dismissThankYou()
-                        onBack()
-                    },
-                )
-            } else if (uiState.proState.status == ProStatus.PRO_PURCHASED) {
-                ProActiveContent()
-            } else {
-                ProUpgradeContent(
-                    uiState = uiState,
-                    onPurchase = {
-                        (context as? Activity)?.let { viewModel.purchasePro(it) }
-                    },
-                )
-            }
+    ExpressiveDetailScaffold(
+        title = stringResource(R.string.pro_upgrade_title),
+        onBack = onBack,
+        modifier = modifier,
+    ) {
+        if (uiState.purchaseCompleted) {
+            PurchaseThankYouContent(
+                onDismiss = {
+                    viewModel.dismissThankYou()
+                    onBack()
+                },
+            )
+        } else if (uiState.proState.status == ProStatus.PRO_PURCHASED) {
+            ProActiveContent()
+        } else {
+            ProUpgradeContent(
+                uiState = uiState,
+                onPurchase = {
+                    (context as? Activity)?.let { viewModel.purchasePro(it) }
+                },
+            )
         }
     }
 }
@@ -99,7 +95,6 @@ private fun ProUpgradeContent(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = MaterialTheme.spacing.lg)
                 .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

@@ -117,6 +117,18 @@ class NetworkViewModel
             updateSpeedTestState { copy(showCellularWarning = false) }
         }
 
+        fun stopSpeedTest() {
+            speedTestJob?.cancel()
+            speedTestJob = null
+            updateSpeedTestState {
+                copy(
+                    phase = SpeedTestPhase.Idle,
+                    isRunning = false,
+                    showCellularWarning = false,
+                )
+            }
+        }
+
         private fun proceedWithSpeedTest(allowCellular: Boolean) {
             speedTestJob?.cancel()
             updateSpeedTestState {

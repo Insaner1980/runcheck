@@ -7,10 +7,10 @@ enum class LearnTopic(
     @param:StringRes val labelRes: Int,
 ) {
     BATTERY(R.string.learn_topic_battery),
-    TEMPERATURE(R.string.learn_topic_temperature),
     NETWORK(R.string.learn_topic_network),
+    THERMAL(R.string.learn_topic_thermal),
     STORAGE(R.string.learn_topic_storage),
-    GENERAL(R.string.learn_topic_general),
+    PRIVACY(R.string.learn_topic_privacy),
 }
 
 object LearnArticleIds {
@@ -46,3 +46,13 @@ data class LearnTopicSection(
     val topic: LearnTopic,
     val articles: List<LearnArticle>,
 )
+
+fun filterLearnSections(
+    sections: List<LearnTopicSection>,
+    selectedTopic: LearnTopic?,
+): List<LearnTopicSection> =
+    if (selectedTopic == null) {
+        sections
+    } else {
+        sections.filter { it.topic == selectedTopic }
+    }

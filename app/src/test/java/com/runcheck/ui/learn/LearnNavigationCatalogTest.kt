@@ -48,7 +48,7 @@ class LearnNavigationCatalogTest {
             listOf(
                 LearnTopic.BATTERY,
                 LearnTopic.NETWORK,
-                LearnTopic.TEMPERATURE,
+                LearnTopic.THERMAL,
                 LearnTopic.STORAGE,
             ).filter { topic ->
                 LearnArticleCatalog.articlesForTopic(topic).isEmpty()

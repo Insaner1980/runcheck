@@ -29,7 +29,6 @@ import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -89,26 +88,27 @@ import com.runcheck.ui.common.rememberSaveableEnumState
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.common.signalQualityLabel
 import com.runcheck.ui.components.CardSectionTitle
-import com.runcheck.ui.components.ContentContainer
-import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.DetailInfoBannerCandidate
+import com.runcheck.ui.components.ExpressiveDetailScaffold
+import com.runcheck.ui.components.InfoBanner
+import com.runcheck.ui.components.LearnTopicLink
 import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.PullToRefreshWrapper
+import com.runcheck.ui.components.RuncheckLoadingIndicator
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SignalBars
 import com.runcheck.ui.components.TrendChart
-import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
+import com.runcheck.ui.components.selectDetailInfoBanner
 import com.runcheck.ui.fullscreen.FullscreenChartSeedStore
 import com.runcheck.ui.fullscreen.FullscreenChartUiState
 import com.runcheck.ui.fullscreen.sanitizeFullscreenMetric
 import com.runcheck.ui.fullscreen.sanitizeFullscreenPeriod
-import com.runcheck.ui.learn.LearnArticleIds
-import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
 import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
@@ -160,6 +160,7 @@ fun NetworkDetailScreen(
     onUpgradeToPro: () -> Unit = {},
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit = { _, _, _ -> },
     onNavigateToLearnArticle: (articleId: String) -> Unit = {},
+    onNavigateToLearnTopic: () -> Unit = {},
     fullscreenResultMetric: String? = null,
     fullscreenResultPeriod: String? = null,
     onConsumeFullscreenResult: () -> Unit = {},
@@ -174,59 +175,57 @@ fun NetworkDetailScreen(
         onStop = viewModel::stopObserving,
     )
 
-    Column(modifier = modifier.fillMaxSize()) {
-        DetailTopBar(
-            title = stringResource(R.string.network_title),
-            onBack = onBack,
-        )
-
-        ContentContainer {
-            when (val state = networkUiState) {
-                is NetworkUiState.Loading -> {
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .semantics {
-                                contentDescription = loadingDescription
-                                liveRegion =
-                                    LiveRegionMode.Polite
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
+    ExpressiveDetailScaffold(
+        title = stringResource(R.string.network_title),
+        onBack = onBack,
+        modifier = modifier,
+    ) {
+        when (val state = networkUiState) {
+            is NetworkUiState.Loading -> {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .semantics {
+                            contentDescription = loadingDescription
+                            liveRegion =
+                                LiveRegionMode.Polite
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    RuncheckLoadingIndicator(contentDescription = loadingDescription)
                 }
+            }
 
-                is NetworkUiState.Error -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                        ) {
-                            Text(state.message.resolve())
-                            TextButton(onClick = { viewModel.refresh() }) {
-                                Text(stringResource(R.string.common_retry))
-                            }
+            is NetworkUiState.Error -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    ) {
+                        Text(state.message.resolve())
+                        TextButton(onClick = { viewModel.refresh() }) {
+                            Text(stringResource(R.string.common_retry))
                         }
                     }
                 }
+            }
 
-                is NetworkUiState.Success -> {
-                    NetworkContent(
-                        state = state,
-                        speedTestState = speedTestState,
-                        onRefresh = { viewModel.refresh() },
-                        onNavigateToSpeedTest = onNavigateToSpeedTest,
-                        onPeriodChange = { viewModel.setHistoryPeriod(it) },
-                        onUpgradeToPro = onUpgradeToPro,
-                        onNavigateToFullscreen = onNavigateToFullscreen,
-                        onNavigateToLearnArticle = onNavigateToLearnArticle,
-                        onDismissInfoCard = { viewModel.dismissInfoCard(it) },
-                        fullscreenResultMetric = fullscreenResultMetric,
-                        fullscreenResultPeriod = fullscreenResultPeriod,
-                        onConsumeFullscreenResult = onConsumeFullscreenResult,
-                    )
-                }
+            is NetworkUiState.Success -> {
+                NetworkContent(
+                    state = state,
+                    speedTestState = speedTestState,
+                    onRefresh = { viewModel.refresh() },
+                    onNavigateToSpeedTest = onNavigateToSpeedTest,
+                    onPeriodChange = { viewModel.setHistoryPeriod(it) },
+                    onUpgradeToPro = onUpgradeToPro,
+                    onNavigateToFullscreen = onNavigateToFullscreen,
+                    onNavigateToLearnArticle = onNavigateToLearnArticle,
+                    onNavigateToLearnTopic = onNavigateToLearnTopic,
+                    onDismissInfoCard = viewModel::dismissInfoCard,
+                    fullscreenResultMetric = fullscreenResultMetric,
+                    fullscreenResultPeriod = fullscreenResultPeriod,
+                    onConsumeFullscreenResult = onConsumeFullscreenResult,
+                )
             }
         }
     }
@@ -670,6 +669,7 @@ private fun NetworkContent(
     onUpgradeToPro: () -> Unit,
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
     onNavigateToLearnArticle: (articleId: String) -> Unit,
+    onNavigateToLearnTopic: () -> Unit,
     onDismissInfoCard: (String) -> Unit,
     fullscreenResultMetric: String? = null,
     fullscreenResultPeriod: String? = null,
@@ -732,7 +732,7 @@ private fun NetworkContent(
                 Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = MaterialTheme.spacing.base),
+                    .padding(bottom = MaterialTheme.spacing.xs),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
         ) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
@@ -774,7 +774,7 @@ private fun NetworkContent(
                 onNavigateToFullscreen = onNavigateToFullscreen,
                 onNavigateToSpeedTest = onNavigateToSpeedTest,
                 onUpgradeToPro = onUpgradeToPro,
-                onNavigateToLearnArticle = onNavigateToLearnArticle,
+                onNavigateToLearnTopic = onNavigateToLearnTopic,
                 onInfoClick = { activeInfoSheetState.value = it },
             )
 
@@ -804,6 +804,37 @@ private fun NetworkOverviewSection( // NOSONAR
     onOpenLocationHelp: () -> Unit,
     onInfoClick: (String) -> Unit,
 ) {
+    val weakSignal =
+        networkState.connectionType != ConnectionType.NONE &&
+            networkState.signalDbm != null &&
+            (
+                networkState.signalQuality == SignalQuality.POOR ||
+                    networkState.signalQuality == SignalQuality.NO_SIGNAL
+            )
+    val selectedBanner =
+        remember(weakSignal, state.dismissedInfoCards, state.showInfoCards) {
+            selectDetailInfoBanner(
+                candidates =
+                    listOf(
+                        DetailInfoBannerCandidate(
+                            id = InfoCardCatalog.NetworkWeakSignalDrain.id,
+                            severity = 3,
+                            catalogOrder = 0,
+                            eligible = weakSignal,
+                        ),
+                        DetailInfoBannerCandidate(
+                            id = InfoCardCatalog.NetworkSpeedTestScope.id,
+                            severity = 0,
+                            catalogOrder = 1,
+                        ),
+                    ),
+                dismissedIds = state.dismissedInfoCards,
+                showInfoBanners = state.showInfoCards,
+            )
+        }?.let { candidate ->
+            InfoCardCatalog.all.first { definition -> definition.id == candidate.id }
+        }
+
     Column {
         NetworkHeroSection(
             networkState = networkState,
@@ -811,47 +842,18 @@ private fun NetworkOverviewSection( // NOSONAR
             onInfoClick = onInfoClick,
         )
 
-        val shouldShowWeakSignalInfoCard =
-            networkState.connectionType != ConnectionType.NONE &&
-                networkState.signalDbm != null &&
-                (
-                    networkState.signalQuality == SignalQuality.POOR ||
-                        networkState.signalQuality == SignalQuality.NO_SIGNAL
-                )
-
-        if (shouldShowWeakSignalInfoCard) {
-            InfoCard(
-                id = InfoCardCatalog.NetworkWeakSignalDrain.id,
-                headline = stringResource(InfoCardCatalog.NetworkWeakSignalDrain.headlineRes),
-                body = stringResource(InfoCardCatalog.NetworkWeakSignalDrain.bodyRes),
+        selectedBanner?.let { definition ->
+            InfoBanner(
+                id = definition.id,
+                title = stringResource(definition.headlineRes),
+                message = stringResource(definition.bodyRes),
                 onDismiss = onDismissInfoCard,
-                visible =
-                    InfoCardCatalog.NetworkWeakSignalDrain.id !in state.dismissedInfoCards &&
-                        state.showInfoCards,
-                onLearnMore = {
-                    InfoCardCatalog
-                        .resolveLearnArticleId(
-                            InfoCardCatalog.NetworkWeakSignalDrain,
-                        )?.let(onNavigateToLearnArticle)
-                },
+                onLearnMore =
+                    InfoCardCatalog.resolveLearnArticleId(definition)?.let { articleId ->
+                        { onNavigateToLearnArticle(articleId) }
+                    },
             )
         }
-
-        InfoCard(
-            id = InfoCardCatalog.NetworkSpeedTestScope.id,
-            headline = stringResource(InfoCardCatalog.NetworkSpeedTestScope.headlineRes),
-            body = stringResource(InfoCardCatalog.NetworkSpeedTestScope.bodyRes),
-            onDismiss = onDismissInfoCard,
-            visible =
-                InfoCardCatalog.NetworkSpeedTestScope.id !in state.dismissedInfoCards &&
-                    state.showInfoCards,
-            onLearnMore = {
-                InfoCardCatalog
-                    .resolveLearnArticleId(
-                        InfoCardCatalog.NetworkSpeedTestScope,
-                    )?.let(onNavigateToLearnArticle)
-            },
-        )
 
         if (networkState.connectionType == ConnectionType.WIFI && networkState.wifiSsid == null) {
             WifiNameHelpCard(
@@ -886,7 +888,7 @@ private fun NetworkToolsSection( // NOSONAR
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
     onNavigateToSpeedTest: () -> Unit,
     onUpgradeToPro: () -> Unit,
-    onNavigateToLearnArticle: (String) -> Unit,
+    onNavigateToLearnTopic: () -> Unit,
     onInfoClick: (String) -> Unit,
 ) {
     if (state.isPro) {
@@ -913,14 +915,9 @@ private fun NetworkToolsSection( // NOSONAR
         onInfoClick = onInfoClick,
     )
 
-    RelatedArticlesSection(
-        articleIds =
-            listOf(
-                LearnArticleIds.NETWORK_SIGNAL,
-                LearnArticleIds.NETWORK_WIFI_BANDS,
-                LearnArticleIds.NETWORK_SPEED_TESTS,
-            ),
-        onNavigateToArticle = onNavigateToLearnArticle,
+    LearnTopicLink(
+        label = stringResource(R.string.learn_topic_link_network),
+        onClick = onNavigateToLearnTopic,
     )
 }
 

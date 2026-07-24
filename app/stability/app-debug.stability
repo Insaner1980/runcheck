@@ -41,7 +41,7 @@ public fun com.runcheck.ui.appusage.AppUsageScreen(onBack: kotlin.Function0<kotl
     - viewModel: UNSTABLE (has mutable properties or unstable members)
 
 @Composable
-private fun com.runcheck.ui.battery.BatteryChargingSection(state: com.runcheck.ui.battery.BatteryUiState.Success, battery: com.runcheck.domain.model.BatteryState, chargingSessionSummary: com.runcheck.ui.chart.ChargingSessionSummary?, selectedSessionMetric: com.runcheck.ui.chart.SessionGraphMetric, onSessionMetricChange: kotlin.Function1<com.runcheck.ui.chart.SessionGraphMetric, kotlin.Unit>, selectedSessionWindow: com.runcheck.ui.chart.SessionGraphWindow, onSessionWindowChange: kotlin.Function1<com.runcheck.ui.chart.SessionGraphWindow, kotlin.Unit>, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \, onDismissInfoCard: kotlin.Function1<kotlin.String, kotlin.Unit>, onNavigateToLearnArticle: kotlin.Function1<kotlin.String, kotlin.Unit>, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.battery.BatteryChargingSection(state: com.runcheck.ui.battery.BatteryUiState.Success, battery: com.runcheck.domain.model.BatteryState, chargingSessionSummary: com.runcheck.ui.chart.ChargingSessionSummary?, selectedSessionMetric: com.runcheck.ui.chart.SessionGraphMetric, onSessionMetricChange: kotlin.Function1<com.runcheck.ui.chart.SessionGraphMetric, kotlin.Unit>, selectedSessionWindow: com.runcheck.ui.chart.SessionGraphWindow, onSessionWindowChange: kotlin.Function1<com.runcheck.ui.chart.SessionGraphWindow, kotlin.Unit>, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -53,12 +53,10 @@ private fun com.runcheck.ui.battery.BatteryChargingSection(state: com.runcheck.u
     - selectedSessionWindow: STABLE (class with no mutable properties)
     - onSessionWindowChange: STABLE (function type)
     - onNavigateToFullscreen: STABLE (function type)
-    - onDismissInfoCard: STABLE (function type)
-    - onNavigateToLearnArticle: STABLE (function type)
     - onInfoClick: STABLE (function type)
 
 @Composable
-private fun com.runcheck.ui.battery.BatteryContent(state: com.runcheck.ui.battery.BatteryUiState.Success, onRefresh: kotlin.Function0<kotlin.Unit>, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>, onNavigateToCharger: kotlin.Function0<kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, onDismissInfoCard: kotlin.Function1<kotlin.String, kotlin.Unit>, fullscreenResultSource: kotlin.String?, fullscreenResultMetric: kotlin.String?, fullscreenResultPeriod: kotlin.String?, onConsumeFullscreenResult: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.battery.BatteryContent(state: com.runcheck.ui.battery.BatteryUiState.Success, onRefresh: kotlin.Function0<kotlin.Unit>, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>, onNavigateToCharger: kotlin.Function0<kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, onNavigateToLearnTopic: kotlin.Function0<kotlin.Unit>, onDismissInfoCard: kotlin.Function1<kotlin.String, kotlin.Unit>, fullscreenResultSource: kotlin.String?, fullscreenResultMetric: kotlin.String?, fullscreenResultPeriod: kotlin.String?, onConsumeFullscreenResult: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -69,6 +67,7 @@ private fun com.runcheck.ui.battery.BatteryContent(state: com.runcheck.ui.batter
     - onUpgradeToPro: STABLE (function type)
     - onNavigateToFullscreen: STABLE (function type)
     - onNavigateToLearnArticle: STABLE (function type)
+    - onNavigateToLearnTopic: STABLE (function type)
     - onDismissInfoCard: STABLE (function type)
     - fullscreenResultSource: STABLE (class with no mutable properties)
     - fullscreenResultMetric: STABLE (class with no mutable properties)
@@ -76,7 +75,7 @@ private fun com.runcheck.ui.battery.BatteryContent(state: com.runcheck.ui.batter
     - onConsumeFullscreenResult: STABLE (function type)
 
 @Composable
-public fun com.runcheck.ui.battery.BatteryDetailScreen(onBack: kotlin.Function0<kotlin.Unit>, onNavigateToCharger: kotlin.Function0<kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, fullscreenResultSource: kotlin.String?, fullscreenResultMetric: kotlin.String?, fullscreenResultPeriod: kotlin.String?, onConsumeFullscreenResult: kotlin.Function0<kotlin.Unit>, viewModel: com.runcheck.ui.battery.BatteryViewModel): kotlin.Unit
+public fun com.runcheck.ui.battery.BatteryDetailScreen(onBack: kotlin.Function0<kotlin.Unit>, onNavigateToCharger: kotlin.Function0<kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, onNavigateToLearnTopic: kotlin.Function0<kotlin.Unit>, fullscreenResultSource: kotlin.String?, fullscreenResultMetric: kotlin.String?, fullscreenResultPeriod: kotlin.String?, onConsumeFullscreenResult: kotlin.Function0<kotlin.Unit>, viewModel: com.runcheck.ui.battery.BatteryViewModel): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -86,6 +85,7 @@ public fun com.runcheck.ui.battery.BatteryDetailScreen(onBack: kotlin.Function0<
     - modifier: STABLE (marked @Stable or @Immutable)
     - onNavigateToFullscreen: STABLE (function type)
     - onNavigateToLearnArticle: STABLE (function type)
+    - onNavigateToLearnTopic: STABLE (function type)
     - fullscreenResultSource: STABLE (class with no mutable properties)
     - fullscreenResultMetric: STABLE (class with no mutable properties)
     - fullscreenResultPeriod: STABLE (class with no mutable properties)
@@ -93,7 +93,7 @@ public fun com.runcheck.ui.battery.BatteryDetailScreen(onBack: kotlin.Function0<
     - viewModel: UNSTABLE (has mutable properties or unstable members)
 
 @Composable
-private fun com.runcheck.ui.battery.BatteryFooterSection(state: com.runcheck.ui.battery.BatteryUiState.Success, selectedHistoryMetric: com.runcheck.ui.chart.BatteryHistoryMetric, onHistoryMetricChange: kotlin.Function1<com.runcheck.ui.chart.BatteryHistoryMetric, kotlin.Unit>, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \, onNavigateToCharger: kotlin.Function0<kotlin.Unit>, onNavigateToLearnArticle: kotlin.Function1<kotlin.String, kotlin.Unit>, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.battery.BatteryFooterSection(state: com.runcheck.ui.battery.BatteryUiState.Success, selectedHistoryMetric: com.runcheck.ui.chart.BatteryHistoryMetric, onHistoryMetricChange: kotlin.Function1<com.runcheck.ui.chart.BatteryHistoryMetric, kotlin.Unit>, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \, onNavigateToCharger: kotlin.Function0<kotlin.Unit>, onNavigateToLearnTopic: kotlin.Function0<kotlin.Unit>, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -104,7 +104,7 @@ private fun com.runcheck.ui.battery.BatteryFooterSection(state: com.runcheck.ui.
     - onUpgradeToPro: STABLE (function type)
     - onNavigateToFullscreen: STABLE (function type)
     - onNavigateToCharger: STABLE (function type)
-    - onNavigateToLearnArticle: STABLE (function type)
+    - onNavigateToLearnTopic: STABLE (function type)
     - onInfoClick: STABLE (function type)
 
 @Composable
@@ -316,12 +316,11 @@ public fun com.runcheck.ui.charger.ChargerComparisonScreen(onBack: kotlin.Functi
     - viewModel: UNSTABLE (has mutable properties or unstable members)
 
 @Composable
-private fun com.runcheck.ui.charger.ChargerContent(state: com.runcheck.ui.charger.ChargerUiState.Success, onBack: kotlin.Function0<kotlin.Unit>, onAddClick: kotlin.Function0<kotlin.Unit>, onSelectCharger: kotlin.Function1<kotlin.Long, kotlin.Unit>, onClearSelectedCharger: kotlin.Function0<kotlin.Unit>, onDeleteRequest: kotlin.Function1<com.runcheck.domain.model.ChargerSummary, kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.charger.ChargerContent(state: com.runcheck.ui.charger.ChargerUiState.Success, onAddClick: kotlin.Function0<kotlin.Unit>, onSelectCharger: kotlin.Function1<kotlin.Long, kotlin.Unit>, onClearSelectedCharger: kotlin.Function0<kotlin.Unit>, onDeleteRequest: kotlin.Function1<com.runcheck.domain.model.ChargerSummary, kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
     - state: RUNTIME (requires runtime check)
-    - onBack: STABLE (function type)
     - onAddClick: STABLE (function type)
     - onSelectCharger: STABLE (function type)
     - onClearSelectedCharger: STABLE (function type)
@@ -337,10 +336,11 @@ private fun com.runcheck.ui.charger.DeleteChargerDialog(chargerName: kotlin.Stri
     - onConfirm: STABLE (function type)
 
 @Composable
-private fun com.runcheck.ui.charger.EmptyStateCard(): kotlin.Unit
+private fun com.runcheck.ui.charger.EmptyStateCard(onAddClick: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
+    - onAddClick: STABLE (function type)
 
 @Composable
 private fun com.runcheck.ui.charger.HistoricalComparisonCard(chargers: kotlin.collections.List<com.runcheck.domain.model.ChargerSummary>): kotlin.Unit
@@ -965,13 +965,13 @@ public fun com.runcheck.ui.components.RuncheckLoadingIndicator(modifier: android
     - contentDescription: STABLE (class with no mutable properties)
 
 @Composable
-public fun com.runcheck.ui.components.RuncheckWavyProgress(progress: kotlin.Float, modifier: androidx.compose.ui.Modifier, contentDescription: kotlin.String, content: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>): kotlin.Unit
+public fun com.runcheck.ui.components.RuncheckWavyProgress(progress: kotlin.Float, contentDescription: kotlin.String, modifier: androidx.compose.ui.Modifier, content: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - progress: STABLE (primitive type)
-    - modifier: STABLE (marked @Stable or @Immutable)
     - contentDescription: STABLE (String is immutable)
+    - modifier: STABLE (marked @Stable or @Immutable)
     - content: STABLE (composable function type)
 
 @Composable
@@ -1111,6 +1111,15 @@ public fun com.runcheck.ui.components.info.rememberInfoSheetState(): androidx.co
   skippable: true
   restartable: true
   params:
+
+@Composable
+public fun com.runcheck.ui.export.ExportScreen(onBack: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, viewModel: com.runcheck.ui.export.ExportViewModel): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - onBack: STABLE (function type)
+    - modifier: STABLE (marked @Stable or @Immutable)
+    - viewModel: UNSTABLE (has mutable properties or unstable members)
 
 @Composable
 private fun com.runcheck.ui.fullscreen.FullscreenChartContent(state: com.runcheck.ui.fullscreen.FullscreenChartUiState.Success, source: com.runcheck.ui.chart.FullscreenChartSource, modifier: androidx.compose.ui.Modifier): kotlin.Unit
@@ -1448,13 +1457,14 @@ private fun com.runcheck.ui.learn.LearnArticleText(text: androidx.compose.ui.tex
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
-public fun com.runcheck.ui.learn.LearnScreen(onBack: kotlin.Function0<kotlin.Unit>, onNavigateToArticle: kotlin.Function1<kotlin.String, kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+public fun com.runcheck.ui.learn.LearnScreen(onBack: kotlin.Function0<kotlin.Unit>, onNavigateToArticle: kotlin.Function1<kotlin.String, kotlin.Unit>, modifier: androidx.compose.ui.Modifier, initialTopic: com.runcheck.ui.learn.LearnTopic?): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - onBack: STABLE (function type)
     - onNavigateToArticle: STABLE (function type)
     - modifier: STABLE (marked @Stable or @Immutable)
+    - initialTopic: STABLE (class with no mutable properties)
 
 @Composable
 public fun com.runcheck.ui.learn.RelatedArticlesSection(articleIds: kotlin.collections.List<kotlin.String>, onNavigateToArticle: kotlin.Function1<@[ParameterName(name = \, modifier: androidx.compose.ui.Modifier): kotlin.Unit
@@ -1575,7 +1585,7 @@ private fun com.runcheck.ui.network.NetworkAddressRows(addresses: kotlin.collect
     - maxLines: STABLE (primitive type)
 
 @Composable
-private fun com.runcheck.ui.network.NetworkContent(state: com.runcheck.ui.network.NetworkUiState.Success, speedTestState: com.runcheck.ui.network.SpeedTestUiState, onRefresh: kotlin.Function0<kotlin.Unit>, onNavigateToSpeedTest: kotlin.Function0<kotlin.Unit>, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, onDismissInfoCard: kotlin.Function1<kotlin.String, kotlin.Unit>, fullscreenResultMetric: kotlin.String?, fullscreenResultPeriod: kotlin.String?, onConsumeFullscreenResult: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.network.NetworkContent(state: com.runcheck.ui.network.NetworkUiState.Success, speedTestState: com.runcheck.ui.network.SpeedTestUiState, onRefresh: kotlin.Function0<kotlin.Unit>, onNavigateToSpeedTest: kotlin.Function0<kotlin.Unit>, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, onNavigateToLearnTopic: kotlin.Function0<kotlin.Unit>, onDismissInfoCard: kotlin.Function1<kotlin.String, kotlin.Unit>, fullscreenResultMetric: kotlin.String?, fullscreenResultPeriod: kotlin.String?, onConsumeFullscreenResult: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -1587,6 +1597,7 @@ private fun com.runcheck.ui.network.NetworkContent(state: com.runcheck.ui.networ
     - onUpgradeToPro: STABLE (function type)
     - onNavigateToFullscreen: STABLE (function type)
     - onNavigateToLearnArticle: STABLE (function type)
+    - onNavigateToLearnTopic: STABLE (function type)
     - onDismissInfoCard: STABLE (function type)
     - fullscreenResultMetric: STABLE (class with no mutable properties)
     - fullscreenResultPeriod: STABLE (class with no mutable properties)
@@ -1600,7 +1611,7 @@ private fun com.runcheck.ui.network.NetworkContextPanel(networkState: com.runche
     - networkState: RUNTIME (requires runtime check)
 
 @Composable
-public fun com.runcheck.ui.network.NetworkDetailScreen(onNavigateToSpeedTest: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onBack: kotlin.Function0<kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, fullscreenResultMetric: kotlin.String?, fullscreenResultPeriod: kotlin.String?, onConsumeFullscreenResult: kotlin.Function0<kotlin.Unit>, viewModel: com.runcheck.ui.network.NetworkViewModel): kotlin.Unit
+public fun com.runcheck.ui.network.NetworkDetailScreen(onNavigateToSpeedTest: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onBack: kotlin.Function0<kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, onNavigateToLearnTopic: kotlin.Function0<kotlin.Unit>, fullscreenResultMetric: kotlin.String?, fullscreenResultPeriod: kotlin.String?, onConsumeFullscreenResult: kotlin.Function0<kotlin.Unit>, viewModel: com.runcheck.ui.network.NetworkViewModel): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -1610,6 +1621,7 @@ public fun com.runcheck.ui.network.NetworkDetailScreen(onNavigateToSpeedTest: ko
     - onUpgradeToPro: STABLE (function type)
     - onNavigateToFullscreen: STABLE (function type)
     - onNavigateToLearnArticle: STABLE (function type)
+    - onNavigateToLearnTopic: STABLE (function type)
     - fullscreenResultMetric: STABLE (class with no mutable properties)
     - fullscreenResultPeriod: STABLE (class with no mutable properties)
     - onConsumeFullscreenResult: STABLE (function type)
@@ -1650,7 +1662,7 @@ internal fun com.runcheck.ui.network.NetworkPanel(modifier: androidx.compose.ui.
     - content: STABLE (composable function type)
 
 @Composable
-private fun com.runcheck.ui.network.NetworkToolsSection(state: com.runcheck.ui.network.NetworkUiState.Success, speedTestState: com.runcheck.ui.network.SpeedTestUiState, selectedHistoryMetric: com.runcheck.ui.chart.NetworkHistoryMetric, onHistoryMetricChange: kotlin.Function1<com.runcheck.ui.chart.NetworkHistoryMetric, kotlin.Unit>, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \, onNavigateToSpeedTest: kotlin.Function0<kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToLearnArticle: kotlin.Function1<kotlin.String, kotlin.Unit>, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.network.NetworkToolsSection(state: com.runcheck.ui.network.NetworkUiState.Success, speedTestState: com.runcheck.ui.network.SpeedTestUiState, selectedHistoryMetric: com.runcheck.ui.chart.NetworkHistoryMetric, onHistoryMetricChange: kotlin.Function1<com.runcheck.ui.chart.NetworkHistoryMetric, kotlin.Unit>, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \, onNavigateToSpeedTest: kotlin.Function0<kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToLearnTopic: kotlin.Function0<kotlin.Unit>, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -1662,7 +1674,7 @@ private fun com.runcheck.ui.network.NetworkToolsSection(state: com.runcheck.ui.n
     - onNavigateToFullscreen: STABLE (function type)
     - onNavigateToSpeedTest: STABLE (function type)
     - onUpgradeToPro: STABLE (function type)
-    - onNavigateToLearnArticle: STABLE (function type)
+    - onNavigateToLearnTopic: STABLE (function type)
     - onInfoClick: STABLE (function type)
 
 @Composable
@@ -1687,13 +1699,14 @@ private fun com.runcheck.ui.network.SpeedMetricsCard(state: com.runcheck.ui.netw
     - onInfoClick: STABLE (function type)
 
 @Composable
-private fun com.runcheck.ui.network.SpeedTestContent(networkState: com.runcheck.domain.model.NetworkState, speedTestState: com.runcheck.ui.network.SpeedTestUiState, onStartSpeedTest: kotlin.Function0<kotlin.Unit>, onConfirmCellular: kotlin.Function0<kotlin.Unit>, onDismissCellular: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.network.SpeedTestContent(networkState: com.runcheck.domain.model.NetworkState, speedTestState: com.runcheck.ui.network.SpeedTestUiState, onStartSpeedTest: kotlin.Function0<kotlin.Unit>, onStopSpeedTest: kotlin.Function0<kotlin.Unit>, onConfirmCellular: kotlin.Function0<kotlin.Unit>, onDismissCellular: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
     - networkState: RUNTIME (requires runtime check)
     - speedTestState: RUNTIME (requires runtime check)
     - onStartSpeedTest: STABLE (function type)
+    - onStopSpeedTest: STABLE (function type)
     - onConfirmCellular: STABLE (function type)
     - onDismissCellular: STABLE (function type)
 
@@ -1705,13 +1718,13 @@ private fun com.runcheck.ui.network.SpeedTestFailureCard(error: kotlin.String): 
     - error: STABLE (String is immutable)
 
 @Composable
-private fun com.runcheck.ui.network.SpeedTestHero(state: com.runcheck.ui.network.SpeedTestUiState, enabled: kotlin.Boolean, onStart: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.network.SpeedTestHero(state: com.runcheck.ui.network.SpeedTestUiState, enabled: kotlin.Boolean, onAction: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
     - state: RUNTIME (requires runtime check)
     - enabled: STABLE (primitive type)
-    - onStart: STABLE (function type)
+    - onAction: STABLE (function type)
 
 @Composable
 public fun com.runcheck.ui.network.SpeedTestScreen(onBack: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, viewModel: com.runcheck.ui.network.NetworkViewModel): kotlin.Unit
@@ -2155,7 +2168,7 @@ internal fun com.runcheck.ui.storage.StorageCleanupToolsSection(storage: com.run
     - onEmptyTrash: STABLE (function type)
 
 @Composable
-private fun com.runcheck.ui.storage.StorageContent(state: com.runcheck.ui.storage.StorageUiState.Success, mediaAccessState: com.runcheck.util.MediaAccessState, hasAllMediaPermissions: kotlin.Boolean, shouldOpenMediaSettings: kotlin.Boolean, onRequestMediaPermissions: kotlin.Function0<kotlin.Unit>, onRefresh: kotlin.Function0<kotlin.Unit>, onNavigateToCleanup: kotlin.Function1<com.runcheck.ui.storage.cleanup.CleanupType, kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, onEmptyTrash: kotlin.Function0<kotlin.Unit>, onDismissInfoCard: kotlin.Function1<kotlin.String, kotlin.Unit>, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.storage.StorageContent(state: com.runcheck.ui.storage.StorageUiState.Success, mediaAccessState: com.runcheck.util.MediaAccessState, hasAllMediaPermissions: kotlin.Boolean, shouldOpenMediaSettings: kotlin.Boolean, onRequestMediaPermissions: kotlin.Function0<kotlin.Unit>, onRefresh: kotlin.Function0<kotlin.Unit>, onNavigateToCleanup: kotlin.Function1<com.runcheck.ui.storage.cleanup.CleanupType, kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, onNavigateToLearnTopic: kotlin.Function0<kotlin.Unit>, onEmptyTrash: kotlin.Function0<kotlin.Unit>, onDismissInfoCard: kotlin.Function1<kotlin.String, kotlin.Unit>, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -2168,12 +2181,13 @@ private fun com.runcheck.ui.storage.StorageContent(state: com.runcheck.ui.storag
     - onNavigateToCleanup: STABLE (function type)
     - onUpgradeToPro: STABLE (function type)
     - onNavigateToLearnArticle: STABLE (function type)
+    - onNavigateToLearnTopic: STABLE (function type)
     - onEmptyTrash: STABLE (function type)
     - onDismissInfoCard: STABLE (function type)
     - onPeriodChange: STABLE (function type)
 
 @Composable
-public fun com.runcheck.ui.storage.StorageDetailScreen(onBack: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onNavigateToCleanup: kotlin.Function1<com.runcheck.ui.storage.cleanup.CleanupType, kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, viewModel: com.runcheck.ui.storage.StorageViewModel): kotlin.Unit
+public fun com.runcheck.ui.storage.StorageDetailScreen(onBack: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onNavigateToCleanup: kotlin.Function1<com.runcheck.ui.storage.cleanup.CleanupType, kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, onNavigateToLearnTopic: kotlin.Function0<kotlin.Unit>, viewModel: com.runcheck.ui.storage.StorageViewModel): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -2182,6 +2196,7 @@ public fun com.runcheck.ui.storage.StorageDetailScreen(onBack: kotlin.Function0<
     - onNavigateToCleanup: STABLE (function type)
     - onUpgradeToPro: STABLE (function type)
     - onNavigateToLearnArticle: STABLE (function type)
+    - onNavigateToLearnTopic: STABLE (function type)
     - viewModel: UNSTABLE (has mutable properties or unstable members)
 
 @Composable
@@ -2193,12 +2208,12 @@ internal fun com.runcheck.ui.storage.StorageDetailsCard(storage: com.runcheck.do
     - onInfoClick: STABLE (function type)
 
 @Composable
-private fun com.runcheck.ui.storage.StorageFooterSection(storage: com.runcheck.domain.model.StorageState, onNavigateToLearnArticle: kotlin.Function1<kotlin.String, kotlin.Unit>, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.storage.StorageFooterSection(storage: com.runcheck.domain.model.StorageState, onNavigateToLearnTopic: kotlin.Function0<kotlin.Unit>, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - storage: STABLE (class with no mutable properties)
-    - onNavigateToLearnArticle: STABLE (function type)
+    - onNavigateToLearnTopic: STABLE (function type)
     - onInfoClick: STABLE (function type)
 
 @Composable
@@ -2569,7 +2584,7 @@ public fun com.runcheck.ui.theme.uiTokens(): com.runcheck.ui.theme.UiTokens
   params:
 
 @Composable
-private fun com.runcheck.ui.thermal.ThermalContent(state: com.runcheck.ui.thermal.ThermalUiState.Success, onRefresh: kotlin.Function0<kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, onDismissInfoCard: kotlin.Function1<kotlin.String, kotlin.Unit>, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.thermal.ThermalContent(state: com.runcheck.ui.thermal.ThermalUiState.Success, onRefresh: kotlin.Function0<kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, onNavigateToLearnTopic: kotlin.Function0<kotlin.Unit>, onDismissInfoCard: kotlin.Function1<kotlin.String, kotlin.Unit>, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -2577,11 +2592,12 @@ private fun com.runcheck.ui.thermal.ThermalContent(state: com.runcheck.ui.therma
     - onRefresh: STABLE (function type)
     - onUpgradeToPro: STABLE (function type)
     - onNavigateToLearnArticle: STABLE (function type)
+    - onNavigateToLearnTopic: STABLE (function type)
     - onDismissInfoCard: STABLE (function type)
     - onPeriodChange: STABLE (function type)
 
 @Composable
-public fun com.runcheck.ui.thermal.ThermalDetailScreen(onBack: kotlin.Function0<kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, viewModel: com.runcheck.ui.thermal.ThermalViewModel): kotlin.Unit
+public fun com.runcheck.ui.thermal.ThermalDetailScreen(onBack: kotlin.Function0<kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, onNavigateToLearnTopic: kotlin.Function0<kotlin.Unit>, viewModel: com.runcheck.ui.thermal.ThermalViewModel): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -2589,6 +2605,7 @@ public fun com.runcheck.ui.thermal.ThermalDetailScreen(onBack: kotlin.Function0<
     - onUpgradeToPro: STABLE (function type)
     - modifier: STABLE (marked @Stable or @Immutable)
     - onNavigateToLearnArticle: STABLE (function type)
+    - onNavigateToLearnTopic: STABLE (function type)
     - viewModel: UNSTABLE (has mutable properties or unstable members)
 
 @Composable
@@ -2688,7 +2705,7 @@ public fun com.runcheck.ui.tools.CleanupEntryScreen(proStatusReady: kotlin.Boole
     - availableContent: STABLE (composable function type)
 
 @Composable
-public fun com.runcheck.ui.tools.ExportEntryScreen(proStatusReady: kotlin.Boolean, hasProAccess: kotlin.Boolean, onBack: kotlin.Function0<kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+public fun com.runcheck.ui.tools.ExportEntryScreen(proStatusReady: kotlin.Boolean, hasProAccess: kotlin.Boolean, onBack: kotlin.Function0<kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, availableContent: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -2697,6 +2714,7 @@ public fun com.runcheck.ui.tools.ExportEntryScreen(proStatusReady: kotlin.Boolea
     - onBack: STABLE (function type)
     - onUpgradeToPro: STABLE (function type)
     - modifier: STABLE (marked @Stable or @Immutable)
+    - availableContent: STABLE (composable function type)
 
 @Composable
 private fun com.runcheck.ui.tools.ToolGridCard(icon: androidx.compose.ui.graphics.vector.ImageVector, title: kotlin.String, subtitle: kotlin.String, locked: kotlin.Boolean, onClick: kotlin.Function0<kotlin.Unit>): kotlin.Unit

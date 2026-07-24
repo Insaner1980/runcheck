@@ -72,14 +72,20 @@ fun ExportEntryScreen(
     onBack: () -> Unit,
     onUpgradeToPro: () -> Unit,
     modifier: Modifier = Modifier,
+    availableContent: @Composable () -> Unit,
 ) {
     val loadingDescription = stringResource(R.string.a11y_loading)
+    val accessState = protectedFeatureAccessState(proStatusReady, hasProAccess)
+    if (accessState == ProtectedFeatureAccessState.AVAILABLE) {
+        availableContent()
+        return
+    }
     ExpressiveDetailScaffold(
         title = stringResource(R.string.export_title),
         onBack = onBack,
         modifier = modifier,
     ) {
-        when (protectedFeatureAccessState(proStatusReady, hasProAccess)) {
+        when (accessState) {
             ProtectedFeatureAccessState.WAITING_FOR_PRO_STATUS -> {
                 CenteredToolContent {
                     RuncheckLoadingIndicator(contentDescription = loadingDescription)
@@ -100,13 +106,7 @@ fun ExportEntryScreen(
             }
 
             ProtectedFeatureAccessState.AVAILABLE -> {
-                CenteredToolContent {
-                    Text(
-                        text = stringResource(R.string.export_settings_hint),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                Unit
             }
         }
     }
@@ -123,10 +123,13 @@ fun CleanupEntryScreen(
 ) {
     val accessState = protectedFeatureAccessState(proStatusReady, hasProAccess)
     when (accessState) {
-        ProtectedFeatureAccessState.AVAILABLE -> availableContent()
+        ProtectedFeatureAccessState.AVAILABLE -> {
+            availableContent()
+        }
 
         ProtectedFeatureAccessState.WAITING_FOR_PRO_STATUS,
-        ProtectedFeatureAccessState.LOCKED -> {
+        ProtectedFeatureAccessState.LOCKED,
+        -> {
             val loadingDescription = stringResource(R.string.a11y_loading)
             ExpressiveDetailScaffold(
                 title = stringResource(R.string.storage_cleanup_tools),

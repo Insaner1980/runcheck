@@ -33,7 +33,6 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -91,8 +90,10 @@ import com.runcheck.ui.common.rememberSaveableEnumState
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ActionCard
 import com.runcheck.ui.components.CardSectionTitle
-import com.runcheck.ui.components.ContentContainer
-import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.DetailInfoBannerCandidate
+import com.runcheck.ui.components.ExpressiveDetailScaffold
+import com.runcheck.ui.components.InfoBanner
+import com.runcheck.ui.components.LearnTopicLink
 import com.runcheck.ui.components.ListRow
 import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
@@ -100,18 +101,17 @@ import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.ProgressRing
 import com.runcheck.ui.components.PullToRefreshWrapper
+import com.runcheck.ui.components.RuncheckLoadingIndicator
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SegmentData
 import com.runcheck.ui.components.SegmentedBar
 import com.runcheck.ui.components.SegmentedBarLegend
 import com.runcheck.ui.components.TrendChart
-import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
-import com.runcheck.ui.learn.LearnArticleIds
-import com.runcheck.ui.learn.RelatedArticlesSection
+import com.runcheck.ui.components.selectDetailInfoBanner
 import com.runcheck.ui.storage.MediaDeleteRequestResult
 import com.runcheck.ui.theme.categoryColor
 import com.runcheck.ui.theme.numericFontFamily
@@ -134,6 +134,7 @@ fun StorageDetailScreen(
     onNavigateToCleanup: (com.runcheck.ui.storage.cleanup.CleanupType) -> Unit = {},
     onUpgradeToPro: () -> Unit = {},
     onNavigateToLearnArticle: (articleId: String) -> Unit = {},
+    onNavigateToLearnTopic: () -> Unit = {},
     viewModel: StorageViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -226,66 +227,65 @@ fun StorageDetailScreen(
         onStop = viewModel::stopObserving,
     )
 
-    Column(modifier = modifier.fillMaxSize()) {
-        DetailTopBar(
-            title = "",
-            onBack = onBack,
-        )
-        ContentContainer {
-            when (val state = uiState) {
-                is StorageUiState.Loading -> {
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .semantics {
-                                contentDescription = loadingDescription
-                                liveRegion =
-                                    LiveRegionMode.Polite
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
+    ExpressiveDetailScaffold(
+        title = stringResource(R.string.storage_title),
+        onBack = onBack,
+        modifier = modifier,
+    ) {
+        when (val state = uiState) {
+            is StorageUiState.Loading -> {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .semantics {
+                            contentDescription = loadingDescription
+                            liveRegion =
+                                LiveRegionMode.Polite
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    RuncheckLoadingIndicator(contentDescription = loadingDescription)
                 }
+            }
 
-                is StorageUiState.Error -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(state.message.resolve())
-                            TextButton(onClick = { viewModel.refresh() }) {
-                                Text(stringResource(R.string.common_retry))
-                            }
+            is StorageUiState.Error -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(state.message.resolve())
+                        TextButton(onClick = { viewModel.refresh() }) {
+                            Text(stringResource(R.string.common_retry))
                         }
                     }
                 }
+            }
 
-                is StorageUiState.Success -> {
-                    StorageContent(
-                        state = state,
-                        mediaAccessState = mediaAccessState,
-                        hasAllMediaPermissions = missingMediaPermissions.isEmpty(),
-                        shouldOpenMediaSettings = shouldOpenMediaSettings,
-                        onRequestMediaPermissions = {
-                            if (shouldOpenMediaSettings) {
-                                context.startActivity(
-                                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                        data = Uri.fromParts("package", context.packageName, null)
-                                    },
-                                )
-                            } else {
-                                mediaPermissionRequested = true
-                                mediaPermissionLauncher.launch(mediaPermissions.toTypedArray())
-                            }
-                        },
-                        onRefresh = { viewModel.refresh() },
-                        onNavigateToCleanup = onNavigateToCleanup,
-                        onUpgradeToPro = onUpgradeToPro,
-                        onNavigateToLearnArticle = onNavigateToLearnArticle,
-                        onEmptyTrash = { showTrashConfirmDialog = true },
-                        onDismissInfoCard = { viewModel.dismissInfoCard(it) },
-                        onPeriodChange = { viewModel.setHistoryPeriod(it) },
-                    )
-                }
+            is StorageUiState.Success -> {
+                StorageContent(
+                    state = state,
+                    mediaAccessState = mediaAccessState,
+                    hasAllMediaPermissions = missingMediaPermissions.isEmpty(),
+                    shouldOpenMediaSettings = shouldOpenMediaSettings,
+                    onRequestMediaPermissions = {
+                        if (shouldOpenMediaSettings) {
+                            context.startActivity(
+                                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = Uri.fromParts("package", context.packageName, null)
+                                },
+                            )
+                        } else {
+                            mediaPermissionRequested = true
+                            mediaPermissionLauncher.launch(mediaPermissions.toTypedArray())
+                        }
+                    },
+                    onRefresh = { viewModel.refresh() },
+                    onNavigateToCleanup = onNavigateToCleanup,
+                    onUpgradeToPro = onUpgradeToPro,
+                    onNavigateToLearnArticle = onNavigateToLearnArticle,
+                    onNavigateToLearnTopic = onNavigateToLearnTopic,
+                    onEmptyTrash = { showTrashConfirmDialog = true },
+                    onDismissInfoCard = viewModel::dismissInfoCard,
+                    onPeriodChange = { viewModel.setHistoryPeriod(it) },
+                )
             }
         }
     }
@@ -335,6 +335,7 @@ private fun StorageContent(
     onNavigateToCleanup: (com.runcheck.ui.storage.cleanup.CleanupType) -> Unit = {},
     onUpgradeToPro: () -> Unit = {},
     onNavigateToLearnArticle: (articleId: String) -> Unit = {},
+    onNavigateToLearnTopic: () -> Unit = {},
     onEmptyTrash: () -> Unit = {},
     onDismissInfoCard: (String) -> Unit = {},
     onPeriodChange: (HistoryPeriod) -> Unit = {},
@@ -358,8 +359,7 @@ private fun StorageContent(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = MaterialTheme.spacing.base),
+                    .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
         ) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
@@ -387,7 +387,7 @@ private fun StorageContent(
 
             StorageFooterSection(
                 storage = storage,
-                onNavigateToLearnArticle = onNavigateToLearnArticle,
+                onNavigateToLearnTopic = onNavigateToLearnTopic,
                 onInfoClick = { activeInfoSheet = it },
             )
 
@@ -421,20 +421,47 @@ private fun StorageOverviewSection( // NOSONAR
         onInfoClick = onInfoClick,
     )
 
-    if (storage.usagePercent > 75f) {
-        InfoCard(
-            id = InfoCardCatalog.StorageFullSlowsPhone.id,
-            headline = stringResource(InfoCardCatalog.StorageFullSlowsPhone.headlineRes),
-            body = stringResource(InfoCardCatalog.StorageFullSlowsPhone.bodyRes),
+    val selectedBanner =
+        remember(
+            storage.usagePercent,
+            storage.mediaBreakdown,
+            hasAllMediaPermissions,
+            state.dismissedInfoCards,
+            state.showInfoCards,
+        ) {
+            selectDetailInfoBanner(
+                candidates =
+                    listOf(
+                        DetailInfoBannerCandidate(
+                            id = InfoCardCatalog.StorageFullSlowsPhone.id,
+                            severity = 3,
+                            catalogOrder = 0,
+                            eligible = storage.usagePercent > 75f,
+                        ),
+                        DetailInfoBannerCandidate(
+                            id = InfoCardCatalog.StorageOverview.id,
+                            severity = 0,
+                            catalogOrder = 1,
+                            eligible = hasAllMediaPermissions && storage.mediaBreakdown != null,
+                        ),
+                    ),
+                dismissedIds = state.dismissedInfoCards,
+                showInfoBanners = state.showInfoCards,
+            )
+        }?.let { candidate ->
+            InfoCardCatalog.all.first { definition -> definition.id == candidate.id }
+        }
+
+    selectedBanner?.let { definition ->
+        InfoBanner(
+            id = definition.id,
+            title = stringResource(definition.headlineRes),
+            message = stringResource(definition.bodyRes),
             onDismiss = onDismissInfoCard,
-            visible =
-                InfoCardCatalog.StorageFullSlowsPhone.id !in state.dismissedInfoCards && state.showInfoCards,
-            onLearnMore = {
-                InfoCardCatalog
-                    .resolveLearnArticleId(
-                        InfoCardCatalog.StorageFullSlowsPhone,
-                    )?.let(onNavigateToLearnArticle)
-            },
+            onLearnMore =
+                InfoCardCatalog.resolveLearnArticleId(definition)?.let { articleId ->
+                    { onNavigateToLearnArticle(articleId) }
+                },
         )
     }
 
@@ -450,22 +477,6 @@ private fun StorageOverviewSection( // NOSONAR
         storage.mediaBreakdown?.let { breakdown ->
             StorageMediaBreakdownCard(breakdown = breakdown, usedBytes = storage.usedBytes)
         }
-    }
-
-    if (hasAllMediaPermissions && storage.mediaBreakdown != null) {
-        InfoCard(
-            id = InfoCardCatalog.StorageOverview.id,
-            headline = stringResource(InfoCardCatalog.StorageOverview.headlineRes),
-            body = stringResource(InfoCardCatalog.StorageOverview.bodyRes),
-            onDismiss = onDismissInfoCard,
-            visible = InfoCardCatalog.StorageOverview.id !in state.dismissedInfoCards && state.showInfoCards,
-            onLearnMore = {
-                InfoCardCatalog
-                    .resolveLearnArticleId(
-                        InfoCardCatalog.StorageOverview,
-                    )?.let(onNavigateToLearnArticle)
-            },
-        )
     }
 }
 
@@ -506,7 +517,7 @@ private fun StorageToolsSection(
 @Composable
 private fun StorageFooterSection(
     storage: StorageState,
-    onNavigateToLearnArticle: (String) -> Unit,
+    onNavigateToLearnTopic: () -> Unit,
     onInfoClick: (String) -> Unit,
 ) {
     Column {
@@ -518,13 +529,9 @@ private fun StorageFooterSection(
 
         StorageQuickActionsCard()
 
-        RelatedArticlesSection(
-            articleIds =
-                listOf(
-                    LearnArticleIds.STORAGE_SLOWDOWN,
-                    LearnArticleIds.STORAGE_BREAKDOWN,
-                ),
-            onNavigateToArticle = onNavigateToLearnArticle,
+        LearnTopicLink(
+            label = stringResource(R.string.learn_topic_link_storage),
+            onClick = onNavigateToLearnTopic,
         )
     }
 }
@@ -738,6 +745,11 @@ private fun StorageHeroCard(
                         modifier = Modifier.weight(1f),
                     )
                 }
+                Text(
+                    text = stringResource(R.string.storage_cache_read_only_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

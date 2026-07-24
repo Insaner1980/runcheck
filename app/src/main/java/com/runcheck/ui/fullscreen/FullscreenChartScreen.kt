@@ -1,6 +1,5 @@
 package com.runcheck.ui.fullscreen
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -15,15 +14,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -55,7 +50,9 @@ import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.chart.sessionGraphMetricLabel
 import com.runcheck.ui.chart.sessionGraphWindowLabel
 import com.runcheck.ui.chart.signalQualityZones
+import com.runcheck.ui.components.ExpressiveSingleChoiceSelector
 import com.runcheck.ui.components.ProFeatureLockedState
+import com.runcheck.ui.components.RuncheckLoadingIndicator
 import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.components.TrendChartPresentation
 import com.runcheck.ui.theme.spacing
@@ -131,7 +128,9 @@ fun FullscreenChartScreen(
         when (val state = uiState) {
             is FullscreenChartUiState.Loading -> {
                 Box(contentModifier, contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    RuncheckLoadingIndicator(
+                        contentDescription = stringResource(R.string.a11y_loading),
+                    )
                 }
             }
 
@@ -257,25 +256,21 @@ private fun FullscreenChartControls(
     onMetricChange: (String) -> Unit,
     onPeriodChange: (String) -> Unit,
 ) {
-    Row(
-        modifier = Modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
+    Column(
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
     ) {
-        periodOptions.forEach { period ->
-            FilterChip(
-                selected = selectedPeriod == period,
-                onClick = { onPeriodChange(period) },
-                label = { Text(resolvePeriodLabel(source, period)) },
-            )
-        }
-        Spacer(modifier = Modifier.width(MaterialTheme.spacing.xs))
-        metricOptions.forEach { metric ->
-            FilterChip(
-                selected = selectedMetric == metric,
-                onClick = { onMetricChange(metric) },
-                label = { Text(resolveMetricLabel(source, metric)) },
-            )
-        }
+        ExpressiveSingleChoiceSelector(
+            options = periodOptions,
+            selected = selectedPeriod,
+            labelFor = { period -> resolvePeriodLabel(source, period) },
+            onSelect = onPeriodChange,
+        )
+        ExpressiveSingleChoiceSelector(
+            options = metricOptions,
+            selected = selectedMetric,
+            labelFor = { metric -> resolveMetricLabel(source, metric) },
+            onSelect = onMetricChange,
+        )
     }
 }
 

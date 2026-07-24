@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -77,25 +76,26 @@ import com.runcheck.ui.common.resolve
 import com.runcheck.ui.common.temperatureBandLabel
 import com.runcheck.ui.common.temperatureUnitRes
 import com.runcheck.ui.components.CardSectionTitle
-import com.runcheck.ui.components.ContentContainer
-import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.DetailInfoBannerCandidate
+import com.runcheck.ui.components.ExpressiveDetailScaffold
 import com.runcheck.ui.components.HeatStrip
+import com.runcheck.ui.components.InfoBanner
+import com.runcheck.ui.components.LearnTopicLink
 import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.PullToRefreshWrapper
+import com.runcheck.ui.components.RuncheckLoadingIndicator
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SegmentedStatusBar
 import com.runcheck.ui.components.StatusDot
 import com.runcheck.ui.components.StatusSegment
 import com.runcheck.ui.components.TrendChart
-import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
-import com.runcheck.ui.learn.LearnArticleIds
-import com.runcheck.ui.learn.RelatedArticlesSection
+import com.runcheck.ui.components.selectDetailInfoBanner
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
 import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
@@ -114,6 +114,7 @@ fun ThermalDetailScreen(
     onUpgradeToPro: () -> Unit,
     modifier: Modifier = Modifier,
     onNavigateToLearnArticle: (articleId: String) -> Unit = {},
+    onNavigateToLearnTopic: () -> Unit = {},
     viewModel: ThermalViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -124,52 +125,51 @@ fun ThermalDetailScreen(
         onStop = viewModel::stopObserving,
     )
 
-    Column(modifier = modifier.fillMaxSize()) {
-        DetailTopBar(
-            title = stringResource(R.string.thermal_title),
-            onBack = onBack,
-        )
-        ContentContainer {
-            when (val state = uiState) {
-                is ThermalUiState.Loading -> {
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .semantics {
-                                contentDescription = loadingDescription
-                                liveRegion =
-                                    LiveRegionMode.Polite
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
+    ExpressiveDetailScaffold(
+        title = stringResource(R.string.thermal_title),
+        onBack = onBack,
+        modifier = modifier,
+    ) {
+        when (val state = uiState) {
+            is ThermalUiState.Loading -> {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .semantics {
+                            contentDescription = loadingDescription
+                            liveRegion =
+                                LiveRegionMode.Polite
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    RuncheckLoadingIndicator(contentDescription = loadingDescription)
                 }
+            }
 
-                is ThermalUiState.Error -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                        ) {
-                            Text(state.message.resolve())
-                            TextButton(onClick = { viewModel.refresh() }) {
-                                Text(stringResource(R.string.common_retry))
-                            }
+            is ThermalUiState.Error -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    ) {
+                        Text(state.message.resolve())
+                        TextButton(onClick = { viewModel.refresh() }) {
+                            Text(stringResource(R.string.common_retry))
                         }
                     }
                 }
+            }
 
-                is ThermalUiState.Success -> {
-                    ThermalContent(
-                        state = state,
-                        onRefresh = { viewModel.refresh() },
-                        onUpgradeToPro = onUpgradeToPro,
-                        onNavigateToLearnArticle = onNavigateToLearnArticle,
-                        onDismissInfoCard = { viewModel.dismissInfoCard(it) },
-                        onPeriodChange = { viewModel.setHistoryPeriod(it) },
-                    )
-                }
+            is ThermalUiState.Success -> {
+                ThermalContent(
+                    state = state,
+                    onRefresh = { viewModel.refresh() },
+                    onUpgradeToPro = onUpgradeToPro,
+                    onNavigateToLearnArticle = onNavigateToLearnArticle,
+                    onNavigateToLearnTopic = onNavigateToLearnTopic,
+                    onDismissInfoCard = viewModel::dismissInfoCard,
+                    onPeriodChange = { viewModel.setHistoryPeriod(it) },
+                )
             }
         }
     }
@@ -181,6 +181,7 @@ private fun ThermalContent(
     onRefresh: () -> Unit,
     onUpgradeToPro: () -> Unit,
     onNavigateToLearnArticle: (articleId: String) -> Unit,
+    onNavigateToLearnTopic: () -> Unit,
     onDismissInfoCard: (String) -> Unit,
     onPeriodChange: (HistoryPeriod) -> Unit,
 ) {
@@ -203,7 +204,7 @@ private fun ThermalContent(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(horizontal = MaterialTheme.spacing.base),
+                    .padding(bottom = MaterialTheme.spacing.xs),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
         ) {
             item { Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm)) }
@@ -224,14 +225,9 @@ private fun ThermalContent(
             throttlingSection(state = state, onUpgradeToPro = onUpgradeToPro)
 
             item {
-                RelatedArticlesSection(
-                    articleIds =
-                        listOf(
-                            LearnArticleIds.THERMAL_NORMAL_TEMPS,
-                            LearnArticleIds.THERMAL_THROTTLING,
-                            LearnArticleIds.THERMAL_FEEDBACK,
-                        ),
-                    onNavigateToArticle = onNavigateToLearnArticle,
+                LearnTopicLink(
+                    label = stringResource(R.string.learn_topic_link_thermal),
+                    onClick = onNavigateToLearnTopic,
                 )
             }
 
@@ -293,42 +289,40 @@ private fun LazyListScope.thermalInfoCards(
     onDismissInfoCard: (String) -> Unit,
     onNavigateToLearnArticle: (String) -> Unit,
 ) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        item {
-            InfoCard(
-                id = InfoCardCatalog.ThermalThrottlingExplainer.id,
-                headline = stringResource(InfoCardCatalog.ThermalThrottlingExplainer.headlineRes),
-                body = stringResource(InfoCardCatalog.ThermalThrottlingExplainer.bodyRes),
-                onDismiss = onDismissInfoCard,
-                visible =
-                    InfoCardCatalog.ThermalThrottlingExplainer.id !in state.dismissedInfoCards &&
-                        state.showInfoCards,
-                onLearnMore = {
-                    InfoCardCatalog
-                        .resolveLearnArticleId(
-                            InfoCardCatalog.ThermalThrottlingExplainer,
-                        )?.let(onNavigateToLearnArticle)
-                },
-            )
+    val selectedBanner =
+        selectDetailInfoBanner(
+            candidates =
+                listOf(
+                    DetailInfoBannerCandidate(
+                        id = InfoCardCatalog.ThermalHeatBatteryLoop.id,
+                        severity = 3,
+                        catalogOrder = 1,
+                        eligible = thermal.batteryTempC > 35f,
+                    ),
+                    DetailInfoBannerCandidate(
+                        id = InfoCardCatalog.ThermalThrottlingExplainer.id,
+                        severity = 0,
+                        catalogOrder = 0,
+                        eligible = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q,
+                    ),
+                ),
+            dismissedIds = state.dismissedInfoCards,
+            showInfoBanners = state.showInfoCards,
+        )?.let { candidate ->
+            InfoCardCatalog.all.first { definition -> definition.id == candidate.id }
         }
-    }
 
-    if (thermal.batteryTempC > 35f) {
-        item {
-            InfoCard(
-                id = InfoCardCatalog.ThermalHeatBatteryLoop.id,
-                headline = stringResource(InfoCardCatalog.ThermalHeatBatteryLoop.headlineRes),
-                body = stringResource(InfoCardCatalog.ThermalHeatBatteryLoop.bodyRes),
+    selectedBanner?.let { definition ->
+        item(key = "thermal_info_${definition.id}") {
+            InfoBanner(
+                id = definition.id,
+                title = stringResource(definition.headlineRes),
+                message = stringResource(definition.bodyRes),
                 onDismiss = onDismissInfoCard,
-                visible =
-                    InfoCardCatalog.ThermalHeatBatteryLoop.id !in state.dismissedInfoCards &&
-                        state.showInfoCards,
-                onLearnMore = {
-                    InfoCardCatalog
-                        .resolveLearnArticleId(
-                            InfoCardCatalog.ThermalHeatBatteryLoop,
-                        )?.let(onNavigateToLearnArticle)
-                },
+                onLearnMore =
+                    InfoCardCatalog.resolveLearnArticleId(definition)?.let { articleId ->
+                        { onNavigateToLearnArticle(articleId) }
+                    },
             )
         }
     }

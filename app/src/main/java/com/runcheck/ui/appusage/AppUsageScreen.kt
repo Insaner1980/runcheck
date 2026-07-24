@@ -28,7 +28,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Android
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -40,6 +39,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,10 +64,13 @@ import com.runcheck.domain.model.AppBatteryUsage
 import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.AppDisplayName
-import com.runcheck.ui.components.ContentContainer
-import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.ExpressiveDetailScaffold
+import com.runcheck.ui.components.ExpressiveEmptyState
+import com.runcheck.ui.components.ExpressiveSingleChoiceSelector
 import com.runcheck.ui.components.IconCircle
 import com.runcheck.ui.components.ProFeatureLockedState
+import com.runcheck.ui.components.RuncheckLoadingIndicator
+import com.runcheck.ui.components.resolveAppDisplayName
 import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
@@ -91,58 +94,63 @@ fun AppUsageScreen(
         onStop = viewModel::stopObserving,
     )
 
-    Column(modifier = modifier.fillMaxSize()) {
-        DetailTopBar(
-            title = stringResource(R.string.app_usage_title),
-            onBack = onBack,
-        )
-        ContentContainer {
-            when (val state = uiState) {
-                is AppUsageUiState.Loading -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                }
-
-                is AppUsageUiState.Error -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(state.message.resolve())
-                            TextButton(onClick = { viewModel.refresh() }) {
-                                Text(stringResource(R.string.common_retry))
-                            }
-                        }
-                    }
-                }
-
-                is AppUsageUiState.Success -> {
-                    val appItems = viewModel.pagedApps.collectAsLazyPagingItems()
-                    AppUsageContent(
-                        state = state,
-                        appItems = appItems,
-                        onRefresh = { viewModel.refresh() },
-                    )
-                }
-
-                AppUsageUiState.Locked -> {
-                    val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
-                    LaunchedEffect(Unit) {
-                        currentOnUpgradeToPro()
-                    }
-                    ProFeatureLockedState(
-                        title = stringResource(R.string.app_usage_title),
-                        message =
-                            stringResource(
-                                R.string.pro_feature_locked_message,
-                                stringResource(R.string.app_usage_title),
-                            ),
-                        actionLabel = stringResource(R.string.pro_feature_upgrade_action),
-                        onAction = onUpgradeToPro,
+    ExpressiveDetailScaffold(
+        title = stringResource(R.string.app_usage_title),
+        onBack = onBack,
+        modifier = modifier,
+    ) {
+        when (val state = uiState) {
+            is AppUsageUiState.Loading -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    RuncheckLoadingIndicator(
+                        contentDescription = stringResource(R.string.a11y_loading),
                     )
                 }
             }
+
+            is AppUsageUiState.Error -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(state.message.resolve())
+                        TextButton(onClick = { viewModel.refresh() }) {
+                            Text(stringResource(R.string.common_retry))
+                        }
+                    }
+                }
+            }
+
+            is AppUsageUiState.Success -> {
+                val appItems = viewModel.pagedApps.collectAsLazyPagingItems()
+                AppUsageContent(
+                    state = state,
+                    appItems = appItems,
+                    onRefresh = { viewModel.refresh() },
+                )
+            }
+
+            AppUsageUiState.Locked -> {
+                val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
+                LaunchedEffect(Unit) {
+                    currentOnUpgradeToPro()
+                }
+                ProFeatureLockedState(
+                    title = stringResource(R.string.app_usage_title),
+                    message =
+                        stringResource(
+                            R.string.pro_feature_locked_message,
+                            stringResource(R.string.app_usage_title),
+                        ),
+                    actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+                    onAction = onUpgradeToPro,
+                )
+            }
         }
     }
+}
+
+private enum class AppUsageMode {
+    USAGE,
+    NOT_USED,
 }
 
 @Composable
@@ -154,6 +162,7 @@ private fun AppUsageContent(
     val context = LocalContext.current
     val currentOnRefresh by rememberUpdatedState(onRefresh)
     var hasUsageAccess by remember(context) { mutableStateOf(context.hasUsageStatsAccess()) }
+    var selectedMode by rememberSaveable { mutableStateOf(AppUsageMode.USAGE) }
     val maxTime = state.maxForegroundTimeMs.coerceAtLeast(1L)
     val totalTime = state.totalForegroundTimeMs.coerceAtLeast(1L)
 
@@ -168,17 +177,37 @@ private fun AppUsageContent(
     }
 
     LazyColumn(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(horizontal = MaterialTheme.spacing.base),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
         item {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            ExpressiveSingleChoiceSelector(
+                options = AppUsageMode.entries,
+                selected = selectedMode,
+                labelFor = { mode ->
+                    stringResource(
+                        if (mode == AppUsageMode.USAGE) {
+                            R.string.app_usage_mode_usage
+                        } else {
+                            R.string.app_usage_mode_not_used
+                        },
+                    )
+                },
+                onSelect = { selectedMode = it },
+            )
         }
 
         when {
+            selectedMode == AppUsageMode.NOT_USED -> {
+                item {
+                    ExpressiveEmptyState(
+                        title = stringResource(R.string.app_usage_mode_not_used),
+                        message = stringResource(R.string.app_usage_unused_placeholder),
+                    )
+                }
+            }
+
             !hasUsageAccess -> {
                 item {
                     Card(
@@ -237,7 +266,9 @@ private fun AppUsageContent(
                                 .padding(vertical = MaterialTheme.spacing.lg),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator()
+                        RuncheckLoadingIndicator(
+                            contentDescription = stringResource(R.string.a11y_loading),
+                        )
                     }
                 }
             }
@@ -339,10 +370,16 @@ private fun AppUsageItem(
     val percentOfTotal =
         ((app.foregroundTimeMs.toFloat() / totalTime.toFloat()) * 100f)
             .coerceIn(0f, 100f)
+    val displayName =
+        resolveAppDisplayName(
+            appLabel = app.appLabel,
+            packageName = app.packageName,
+            unknownAppLabel = stringResource(R.string.app_unknown_name),
+        )
     val progressDescription =
         stringResource(
             R.string.a11y_progress_percent,
-            app.appLabel,
+            displayName,
             (progress * 100).roundToInt(),
         )
 
@@ -378,6 +415,12 @@ private fun AppUsageItem(
                             appLabel = app.appLabel,
                             packageName = app.packageName,
                             style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            text = app.packageName,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
                         )
                         Text(
                             text =

@@ -1171,10 +1171,10 @@
     <string name="home_learn">Learn</string>
     <string name="learn_screen_title">Learn</string>
     <string name="learn_topic_battery">Battery</string>
-    <string name="learn_topic_temperature">Temperature</string>
+    <string name="learn_topic_thermal">Thermal</string>
     <string name="learn_topic_network">Network</string>
     <string name="learn_topic_storage">Storage</string>
-    <string name="learn_topic_general">General</string>
+    <string name="learn_topic_privacy">Privacy</string>
     <string name="learn_read_time">%1$d min read</string>
     <string name="learn_cross_link_check">Check yours</string>
     <string name="learn_article_not_found">Article not found</string>
@@ -1247,4 +1247,15 @@
 
     <!-- Settings - monitoring help link -->
     <string name="settings_monitoring_help">Monitoring not working?</string>
+    <string name="learn_topic_link_battery">Explore battery guides</string>
+    <string name="learn_topic_link_network">Explore network guides</string>
+    <string name="learn_topic_link_thermal">Explore thermal guides</string>
+    <string name="learn_topic_link_storage">Explore storage guides</string>
+    <string name="storage_cache_read_only_note">runcheck can measure cache storage as read-only data. It cannot clear other apps’ caches.</string>
+    <string name="speed_test_stop">Stop speed test</string>
+    <string name="app_usage_mode_usage">Usage</string>
+    <string name="app_usage_mode_not_used">Not used</string>
+    <string name="app_usage_unused_placeholder">Unused-app analysis is not available on this screen yet.</string>
+    <string name="export_screen_message">Create CSV files for your runcheck measurements and share them with another app.</string>
+    <string name="export_action">Create and share export</string>
 </resources>

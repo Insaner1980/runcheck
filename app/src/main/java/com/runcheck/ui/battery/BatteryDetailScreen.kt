@@ -24,7 +24,6 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -100,27 +99,28 @@ import com.runcheck.ui.common.temperatureBandLabel
 import com.runcheck.ui.components.AreaChart
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.ConfidenceBadge
-import com.runcheck.ui.components.ContentContainer
-import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.DetailInfoBannerCandidate
+import com.runcheck.ui.components.ExpressiveDetailScaffold
+import com.runcheck.ui.components.InfoBanner
+import com.runcheck.ui.components.LearnTopicLink
 import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.components.ProBadgePill
 import com.runcheck.ui.components.ProgressRing
 import com.runcheck.ui.components.PullToRefreshWrapper
+import com.runcheck.ui.components.RuncheckLoadingIndicator
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.TrendChart
-import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
+import com.runcheck.ui.components.selectDetailInfoBanner
 import com.runcheck.ui.fullscreen.FullscreenChartSeedStore
 import com.runcheck.ui.fullscreen.FullscreenChartUiState
 import com.runcheck.ui.fullscreen.sanitizeFullscreenMetric
 import com.runcheck.ui.fullscreen.sanitizeFullscreenPeriod
-import com.runcheck.ui.learn.LearnArticleIds
-import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.heroCardColor
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
@@ -144,6 +144,7 @@ fun BatteryDetailScreen(
     modifier: Modifier = Modifier,
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit = { _, _, _ -> },
     onNavigateToLearnArticle: (articleId: String) -> Unit = {},
+    onNavigateToLearnTopic: () -> Unit = {},
     fullscreenResultSource: String? = null,
     fullscreenResultMetric: String? = null,
     fullscreenResultPeriod: String? = null,
@@ -158,58 +159,57 @@ fun BatteryDetailScreen(
         onStop = viewModel::stopObserving,
     )
 
-    Column(modifier = modifier.fillMaxSize()) {
-        DetailTopBar(
-            title = "",
-            onBack = onBack,
-        )
-        ContentContainer {
-            when (val state = uiState) {
-                is BatteryUiState.Loading -> {
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .semantics {
-                                contentDescription = loadingDescription
-                                liveRegion =
-                                    LiveRegionMode.Polite
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
+    ExpressiveDetailScaffold(
+        title = stringResource(R.string.battery_title),
+        onBack = onBack,
+        modifier = modifier,
+    ) {
+        when (val state = uiState) {
+            is BatteryUiState.Loading -> {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .semantics {
+                            contentDescription = loadingDescription
+                            liveRegion =
+                                LiveRegionMode.Polite
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    RuncheckLoadingIndicator(contentDescription = loadingDescription)
                 }
+            }
 
-                is BatteryUiState.Error -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                        ) {
-                            Text(state.message.resolve())
-                            TextButton(onClick = { viewModel.refresh() }) {
-                                Text(stringResource(R.string.common_retry))
-                            }
+            is BatteryUiState.Error -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    ) {
+                        Text(state.message.resolve())
+                        TextButton(onClick = { viewModel.refresh() }) {
+                            Text(stringResource(R.string.common_retry))
                         }
                     }
                 }
+            }
 
-                is BatteryUiState.Success -> {
-                    BatteryContent(
-                        state = state,
-                        onRefresh = { viewModel.refresh() },
-                        onPeriodChange = { viewModel.setHistoryPeriod(it) },
-                        onNavigateToCharger = onNavigateToCharger,
-                        onUpgradeToPro = onUpgradeToPro,
-                        onNavigateToFullscreen = onNavigateToFullscreen,
-                        onNavigateToLearnArticle = onNavigateToLearnArticle,
-                        onDismissInfoCard = { viewModel.dismissInfoCard(it) },
-                        fullscreenResultSource = fullscreenResultSource,
-                        fullscreenResultMetric = fullscreenResultMetric,
-                        fullscreenResultPeriod = fullscreenResultPeriod,
-                        onConsumeFullscreenResult = onConsumeFullscreenResult,
-                    )
-                }
+            is BatteryUiState.Success -> {
+                BatteryContent(
+                    state = state,
+                    onRefresh = { viewModel.refresh() },
+                    onPeriodChange = { viewModel.setHistoryPeriod(it) },
+                    onNavigateToCharger = onNavigateToCharger,
+                    onUpgradeToPro = onUpgradeToPro,
+                    onNavigateToFullscreen = onNavigateToFullscreen,
+                    onNavigateToLearnArticle = onNavigateToLearnArticle,
+                    onNavigateToLearnTopic = onNavigateToLearnTopic,
+                    onDismissInfoCard = viewModel::dismissInfoCard,
+                    fullscreenResultSource = fullscreenResultSource,
+                    fullscreenResultMetric = fullscreenResultMetric,
+                    fullscreenResultPeriod = fullscreenResultPeriod,
+                    onConsumeFullscreenResult = onConsumeFullscreenResult,
+                )
             }
         }
     }
@@ -224,6 +224,7 @@ private fun BatteryContent(
     onUpgradeToPro: () -> Unit,
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
     onNavigateToLearnArticle: (articleId: String) -> Unit,
+    onNavigateToLearnTopic: () -> Unit,
     onDismissInfoCard: (String) -> Unit,
     fullscreenResultSource: String? = null,
     fullscreenResultMetric: String? = null,
@@ -317,7 +318,7 @@ private fun BatteryContent(
                 Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = MaterialTheme.spacing.base),
+                    .padding(bottom = MaterialTheme.spacing.xs),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
         ) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
@@ -339,8 +340,6 @@ private fun BatteryContent(
                 selectedSessionWindow = sessionWindow,
                 onSessionWindowChange = { selectedSessionWindowState.value = it },
                 onNavigateToFullscreen = onNavigateToFullscreen,
-                onDismissInfoCard = onDismissInfoCard,
-                onNavigateToLearnArticle = onNavigateToLearnArticle,
                 onInfoClick = { activeInfoSheetState.value = it },
             )
 
@@ -352,7 +351,7 @@ private fun BatteryContent(
                 onUpgradeToPro = onUpgradeToPro,
                 onNavigateToFullscreen = onNavigateToFullscreen,
                 onNavigateToCharger = onNavigateToCharger,
-                onNavigateToLearnArticle = onNavigateToLearnArticle,
+                onNavigateToLearnTopic = onNavigateToLearnTopic,
                 onInfoClick = { activeInfoSheetState.value = it },
             )
 
@@ -376,6 +375,54 @@ private fun BatteryOverviewSection( // NOSONAR
     onNavigateToLearnArticle: (String) -> Unit,
     onInfoClick: (String) -> Unit,
 ) {
+    val selectedBanner =
+        remember(
+            battery.healthPercent,
+            battery.chargingStatus,
+            state.screenUsage?.screenOffDrainRate,
+            state.dismissedInfoCards,
+            state.showInfoCards,
+        ) {
+            selectDetailInfoBanner(
+                candidates =
+                    listOf(
+                        DetailInfoBannerCandidate(
+                            id = InfoCardCatalog.BatteryDiesBeforeZero.id,
+                            severity = 4,
+                            catalogOrder = 1,
+                            eligible = battery.healthPercent?.let { it < 80 } == true,
+                        ),
+                        DetailInfoBannerCandidate(
+                            id = InfoCardCatalog.BatteryScreenOffDrain.id,
+                            severity = 4,
+                            catalogOrder = 3,
+                            eligible = state.screenUsage?.screenOffDrainRate?.let { it > 2f } == true,
+                        ),
+                        DetailInfoBannerCandidate(
+                            id = InfoCardCatalog.BatteryHealthDegraded.id,
+                            severity = 3,
+                            catalogOrder = 0,
+                            eligible = battery.healthPercent?.let { it < 90 } == true,
+                        ),
+                        DetailInfoBannerCandidate(
+                            id = InfoCardCatalog.BatteryChargingHabits.id,
+                            severity = 1,
+                            catalogOrder = 2,
+                            eligible = battery.chargingStatus == ChargingStatus.CHARGING,
+                        ),
+                        DetailInfoBannerCandidate(
+                            id = InfoCardCatalog.BatteryLiveNotification.id,
+                            severity = 0,
+                            catalogOrder = 4,
+                        ),
+                    ),
+                dismissedIds = state.dismissedInfoCards,
+                showInfoBanners = state.showInfoCards,
+            )
+        }?.let { candidate ->
+            InfoCardCatalog.all.first { definition -> definition.id == candidate.id }
+        }
+
     Column {
         BatteryHeroSection(
             battery = battery,
@@ -383,47 +430,16 @@ private fun BatteryOverviewSection( // NOSONAR
             onInfoClick = onInfoClick,
         )
 
-        InfoCard(
-            id = InfoCardCatalog.BatteryLiveNotification.id,
-            headline = stringResource(InfoCardCatalog.BatteryLiveNotification.headlineRes),
-            body = stringResource(InfoCardCatalog.BatteryLiveNotification.bodyRes),
-            onDismiss = onDismissInfoCard,
-            visible =
-                InfoCardCatalog.BatteryLiveNotification.id !in state.dismissedInfoCards &&
-                    state.showInfoCards,
-        )
-
-        if (battery.healthPercent != null && battery.healthPercent < 90) {
-            InfoCard(
-                id = InfoCardCatalog.BatteryHealthDegraded.id,
-                headline = stringResource(InfoCardCatalog.BatteryHealthDegraded.headlineRes),
-                body = stringResource(InfoCardCatalog.BatteryHealthDegraded.bodyRes),
+        selectedBanner?.let { definition ->
+            InfoBanner(
+                id = definition.id,
+                title = stringResource(definition.headlineRes),
+                message = stringResource(definition.bodyRes),
                 onDismiss = onDismissInfoCard,
-                visible =
-                    InfoCardCatalog.BatteryHealthDegraded.id !in state.dismissedInfoCards && state.showInfoCards,
-                onLearnMore = {
-                    InfoCardCatalog
-                        .resolveLearnArticleId(
-                            InfoCardCatalog.BatteryHealthDegraded,
-                        )?.let(onNavigateToLearnArticle)
-                },
-            )
-        }
-
-        if (battery.healthPercent != null && battery.healthPercent < 80) {
-            InfoCard(
-                id = InfoCardCatalog.BatteryDiesBeforeZero.id,
-                headline = stringResource(InfoCardCatalog.BatteryDiesBeforeZero.headlineRes),
-                body = stringResource(InfoCardCatalog.BatteryDiesBeforeZero.bodyRes),
-                onDismiss = onDismissInfoCard,
-                visible =
-                    InfoCardCatalog.BatteryDiesBeforeZero.id !in state.dismissedInfoCards && state.showInfoCards,
-                onLearnMore = {
-                    InfoCardCatalog
-                        .resolveLearnArticleId(
-                            InfoCardCatalog.BatteryDiesBeforeZero,
-                        )?.let(onNavigateToLearnArticle)
-                },
+                onLearnMore =
+                    InfoCardCatalog.resolveLearnArticleId(definition)?.let { articleId ->
+                        { onNavigateToLearnArticle(articleId) }
+                    },
             )
         }
 
@@ -585,8 +601,6 @@ private fun BatteryChargingSection( // NOSONAR
     selectedSessionWindow: SessionGraphWindow,
     onSessionWindowChange: (SessionGraphWindow) -> Unit,
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
-    onDismissInfoCard: (String) -> Unit,
-    onNavigateToLearnArticle: (String) -> Unit,
     onInfoClick: (String) -> Unit,
 ) {
     BatteryPanel {
@@ -744,23 +758,6 @@ private fun BatteryChargingSection( // NOSONAR
         }
     }
 
-    if (battery.chargingStatus == ChargingStatus.CHARGING) {
-        InfoCard(
-            id = InfoCardCatalog.BatteryChargingHabits.id,
-            headline = stringResource(InfoCardCatalog.BatteryChargingHabits.headlineRes),
-            body = stringResource(InfoCardCatalog.BatteryChargingHabits.bodyRes),
-            onDismiss = onDismissInfoCard,
-            visible =
-                InfoCardCatalog.BatteryChargingHabits.id !in state.dismissedInfoCards && state.showInfoCards,
-            onLearnMore = {
-                InfoCardCatalog
-                    .resolveLearnArticleId(
-                        InfoCardCatalog.BatteryChargingHabits,
-                    )?.let(onNavigateToLearnArticle)
-            },
-        )
-    }
-
     chargingSessionSummary?.let { summary ->
         if (
             shouldShowRemainingChargePanel(
@@ -793,25 +790,6 @@ private fun BatteryChargingSection( // NOSONAR
         )
     }
 
-    if (state.screenUsage?.screenOffDrainRate != null &&
-        state.screenUsage.screenOffDrainRate > 2f
-    ) {
-        InfoCard(
-            id = InfoCardCatalog.BatteryScreenOffDrain.id,
-            headline = stringResource(InfoCardCatalog.BatteryScreenOffDrain.headlineRes),
-            body = stringResource(InfoCardCatalog.BatteryScreenOffDrain.bodyRes),
-            onDismiss = onDismissInfoCard,
-            visible =
-                InfoCardCatalog.BatteryScreenOffDrain.id !in state.dismissedInfoCards && state.showInfoCards,
-            onLearnMore = {
-                InfoCardCatalog
-                    .resolveLearnArticleId(
-                        InfoCardCatalog.BatteryScreenOffDrain,
-                    )?.let(onNavigateToLearnArticle)
-            },
-        )
-    }
-
     state.sleepAnalysis?.let { sleep ->
         BatterySleepAnalysisPanel(
             sleep = sleep,
@@ -830,7 +808,7 @@ private fun BatteryFooterSection( // NOSONAR
     onUpgradeToPro: () -> Unit,
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
     onNavigateToCharger: () -> Unit,
-    onNavigateToLearnArticle: (String) -> Unit,
+    onNavigateToLearnTopic: () -> Unit,
     onInfoClick: (String) -> Unit,
 ) {
     Column {
@@ -873,15 +851,9 @@ private fun BatteryFooterSection( // NOSONAR
             )
         }
 
-        RelatedArticlesSection(
-            articleIds =
-                listOf(
-                    LearnArticleIds.BATTERY_HEALTH,
-                    LearnArticleIds.BATTERY_DRAIN,
-                    LearnArticleIds.BATTERY_CHARGING,
-                    LearnArticleIds.BATTERY_CURRENT_POWER,
-                ),
-            onNavigateToArticle = onNavigateToLearnArticle,
+        LearnTopicLink(
+            label = stringResource(R.string.learn_topic_link_battery),
+            onClick = onNavigateToLearnTopic,
         )
     }
 }

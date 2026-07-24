@@ -448,10 +448,10 @@ Fullscreen chart route:
 
 Common detail pattern:
 
-- Root `Column(fillMaxSize())`.
-- `DetailTopBar`.
+- `ExpressiveDetailScaffold(fillMaxSize())`.
+- Collapsible `LargeFlexibleTopAppBar`.
 - `ContentContainer`.
-- Inner scroll content uses horizontal 16dp padding.
+- The scaffold owns horizontal 16dp content padding.
 - Vertical item spacing usually 12dp.
 - Top spacer usually 8dp.
 - Bottom spacer usually 32dp.
@@ -465,7 +465,8 @@ Screen-specific scroll containers:
 - Thermal: `PullToRefreshWrapper` plus `LazyColumn`.
 - Settings: vertical scroll column.
 - Learn and App Usage: `LazyColumn`.
-- Cleanup and Charger: `Scaffold` plus `LazyColumn`.
+- Cleanup: `Scaffold` plus `LazyColumn`.
+- Charger: expressive detail scaffold plus `LazyColumn`.
 
 ---
 
@@ -779,14 +780,13 @@ Used on Home grid metrics.
 - Message: `bodyMedium`.
 - Action: `OutlinedButton` with 1dp primary border.
 
-### 7.22 Filter Chip Rows
+### 7.22 Connected Selection Rows
 
 `EnumFilterChipRow`:
 
-- Row fills width.
-- Horizontal scroll.
-- Gap: 8dp.
-- Uses Material 3 `FilterChip`.
+- Delegates to `ExpressiveSingleChoiceSelector`.
+- Uses an equal-width Material 3 `SingleChoiceSegmentedButtonRow`.
+- Long labels are single-line and ellipsized.
 
 `HistoryPeriodFilterChipRow`:
 
@@ -795,21 +795,20 @@ Used on Home grid metrics.
 
 Fullscreen chart controls:
 
-- Horizontal scroll row.
+- Two full-width connected selector rows.
+- Period selector first, metric selector second.
 - Gap: 4dp.
-- Period chips first.
-- 4dp spacer.
-- Metric chips second.
 
 ### 7.23 Expressive Wrappers
 
 `ExpressiveComponents.kt` keeps reusable Material 3 Expressive surfaces behind
 one component boundary:
 
-- `ExpressiveDetailScaffold` combines the shared detail top bar, constrained
-  content, and 16dp horizontal content padding. Task 4 uses it for the interim
-  Weekly Report and Export entries plus the protected Cleanup loading/locked
-  path; the complete detail-screen migration remains the Task 5 boundary.
+- `ExpressiveDetailScaffold` combines a collapsible
+  `LargeFlexibleTopAppBar`, constrained content, and 16dp horizontal content
+  padding. It is the implemented shell for Battery, Network, Thermal, Storage,
+  Speed Test, Charger Comparison, App Usage, Learn, Export, and Pro Upgrade,
+  plus protected tool entry states.
 - `ExpressiveSingleChoiceSelector<T>` renders equal-width single-choice
   segmented options and is used by Insights filters and the Settings theme
   selector.
@@ -1109,9 +1108,10 @@ Home insights card:
 
 Structure:
 
+- `ExpressiveDetailScaffold` with collapsible large top app bar.
 - `PullToRefreshWrapper`.
 - Scroll column.
-- Horizontal padding: 16dp.
+- Horizontal padding: 16dp, owned by the scaffold.
 - Vertical item gap: 12dp.
 - Top spacer: 8dp.
 - Bottom spacer: 32dp.
@@ -1148,7 +1148,7 @@ Battery history panel:
 - Uses `BatteryPanel`.
 - Contains card title, metric chips, period chips, load error if present,
   chart, and stats.
-- Chip rows use `EnumFilterChipRow`.
+- Selection rows use connected `EnumFilterChipRow`.
 - Chart label: `labelLarge`, primary.
 - `TrendChart` uses embedded presentation with grid and battery quality zones.
 - Expanded fullscreen action is available for history chart.
@@ -1177,14 +1177,19 @@ Other battery panels:
   and statistics sections use the same `BatteryPanel` card grammar.
 - Dividers use outlineVariant alpha 0.35.
 - Live charts are used when enough session points exist.
+- At most one eligible information banner is shown. Selection is deterministic:
+  severity first, then catalog order; dismissed banners and the global tips
+  preference are respected.
+- The footer links to the prefiltered Battery topic in Learn.
 
 ### 9.3 Network Detail
 
 Structure:
 
+- `ExpressiveDetailScaffold` with collapsible large top app bar.
 - `PullToRefreshWrapper`.
 - Scroll column.
-- Horizontal padding: 16dp.
+- Horizontal padding: 16dp, owned by the scaffold.
 - Vertical item gap: 12dp.
 - Top spacer: 8dp.
 - Bottom spacer: 32dp.
@@ -1243,7 +1248,10 @@ Network tools:
 
 - Pro signal history is shown when Pro is active.
 - Otherwise `ProFeatureCalloutCard` is shown.
-- Speed test summary and related articles appear in the tools area.
+- Speed test summary and one prefiltered Network Learn topic link appear in the
+  tools area.
+- At most one eligible information banner is shown using the shared
+  severity-then-catalog-order policy.
 
 WiFi name help:
 
@@ -1253,8 +1261,9 @@ WiFi name help:
 
 Structure:
 
+- `ExpressiveDetailScaffold` with collapsible large top app bar.
 - Scroll column.
-- Horizontal padding: 16dp.
+- Horizontal padding: 16dp, owned by the scaffold.
 - Vertical gap: 12dp.
 - Center horizontal alignment.
 - Top spacer: 8dp.
@@ -1305,6 +1314,9 @@ Speed test hero:
   - Unit: `labelMedium`.
   - Progress/status label under value.
 - Semantics role: button.
+- While a test is running, the action surface morphs toward a rounded rectangle,
+  exposes "Stop speed test", and calls `NetworkViewModel.stopSpeedTest()`.
+- Loading uses `RuncheckLoadingIndicator`.
 
 Speed metrics card:
 
@@ -1343,9 +1355,10 @@ History item:
 
 Structure:
 
+- `ExpressiveDetailScaffold` with collapsible large top app bar.
 - `PullToRefreshWrapper`.
 - `LazyColumn`.
-- Horizontal padding: 16dp.
+- Horizontal padding: 16dp, owned by the scaffold.
 - Vertical gap: 12dp.
 - Top spacer: 8dp.
 - Bottom spacer: 32dp.
@@ -1399,14 +1412,18 @@ Throttling section:
 - Event item card uses 16dp padding and 4dp vertical gap.
 - Event detail row gap: 8dp.
 - Pro-locked thermal logs use `ProFeatureCalloutCard`.
+- At most one eligible information banner is shown using the shared
+  severity-then-catalog-order policy.
+- The footer links to the prefiltered Thermal topic in Learn.
 
 ### 9.6 Storage Detail
 
 Structure:
 
+- `ExpressiveDetailScaffold` with collapsible large top app bar.
 - `PullToRefreshWrapper`.
 - Scroll column.
-- Horizontal padding: 16dp.
+- Horizontal padding: 16dp, owned by the scaffold.
 - Vertical gap: 12dp.
 - Top spacer: 8dp.
 - Bottom spacer: 32dp.
@@ -1446,6 +1463,8 @@ Storage hero:
 - Free/fill detail: `bodySmall`.
 - Optional usage `LiveChart` after 16dp.
 - Metrics row gap: 16dp.
+- Cache storage is explicitly described as a read-only measurement: runcheck can
+  measure it but cannot clear other apps' caches.
 
 Media breakdown:
 
@@ -1484,6 +1503,9 @@ Storage details and quick actions:
 - Dividers separate rows except the final row.
 - Quick action card uses `ListRow`s with dividers.
 - Removable-storage card uses the same panel grammar when present and shows `Unknown` when a detected volume's capacity cannot be read.
+- At most one eligible information banner is shown using the shared
+  severity-then-catalog-order policy.
+- The footer links to the prefiltered Storage topic in Learn.
 
 ### 9.7 Cleanup Screens
 
@@ -1495,13 +1517,12 @@ Structure:
 - Body horizontal padding: 16dp.
 - Optional filter chip row:
   - Top spacer 8dp.
-  - Horizontal scroll.
-  - Gap 8dp.
+  - Full-width connected single-choice selector.
   - Bottom spacer 8dp.
 
 Loading/scanning/deleting:
 
-- Centered `CircularProgressIndicator`.
+- Centered `RuncheckLoadingIndicator`.
 - Live region semantics for scanning/deleting.
 
 Unsupported state:
@@ -1583,6 +1604,7 @@ Cleanup bottom bar:
   - Height 4dp.
   - Fill: healthy status color.
 - Bar/button gap: 8dp.
+- The action is hosted by `HorizontalFloatingToolbar`.
 - Delete button:
   - Full width.
   - Primary container and on-primary content.
@@ -1611,11 +1633,10 @@ Cleanup success overlay:
 
 Structure:
 
-- `DetailTopBar`.
-- `ContentContainer`.
+- `ExpressiveDetailScaffold`.
 - Loading/error/locked states centered.
 - Success content uses `LazyColumn`.
-- Horizontal padding: 16dp.
+- Horizontal padding: 16dp, owned by the scaffold.
 - Vertical item gap: 8dp.
 - Top spacer: 8dp.
 - Bottom: 12dp spacer then 32dp spacer.
@@ -1644,6 +1665,9 @@ App usage item:
   - Fallback `IconCircle`: 40dp, icon 20dp, healthy tint.
 - Icon/text gap: 8dp.
 - App label: `bodyMedium`.
+- `AppDisplayName` is the primary label and derives a readable package-tail
+  fallback when the app label is missing.
+- The package name remains visible only as a `labelSmall` technical detail.
 - Time text: `bodySmall`, `onSurfaceVariant`.
 - Label/time column gap: 2dp.
 - Percent: `bodyMedium`, `onSurfaceVariant`.
@@ -1653,15 +1677,16 @@ App usage item:
   - Track `surfaceVariant`.
   - Semantics includes content description and progress range.
 - Optional drain text: `bodySmall`, `onSurfaceVariant`.
+- A connected Usage / Not used selector is present. Task 5 does not create an
+  unused-app data flow; the Not used side therefore exposes a truthful empty
+  placeholder until that flow exists.
 
 ### 9.9 Charger Comparison
 
 Structure:
 
-- `ContentContainer`.
-- `Scaffold` for success state.
-- `DetailTopBar`.
-- Floating action button:
+- `ExpressiveDetailScaffold`.
+- Extended floating action button when profiles exist:
   - Container primary.
   - Content on-primary.
   - Icon: outlined add.
@@ -1689,8 +1714,9 @@ Selected charger card:
 
 Empty state:
 
-- Title: `titleMedium`.
-- Body: `bodyMedium`.
+- Shared `ExpressiveEmptyState` with outlined add icon.
+- Inline full-width Add charger CTA.
+- Charging sessions remain automatic; there is no manual Start session action.
 
 Historical comparison:
 
@@ -1787,10 +1813,12 @@ remain unseen until the next visible transition, preserving the app-shell badge.
 
 Learn list:
 
-- `DetailTopBar`.
-- `ContentContainer`.
+- `ExpressiveDetailScaffold`.
+- Connected topic selector with exactly Battery, Network, Thermal, Storage, and
+  Privacy in that order.
+- Detail-screen links open Learn with the matching topic preselected.
 - `LazyColumn`.
-- Horizontal padding: 16dp.
+- Horizontal padding: 16dp, owned by the scaffold.
 - Vertical gap: 8dp.
 - Top spacer: 4dp.
 - Section headers use `CardSectionTitle`.
@@ -1985,11 +2013,10 @@ Settings dialogs:
 
 Pro upgrade screen:
 
-- `DetailTopBar`.
-- `ContentContainer`.
+- `ExpressiveDetailScaffold`.
 - Upgrade content:
   - Vertical scroll.
-  - Horizontal padding: 24dp.
+  - Horizontal padding: 16dp, owned by the scaffold.
   - `navigationBarsPadding()`.
   - Center aligned.
   - Top spacer: 32dp.
@@ -2103,8 +2130,9 @@ Scaffold:
 - Controls:
   - Appear below header when state has selections.
   - Gap above controls: 4dp.
-  - Horizontal scroll row, 4dp chip gap.
-  - Period chips first, then 4dp spacer, then metric chips.
+  - Full-width connected period selector first.
+  - Full-width connected metric selector second.
+  - Gap: 4dp.
 - Content:
   - Fills size.
   - Applies Scaffold inner padding.
@@ -2165,7 +2193,11 @@ Locked content:
   top-level navigation policy; Back therefore returns through Home rather than
   the originating article stack.
 - Export waits for Pro status. Free users see `ProFeatureLockedState`; Pro users
-  may continue to the current export entry content.
+  open the dedicated `ExportScreen`.
+- Export owns its own `ExportViewModel`, delegates CSV preparation to
+  `ExportDataUseCase.prepareExportShare()`, shows `RuncheckLoadingIndicator`
+  while preparing, and launches the existing Android share flow when the URIs
+  are ready.
 
 ---
 
@@ -2279,9 +2311,10 @@ Current UI color rules as implemented:
 
 Current UI state rules as implemented:
 
-- Home, Insights, Settings debug actions, Weekly Report access readiness, and
-  Export access readiness use `RuncheckLoadingIndicator`; detail screens not
-  yet migrated continue to use their existing indicators.
+- Home, Insights, Settings debug actions, Weekly Report and protected feature
+  readiness, Battery, Network, Thermal, Storage, Speed Test, Cleanup, Charger,
+  App Usage, Fullscreen Chart, and Export use `RuncheckLoadingIndicator` for
+  their implemented loading paths.
 - Error states use body text and retry buttons where available.
 - Empty states use muted body text or card-based prompts.
 - Pro-locked states navigate to Pro or show the shared locked/callout UI.
@@ -2296,7 +2329,7 @@ These details are present in the current code and should be treated as existing
 UI behavior:
 
 - Top-level Home, Insights, Tools, and Settings use 16dp horizontal content padding.
-- Pro upgrade content uses 24dp horizontal padding.
+- Pro upgrade content uses the scaffold's 16dp horizontal padding.
 - Thermal hero uses 24dp horizontal/vertical padding.
 - Home health hero uses 24dp horizontal/vertical padding and a 148dp wavy ring.
 - Battery, Network, and Storage detail heroes use 16dp padding.
