@@ -43,9 +43,17 @@ class AppShellSourceContractTest {
     fun `top level content delegates bottom insets to the root Scaffold`() {
         val home = appDir.resolve("src/main/java/com/runcheck/ui/home/HomeScreen.kt").readText()
         val insights = appDir.resolve("src/main/java/com/runcheck/ui/insights/InsightsScreen.kt").readText()
+        val navGraph = appDir.resolve("src/main/java/com/runcheck/ui/navigation/NavGraph.kt").readText()
 
         assertFalse(home.contains("navigationBarsPadding"))
         assertFalse(insights.contains("navigationBarsPadding"))
+        assertFalse(navGraph.contains("contentWindowInsets = WindowInsets(0"))
+        assertTrue(
+            navGraph.contains(
+                "contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)",
+            ),
+        )
+        assertTrue(navGraph.contains(".consumeWindowInsets(innerPadding)"))
     }
 
     @Test
@@ -57,6 +65,16 @@ class AppShellSourceContractTest {
         assertFalse(insights.contains("DetailTopBar("))
         assertTrue(settings.contains("PrimaryTopBar("))
         assertFalse(settings.contains("DetailTopBar("))
+    }
+
+    @Test
+    fun `Export route uses the standard Pro locked state`() {
+        val tools = appDir.resolve("src/main/java/com/runcheck/ui/tools/ToolEntryScreens.kt").readText()
+
+        assertTrue(tools.contains("ProFeatureLockedState("))
+        assertTrue(tools.contains("ExportAccessState.WAITING_FOR_PRO_STATUS"))
+        assertTrue(tools.contains("ExportAccessState.LOCKED"))
+        assertTrue(tools.contains("ExportAccessState.AVAILABLE"))
     }
 
     private fun findAppDir(): Path {

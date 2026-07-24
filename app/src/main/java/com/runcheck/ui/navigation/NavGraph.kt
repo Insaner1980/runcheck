@@ -9,8 +9,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -67,10 +71,10 @@ import com.runcheck.ui.tools.WeeklyReportEntryScreen
 fun RuncheckNavHost(
     modifier: Modifier = Modifier,
     deepLinkRoute: String? = null,
-    appShellViewModel: AppShellViewModel = hiltViewModel(),
     onConsumeDeepLink: () -> Unit = {},
 ) {
     val navController = rememberNavController()
+    val appShellViewModel: AppShellViewModel = hiltViewModel()
     val reducedMotion = LocalReducedMotion.current
     val appShellState by appShellViewModel.uiState.collectAsStateWithLifecycle()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
@@ -90,7 +94,7 @@ fun RuncheckNavHost(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom),
         bottomBar = {
             if (currentTopLevelDestination != null) {
                 RuncheckNavigationBar(
@@ -105,7 +109,8 @@ fun RuncheckNavHost(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .padding(innerPadding)
+                    .consumeWindowInsets(innerPadding),
             navController = navController,
             startDestination = Screen.Home.route,
             enterTransition = {
@@ -350,7 +355,12 @@ fun RuncheckNavHost(
                 WeeklyReportEntryScreen(onBack = { navController.popBackStack() })
             }
             composable(Screen.Export.route) {
-                ExportEntryScreen(onBack = { navController.popBackStack() })
+                ExportEntryScreen(
+                    proStatusReady = appShellState.proStatusReady,
+                    hasProAccess = appShellState.hasProAccess,
+                    onBack = { navController.popBackStack() },
+                    onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
+                )
             }
             composable(Screen.Learn.route) {
                 LearnScreen(
@@ -368,7 +378,7 @@ fun RuncheckNavHost(
                 LearnArticleDetailScreen(
                     articleId = articleId,
                     onBack = { navController.popBackStack() },
-                    onNavigateToRoute = { route -> navController.navigateSingleTop(route) },
+                    onNavigateToRoute = navController::navigateRoute,
                 )
             }
             composable(
@@ -502,19 +512,38 @@ private fun NavHostController.navigateSingleTop(route: String) {
     }
 }
 
-private fun NavHostController.navigateExternalRoute(route: String) {
+internal fun NavHostController.navigateRoute(route: String) {
+    val topLevelDestination = topLevelDestinationFor(route)
+    if (topLevelDestination != null) {
+        navigateTopLevel(topLevelDestination)
+    } else {
+        navigateSingleTop(route)
+    }
+}
+
+internal fun NavHostController.navigateExternalRoute(route: String) {
     if (currentBackStackEntry?.destination?.route == route) {
         return
     }
     val plan = externalNavigationPlan(route)
     val parent = topLevelDestinationFor(plan.firstOrNull()) ?: return
-    navigateTopLevel(parent)
+    navigateExternalParentRoot(parent)
     if (route != parent.screen.route) {
         navigateSingleTop(route)
     }
 }
 
-private fun NavHostController.navigateTopLevel(destination: TopLevelDestination) {
+private fun NavHostController.navigateExternalParentRoot(parent: TopLevelDestination) {
+    navigate(parent.screen.route) {
+        launchSingleTop = true
+        restoreState = false
+        popUpTo(graph.findStartDestination().id) {
+            saveState = false
+        }
+    }
+}
+
+internal fun NavHostController.navigateTopLevel(destination: TopLevelDestination) {
     when (topLevelNavigationAction(currentDestination?.route, destination)) {
         TopLevelNavigationAction.RESELECT -> {
             popBackStack(destination.screen.route, inclusive = false)

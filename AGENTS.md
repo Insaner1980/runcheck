@@ -106,7 +106,7 @@ Current runtime systems:
 - `RealTimeMonitorService` is an opt-in live notification foreground service and must stay user-controlled from Settings
 - Widgets are backed by Room snapshots and treated as a Pro feature
 - Trial state currently counts as Pro access through `ProState.isPro`
-- `AppShellViewModel` combines Room insight state with Pro readiness for the four-item top-level navigation bar; the Insights badge counts visible unseen items and protected external routes wait for the initial Pro state before navigation
+- `AppShellViewModel` combines Room insight state with Pro readiness for the four-item top-level navigation bar; the Insights badge counts visible unseen items, protected external routes wait for the initial Pro state, external routes rebuild their documented parent root without restoring stale child stacks, and Export renders the shared locked state until access is confirmed
 - Home now includes a rule-driven Insights surface backed by Room-persisted insight rows; Home shows a curated subset of up to three items and the full list lives in the dedicated Insights screen
 - `AppBatteryImpactRule` is intentionally excluded from production because foreground duration alone cannot support defensible per-app mAh attribution
 - Debug-only insight seeding and manual regeneration live behind debug source-set wiring and must stay release-inaccessible

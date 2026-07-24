@@ -159,4 +159,24 @@ class NavigationPolicyTest {
             assertFalse("$route should not wait for Pro status", route.requiresReadyProStatus())
         }
     }
+
+    @Test
+    fun `Export waits for Pro readiness before resolving locked or available content`() {
+        assertEquals(
+            ExportAccessState.WAITING_FOR_PRO_STATUS,
+            exportAccessState(proStatusReady = false, hasProAccess = false),
+        )
+        assertEquals(
+            ExportAccessState.WAITING_FOR_PRO_STATUS,
+            exportAccessState(proStatusReady = false, hasProAccess = true),
+        )
+        assertEquals(
+            ExportAccessState.LOCKED,
+            exportAccessState(proStatusReady = true, hasProAccess = false),
+        )
+        assertEquals(
+            ExportAccessState.AVAILABLE,
+            exportAccessState(proStatusReady = true, hasProAccess = true),
+        )
+    }
 }

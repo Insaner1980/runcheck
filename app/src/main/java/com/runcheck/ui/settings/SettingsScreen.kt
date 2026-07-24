@@ -78,8 +78,8 @@ import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.ContentContainer
-import com.runcheck.ui.components.PrimaryTopBar
 import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.PrimaryTopBar
 import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState

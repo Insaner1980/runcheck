@@ -26,6 +26,7 @@ gson = "2.11.0"
 kotlinxSerialization = "1.11.0"
 junit = "4.13.2"
 mockk = "1.13.16"
+robolectric = "4.16"
 androidxTestExtJunit = "1.3.0"
 androidxTestRunner = "1.7.0"
 jacoco = "0.8.14"
@@ -56,6 +57,7 @@ compose-foundation = { group = "androidx.compose.foundation", name = "foundation
 
 # Navigation
 navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "composeNavigation" }
+navigation-testing = { group = "androidx.navigation", name = "navigation-testing", version.ref = "composeNavigation" }
 
 # Lifecycle
 lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
@@ -116,6 +118,7 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
 

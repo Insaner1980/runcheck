@@ -71,12 +71,15 @@ class AppShellViewModelTest {
             runCurrent()
 
             assertFalse(viewModel.uiState.value.proStatusReady)
+            assertFalse(viewModel.uiState.value.hasProAccess)
 
+            proState.value = ProState(status = ProStatus.PRO_PURCHASED)
             proStatusReady.value = true
             advanceTimeBy(334L)
             runCurrent()
 
             assertTrue(viewModel.uiState.value.proStatusReady)
+            assertTrue(viewModel.uiState.value.hasProAccess)
             viewModel.viewModelScope.cancel()
         }
 

@@ -244,12 +244,13 @@ State restoration details:
 - `SavedStateHandle` is used for route-backed or deep state that must survive recreation, including battery/network history period, cleanup filter selection, and fullscreen chart metric/period.
 - Free-tier entry into `charger` and `app_usage` routes redirects to `pro_upgrade`.
 - Top-level switches use `launchSingleTop`, restore saved state, and pop up to the graph start destination with state saving; reselecting the active item returns to its root.
-- Direct notification/deep-link routes restore their documented top-level parent before opening the requested destination. Weekly Report belongs to Tools, and protected routes wait for the first Pro status before routing.
+- Direct notification/deep-link routes rebuild their documented top-level parent root without restoring a previously saved child stack, then push the requested destination. Weekly Report belongs to Tools, and protected routes wait for the first Pro status before routing.
 - Direct notification/deep-link routes accept the argument-free destinations in `Screen.directRoutes` plus validated cleanup, Learn article, and fullscreen chart route patterns.
 - The Insights navigation item shows the count of visible unseen Room-backed insights; Pro-only insight visibility is evaluated only after Pro status is ready.
-- Learn article cross-links are validated against direct routes at catalog initialization time.
+- Learn article cross-links are validated against direct routes at catalog initialization time. Cross-links to a top-level route use the same top-level state/back-stack policy instead of pushing a second top-level screen over the article.
 - Fullscreen chart args are route-backed, but selection changes are returned to Battery/Network through `FullscreenChartResult` keys on the previous back stack entry.
-- Weekly Report and Export currently have explicit route entry screens; their feature redesigns are owned by later tasks.
+- Root scaffold content uses the safe-drawing bottom inset only when no navigation bar is present; top-level roots receive the navigation bar's inset once, and pushed destinations remain protected from system navigation.
+- Weekly Report and Export currently have explicit route entry screens; Export waits for Pro readiness and shows the shared locked state to free users. Their feature redesigns are owned by later tasks.
 
 ---
 

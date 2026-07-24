@@ -2165,13 +2165,20 @@ Locked content:
 - Navigation items use outlined icons. The Insights item may show a badge for
   visible unseen Room-backed insights, including an accessible count label.
 - The bar appears only at top-level roots. Pushed destinations keep their
-  existing top bars and consume scaffold content insets without adding a second
-  navigation-bar inset.
+  existing top bars. The root scaffold applies `safeDrawing` on the bottom when
+  the bar is absent, consumes its content padding centrally, and avoids a
+  second navigation-bar inset on top-level roots.
 - Switching top-level destinations preserves their state. Reselecting the
   active destination returns to that destination's root.
-- Weekly Report notifications restore Tools as their parent. Protected external
-  routes wait for Pro status before routing so a cold start cannot expose gated
-  content during billing initialization.
+- Weekly Report notifications rebuild the Tools root without restoring a saved
+  Tools child stack, then push Weekly Report. Protected external routes wait
+  for Pro status before routing so a cold start cannot expose gated content
+  during billing initialization.
+- Learn article cross-links to Home, Insights, Tools, or Settings use the
+  top-level navigation policy; Back therefore returns through Home rather than
+  the originating article stack.
+- Export waits for Pro status. Free users see `ProFeatureLockedState`; Pro users
+  may continue to the current export entry content.
 
 ---
 
@@ -2264,8 +2271,6 @@ Current nested destinations:
 - Tools -> Weekly Report.
 - Tools -> Export.
 - Settings -> Pro Upgrade.
-- Storage -> Cleanup by type.
-- Learn -> Learn Article.
 
 ---
 

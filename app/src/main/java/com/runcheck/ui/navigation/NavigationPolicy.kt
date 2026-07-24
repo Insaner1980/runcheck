@@ -5,6 +5,22 @@ enum class TopLevelNavigationAction {
     RESELECT,
 }
 
+enum class ExportAccessState {
+    WAITING_FOR_PRO_STATUS,
+    LOCKED,
+    AVAILABLE,
+}
+
+fun exportAccessState(
+    proStatusReady: Boolean,
+    hasProAccess: Boolean,
+): ExportAccessState =
+    when {
+        !proStatusReady -> ExportAccessState.WAITING_FOR_PRO_STATUS
+        hasProAccess -> ExportAccessState.AVAILABLE
+        else -> ExportAccessState.LOCKED
+    }
+
 fun topLevelDestinationFor(route: String?): TopLevelDestination? =
     topLevelDestinations.firstOrNull { it.screen.route == route }
 

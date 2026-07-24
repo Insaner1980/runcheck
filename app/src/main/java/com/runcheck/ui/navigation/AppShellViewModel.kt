@@ -21,6 +21,7 @@ import javax.inject.Inject
 data class AppShellUiState(
     val unseenInsightCount: Int = 0,
     val proStatusReady: Boolean = false,
+    val hasProAccess: Boolean = false,
 )
 
 @HiltViewModel
@@ -59,6 +60,7 @@ class AppShellViewModel
                                 .visibleForProAccess(proState.isPro)
                                 .count { !it.seen },
                         proStatusReady = proStatusReady,
+                        hasProAccess = proState.isPro,
                     )
                 }.sample(DISPLAY_UPDATE_INTERVAL_MS)
                     .collect(_uiState)
