@@ -327,6 +327,12 @@ private fun com.runcheck.ui.charger.ChargerContent(state: com.runcheck.ui.charge
     - onDeleteRequest: STABLE (function type)
 
 @Composable
+private fun com.runcheck.ui.charger.ChargerEmptyIllustration(): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+
+@Composable
 private fun com.runcheck.ui.charger.DeleteChargerDialog(chargerName: kotlin.String, onDismiss: kotlin.Function0<kotlin.Unit>, onConfirm: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
@@ -716,7 +722,7 @@ public fun com.runcheck.ui.components.ExpressiveDetailScaffold(title: kotlin.Str
     - content: STABLE (composable function type)
 
 @Composable
-public fun com.runcheck.ui.components.ExpressiveEmptyState(title: kotlin.String, message: kotlin.String, modifier: androidx.compose.ui.Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector): kotlin.Unit
+public fun com.runcheck.ui.components.ExpressiveEmptyState(title: kotlin.String, message: kotlin.String, modifier: androidx.compose.ui.Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector, illustration: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>?): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -724,6 +730,7 @@ public fun com.runcheck.ui.components.ExpressiveEmptyState(title: kotlin.String,
     - message: STABLE (String is immutable)
     - modifier: STABLE (marked @Stable or @Immutable)
     - icon: STABLE (marked @Stable or @Immutable)
+    - illustration: STABLE (composable function type)
 
 @Composable
 public fun com.runcheck.ui.components.ExpressiveSingleChoiceSelector(options: kotlin.collections.List<T of com.runcheck.ui.components.ExpressiveSingleChoiceSelector>, selected: T of com.runcheck.ui.components.ExpressiveSingleChoiceSelector, labelFor: @[Composable] androidx.compose.runtime.internal.ComposableFunction1<T of com.runcheck.ui.components.ExpressiveSingleChoiceSelector, kotlin.String>, onSelect: kotlin.Function1<T of com.runcheck.ui.components.ExpressiveSingleChoiceSelector, kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
@@ -841,6 +848,18 @@ private fun com.runcheck.ui.components.LiveChartCanvas(data: kotlin.collections.
     - accessibilityDescription: STABLE (class with no mutable properties)
     - modifier: STABLE (marked @Stable or @Immutable)
     - reducedMotion: STABLE (primitive type)
+
+@Composable
+public fun com.runcheck.ui.components.MeasuredHeroValue(value: kotlin.String, unit: kotlin.String, confidence: com.runcheck.domain.model.Confidence, modifier: androidx.compose.ui.Modifier, valueStyle: androidx.compose.ui.text.TextStyle, unitStyle: androidx.compose.ui.text.TextStyle): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - value: STABLE (String is immutable)
+    - unit: STABLE (String is immutable)
+    - confidence: STABLE (class with no mutable properties)
+    - modifier: STABLE (marked @Stable or @Immutable)
+    - valueStyle: STABLE (marked @Stable or @Immutable)
+    - unitStyle: STABLE (marked @Stable or @Immutable)
 
 @Composable
 public fun com.runcheck.ui.components.MetricPill(label: kotlin.String, value: kotlin.String, modifier: androidx.compose.ui.Modifier, valueColor: androidx.compose.ui.graphics.Color, onInfoClick: kotlin.Function0<kotlin.Unit>?): kotlin.Unit
@@ -973,6 +992,15 @@ public fun com.runcheck.ui.components.RuncheckWavyProgress(progress: kotlin.Floa
     - contentDescription: STABLE (String is immutable)
     - modifier: STABLE (marked @Stable or @Immutable)
     - content: STABLE (composable function type)
+
+@Composable
+public fun com.runcheck.ui.components.SecondaryActionLink(label: kotlin.String, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - label: STABLE (String is immutable)
+    - onClick: STABLE (function type)
+    - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
 public fun com.runcheck.ui.components.SectionHeader(text: kotlin.String, modifier: androidx.compose.ui.Modifier): kotlin.Unit

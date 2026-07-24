@@ -2,6 +2,7 @@ package com.runcheck.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
@@ -32,6 +35,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.runtime.Composable
@@ -51,6 +55,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
+import com.runcheck.domain.model.Confidence
+import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.ui.components.info.CrossLinkButton
 import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.theme.MotionTokens
@@ -61,6 +67,38 @@ import com.runcheck.ui.theme.runcheckOutlinedCardBorder
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.uiTokens
+
+private const val FIXED_SELECTOR_OPTION_LIMIT = 4
+private const val SCROLLING_SELECTOR_OPTION_WIDTH_DP = 104
+private const val MINIMUM_TOUCH_TARGET_DP = 48
+
+internal data class ExpressiveSelectorLayoutPolicy(
+    val isScrollable: Boolean,
+    val minimumOptionWidthDp: Int?,
+    val minimumTouchTargetDp: Int = MINIMUM_TOUCH_TARGET_DP,
+)
+
+internal fun expressiveSelectorLayoutPolicy(optionCount: Int): ExpressiveSelectorLayoutPolicy =
+    if (optionCount > FIXED_SELECTOR_OPTION_LIMIT) {
+        ExpressiveSelectorLayoutPolicy(
+            isScrollable = true,
+            minimumOptionWidthDp = SCROLLING_SELECTOR_OPTION_WIDTH_DP,
+        )
+    } else {
+        ExpressiveSelectorLayoutPolicy(
+            isScrollable = false,
+            minimumOptionWidthDp = null,
+        )
+    }
+
+internal fun <T> platformTelemetryMeasurement(
+    value: T?,
+    unavailableValue: T,
+): MeasuredValue<T> =
+    MeasuredValue(
+        value = value ?: unavailableValue,
+        confidence = if (value == null) Confidence.UNAVAILABLE else Confidence.LOW,
+    )
 
 @Composable
 fun ExpressiveDetailScaffold(
@@ -122,21 +160,98 @@ fun <T> ExpressiveSingleChoiceSelector(
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
-        options.forEachIndexed { index, option ->
-            SegmentedButton(
-                selected = option == selected,
-                onClick = { onSelect(option) },
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    text = labelFor(option),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+    val policy = expressiveSelectorLayoutPolicy(options.size)
+    val scrollState = rememberScrollState()
+    Box(
+        modifier =
+            if (policy.isScrollable) {
+                modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(scrollState)
+            } else {
+                modifier.fillMaxWidth()
+            },
+    ) {
+        SingleChoiceSegmentedButtonRow(
+            modifier = if (policy.isScrollable) Modifier else Modifier.fillMaxWidth(),
+        ) {
+            options.forEachIndexed { index, option ->
+                SegmentedButton(
+                    selected = option == selected,
+                    onClick = { onSelect(option) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                    modifier =
+                        if (policy.isScrollable) {
+                            Modifier
+                                .widthIn(min = requireNotNull(policy.minimumOptionWidthDp).dp)
+                                .defaultMinSize(minHeight = policy.minimumTouchTargetDp.dp)
+                        } else {
+                            Modifier
+                                .weight(1f)
+                                .defaultMinSize(minHeight = policy.minimumTouchTargetDp.dp)
+                        },
+                ) {
+                    Text(
+                        text = labelFor(option),
+                        maxLines = if (policy.isScrollable) 2 else 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+fun MeasuredHeroValue(
+    value: String,
+    unit: String,
+    confidence: Confidence,
+    modifier: Modifier = Modifier,
+    valueStyle: TextStyle = MaterialTheme.typography.displaySmall,
+    unitStyle: TextStyle = MaterialTheme.typography.titleMedium,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
+    ) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                text = value,
+                style = valueStyle,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = unit,
+                style = unitStyle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = MaterialTheme.spacing.xs),
+            )
+        }
+        ConfidenceBadge(confidence = confidence)
+    }
+}
+
+@Composable
+fun SecondaryActionLink(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    TextButton(
+        onClick = onClick,
+        modifier =
+            modifier.defaultMinSize(
+                minHeight = MaterialTheme.uiTokens.touchTarget,
+            ),
+    ) {
+        Text(label)
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
+            contentDescription = null,
+            modifier = Modifier.size(MaterialTheme.uiTokens.iconMedium),
+        )
     }
 }
 
@@ -307,6 +422,7 @@ fun ExpressiveEmptyState(
     message: String,
     modifier: Modifier = Modifier,
     icon: ImageVector = Icons.Outlined.Info,
+    illustration: (@Composable () -> Unit)? = null,
 ) {
     Column(
         modifier =
@@ -315,16 +431,20 @@ fun ExpressiveEmptyState(
                 .padding(MaterialTheme.spacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier =
-                Modifier.sizeIn(
-                    minWidth = MaterialTheme.uiTokens.touchTarget,
-                    minHeight = MaterialTheme.uiTokens.touchTarget,
-                ),
-        )
+        if (illustration == null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier =
+                    Modifier.sizeIn(
+                        minWidth = MaterialTheme.uiTokens.touchTarget,
+                        minHeight = MaterialTheme.uiTokens.touchTarget,
+                    ),
+            )
+        } else {
+            illustration()
+        }
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,

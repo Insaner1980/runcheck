@@ -5,7 +5,9 @@ import com.runcheck.ui.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -36,5 +38,33 @@ class ExportViewModelTest {
                 viewModel.uiState.value.shareUris,
             )
             assertFalse(viewModel.uiState.value.isExporting)
+        }
+
+    @Test
+    fun `double invocation while export is active prepares and exposes one share result`() =
+        runTest {
+            val exportStarted = CompletableDeferred<Unit>()
+            val completeExport = CompletableDeferred<Unit>()
+            coEvery { exportDataUseCase.prepareExportShare() } coAnswers {
+                exportStarted.complete(Unit)
+                completeExport.await()
+                listOf("content://runcheck/export.csv")
+            }
+            val viewModel = ExportViewModel(exportDataUseCase)
+
+            viewModel.prepareExportShare()
+            val waitingForStart = async { exportStarted.await() }
+            runCurrent()
+            waitingForStart.await()
+
+            viewModel.prepareExportShare()
+            completeExport.complete(Unit)
+            runCurrent()
+
+            coVerify(exactly = 1) { exportDataUseCase.prepareExportShare() }
+            assertEquals(
+                listOf("content://runcheck/export.csv"),
+                viewModel.uiState.value.shareUris,
+            )
         }
 }

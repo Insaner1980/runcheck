@@ -50,6 +50,7 @@ class LearnNavigationCatalogTest {
                 LearnTopic.NETWORK,
                 LearnTopic.THERMAL,
                 LearnTopic.STORAGE,
+                LearnTopic.PRIVACY,
             ).filter { topic ->
                 LearnArticleCatalog.articlesForTopic(topic).isEmpty()
             }

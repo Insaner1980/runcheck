@@ -7,8 +7,8 @@ object LearnArticleCatalog {
     private val topicOrder =
         listOf(
             LearnTopic.BATTERY,
-            LearnTopic.THERMAL,
             LearnTopic.NETWORK,
+            LearnTopic.THERMAL,
             LearnTopic.STORAGE,
             LearnTopic.PRIVACY,
         )
@@ -124,8 +124,17 @@ object LearnArticleCatalog {
                 crossLinkRoute = Screen.Storage.route,
             ),
             LearnArticle(
-                id = LearnArticleIds.HEALTH_SCORE,
+                id = LearnArticleIds.PRIVACY_DATA,
                 topic = LearnTopic.PRIVACY,
+                titleRes = R.string.learn_privacy_data_title,
+                previewRes = R.string.learn_privacy_data_preview,
+                bodyRes = R.string.learn_privacy_data_body,
+                readTimeMinutes = 3,
+                crossLinkRoute = Screen.Settings.route,
+            ),
+            LearnArticle(
+                id = LearnArticleIds.HEALTH_SCORE,
+                topic = null,
                 titleRes = R.string.learn_health_score_title,
                 previewRes = R.string.learn_health_score_preview,
                 bodyRes = R.string.learn_health_score_body,
@@ -134,7 +143,7 @@ object LearnArticleCatalog {
             ),
             LearnArticle(
                 id = LearnArticleIds.SOFTWARE_VS_HARDWARE,
-                topic = LearnTopic.PRIVACY,
+                topic = null,
                 titleRes = R.string.learn_sw_vs_hw_title,
                 previewRes = R.string.learn_sw_vs_hw_preview,
                 bodyRes = R.string.learn_sw_vs_hw_body,
@@ -143,7 +152,7 @@ object LearnArticleCatalog {
             ),
             LearnArticle(
                 id = LearnArticleIds.BACKGROUND_MONITORING,
-                topic = LearnTopic.PRIVACY,
+                topic = null,
                 titleRes = R.string.learn_background_monitoring_title,
                 previewRes = R.string.learn_background_monitoring_preview,
                 bodyRes = R.string.learn_background_monitoring_body,
@@ -174,7 +183,15 @@ object LearnArticleCatalog {
                 }
             }
         }
-        check(sections.flatMap(LearnTopicSection::articles) == articles) {
+        check(sections.map(LearnTopicSection::topic) == LearnTopic.entries) {
+            "Learn topic sections do not match the selector order"
+        }
+        val categorizedArticles = articles.filter { it.topic != null }
+        val sectionArticles = sections.flatMap(LearnTopicSection::articles)
+        check(
+            sectionArticles.size == categorizedArticles.size &&
+                sectionArticles.toSet() == categorizedArticles.toSet(),
+        ) {
             "Learn topic sections are out of sync with the article catalog"
         }
     }

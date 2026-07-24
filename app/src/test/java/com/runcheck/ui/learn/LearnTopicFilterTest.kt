@@ -35,4 +35,28 @@ class LearnTopicFilterTest {
             filterLearnSections(LearnArticleCatalog.sections, selectedTopic = null),
         )
     }
+
+    @Test
+    fun `privacy topic contains only genuine privacy content`() {
+        val privacyArticles = LearnArticleCatalog.articlesForTopic(LearnTopic.PRIVACY)
+
+        assertEquals(listOf(LearnArticleIds.PRIVACY_DATA), privacyArticles.map(LearnArticle::id))
+        assertTrue(privacyArticles.all { it.topic == LearnTopic.PRIVACY })
+        assertTrue(
+            listOf(
+                LearnArticleIds.HEALTH_SCORE,
+                LearnArticleIds.SOFTWARE_VS_HARDWARE,
+                LearnArticleIds.BACKGROUND_MONITORING,
+            ).all { id -> LearnArticleCatalog.findById(id)?.topic == null },
+        )
+    }
+
+    @Test
+    fun `catalog sections follow selector order and include every categorized article once`() {
+        assertEquals(LearnTopic.entries, LearnArticleCatalog.sections.map(LearnTopicSection::topic))
+        val categorizedArticles = LearnArticleCatalog.articles.filter { it.topic != null }
+        val sectionArticles = LearnArticleCatalog.sections.flatMap(LearnTopicSection::articles)
+        assertEquals(categorizedArticles.size, sectionArticles.size)
+        assertEquals(categorizedArticles.toSet(), sectionArticles.toSet())
+    }
 }

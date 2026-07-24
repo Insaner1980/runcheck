@@ -58,6 +58,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
+import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.NetworkReading
@@ -93,6 +94,7 @@ import com.runcheck.ui.components.ExpressiveDetailScaffold
 import com.runcheck.ui.components.InfoBanner
 import com.runcheck.ui.components.LearnTopicLink
 import com.runcheck.ui.components.LiveChart
+import com.runcheck.ui.components.MeasuredHeroValue
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.components.ProFeatureCalloutCard
@@ -104,6 +106,7 @@ import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
+import com.runcheck.ui.components.platformTelemetryMeasurement
 import com.runcheck.ui.components.selectDetailInfoBanner
 import com.runcheck.ui.fullscreen.FullscreenChartSeedStore
 import com.runcheck.ui.fullscreen.FullscreenChartUiState
@@ -239,6 +242,16 @@ private fun NetworkHeroSection(
     liveSignalDbm: List<Float> = emptyList(),
     onInfoClick: (String) -> Unit = {},
 ) {
+    val signalMeasurement =
+        platformTelemetryMeasurement(
+            value = networkState.signalDbm,
+            unavailableValue = 0,
+        )
+    val latencyMeasurement =
+        platformTelemetryMeasurement(
+            value = networkState.latencyMs,
+            unavailableValue = 0,
+        )
     val qualityLabel =
         if (networkState.isConnected) {
             signalQualityLabel(networkState.signalQuality)
@@ -291,36 +304,30 @@ private fun NetworkHeroSection(
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg),
                 verticalAlignment = Alignment.Bottom,
             ) {
-                networkState.signalDbm?.let { dbm ->
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            text = dbm.toString(),
-                            style = MaterialTheme.numericMetricDisplayTextStyle,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = stringResource(R.string.unit_dbm),
-                            style = MaterialTheme.numericHeroDisplayUnitTextStyle,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 2.dp, bottom = 8.dp),
-                        )
-                    }
-                }
-                networkState.latencyMs?.let { ms ->
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            text = ms.toString(),
-                            style = MaterialTheme.numericMetricDisplayTextStyle,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = stringResource(R.string.unit_ms),
-                            style = MaterialTheme.numericHeroDisplayUnitTextStyle,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 2.dp, bottom = 8.dp),
-                        )
-                    }
-                }
+                MeasuredHeroValue(
+                    value =
+                        signalMeasurement.value
+                            .takeIf { signalMeasurement.confidence != Confidence.UNAVAILABLE }
+                            ?.toString()
+                            ?: stringResource(R.string.placeholder_dash),
+                    unit = stringResource(R.string.unit_dbm),
+                    confidence = signalMeasurement.confidence,
+                    modifier = Modifier.weight(1f),
+                    valueStyle = MaterialTheme.numericMetricDisplayTextStyle,
+                    unitStyle = MaterialTheme.numericHeroDisplayUnitTextStyle,
+                )
+                MeasuredHeroValue(
+                    value =
+                        latencyMeasurement.value
+                            .takeIf { latencyMeasurement.confidence != Confidence.UNAVAILABLE }
+                            ?.toString()
+                            ?: stringResource(R.string.placeholder_dash),
+                    unit = stringResource(R.string.unit_ms),
+                    confidence = latencyMeasurement.confidence,
+                    modifier = Modifier.weight(1f),
+                    valueStyle = MaterialTheme.numericMetricDisplayTextStyle,
+                    unitStyle = MaterialTheme.numericHeroDisplayUnitTextStyle,
+                )
             }
 
             if (liveSignalDbm.size >= 2) {
@@ -346,15 +353,6 @@ private fun NetworkHeroSection(
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
                 verticalAlignment = Alignment.Top,
             ) {
-                MetricPill(
-                    label = stringResource(R.string.network_latency),
-                    value =
-                        networkState.latencyMs?.let {
-                            stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_ms))
-                        } ?: stringResource(R.string.placeholder_dash),
-                    modifier = Modifier.weight(1f),
-                    onInfoClick = { onInfoClick("latency") },
-                )
                 MetricPill(
                     label = bandwidthPillLabel(networkState),
                     value = bandwidthPillValue(networkState),

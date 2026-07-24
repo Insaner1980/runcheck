@@ -459,14 +459,6 @@ private fun AppUsageItem(
                         },
                 trackColor = MaterialTheme.colorScheme.surfaceVariant,
             )
-
-            app.estimatedDrainMah?.let { drain ->
-                Text(
-                    text = stringResource(R.string.app_usage_drain, drain.toDouble()),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
     }
 }

@@ -733,7 +733,6 @@
     <string name="app_usage_time_hours_minutes">%1$dh %2$dm</string>
     <string name="app_usage_time_minutes">%1$dm</string>
     <string name="app_usage_percent">%1$d%%</string>
-    <string name="app_usage_drain">Est. drain: %1$.1f mAh</string>
 
     <!-- Speed Test -->
     <string name="speed_test_title">Speed Test</string>
@@ -1231,6 +1230,11 @@
     <string name="learn_storage_breakdown_title">Where Your Storage Goes</string>
     <string name="learn_storage_breakdown_preview">Understanding what uses your storage and how to manage each category effectively.</string>
     <string name="learn_storage_breakdown_body">## The main categories\n\nApps and their data typically use the most space (30–60% on most phones). Photos and videos are usually second. System files take a chunk you cannot fully reclaim. Downloads, documents, and audio make up the rest.\n\n## Hidden storage consumers\n\nApp caches grow over time: social media apps can cache gigabytes of images and videos. Messaging apps store received media. Offline maps and music can use significant space. Old APK installer files often linger in Downloads.\n\n## Management strategies\n\nRegularly review large files and Downloads. If you have runcheck Pro, the Storage cleanup tools can surface large files, old downloads, and leftover APKs. When media access is available, the Storage screen\'s media breakdown chart shows where scanned media space is going.</string>
+
+    <!-- Learn Articles - Privacy -->
+    <string name="learn_privacy_data_title">Your Data and Privacy</string>
+    <string name="learn_privacy_data_preview">What runcheck reads on your device, what stays local, and when network requests can occur.</string>
+    <string name="learn_privacy_data_body">runcheck reads battery, network, thermal, storage, and—only with your permission—app usage information to explain device health. Connection details are read through Android APIs and stay on your device. Network requests occur for user-started speed tests, latency measurements, and Google Play Billing. Debug builds can enable developer diagnostics with an explicit DSN; release builds do not include telemetry. You can control optional monitoring and permissions from Settings.</string>
 
     <!-- Learn Articles - General -->
     <string name="learn_health_score_title">How the Health Score Works</string>

@@ -11,11 +11,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -54,6 +56,8 @@ import com.runcheck.ui.components.ExpressiveDetailScaffold
 import com.runcheck.ui.components.ExpressiveEmptyState
 import com.runcheck.ui.components.ProFeatureLockedState
 import com.runcheck.ui.components.RuncheckLoadingIndicator
+import com.runcheck.ui.components.StatusPill
+import com.runcheck.ui.components.StatusTone
 import com.runcheck.ui.theme.RuncheckPillShape
 import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
@@ -302,11 +306,35 @@ private fun EmptyStateCard(onAddClick: () -> Unit) {
         ExpressiveEmptyState(
             title = stringResource(R.string.charger_no_chargers),
             message = stringResource(R.string.charger_empty_body),
-            icon = Icons.Outlined.Add,
+            illustration = { ChargerEmptyIllustration() },
         )
         Button(onClick = onAddClick, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.charger_add))
         }
+    }
+}
+
+@Composable
+private fun ChargerEmptyIllustration() {
+    Box(
+        modifier = Modifier.size(80.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.BatteryChargingFull,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(64.dp),
+        )
+        Icon(
+            imageVector = Icons.Outlined.Add,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.secondary,
+            modifier =
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(32.dp),
+        )
     }
 }
 
@@ -435,10 +463,14 @@ private fun ChargerCard(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     selectedLabel?.let {
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
+                        StatusPill(
+                            label = it,
+                            tone =
+                                if (charger.hasActiveSession) {
+                                    StatusTone.HEALTHY
+                                } else {
+                                    StatusTone.NEUTRAL
+                                },
                         )
                     }
                 }

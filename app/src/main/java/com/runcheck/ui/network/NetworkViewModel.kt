@@ -125,6 +125,12 @@ class NetworkViewModel
                     phase = SpeedTestPhase.Idle,
                     isRunning = false,
                     showCellularWarning = false,
+                    pingMs = 0,
+                    jitterMs = null,
+                    downloadMbps = 0.0,
+                    uploadMbps = 0.0,
+                    downloadProgress = 0f,
+                    uploadProgress = 0f,
                 )
             }
         }

@@ -110,6 +110,7 @@ import com.runcheck.ui.components.ProBadgePill
 import com.runcheck.ui.components.ProgressRing
 import com.runcheck.ui.components.PullToRefreshWrapper
 import com.runcheck.ui.components.RuncheckLoadingIndicator
+import com.runcheck.ui.components.SecondaryActionLink
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.components.info.InfoCardCatalog
@@ -812,28 +813,10 @@ private fun BatteryFooterSection( // NOSONAR
     onInfoClick: (String) -> Unit,
 ) {
     Column {
-        BatteryPanel {
-            CardSectionTitle(text = stringResource(R.string.home_test_compare))
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-            Text(
-                text = stringResource(R.string.charger_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-            Text(
-                text = stringResource(R.string.home_chargers_desc),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            Button(
-                onClick = onNavigateToCharger,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.charger_title))
-            }
-        }
+        SecondaryActionLink(
+            label = stringResource(R.string.charger_title),
+            onClick = onNavigateToCharger,
+        )
 
         BatteryHistoryPanel(
             state = state,

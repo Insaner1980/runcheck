@@ -26,6 +26,7 @@ object LearnArticleIds {
     const val NETWORK_SPEED_TESTS = "network_speed_tests"
     const val STORAGE_SLOWDOWN = "storage_slowdown"
     const val STORAGE_BREAKDOWN = "storage_breakdown"
+    const val PRIVACY_DATA = "privacy_data"
     const val HEALTH_SCORE = "health_score"
     const val SOFTWARE_VS_HARDWARE = "sw_vs_hw"
     const val BACKGROUND_MONITORING = "background_monitoring"
@@ -33,7 +34,7 @@ object LearnArticleIds {
 
 data class LearnArticle(
     val id: String,
-    val topic: LearnTopic,
+    val topic: LearnTopic?,
     @param:StringRes val titleRes: Int,
     @param:StringRes val previewRes: Int,
     @param:StringRes val bodyRes: Int,

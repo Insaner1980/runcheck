@@ -48,12 +48,17 @@ class ExpressiveDetailSourceContractTest {
         val charger = source("charger/ChargerComparisonScreen.kt")
         assertTrue(charger.contains("ExtendedFloatingActionButton("))
         assertTrue(charger.contains("ExpressiveEmptyState("))
+        assertTrue(charger.contains("ChargerEmptyIllustration("))
+        assertTrue(charger.contains("StatusPill("))
         assertFalse(charger.contains("Start session"))
 
         val appUsage = source("appusage/AppUsageScreen.kt")
         assertTrue(appUsage.contains("ExpressiveSingleChoiceSelector("))
         assertTrue(appUsage.contains("app.packageName"))
         assertTrue(appUsage.contains("AppDisplayName("))
+        assertFalse(appUsage.contains("estimatedDrainMah"))
+        val strings = appDir.resolve("src/main/res/values/strings.xml").readText()
+        assertFalse(strings.contains("app_usage_drain"))
 
         val learn = source("learn/LearnScreen.kt")
         assertTrue(learn.contains("ExpressiveSingleChoiceSelector("))
@@ -64,6 +69,28 @@ class ExpressiveDetailSourceContractTest {
         val fullscreen = source("fullscreen/FullscreenChartScreen.kt")
         assertTrue(fullscreen.contains("ExpressiveSingleChoiceSelector("))
         assertFalse(fullscreen.contains("FilterChip("))
+    }
+
+    @Test
+    fun `battery charger comparison is a secondary link instead of a primary panel action`() {
+        val battery = source("battery/BatteryDetailScreen.kt")
+
+        assertTrue(battery.contains("SecondaryActionLink("))
+        assertFalse(battery.contains("Button(\n                onClick = onNavigateToCharger"))
+    }
+
+    @Test
+    fun `network and thermal heroes expose confidence aware measurements`() {
+        val network = source("network/NetworkDetailScreen.kt")
+        val thermal = source("thermal/ThermalDetailScreen.kt")
+
+        assertTrue(network.contains("platformTelemetryMeasurement("))
+        assertTrue(network.contains("MeasuredHeroValue("))
+        assertTrue(thermal.contains("platformTelemetryMeasurement("))
+        assertTrue(thermal.contains("MeasuredHeroValue("))
+        val sharedComponents =
+            appDir.resolve("src/main/java/com/runcheck/ui/components/ExpressiveComponents.kt").readText()
+        assertTrue(sharedComponents.contains("ConfidenceBadge(confidence = confidence)"))
     }
 
     @Test

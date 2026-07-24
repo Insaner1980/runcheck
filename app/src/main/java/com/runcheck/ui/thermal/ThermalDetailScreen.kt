@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
+import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.model.ThermalReading
@@ -82,6 +83,7 @@ import com.runcheck.ui.components.HeatStrip
 import com.runcheck.ui.components.InfoBanner
 import com.runcheck.ui.components.LearnTopicLink
 import com.runcheck.ui.components.LiveChart
+import com.runcheck.ui.components.MeasuredHeroValue
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.PullToRefreshWrapper
@@ -89,12 +91,15 @@ import com.runcheck.ui.components.RuncheckLoadingIndicator
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SegmentedStatusBar
 import com.runcheck.ui.components.StatusDot
+import com.runcheck.ui.components.StatusPill
 import com.runcheck.ui.components.StatusSegment
+import com.runcheck.ui.components.StatusTone
 import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
+import com.runcheck.ui.components.platformTelemetryMeasurement
 import com.runcheck.ui.components.selectDetailInfoBanner
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
@@ -390,8 +395,25 @@ private fun ThermalHeroCard(
     sessionMinTemp: Float? = null,
     sessionMaxTemp: Float? = null,
 ) {
-    val tempColor = statusColorForTemperature(thermal.batteryTempC)
-    val bandLabel = temperatureBandLabel(thermal.batteryTempC)
+    val temperatureMeasurement =
+        platformTelemetryMeasurement(
+            value = thermal.batteryTempC.takeIf { it > 0f },
+            unavailableValue = 0f,
+        )
+    val bandLabel =
+        if (temperatureMeasurement.confidence == Confidence.UNAVAILABLE) {
+            stringResource(R.string.not_available)
+        } else {
+            temperatureBandLabel(temperatureMeasurement.value)
+        }
+    val statusTone =
+        when {
+            temperatureMeasurement.confidence == Confidence.UNAVAILABLE -> StatusTone.UNAVAILABLE
+            temperatureMeasurement.value < 35f -> StatusTone.HEALTHY
+            temperatureMeasurement.value < 40f -> StatusTone.FAIR
+            temperatureMeasurement.value < 45f -> StatusTone.POOR
+            else -> StatusTone.CRITICAL
+        }
     val statusColors = MaterialTheme.statusColors
 
     val optimalLabel = stringResource(R.string.thermal_cool)
@@ -431,25 +453,19 @@ private fun ThermalHeroCard(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
 
             // Large typographic temperature
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    text = formatTemperatureValue(thermal.batteryTempC, temperatureUnit),
-                    style = MaterialTheme.numericHeroDisplayTextStyle,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = stringResource(temperatureUnitRes(temperatureUnit)),
-                    style = MaterialTheme.numericHeroDisplayUnitTextStyle,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 2.dp, bottom = 12.dp),
-                )
-            }
-
-            Text(
-                text = bandLabel,
-                style = MaterialTheme.typography.titleMedium,
-                color = tempColor,
+            MeasuredHeroValue(
+                value =
+                    if (temperatureMeasurement.confidence == Confidence.UNAVAILABLE) {
+                        stringResource(R.string.placeholder_dash)
+                    } else {
+                        formatTemperatureValue(temperatureMeasurement.value, temperatureUnit)
+                    },
+                unit = stringResource(temperatureUnitRes(temperatureUnit)),
+                confidence = temperatureMeasurement.confidence,
+                valueStyle = MaterialTheme.numericHeroDisplayTextStyle,
+                unitStyle = MaterialTheme.numericHeroDisplayUnitTextStyle,
             )
+            StatusPill(label = bandLabel, tone = statusTone)
 
             if (sessionMinTemp != null && sessionMaxTemp != null &&
                 sessionMinTemp != sessionMaxTemp

@@ -809,15 +809,22 @@ one component boundary:
   padding. It is the implemented shell for Battery, Network, Thermal, Storage,
   Speed Test, Charger Comparison, App Usage, Learn, Export, and Pro Upgrade,
   plus protected tool entry states.
-- `ExpressiveSingleChoiceSelector<T>` renders equal-width single-choice
-  segmented options and is used by Insights filters and the Settings theme
-  selector.
+- `ExpressiveSingleChoiceSelector<T>` renders connected, equal-width
+  single-choice options when there are at most four choices. Longer sets use
+  the same connected segmented shape in a horizontal scroll container, with
+  104dp minimum option width, up to two label lines, and a 48dp minimum touch
+  target.
 - `RuncheckActionCard` is the 28dp hero action surface with a 1dp ActionCard
   outline, 24dp content padding, an outlined icon, and a 56dp primary CTA.
 - `InfoBanner` delegates deterministic, dismissible information to the shared
   info-card behavior.
 - `StatusPill` maps a text label and optional outlined icon to an opaque semantic
   status container/foreground pair. It never conveys status through color alone.
+- `MeasuredHeroValue` pairs a hero value with its unit and the shared
+  `ConfidenceBadge`. Raw Android platform telemetry is conservatively presented
+  as estimated, or unavailable when the platform value is missing.
+- `SecondaryActionLink` is the compact text-and-arrow action for a related
+  destination that must not compete with the screen's primary action.
 - `LearnTopicLink` is the shared full-width related-content link.
 - `ExpressiveEmptyState` provides an icon, title, and supporting message; its
   icon minimum size comes from `UiTokens.touchTarget`.
@@ -1180,6 +1187,8 @@ Other battery panels:
 - At most one eligible information banner is shown. Selection is deterministic:
   severity first, then catalog order; dismissed banners and the global tips
   preference are respected.
+- Charger Comparison is a compact secondary action link, not a full-width
+  primary panel or button.
 - The footer links to the prefiltered Battery topic in Learn.
 
 ### 9.3 Network Detail
@@ -1213,9 +1222,11 @@ Network hero:
 - Numeric metrics row gap: 24dp.
 - Signal dBm and latency ms use `numericMetricDisplayTextStyle` 48sp.
 - Unit style: `numericHeroDisplayUnitTextStyle`.
-- Unit padding: start 2dp, bottom 8dp.
+- Both raw Android values use `MeasuredHeroValue` with an estimated or
+  unavailable `ConfidenceBadge`; the UI does not invent an accurate rating.
 - Optional signal `LiveChart`.
-- Metrics row gap: 16dp, with latency, bandwidth, and band pills.
+- Metrics row gap: 16dp, with bandwidth and band pills. Latency is not repeated
+  as an unbadged raw value below the confidence-aware hero metric.
 
 Signal history:
 
@@ -1372,8 +1383,9 @@ Thermal hero:
 - Header/value gap: 24dp.
 - Temperature value: `numericHeroDisplayTextStyle`.
 - Unit: `numericHeroDisplayUnitTextStyle`.
-- Unit padding: start 2dp, bottom 12dp.
-- Thermal band: `titleMedium` with status color.
+- The raw Android battery temperature uses `MeasuredHeroValue` with an
+  estimated or unavailable `ConfidenceBadge`.
+- Thermal band uses `StatusPill` with the matching semantic tone.
 - Optional session min/max: `bodySmall`, top gap 4dp.
 - Segmented status bar after 24dp.
 - Gap after status bar: 8dp.
@@ -1676,7 +1688,8 @@ App usage item:
   - Height 4dp.
   - Track `surfaceVariant`.
   - Semantics includes content description and progress range.
-- Optional drain text: `bodySmall`, `onSurfaceVariant`.
+- Per-app estimated mAh drain is not shown. Foreground duration and usage share
+  do not support a defensible per-app drain claim.
 - A connected Usage / Not used selector is present. Task 5 does not create an
   unused-app data flow; the Not used side therefore exposes a truthful empty
   placeholder until that flow exists.
@@ -1714,7 +1727,8 @@ Selected charger card:
 
 Empty state:
 
-- Shared `ExpressiveEmptyState` with outlined add icon.
+- Shared `ExpressiveEmptyState` with an outlined battery-charging and add icon
+  illustration group.
 - Inline full-width Add charger CTA.
 - Charging sessions remain automatic; there is no manual Start session action.
 
@@ -1745,7 +1759,7 @@ Charger card:
 - Padding: 16dp.
 - Header row space between.
 - Name: `titleMedium`.
-- Selected label: `bodySmall`, primary.
+- Selected and active labels use the shared semantic `StatusPill`.
 - Text column gap: 2dp.
 - Delete icon button uses outlined delete, tint `onSurfaceVariant`.
 - Spacers: 4dp after header, 4dp after sessions, 8dp before action.
@@ -1816,6 +1830,9 @@ Learn list:
 - `ExpressiveDetailScaffold`.
 - Connected topic selector with exactly Battery, Network, Thermal, Storage, and
   Privacy in that order.
+- Privacy contains a dedicated data-and-privacy article. The existing general
+  health score, software-versus-hardware, and background-monitoring articles
+  remain directly addressable but are not relabeled as Privacy.
 - Detail-screen links open Learn with the matching topic preselected.
 - `LazyColumn`.
 - Horizontal padding: 16dp, owned by the scaffold.

@@ -350,6 +350,8 @@ class NetworkViewModelTest {
             every { runSpeedTest(any()) } returns
                 flow {
                     emit(SpeedTestProgress.PingPhase(pingMs = 12, jitterMs = 2))
+                    emit(SpeedTestProgress.DownloadPhase(currentMbps = 85.5, progress = 0.4f))
+                    emit(SpeedTestProgress.UploadPhase(currentMbps = 21.5, progress = 0.6f))
                     awaitCancellation()
                 }
 
@@ -364,8 +366,15 @@ class NetworkViewModelTest {
             viewModel.stopSpeedTest()
             runCurrent()
 
-            assertFalse(viewModel.speedTestState.value.isRunning)
-            assertEquals(SpeedTestPhase.Idle, viewModel.speedTestState.value.phase)
+            val stoppedState = viewModel.speedTestState.value
+            assertFalse(stoppedState.isRunning)
+            assertEquals(SpeedTestPhase.Idle, stoppedState.phase)
+            assertEquals(0, stoppedState.pingMs)
+            assertEquals(null, stoppedState.jitterMs)
+            assertEquals(0.0, stoppedState.downloadMbps, 0.0)
+            assertEquals(0.0, stoppedState.uploadMbps, 0.0)
+            assertEquals(0f, stoppedState.downloadProgress, 0f)
+            assertEquals(0f, stoppedState.uploadProgress, 0f)
             coVerify(exactly = 0) { finalizeSpeedTest(any(), any()) }
             viewModel.stopObserving()
         }
