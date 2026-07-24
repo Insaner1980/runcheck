@@ -166,16 +166,9 @@ fun RuncheckNavHost(
                             childRoute = Screen.Charger.route,
                         )
                     },
-                    onNavigateToSpeedTest = {
-                        navController.navigateNested(
-                            parentRoute = Screen.Network.route,
-                            childRoute = Screen.SpeedTest.route,
-                        )
-                    },
                     onNavigateToAppUsage = { navController.navigateSingleTop(Screen.AppUsage.route) },
                     onNavigateToInsights = { navController.navigateTopLevel(TopLevelDestination.Insights) },
                     onNavigateToProUpgrade = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
-                    onNavigateToLearn = { navController.navigateSingleTop(Screen.Learn.route) },
                     onNavigateToLearnArticle = { articleId ->
                         navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
                     },
@@ -212,6 +205,7 @@ fun RuncheckNavHost(
                     onNavigateToLearn = { navController.navigateSingleTop(Screen.Learn.route) },
                     onNavigateToWeeklyReport = { navController.navigateSingleTop(Screen.WeeklyReport.route) },
                     onNavigateToExport = { navController.navigateSingleTop(Screen.Export.route) },
+                    hasProAccess = appShellState.hasProAccess,
                 )
             }
             composable(Screen.Battery.route) { entry ->
@@ -330,6 +324,12 @@ fun RuncheckNavHost(
                     onNavigateToLearnArticle = { articleId ->
                         navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
                     },
+                    onNavigateToExport = {
+                        navController.navigateSingleTop(Screen.Export.route)
+                    },
+                    onNavigateToProUpgrade = {
+                        navController.navigateSingleTop(Screen.ProUpgrade.route)
+                    },
                 )
             }
             composable(Screen.SpeedTest.route) {
@@ -352,7 +352,14 @@ fun RuncheckNavHost(
                 ProUpgradeScreen(onBack = { navController.popBackStack() })
             }
             composable(Screen.WeeklyReport.route) {
-                WeeklyReportEntryScreen(onBack = { navController.popBackStack() })
+                WeeklyReportEntryScreen(
+                    proStatusReady = appShellState.proStatusReady,
+                    hasProAccess = appShellState.hasProAccess,
+                    onBack = { navController.popBackStack() },
+                    onUpgradeToPro = {
+                        navController.navigateSingleTop(Screen.ProUpgrade.route)
+                    },
+                )
             }
             composable(Screen.Export.route) {
                 ExportEntryScreen(

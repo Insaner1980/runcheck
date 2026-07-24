@@ -200,7 +200,6 @@ fun RuncheckTheme(
         LocalReducedMotion provides reducedMotion,
         LocalNumericFontFamily provides JetBrainsMonoFontFamily,
         LocalUiTokens provides UiTokens(),
-        LocalChartColors provides chartColors,
         LocalHeroCardColor provides heroCardColor,
     ) {
         MaterialExpressiveTheme(
@@ -208,7 +207,8 @@ fun RuncheckTheme(
             motionScheme = MotionScheme.expressive(),
             typography = RuncheckTypography,
             shapes = RuncheckShapes,
-            content = content,
-        )
+        ) {
+            ChartTheme(colors = chartColors, content = content)
+        }
     }
 }

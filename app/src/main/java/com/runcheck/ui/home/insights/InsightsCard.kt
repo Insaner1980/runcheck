@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -16,11 +15,12 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.domain.insights.model.Insight
 import com.runcheck.ui.components.SectionHeader
+import com.runcheck.ui.theme.BadgeShape
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun InsightsCard(
@@ -45,10 +45,8 @@ fun InsightsCard(
             if (state.unseenInsightCount > 0) {
                 UnseenInsightsBadge(unseenInsightCount = state.unseenInsightCount)
             }
-            if (state.totalInsightCount > insights.size) {
-                TextButton(onClick = onNavigateToInsights) {
-                    Text(text = stringResource(R.string.home_insights_view_all))
-                }
+            TextButton(onClick = onNavigateToInsights) {
+                Text(text = stringResource(R.string.home_insights_view_all))
             }
         }
 
@@ -71,13 +69,13 @@ fun InsightsCard(
 
 data class InsightsCardState(
     val insights: List<Insight>,
-    val totalInsightCount: Int,
     val unseenInsightCount: Int,
     val isPro: Boolean,
 )
 
 @Composable
 private fun UnseenInsightsBadge(unseenInsightCount: Int) {
+    val tokens = MaterialTheme.uiTokens
     val label =
         pluralStringResource(
             id = R.plurals.home_insights_unseen_count,
@@ -93,8 +91,11 @@ private fun UnseenInsightsBadge(unseenInsightCount: Int) {
                     contentDescription = label
                 }.background(
                     color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
-                    shape = RoundedCornerShape(999.dp),
-                ).padding(horizontal = 8.dp, vertical = 4.dp),
+                    shape = BadgeShape,
+                ).padding(
+                    horizontal = tokens.proBadgeHorizontalPadding,
+                    vertical = tokens.badgeVerticalPadding,
+                ),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSecondaryContainer,
     )

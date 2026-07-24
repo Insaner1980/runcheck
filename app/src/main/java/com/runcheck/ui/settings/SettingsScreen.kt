@@ -105,6 +105,8 @@ internal const val DISABLED_CONTENT_ALPHA = 0.38f
 fun SettingsScreen(
     modifier: Modifier = Modifier,
     onNavigateToLearnArticle: (String) -> Unit = {},
+    onNavigateToExport: () -> Unit = {},
+    onNavigateToProUpgrade: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -241,6 +243,13 @@ fun SettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
             ) {
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                DisplaySection(
+                    preferences = uiState.preferences,
+                    onSetThemeMode = viewModel::setThemeMode,
+                    onSetTemperatureUnit = viewModel::setTemperatureUnit,
+                    onSetShowInfoCards = viewModel::setShowInfoCards,
+                )
+
                 MonitoringSection(
                     context = context,
                     monitoringInterval = uiState.preferences.monitoringInterval,
@@ -249,16 +258,6 @@ fun SettingsScreen(
                     onNavigateToMonitoringHelp = {
                         onNavigateToLearnArticle(LearnArticleIds.BACKGROUND_MONITORING)
                     },
-                )
-
-                LiveNotificationSection(
-                    preferences = uiState.preferences,
-                    onLiveNotificationEnabledChange = updateLiveNotificationEnabled,
-                    onSetLiveNotifCurrent = viewModel::setLiveNotifCurrent,
-                    onSetLiveNotifDrainRate = viewModel::setLiveNotifDrainRate,
-                    onSetLiveNotifTemperature = viewModel::setLiveNotifTemperature,
-                    onSetLiveNotifScreenStats = viewModel::setLiveNotifScreenStats,
-                    onSetLiveNotifRemainingTime = viewModel::setLiveNotifRemainingTime,
                 )
 
                 NotificationsSection(
@@ -282,26 +281,28 @@ fun SettingsScreen(
                     onResetThresholdsClick = { showResetThresholdsDialogState.value = true },
                 )
 
-                DisplaySection(
+                LiveNotificationSection(
                     preferences = uiState.preferences,
-                    onSetTemperatureUnit = viewModel::setTemperatureUnit,
-                    onSetShowInfoCards = viewModel::setShowInfoCards,
+                    onLiveNotificationEnabledChange = updateLiveNotificationEnabled,
+                    onSetLiveNotifCurrent = viewModel::setLiveNotifCurrent,
+                    onSetLiveNotifDrainRate = viewModel::setLiveNotifDrainRate,
+                    onSetLiveNotifTemperature = viewModel::setLiveNotifTemperature,
+                    onSetLiveNotifScreenStats = viewModel::setLiveNotifScreenStats,
+                    onSetLiveNotifRemainingTime = viewModel::setLiveNotifRemainingTime,
                 )
 
                 DataSection(
                     uiState = uiState,
                     onSetDataRetention = viewModel::setDataRetention,
-                    onExportData = viewModel::exportData,
+                    onNavigateToExport = onNavigateToExport,
                     onResetTipsClick = { showResetTipsDialogState.value = true },
                     onClearSpeedTestsClick = { showClearSpeedTestsDialogState.value = true },
                     onClearAllDataClick = { showClearDialogState.value = true },
                 )
 
-                DebugInsightsSection(
-                    uiState = uiState,
-                    onSeedDemoInsights = viewModel::seedDemoInsights,
-                    onGenerateInsightsNow = viewModel::generateInsightsNow,
-                    onClearInsights = viewModel::clearInsights,
+                WidgetsSection(
+                    isPro = uiState.isPro,
+                    onNavigateToProUpgrade = onNavigateToProUpgrade,
                 )
 
                 ProSection(
@@ -317,6 +318,13 @@ fun SettingsScreen(
                 )
 
                 SettingsAboutSection(context = context)
+
+                DebugInsightsSection(
+                    uiState = uiState,
+                    onSeedDemoInsights = viewModel::seedDemoInsights,
+                    onGenerateInsightsNow = viewModel::generateInsightsNow,
+                    onClearInsights = viewModel::clearInsights,
+                )
 
                 SettingsTransientEffects(
                     uiState = uiState,

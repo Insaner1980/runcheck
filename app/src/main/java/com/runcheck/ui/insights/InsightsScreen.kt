@@ -1,29 +1,36 @@
 package com.runcheck.ui.insights
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ContentContainer
+import com.runcheck.ui.components.ExpressiveEmptyState
+import com.runcheck.ui.components.ExpressiveSingleChoiceSelector
 import com.runcheck.ui.components.PrimaryTopBar
+import com.runcheck.ui.components.RuncheckLoadingIndicator
+import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.home.insights.InsightNavigationHandlers
 import com.runcheck.ui.home.insights.InsightRow
 import com.runcheck.ui.home.insights.resolveInsightNavigationAction
@@ -36,6 +43,8 @@ fun InsightsScreen(
     viewModel: InsightsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var selectedFilter by rememberSaveable { mutableStateOf(InsightFilter.ALL) }
+    val loadingDescription = stringResource(R.string.a11y_loading)
 
     Column(modifier = modifier.fillMaxSize()) {
         PrimaryTopBar(title = stringResource(R.string.insights_screen_title))
@@ -43,12 +52,11 @@ fun InsightsScreen(
         when (val state = uiState) {
             InsightsUiState.Loading -> {
                 ContentContainer(modifier = Modifier.fillMaxSize()) {
-                    Column(
+                    Box(
                         modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                        contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator()
+                        RuncheckLoadingIndicator(contentDescription = loadingDescription)
                     }
                 }
             }
@@ -59,7 +67,7 @@ fun InsightsScreen(
                         modifier =
                             Modifier
                                 .fillMaxSize()
-                                .padding(24.dp),
+                                .padding(MaterialTheme.spacing.lg),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
@@ -73,35 +81,51 @@ fun InsightsScreen(
             }
 
             is InsightsUiState.Success -> {
+                val filteredInsights = selectedFilter.applyTo(state.insights)
                 ContentContainer {
                     Column(
                         modifier =
                             Modifier
                                 .verticalScroll(rememberScrollState())
-                                .padding(horizontal = 24.dp),
+                                .padding(horizontal = MaterialTheme.spacing.base),
                         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
                     ) {
                         Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+
+                        SectionHeader(text = stringResource(R.string.insights_filter_title))
+                        ExpressiveSingleChoiceSelector(
+                            options = InsightFilter.entries,
+                            selected = selectedFilter,
+                            labelFor = { filter ->
+                                stringResource(
+                                    when (filter) {
+                                        InsightFilter.ALL -> R.string.insights_filter_all
+                                        InsightFilter.IMPORTANT -> R.string.insights_filter_important
+                                    },
+                                )
+                            },
+                            onSelect = { selectedFilter = it },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
 
                         Text(
                             text =
                                 pluralStringResource(
                                     id = R.plurals.insights_screen_count,
-                                    count = state.insights.size,
-                                    state.insights.size,
+                                    count = filteredInsights.size,
+                                    filteredInsights.size,
                                 ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
 
-                        if (state.insights.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.insights_screen_empty),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        if (filteredInsights.isEmpty()) {
+                            ExpressiveEmptyState(
+                                title = stringResource(R.string.insights_empty_title),
+                                message = stringResource(R.string.insights_screen_empty),
                             )
                         } else {
-                            state.insights.forEach { insight ->
+                            filteredInsights.forEach { insight ->
                                 val navigationAction =
                                     resolveInsightNavigationAction(
                                         insight = insight,

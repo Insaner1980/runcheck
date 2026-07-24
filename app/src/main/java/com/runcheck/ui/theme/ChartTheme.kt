@@ -2,6 +2,7 @@ package com.runcheck.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -43,3 +44,14 @@ val MaterialTheme.chartColors: ChartColors
     @Composable
     @ReadOnlyComposable
     get() = LocalChartColors.current
+
+@Composable
+fun ChartTheme(
+    colors: ChartColors,
+    content: @Composable () -> Unit,
+) {
+    CompositionLocalProvider(
+        LocalChartColors provides colors,
+        content = content,
+    )
+}

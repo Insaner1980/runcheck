@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -32,9 +31,13 @@ import com.runcheck.R
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.model.TemperatureUnit
+import com.runcheck.domain.model.ThemeMode
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.components.CardSectionTitle
+import com.runcheck.ui.components.ExpressiveSingleChoiceSelector
+import com.runcheck.ui.components.ProBadgePill
+import com.runcheck.ui.components.RuncheckLoadingIndicator
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.uiTokens
@@ -313,12 +316,36 @@ internal fun AlertThresholdsSection(
 @Composable
 internal fun DisplaySection(
     preferences: UserPreferences,
+    onSetThemeMode: (ThemeMode) -> Unit,
     onSetTemperatureUnit: (TemperatureUnit) -> Unit,
     onSetShowInfoCards: (Boolean) -> Unit,
 ) {
     SettingsCard {
         CardSectionTitle(text = stringResource(R.string.settings_display))
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+
+        Text(
+            text = stringResource(R.string.settings_theme),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        ExpressiveSingleChoiceSelector(
+            options = ThemeMode.entries,
+            selected = preferences.themeMode,
+            labelFor = { mode ->
+                stringResource(
+                    when (mode) {
+                        ThemeMode.SYSTEM -> R.string.settings_theme_system
+                        ThemeMode.LIGHT -> R.string.settings_theme_light
+                        ThemeMode.DARK -> R.string.settings_theme_dark
+                    },
+                )
+            },
+            onSelect = onSetThemeMode,
+        )
+
+        SettingsDivider()
 
         Text(
             text = stringResource(R.string.settings_temp_unit),
@@ -352,14 +379,11 @@ internal fun DisplaySection(
 internal fun DataSection(
     uiState: SettingsUiState,
     onSetDataRetention: (DataRetention) -> Unit,
-    onExportData: () -> Unit,
+    onNavigateToExport: () -> Unit,
     onResetTipsClick: () -> Unit,
     onClearSpeedTestsClick: () -> Unit,
     onClearAllDataClick: () -> Unit,
 ) {
-    val tokens = MaterialTheme.uiTokens
-    val exportingDescription = stringResource(R.string.a11y_exporting_data)
-
     SettingsCard {
         CardSectionTitle(text = stringResource(R.string.settings_data_section))
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
@@ -385,25 +409,10 @@ internal fun DataSection(
             )
         }
         SettingsDivider()
-        OutlinedButton(
-            onClick = onExportData,
-            enabled = uiState.isPro && !uiState.isExporting,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            if (uiState.isExporting) {
-                CircularProgressIndicator(
-                    modifier =
-                        Modifier
-                            .size(tokens.iconMedium)
-                            .semantics {
-                                contentDescription = exportingDescription
-                            },
-                    strokeWidth = 2.dp,
-                )
-            } else {
-                Text(stringResource(R.string.settings_export_data))
-            }
-        }
+        SettingsNavigationRow(
+            label = stringResource(R.string.settings_export_data),
+            onClick = onNavigateToExport,
+        )
 
         SettingsDivider()
         SettingsNavigationRow(
@@ -421,6 +430,47 @@ internal fun DataSection(
             labelColor = MaterialTheme.colorScheme.error,
             onClick = onClearAllDataClick,
         )
+    }
+}
+
+@Composable
+internal fun WidgetsSection(
+    isPro: Boolean,
+    onNavigateToProUpgrade: () -> Unit,
+) {
+    SettingsCard {
+        CardSectionTitle(text = stringResource(R.string.settings_widgets))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+        Text(
+            text = stringResource(R.string.settings_widgets_description),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        SettingsDivider()
+        if (isPro) {
+            SettingsValueRow(
+                label = stringResource(R.string.settings_widgets_status),
+                value = stringResource(R.string.settings_widgets_available),
+                valueColor = MaterialTheme.statusColors.healthy,
+            )
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_widgets_locked),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                ProBadgePill()
+            }
+            SettingsNavigationRow(
+                label = stringResource(R.string.pro_feature_upgrade_action),
+                onClick = onNavigateToProUpgrade,
+            )
+        }
     }
 }
 
@@ -450,7 +500,10 @@ internal fun DebugInsightsSection(
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                CircularProgressIndicator(modifier = Modifier.size(tokens.iconMedium), strokeWidth = 2.dp)
+                RuncheckLoadingIndicator(
+                    modifier = Modifier.size(tokens.iconMedium),
+                    contentDescription = stringResource(R.string.settings_debug_insights_running),
+                )
                 Text(
                     text = stringResource(R.string.settings_debug_insights_running),
                     style = MaterialTheme.typography.bodyMedium,

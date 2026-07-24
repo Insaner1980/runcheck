@@ -28,6 +28,7 @@ Primary source files:
 - `app/src/main/java/com/runcheck/ui/learn/`
 - `app/src/main/java/com/runcheck/ui/insights/`
 - `app/src/main/java/com/runcheck/ui/charger/`
+- `app/src/main/java/com/runcheck/ui/tools/`
 - `app/src/main/java/com/runcheck/ui/fullscreen/`
 - `app/src/main/java/com/runcheck/ui/navigation/`
 
@@ -430,7 +431,7 @@ Fullscreen chart route:
 - Background: `MaterialTheme.colorScheme.surface`.
 - Horizontal arrangement: `spacedBy(8.dp)`.
 - Title style: `headlineSmall`.
-- Optional menu/settings icon button; absent button leaves a 4dp spacer.
+- Optional menu icon button; absent button leaves a 4dp spacer.
 
 `DetailTopBar`:
 
@@ -798,6 +799,33 @@ Fullscreen chart controls:
 - 4dp spacer.
 - Metric chips second.
 
+### 7.23 Expressive Wrappers
+
+`ExpressiveComponents.kt` keeps reusable Material 3 Expressive surfaces behind
+one component boundary:
+
+- `ExpressiveDetailScaffold` combines the shared detail top bar, constrained
+  content, and 16dp horizontal content padding.
+- `ExpressiveSingleChoiceSelector<T>` renders equal-width single-choice
+  segmented options and is used by Insights filters and the Settings theme
+  selector.
+- `RuncheckActionCard` is the 28dp hero action surface with a 1dp ActionCard
+  outline, 24dp content padding, an outlined icon, and a 56dp primary CTA.
+- `InfoBanner` delegates deterministic, dismissible information to the shared
+  info-card behavior.
+- `StatusPill` maps a text label and optional outlined icon to an opaque semantic
+  status container/foreground pair. It never conveys status through color alone.
+- `LearnTopicLink` is the shared full-width related-content link.
+- `ExpressiveEmptyState` provides an icon, title, and supporting message.
+- `RuncheckLoadingIndicator` owns the experimental morphing loading indicator.
+  Reduced motion renders a fixed determinate shape instead of continuous morphing.
+- `RuncheckWavyProgress` owns the circular wavy progress API. It uses the
+  1200ms ring token and removes wave amplitude and speed under reduced motion.
+- `AppDisplayName` trims a real app label and otherwise derives a readable
+  package-tail fallback.
+- `ChartTheme` owns the chart color composition local selected by
+  `RuncheckTheme`.
+
 ---
 
 ## 8. Chart System
@@ -1028,127 +1056,43 @@ Trend threshold:
 
 Structure:
 
-- `PrimaryTopBar` with app name and settings action.
+- Lightweight `PrimaryTopBar` with the lowercase app name and no Settings action.
 - `ContentContainer`.
 - Vertical scroll column.
 - Horizontal padding: 16dp.
-- `navigationBarsPadding()`.
 - Top spacer: 4dp.
-- Major section spacers: commonly 12dp and 24dp.
+- Section gap: 12dp.
 - Bottom spacer: 32dp.
 - Wide layout threshold: `screenWidthDp >= 600`.
 
-Health score card:
+First viewport:
 
-- Hero card uses `BgCardDeep`.
-- Column padding: 24dp horizontal and 24dp vertical.
-- Center aligned.
-- Header: `SectionHeader`.
-- Header/value gap: 24dp.
-- Score: `numericHeroDisplayTextStyle` 64sp.
-- Unit/percent: `numericHeroDisplayUnitTextStyle` 28sp.
-- Unit padding: start 4dp, bottom 12dp.
-- Status summary: `bodyLarge`.
-- Optional high-temperature warning: `bodySmall`, poor status color.
-- Category bar follows after 24dp.
-
-Health category bar:
-
-- Four equal segments.
-- Row gap: 3dp.
-- Segment height: 6dp.
-- Segment corner radius: 4dp.
-- Labels appear after 4dp.
-- Labels: `labelSmall`.
-- A disconnected network segment and label use the unavailable color instead of a critical status color.
-
-Health breakdown row:
-
-- Minimum height: 48dp.
-- Optional clickable behavior.
-- Vertical padding: 12dp.
-- Status dot before text.
-- Status dot trailing gap: 8dp.
-- A disconnected network row shows `Unrated` with the unavailable status color instead of `0%` with critical styling.
-- Numeric value: `titleMedium` with JetBrains Mono.
-
-Battery hero card on Home:
-
-- Card background: default `surfaceContainer`.
-- Padding: 24dp horizontal, 16dp vertical.
-- Header: `SectionHeader`.
-- Numeric battery value: 54sp `numericHeroLargeValueTextStyle`.
-- Percent unit: `headlineLarge` using numeric font.
-- Unit padding: start 2dp, bottom 12dp.
-- Decorative battery icon wrapper: 130dp.
-- Metrics row gap: 12dp.
-
-Home battery charge icon:
-
-- Canvas size: 80dp by 124dp.
-- Battery cap: 18dp by 5dp.
-- Cap radius: 2dp.
-- Body top offset: cap height + 1dp.
-- Body stroke: 2dp.
-- Body corner radius: 12dp.
-- Fill inset: 4dp.
-- Fill corner radius: 8dp.
-- Charging wave amplitude: 3dp.
-- Charging loop duration: 2000ms linear.
-- Wave is disabled by reduced motion.
-- Text inside uses `labelLarge`, numeric font, bold.
-- Icon semantics cleared.
+- A stale-monitoring `InfoBanner` appears only while `monitoringStale` is true.
+- `HomeHealthHero` uses the 28dp hero shape, hero surface color, and 24dp
+  padding.
+- The overall score is rendered inside a 148dp determinate
+  `RuncheckWavyProgress`; the semantic description reports the score out of 100.
+- A text `StatusPill` identifies Healthy, Fair, Poor, or Critical alongside
+  "Current device snapshot" and the explicit note that the score uses available
+  device-reported signals.
+- The hero does not repeat the four category breakdown rows.
 
 Home grid:
 
 - Wide layout: one row of four `GridCard`s with 8dp gaps.
 - Compact layout: two rows; row gap 12dp, column gap 8dp.
 - Grid cards use equal weights.
-
-Quick tools:
-
-- Section header.
-- Header/card gap: 8dp.
-- Container card: large shape, `surfaceContainer`.
-- Card padding: horizontal 16dp, vertical 4dp.
-- Rows are `ListRow`.
-- Dividers use outlineVariant alpha 0.35.
-- App usage row can show a locked overlay with scrim alpha 0.14 and a
-  trailing `ProBadgePill`.
+- Grid order is Battery, Network, Thermal, Storage.
+- Each grid card pairs its semantic icon tint with text: charge/health,
+  signal quality, temperature band, or storage-used percentage.
 
 Home insights card:
 
-- Column gap: 8dp.
-- Header row gap: 8dp.
-- Unseen badge:
-  - Background: `secondaryContainer.copy(alpha = 0.7f)`.
-  - Shape: `RoundedCornerShape(999.dp)`.
-  - Padding: horizontal 8dp, vertical 4dp.
-  - Text: `labelMedium` on secondary container.
-
-Insight row:
-
-- Card shape: large.
-- Background: `surfaceContainer`.
-- Row padding: 16dp.
-- Row gap: 12dp.
-- Leading icon circle uses priority tint:
-  - High: critical.
-  - Medium: poor.
-  - Low: fair.
-- Title: `titleMedium`.
-- Body: `bodyMedium`.
-- Dismiss button: 48dp, icon 18dp.
-- Optional arrow icon: 20dp.
-
-Trial/pro status cards on Home:
-
-- `TrialHomeCard` appears only for active trial.
-- Trial card padding: 16dp.
-- Trial progress bar height: 4dp, corner 2dp.
-- Urgent trial accent: poor status color when days remaining <= 1.
-- Normal trial accent: primary.
-- Post-expiration card padding: 16dp; dismiss action aligned end.
+- Home passes at most one ranked insight to the shared card and always exposes
+  the Insights link.
+- The unseen count remains visible next to the section heading.
+- Only `TrialHomeCard` for an active trial follows the insight. Home no longer
+  owns quick tools, charger comparison, purchased-Pro, or expired-trial cards.
 
 ### 9.2 Battery Detail
 
@@ -1783,8 +1727,8 @@ Dialogs:
 
 Structure:
 
-- `DetailTopBar`.
-- Loading state: centered `CircularProgressIndicator` inside `ContentContainer`.
+- Top-level `PrimaryTopBar`; there is no back action.
+- Loading state: centered `RuncheckLoadingIndicator` inside `ContentContainer`.
 - Error state:
   - Centered column.
   - Padding 24dp.
@@ -1792,14 +1736,34 @@ Structure:
 - Success state:
   - `ContentContainer`.
   - Vertical scroll column.
-  - Horizontal padding 24dp.
-  - `navigationBarsPadding()`.
+  - Horizontal padding 16dp.
   - Vertical gap 8dp.
   - Top spacer 8dp.
-  - Count text: `bodyMedium`, `onSurfaceVariant`.
-  - Empty text: `bodyMedium`, `onSurfaceVariant`.
+  - `SectionHeader` plus an equal-width `ExpressiveSingleChoiceSelector` for
+    All and Important.
+  - Important includes High and Medium priorities.
+  - Count text follows the selected filter.
+  - Empty results use `ExpressiveEmptyState`.
   - Insight rows use the shared `InsightRow`.
   - Bottom spacer 32dp.
+
+Insight rows pair the priority color with a High/Medium/Low text
+`StatusPill`, show the localized generated timestamp, and keep existing
+dismissal and destination behavior. Displaying the screen marks visible unseen
+rows as seen through `InsightsViewModel`, which clears the app-shell badge.
+
+### 9.10a Tools
+
+- Top-level `PrimaryTopBar`; there is no back action.
+- A 28dp `RuncheckActionCard` dominates the first viewport with the outlined
+  Speed icon, M-Lab NDT7 context, and a 56dp "Run speed test" CTA.
+- The Device tools section is a two-by-two `GridCard` bento:
+  Storage cleanup, Charger Comparison, App Battery Usage, and Weekly Report.
+- All four Pro tools stay visible for Free users, expose the standard locked
+  semantics and `PRO` badge, and open their existing protected destination.
+- Learn uses `LearnTopicLink`.
+- Export is a secondary `ListRow`; Free users see the same `ProBadgePill` and
+  reach the standard Export locked state.
 
 ### 9.11 Learn
 
@@ -1857,7 +1821,7 @@ Related articles:
 
 Structure:
 
-- `DetailTopBar`.
+- Top-level `PrimaryTopBar`; there is no back action.
 - `ContentContainer`.
 - Vertical scroll column.
 - Horizontal padding: 16dp.
@@ -1934,6 +1898,10 @@ SettingsNavigationRow:
 
 Sections:
 
+- Display:
+  - System, Light, and Dark use `ExpressiveSingleChoiceSelector`.
+  - The selection updates DataStore immediately through `SettingsViewModel`.
+  - Temperature unit and info-card controls remain below the theme selector.
 - Monitoring:
   - `CardSectionTitle`.
   - Note text: `bodyMedium`, `onSurfaceVariant`.
@@ -1954,22 +1922,15 @@ Sections:
 - Alert thresholds:
   - Three `SettingsSlider`s separated by dividers.
   - Reset button appears only when thresholds differ from defaults.
-- Display:
-  - Temperature unit title `titleSmall`.
-  - Celsius/Fahrenheit radio rows.
-  - Divider before info card toggle.
 - Data:
   - Description: `bodySmall`, `onSurfaceVariant`.
   - Retention rows separated by dividers.
-  - Export action: full-width `OutlinedButton`.
-  - Export spinner: 18dp, stroke 2dp.
+  - Export is a navigation row to the protected Export destination.
   - Reset/clear actions use `SettingsNavigationRow`.
   - Clear all label uses error color.
-- Debug insights:
-  - Only appears when debug insights are available.
-  - Description: `bodySmall`, `onSurfaceVariant`.
-  - Running row: 8dp top spacer, 8dp gap, 18dp spinner, 2dp stroke.
-  - Actions: full-width outlined buttons and text button, 4dp/8dp spacers.
+- Widgets:
+  - Pro users see an Available status.
+  - Free users see a visible Pro badge and upgrade navigation.
 - Pro:
   - Status row uses healthy color when active.
   - Active Pro shows thank-you body text.
@@ -1985,6 +1946,14 @@ Sections:
   - Rows separated by dividers.
   - Open-source licenses dialog text max height: 420dp, bodySmall,
     vertical scroll.
+- Debug insights:
+  - Appears after About and only when debug insight actions exist.
+  - Uses `RuncheckLoadingIndicator` while an action is running.
+  - Actions remain full-width outlined buttons and a text button.
+
+The implemented section order is Display, Monitoring, Notifications (including
+thresholds and live notification), Data, Widgets, Pro, Device Capabilities,
+About, and debug-only insights.
 
 Settings dialogs:
 
@@ -2292,7 +2261,9 @@ Current UI color rules as implemented:
 
 Current UI state rules as implemented:
 
-- Loading states are centered `CircularProgressIndicator`s.
+- Home, Insights, Settings debug actions, Weekly Report access readiness, and
+  Export access readiness use `RuncheckLoadingIndicator`; detail screens not
+  yet migrated continue to use their existing indicators.
 - Error states use body text and retry buttons where available.
 - Empty states use muted body text or card-based prompts.
 - Pro-locked states navigate to Pro or show the shared locked/callout UI.
@@ -2306,11 +2277,10 @@ Current UI state rules as implemented:
 These details are present in the current code and should be treated as existing
 UI behavior:
 
-- `InsightsScreen` uses 24dp horizontal padding, while most other screens use
-  16dp.
+- Top-level Home, Insights, Tools, and Settings use 16dp horizontal content padding.
 - Pro upgrade content uses 24dp horizontal padding.
 - Thermal hero uses 24dp horizontal/vertical padding.
-- Home health hero uses 24dp horizontal/vertical padding.
+- Home health hero uses 24dp horizontal/vertical padding and a 148dp wavy ring.
 - Battery, Network, and Storage detail heroes use 16dp padding.
 - Fullscreen chart top bar uses 8dp horizontal padding and 4dp vertical
   padding.

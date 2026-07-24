@@ -63,6 +63,7 @@ import com.runcheck.R
 import com.runcheck.domain.model.AppBatteryUsage
 import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.resolve
+import com.runcheck.ui.components.AppDisplayName
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.IconCircle
@@ -373,10 +374,9 @@ private fun AppUsageItem(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
-                        Text(
-                            text = app.appLabel,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
+                        AppDisplayName(
+                            appLabel = app.appLabel,
+                            packageName = app.packageName,
                         )
                         Text(
                             text =

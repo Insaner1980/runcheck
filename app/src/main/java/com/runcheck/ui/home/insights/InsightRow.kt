@@ -22,7 +22,10 @@ import androidx.compose.ui.res.stringResource
 import com.runcheck.R
 import com.runcheck.domain.insights.model.Insight
 import com.runcheck.domain.insights.model.InsightPriority
+import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.components.IconCircle
+import com.runcheck.ui.components.StatusPill
+import com.runcheck.ui.components.StatusTone
 import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
@@ -59,6 +62,22 @@ fun InsightRow(
                 tint = priorityTint,
             )
             Column(modifier = with(this) { Modifier.weight(1f) }) {
+                StatusPill(
+                    label =
+                        stringResource(
+                            when (insight.priority) {
+                                InsightPriority.HIGH -> R.string.insight_priority_high
+                                InsightPriority.MEDIUM -> R.string.insight_priority_medium
+                                InsightPriority.LOW -> R.string.insight_priority_low
+                            },
+                        ),
+                    tone =
+                        when (insight.priority) {
+                            InsightPriority.HIGH -> StatusTone.CRITICAL
+                            InsightPriority.MEDIUM -> StatusTone.POOR
+                            InsightPriority.LOW -> StatusTone.FAIR
+                        },
+                )
                 Text(
                     text = resolveInsightTitle(insight),
                     style = MaterialTheme.typography.titleMedium,
@@ -67,6 +86,11 @@ fun InsightRow(
                 Text(
                     text = resolveInsightBody(insight),
                     style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = rememberFormattedDateTime(insight.generatedAt, "MMMdhm"),
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

@@ -9,6 +9,14 @@
     <string name="navigation_home">Home</string>
     <string name="navigation_insights">Insights</string>
     <string name="navigation_tools">Tools</string>
+    <string name="tools_speed_test_subtitle">Measure download, upload, ping, and jitter with M-Lab NDT7.</string>
+    <string name="tools_speed_test_action">Run speed test</string>
+    <string name="tools_device_actions">Device tools</string>
+    <string name="tools_cleanup_subtitle">Find space to review</string>
+    <string name="tools_charger_subtitle">Compare saved chargers</string>
+    <string name="tools_app_usage_subtitle">Review recent foreground use</string>
+    <string name="tools_weekly_report_subtitle">See your weekly summary</string>
+    <string name="tools_more">Learn and export</string>
     <string name="navigation_settings">Settings</string>
     <plurals name="navigation_insights_unseen">
         <item quantity="one">%1$d unseen insight</item>
@@ -40,6 +48,9 @@
     <string name="home_pro_title">Unlock runcheck Pro</string>
     <string name="home_chargers_desc">Test &amp; compare your chargers</string>
     <string name="home_health_score">HEALTH SCORE</string>
+    <string name="home_health_snapshot">Current device snapshot</string>
+    <string name="home_health_confidence">Score uses available device-reported signals</string>
+    <string name="home_storage_used">%1$d%% used</string>
     <string name="home_device_good_shape">Your device is in %1$s shape.</string>
     <string name="home_temp_elevated">Temperature is slightly elevated.</string>
     <string name="home_quick_tools">QUICK TOOLS</string>
@@ -56,6 +67,13 @@
     </plurals>
     <string name="insights_screen_title">Insights</string>
     <string name="insights_screen_empty">No active insights right now.</string>
+    <string name="insights_empty_title">You are all caught up</string>
+    <string name="insights_filter_title">Show insights</string>
+    <string name="insights_filter_all">All</string>
+    <string name="insights_filter_important">Important</string>
+    <string name="insight_priority_high">High priority</string>
+    <string name="insight_priority_medium">Medium priority</string>
+    <string name="insight_priority_low">Low priority</string>
     <plurals name="insights_screen_count">
         <item quantity="one">%1$d active insight</item>
         <item quantity="other">%1$d active insights</item>
@@ -557,6 +575,15 @@
 
     <!-- Settings: Display -->
     <string name="settings_display">Display</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_widgets">Widgets</string>
+    <string name="settings_widgets_description">Home screen widgets show a quick device snapshot without opening runcheck.</string>
+    <string name="settings_widgets_status">Widget access</string>
+    <string name="settings_widgets_available">Available</string>
+    <string name="settings_widgets_locked">Home screen widgets require Pro</string>
     <string name="settings_temp_unit">Temperature Unit</string>
     <string name="settings_temp_celsius">Celsius (°C)</string>
     <string name="settings_temp_fahrenheit">Fahrenheit (°F)</string>
@@ -695,6 +722,7 @@
 
     <!-- App Battery Usage -->
     <string name="app_usage_title">App Battery Usage</string>
+    <string name="app_unknown_name">Unknown app</string>
     <string name="app_usage_no_data">No usage data available for the last 24 hours</string>
     <string name="app_usage_no_data_message">This can happen on a fresh install or right after granting usage access. Give Android a moment, then retry.</string>
     <string name="app_usage_permission_title">Allow usage access</string>
