@@ -76,7 +76,7 @@ Current version catalog highlights:
 | Room | `2.8.4` |
 | Compose BOM | `2026.06.01` |
 | Material3 direct override | `1.5.0-alpha24` |
-| Navigation Compose | `2.9.7` |
+| Navigation Compose | `2.9.8` |
 | Lifecycle | `2.10.0` |
 | Activity Compose | `1.12.3` |
 | Core KTX | `1.18.0` |
