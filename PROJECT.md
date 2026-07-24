@@ -309,11 +309,12 @@ Additional one-time weekly reporting behavior:
   - unique work name: `weekly_report`
   - scheduled as one one-time job for the next local Monday at 09:00; no periodic or retry chain is maintained
   - waits for confirmed Pro readiness before reconciling at app startup, boot/package replacement, weekly-report preference changes, and Pro-state changes; an unready state does not cancel work
-  - routine reconciliation keeps due/running work, while timezone change explicitly replaces the local-time target
+  - routine reconciliation keeps due/running work; a timezone change received before Pro readiness is retained and then consumed as one explicit replacement of the local-time target after eligible readiness
   - canceled when the toggle is off or Pro access is inactive; Pro expiry preserves the user's toggle selection
   - reads the previous completed local Monday 00:00 to Monday 00:00 interval with an exclusive end
   - notification denial or a disabled reports channel records that interval as handled, so permission restoration does not create a catch-up notification
   - posts through the low-importance reports channel and opens Tools → Weekly Report
+  - endpoint-attributed app-usage aggregates are estimates: their recorded total may include activity before the interval or omit interval activity recorded by an endpoint outside it
 
 Supporting monitor components include:
 

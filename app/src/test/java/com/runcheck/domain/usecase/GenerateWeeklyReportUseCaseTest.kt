@@ -167,7 +167,7 @@ class GenerateWeeklyReportUseCaseTest {
         }
 
     @Test
-    fun `app usage crossing the period boundary is explicitly estimated`() =
+    fun `every endpoint attributed app usage aggregate is estimated`() =
         runTest {
             val start = period.startInclusive.toEpochMilli()
             val result =
@@ -178,7 +178,7 @@ class GenerateWeeklyReportUseCaseTest {
                                 (0 until 7).map { day ->
                                     battery(start + day * 24L * 60L * 60L * 1000L, 80, null)
                                 },
-                            appUsage = listOf(app(start + 60_000L, "example.crossing", "Crossing", 120_000L)),
+                            appUsage = listOf(app(start + 60_000L, "example.endpoint", "Endpoint", 0L)),
                         ),
                     ),
                     FakeWeeklyReportProStatus(true),
@@ -186,6 +186,19 @@ class GenerateWeeklyReportUseCaseTest {
 
             assertEquals(WeeklyReportAvailability.ESTIMATED, result.report.coverage.availability)
             assertEquals(WeeklyReportAvailability.ESTIMATED, result.report.topApps.single().availability)
+        }
+
+    @Test
+    fun `empty endpoint attributed app usage remains unavailable`() =
+        runTest {
+            val result =
+                GenerateWeeklyReportUseCase(
+                    FakeWeeklyReportRepository(WeeklyReportSourceData(appUsage = emptyList())),
+                    FakeWeeklyReportProStatus(true),
+                )(period) as WeeklyReportGenerationResult.Available
+
+            assertTrue(result.report.topApps.isEmpty())
+            assertEquals(WeeklyReportAvailability.UNAVAILABLE, result.report.coverage.availability)
         }
 
     private fun battery(

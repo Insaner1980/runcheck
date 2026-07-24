@@ -204,6 +204,87 @@ class WeeklyReportSchedulerTest {
                 )
             }
         }
+
+    @Test
+    fun `unready timezone change is consumed once with replacement after Pro restores`() =
+        runTest {
+            every { preferencesRepository.getPreferences() } returns
+                flowOf(UserPreferences(weeklyReportEnabled = true))
+            val proStatus = SchedulerProStatus(value = false, ready = false)
+            val scheduler =
+                WeeklyReportScheduler(
+                    workManager,
+                    preferencesRepository,
+                    proStatus,
+                    Clock.systemUTC(),
+                    { ZoneId.of("UTC") },
+                )
+            every {
+                workManager.enqueueUniqueWork(
+                    WeeklyReportWorker.WORK_NAME,
+                    ExistingWorkPolicy.REPLACE,
+                    any<OneTimeWorkRequest>(),
+                )
+            } returns operation
+            every {
+                workManager.enqueueUniqueWork(
+                    WeeklyReportWorker.WORK_NAME,
+                    ExistingWorkPolicy.KEEP,
+                    any<OneTimeWorkRequest>(),
+                )
+            } returns operation
+
+            scheduler.rescheduleForTimezoneChange()
+            proStatus.value = true
+            proStatus.ready = true
+            scheduler.ensureScheduled()
+            scheduler.ensureScheduled()
+
+            verify(exactly = 1) {
+                workManager.enqueueUniqueWork(
+                    WeeklyReportWorker.WORK_NAME,
+                    ExistingWorkPolicy.REPLACE,
+                    any<OneTimeWorkRequest>(),
+                )
+            }
+            verify(exactly = 1) {
+                workManager.enqueueUniqueWork(
+                    WeeklyReportWorker.WORK_NAME,
+                    ExistingWorkPolicy.KEEP,
+                    any<OneTimeWorkRequest>(),
+                )
+            }
+        }
+
+    @Test
+    fun `pending timezone reconcile clears without replacement for confirmed free access`() =
+        runTest {
+            every { preferencesRepository.getPreferences() } returns
+                flowOf(UserPreferences(weeklyReportEnabled = true))
+            every { workManager.cancelUniqueWork(WeeklyReportWorker.WORK_NAME) } returns operation
+            val proStatus = SchedulerProStatus(value = false, ready = false)
+            val scheduler =
+                WeeklyReportScheduler(
+                    workManager,
+                    preferencesRepository,
+                    proStatus,
+                    Clock.systemUTC(),
+                    { ZoneId.of("UTC") },
+                )
+
+            scheduler.rescheduleForTimezoneChange()
+            proStatus.ready = true
+            scheduler.ensureScheduled()
+
+            verify(exactly = 1) { workManager.cancelUniqueWork(WeeklyReportWorker.WORK_NAME) }
+            verify(exactly = 0) {
+                workManager.enqueueUniqueWork(
+                    WeeklyReportWorker.WORK_NAME,
+                    ExistingWorkPolicy.REPLACE,
+                    any<OneTimeWorkRequest>(),
+                )
+            }
+        }
 }
 
 private class SchedulerProStatus(

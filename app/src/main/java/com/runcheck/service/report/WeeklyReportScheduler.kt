@@ -6,6 +6,8 @@ import androidx.work.WorkManager
 import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.repository.UserPreferencesRepository
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.Clock
 import java.time.DayOfWeek
 import java.time.Duration
@@ -40,26 +42,33 @@ class WeeklyReportScheduler
             },
         )
 
-        suspend fun ensureScheduled() {
-            schedule(
-                existingWorkPolicy = ExistingWorkPolicy.KEEP,
-                cancelWhenDisabled = true,
-            )
-        }
+        private val reconcileMutex = Mutex()
+        private var timezoneReconcilePending = false
 
-        suspend fun rescheduleForTimezoneChange() {
-            schedule(
-                existingWorkPolicy = ExistingWorkPolicy.REPLACE,
-                cancelWhenDisabled = true,
-            )
-        }
+        suspend fun ensureScheduled() =
+            reconcileMutex.withLock {
+                schedule(
+                    existingWorkPolicy = ExistingWorkPolicy.KEEP,
+                    cancelWhenDisabled = true,
+                )
+            }
 
-        suspend fun scheduleNextAfterCurrent() {
-            schedule(
-                existingWorkPolicy = ExistingWorkPolicy.APPEND_OR_REPLACE,
-                cancelWhenDisabled = false,
-            )
-        }
+        suspend fun rescheduleForTimezoneChange() =
+            reconcileMutex.withLock {
+                timezoneReconcilePending = true
+                schedule(
+                    existingWorkPolicy = ExistingWorkPolicy.KEEP,
+                    cancelWhenDisabled = true,
+                )
+            }
+
+        suspend fun scheduleNextAfterCurrent() =
+            reconcileMutex.withLock {
+                schedule(
+                    existingWorkPolicy = ExistingWorkPolicy.APPEND_OR_REPLACE,
+                    cancelWhenDisabled = false,
+                )
+            }
 
         private suspend fun schedule(
             existingWorkPolicy: ExistingWorkPolicy,
@@ -68,6 +77,7 @@ class WeeklyReportScheduler
             if (!proStatusProvider.isProStatusReady) return
             val preferences = preferencesRepository.getPreferences().first()
             if (!preferences.weeklyReportEnabled || !proStatusProvider.isPro()) {
+                timezoneReconcilePending = false
                 if (cancelWhenDisabled) {
                     workManager.cancelUniqueWork(WeeklyReportWorker.WORK_NAME)
                 }
@@ -82,10 +92,12 @@ class WeeklyReportScheduler
                     .build()
             workManager.enqueueUniqueWork(
                 WeeklyReportWorker.WORK_NAME,
-                existingWorkPolicy,
+                if (timezoneReconcilePending) ExistingWorkPolicy.REPLACE else existingWorkPolicy,
                 request,
             )
+            timezoneReconcilePending = false
         }
+
     }
 
 internal fun nextMondayMorning(

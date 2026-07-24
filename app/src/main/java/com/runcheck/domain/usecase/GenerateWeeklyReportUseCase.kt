@@ -54,12 +54,7 @@ internal fun aggregateWeeklyReport(
                     packageName = packageName,
                     appLabel = rows.lastOrNull()?.appLabel,
                     foregroundTimeMs = rows.sumOf { it.foregroundTimeMs },
-                    availability =
-                        if (rows.any { it.crossesPeriodStart(period) }) {
-                            WeeklyReportAvailability.ESTIMATED
-                        } else {
-                            WeeklyReportAvailability.AVAILABLE
-                        },
+                    availability = WeeklyReportAvailability.ESTIMATED,
                 )
             }.sortedByDescending { it.foregroundTimeMs }
             .take(MAX_TOP_APPS)
@@ -82,7 +77,7 @@ internal fun aggregateWeeklyReport(
     val coverageAvailability =
         when {
             sampleTimes.isEmpty() -> WeeklyReportAvailability.UNAVAILABLE
-            monitoredDays >= DAYS_IN_WEEK && source.appUsage.none { it.crossesPeriodStart(period) } ->
+            monitoredDays >= DAYS_IN_WEEK && source.appUsage.isEmpty() ->
                 WeeklyReportAvailability.AVAILABLE
             else -> WeeklyReportAvailability.ESTIMATED
         }
@@ -201,11 +196,6 @@ private fun median(values: List<Double>): Double? {
         sorted[middle]
     }
 }
-
-private fun com.runcheck.domain.model.AppBatteryUsage.crossesPeriodStart(
-    period: WeeklyReportPeriod,
-): Boolean =
-    foregroundTimeMs > 0L && timestamp - period.startInclusive.toEpochMilli() < foregroundTimeMs
 
 private const val MILLIS_PER_HOUR = 60.0 * 60.0 * 1000.0
 private const val MAX_BATTERY_SAMPLE_GAP_MS = 4L * 60L * 60L * 1000L

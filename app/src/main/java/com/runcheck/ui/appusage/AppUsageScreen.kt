@@ -175,7 +175,6 @@ private fun AppUsageContent(
     var hasUsageAccess by remember(context) { mutableStateOf(context.hasUsageStatsAccess()) }
     var selectedMode by rememberSaveable { mutableStateOf(AppUsageMode.USAGE) }
     var unusedPeriod by rememberSaveable { mutableStateOf(UnusedAppsPeriod.DAYS_30) }
-    var uninstallPending by rememberSaveable { mutableStateOf(false) }
     val maxTime = state.maxForegroundTimeMs.coerceAtLeast(1L)
     val totalTime = state.totalForegroundTimeMs.coerceAtLeast(1L)
 
@@ -188,7 +187,6 @@ private fun AppUsageContent(
         }
         if (selectedMode == AppUsageMode.NOT_USED) {
             onLoadUnusedApps(unusedPeriod, true)
-            uninstallPending = false
         }
         onPauseOrDispose { }
     }
@@ -238,7 +236,6 @@ private fun AppUsageContent(
                     context = context,
                     onRetry = { onLoadUnusedApps(unusedPeriod, true) },
                     onUninstall = { packageName ->
-                        uninstallPending = true
                         context.startActivity(
                             Intent(Intent.ACTION_DELETE, Uri.parse("package:$packageName")),
                         )
