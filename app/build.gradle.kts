@@ -262,6 +262,12 @@ java {
     }
 }
 
+kotlin {
+    compilerOptions {
+        optIn.add("androidx.compose.material3.ExperimentalMaterial3ExpressiveApi")
+    }
+}
+
 android {
     namespace = "com.runcheck"
     compileSdk = 37
@@ -719,6 +725,7 @@ dependencies {
 
     // Core
     implementation(libs.core.ktx)
+    implementation(libs.core.splashscreen)
     implementation(libs.activity.compose)
 
     // Gson

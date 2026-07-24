@@ -1,6 +1,7 @@
 package com.runcheck.domain.usecase
 
 import com.runcheck.domain.model.TemperatureUnit
+import com.runcheck.domain.model.ThemeMode
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.repository.UserPreferencesRepository
 import io.mockk.coVerify
@@ -39,6 +40,7 @@ class ManageUserPreferencesUseCaseTest {
             useCase.setAlertTempThreshold(39)
             useCase.setAlertStorageThreshold(85)
             useCase.setTemperatureUnit(TemperatureUnit.FAHRENHEIT)
+            useCase.setThemeMode(ThemeMode.DARK)
             useCase.setLiveNotificationEnabled(true)
             useCase.setLiveNotifCurrent(false)
             useCase.setLiveNotifDrainRate(false)
@@ -56,6 +58,7 @@ class ManageUserPreferencesUseCaseTest {
             coVerify(exactly = 1) { repository.setAlertTempThreshold(39) }
             coVerify(exactly = 1) { repository.setAlertStorageThreshold(85) }
             coVerify(exactly = 1) { repository.setTemperatureUnit(TemperatureUnit.FAHRENHEIT) }
+            coVerify(exactly = 1) { repository.setThemeMode(ThemeMode.DARK) }
             coVerify(exactly = 1) { repository.setLiveNotificationEnabled(true) }
             coVerify(exactly = 1) { repository.setLiveNotifCurrent(false) }
             coVerify(exactly = 1) { repository.setLiveNotifDrainRate(false) }

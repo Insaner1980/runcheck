@@ -15,6 +15,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.model.TemperatureUnit
+import com.runcheck.domain.model.ThemeMode
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.repository.InfoCardDismissalRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
@@ -91,6 +92,7 @@ class UserPreferencesRepositoryImpl
                     alertBatteryThreshold = prefs[KEY_ALERT_BATTERY] ?: 20,
                     alertTempThreshold = prefs[KEY_ALERT_TEMP] ?: 42,
                     alertStorageThreshold = prefs[KEY_ALERT_STORAGE] ?: 90,
+                    themeMode = ThemeMode.fromStoredValue(prefs[KEY_THEME_MODE]),
                     temperatureUnit =
                         prefs[KEY_TEMP_UNIT]
                             ?.let { stored -> enumValueOrNull<TemperatureUnit>(stored) }
@@ -183,6 +185,10 @@ class UserPreferencesRepositoryImpl
             context.dataStore.edit { it[KEY_TEMP_UNIT] = unit.name }
         }
 
+        override suspend fun setThemeMode(mode: ThemeMode) {
+            context.dataStore.edit { it[KEY_THEME_MODE] = mode.name }
+        }
+
         override suspend fun setLiveNotificationEnabled(enabled: Boolean) {
             context.dataStore.edit { it[KEY_LIVE_NOTIF_ENABLED] = enabled }
         }
@@ -225,6 +231,7 @@ class UserPreferencesRepositoryImpl
             private val KEY_ALERT_BATTERY = intPreferencesKey("alert_battery_threshold")
             private val KEY_ALERT_TEMP = intPreferencesKey("alert_temp_threshold")
             private val KEY_ALERT_STORAGE = intPreferencesKey("alert_storage_threshold")
+            private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
             private val KEY_TEMP_UNIT = stringPreferencesKey("temp_unit")
             private val KEY_LIVE_NOTIF_ENABLED = booleanPreferencesKey("live_notif_enabled")
             private val KEY_LIVE_NOTIF_CURRENT = booleanPreferencesKey("live_notif_current")

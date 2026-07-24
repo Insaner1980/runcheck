@@ -3,6 +3,7 @@ package com.runcheck.domain.repository
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.model.TemperatureUnit
+import com.runcheck.domain.model.ThemeMode
 import com.runcheck.domain.model.UserPreferences
 import kotlinx.coroutines.flow.Flow
 
@@ -45,6 +46,8 @@ interface UserPreferencesRepository {
     suspend fun setAlertStorageThreshold(value: Int)
 
     suspend fun setTemperatureUnit(unit: TemperatureUnit)
+
+    suspend fun setThemeMode(mode: ThemeMode)
 
     suspend fun setLiveNotificationEnabled(enabled: Boolean)
 

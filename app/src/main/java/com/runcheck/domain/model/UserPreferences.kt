@@ -14,6 +14,7 @@ data class UserPreferences(
     val alertTempThreshold: Int = 42,
     val alertStorageThreshold: Int = 90,
     // Display
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS,
     // Live notification
     val liveNotificationEnabled: Boolean = false,

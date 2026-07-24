@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import com.runcheck.R
 import com.runcheck.domain.model.Confidence
+import com.runcheck.ui.theme.RuncheckPillShape
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.uiTokens
@@ -83,7 +84,7 @@ fun ConfidenceBadge(
                 .semantics {
                     contentDescription = label
                     role = Role.Image
-                }.background(backgroundColor, MaterialTheme.shapes.extraLarge)
+                }.background(backgroundColor, RuncheckPillShape)
                 .padding(
                     horizontal = tokens.badgeHorizontalPadding,
                     vertical = tokens.badgeVerticalPadding,

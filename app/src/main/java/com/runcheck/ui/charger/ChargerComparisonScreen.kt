@@ -54,6 +54,7 @@ import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.ProFeatureLockedState
+import com.runcheck.ui.theme.RuncheckPillShape
 import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
@@ -367,7 +368,7 @@ private fun HistoricalComparisonCard(chargers: List<ChargerSummary>) {
                             .height(8.dp)
                             .background(
                                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                shape = MaterialTheme.shapes.extraLarge,
+                                shape = RuncheckPillShape,
                             ),
                 ) {
                     Box(
@@ -377,7 +378,7 @@ private fun HistoricalComparisonCard(chargers: List<ChargerSummary>) {
                                 .height(8.dp)
                                 .background(
                                     color = MaterialTheme.colorScheme.primary,
-                                    shape = MaterialTheme.shapes.extraLarge,
+                                    shape = RuncheckPillShape,
                                 ),
                     )
                 }

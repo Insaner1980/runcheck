@@ -10,14 +10,14 @@ import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.runcheck.domain.model.Confidence
+import com.runcheck.ui.theme.RuncheckPreviews
 import com.runcheck.ui.theme.RuncheckTheme
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 
-@Preview(showBackground = true, widthDp = 412)
+@RuncheckPreviews
 @Composable
 private fun ComponentStackPreview() {
     RuncheckTheme {

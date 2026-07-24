@@ -1,6 +1,6 @@
 # runcheck — Project Overview
 
-Android device health diagnostics app built with Kotlin and Jetpack Compose. Single dark theme, one-time Pro purchase, no subscriptions.
+Android device health diagnostics app built with Kotlin and Jetpack Compose. System, light, and dark themes, one-time Pro purchase, no subscriptions.
 
 ---
 
@@ -928,29 +928,29 @@ Telemetry/logging boundary:
 
 ## Brand & Design System
 
-Single dark theme — no light mode, no AMOLED toggle, no dynamic colors.
+System, light, and dark modes — no AMOLED toggle and no dynamic colors. The persisted DataStore preference is applied before the splash is dismissed.
 
 ### Color Palette
 
-**Backgrounds:**
+**Dark backgrounds:**
 
 | Token | Hex | Material3 Role | Usage |
 |-------|-----|----------------|-------|
 | BgPage | `#0B1E24` | `background`, `surface` | Page background |
 | BgCard | `#133040` | `surfaceContainer` | Card backgrounds |
 | BgCardDeep | `#0D2530` | — | Deeper card surfaces where explicitly used |
-| BgCardAlt | `#0F2A35` | `surfaceContainerHigh` | Info cards, elevated surfaces |
-| BgIconCircle | `#1A3A48` | `surfaceContainerHighest`, `surfaceVariant` | Icon circle backgrounds |
+| BgCardAlt | `#0F2A35` | `surfaceContainerLow` | Alternate card surfaces |
+| BgIconCircle | `#1A3A48` | `surfaceContainerHigh`, `surfaceContainerHighest`, `surfaceVariant` | Icon circle backgrounds |
 
 **Accents:**
 
 | Token | Hex | Material3 Role | Usage |
 |-------|-----|----------------|-------|
 | AccentBlue | `#4A9EDE` | `primary` | Primary accent, buttons, links, brand |
-| AccentTeal | `#5DE4C7` | `secondary` | Healthy status, positive values |
-| AccentAmber | `#E8C44A` | `tertiary` | Fair status, warnings |
-| AccentOrange | `#F5963A` | — | Poor status |
-| AccentRed | `#F06040` | `error` | Critical status, destructive actions |
+| AccentTeal | `#5DE4C7` | `secondary` | Secondary accent |
+| AccentAmber | `#E8C44A` | `tertiary` | Warning accent |
+| AccentOrange | `#F5963A` | — | Category accent |
+| AccentRed | `#F06040` | `error` | Destructive actions |
 | AccentLime | `#C8E636` | — | Storage video category |
 | AccentYellow | `#F5D03A` | — | Storage audio category |
 
@@ -958,21 +958,44 @@ Single dark theme — no light mode, no AMOLED toggle, no dynamic colors.
 
 | Token | Hex | Material3 Role | Usage |
 |-------|-----|----------------|-------|
-| TextPrimary | `#E8E8ED` | `onSurface`, `onBackground` | Main text |
-| TextSecondary | `#90A8B0` | `onSurfaceVariant` | Labels, descriptions |
+| TextPrimary | `#F4F7F8` | `onSurface`, `onBackground` | Main text |
+| TextSecondary | `#B5C7CE` | `onSurfaceVariant` | Labels, descriptions |
 | TextMuted | `#7A949E` | `outline`, `outlineVariant` | Hints, dividers, disabled text |
 | TextOnLime | `#1A2E0A` | — | Text on lime-colored backgrounds |
 
+**Light Material roles:**
+
+| Material3 Role | Hex |
+|-------|------|
+| background | `#F4F7F8` |
+| surface | `#FFFFFF` |
+| surfaceContainerLow | `#F0F4F5` |
+| surfaceContainer | `#E9EFF1` |
+| surfaceContainerHigh | `#DEE7EA` |
+| surfaceContainerHighest | `#D4E0E4` |
+| primary | `#246A9F` |
+| secondary | `#006B5A` |
+| tertiary | `#795F00` |
+| error | `#B3261E` |
+| onSurface | `#16262C` |
+| onSurfaceVariant | `#4E6570` |
+| outline | `#647A83` |
+| outlineVariant | `#C0CDD1` |
+
 ### Status Colors
 
-Used via `MaterialTheme.statusColors` extension. Always paired with icons or text labels for accessibility.
+Used via `MaterialTheme.statusColors` extension. Each status has an explicit
+opaque container and WCAG-selected foreground, and is always paired with an
+icon or text label for accessibility.
 
-| Status | Color | Thresholds |
+| Status | Opaque base/container | Thresholds |
 |--------|-------|------------|
-| Healthy | AccentTeal `#5DE4C7` | Battery ≥75%, Temp <35°C, Storage <75%, Signal Excellent/Good |
-| Fair | AccentAmber `#E8C44A` | Battery 50–74%, Temp 35–39°C, Storage 75–84%, Signal Fair |
-| Poor | AccentOrange `#F5963A` | Battery 25–49%, Temp 40–44°C, Storage 85–94%, Signal Poor |
-| Critical | AccentRed `#F06040` | Battery <25%, Temp ≥45°C, Storage ≥95%, No Signal |
+| Healthy | `#006B57` | Battery ≥75%, Temp <35°C, Storage <75%, Signal Excellent/Good |
+| Fair | `#795F00` | Battery 50–74%, Temp 35–39°C, Storage 75–84%, Signal Fair |
+| Poor | `#9C4E00` | Battery 25–49%, Temp 40–44°C, Storage 85–94%, Signal Poor |
+| Critical | `#B3261E` | Battery <25%, Temp ≥45°C, Storage ≥95%, No Signal |
+| Neutral | `#4E6570` | Neutral status |
+| Unavailable | `#647A83` | Unavailable status |
 
 **Confidence badges:**
 
@@ -980,7 +1003,7 @@ Used via `MaterialTheme.statusColors` extension. Always paired with icons or tex
 |-------|-----------|------|
 | Accurate | AccentBlue `#4A9EDE` | BgPage `#0B1E24` |
 | Estimated | AccentAmber `#E8C44A` | BgPage `#0B1E24` |
-| Unavailable | TextMuted `#7A949E` | TextPrimary `#E8E8ED` |
+| Unavailable | TextMuted `#7A949E` | TextPrimary `#F4F7F8` |
 
 ### Typography
 
@@ -1031,9 +1054,11 @@ Used via `MaterialTheme.statusColors` extension. Always paired with icons or tex
 | Shape | Radius | Usage |
 |-------|--------|-------|
 | large | 16dp | Cards, panels, dialogs |
-| medium | 8dp | Badges, chips, small elements |
+| medium | 16dp | Regular cards and medium surfaces |
 | small | 8dp | Compact elements |
-| extraLarge | 50% | Circles (icons, avatars) |
+| extraLarge | 28dp | Hero cards and large sheets |
+| RuncheckPillShape | 50% | Navigation indicators, badges, and pills |
+| BottomSheetShape | 28dp top corners | Modal bottom sheets |
 
 **Spacing grid (4dp base):**
 

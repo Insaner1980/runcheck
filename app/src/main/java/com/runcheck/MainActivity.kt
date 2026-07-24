@@ -6,10 +6,14 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.di.DatabaseModule
@@ -26,22 +30,30 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val deepLinkRoute = mutableStateOf<String?>(null)
+    private val appThemeViewModel: AppThemeViewModel by viewModels()
 
     @Inject
     lateinit var proPurchaseManager: ProPurchaseManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+        splashScreen.setKeepOnScreenCondition {
+            appThemeViewModel.themeMode.value == null
+        }
         enableEdgeToEdge()
         checkDatabaseReset()
         deepLinkRoute.value = consumeNotificationRoute(intent)
         setContent {
-            RuncheckTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    RuncheckNavHost(
-                        deepLinkRoute = deepLinkRoute.value,
-                        onConsumeDeepLink = { deepLinkRoute.value = null },
-                    )
+            val themeMode by appThemeViewModel.themeMode.collectAsStateWithLifecycle()
+            themeMode?.let { readyThemeMode ->
+                RuncheckTheme(themeMode = readyThemeMode) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        RuncheckNavHost(
+                            deepLinkRoute = deepLinkRoute.value,
+                            onConsumeDeepLink = { deepLinkRoute.value = null },
+                        )
+                    }
                 }
             }
         }

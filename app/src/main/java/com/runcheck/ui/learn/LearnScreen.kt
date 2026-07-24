@@ -12,11 +12,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import com.runcheck.R
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.theme.RuncheckPreviews
 import com.runcheck.ui.theme.RuncheckTheme
 import com.runcheck.ui.theme.spacing
 
@@ -81,7 +81,7 @@ fun LearnScreen(
     }
 }
 
-@Preview(showBackground = true, widthDp = 412, heightDp = 915)
+@RuncheckPreviews
 @Composable
 private fun LearnScreenPreview() {
     RuncheckTheme {

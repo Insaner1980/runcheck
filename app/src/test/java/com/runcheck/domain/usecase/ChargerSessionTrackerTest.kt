@@ -329,6 +329,8 @@ private class FakeUserPreferencesRepository(
 
     override suspend fun setTemperatureUnit(unit: com.runcheck.domain.model.TemperatureUnit) = Unit
 
+    override suspend fun setThemeMode(mode: com.runcheck.domain.model.ThemeMode) = Unit
+
     override suspend fun setLiveNotificationEnabled(enabled: Boolean) = Unit
 
     override suspend fun setLiveNotifCurrent(enabled: Boolean) = Unit

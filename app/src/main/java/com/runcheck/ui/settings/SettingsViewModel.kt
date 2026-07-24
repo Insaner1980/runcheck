@@ -10,6 +10,7 @@ import com.runcheck.billing.PurchaseEvent
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.model.TemperatureUnit
+import com.runcheck.domain.model.ThemeMode
 import com.runcheck.domain.repository.InsightDebugActions
 import com.runcheck.domain.repository.SpeedTestRepository
 import com.runcheck.domain.usecase.ClearMonitoringDataUseCase
@@ -311,6 +312,12 @@ class SettingsViewModel
         fun setTemperatureUnit(unit: TemperatureUnit) {
             executePreferenceUpdate {
                 manageUserPreferences.setTemperatureUnit(unit)
+            }
+        }
+
+        fun setThemeMode(mode: ThemeMode) {
+            executePreferenceUpdate {
+                manageUserPreferences.setThemeMode(mode)
             }
         }
 

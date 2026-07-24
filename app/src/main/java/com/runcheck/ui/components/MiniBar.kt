@@ -20,6 +20,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.runcheck.ui.theme.MotionTokens
+import com.runcheck.ui.theme.RuncheckPillShape
 import com.runcheck.ui.theme.iconCircleColor
 import com.runcheck.ui.theme.reducedMotion
 
@@ -34,7 +35,7 @@ fun MiniBar(
     contentDescription: String? = null,
 ) {
     val isReducedMotion = MaterialTheme.reducedMotion
-    val pillShape = MaterialTheme.shapes.extraLarge
+    val pillShape = RuncheckPillShape
 
     val animatedProgress by animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),

@@ -4,7 +4,7 @@ Code-derived visual specification for the runcheck Android app.
 
 This file describes only the UI that exists in the current Compose codebase.
 
-Audit date: 2026-07-06
+Audit date: 2026-07-24
 
 Primary source files:
 
@@ -35,16 +35,16 @@ Primary source files:
 
 ## 1. Product-Level Visual Constraints
 
-The app is a Kotlin/Jetpack Compose Android app using Material 3. The current
-visual system is a single dark theme.
+The app is a Kotlin/Jetpack Compose Android app using Material 3 Expressive.
+The visual system supports system-selected, light, and dark theme modes.
 
 Current global constraints:
 
-- Single dark theme only.
-- No light theme implementation.
+- System, light, and dark theme modes only.
 - No AMOLED theme implementation.
 - No dynamic color implementation.
-- Material 3 color roles are supplied by `RuncheckColorScheme`.
+- Material 3 color roles are supplied by `DarkRuncheckColorScheme` and
+  `LightRuncheckColorScheme`.
 - Cards are flat by default: zero tonal elevation and zero shadow elevation.
 - General cards have no border.
 - `ActionCard` and explicit outline buttons use 1dp outlines.
@@ -62,56 +62,75 @@ Current global constraints:
 
 Defined in `Color.kt` and exposed through `Theme.kt`.
 
-### 2.1 Base Colors
+### 2.1 Dark Base Colors
 
 | Token | Hex | Current Material role or usage |
 |---|---:|---|
 | `BgPage` | `#0B1E24` | `background`, `surface`; full page background |
 | `BgCard` | `#133040` | `surfaceContainer`; default card background |
 | `BgCardDeep` | `#0D2530` | `heroCardColor`; hero card background |
-| `BgCardAlt` | `#0F2A35` | `surfaceContainerHigh`; alternate surfaces |
-| `BgIconCircle` | `#1A3A48` | `surfaceContainerHighest`, `surfaceVariant`; icon circles and tracks |
-| `AccentTeal` | `#5DE4C7` | `secondary`; healthy/positive status |
+| `BgCardAlt` | `#0F2A35` | `surfaceContainerLow`; alternate surfaces |
+| `BgIconCircle` | `#1A3A48` | `surfaceContainerHigh`, `surfaceContainerHighest`, `surfaceVariant`; icon circles and tracks |
+| `AccentTeal` | `#5DE4C7` | `secondary`; secondary accent |
 | `AccentBlue` | `#4A9EDE` | `primary`; primary actions, links, main accent |
-| `AccentAmber` | `#E8C44A` | `tertiary`; fair/warning status |
-| `AccentOrange` | `#F5963A` | poor status |
-| `AccentRed` | `#F06040` | `error`; critical/destructive status |
+| `AccentAmber` | `#E8C44A` | `tertiary`; warning accent |
+| `AccentOrange` | `#F5963A` | category accent |
+| `AccentRed` | `#F06040` | `error`; destructive accent |
 | `AccentLime` | `#C8E636` | storage/category accent |
 | `AccentYellow` | `#F5D03A` | storage/category accent |
-| `TextPrimary` | `#E8E8ED` | `onSurface`, `onBackground`; primary text |
-| `TextSecondary` | `#90A8B0` | `onSurfaceVariant`; labels/descriptions |
+| `TextPrimary` | `#F4F7F8` | `onSurface`, `onBackground`; primary text |
+| `TextSecondary` | `#B5C7CE` | `onSurfaceVariant`; labels/descriptions |
 | `TextMuted` | `#7A949E` | `outline`, `outlineVariant`; muted text/dividers |
 | `TextOnLime` | `#1A2E0A` | text on lime backgrounds |
 
-### 2.2 Material Color Scheme Mapping
+### 2.2 Light Base Colors
 
-`RuncheckColorScheme = darkColorScheme(...)` maps roles as follows:
+| Token | Hex | Current Material role |
+|---|---:|---|
+| `LightBackground` | `#F4F7F8` | `background` |
+| `LightSurface` | `#FFFFFF` | `surface` |
+| `LightSurfaceContainerLow` | `#F0F4F5` | `surfaceContainerLow` |
+| `LightSurfaceContainer` | `#E9EFF1` | `surfaceContainer` |
+| `LightSurfaceContainerHigh` | `#DEE7EA` | `surfaceContainerHigh` |
+| `LightSurfaceContainerHighest` | `#D4E0E4` | `surfaceContainerHighest` |
+| `LightPrimary` | `#246A9F` | `primary` |
+| `LightSecondary` | `#006B5A` | `secondary` |
+| `LightTertiary` | `#795F00` | `tertiary` |
+| `LightError` | `#B3261E` | `error` |
+| `LightOnSurface` | `#16262C` | `onSurface` |
+| `LightOnSurfaceVariant` | `#4E6570` | `onSurfaceVariant` |
+| `LightOutline` | `#647A83` | `outline` |
+| `LightOutlineVariant` | `#C0CDD1` | `outlineVariant` |
 
-| Material role | Current token |
-|---|---|
-| `background` | `BgPage` |
-| `surface` | `BgPage` |
-| `surfaceContainer` | `BgCard` |
-| `surfaceContainerHigh` | `BgCardAlt` |
-| `surfaceContainerHighest` | `BgIconCircle` |
-| `surfaceVariant` | `BgIconCircle` |
-| `primary` | `AccentBlue` |
-| `secondary` | `AccentTeal` |
-| `tertiary` | `AccentAmber` |
-| `error` | `AccentRed` |
-| `onSurface` | `TextPrimary` |
-| `onBackground` | `TextPrimary` |
-| `onSurfaceVariant` | `TextSecondary` |
-| `outline` | `TextMuted` |
-| `outlineVariant` | `TextMuted` |
-| `onPrimary` | `BgPage` |
-| `onSecondary` | `BgPage` |
-| `onTertiary` | `BgPage` |
-| `onError` | `TextPrimary` |
+### 2.3 Material Color Scheme Mapping
+
+`RuncheckTheme(themeMode)` selects the fixed light or dark scheme and passes it
+to `MaterialExpressiveTheme` with `MotionScheme.expressive()`. Dynamic colors
+are not used.
+
+| Material role | Dark token | Light token |
+|---|---|---|
+| `background` | `BgPage` | `LightBackground` |
+| `surface` | `BgPage` | `LightSurface` |
+| `surfaceContainerLow` | `BgCardAlt` | `LightSurfaceContainerLow` |
+| `surfaceContainer` | `BgCard` | `LightSurfaceContainer` |
+| `surfaceContainerHigh` | `BgIconCircle` | `LightSurfaceContainerHigh` |
+| `surfaceContainerHighest` | `BgIconCircle` | `LightSurfaceContainerHighest` |
+| `primary` | `AccentBlue` | `LightPrimary` |
+| `secondary` | `AccentTeal` | `LightSecondary` |
+| `tertiary` | `AccentAmber` | `LightTertiary` |
+| `error` | `AccentRed` | `LightError` |
+| `onSurface` | `TextPrimary` | `LightOnSurface` |
+| `onSurfaceVariant` | `TextSecondary` | `LightOnSurfaceVariant` |
+| `outline` | `TextMuted` | `LightOutline` |
+| `outlineVariant` | `TextMuted` | `LightOutlineVariant` |
 
 Theme extensions:
 
-- `MaterialTheme.heroCardColor`: `BgCardDeep`
+- `MaterialTheme.heroCardColor`: `BgCardDeep` in dark mode,
+  `LightSurfaceContainerLow` in light mode
+- `MaterialTheme.chartColors`: centralized appearance-specific grid, axis,
+  line, fill, selected-point, and glow tokens
 - `MaterialTheme.iconCircleColor`: `surfaceContainerHighest`
 - `MaterialTheme.cardStrokeColor`: `outlineVariant.copy(alpha = 0.35f)`
 - `runcheckCardColors()`: `CardDefaults.cardColors(containerColor = surfaceContainer)`
@@ -119,18 +138,21 @@ Theme extensions:
 - `runcheckCardElevation()`: `CardDefaults.cardElevation(defaultElevation = 0.dp)`
 - `runcheckOutlinedCardBorder()`: 1dp `outlineVariant.copy(alpha = 0.35f)`
 
-### 2.3 Status Colors
+### 2.4 Status Colors
 
 Defined in `StatusColors.kt`.
 
-| Status token | Color |
+| Status token | Opaque base/container |
 |---|---|
-| `healthy` | `AccentTeal` |
-| `fair` | `AccentAmber` |
-| `poor` | `AccentOrange` |
-| `critical` | `AccentRed` |
-| `neutral` | `TextSecondary` |
-| `unavailable` | `TextMuted` |
+| `healthy` | `#006B57` |
+| `fair` | `#795F00` |
+| `poor` | `#9C4E00` |
+| `critical` | `#B3261E` |
+| `neutral` | `#4E6570` |
+| `unavailable` | `#647A83` |
+
+Each status exposes an explicit opaque container and a foreground selected from
+`#0B1E24` and `#FFFFFF` by the greater WCAG contrast ratio.
 
 Thresholds:
 
@@ -299,10 +321,13 @@ Defined in `Shapes.kt`.
 | Shape | Value | Usage |
 |---|---|---|
 | `small` | 8dp rounded corners | small surfaces, file thumbnails, normal range block |
-| `medium` | 8dp rounded corners | medium Material shape |
+| `medium` | 16dp rounded corners | regular cards and medium Material surfaces |
 | `large` | 16dp rounded corners | cards, dialogs, buttons |
-| `extraLarge` | 50 percent rounded | pills, circular/fully rounded elements |
-| `BottomSheetShape` | top start 16dp, top end 16dp | modal bottom sheets |
+| `extraLarge` | 28dp rounded corners | hero cards and large Material surfaces |
+| `RuncheckPillShape` | 50 percent rounded | pills and circular/fully rounded elements |
+| `NavigationIndicatorShape` | pill | navigation indicator |
+| `BadgeShape` | pill | badges |
+| `BottomSheetShape` | top start 28dp, top end 28dp | modal bottom sheets |
 
 ### 4.4 Elevation, Borders, Dividers
 

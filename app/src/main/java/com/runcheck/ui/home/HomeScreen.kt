@@ -462,7 +462,7 @@ private fun MonitoringStaleWarning(onLearnWhy: () -> Unit) {
         shape = MaterialTheme.shapes.large,
         colors =
             CardDefaults.cardColors(
-                containerColor = MaterialTheme.statusColors.poor.copy(alpha = 0.12f),
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
             ),
         elevation = runcheckCardElevation(),
     ) {

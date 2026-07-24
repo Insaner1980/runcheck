@@ -1,6 +1,7 @@
 package com.runcheck.domain.usecase
 
 import com.runcheck.domain.model.TemperatureUnit
+import com.runcheck.domain.model.ThemeMode
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.repository.UserPreferencesRepository
 import kotlinx.coroutines.flow.Flow
@@ -49,6 +50,10 @@ class ManageUserPreferencesUseCase
 
         suspend fun setTemperatureUnit(unit: TemperatureUnit) {
             userPreferencesRepository.setTemperatureUnit(unit)
+        }
+
+        suspend fun setThemeMode(mode: ThemeMode) {
+            userPreferencesRepository.setThemeMode(mode)
         }
 
         suspend fun setLiveNotificationEnabled(enabled: Boolean) {

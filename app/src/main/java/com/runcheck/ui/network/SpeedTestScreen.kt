@@ -62,7 +62,6 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -84,6 +83,7 @@ import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.theme.MotionTokens
+import com.runcheck.ui.theme.RuncheckPreviews
 import com.runcheck.ui.theme.RuncheckTheme
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericSpeedHeroValueTextStyle
@@ -1096,7 +1096,7 @@ private fun formatPingValue(pingMs: Int): String =
 
 // ── Preview ──────────────────────────────────────────────────────────────────────
 
-@Preview(showBackground = true, widthDp = 412, heightDp = 915)
+@RuncheckPreviews
 @Composable
 private fun SpeedTestContentPreview() {
     RuncheckTheme {

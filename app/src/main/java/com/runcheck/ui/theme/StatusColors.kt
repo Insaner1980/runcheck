@@ -14,11 +14,23 @@ import com.runcheck.domain.model.SignalQuality
 @Immutable
 data class StatusColors(
     val healthy: Color,
+    val healthyContainer: Color,
+    val onHealthyContainer: Color,
     val fair: Color,
+    val fairContainer: Color,
+    val onFairContainer: Color,
     val poor: Color,
+    val poorContainer: Color,
+    val onPoorContainer: Color,
     val critical: Color,
+    val criticalContainer: Color,
+    val onCriticalContainer: Color,
     val neutral: Color,
+    val neutralContainer: Color,
+    val onNeutralContainer: Color,
     val unavailable: Color,
+    val unavailableContainer: Color,
+    val onUnavailableContainer: Color,
     val confidenceAccurateBg: Color,
     val confidenceAccurateText: Color,
     val confidenceEstimatedBg: Color,
@@ -29,12 +41,24 @@ data class StatusColors(
 
 val RuncheckStatusColors =
     StatusColors(
-        healthy = AccentTeal,
-        fair = AccentAmber,
-        poor = AccentOrange,
-        critical = AccentRed,
-        neutral = TextSecondary,
-        unavailable = TextMuted,
+        healthy = StatusHealthy,
+        healthyContainer = StatusHealthy,
+        onHealthyContainer = preferredStatusForeground(StatusHealthy),
+        fair = StatusFair,
+        fairContainer = StatusFair,
+        onFairContainer = preferredStatusForeground(StatusFair),
+        poor = StatusPoor,
+        poorContainer = StatusPoor,
+        onPoorContainer = preferredStatusForeground(StatusPoor),
+        critical = StatusCritical,
+        criticalContainer = StatusCritical,
+        onCriticalContainer = preferredStatusForeground(StatusCritical),
+        neutral = StatusNeutral,
+        neutralContainer = StatusNeutral,
+        onNeutralContainer = preferredStatusForeground(StatusNeutral),
+        unavailable = StatusUnavailable,
+        unavailableContainer = StatusUnavailable,
+        onUnavailableContainer = preferredStatusForeground(StatusUnavailable),
         confidenceAccurateBg = AccentBlue,
         confidenceAccurateText = BgPage,
         confidenceEstimatedBg = AccentAmber,
@@ -42,6 +66,34 @@ val RuncheckStatusColors =
         confidenceUnavailableBg = TextMuted,
         confidenceUnavailableText = TextPrimary,
     )
+
+internal fun preferredStatusForeground(container: Color): Color =
+    listOf(BgPage, Color.White).maxBy { foreground ->
+        contrastRatio(foreground, container)
+    }
+
+internal fun contrastRatio(
+    foreground: Color,
+    background: Color,
+): Double {
+    val lighter = maxOf(foreground.relativeLuminance(), background.relativeLuminance())
+    val darker = minOf(foreground.relativeLuminance(), background.relativeLuminance())
+    return (lighter + 0.05) / (darker + 0.05)
+}
+
+private fun Color.relativeLuminance(): Double =
+    0.2126 * red.wcagLinearComponent() +
+        0.7152 * green.wcagLinearComponent() +
+        0.0722 * blue.wcagLinearComponent()
+
+private fun Float.wcagLinearComponent(): Double {
+    val component = toDouble()
+    return if (component <= 0.04045) {
+        component / 12.92
+    } else {
+        Math.pow((component + 0.055) / 1.055, 2.4)
+    }
+}
 
 val LocalStatusColors = staticCompositionLocalOf { RuncheckStatusColors }
 

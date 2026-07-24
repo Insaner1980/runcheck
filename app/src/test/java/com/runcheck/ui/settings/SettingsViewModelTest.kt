@@ -5,6 +5,7 @@ import com.runcheck.R
 import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.billing.ProPurchaseRefreshResult
 import com.runcheck.billing.PurchaseEvent
+import com.runcheck.domain.model.ThemeMode
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.repository.InsightDebugActions
 import com.runcheck.domain.repository.SpeedTestRepository
@@ -375,6 +376,18 @@ class SettingsViewModelTest {
                 UiText.Resource(R.string.common_error_generic),
                 viewModel.uiState.value.errorMessage,
             )
+        }
+
+    @Test
+    fun `theme preference update delegates through the use case`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val viewModel = createViewModel()
+            runCurrent()
+
+            viewModel.setThemeMode(ThemeMode.LIGHT)
+            runCurrent()
+
+            coVerify(exactly = 1) { manageUserPreferences.setThemeMode(ThemeMode.LIGHT) }
         }
 
     private fun createViewModel(): SettingsViewModel =

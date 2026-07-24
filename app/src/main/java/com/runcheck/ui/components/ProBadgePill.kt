@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.runcheck.R
+import com.runcheck.ui.theme.BadgeShape
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.uiTokens
 
@@ -28,7 +29,7 @@ fun ProBadgePill(
     val tokens = MaterialTheme.uiTokens
     Surface(
         modifier = modifier,
-        shape = MaterialTheme.shapes.small,
+        shape = BadgeShape,
         color = accentColor.copy(alpha = tokens.proBadgeBackgroundAlpha),
     ) {
         Row(

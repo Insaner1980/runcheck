@@ -7,7 +7,7 @@ These instructions are for agents working in this repository. Keep this file ali
 runcheck is an Android device health diagnostics app built with Kotlin and Jetpack Compose. Product direction is fixed:
 
 - App name is `runcheck` in lowercase
-- Single dark theme only
+- System, light, and dark theme modes
 - One-time Pro purchase only
 - No subscriptions
 - No ads as a product direction
@@ -37,6 +37,7 @@ Legacy billing or ad-related code may still exist in the repo. Do not expand tha
 - Database: Room
 - Preferences: DataStore
 - UI: Jetpack Compose + Material 3
+- Theme: Material 3 Expressive with persisted `SYSTEM`, `LIGHT`, and `DARK` modes
 - Background work: WorkManager
 - Widgets: Glance
 - Speed test: M-Lab NDT7 (`ndt7-client-android`)
@@ -93,6 +94,7 @@ Home
 Current runtime systems:
 
 - `RuncheckApp` initializes billing, Pro state, notification channels, screen-state tracking, periodic monitoring, and widget refresh hooks
+- `MainActivity` keeps the AndroidX splash visible until DataStore emits the first theme preference, then applies it through `AppThemeViewModel` and `RuncheckTheme`
 - `RuncheckApp` also initializes source-set-specific `SentryInit`; debug builds may report to Sentry through `sentry-android-core` only when `RUNCHECK_SENTRY_DSN`, `SENTRY_DSN`, or ignored `debug.credentials.properties` provides `sentry.dsn`; release builds are a no-op and must remain telemetry-free
 - WorkManager runs `HealthMonitorWorker` for snapshot collection + alert evaluation
 - WorkManager runs `HealthMaintenanceWorker` for app-usage refresh, cleanup, and widget refresh

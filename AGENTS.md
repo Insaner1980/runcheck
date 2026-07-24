@@ -2,7 +2,7 @@
 
 This file and `CODEX.md` should stay aligned. If one is updated, update the other in the same change.
 
-Android device health diagnostics app. Kotlin + Jetpack Compose. Single dark theme.
+Android device health diagnostics app. Kotlin + Jetpack Compose. System, light, and dark themes.
 
 When product/runtime facts or visual system rules matter, treat `PROJECT.md` and `UI-SPEC.md` as the authoritative companion docs and keep them aligned with code.
 
@@ -37,6 +37,7 @@ Dependency injection: Hilt. Database: Room. UI: Jetpack Compose + Material 3.
 - Database: Room
 - Preferences: DataStore
 - UI: Jetpack Compose + Material 3
+- Theme: Material 3 Expressive with persisted `SYSTEM`, `LIGHT`, and `DARK` modes
 - Background work: WorkManager
 - Widgets: Glance
 - Speed test: M-Lab NDT7 (`ndt7-client-android`)
@@ -93,6 +94,7 @@ Home
 Current runtime systems:
 
 - `RuncheckApp` initializes billing, Pro state, notification channels, screen-state tracking, periodic monitoring, and widget refresh hooks
+- `MainActivity` keeps the AndroidX splash visible until DataStore emits the first theme preference, then applies it through `AppThemeViewModel` and `RuncheckTheme`
 - `RuncheckApp` also initializes source-set-specific `SentryInit`; debug builds may report to Sentry through `sentry-android-core` only when `RUNCHECK_SENTRY_DSN`, `SENTRY_DSN`, or ignored `debug.credentials.properties` provides `sentry.dsn`; release builds are a no-op and must remain telemetry-free
 - WorkManager runs `HealthMonitorWorker` for snapshot collection + alert evaluation
 - WorkManager runs `HealthMaintenanceWorker` for app-usage refresh, cleanup, and widget refresh
@@ -235,7 +237,7 @@ Raise a review comment for any of the following:
 ## What Not to Change
 
 - App name is `runcheck` (lowercase). Never change to RunCheck, Runcheck, or any other casing.
-- Single dark theme only. No light mode, no AMOLED toggle.
+- System, light, and dark modes only. No AMOLED toggle.
 - No dynamic colors.
 - One-time Pro purchase only. No subscription, no ads.
 - English-only localization is intentional for now. Do not reintroduce partial Finnish strings ad hoc.

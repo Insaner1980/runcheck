@@ -17,11 +17,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.tooling.preview.Preview
 import com.runcheck.R
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.info.CrossLinkButton
+import com.runcheck.ui.theme.RuncheckPreviews
 import com.runcheck.ui.theme.RuncheckTheme
 import com.runcheck.ui.theme.spacing
 
@@ -168,7 +168,7 @@ private fun LearnArticleText(
     )
 }
 
-@Preview(showBackground = true, widthDp = 412, heightDp = 915)
+@RuncheckPreviews
 @Composable
 private fun LearnArticleDetailScreenPreview() {
     RuncheckTheme {

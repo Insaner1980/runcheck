@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.runcheck.ui.theme.RuncheckPillShape
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.uiTokens
 
@@ -75,7 +76,7 @@ fun ListRow(
             if (onClick != null) {
                 Spacer(modifier = Modifier.width(MaterialTheme.spacing.xs))
                 Surface(
-                    shape = MaterialTheme.shapes.extraLarge,
+                    shape = RuncheckPillShape,
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
                 ) {
                     Icon(
