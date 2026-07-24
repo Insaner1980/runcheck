@@ -500,7 +500,7 @@ Used on Home grid metrics.
 - Label: `bodyLarge`, `onSurface`.
 - Value: `bodyMedium`, `onSurfaceVariant`.
 - Optional trailing arrow surface:
-  - Shape: `extraLarge`.
+  - Shape: `RuncheckPillShape`.
   - Color: `surfaceVariant.copy(alpha = 0.35f)`.
   - Inner padding: 2dp.
   - Icon: 20dp.
@@ -561,7 +561,7 @@ Used on Home grid metrics.
 - Default height: 6dp.
 - Default track: `iconCircleColor`.
 - Default fill: `primary`.
-- Shape: `extraLarge`.
+- Shape: `RuncheckPillShape`.
 - Animation: 800ms FastOutSlowIn.
 - Reduced motion duration: 0ms.
 - Optional clear semantics content description.
@@ -639,7 +639,7 @@ Used on Home grid metrics.
 
 ### 7.13 ConfidenceBadge
 
-- Shape: `extraLarge`.
+- Shape: `RuncheckPillShape`.
 - Padding: horizontal 12dp, vertical 4dp.
 - Text style: `labelMedium`.
 - Background/text colors from confidence color mapping.
@@ -688,7 +688,7 @@ Used on Home grid metrics.
 - `ModalBottomSheet`.
 - `skipPartiallyExpanded = true`.
 - Container: `surfaceContainer`.
-- Shape: `BottomSheetShape`, top corners 16dp.
+- Shape: `BottomSheetShape`, top corners 28dp.
 - Max content height: 60 percent of screen height.
 - Content column:
   - `fillMaxWidth()`.
@@ -1748,11 +1748,11 @@ Historical comparison:
 - Bar track:
   - Height 8dp.
   - Background: `surfaceContainerHighest`.
-  - Shape: `extraLarge`.
+  - Shape: `RuncheckPillShape`.
 - Bar fill:
   - Height 8dp.
   - Color: primary.
-  - Shape: `extraLarge`.
+  - Shape: `RuncheckPillShape`.
 - Per-row bottom gap: 8dp.
 
 Charger card:

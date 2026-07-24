@@ -233,9 +233,10 @@ Rules:
   - `BgCardAlt` `#0F2A35`
   - `BgIconCircle` `#1A3A48`
 - Primary accent: blue `#4A9EDE`
-- Secondary/status accent: teal `#5DE4C7`
+- Secondary accent: teal `#5DE4C7`
+- Semantic status palette: Healthy `#006B57`, Fair `#795F00`, Poor `#9C4E00`, Critical `#B3261E`, Neutral `#4E6570`, Unavailable `#647A83`
 - Gauge arcs stay neutral white/gray; accent color is only for the indicator
-- Status colors are for small badges and dots, not large fills
+- Status colors use explicit opaque container/foreground pairs for small badges and dots only, never for large fills, and must always be paired with text or an icon
 - Typography:
   - Manrope for body text
   - JetBrains Mono for hero numbers and gauge values

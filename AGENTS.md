@@ -196,9 +196,10 @@ When reviewing a PR or file, check for these in order:
 - Background colors: BgPage `#0B1E24`, BgCard `#133040`, BgIconCircle `#1A3A48`.
 - Alternate card background: BgCardAlt `#0F2A35`.
 - Primary accent: Blue `#4A9EDE`.
-- Secondary/status accent: Teal `#5DE4C7`.
+- Secondary accent: Teal `#5DE4C7`.
+- Semantic status palette: Healthy `#006B57`, Fair `#795F00`, Poor `#9C4E00`, Critical `#B3261E`, Neutral `#4E6570`, Unavailable `#647A83`.
 - Gauge arcs must be neutral (white/gray) — not colored. Accent color is for the indicator only.
-- Status colors (Teal/Blue/Orange/Red) are for small badges and status dots only, never for large fills.
+- Status colors use explicit opaque container/foreground pairs for small badges and status dots only, never for large fills, and must always be paired with text or an icon.
 - Typography: Manrope for body text, JetBrains Mono for hero numbers and gauge values.
 - Card corner radius: 16dp. Small elements: 8dp. No shadows, no elevation, no borders (except ActionCards: 1dp outlineVariant at 35% alpha).
 - Shared touch targets, icon sizes, and common CTA heights should come from `UiTokens` instead of repeating raw values in shared components.
