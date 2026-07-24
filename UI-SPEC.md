@@ -2252,14 +2252,22 @@ Locked content:
 - Every widget has responsive compact, standard, and expanded size policies;
   user-visible widget text is bounded with `maxLines` so narrow launchers
   truncate instead of overflowing.
+- The Battery widget's declared minimum is 110×72dp. Its compact policy uses
+  8dp outer padding and shows level plus temperature so the content and root
+  action fit the minimum height; wider policies add current and the title.
 - Quick Glance targets 4×2 and presents a 2×2 grid in this accessibility order:
   Health Score, Battery, Free storage, Temperature.
+- Quick Glance selects explicit typography budgets for 1.0, 1.3, and 2.0 font
+  scales. Visible cell text stays on one line and may be ellipsized, while each
+  cell keeps the complete label and value in its content description.
 - The four Quick Glance cells open Home, Battery, Storage, and Thermal,
   respectively, through the same validated direct-route extra consumed by
   `MainActivity`.
 - Widget states are Loading, Pro locked, Empty, Stale, Unavailable, and fresh
   content. State titles and supporting text expose status without relying on
   color.
+- Health status text uses centralized day/night status providers whose normal
+  text contrast against the corresponding widget background is at least 4.5:1.
 - Free users are gated before Room snapshot subscriptions or health-score
   calculation. Quick Glance extends the Health widget's coherent snapshot with
   storage and thermal values rather than owning another score pipeline.

@@ -19,6 +19,8 @@ val TextPrimary = Color(0xFFF4F7F8)
 val TextSecondary = Color(0xFFB5C7CE)
 val TextMuted = Color(0xFF7A949E)
 val TextOnLime = Color(0xFF1A2E0A)
+val WidgetStatusPoorNight = Color(0xFFFFB77D)
+val WidgetStatusCriticalNight = Color(0xFFFFB4AB)
 
 // Light palette
 val LightBackground = Color(0xFFF4F7F8)

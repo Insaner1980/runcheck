@@ -38,7 +38,6 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 
 internal data class BatteryWidgetSnapshot(
     val level: Int,
@@ -80,11 +79,15 @@ internal object WidgetDataProvider {
     fun observeBatteryWidgetState(context: Context): Flow<WidgetRenderState<BatteryWidgetSnapshot>> {
         val ep = entryPoint(context)
         return proGatedWidgetState(ep.proStatusProvider().isProUser) {
-            ep.batteryReadingDao().getLatestReading().map { latestReading ->
-                when (latestReading) {
-                    null -> WidgetRenderState.Empty
-                    else -> WidgetRenderState.Content(latestReading.toBatteryWidgetSnapshot())
-                }
+            combine(
+                ep.userPreferencesRepository().getPreferences(),
+                ep.batteryReadingDao().getLatestReading(),
+            ) { preferences, latestReading ->
+                batteryWidgetRenderState(
+                    monitoringInterval = preferences.monitoringInterval,
+                    reading = latestReading,
+                    nowMillis = System.currentTimeMillis(),
+                )
             }
         }.catch { emit(WidgetRenderState.Unavailable) }
     }
@@ -121,6 +124,24 @@ internal object WidgetDataProvider {
             context.applicationContext,
             WidgetDataEntryPoint::class.java,
         )
+}
+
+internal fun batteryWidgetRenderState(
+    monitoringInterval: MonitoringInterval,
+    reading: BatteryReadingEntity?,
+    nowMillis: Long,
+): WidgetRenderState<BatteryWidgetSnapshot> {
+    if (reading == null) return WidgetRenderState.Empty
+    val staleAfterMillis = MonitoringFreshnessPolicy.staleAfterMillis(monitoringInterval.minutes)
+    val isInvalidOrStale =
+        reading.timestamp < 0L ||
+            reading.timestamp > nowMillis ||
+            nowMillis - reading.timestamp > staleAfterMillis
+    return if (isInvalidOrStale) {
+        WidgetRenderState.Stale
+    } else {
+        WidgetRenderState.Content(reading.toBatteryWidgetSnapshot())
+    }
 }
 
 internal object RuncheckWidgets {

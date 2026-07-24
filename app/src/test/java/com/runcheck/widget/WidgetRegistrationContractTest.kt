@@ -30,6 +30,54 @@ class WidgetRegistrationContractTest {
     }
 
     @Test
+    fun `battery widget declares usable minimum bounds matched by responsive policy`() {
+        val info = appDir.resolve("src/main/res/xml/battery_widget_info.xml").readText()
+        val battery = appDir.resolve("src/main/java/com/runcheck/widget/BatteryWidget.kt").readText()
+
+        assertTrue(info.contains("""android:minWidth="110dp""""))
+        assertTrue(info.contains("""android:minHeight="72dp""""))
+        assertTrue(battery.contains("DpSize(110.dp, 72.dp)"))
+        assertTrue(battery.contains("batteryWidgetPresentationFor"))
+    }
+
+    @Test
+    fun `quick glance applies one line limits and explicit cell semantics`() {
+        val source = appDir.resolve("src/main/java/com/runcheck/widget/QuickGlanceWidget.kt").readText()
+
+        assertTrue(source.contains("maxLines = presentation.valueMaxLines"))
+        assertTrue(source.contains("maxLines = presentation.labelMaxLines"))
+        assertTrue(source.contains(".semantics"))
+        assertTrue(source.contains("contentDescription = model.accessibilityLabel"))
+        assertTrue(source.contains("testTag ="))
+    }
+
+    @Test
+    fun `health widget description matches implemented score status and battery content`() {
+        val strings = appDir.resolve("src/main/res/values/strings.xml").readText()
+
+        assertTrue(
+            strings.contains(
+                """name="widget_health_description">Shows health score, status, and battery level<""",
+            ),
+        )
+        assertFalse(strings.contains("widget_health_description\">Shows overall health score with category indicators"))
+    }
+
+    @Test
+    fun `shared stale state copy applies to every widget data type`() {
+        val strings = appDir.resolve("src/main/res/values/strings.xml").readText()
+        val staleMessage =
+            Regex("""<string name="widget_stale_data_message">(.*?)</string>""")
+                .find(strings)
+                ?.groupValues
+                ?.get(1)
+                .orEmpty()
+
+        assertTrue(staleMessage.contains("widget data"))
+        assertFalse(staleMessage.contains("health score"))
+    }
+
+    @Test
     fun `widget theme uses day and night providers without app theme mode`() {
         val common = appDir.resolve("src/main/java/com/runcheck/widget/WidgetCommon.kt").readText()
         val dayColors = appDir.resolve("src/main/res/values/colors.xml").readText()

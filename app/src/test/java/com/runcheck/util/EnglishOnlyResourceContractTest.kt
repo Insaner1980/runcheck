@@ -104,6 +104,15 @@ class EnglishOnlyResourceContractTest {
         assertTrue(!isLocaleValuesDirectoryName("values-v31"))
     }
 
+    @Test
+    fun `locale qualifier detection parses locales after mcc and mnc qualifiers`() {
+        assertTrue(isLocaleValuesDirectoryName("values-mcc310-fi"))
+        assertTrue(isLocaleValuesDirectoryName("values-mcc310-mnc004-en-rUS-night"))
+        assertTrue(isLocaleValuesDirectoryName("values-mcc310-b+zh+Hans+CN-night"))
+        assertTrue(!isLocaleValuesDirectoryName("values-mcc310-mnc004-night-sw600dp-v31"))
+        assertTrue(!isLocaleValuesDirectoryName("values-mcc310-mnc004-land-night"))
+    }
+
     private fun findAppDir(): Path {
         val start = Paths.get("").toAbsolutePath()
         return generateSequence(start) { it.parent }
@@ -113,12 +122,17 @@ class EnglishOnlyResourceContractTest {
 }
 
 internal fun isLocaleValuesDirectoryName(name: String): Boolean {
-    val firstQualifier = name.removePrefix("values-").substringBefore('-')
-    return firstQualifier.startsWith("b+") ||
-        (
-            firstQualifier.matches(Regex("[a-z]{2,3}")) &&
-                firstQualifier !in nonLocaleAlphabeticQualifiers
-        )
+    if (!name.startsWith("values-")) return false
+    return name
+        .removePrefix("values-")
+        .split('-')
+        .any { qualifier ->
+            qualifier.startsWith("b+") ||
+                (
+                    qualifier.matches(Regex("[a-z]{2,3}")) &&
+                        qualifier !in nonLocaleAlphabeticQualifiers
+                )
+        }
 }
 
 private val nonLocaleAlphabeticQualifiers =

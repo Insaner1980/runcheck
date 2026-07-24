@@ -662,7 +662,7 @@
     <string name="widget_battery_name">Battery Status</string>
     <string name="widget_battery_description">Shows battery level, temperature, and current</string>
     <string name="widget_health_name">Device Health</string>
-    <string name="widget_health_description">Shows overall health score with category indicators</string>
+    <string name="widget_health_description">Shows health score, status, and battery level</string>
     <string name="widget_quick_glance_name">Quick Glance</string>
     <string name="widget_quick_glance_description">Shows health score, battery, free storage, and temperature</string>
     <string name="widget_health_score_label">Health Score</string>
@@ -684,7 +684,7 @@
     <string name="widget_no_data_title">No data yet</string>
     <string name="widget_no_data_message">Open runcheck to collect readings</string>
     <string name="widget_stale_data_title">Data out of date</string>
-    <string name="widget_stale_data_message">Open runcheck to refresh the health score</string>
+    <string name="widget_stale_data_message">Open runcheck to refresh the widget data</string>
     <string name="widget_loading_title">Loading</string>
     <string name="widget_loading_message">Reading the latest device snapshot</string>
     <string name="widget_unavailable_title">Data unavailable</string>
@@ -1270,7 +1270,7 @@
     <!-- Learn Articles - Storage -->
     <string name="learn_storage_slowdown_title">Full Storage &amp; Performance</string>
     <string name="learn_storage_slowdown_preview">Why a nearly-full phone runs slower and what you can do about it.</string>
-    <string name="learn_storage_slowdown_body" formatted="false">## How storage affects speed\n\nModern flash storage (UFS/eMMC) needs free space to operate efficiently. The controller uses free blocks for wear leveling, garbage collection, and write amplification management. Below about 25% free space, these operations become constrained.\n\n## What you\'ll notice\n\nApp launches take longer. Photos take a moment to save. System updates may fail. Apps may crash when they can\'t write temporary data. The overall system feels sluggish.\n\n## Fixing it\n\nStart with obvious wins: large files, stale downloads, leftover APK installers, and oversized app caches. If you have runcheck Pro, the Storage cleanup tools can help surface those categories quickly. Review apps you haven\'t used recently and move large photos or videos off the device if space stays tight.</string>
+    <string name="learn_storage_slowdown_body" formatted="false">## How storage affects speed\n\nModern flash storage (UFS/eMMC) needs free space to operate efficiently. The controller uses free blocks for wear leveling, garbage collection, and write amplification management. Below about 25% free space, these operations become constrained.\n\n## What you\'ll notice\n\nApp launches take longer. Photos take a moment to save. System updates may fail. Apps may crash when they can\'t write temporary data. The overall system feels sluggish.\n\n## Fixing it\n\nStart with runcheck\'s read-only cache measurement to understand aggregate cache use, then use Android Settings when a specific app cache needs management. runcheck Pro cleanup can surface large files, old downloads, leftover APK installers, and user-visible media for review and deletion; it does not clear app caches. Review apps you haven\'t used recently and move large photos or videos off the device if space stays tight.</string>
 
     <string name="learn_storage_breakdown_title">Where Your Storage Goes</string>
     <string name="learn_storage_breakdown_preview">Understanding what uses your storage and how to manage each category effectively.</string>

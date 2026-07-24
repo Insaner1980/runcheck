@@ -24,6 +24,9 @@ import androidx.glance.layout.Row
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
+import androidx.glance.semantics.contentDescription
+import androidx.glance.semantics.semantics
+import androidx.glance.semantics.testTag
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
@@ -47,12 +50,84 @@ internal enum class QuickGlanceLayout {
     EXPANDED,
 }
 
+internal data class QuickGlancePresentation(
+    val layout: QuickGlanceLayout,
+    val outerPaddingDp: Int,
+    val cellPaddingDp: Int,
+    val valueFontSp: Int,
+    val labelFontSp: Int,
+    val maxDisplayCharacters: Int,
+    val valueMaxLines: Int = 1,
+    val labelMaxLines: Int = 1,
+) {
+    fun availableCellHeightDp(size: DpSize): Float =
+        (size.height.value - outerPaddingDp * 2f) / QUICK_GLANCE_ROW_COUNT
+
+    fun requiredCellContentHeightDp(fontScale: Float): Float =
+        cellPaddingDp * 2f +
+            (valueFontSp + labelFontSp) * fontScale * WIDGET_TEXT_LINE_HEIGHT_MULTIPLIER
+}
+
+internal data class QuickGlanceCellValue(
+    val label: String,
+    val value: String,
+)
+
+internal data class QuickGlanceCellModel(
+    val metric: QuickGlanceMetric,
+    val displayLabel: String,
+    val displayValue: String,
+    val accessibilityLabel: String,
+)
+
 internal fun quickGlanceLayoutFor(size: DpSize): QuickGlanceLayout =
     when {
         size.width >= 320.dp && size.height >= 180.dp -> QuickGlanceLayout.EXPANDED
         size.width >= 250.dp && size.height >= 110.dp -> QuickGlanceLayout.STANDARD
         else -> QuickGlanceLayout.COMPACT
     }
+
+internal fun quickGlancePresentationFor(
+    size: DpSize,
+    fontScale: Float,
+): QuickGlancePresentation {
+    val layout = quickGlanceLayoutFor(size)
+    val typography =
+        when {
+            fontScale >= 1.75f && layout == QuickGlanceLayout.EXPANDED -> Triple(14, 10, 18)
+            fontScale >= 1.75f -> Triple(8, 7, 12)
+            fontScale >= 1.2f && layout == QuickGlanceLayout.EXPANDED -> Triple(16, 10, 18)
+            fontScale >= 1.2f -> Triple(12, 8, 14)
+            layout == QuickGlanceLayout.EXPANDED -> Triple(18, 10, 20)
+            layout == QuickGlanceLayout.STANDARD -> Triple(16, 10, 18)
+            else -> Triple(15, 9, 16)
+        }
+    return QuickGlancePresentation(
+        layout = layout,
+        outerPaddingDp = 12,
+        cellPaddingDp = 4,
+        valueFontSp = typography.first,
+        labelFontSp = typography.second,
+        maxDisplayCharacters = typography.third,
+    )
+}
+
+internal fun quickGlanceCellModels(
+    values: Map<QuickGlanceMetric, QuickGlanceCellValue>,
+    presentation: QuickGlancePresentation,
+): List<QuickGlanceCellModel> =
+    QuickGlanceMetric.entries.map { metric ->
+        val cell = requireNotNull(values[metric]) { "Missing Quick Glance value for $metric" }
+        QuickGlanceCellModel(
+            metric = metric,
+            displayLabel = cell.label.ellipsizeForWidget(presentation.maxDisplayCharacters),
+            displayValue = cell.value.ellipsizeForWidget(presentation.maxDisplayCharacters),
+            accessibilityLabel = "${cell.label}, ${cell.value}",
+        )
+    }
+
+private fun String.ellipsizeForWidget(maxCharacters: Int): String =
+    if (length <= maxCharacters) this else take(maxCharacters - 1) + "…"
 
 class QuickGlanceWidget : GlanceAppWidget() {
     companion object {
@@ -99,52 +174,69 @@ private fun QuickGlanceContent(
     val batteryValue = context.getString(R.string.widget_percent_value, snapshot.batteryLevel)
     val storageValue = Formatter.formatShortFileSize(context, snapshot.availableStorageBytes)
     val temperatureValue = context.getString(R.string.widget_temperature_value, snapshot.temperatureC)
-    val layout = quickGlanceLayoutFor(LocalSize.current)
-    val valueSize = if (layout == QuickGlanceLayout.EXPANDED) 18.sp else 15.sp
-    val labelSize = if (layout == QuickGlanceLayout.COMPACT) 9.sp else 10.sp
+    val presentation =
+        quickGlancePresentationFor(
+            size = LocalSize.current,
+            fontScale = context.resources.configuration.fontScale,
+        )
+    val models =
+        quickGlanceCellModels(
+            values =
+                mapOf(
+                    QuickGlanceMetric.HEALTH to
+                        QuickGlanceCellValue(
+                            label = context.getString(R.string.widget_health_score_label),
+                            value = healthValue,
+                        ),
+                    QuickGlanceMetric.BATTERY to
+                        QuickGlanceCellValue(
+                            label = context.getString(R.string.widget_battery_label),
+                            value = batteryValue,
+                        ),
+                    QuickGlanceMetric.STORAGE to
+                        QuickGlanceCellValue(
+                            label = context.getString(R.string.widget_free_storage_label),
+                            value = storageValue,
+                        ),
+                    QuickGlanceMetric.TEMPERATURE to
+                        QuickGlanceCellValue(
+                            label = context.getString(R.string.widget_temperature_label),
+                            value = temperatureValue,
+                        ),
+                ),
+            presentation = presentation,
+        )
 
     RuncheckWidgetTheme {
         Column(
-            modifier = widgetSurfaceModifier(),
+            modifier = widgetSurfaceModifier(presentation.outerPaddingDp.dp),
         ) {
             Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
                 QuickGlanceCell(
                     modifier = GlanceModifier.defaultWeight(),
                     context = context,
-                    metric = QuickGlanceMetric.HEALTH,
-                    label = context.getString(R.string.widget_health_score_label),
-                    value = healthValue,
-                    valueSize = valueSize,
-                    labelSize = labelSize,
+                    model = models[0],
+                    presentation = presentation,
                 )
                 QuickGlanceCell(
                     modifier = GlanceModifier.defaultWeight(),
                     context = context,
-                    metric = QuickGlanceMetric.BATTERY,
-                    label = context.getString(R.string.widget_battery_label),
-                    value = batteryValue,
-                    valueSize = valueSize,
-                    labelSize = labelSize,
+                    model = models[1],
+                    presentation = presentation,
                 )
             }
             Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
                 QuickGlanceCell(
                     modifier = GlanceModifier.defaultWeight(),
                     context = context,
-                    metric = QuickGlanceMetric.STORAGE,
-                    label = context.getString(R.string.widget_free_storage_label),
-                    value = storageValue,
-                    valueSize = valueSize,
-                    labelSize = labelSize,
+                    model = models[2],
+                    presentation = presentation,
                 )
                 QuickGlanceCell(
                     modifier = GlanceModifier.defaultWeight(),
                     context = context,
-                    metric = QuickGlanceMetric.TEMPERATURE,
-                    label = context.getString(R.string.widget_temperature_label),
-                    value = temperatureValue,
-                    valueSize = valueSize,
-                    labelSize = labelSize,
+                    model = models[3],
+                    presentation = presentation,
                 )
             }
         }
@@ -155,37 +247,38 @@ private fun QuickGlanceContent(
 private fun QuickGlanceCell(
     modifier: GlanceModifier,
     context: Context,
-    metric: QuickGlanceMetric,
-    label: String,
-    value: String,
-    valueSize: androidx.compose.ui.unit.TextUnit,
-    labelSize: androidx.compose.ui.unit.TextUnit,
+    model: QuickGlanceCellModel,
+    presentation: QuickGlancePresentation,
 ) {
     Column(
         modifier =
             modifier
                 .fillMaxSize()
-                .clickable(actionStartActivity(widgetNavigationIntent(context, metric.route)))
-                .padding(4.dp),
+                .clickable(actionStartActivity(widgetNavigationIntent(context, model.metric.route)))
+                .semantics {
+                    contentDescription = model.accessibilityLabel
+                    testTag = "quick_glance_${model.metric.name.lowercase()}"
+                }
+                .padding(presentation.cellPaddingDp.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = value,
-            maxLines = 1,
+            text = model.displayValue,
+            maxLines = presentation.valueMaxLines,
             style =
                 TextStyle(
-                    fontSize = valueSize,
+                    fontSize = presentation.valueFontSp.sp,
                     fontWeight = FontWeight.Bold,
                     color = GlanceTheme.colors.onSurface,
                 ),
         )
         Text(
-            text = label,
-            maxLines = 1,
+            text = model.displayLabel,
+            maxLines = presentation.labelMaxLines,
             style =
                 TextStyle(
-                    fontSize = labelSize,
+                    fontSize = presentation.labelFontSp.sp,
                     color = GlanceTheme.colors.onSurfaceVariant,
                 ),
         )
@@ -195,3 +288,5 @@ private fun QuickGlanceCell(
 class QuickGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = QuickGlanceWidget()
 }
+
+private const val QUICK_GLANCE_ROW_COUNT = 2f

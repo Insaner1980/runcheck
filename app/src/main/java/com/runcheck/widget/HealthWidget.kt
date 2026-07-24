@@ -15,7 +15,6 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.provideContent
-import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
@@ -30,8 +29,6 @@ import com.runcheck.R
 import com.runcheck.domain.model.HealthScore
 import com.runcheck.ui.common.healthStatusLabelRes
 import com.runcheck.ui.navigation.Screen
-import com.runcheck.ui.theme.RuncheckStatusColors
-import com.runcheck.ui.theme.forHealthStatus
 
 internal fun healthWidgetLayoutFor(size: DpSize): WidgetLayout =
     when {
@@ -84,8 +81,7 @@ class HealthWidget : GlanceAppWidget() {
         val scoreLabel = context.getString(R.string.widget_health_score_with_status, healthScoreLabel, statusLabel)
         val batteryLabel = context.getString(R.string.widget_battery_short_label)
         val batteryValue = context.getString(R.string.widget_percent_value, snapshot.batteryLevel)
-        val statusColor = RuncheckStatusColors.forHealthStatus(status)
-        val statusColorProvider = ColorProvider(statusColor, statusColor)
+        val statusColorProvider = RuncheckWidgetStatusPalette.forHealthStatus(status)
 
         RuncheckWidgetTheme {
             val size = LocalSize.current

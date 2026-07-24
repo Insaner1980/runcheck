@@ -38,6 +38,22 @@ class CacheClaimContractTest {
     }
 
     @Test
+    fun `storage guidance distinguishes cache measurement settings and cleanup categories`() {
+        val strings = appDir.resolve("src/main/res/values/strings.xml").readText()
+        val slowdownBody =
+            Regex(
+                """<string name="learn_storage_slowdown_body"[^>]*>(.*?)</string>""",
+                setOf(RegexOption.DOT_MATCHES_ALL),
+            ).find(strings)?.groupValues?.get(1).orEmpty()
+
+        assertTrue(slowdownBody.contains("read-only cache measurement"))
+        assertTrue(slowdownBody.contains("Android Settings"))
+        assertTrue(slowdownBody.contains("large files, old downloads, leftover APK installers, and user-visible media"))
+        assertTrue(slowdownBody.contains("does not clear app caches"))
+        assertFalse(slowdownBody.contains("surface those categories"))
+    }
+
+    @Test
     fun `user facing copy does not claim runcheck clears cache ram or speeds up the phone`() {
         val userFacingCopy =
             buildString {

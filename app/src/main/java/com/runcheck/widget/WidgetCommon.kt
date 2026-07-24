@@ -3,6 +3,8 @@ package com.runcheck.widget
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
@@ -21,10 +23,13 @@ import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider as GlanceColorProvider
 import com.runcheck.MainActivity
 import com.runcheck.R
+import com.runcheck.domain.model.HealthStatus
 import com.runcheck.service.monitor.NotificationHelper
 import com.runcheck.ui.navigation.Screen
+import com.runcheck.ui.theme.AccentAmber
 import com.runcheck.ui.theme.AccentBlue
 import com.runcheck.ui.theme.AccentRed
 import com.runcheck.ui.theme.AccentTeal
@@ -43,9 +48,15 @@ import com.runcheck.ui.theme.LightSurface
 import com.runcheck.ui.theme.LightSurfaceContainer
 import com.runcheck.ui.theme.LightSurfaceContainerHigh
 import com.runcheck.ui.theme.LightSurfaceContainerHighest
+import com.runcheck.ui.theme.StatusCritical
+import com.runcheck.ui.theme.StatusFair
+import com.runcheck.ui.theme.StatusHealthy
+import com.runcheck.ui.theme.StatusPoor
 import com.runcheck.ui.theme.TextMuted
 import com.runcheck.ui.theme.TextPrimary
 import com.runcheck.ui.theme.TextSecondary
+import com.runcheck.ui.theme.WidgetStatusCriticalNight
+import com.runcheck.ui.theme.WidgetStatusPoorNight
 
 internal val RuncheckWidgetColors: ColorProviders =
     colorProviders(
@@ -78,6 +89,32 @@ internal val RuncheckWidgetColors: ColorProviders =
         widgetBackground = ColorProvider(day = LightSurfaceContainer, night = BgCard),
     )
 
+internal data class WidgetStatusTone(
+    val name: String,
+    val day: Color,
+    val night: Color,
+) {
+    val provider: GlanceColorProvider = ColorProvider(day = day, night = night)
+}
+
+internal object RuncheckWidgetStatusPalette {
+    val healthy = WidgetStatusTone("healthy", StatusHealthy, AccentTeal)
+    val fair = WidgetStatusTone("fair", StatusFair, AccentAmber)
+    val poor = WidgetStatusTone("poor", StatusPoor, WidgetStatusPoorNight)
+    val critical = WidgetStatusTone("critical", StatusCritical, WidgetStatusCriticalNight)
+    val all = listOf(healthy, fair, poor, critical)
+
+    fun forHealthStatus(status: HealthStatus): GlanceColorProvider =
+        when (status) {
+            HealthStatus.HEALTHY -> healthy.provider
+            HealthStatus.FAIR -> fair.provider
+            HealthStatus.POOR -> poor.provider
+            HealthStatus.CRITICAL -> critical.provider
+    }
+}
+
+internal const val WIDGET_TEXT_LINE_HEIGHT_MULTIPLIER = 1.2f
+
 @Composable
 internal fun RuncheckWidgetTheme(content: @Composable () -> Unit) {
     GlanceTheme(colors = RuncheckWidgetColors, content = content)
@@ -96,10 +133,10 @@ internal fun widgetNavigationIntent(
 }
 
 @Composable
-internal fun widgetSurfaceModifier(): GlanceModifier =
+internal fun widgetSurfaceModifier(padding: Dp = 12.dp): GlanceModifier =
     GlanceModifier
         .fillMaxSize()
-        .padding(12.dp)
+        .padding(padding)
         .cornerRadius(16.dp)
         .background(GlanceTheme.colors.widgetBackground)
 
@@ -107,8 +144,9 @@ internal fun widgetSurfaceModifier(): GlanceModifier =
 internal fun widgetContainerModifier(
     context: Context,
     route: String,
+    padding: Dp = 12.dp,
 ): GlanceModifier =
-    widgetSurfaceModifier()
+    widgetSurfaceModifier(padding)
         .clickable(actionStartActivity(widgetNavigationIntent(context, route)))
 
 @Composable
