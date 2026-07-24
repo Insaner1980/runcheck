@@ -72,6 +72,15 @@ interface AppBatteryUsageDao {
     @Query("SELECT * FROM app_battery_usage WHERE timestamp >= :since ORDER BY timestamp ASC, id ASC")
     suspend fun getUsageSinceSync(since: Long): List<AppBatteryUsageEntity>
 
+    @Query(
+        "SELECT * FROM app_battery_usage WHERE timestamp >= :startInclusive AND timestamp < :endExclusive " +
+            "ORDER BY timestamp ASC, id ASC",
+    )
+    suspend fun getUsageInPeriod(
+        startInclusive: Long,
+        endExclusive: Long,
+    ): List<AppBatteryUsageEntity>
+
     @Query("DELETE FROM app_battery_usage WHERE timestamp < :cutoff")
     suspend fun deleteOlderThan(cutoff: Long)
 

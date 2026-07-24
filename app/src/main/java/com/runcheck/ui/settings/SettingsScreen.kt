@@ -270,6 +270,9 @@ fun SettingsScreen(
                     onSetNotifHighTemp = viewModel::setNotifHighTemp,
                     onSetNotifLowStorage = viewModel::setNotifLowStorage,
                     onSetNotifChargeComplete = viewModel::setNotifChargeComplete,
+                    isPro = uiState.isPro,
+                    onSetWeeklyReportEnabled = viewModel::setWeeklyReportEnabled,
+                    onUpgradeToPro = onNavigateToProUpgrade,
                 )
 
                 AlertThresholdsSection(

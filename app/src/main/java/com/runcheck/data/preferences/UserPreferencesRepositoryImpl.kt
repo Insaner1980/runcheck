@@ -103,6 +103,7 @@ class UserPreferencesRepositoryImpl
                     liveNotifTemperature = prefs[KEY_LIVE_NOTIF_TEMPERATURE] ?: true,
                     liveNotifScreenStats = prefs[KEY_LIVE_NOTIF_SCREEN_STATS] ?: false,
                     liveNotifRemainingTime = prefs[KEY_LIVE_NOTIF_REMAINING_TIME] ?: false,
+                    weeklyReportEnabled = prefs[KEY_WEEKLY_REPORT_ENABLED] ?: false,
                     showInfoCards = prefs[KEY_SHOW_INFO_CARDS] ?: true,
                 )
             }
@@ -217,6 +218,27 @@ class UserPreferencesRepositoryImpl
             context.dataStore.edit { it[KEY_SHOW_INFO_CARDS] = enabled }
         }
 
+        override suspend fun setWeeklyReportEnabled(enabled: Boolean) {
+            context.dataStore.edit { it[KEY_WEEKLY_REPORT_ENABLED] = enabled }
+        }
+
+        override suspend fun getWeeklyReportLastProcessedPeriod(): Pair<Long, Long>? {
+            val prefs = preferencesFlow.first()
+            val start = prefs[KEY_WEEKLY_REPORT_LAST_START] ?: return null
+            val end = prefs[KEY_WEEKLY_REPORT_LAST_END] ?: return null
+            return start to end
+        }
+
+        override suspend fun setWeeklyReportLastProcessedPeriod(
+            startInclusive: Long,
+            endExclusive: Long,
+        ) {
+            context.dataStore.edit { prefs ->
+                prefs[KEY_WEEKLY_REPORT_LAST_START] = startInclusive
+                prefs[KEY_WEEKLY_REPORT_LAST_END] = endExclusive
+            }
+        }
+
         companion object {
             private val KEY_MONITORING_INTERVAL = stringPreferencesKey("monitoring_interval")
             private val KEY_NOTIFICATIONS = booleanPreferencesKey("notifications")
@@ -239,6 +261,9 @@ class UserPreferencesRepositoryImpl
             private val KEY_LIVE_NOTIF_TEMPERATURE = booleanPreferencesKey("live_notif_temperature")
             private val KEY_LIVE_NOTIF_SCREEN_STATS = booleanPreferencesKey("live_notif_screen_stats")
             private val KEY_LIVE_NOTIF_REMAINING_TIME = booleanPreferencesKey("live_notif_remaining_time")
+            private val KEY_WEEKLY_REPORT_ENABLED = booleanPreferencesKey("weekly_report_enabled")
+            private val KEY_WEEKLY_REPORT_LAST_START = longPreferencesKey("weekly_report_last_processed_start")
+            private val KEY_WEEKLY_REPORT_LAST_END = longPreferencesKey("weekly_report_last_processed_end")
             private val KEY_SHOW_INFO_CARDS = booleanPreferencesKey("show_info_cards")
             private val KEY_DISMISSED_INFO_CARDS = stringSetPreferencesKey("dismissed_info_cards")
             private val VERSIONED_CARD_ID_REGEX = Regex("^(.*)_v(\\d+)$")

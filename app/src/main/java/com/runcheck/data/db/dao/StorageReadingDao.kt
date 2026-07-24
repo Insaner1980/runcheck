@@ -48,4 +48,13 @@ interface StorageReadingDao {
 
     @Query("SELECT * FROM storage_readings WHERE timestamp >= :since ORDER BY timestamp ASC")
     suspend fun getReadingsSinceSync(since: Long): List<StorageReadingEntity>
+
+    @Query(
+        "SELECT * FROM storage_readings WHERE timestamp >= :startInclusive AND timestamp < :endExclusive " +
+            "ORDER BY timestamp ASC",
+    )
+    suspend fun getReadingsInPeriod(
+        startInclusive: Long,
+        endExclusive: Long,
+    ): List<StorageReadingEntity>
 }

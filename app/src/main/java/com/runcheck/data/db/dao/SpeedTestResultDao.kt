@@ -43,4 +43,13 @@ interface SpeedTestResultDao {
 
     @Query("SELECT * FROM speed_test_results ORDER BY timestamp ASC")
     suspend fun getAll(): List<SpeedTestResultEntity>
+
+    @Query(
+        "SELECT * FROM speed_test_results WHERE timestamp >= :startInclusive AND timestamp < :endExclusive " +
+            "ORDER BY timestamp ASC, id ASC",
+    )
+    suspend fun getResultsInPeriod(
+        startInclusive: Long,
+        endExclusive: Long,
+    ): List<SpeedTestResultEntity>
 }

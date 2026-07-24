@@ -14,6 +14,8 @@ import com.runcheck.data.storage.StorageCleanupRepositoryImpl
 import com.runcheck.data.storage.StorageRepositoryImpl
 import com.runcheck.data.thermal.ThermalRepositoryImpl
 import com.runcheck.data.thermal.ThrottlingRepositoryImpl
+import com.runcheck.data.weekly.WeeklyReportRepositoryImpl
+import com.runcheck.data.appusage.UnusedAppsRepositoryImpl
 import com.runcheck.domain.repository.AppBatteryUsageRepository
 import com.runcheck.domain.repository.ChargerRepository
 import com.runcheck.domain.repository.FileExportRepository
@@ -22,6 +24,8 @@ import com.runcheck.domain.repository.InsightRepository
 import com.runcheck.domain.repository.MonitoringStatusRepository
 import com.runcheck.domain.repository.StorageCleanupRepository
 import com.runcheck.domain.repository.ThrottlingRepository
+import com.runcheck.domain.repository.UnusedAppsRepository
+import com.runcheck.domain.repository.WeeklyReportRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -97,4 +101,12 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindFileExportRepository(impl: FileExportRepositoryImpl): FileExportRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindWeeklyReportRepository(impl: WeeklyReportRepositoryImpl): WeeklyReportRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUnusedAppsRepository(impl: UnusedAppsRepositoryImpl): UnusedAppsRepository
 }

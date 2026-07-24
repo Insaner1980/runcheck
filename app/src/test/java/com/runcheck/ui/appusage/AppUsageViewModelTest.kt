@@ -6,6 +6,11 @@ import com.runcheck.domain.model.AppUsageListSummary
 import com.runcheck.domain.usecase.GetAppBatteryUsageSummaryUseCase
 import com.runcheck.domain.usecase.GetAppBatteryUsageUseCase
 import com.runcheck.domain.usecase.IsProUserUseCase
+import com.runcheck.domain.usecase.GetUnusedAppsUseCase
+import com.runcheck.domain.usecase.UnusedAppsQueryResult
+import com.runcheck.domain.model.UnusedAppsPeriod
+import com.runcheck.domain.model.UnusedAppsResult
+import com.runcheck.domain.model.UsageAccess
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.RefreshAppUsageSnapshotUseCase
 import com.runcheck.ui.MainDispatcherRule
@@ -22,6 +27,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppUsageViewModelTest {
@@ -33,6 +39,7 @@ class AppUsageViewModelTest {
     private val refreshAppUsageSnapshot: RefreshAppUsageSnapshotUseCase = mockk(relaxed = true)
     private val observeProAccess: ObserveProAccessUseCase = mockk()
     private val isProUser: IsProUserUseCase = mockk()
+    private val getUnusedApps: GetUnusedAppsUseCase = mockk()
 
     @Test
     fun `refresh shows locked state for non pro users`() =
@@ -84,6 +91,47 @@ class AppUsageViewModelTest {
             assertEquals(UiText.Dynamic("usage failed"), (state as AppUsageUiState.Error).message)
         }
 
+    @Test
+    fun `not used mode exposes permission guidance instead of an empty list`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            coEvery { getUnusedApps(any(), any(), any()) } returns
+                UnusedAppsQueryResult.Available(
+                    UnusedAppsResult(
+                        usageAccess = UsageAccess.REQUIRED,
+                        period = UnusedAppsPeriod.DAYS_30,
+                        observedAt = Instant.EPOCH,
+                    ),
+                )
+            val viewModel = createViewModel()
+
+            viewModel.loadUnusedApps(UnusedAppsPeriod.DAYS_30, forceRefresh = false)
+            runCurrent()
+
+            assertTrue(viewModel.unusedAppsState.value is UnusedAppsUiState.PermissionRequired)
+        }
+
+    @Test
+    fun `return from uninstall can force one refreshed query`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            coEvery { getUnusedApps(any(), any(), true) } returns
+                UnusedAppsQueryResult.Available(
+                    UnusedAppsResult(
+                        usageAccess = UsageAccess.GRANTED,
+                        period = UnusedAppsPeriod.DAYS_90,
+                        observedAt = Instant.EPOCH,
+                    ),
+                )
+            val viewModel = createViewModel()
+
+            viewModel.loadUnusedApps(UnusedAppsPeriod.DAYS_90, forceRefresh = true)
+            runCurrent()
+
+            coVerify(exactly = 1) {
+                getUnusedApps(UnusedAppsPeriod.DAYS_90, any(), true)
+            }
+            assertTrue(viewModel.unusedAppsState.value is UnusedAppsUiState.Success)
+        }
+
     private fun createViewModel(): AppUsageViewModel =
         AppUsageViewModel(
             getAppBatteryUsage = getAppBatteryUsage,
@@ -91,5 +139,6 @@ class AppUsageViewModelTest {
             refreshAppUsageSnapshot = refreshAppUsageSnapshot,
             observeProAccess = observeProAccess,
             isProUser = isProUser,
+            getUnusedApps = getUnusedApps,
         )
 }

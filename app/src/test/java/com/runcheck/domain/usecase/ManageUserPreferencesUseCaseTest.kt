@@ -48,6 +48,7 @@ class ManageUserPreferencesUseCaseTest {
             useCase.setLiveNotifScreenStats(true)
             useCase.setLiveNotifRemainingTime(true)
             useCase.setShowInfoCards(false)
+            useCase.setWeeklyReportEnabled(true)
 
             coVerify(exactly = 1) { repository.setSelectedChargerId(4L) }
             coVerify(exactly = 1) { repository.setNotifLowBattery(false) }
@@ -66,6 +67,7 @@ class ManageUserPreferencesUseCaseTest {
             coVerify(exactly = 1) { repository.setLiveNotifScreenStats(true) }
             coVerify(exactly = 1) { repository.setLiveNotifRemainingTime(true) }
             coVerify(exactly = 1) { repository.setShowInfoCards(false) }
+            coVerify(exactly = 1) { repository.setWeeklyReportEnabled(true) }
         }
 
     @Test

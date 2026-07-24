@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -17,6 +19,12 @@ import com.runcheck.ui.components.RuncheckLoadingIndicator
 import com.runcheck.ui.navigation.ProtectedFeatureAccessState
 import com.runcheck.ui.navigation.protectedFeatureAccessState
 import com.runcheck.ui.theme.spacing
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.runcheck.ui.weekly.WeeklyReportContent
+import com.runcheck.ui.weekly.WeeklyReportUiState
+import com.runcheck.ui.weekly.WeeklyReportViewModel
+import com.runcheck.ui.common.resolve
 
 @Composable
 fun WeeklyReportEntryScreen(
@@ -25,14 +33,22 @@ fun WeeklyReportEntryScreen(
     onBack: () -> Unit,
     onUpgradeToPro: () -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: WeeklyReportViewModel = hiltViewModel(),
 ) {
     val loadingDescription = stringResource(R.string.a11y_loading)
+    val accessState = protectedFeatureAccessState(proStatusReady, hasProAccess)
+    val reportState by viewModel.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(accessState) {
+        if (accessState == ProtectedFeatureAccessState.AVAILABLE) {
+            viewModel.load()
+        }
+    }
     ExpressiveDetailScaffold(
         title = stringResource(R.string.weekly_report_title),
         onBack = onBack,
         modifier = modifier,
     ) {
-        when (protectedFeatureAccessState(proStatusReady, hasProAccess)) {
+        when (accessState) {
             ProtectedFeatureAccessState.WAITING_FOR_PRO_STATUS -> {
                 CenteredToolContent {
                     RuncheckLoadingIndicator(contentDescription = loadingDescription)
@@ -53,12 +69,39 @@ fun WeeklyReportEntryScreen(
             }
 
             ProtectedFeatureAccessState.AVAILABLE -> {
-                CenteredToolContent {
-                    Text(
-                        text = stringResource(R.string.weekly_report_empty),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                when (val state = reportState) {
+                    WeeklyReportUiState.Loading -> {
+                        CenteredToolContent {
+                            RuncheckLoadingIndicator(contentDescription = loadingDescription)
+                        }
+                    }
+
+                    WeeklyReportUiState.Locked -> {
+                        ProFeatureLockedState(
+                            title = stringResource(R.string.weekly_report_title),
+                            message =
+                                stringResource(
+                                    R.string.pro_feature_locked_message,
+                                    stringResource(R.string.weekly_report_title),
+                                ),
+                            actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+                            onAction = onUpgradeToPro,
+                        )
+                    }
+
+                    is WeeklyReportUiState.Error -> {
+                        CenteredToolContent {
+                            Text(
+                                text = state.message.resolve(),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+
+                    is WeeklyReportUiState.Success -> {
+                        WeeklyReportContent(report = state.report)
+                    }
                 }
             }
         }

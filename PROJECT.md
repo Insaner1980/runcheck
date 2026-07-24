@@ -250,7 +250,7 @@ State restoration details:
 - Learn article cross-links are validated against direct routes at catalog initialization time. Cross-links to a top-level route use the same top-level state/back-stack policy instead of pushing a second top-level screen over the article.
 - Fullscreen chart args are route-backed, but selection changes are returned to Battery/Network through `FullscreenChartResult` keys on the previous back stack entry.
 - Root scaffold content uses the safe-drawing bottom inset only when no navigation bar is present; top-level roots receive the navigation bar's inset once, and pushed destinations remain protected from system navigation.
-- Weekly Report and Export currently have explicit route entry screens; Export waits for Pro readiness and shows the shared locked state to free users. Their feature redesigns are owned by later tasks.
+- Weekly Report has a Pro-gated report screen backed by the previous completed local Monday-to-Monday interval. Export waits for Pro readiness and shows the shared locked state to free users.
 
 ---
 
@@ -302,6 +302,17 @@ Additional WorkManager-backed trial behavior:
   - scheduled by `TrialManager` as unique one-time day-5 and day-7 trial notification work
   - initializes billing before notifying and skips notifications when Pro is already active
   - canceled by `ProManager` once a permanent purchase is active
+
+Additional one-time weekly reporting behavior:
+
+- `WeeklyReportWorker`
+  - unique work name: `weekly_report`
+  - scheduled as one one-time job for the next local Monday at 09:00; no periodic or retry chain is maintained
+  - reconciled at app startup, boot/package replacement, timezone change, weekly-report preference changes, and Pro-state changes
+  - canceled when the toggle is off or Pro access is inactive; Pro expiry preserves the user's toggle selection
+  - reads the previous completed local Monday 00:00 to Monday 00:00 interval with an exclusive end
+  - notification denial or a disabled reports channel records that interval as handled, so permission restoration does not create a catch-up notification
+  - posts through the low-importance reports channel and opens Tools → Weekly Report
 
 Supporting monitor components include:
 
@@ -651,7 +662,7 @@ UI and data behavior:
 
 ## App Usage
 
-App Usage is Pro-gated and backed by paging.
+App Usage is Pro-gated. The Usage mode is backed by paging; the Not used mode is a separately loaded, one-refresh-cached candidate list.
 
 Behavior:
 
@@ -660,6 +671,13 @@ Behavior:
 - Shows permission education card when access is missing
 - Refreshes usage snapshot when the user returns from system settings
 - Displays total foreground time summary and per-app list items
+- The connected Usage / Not used selector keeps the existing foreground-usage view and adds 30/60/90-day unused-app filters
+- Not used queries only launcher-visible apps through `ACTION_MAIN` + `CATEGORY_LAUNCHER`; `QUERY_ALL_PACKAGES` is not declared
+- System apps, updated system apps, the runcheck package, and apps installed inside the selected interval are excluded
+- Missing `UsageStats` rows remain honest candidates with "No recorded use" wording rather than being treated as proof that an app was never used
+- Per-app `StorageStatsManager` reads are bounded, run on `AppDispatchers.IO`, and retain partial results when an app disappears or a size lookup fails
+- App labels fall back to package names, uninstall uses `ACTION_DELETE`, and returning from the uninstall/settings flow forces a fresh query
+- The domain use case checks Pro access before repository work, so free users never trigger the aggregate or package scan
 
 Background support:
 
@@ -718,6 +736,7 @@ Sections:
   - starts/stops `RealTimeMonitorService` foreground service
 - Notifications
   - master notifications toggle
+  - weekly report toggle (selection persists across Pro expiry; inactive/free access prevents scheduling and delivery)
   - low battery
   - high temperature
   - low storage
@@ -789,7 +808,7 @@ Persistence technologies:
 - Room schema export is enabled and androidTest assets include `app/schemas`; exported schema assets currently cover versions 6-10
 - Room migrations are explicitly registered from 1→2 through 9→10
 - A destructive migration callback logs debug-only and records `destructive_migration_occurred` in `runcheck_db_events`
-- DataStore `settings` for user preferences, dismissed info cards, selected charger, and app-usage collection timestamp
+- DataStore `settings` for user preferences, weekly-report enablement and last handled period, dismissed info cards, selected charger, and app-usage collection timestamp
 - DataStore `trial_state` for trial start, last-known timestamp, welcome/day-5 prompt state, and upgrade-card dismissal pacing
 - DataStore `monitoring_status` for the last successful periodic worker heartbeat
 - DataStore `monitoring_alert_state` for the previous alert snapshot and charge-complete debounce state
@@ -867,6 +886,7 @@ Pro-gated areas currently include:
 - App Usage
 - Extended history
 - Thermal logs
+- Weekly Report
 - CSV export
 - Widgets
 - Remaining charge time

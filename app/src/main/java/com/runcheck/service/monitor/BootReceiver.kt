@@ -11,6 +11,7 @@ import com.runcheck.domain.repository.UserPreferencesRepository
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
 import com.runcheck.util.RuncheckPermissionPolicy
+import com.runcheck.service.report.WeeklyReportScheduler
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +33,9 @@ class BootReceiver : BroadcastReceiver() {
     @Inject
     lateinit var dispatchers: AppDispatchers
 
+    @Inject
+    lateinit var weeklyReportScheduler: WeeklyReportScheduler
+
     @Suppress("TooGenericExceptionCaught")
     override fun onReceive(
         context: Context,
@@ -41,7 +45,8 @@ class BootReceiver : BroadcastReceiver() {
         if (
             action != Intent.ACTION_BOOT_COMPLETED &&
             action != Intent.ACTION_MY_PACKAGE_REPLACED &&
-            action != Intent.ACTION_USER_UNLOCKED
+            action != Intent.ACTION_USER_UNLOCKED &&
+            action != Intent.ACTION_TIMEZONE_CHANGED
         ) {
             return
         }
@@ -56,6 +61,7 @@ class BootReceiver : BroadcastReceiver() {
             try {
                 screenStateRepository.initialize()
                 monitorScheduler.ensureScheduled()
+                weeklyReportScheduler.ensureScheduled()
                 restartLiveNotificationIfEnabled(context)
             } catch (e: CancellationException) {
                 throw e

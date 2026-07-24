@@ -1690,9 +1690,31 @@ App usage item:
   - Semantics includes content description and progress range.
 - Per-app estimated mAh drain is not shown. Foreground duration and usage share
   do not support a defensible per-app drain claim.
-- A connected Usage / Not used selector is present. Task 5 does not create an
-  unused-app data flow; the Not used side therefore exposes a truthful empty
-  placeholder until that flow exists.
+- A connected Usage / Not used selector is present.
+- Not used offers 30/60/90-day connected filter buttons and loads only after
+  Pro access is confirmed.
+- Each candidate keeps the app label as the primary line and package name as a
+  technical secondary line. Missing labels fall back to the package name.
+- Last-use copy distinguishes a recorded date from "No recorded use in N days";
+  an absent UsageStats row is not presented as proof that the app was never used.
+- Storage size is shown when available. Per-app size failures keep the remaining
+  list visible and add a concise partial-results note.
+- Each candidate exposes a 48dp-minimum uninstall action that launches the
+  system `ACTION_DELETE` flow. Returning to the screen forces a fresh query.
+
+### 9.8a Weekly Report
+
+- `ExpressiveDetailScaffold` owns the title, back action, and horizontal padding.
+- Free users see the shared `ProFeatureLockedState`; the report use case is not
+  invoked until Pro access is available.
+- The hero card shows the previous completed local Monday-to-Monday interval,
+  monitored-day/sample coverage, and Available/Estimated/Unavailable wording.
+- Battery shows observed level changes, defensible discharge-rate estimates, and
+  health change only when data exists. It does not claim per-app mAh drain.
+- Storage, thermal, and speed sections state unavailable data explicitly.
+- App ranking uses foreground duration only.
+- Weekly notifications use the low-importance Reports channel and open the
+  Tools parent before pushing Weekly Report.
 
 ### 9.9 Charger Comparison
 

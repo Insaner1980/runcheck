@@ -178,6 +178,9 @@ internal fun NotificationsSection( // NOSONAR
     onSetNotifHighTemp: (Boolean) -> Unit,
     onSetNotifLowStorage: (Boolean) -> Unit,
     onSetNotifChargeComplete: (Boolean) -> Unit,
+    isPro: Boolean,
+    onSetWeeklyReportEnabled: (Boolean) -> Unit,
+    onUpgradeToPro: () -> Unit,
 ) {
     val masterEnabled = preferences.notificationsEnabled
     val notificationToggles =
@@ -236,6 +239,26 @@ internal fun NotificationsSection( // NOSONAR
                 SettingsDivider()
             }
         }
+        SettingsDivider()
+        SettingsToggle(
+            title = stringResource(R.string.settings_weekly_report),
+            description =
+                stringResource(
+                    if (isPro) {
+                        R.string.settings_weekly_report_description
+                    } else {
+                        R.string.settings_weekly_report_requires_pro
+                    },
+                ),
+            checked = preferences.weeklyReportEnabled,
+            onCheckedChange = { enabled ->
+                if (isPro) {
+                    onSetWeeklyReportEnabled(enabled)
+                } else {
+                    onUpgradeToPro()
+                }
+            },
+        )
 
         if (masterEnabled && !alertsEffectivelyEnabled) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))

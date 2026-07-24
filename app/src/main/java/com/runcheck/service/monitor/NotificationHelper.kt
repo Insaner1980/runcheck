@@ -41,12 +41,14 @@ class NotificationHelper
                 )
             const val CHANNEL_TRIAL = "runcheck_trial"
             const val CHANNEL_REAL_TIME = "real_time_monitor"
+            const val CHANNEL_REPORTS = "runcheck_reports"
             const val NOTIFICATION_LOW_BATTERY = 1001
             const val NOTIFICATION_HIGH_TEMP = 1002
             const val NOTIFICATION_LOW_STORAGE = 1003
             const val NOTIFICATION_CHARGE_COMPLETE = 1004
             const val NOTIFICATION_TRIAL_DAY5 = 1005
             const val NOTIFICATION_TRIAL_DAY7 = 1006
+            const val NOTIFICATION_WEEKLY_REPORT = 1007
 
             /** Intent extra key for deep-linking to a specific screen from notifications. */
             const val EXTRA_NAVIGATE_TO = "navigate_to"
@@ -54,6 +56,7 @@ class NotificationHelper
             const val NAVIGATE_THERMAL = "thermal"
             const val NAVIGATE_STORAGE = "storage"
             const val NAVIGATE_PRO_UPGRADE = "pro_upgrade"
+            const val NAVIGATE_WEEKLY_REPORT = "weekly_report"
 
             fun createContentIntent(
                 context: Context,
@@ -119,8 +122,18 @@ class NotificationHelper
                     description = context.getString(R.string.notification_channel_trial_description)
                 }
 
+            val reportsChannel =
+                NotificationChannel(
+                    CHANNEL_REPORTS,
+                    context.getString(R.string.notification_channel_reports),
+                    NotificationManager.IMPORTANCE_LOW,
+                ).apply {
+                    description = context.getString(R.string.notification_channel_reports_description)
+                    setShowBadge(false)
+                }
+
             notificationManager.createNotificationChannels(
-                listOf(alertChannel, trialChannel),
+                listOf(alertChannel, trialChannel, reportsChannel),
             )
 
             // Remove leftover channels from the old "DevicePulse" app name
@@ -238,6 +251,39 @@ class NotificationHelper
                     .setAutoCancel(true)
                     .build()
             notificationManager.notify(NOTIFICATION_TRIAL_DAY7, notification)
+        }
+
+        fun canPostReports(): Boolean {
+            if (!canPostNotifications()) return false
+            if (!notificationManager.areNotificationsEnabled()) return false
+            val channel = notificationManager.getNotificationChannel(CHANNEL_REPORTS)
+            return channel == null || channel.importance != NotificationManager.IMPORTANCE_NONE
+        }
+
+        fun showWeeklyReport(monitoredDays: Int): Boolean {
+            if (!canPostReports()) return false
+            createChannels()
+            val notification =
+                NotificationCompat
+                    .Builder(context, CHANNEL_REPORTS)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setContentTitle(context.getString(R.string.notification_weekly_report_title))
+                    .setContentText(
+                        context.getString(
+                            R.string.notification_weekly_report_text,
+                            monitoredDays,
+                        ),
+                    ).setPriority(NotificationCompat.PRIORITY_LOW)
+                    .setContentIntent(
+                        createContentIntent(
+                            context,
+                            NAVIGATE_WEEKLY_REPORT,
+                            NOTIFICATION_WEEKLY_REPORT,
+                        ),
+                    ).setAutoCancel(true)
+                    .build()
+            notificationManager.notify(NOTIFICATION_WEEKLY_REPORT, notification)
+            return true
         }
 
         /** Cancels a notification by its ID. */

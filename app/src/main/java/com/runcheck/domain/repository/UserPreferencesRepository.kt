@@ -62,4 +62,13 @@ interface UserPreferencesRepository {
     suspend fun setLiveNotifRemainingTime(enabled: Boolean)
 
     suspend fun setShowInfoCards(enabled: Boolean)
+
+    suspend fun setWeeklyReportEnabled(enabled: Boolean) = Unit
+
+    suspend fun getWeeklyReportLastProcessedPeriod(): Pair<Long, Long>? = null
+
+    suspend fun setWeeklyReportLastProcessedPeriod(
+        startInclusive: Long,
+        endExclusive: Long,
+    ) = Unit
 }

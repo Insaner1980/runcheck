@@ -357,6 +357,10 @@ class SettingsViewModel
             executePreferenceUpdate { manageUserPreferences.setShowInfoCards(enabled) }
         }
 
+        fun setWeeklyReportEnabled(enabled: Boolean) {
+            executePreferenceUpdate { manageUserPreferences.setWeeklyReportEnabled(enabled) }
+        }
+
         fun resetAlertThresholds() {
             executePreferenceUpdate {
                 manageUserPreferences.resetAlertThresholds()

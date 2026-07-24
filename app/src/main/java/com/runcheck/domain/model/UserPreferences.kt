@@ -23,6 +23,8 @@ data class UserPreferences(
     val liveNotifTemperature: Boolean = true,
     val liveNotifScreenStats: Boolean = false,
     val liveNotifRemainingTime: Boolean = false,
+    // Weekly report
+    val weeklyReportEnabled: Boolean = false,
     // Info cards
     val showInfoCards: Boolean = true,
 )

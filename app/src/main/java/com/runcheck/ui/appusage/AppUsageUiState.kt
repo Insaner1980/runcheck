@@ -1,5 +1,8 @@
 package com.runcheck.ui.appusage
 
+import com.runcheck.domain.model.UnusedAppCandidate
+import com.runcheck.domain.model.UnusedAppError
+import com.runcheck.domain.model.UnusedAppsPeriod
 import com.runcheck.ui.common.UiText
 
 sealed interface AppUsageUiState {
@@ -15,4 +18,26 @@ sealed interface AppUsageUiState {
     data class Error(
         val message: UiText,
     ) : AppUsageUiState
+}
+
+sealed interface UnusedAppsUiState {
+    data object Idle : UnusedAppsUiState
+
+    data object Loading : UnusedAppsUiState
+
+    data object Locked : UnusedAppsUiState
+
+    data class PermissionRequired(
+        val period: UnusedAppsPeriod,
+    ) : UnusedAppsUiState
+
+    data class Success(
+        val period: UnusedAppsPeriod,
+        val candidates: List<UnusedAppCandidate>,
+        val partialErrors: Set<UnusedAppError>,
+    ) : UnusedAppsUiState
+
+    data class Error(
+        val message: UiText,
+    ) : UnusedAppsUiState
 }

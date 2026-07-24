@@ -49,6 +49,15 @@ interface BatteryReadingDao {
     @Query("SELECT * FROM battery_readings WHERE timestamp >= :since ORDER BY timestamp ASC")
     suspend fun getReadingsSinceSync(since: Long): List<BatteryReadingEntity>
 
+    @Query(
+        "SELECT * FROM battery_readings WHERE timestamp >= :startInclusive AND timestamp < :endExclusive " +
+            "ORDER BY timestamp ASC",
+    )
+    suspend fun getReadingsInPeriod(
+        startInclusive: Long,
+        endExclusive: Long,
+    ): List<BatteryReadingEntity>
+
     @Query("SELECT timestamp FROM battery_readings WHERE status = 'CHARGING' ORDER BY timestamp DESC LIMIT 1")
     suspend fun getLastChargingTimestamp(): Long?
 

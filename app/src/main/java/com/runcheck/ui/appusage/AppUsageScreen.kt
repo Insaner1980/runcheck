@@ -9,6 +9,7 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
+import android.net.Uri
 import android.util.LruCache
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -61,6 +63,8 @@ import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import com.runcheck.R
 import com.runcheck.domain.model.AppBatteryUsage
+import com.runcheck.domain.model.UnusedAppCandidate
+import com.runcheck.domain.model.UnusedAppsPeriod
 import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.AppDisplayName
@@ -78,6 +82,8 @@ import com.runcheck.ui.theme.statusColors
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.text.DateFormat
+import java.util.Date
 import kotlin.math.roundToInt
 
 @Composable
@@ -88,6 +94,7 @@ fun AppUsageScreen(
     viewModel: AppUsageViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val unusedAppsState by viewModel.unusedAppsState.collectAsStateWithLifecycle()
 
     LifecycleStartStopEffect(
         onStart = viewModel::startObserving,
@@ -125,6 +132,8 @@ fun AppUsageScreen(
                     state = state,
                     appItems = appItems,
                     onRefresh = { viewModel.refresh() },
+                    unusedAppsState = unusedAppsState,
+                    onLoadUnusedApps = viewModel::loadUnusedApps,
                 )
             }
 
@@ -158,11 +167,15 @@ private fun AppUsageContent(
     state: AppUsageUiState.Success,
     appItems: LazyPagingItems<com.runcheck.domain.model.AppBatteryUsage>,
     onRefresh: () -> Unit,
+    unusedAppsState: UnusedAppsUiState,
+    onLoadUnusedApps: (UnusedAppsPeriod, Boolean) -> Unit,
 ) {
     val context = LocalContext.current
     val currentOnRefresh by rememberUpdatedState(onRefresh)
     var hasUsageAccess by remember(context) { mutableStateOf(context.hasUsageStatsAccess()) }
     var selectedMode by rememberSaveable { mutableStateOf(AppUsageMode.USAGE) }
+    var unusedPeriod by rememberSaveable { mutableStateOf(UnusedAppsPeriod.DAYS_30) }
+    var uninstallPending by rememberSaveable { mutableStateOf(false) }
     val maxTime = state.maxForegroundTimeMs.coerceAtLeast(1L)
     val totalTime = state.totalForegroundTimeMs.coerceAtLeast(1L)
 
@@ -173,7 +186,17 @@ private fun AppUsageContent(
         if (currentAccess && (justGrantedAccess || appItems.itemCount == 0)) {
             currentOnRefresh()
         }
+        if (selectedMode == AppUsageMode.NOT_USED && (justGrantedAccess || uninstallPending)) {
+            onLoadUnusedApps(unusedPeriod, true)
+            uninstallPending = false
+        }
         onPauseOrDispose { }
+    }
+
+    LaunchedEffect(selectedMode, unusedPeriod) {
+        if (selectedMode == AppUsageMode.NOT_USED) {
+            onLoadUnusedApps(unusedPeriod, false)
+        }
     }
 
     LazyColumn(
@@ -201,11 +224,26 @@ private fun AppUsageContent(
         when {
             selectedMode == AppUsageMode.NOT_USED -> {
                 item {
-                    ExpressiveEmptyState(
-                        title = stringResource(R.string.app_usage_mode_not_used),
-                        message = stringResource(R.string.app_usage_unused_placeholder),
-                    )
+                    ExpressiveSingleChoiceSelector(
+                options = UnusedAppsPeriod.entries,
+                selected = unusedPeriod,
+                labelFor = { period ->
+                    stringResource(R.string.app_usage_unused_period_days, period.days)
+                },
+                onSelect = { unusedPeriod = it },
+            )
                 }
+                unusedAppsItems(
+                    state = unusedAppsState,
+                    context = context,
+                    onRetry = { onLoadUnusedApps(unusedPeriod, true) },
+                    onUninstall = { packageName ->
+                        uninstallPending = true
+                        context.startActivity(
+                            Intent(Intent.ACTION_DELETE, Uri.parse("package:$packageName")),
+                        )
+                    },
+                )
             }
 
             !hasUsageAccess -> {
@@ -354,6 +392,198 @@ private fun AppUsageContent(
         item {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
+        }
+    }
+}
+
+private fun LazyListScope.unusedAppsItems(
+    state: UnusedAppsUiState,
+    context: Context,
+    onRetry: () -> Unit,
+    onUninstall: (String) -> Unit,
+) {
+    when (state) {
+        UnusedAppsUiState.Idle,
+        UnusedAppsUiState.Loading,
+        -> {
+            item {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = MaterialTheme.spacing.lg),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    RuncheckLoadingIndicator(
+                        contentDescription = context.getString(R.string.a11y_loading),
+                    )
+                }
+            }
+        }
+
+        UnusedAppsUiState.Locked -> {
+            item {
+                ExpressiveEmptyState(
+                    title = context.getString(R.string.app_usage_mode_not_used),
+                    message = context.getString(R.string.app_usage_unused_requires_pro),
+                )
+            }
+        }
+
+        is UnusedAppsUiState.PermissionRequired -> {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large,
+                    colors = runcheckCardColors(),
+                    elevation = runcheckCardElevation(),
+                ) {
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(MaterialTheme.spacing.base),
+                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+                    ) {
+                        Text(
+                            text = context.getString(R.string.app_usage_permission_title),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(
+                            text = context.getString(R.string.app_usage_permission_message),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        TextButton(
+                            onClick = {
+                                context.startActivity(
+                                    Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(
+                                        Intent.FLAG_ACTIVITY_NEW_TASK,
+                                    ),
+                                )
+                            },
+                        ) {
+                            Text(context.getString(R.string.app_usage_permission_open_settings))
+                        }
+                    }
+                }
+            }
+        }
+
+        is UnusedAppsUiState.Error -> {
+            item {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    ExpressiveEmptyState(
+                        title = context.getString(R.string.common_error_generic),
+                        message = state.message.resolve(),
+                    )
+                    TextButton(onClick = onRetry) {
+                        Text(context.getString(R.string.common_retry))
+                    }
+                }
+            }
+        }
+
+        is UnusedAppsUiState.Success -> {
+            if (state.partialErrors.isNotEmpty()) {
+                item {
+                    Text(
+                        text = context.getString(R.string.app_usage_unused_partial_sizes),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            if (state.candidates.isEmpty()) {
+                item {
+                    ExpressiveEmptyState(
+                        title = context.getString(R.string.app_usage_unused_none_title),
+                        message =
+                            context.getString(
+                                R.string.app_usage_unused_none_message,
+                                state.period.days,
+                            ),
+                    )
+                }
+            } else {
+                items(
+                    items = state.candidates,
+                    key = UnusedAppCandidate::packageName,
+                ) { candidate ->
+                    UnusedAppItem(
+                        candidate = candidate,
+                        period = state.period,
+                        onUninstall = { onUninstall(candidate.packageName) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UnusedAppItem(
+    candidate: UnusedAppCandidate,
+    period: UnusedAppsPeriod,
+    onUninstall: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = runcheckCardColors(),
+        elevation = runcheckCardElevation(),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(MaterialTheme.spacing.base),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AppIcon(candidate.packageName)
+                Spacer(modifier = Modifier.width(MaterialTheme.spacing.sm))
+                Column(modifier = Modifier.weight(1f)) {
+                    AppDisplayName(
+                        appLabel = candidate.appLabel.orEmpty(),
+                        packageName = candidate.packageName,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = candidate.packageName,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Text(
+                text =
+                    candidate.lastRecordedUse?.let { lastUse ->
+                        stringResource(
+                            R.string.app_usage_unused_last_recorded,
+                            DateFormat.getDateInstance().format(Date.from(lastUse)),
+                        )
+                    } ?: stringResource(
+                        R.string.app_usage_unused_no_recorded,
+                        period.days,
+                    ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text =
+                    candidate.storageBytes?.let { bytes ->
+                        stringResource(R.string.app_usage_unused_size_mb, bytes / (1024 * 1024))
+                    } ?: stringResource(R.string.app_usage_unused_size_unavailable),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            TextButton(onClick = onUninstall) {
+                Text(stringResource(R.string.app_usage_unused_uninstall))
+            }
         }
     }
 }

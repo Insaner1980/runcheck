@@ -84,6 +84,10 @@ class ManageUserPreferencesUseCase
             userPreferencesRepository.setShowInfoCards(enabled)
         }
 
+        suspend fun setWeeklyReportEnabled(enabled: Boolean) {
+            userPreferencesRepository.setWeeklyReportEnabled(enabled)
+        }
+
         suspend fun resetAlertThresholds() {
             val defaults = UserPreferences()
             userPreferencesRepository.setAlertBatteryThreshold(defaults.alertBatteryThreshold)

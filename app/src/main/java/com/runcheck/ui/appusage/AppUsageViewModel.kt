@@ -7,9 +7,13 @@ import androidx.paging.cachedIn
 import com.runcheck.R
 import com.runcheck.domain.usecase.GetAppBatteryUsageSummaryUseCase
 import com.runcheck.domain.usecase.GetAppBatteryUsageUseCase
+import com.runcheck.domain.usecase.GetUnusedAppsUseCase
 import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.RefreshAppUsageSnapshotUseCase
+import com.runcheck.domain.usecase.UnusedAppsQueryResult
+import com.runcheck.domain.model.UnusedAppsPeriod
+import com.runcheck.domain.model.UsageAccess
 import com.runcheck.ui.common.messageOrRes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -25,6 +29,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import java.time.Instant
 
 private const val APP_USAGE_LOOKBACK_MS = 24 * 60 * 60 * 1000L
 
@@ -38,9 +43,12 @@ class AppUsageViewModel
         private val refreshAppUsageSnapshot: RefreshAppUsageSnapshotUseCase,
         private val observeProAccess: ObserveProAccessUseCase,
         private val isProUser: IsProUserUseCase,
+        private val getUnusedApps: GetUnusedAppsUseCase,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow<AppUsageUiState>(AppUsageUiState.Loading)
         val uiState: StateFlow<AppUsageUiState> = _uiState.asStateFlow()
+        private val _unusedAppsState = MutableStateFlow<UnusedAppsUiState>(UnusedAppsUiState.Idle)
+        val unusedAppsState: StateFlow<UnusedAppsUiState> = _unusedAppsState.asStateFlow()
         private val pagingEnabled = MutableStateFlow(false)
         val pagedApps: Flow<PagingData<com.runcheck.domain.model.AppBatteryUsage>> =
             pagingEnabled
@@ -54,6 +62,7 @@ class AppUsageViewModel
                 }.cachedIn(viewModelScope)
         private var proObserverJob: Job? = null
         private var loadJob: Job? = null
+        private var unusedAppsJob: Job? = null
 
         fun refresh() {
             if (isProUser()) {
@@ -73,6 +82,8 @@ class AppUsageViewModel
             proObserverJob = null
             loadJob?.cancel()
             loadJob = null
+            unusedAppsJob?.cancel()
+            unusedAppsJob = null
         }
 
         private fun observeProState() {
@@ -83,8 +94,10 @@ class AppUsageViewModel
                         observeProAccess().collectLatest { isPro ->
                             if (!isPro) {
                                 loadJob?.cancel()
+                                unusedAppsJob?.cancel()
                                 pagingEnabled.value = false
                                 _uiState.value = AppUsageUiState.Locked
+                                _unusedAppsState.value = UnusedAppsUiState.Locked
                                 return@collectLatest
                             }
                             loadUsageData()
@@ -93,6 +106,42 @@ class AppUsageViewModel
                         throw e
                     } catch (e: Exception) {
                         _uiState.value = AppUsageUiState.Error(e.messageOrRes(R.string.common_error_generic))
+                    }
+                }
+        }
+
+        fun loadUnusedApps(
+            period: UnusedAppsPeriod,
+            forceRefresh: Boolean,
+        ) {
+            unusedAppsJob?.cancel()
+            unusedAppsJob =
+                viewModelScope.launch {
+                    _unusedAppsState.value = UnusedAppsUiState.Loading
+                    try {
+                        when (val result = getUnusedApps(period, Instant.now(), forceRefresh)) {
+                            UnusedAppsQueryResult.Locked -> {
+                                _unusedAppsState.value = UnusedAppsUiState.Locked
+                            }
+
+                            is UnusedAppsQueryResult.Available -> {
+                                _unusedAppsState.value =
+                                    if (result.result.usageAccess == UsageAccess.REQUIRED) {
+                                        UnusedAppsUiState.PermissionRequired(period)
+                                    } else {
+                                        UnusedAppsUiState.Success(
+                                            period = period,
+                                            candidates = result.result.candidates,
+                                            partialErrors = result.result.partialErrors,
+                                        )
+                                    }
+                            }
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        _unusedAppsState.value =
+                            UnusedAppsUiState.Error(e.messageOrRes(R.string.common_error_generic))
                     }
                 }
         }

@@ -7,8 +7,10 @@ import androidx.work.Configuration
 import com.runcheck.data.billing.BillingManager
 import com.runcheck.domain.repository.MonitoringScheduler
 import com.runcheck.domain.repository.ScreenStateRepository
+import com.runcheck.domain.repository.UserPreferencesRepository
 import com.runcheck.pro.ProManager
 import com.runcheck.service.monitor.NotificationHelper
+import com.runcheck.service.report.WeeklyReportScheduler
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
 import com.runcheck.widget.RuncheckWidgets
@@ -18,6 +20,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -48,6 +52,12 @@ class RuncheckApp :
     @Inject
     lateinit var screenStateRepository: dagger.Lazy<ScreenStateRepository>
 
+    @Inject
+    lateinit var weeklyReportScheduler: dagger.Lazy<WeeklyReportScheduler>
+
+    @Inject
+    lateinit var userPreferencesRepository: dagger.Lazy<UserPreferencesRepository>
+
     override fun onCreate() {
         super.onCreate()
         applicationScope = CoroutineScope(SupervisorJob() + dispatchers.default)
@@ -65,6 +75,16 @@ class RuncheckApp :
         launchSafely(dispatchers.default, "screen state + scheduling") {
             screenStateRepository.get().initialize()
             monitorScheduler.get().ensureScheduled()
+        }
+        launchSafely(dispatchers.default, "weekly report scheduling") {
+            combine(
+                userPreferencesRepository.get().getPreferences().map { it.weeklyReportEnabled },
+                proManager.get().isProUser,
+            ) { weeklyReportEnabled, isPro ->
+                weeklyReportEnabled to isPro
+            }.distinctUntilChanged().collect {
+                weeklyReportScheduler.get().ensureScheduled()
+            }
         }
         // Update widgets when pro status changes
         launchSafely(dispatchers.default, "widget updates") {
