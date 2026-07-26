@@ -63,11 +63,9 @@ internal data class QuickGlancePresentation(
     val valueMaxLines: Int = 1,
     val labelMaxLines: Int = 1,
 ) {
-    fun availableCellHeightDp(size: DpSize): Float =
-        (size.height.value - outerPaddingDp * 2f) / QUICK_GLANCE_ROW_COUNT
+    fun availableCellHeightDp(size: DpSize): Float = (size.height.value - outerPaddingDp * 2f) / QUICK_GLANCE_ROW_COUNT
 
-    fun availableCellTextWidthDp(size: DpSize): Float =
-        quickGlanceCellTextWidthDp(size, outerPaddingDp, cellPaddingDp)
+    fun availableCellTextWidthDp(size: DpSize): Float = quickGlanceCellTextWidthDp(size, outerPaddingDp, cellPaddingDp)
 
     fun requiredCellContentHeightDp(fontScale: Float): Float =
         cellPaddingDp * 2f +
@@ -371,10 +369,10 @@ private fun QuickGlanceContent(
 
 @Composable
 private fun QuickGlanceCell(
-    modifier: GlanceModifier,
     context: Context,
     model: QuickGlanceCellModel,
     presentation: QuickGlancePresentation,
+    modifier: GlanceModifier = GlanceModifier,
 ) {
     Column(
         modifier =
@@ -384,8 +382,7 @@ private fun QuickGlanceCell(
                 .semantics {
                     contentDescription = model.accessibilityLabel
                     testTag = "quick_glance_${model.metric.name.lowercase()}"
-                }
-                .padding(presentation.cellPaddingDp.dp),
+                }.padding(presentation.cellPaddingDp.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

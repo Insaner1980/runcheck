@@ -18,7 +18,7 @@ import com.runcheck.R
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.ExpressiveDetailScaffold
 import com.runcheck.ui.components.ExpressiveSingleChoiceSelector
-import com.runcheck.ui.theme.RuncheckPreviews
+import com.runcheck.ui.theme.PreviewsRuncheckThemes
 import com.runcheck.ui.theme.RuncheckTheme
 import com.runcheck.ui.theme.spacing
 
@@ -115,7 +115,7 @@ fun LearnScreen(
     }
 }
 
-@RuncheckPreviews
+@PreviewsRuncheckThemes
 @Composable
 private fun LearnScreenPreview() {
     RuncheckTheme {

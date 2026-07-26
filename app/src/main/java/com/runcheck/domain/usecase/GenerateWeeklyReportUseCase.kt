@@ -76,10 +76,17 @@ internal fun aggregateWeeklyReport(
             .count()
     val coverageAvailability =
         when {
-            sampleTimes.isEmpty() -> WeeklyReportAvailability.UNAVAILABLE
-            monitoredDays >= DAYS_IN_WEEK && source.appUsage.isEmpty() ->
+            sampleTimes.isEmpty() -> {
+                WeeklyReportAvailability.UNAVAILABLE
+            }
+
+            monitoredDays >= DAYS_IN_WEEK && source.appUsage.isEmpty() -> {
                 WeeklyReportAvailability.AVAILABLE
-            else -> WeeklyReportAvailability.ESTIMATED
+            }
+
+            else -> {
+                WeeklyReportAvailability.ESTIMATED
+            }
         }
     val coverage =
         WeeklyReportCoverage(

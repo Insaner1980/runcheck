@@ -50,7 +50,10 @@ class InsightRuleMultibindingContractTest {
                 .sorted()
 
         assertEquals(
-            listOf("src/main/java/com/runcheck/domain/insights/engine/InsightEngine.kt"),
+            listOf(
+                "src/main/java/com/runcheck/data/insights/InsightRepositoryImpl.kt",
+                "src/main/java/com/runcheck/domain/insights/engine/InsightEngine.kt",
+            ),
             consumers,
         )
 

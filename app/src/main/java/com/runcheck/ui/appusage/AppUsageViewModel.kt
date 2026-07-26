@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.runcheck.R
+import com.runcheck.domain.model.UnusedAppsPeriod
+import com.runcheck.domain.model.UsageAccess
 import com.runcheck.domain.usecase.GetAppBatteryUsageSummaryUseCase
 import com.runcheck.domain.usecase.GetAppBatteryUsageUseCase
 import com.runcheck.domain.usecase.GetUnusedAppsUseCase
@@ -12,8 +14,6 @@ import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.RefreshAppUsageSnapshotUseCase
 import com.runcheck.domain.usecase.UnusedAppsQueryResult
-import com.runcheck.domain.model.UnusedAppsPeriod
-import com.runcheck.domain.model.UsageAccess
 import com.runcheck.ui.common.messageOrRes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -28,8 +28,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 import java.time.Instant
+import javax.inject.Inject
 
 private const val APP_USAGE_LOOKBACK_MS = 24 * 60 * 60 * 1000L
 

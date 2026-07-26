@@ -19,7 +19,5 @@ abstract class WeeklyReportModule {
 
     @Binds
     @Singleton
-    abstract fun bindWeeklyReportNotificationGate(
-        impl: WeeklyReportNotificationGateImpl,
-    ): WeeklyReportNotificationGate
+    abstract fun bindWeeklyReportNotificationGate(impl: WeeklyReportNotificationGateImpl): WeeklyReportNotificationGate
 }

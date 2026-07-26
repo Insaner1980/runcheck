@@ -98,7 +98,7 @@ Settings [top level]
 Current runtime systems:
 
 - `RuncheckApp` initializes billing, Pro state, notification channels, screen-state tracking, periodic monitoring, and widget refresh hooks
-- `MainActivity` keeps the AndroidX splash visible until DataStore emits the first theme preference, then applies it through `AppThemeViewModel` and `RuncheckTheme`
+- `MainActivity` uses one theme-neutral AndroidX starting splash for day/night resources, keeps it visible until DataStore emits the first theme preference and the matching edge-to-edge system-bar appearance is applied, then reveals `RuncheckTheme`
 - `RuncheckApp` also initializes source-set-specific `SentryInit`; debug builds may report to Sentry through `sentry-android-core` only when `RUNCHECK_SENTRY_DSN`, `SENTRY_DSN`, or ignored `debug.credentials.properties` provides `sentry.dsn`; release builds are a no-op and must remain telemetry-free
 - WorkManager runs `HealthMonitorWorker` for snapshot collection + alert evaluation
 - WorkManager runs `HealthMaintenanceWorker` for app-usage refresh, cleanup, and widget refresh
@@ -113,7 +113,7 @@ Current runtime systems:
 - Trial state currently counts as Pro access through `ProState.isPro`
 - `AppShellViewModel` combines Room insight state with Pro readiness for the four-item top-level navigation bar; the Insights badge counts visible unseen items, protected external routes wait for the initial Pro state, external routes rebuild their documented parent root without restoring stale child stacks, and Export renders the shared locked state until access is confirmed
 - Home now includes a rule-driven Insights surface backed by Room-persisted insight rows; Home shows a curated subset of up to three items and the full list lives in the dedicated Insights screen
-- `AppBatteryImpactRule` is intentionally excluded from production because foreground duration alone cannot support defensible per-app mAh attribution
+- The multibound production `InsightRule` set is the supported-rule source of truth; repository observation and generation purge persisted rows for removed rule IDs before they can render
 - Debug-only insight seeding and manual regeneration live behind debug source-set wiring and must stay release-inaccessible
 
 State restoration conventions:
@@ -203,7 +203,7 @@ When reviewing or modifying code, check these first and in this order.
 Pro features are:
 
 - Charger Comparison
-- Per-App Battery
+- App Usage
 - Extended History
 - Thermal Logs
 - Weekly Report

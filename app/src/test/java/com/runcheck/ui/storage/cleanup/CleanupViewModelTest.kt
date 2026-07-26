@@ -12,6 +12,7 @@ import com.runcheck.domain.model.ScannedFile
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
+import com.runcheck.domain.usecase.StorageCleanupResult
 import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.MainDispatcherRule
 import com.runcheck.ui.common.UiText
@@ -103,8 +104,10 @@ class CleanupViewModelTest {
 
     @Before
     fun setup() {
-        coEvery { storageCleanup.getCurrentStorageState() } returns storageState
-        coEvery { storageCleanup.findExistingUris(any()) } returns emptySet()
+        coEvery { storageCleanup.getCurrentStorageState() } returns
+            StorageCleanupResult.Available(storageState)
+        coEvery { storageCleanup.findExistingUris(any()) } returns
+            StorageCleanupResult.Available(emptySet())
         every { observeProAccess() } returns proAccessFlow
         every { isProUser() } answers { proAccessFlow.value }
     }
@@ -130,14 +133,19 @@ class CleanupViewModelTest {
 
     private fun stubCleanupData(files: List<ScannedFile>) {
         val summary = createSummary(files)
-        coEvery { storageCleanup.getCleanupSummary(any()) } returns summary
-        every { storageCleanup.getCleanupItems(any(), any()) } answers {
+        coEvery { storageCleanup.getCleanupSummary(any()) } returns
+            StorageCleanupResult.Available(summary)
+        coEvery { storageCleanup.getCleanupItems(any(), any()) } answers {
             val category = secondArg<MediaCategory>()
-            flowOf(PagingData.from(files.filter { it.category == category }))
+            StorageCleanupResult.Available(
+                flowOf(PagingData.from(files.filter { it.category == category })),
+            )
         }
         coEvery { storageCleanup.getCleanupGroupFileSizes(any(), any()) } answers {
             val category = secondArg<MediaCategory>()
-            files.filter { it.category == category }.associate { it.uri to it.sizeBytes }
+            StorageCleanupResult.Available(
+                files.filter { it.category == category }.associate { it.uri to it.sizeBytes },
+            )
         }
     }
 
@@ -339,7 +347,8 @@ class CleanupViewModelTest {
     fun `scan failure produces Error state instead of Empty`() =
         runTest(mainDispatcherRule.testDispatcher) {
             coEvery { storageCleanup.getCleanupSummary(any()) } throws IllegalStateException("boom")
-            every { storageCleanup.getCleanupItems(any(), any()) } returns flowOf(PagingData.empty())
+            coEvery { storageCleanup.getCleanupItems(any(), any()) } returns
+                StorageCleanupResult.Available(flowOf(PagingData.empty()))
 
             val savedStateHandle = SavedStateHandle(mapOf("type" to "LARGE_FILES"))
             val viewModel =
@@ -362,7 +371,8 @@ class CleanupViewModelTest {
     @Test
     fun `android 10 delete waits for explicit confirmation`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            coEvery { storageCleanup.deleteLegacy(any()) } returns setOf(testFiles[0].uri)
+            coEvery { storageCleanup.deleteLegacy(any()) } returns
+                StorageCleanupResult.Available(setOf(testFiles[0].uri))
             val viewModel = createViewModel()
             advanceUntilIdle()
             viewModel.toggleSelection(testFiles[0])
@@ -446,7 +456,8 @@ class CleanupViewModelTest {
     @Test
     fun `recreated process counts only files deleted from approved request`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            coEvery { storageCleanup.findExistingUris(any()) } returns setOf(testFiles[1].uri)
+            coEvery { storageCleanup.findExistingUris(any()) } returns
+                StorageCleanupResult.Available(setOf(testFiles[1].uri))
             val recreatedViewModel =
                 createViewModel(savedStateValues = pendingDeleteState(testFiles.take(2)))
             advanceUntilIdle()
@@ -490,15 +501,21 @@ class CleanupViewModelTest {
             advanceUntilIdle()
 
             val remainingFiles = testFiles.drop(1)
-            coEvery { storageCleanup.findExistingUris(any()) } returns setOf(testFiles[1].uri)
-            coEvery { storageCleanup.getCleanupSummary(any()) } returns createSummary(remainingFiles)
-            every { storageCleanup.getCleanupItems(any(), any()) } answers {
+            coEvery { storageCleanup.findExistingUris(any()) } returns
+                StorageCleanupResult.Available(setOf(testFiles[1].uri))
+            coEvery { storageCleanup.getCleanupSummary(any()) } returns
+                StorageCleanupResult.Available(createSummary(remainingFiles))
+            coEvery { storageCleanup.getCleanupItems(any(), any()) } answers {
                 val category = secondArg<MediaCategory>()
-                flowOf(PagingData.from(remainingFiles.filter { it.category == category }))
+                StorageCleanupResult.Available(
+                    flowOf(PagingData.from(remainingFiles.filter { it.category == category })),
+                )
             }
             coEvery { storageCleanup.getCleanupGroupFileSizes(any(), any()) } answers {
                 val category = secondArg<MediaCategory>()
-                remainingFiles.filter { it.category == category }.associate { it.uri to it.sizeBytes }
+                StorageCleanupResult.Available(
+                    remainingFiles.filter { it.category == category }.associate { it.uri to it.sizeBytes },
+                )
             }
 
             viewModel.onDeleteConfirmed()

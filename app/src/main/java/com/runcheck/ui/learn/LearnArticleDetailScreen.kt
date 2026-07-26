@@ -21,7 +21,7 @@ import com.runcheck.R
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.info.CrossLinkButton
-import com.runcheck.ui.theme.RuncheckPreviews
+import com.runcheck.ui.theme.PreviewsRuncheckThemes
 import com.runcheck.ui.theme.RuncheckTheme
 import com.runcheck.ui.theme.spacing
 
@@ -168,7 +168,7 @@ private fun LearnArticleText(
     )
 }
 
-@RuncheckPreviews
+@PreviewsRuncheckThemes
 @Composable
 private fun LearnArticleDetailScreenPreview() {
     RuncheckTheme {

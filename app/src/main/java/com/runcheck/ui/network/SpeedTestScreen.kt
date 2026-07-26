@@ -82,7 +82,7 @@ import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.theme.MotionTokens
-import com.runcheck.ui.theme.RuncheckPreviews
+import com.runcheck.ui.theme.PreviewsRuncheckThemes
 import com.runcheck.ui.theme.RuncheckTheme
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericSpeedHeroValueTextStyle
@@ -1118,7 +1118,7 @@ private fun formatPingValue(pingMs: Int): String =
 
 // ── Preview ──────────────────────────────────────────────────────────────────────
 
-@RuncheckPreviews
+@PreviewsRuncheckThemes
 @Composable
 private fun SpeedTestContentPreview() {
     RuncheckTheme {

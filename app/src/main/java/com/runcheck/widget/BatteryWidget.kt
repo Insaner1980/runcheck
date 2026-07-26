@@ -58,8 +58,7 @@ internal data class BatteryWidgetPresentation(
         return maxOf(valueLineHeight, detailHeight) + titleHeight
     }
 
-    fun requiredTotalHeightDp(fontScale: Float): Float =
-        outerPaddingDp * 2f + requiredContentHeightDp(fontScale)
+    fun requiredTotalHeightDp(fontScale: Float): Float = outerPaddingDp * 2f + requiredContentHeightDp(fontScale)
 }
 
 internal fun batteryWidgetLayoutFor(size: DpSize): WidgetLayout =
@@ -81,7 +80,7 @@ internal fun batteryWidgetPresentationFor(
             else -> Triple(28, 12, 11)
         }
     return when (layout) {
-        WidgetLayout.COMPACT ->
+        WidgetLayout.COMPACT -> {
             BatteryWidgetPresentation(
                 layout = layout,
                 outerPaddingDp = 8,
@@ -91,7 +90,9 @@ internal fun batteryWidgetPresentationFor(
                 showCurrent = false,
                 showTitle = false,
             )
-        WidgetLayout.STANDARD ->
+        }
+
+        WidgetLayout.STANDARD -> {
             BatteryWidgetPresentation(
                 layout = layout,
                 outerPaddingDp = 8,
@@ -101,7 +102,9 @@ internal fun batteryWidgetPresentationFor(
                 showCurrent = fontScale < 1.75f,
                 showTitle = false,
             )
-        WidgetLayout.EXPANDED ->
+        }
+
+        WidgetLayout.EXPANDED -> {
             BatteryWidgetPresentation(
                 layout = layout,
                 outerPaddingDp = 12,
@@ -111,6 +114,7 @@ internal fun batteryWidgetPresentationFor(
                 showCurrent = true,
                 showTitle = true,
             )
+        }
     }
 }
 

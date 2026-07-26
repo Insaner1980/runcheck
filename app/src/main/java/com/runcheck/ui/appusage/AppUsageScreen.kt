@@ -6,10 +6,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
-import android.net.Uri
 import android.util.LruCache
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -172,6 +172,7 @@ private fun AppUsageContent(
 ) {
     val context = LocalContext.current
     val currentOnRefresh by rememberUpdatedState(onRefresh)
+    val currentOnLoadUnusedApps by rememberUpdatedState(onLoadUnusedApps)
     var hasUsageAccess by remember(context) { mutableStateOf(context.hasUsageStatsAccess()) }
     var selectedMode by rememberSaveable { mutableStateOf(AppUsageMode.USAGE) }
     var unusedPeriod by rememberSaveable { mutableStateOf(UnusedAppsPeriod.DAYS_30) }
@@ -186,14 +187,14 @@ private fun AppUsageContent(
             currentOnRefresh()
         }
         if (selectedMode == AppUsageMode.NOT_USED) {
-            onLoadUnusedApps(unusedPeriod, true)
+            currentOnLoadUnusedApps(unusedPeriod, true)
         }
         onPauseOrDispose { }
     }
 
     LaunchedEffect(selectedMode, unusedPeriod) {
         if (selectedMode == AppUsageMode.NOT_USED) {
-            onLoadUnusedApps(unusedPeriod, false)
+            currentOnLoadUnusedApps(unusedPeriod, false)
         }
     }
 
@@ -223,13 +224,13 @@ private fun AppUsageContent(
             selectedMode == AppUsageMode.NOT_USED -> {
                 item {
                     ExpressiveSingleChoiceSelector(
-                options = UnusedAppsPeriod.entries,
-                selected = unusedPeriod,
-                labelFor = { period ->
-                    stringResource(R.string.app_usage_unused_period_days, period.days)
-                },
-                onSelect = { unusedPeriod = it },
-            )
+                        options = UnusedAppsPeriod.entries,
+                        selected = unusedPeriod,
+                        labelFor = { period ->
+                            stringResource(R.string.app_usage_unused_period_days, period.days)
+                        },
+                        onSelect = { unusedPeriod = it },
+                    )
                 }
                 unusedAppsItems(
                     state = unusedAppsState,
@@ -486,12 +487,21 @@ private fun LazyListScope.unusedAppsItems(
                 item {
                     val messageRes =
                         when (classifyUnusedAppsPartialErrors(state.partialErrors)) {
-                            UnusedAppsPartialErrorKind.STORAGE_ONLY -> R.string.app_usage_unused_partial_sizes
-                            UnusedAppsPartialErrorKind.LABELS_ONLY -> R.string.app_usage_unused_partial_labels
-                            UnusedAppsPartialErrorKind.STORAGE_AND_LABELS ->
-                                R.string.app_usage_unused_partial_details
+                            UnusedAppsPartialErrorKind.STORAGE_ONLY -> {
+                                R.string.app_usage_unused_partial_sizes
+                            }
 
-                            UnusedAppsPartialErrorKind.NONE -> return@item
+                            UnusedAppsPartialErrorKind.LABELS_ONLY -> {
+                                R.string.app_usage_unused_partial_labels
+                            }
+
+                            UnusedAppsPartialErrorKind.STORAGE_AND_LABELS -> {
+                                R.string.app_usage_unused_partial_details
+                            }
+
+                            UnusedAppsPartialErrorKind.NONE -> {
+                                return@item
+                            }
                         }
                     Text(
                         text = context.getString(messageRes),

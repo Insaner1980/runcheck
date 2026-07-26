@@ -158,8 +158,9 @@ class UnusedAppsRepositoryImpl
             startInclusive: Instant,
             endExclusive: Instant,
         ): Map<String, Instant> {
-            val manager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
-                ?: return emptyMap()
+            val manager =
+                context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
+                    ?: return emptyMap()
             return manager
                 .queryUsageStats(
                     UsageStatsManager.INTERVAL_BEST,

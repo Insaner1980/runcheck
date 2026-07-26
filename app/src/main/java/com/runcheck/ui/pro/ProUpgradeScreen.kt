@@ -248,7 +248,7 @@ private fun featureIcon(feature: ProFeature): ImageVector =
     when (feature) {
         ProFeature.EXTENDED_HISTORY -> Icons.Outlined.BarChart
         ProFeature.CHARGER_COMPARISON -> Icons.Outlined.BatteryChargingFull
-        ProFeature.PER_APP_BATTERY -> Icons.Outlined.DataUsage
+        ProFeature.APP_USAGE -> Icons.Outlined.DataUsage
         ProFeature.WIDGETS -> Icons.Outlined.Widgets
         ProFeature.CSV_EXPORT -> Icons.Outlined.FileDownload
         ProFeature.THERMAL_LOGS -> Icons.Outlined.Thermostat

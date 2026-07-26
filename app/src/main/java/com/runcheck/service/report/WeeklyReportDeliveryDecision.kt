@@ -26,11 +26,19 @@ internal fun decideWeeklyReportDelivery(
             WeeklyReportDeliveryDecision.ALREADY_PROCESSED
         }
 
-        !weeklyEnabled -> WeeklyReportDeliveryDecision.DISABLED
-        !hasPro -> WeeklyReportDeliveryDecision.PRO_INACTIVE
+        !weeklyEnabled -> {
+            WeeklyReportDeliveryDecision.DISABLED
+        }
+
+        !hasPro -> {
+            WeeklyReportDeliveryDecision.PRO_INACTIVE
+        }
+
         !notificationsEnabled || !canPostNotifications || !reportsChannelEnabled -> {
             WeeklyReportDeliveryDecision.HANDLE_WITHOUT_NOTIFICATION
         }
 
-        else -> WeeklyReportDeliveryDecision.DELIVER
+        else -> {
+            WeeklyReportDeliveryDecision.DELIVER
+        }
     }

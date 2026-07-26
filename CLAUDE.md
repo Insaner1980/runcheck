@@ -24,7 +24,7 @@ runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device
 ```
 app/src/main/java/com/runcheck/
 ├── data/
-│   ├── appusage/      # App battery usage data source
+│   ├── appusage/      # App foreground-usage data source
 │   ├── battery/       # BatteryManager wrappers, BatteryDataSourceFactory,
 │   │                  #   GenericBatterySource + manufacturer-specific sources
 │   │                  #   (Android14, Samsung, OnePlus), BatteryCapacityReader
@@ -63,7 +63,7 @@ app/src/main/java/com/runcheck/
 │   │                  #   (CleanupScreen, CleanupViewModel, FileListItem, CategoryGroup)
 │   │                  #   + StorageInfoContent, shared InfoCardCatalog entries
 │   ├── charger/       # Charger comparison screen + ViewModel
-│   ├── appusage/      # App battery usage screen + ViewModel
+│   ├── appusage/      # App Usage screen + ViewModel
 │   ├── learn/         # Learn section — article catalog, list screen, detail screen
 │   ├── settings/      # Settings screen + ViewModel
 │   ├── pro/           # Pro upgrade screen, trial UI, purchase flow

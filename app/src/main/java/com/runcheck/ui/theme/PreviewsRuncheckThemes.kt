@@ -19,4 +19,4 @@ import androidx.compose.ui.tooling.preview.Preview
     heightDp = 915,
     uiMode = Configuration.UI_MODE_NIGHT_YES,
 )
-annotation class RuncheckPreviews
+annotation class PreviewsRuncheckThemes

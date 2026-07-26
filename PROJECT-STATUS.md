@@ -61,7 +61,7 @@
   - `StoragePressureImpactRule`
   - `ThermalPatternDetectionRule`
 
-`AppBatteryImpactRule` is intentionally inactive because ordinary third-party apps cannot access reliable per-app battery statistics, and foreground duration alone is not a defensible mAh attribution signal.
+App Usage reports foreground duration only because ordinary third-party apps cannot access reliable battery attribution for other apps.
 - Insights are generally available, but insights targeting Pro-only destinations are filtered for free users:
   - `APP_USAGE`
   - `CHARGER`
@@ -75,7 +75,7 @@
 - Current `ProFeature` enum entries:
   - Extended History
   - Charger Comparison
-  - Per-App Battery
+  - App Usage
   - Widgets
   - CSV Export
   - Thermal Logs

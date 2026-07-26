@@ -12,7 +12,7 @@ class ProFeatureUiStringsTest {
             mapOf(
                 ProFeature.EXTENDED_HISTORY to R.string.pro_feature_extended_history,
                 ProFeature.CHARGER_COMPARISON to R.string.pro_feature_charger_comparison,
-                ProFeature.PER_APP_BATTERY to R.string.pro_feature_per_app_battery,
+                ProFeature.APP_USAGE to R.string.pro_feature_app_usage,
                 ProFeature.WIDGETS to R.string.pro_feature_widgets,
                 ProFeature.CSV_EXPORT to R.string.pro_feature_csv_export,
                 ProFeature.THERMAL_LOGS to R.string.pro_feature_thermal_logs,

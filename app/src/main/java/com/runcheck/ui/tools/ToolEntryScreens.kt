@@ -12,19 +12,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
+import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ExpressiveDetailScaffold
 import com.runcheck.ui.components.ProFeatureLockedState
 import com.runcheck.ui.components.RuncheckLoadingIndicator
 import com.runcheck.ui.navigation.ProtectedFeatureAccessState
 import com.runcheck.ui.navigation.protectedFeatureAccessState
 import com.runcheck.ui.theme.spacing
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.ui.weekly.WeeklyReportContent
 import com.runcheck.ui.weekly.WeeklyReportUiState
 import com.runcheck.ui.weekly.WeeklyReportViewModel
-import com.runcheck.ui.common.resolve
 
 @Composable
 fun WeeklyReportEntryScreen(

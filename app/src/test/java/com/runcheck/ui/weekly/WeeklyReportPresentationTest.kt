@@ -3,10 +3,10 @@ package com.runcheck.ui.weekly
 import com.runcheck.domain.model.WeeklyBatterySummary
 import com.runcheck.domain.model.WeeklyReportAvailability
 import com.runcheck.domain.model.WeeklyThermalSummary
-import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
 class WeeklyReportPresentationTest {
     @Test

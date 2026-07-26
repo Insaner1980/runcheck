@@ -8,10 +8,10 @@ import androidx.core.content.ContextCompat
 import com.runcheck.domain.repository.MonitoringScheduler
 import com.runcheck.domain.repository.ScreenStateRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
+import com.runcheck.service.report.WeeklyReportScheduler
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
 import com.runcheck.util.RuncheckPermissionPolicy
-import com.runcheck.service.report.WeeklyReportScheduler
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope

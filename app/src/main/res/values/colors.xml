@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="splash_background">#F4F7F8</color>
+    <color name="splash_background">#1A3A48</color>
+    <color name="system_navigation_bar_contrast_scrim">#8016262C</color>
     <color name="widget_background">#E9EFF1</color>
     <color name="widget_on_surface">#16262C</color>
     <color name="widget_on_surface_variant">#4E6570</color>

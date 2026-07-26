@@ -59,12 +59,15 @@ fun GridCard(
     val resolvedStatusLabelColor = if (hasStatus) statusColor else MaterialTheme.colorScheme.onSurfaceVariant
     val resolvedSubtitleStyle: TextStyle =
         when (subtitleStyle) {
-            GridCardSubtitleStyle.MEASUREMENT ->
+            GridCardSubtitleStyle.MEASUREMENT -> {
                 MaterialTheme.typography.headlineSmall.copy(
                     fontFamily = MaterialTheme.numericFontFamily,
                 )
+            }
 
-            GridCardSubtitleStyle.BODY -> MaterialTheme.typography.bodyMedium
+            GridCardSubtitleStyle.BODY -> {
+                MaterialTheme.typography.bodyMedium
+            }
         }
 
     Card(

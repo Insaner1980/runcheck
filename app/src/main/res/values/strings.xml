@@ -114,8 +114,6 @@
     <string name="insight_battery_degradation_body">Your battery has been draining %1$s%% faster this week compared to last week.</string>
     <string name="insight_battery_baseline_anomaly_title">Battery drain looks unusual</string>
     <string name="insight_battery_baseline_anomaly_body">Recent battery drain was about %1$s%%/h, above your usual %2$s%%/h baseline.</string>
-    <string name="insight_app_battery_impact_title">One app is hitting battery unusually hard</string>
-    <string name="insight_app_battery_impact_body">%1$s accounted for about %2$s mAh of estimated drain, around %3$s%% of tracked app battery use today.</string>
     <string name="insight_charger_performance_title">One charger is clearly slower</string>
     <string name="insight_charger_performance_body">%1$s is charging about %2$s%% slower than your best saved charger.</string>
     <string name="insight_storage_pressure_title">Storage may fill up soon</string>
@@ -769,8 +767,8 @@
         <item quantity="other">%d sessions</item>
     </plurals>
 
-    <!-- App Battery Usage -->
-    <string name="app_usage_title">App Battery Usage</string>
+    <!-- App Usage -->
+    <string name="app_usage_title">App Usage</string>
     <string name="app_unknown_name">Unknown app</string>
     <string name="app_usage_no_data">No usage data available for the last 24 hours</string>
     <string name="app_usage_no_data_message">This can happen on a fresh install or right after granting usage access. Give Android a moment, then retry.</string>
@@ -826,7 +824,7 @@
     <string name="pro_upgrade_one_time">One-time purchase. No subscription.</string>
     <string name="pro_feature_extended_history">Extended battery history (week, month, all-time)</string>
     <string name="pro_feature_charger_comparison">Charger comparison &amp; testing</string>
-    <string name="pro_feature_per_app_battery">Per-app battery usage</string>
+    <string name="pro_feature_app_usage">App usage</string>
     <string name="pro_feature_widgets">Home screen widgets</string>
     <string name="pro_feature_csv_export">CSV data export</string>
     <string name="pro_feature_thermal_logs">Thermal throttling logs</string>

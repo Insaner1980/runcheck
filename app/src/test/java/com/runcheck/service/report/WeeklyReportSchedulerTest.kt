@@ -7,10 +7,10 @@ import androidx.work.WorkManager
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.repository.UserPreferencesRepository
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
-import io.mockk.coVerify
 import io.mockk.verify
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf

@@ -271,7 +271,7 @@ fun SettingsScreen(
                     onSetNotifLowStorage = viewModel::setNotifLowStorage,
                     onSetNotifChargeComplete = viewModel::setNotifChargeComplete,
                     isPro = uiState.isPro,
-                    onSetWeeklyReportEnabled = viewModel::setWeeklyReportEnabled,
+                    onWeeklyReportEnabledChange = viewModel::setWeeklyReportEnabled,
                     onUpgradeToPro = onNavigateToProUpgrade,
                 )
 

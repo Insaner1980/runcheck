@@ -63,7 +63,12 @@ class GetUnusedAppsUseCaseTest {
                 ) as UnusedAppsQueryResult.Available
 
             assertEquals(1, result.result.candidates.size)
-            assertEquals(null, result.result.candidates.single().lastRecordedUse)
+            assertEquals(
+                null,
+                result.result.candidates
+                    .single()
+                    .lastRecordedUse,
+            )
             assertTrue(repository.lastForceRefresh)
         }
 }

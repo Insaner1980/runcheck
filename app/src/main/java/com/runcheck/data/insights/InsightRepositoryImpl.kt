@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.runcheck.data.db.dao.InsightDao
 import com.runcheck.data.db.entity.InsightEntity
+import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.model.Insight
 import com.runcheck.domain.insights.model.InsightCandidate
 import com.runcheck.domain.insights.model.InsightPriority
@@ -13,6 +14,8 @@ import com.runcheck.domain.repository.DatabaseTransactionRunner
 import com.runcheck.domain.repository.InsightRepository
 import com.runcheck.util.AppDispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -26,12 +29,21 @@ class InsightRepositoryImpl
         private val gson: Gson,
         private val transactionRunner: DatabaseTransactionRunner,
         private val dispatchers: AppDispatchers,
+        rules: Set<@JvmSuppressWildcards InsightRule>,
     ) : InsightRepository {
-        override fun getActiveInsights(): Flow<List<Insight>> = observeActiveInsights().flowOn(dispatchers.io)
+        private val supportedRuleIds = rules.map(InsightRule::ruleId).toSet()
+
+        override fun getActiveInsights(): Flow<List<Insight>> =
+            observeSupportedEntities()
+                .map { entities ->
+                    val now = System.currentTimeMillis()
+                    entities
+                        .filter { it.expiresAt > now }
+                        .map { it.toDomain(gson) }
+                }.flowOn(dispatchers.io)
 
         override fun getUnseenCount(): Flow<Int> =
-            insightDao
-                .observeUndismissedInsights()
+            observeSupportedEntities()
                 .map { entities ->
                     val now = System.currentTimeMillis()
                     entities.count { !it.seen && it.expiresAt > now }
@@ -50,10 +62,13 @@ class InsightRepositoryImpl
             now: Long,
         ) {
             transactionRunner.runInTransaction {
+                purgeUnsupportedRuleIds()
                 insightDao.deleteExpired(now)
-                candidatesByRule.forEach { (ruleId, candidates) ->
-                    replaceRuleResults(ruleId, candidates)
-                }
+                candidatesByRule
+                    .filterKeys { ruleId -> ruleId in supportedRuleIds }
+                    .forEach { (ruleId, candidates) ->
+                        replaceRuleResults(ruleId, candidates)
+                    }
             }
         }
 
@@ -86,15 +101,25 @@ class InsightRepositoryImpl
             insightDao.insertAll(merged)
         }
 
-        private fun observeActiveInsights(): Flow<List<Insight>> =
-            insightDao
-                .observeUndismissedInsights()
-                .map { entities ->
-                    val now = System.currentTimeMillis()
-                    entities
-                        .filter { it.expiresAt > now }
-                        .map { it.toDomain(gson) }
-                }
+        private fun observeSupportedEntities(): Flow<List<InsightEntity>> =
+            flow {
+                purgeUnsupportedRuleIds()
+                emitAll(
+                    insightDao
+                        .observeUndismissedInsights()
+                        .map { entities ->
+                            entities.filter { entity -> entity.ruleId in supportedRuleIds }
+                        },
+                )
+            }
+
+        private suspend fun purgeUnsupportedRuleIds() {
+            if (supportedRuleIds.isEmpty()) {
+                insightDao.deleteAll()
+            } else {
+                insightDao.deleteUnsupportedRuleIds(supportedRuleIds)
+            }
+        }
     }
 
 private fun InsightEntity.toDomain(gson: Gson): Insight =

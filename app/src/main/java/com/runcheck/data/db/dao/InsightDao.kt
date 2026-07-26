@@ -27,6 +27,9 @@ interface InsightDao {
     @Query("DELETE FROM insights WHERE dismissed = 0 AND expires_at <= :now")
     suspend fun deleteExpired(now: Long)
 
+    @Query("DELETE FROM insights WHERE rule_id NOT IN (:supportedRuleIds)")
+    suspend fun deleteUnsupportedRuleIds(supportedRuleIds: Set<String>)
+
     @Query("DELETE FROM insights WHERE rule_id = :ruleId AND dismissed = 0")
     suspend fun deleteUndismissedByRule(ruleId: String)
 

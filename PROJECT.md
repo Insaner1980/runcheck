@@ -832,7 +832,7 @@ Room tables/entities:
 | `throttling_events` | `ThrottlingEventEntity` | Thermal throttling log |
 | `charger_profiles` | `ChargerProfileEntity` | User charger labels |
 | `charging_sessions` | `ChargingSessionEntity` | Charging session measurements |
-| `app_battery_usage` | `AppBatteryUsageEntity` | Per-app foreground/estimated usage snapshots |
+| `app_battery_usage` | `AppBatteryUsageEntity` | Per-app foreground-time snapshots |
 | `speed_test_results` | `SpeedTestResultEntity` | NDT7 speed test history |
 | `devices` | `DeviceEntity` | Current device profile JSON |
 | `insights` | `InsightEntity` | Persisted rule-driven insight rows |
@@ -843,7 +843,7 @@ Migration history:
 |-----------|-------------|
 | 1→2 | Adds `throttling_events` |
 | 2→3 | Adds charger profiles and charging sessions |
-| 3→4 | Adds app battery usage |
+| 3→4 | Adds app foreground-usage snapshots |
 | 4→5 | Recreates network readings with nullable `signal_dbm` |
 | 5→6 | Adds speed test results |
 | 6→7 | Adds battery status/timestamp and charging session end-time indexes |
@@ -903,7 +903,7 @@ Pro-gated areas currently include:
 
 - `EXTENDED_HISTORY`
 - `CHARGER_COMPARISON`
-- `PER_APP_BATTERY`
+- `APP_USAGE`
 - `WIDGETS`
 - `CSV_EXPORT`
 - `THERMAL_LOGS`
@@ -1259,9 +1259,9 @@ Current Insights rule set:
 - `StoragePressureImpactRule`
 - `ThermalPatternDetectionRule`
 
-Rules are Hilt multibindings into `Set<InsightRule>`. `InsightEngine` filters generated candidates below 0.6 confidence and replaces results per rule. Matching dedupe keys preserve existing seen/dismissed state, and dismissed rows remain as dedupe tombstones when a candidate is temporarily absent or expired so regeneration cannot resurrect them. Expired undismissed rows are deleted during generation.
+Rules are Hilt multibindings into `Set<InsightRule>`. That same set is the supported-rule source of truth for `InsightRepositoryImpl`: observation and generation delete persisted rows whose rule IDs are no longer registered, without a Room schema-version change. `InsightEngine` filters generated candidates below 0.6 confidence and replaces results per rule. Matching dedupe keys preserve existing seen/dismissed state, and dismissed rows remain as dedupe tombstones when a candidate is temporarily absent or expired so regeneration cannot resurrect them. Expired undismissed rows are deleted during generation.
 
-`AppBatteryImpactRule` is intentionally not part of the production rule set. Android does not expose other apps' battery statistics to ordinary third-party apps, and runcheck does not manufacture per-app mAh attribution from foreground time alone.
+App Usage reports foreground duration only. Android does not expose reliable battery attribution for other apps to ordinary third-party apps.
 
 ### Known Tool Limitations
 

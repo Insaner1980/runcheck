@@ -11,7 +11,7 @@ enum class ProStatus {
 enum class ProFeature {
     EXTENDED_HISTORY,
     CHARGER_COMPARISON,
-    PER_APP_BATTERY,
+    APP_USAGE,
     WIDGETS,
     CSV_EXPORT,
     THERMAL_LOGS,

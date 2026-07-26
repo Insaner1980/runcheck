@@ -75,9 +75,9 @@ fun RuncheckNavHost(
     modifier: Modifier = Modifier,
     deepLinkRoute: String? = null,
     onConsumeDeepLink: () -> Unit = {},
+    navController: NavHostController = rememberNavController(),
+    appShellViewModel: AppShellViewModel = hiltViewModel(),
 ) {
-    val navController = rememberNavController()
-    val appShellViewModel: AppShellViewModel = hiltViewModel()
     val reducedMotion = LocalReducedMotion.current
     val appShellState by appShellViewModel.uiState.collectAsStateWithLifecycle()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
@@ -89,8 +89,7 @@ fun RuncheckNavHost(
     val currentOnConsumeDeepLink by rememberUpdatedState(onConsumeDeepLink)
     LaunchedEffect(deepLinkRoute, appShellState.proStatusReady) {
         val route = deepLinkRoute ?: return@LaunchedEffect
-        if (!route.requiresReadyProStatus() || appShellState.proStatusReady) {
-            navController.navigateExternalRoute(route)
+        if (navController.navigateExternalRouteWhenReady(route, appShellState.proStatusReady)) {
             currentOnConsumeDeepLink()
         }
     }
@@ -584,6 +583,17 @@ internal fun NavHostController.navigateExternalRoute(route: String) {
     }
 }
 
+internal fun NavHostController.navigateExternalRouteWhenReady(
+    route: String,
+    proStatusReady: Boolean,
+): Boolean {
+    if (route.requiresReadyProStatus() && !proStatusReady) {
+        return false
+    }
+    navigateExternalRoute(route)
+    return true
+}
+
 private fun NavHostController.navigateExternalParentRoot(parent: TopLevelDestination) {
     navigate(parent.screen.route) {
         launchSingleTop = true
@@ -597,17 +607,23 @@ private fun NavHostController.navigateExternalParentRoot(parent: TopLevelDestina
 internal fun NavHostController.navigateTopLevel(destination: TopLevelDestination) {
     when (topLevelNavigationAction(currentDestination?.route, destination)) {
         TopLevelNavigationAction.RESELECT -> {
-            popBackStack(destination.screen.route, inclusive = false)
+            if (!popBackStack(destination.screen.route, inclusive = false)) {
+                switchTopLevel(destination)
+            }
         }
 
         TopLevelNavigationAction.SWITCH -> {
-            navigate(destination.screen.route) {
-                launchSingleTop = true
-                restoreState = true
-                popUpTo(graph.findStartDestination().id) {
-                    saveState = true
-                }
-            }
+            switchTopLevel(destination)
+        }
+    }
+}
+
+private fun NavHostController.switchTopLevel(destination: TopLevelDestination) {
+    navigate(destination.screen.route) {
+        launchSingleTop = true
+        restoreState = true
+        popUpTo(graph.findStartDestination().id) {
+            saveState = true
         }
     }
 }

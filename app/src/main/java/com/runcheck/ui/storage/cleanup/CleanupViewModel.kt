@@ -15,6 +15,7 @@ import com.runcheck.domain.model.ScannedFile
 import com.runcheck.domain.model.StorageDeleteFailure
 import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
+import com.runcheck.domain.usecase.StorageCleanupResult
 import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.common.UiText
 import com.runcheck.util.ReleaseSafeLog
@@ -205,7 +206,11 @@ class CleanupViewModel
 
         @Suppress("LongMethod")
         private suspend fun performScan() {
-            val storageState = storageCleanup.getCurrentStorageState()
+            val storageState =
+                storageCleanup
+                    .getCurrentStorageState()
+                    .availableOrRevoke()
+                    ?: return
             currentStorageTotal = storageState.totalBytes.coerceAtLeast(1L)
             currentStorageUsed = storageState.usedBytes
 
@@ -220,7 +225,11 @@ class CleanupViewModel
                     filterValue = filterValue,
                 )
             currentQuery = query
-            val summary = storageCleanup.getCleanupSummary(query)
+            val summary =
+                storageCleanup
+                    .getCleanupSummary(query)
+                    .availableOrRevoke()
+                    ?: return
 
             if (summary.totalCount == 0) {
                 groupedFiles = emptyList()
@@ -251,13 +260,16 @@ class CleanupViewModel
                         if (index == 0) group.copy(expanded = true) else group
                     }
             pagerGeneration += 1
-            pagerFlows =
-                groupedFiles.associate { group ->
-                    group.category to
-                        storageCleanup
-                            .getCleanupItems(query, group.category)
-                            .cachedIn(viewModelScope)
-                }
+            val refreshedPagerFlows = mutableMapOf<MediaCategory, Flow<PagingData<ScannedFile>>>()
+            groupedFiles.forEach { group ->
+                val pagingFlow =
+                    storageCleanup
+                        .getCleanupItems(query, group.category)
+                        .availableOrRevoke()
+                        ?: return
+                refreshedPagerFlows[group.category] = pagingFlow.cachedIn(viewModelScope)
+            }
+            pagerFlows = refreshedPagerFlows
 
             selectedGroups =
                 if (cleanupType.preselectAll) {
@@ -371,7 +383,11 @@ class CleanupViewModel
 
         private suspend fun performLegacyDelete(uris: List<String>) {
             try {
-                val deletedUris = storageCleanup.deleteLegacy(uris)
+                val deletedUris =
+                    storageCleanup
+                        .deleteLegacy(uris)
+                        .availableOrRevoke()
+                        ?: return
                 completeLegacyDelete(deletedUris, UiText.Resource(R.string.cleanup_delete_failed))
             } catch (error: StorageDeleteFailure) {
                 handleLegacyDeleteFailure(error)
@@ -596,10 +612,14 @@ class CleanupViewModel
             return uris.sumOf { uri -> fileSizeByUri[uri] ?: 0L }
         }
 
-        private suspend fun verifyDeleteResult(): VerifiedDeleteResult {
+        private suspend fun verifyDeleteResult(): VerifiedDeleteResult? {
             val uris = pendingDeleteUris
             if (uris.isEmpty()) return VerifiedDeleteResult(0L, emptySet())
-            val remainingUris = storageCleanup.findExistingUris(uris)
+            val remainingUris =
+                storageCleanup
+                    .findExistingUris(uris)
+                    .availableOrRevoke()
+                    ?: return null
             val persistedMetadata = pendingSelectionSnapshot?.uriMetadata.orEmpty()
             val freedBytes =
                 (uris - remainingUris).sumOf { uri ->
@@ -626,7 +646,7 @@ class CleanupViewModel
         private suspend fun finishDeleteAttempt() {
             try {
                 delay(200)
-                val result = verifyDeleteResult()
+                val result = verifyDeleteResult() ?: return
                 onDeleteSuccess(result.freedBytes, result.remainingUris)
             } catch (error: SecurityException) {
                 ReleaseSafeLog.error("CleanupVM", "Delete result access denied", error)
@@ -664,7 +684,11 @@ class CleanupViewModel
                     .filter { uri -> fileCategoryByUri[uri] !in selectedGroups }
                     .toMutableSet()
             selectedGroups.forEach { category ->
-                val groupFileSizes = storageCleanup.getCleanupGroupFileSizes(query, category)
+                val groupFileSizes =
+                    storageCleanup
+                        .getCleanupGroupFileSizes(query, category)
+                        .availableOrRevoke()
+                        ?: return emptyList()
                 groupFileSizes.forEach { (uri, sizeBytes) ->
                     fileSizeByUri[uri] = sizeBytes
                     fileCategoryByUri[uri] = category
@@ -673,6 +697,18 @@ class CleanupViewModel
             }
             return explicitSelections.toList()
         }
+
+        private fun <T> StorageCleanupResult<T>.availableOrRevoke(): T? =
+            when (this) {
+                is StorageCleanupResult.Available -> {
+                    value
+                }
+
+                StorageCleanupResult.Locked -> {
+                    revokeProAccess()
+                    null
+                }
+            }
 
         private fun countsByCategory(uris: Set<String>): Map<MediaCategory, Int> =
             uris

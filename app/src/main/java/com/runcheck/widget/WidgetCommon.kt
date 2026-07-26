@@ -10,8 +10,8 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.action.clickable
-import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.action.actionStartActivity
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.background
 import androidx.glance.color.ColorProvider
 import androidx.glance.color.ColorProviders
@@ -23,7 +23,6 @@ import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.glance.unit.ColorProvider as GlanceColorProvider
 import com.runcheck.MainActivity
 import com.runcheck.R
 import com.runcheck.domain.model.HealthStatus
@@ -57,6 +56,7 @@ import com.runcheck.ui.theme.TextPrimary
 import com.runcheck.ui.theme.TextSecondary
 import com.runcheck.ui.theme.WidgetStatusCriticalNight
 import com.runcheck.ui.theme.WidgetStatusPoorNight
+import androidx.glance.unit.ColorProvider as GlanceColorProvider
 
 internal val RuncheckWidgetColors: ColorProviders =
     colorProviders(
@@ -110,7 +110,7 @@ internal object RuncheckWidgetStatusPalette {
             HealthStatus.FAIR -> fair.provider
             HealthStatus.POOR -> poor.provider
             HealthStatus.CRITICAL -> critical.provider
-    }
+        }
 }
 
 internal const val WIDGET_TEXT_LINE_HEIGHT_MULTIPLIER = 1.2f

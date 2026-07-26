@@ -3,6 +3,7 @@ package com.runcheck.data.insights
 import com.google.gson.Gson
 import com.runcheck.data.db.dao.InsightDao
 import com.runcheck.data.db.entity.InsightEntity
+import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.model.InsightCandidate
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
@@ -171,13 +172,91 @@ class InsightRepositoryImplTest {
             assertEquals(1, repository.getUnseenCount().first())
         }
 
-    private fun createRepository(insightDao: InsightDao): InsightRepositoryImpl =
+    @Test
+    fun `active insight refresh purges obsolete rule rows before they can render`() =
+        runTest {
+            val insightDao: InsightDao = mockk(relaxed = true)
+            val now = System.currentTimeMillis()
+            every { insightDao.observeUndismissedInsights() } returns
+                flowOf(
+                    listOf(
+                        insightEntity(
+                            id = 1L,
+                            ruleId = "app_battery_impact",
+                            expiresAt = now + 60_000L,
+                        ),
+                        insightEntity(
+                            id = 2L,
+                            ruleId = "heavy_app_usage",
+                            expiresAt = now + 60_000L,
+                        ),
+                    ),
+                )
+            val repository =
+                createRepository(
+                    insightDao = insightDao,
+                    rules = setOf(insightRule("heavy_app_usage")),
+                )
+
+            val result = repository.getActiveInsights().first()
+
+            assertEquals(listOf("heavy_app_usage"), result.map { it.ruleId })
+            coVerify(exactly = 1) {
+                insightDao.deleteUnsupportedRuleIds(setOf("heavy_app_usage"))
+            }
+        }
+
+    @Test
+    fun `generation refresh purges obsolete rows while retaining every registered rule`() =
+        runTest {
+            val insightDao: InsightDao = mockk(relaxed = true)
+            val repository =
+                createRepository(
+                    insightDao = insightDao,
+                    rules =
+                        setOf(
+                            insightRule("heavy_app_usage"),
+                            insightRule("battery_baseline_anomaly"),
+                        ),
+                )
+
+            repository.replaceGenerationResults(
+                candidatesByRule = emptyMap(),
+                now = 500L,
+            )
+
+            coVerify(exactly = 1) {
+                insightDao.deleteUnsupportedRuleIds(
+                    setOf(
+                        "heavy_app_usage",
+                        "battery_baseline_anomaly",
+                    ),
+                )
+            }
+        }
+
+    private fun createRepository(
+        insightDao: InsightDao,
+        rules: Set<InsightRule> =
+            setOf(
+                insightRule("rule"),
+                insightRule("battery_rule"),
+            ),
+    ): InsightRepositoryImpl =
         InsightRepositoryImpl(
             insightDao = insightDao,
             gson = Gson(),
             transactionRunner = transactionRunner,
             dispatchers = TestAppDispatchers(),
+            rules = rules,
         )
+
+    private fun insightRule(id: String): InsightRule =
+        object : InsightRule {
+            override val ruleId: String = id
+
+            override suspend fun evaluate(now: Long): List<InsightCandidate> = emptyList()
+        }
 
     private fun insightCandidate(
         ruleId: String = "rule",

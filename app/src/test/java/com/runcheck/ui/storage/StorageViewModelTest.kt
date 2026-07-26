@@ -11,6 +11,7 @@ import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
+import com.runcheck.domain.usecase.StorageCleanupResult
 import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.MainDispatcherRule
 import com.runcheck.ui.common.UiText
@@ -57,7 +58,8 @@ class StorageViewModelTest {
             every { manageInfoCardDismissals.observeDismissedCardIds() } returns flowOf(emptySet())
             every { manageUserPreferences.observePreferences() } returns flowOf(UserPreferences())
             every { getStorageHistory(HistoryPeriod.WEEK) } returns flowOf(emptyList())
-            coEvery { storageCleanup.getTrashedUris() } returns listOf("content://media/1")
+            coEvery { storageCleanup.getTrashedUris() } returns
+                StorageCleanupResult.Available(listOf("content://media/1"))
 
             val viewModel = createViewModel()
             viewModel.startObserving()
@@ -73,7 +75,8 @@ class StorageViewModelTest {
     fun `empty trash emits no delete request when trash is empty`() =
         runTest(mainDispatcherRule.testDispatcher) {
             prepareProStorageState()
-            coEvery { storageCleanup.getTrashedUris() } returns emptyList()
+            coEvery { storageCleanup.getTrashedUris() } returns
+                StorageCleanupResult.Available(emptyList())
             val viewModel = createViewModel()
 
             viewModel.emptyTrash()

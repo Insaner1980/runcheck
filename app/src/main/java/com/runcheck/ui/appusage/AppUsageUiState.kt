@@ -49,9 +49,7 @@ internal enum class UnusedAppsPartialErrorKind {
     STORAGE_AND_LABELS,
 }
 
-internal fun classifyUnusedAppsPartialErrors(
-    errors: Set<UnusedAppError>,
-): UnusedAppsPartialErrorKind {
+internal fun classifyUnusedAppsPartialErrors(errors: Set<UnusedAppError>): UnusedAppsPartialErrorKind {
     val hasStorageError =
         UnusedAppError.STORAGE_PERMISSION in errors || UnusedAppError.STORAGE_IO in errors
     val hasLabelError = UnusedAppError.PACKAGE_LABEL in errors

@@ -103,19 +103,18 @@ class WeeklyReportWorkerTest {
     private fun worker(
         canNotify: Boolean,
         proReady: Boolean = true,
-    ) =
-        WeeklyReportWorker(
-            context,
-            params,
-            preferences,
-            generateReport,
-            WorkerProStatus(value = true, ready = proReady),
-            notifier,
-            scheduler,
-            WeeklyReportNotificationGate { canNotify },
-            clock,
-            { ZoneId.of("Europe/Helsinki") },
-        )
+    ) = WeeklyReportWorker(
+        context,
+        params,
+        preferences,
+        generateReport,
+        WorkerProStatus(value = true, ready = proReady),
+        notifier,
+        scheduler,
+        WeeklyReportNotificationGate { canNotify },
+        clock,
+        { ZoneId.of("Europe/Helsinki") },
+    )
 }
 
 private class WorkerProStatus(

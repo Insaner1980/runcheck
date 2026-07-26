@@ -57,7 +57,10 @@ class WeeklyReportViewModel
                             )
                         _uiState.value =
                             when (val result = generateWeeklyReport(period)) {
-                                WeeklyReportGenerationResult.Locked -> WeeklyReportUiState.Locked
+                                WeeklyReportGenerationResult.Locked -> {
+                                    WeeklyReportUiState.Locked
+                                }
+
                                 is WeeklyReportGenerationResult.Available -> {
                                     WeeklyReportUiState.Success(result.report)
                                 }

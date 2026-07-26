@@ -97,7 +97,6 @@ class WeeklyReportScheduler
             )
             timezoneReconcilePending = false
         }
-
     }
 
 internal fun nextMondayMorning(

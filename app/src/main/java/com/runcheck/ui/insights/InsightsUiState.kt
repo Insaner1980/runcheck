@@ -11,12 +11,16 @@ enum class InsightFilter {
 
     fun applyTo(insights: List<Insight>): List<Insight> =
         when (this) {
-            ALL -> insights
-            IMPORTANT ->
+            ALL -> {
+                insights
+            }
+
+            IMPORTANT -> {
                 insights.filter { insight ->
                     insight.priority == InsightPriority.HIGH ||
                         insight.priority == InsightPriority.MEDIUM
                 }
+            }
         }
 }
 

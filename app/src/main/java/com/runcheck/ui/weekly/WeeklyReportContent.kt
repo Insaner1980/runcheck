@@ -42,10 +42,11 @@ fun WeeklyReportContent(
                 title = stringResource(R.string.weekly_report_battery),
                 lines =
                     when (batteryProjection(report.battery)) {
-                        WeeklyReportMetricProjection.Unavailable ->
+                        WeeklyReportMetricProjection.Unavailable -> {
                             listOf(stringResource(R.string.weekly_report_metric_unavailable))
+                        }
 
-                        WeeklyReportMetricProjection.Available ->
+                        WeeklyReportMetricProjection.Available -> {
                             listOf(
                                 report.battery.averageDischargePercentPerHour?.let {
                                     stringResource(R.string.weekly_report_discharge_rate, it)
@@ -59,6 +60,7 @@ fun WeeklyReportContent(
                                     stringResource(R.string.weekly_report_health_change, it)
                                 } ?: stringResource(R.string.weekly_report_health_unavailable),
                             )
+                        }
                     },
             )
         }
@@ -78,10 +80,11 @@ fun WeeklyReportContent(
                 title = stringResource(R.string.weekly_report_thermal),
                 lines =
                     when (thermalProjection(report.thermal)) {
-                        WeeklyReportMetricProjection.Unavailable ->
+                        WeeklyReportMetricProjection.Unavailable -> {
                             listOf(stringResource(R.string.weekly_report_metric_unavailable))
+                        }
 
-                        WeeklyReportMetricProjection.Available ->
+                        WeeklyReportMetricProjection.Available -> {
                             listOf(
                                 stringResource(
                                     R.string.weekly_report_throttling_events,
@@ -91,6 +94,7 @@ fun WeeklyReportContent(
                                     stringResource(R.string.weekly_report_highest_thermal_status, it)
                                 } ?: stringResource(R.string.weekly_report_metric_unavailable),
                             )
+                        }
                     },
             )
         }

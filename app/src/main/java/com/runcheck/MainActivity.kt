@@ -1,9 +1,12 @@
 package com.runcheck
 
 import android.content.Intent
+import android.content.res.Configuration
+import android.graphics.Color
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -24,13 +27,16 @@ import com.runcheck.ui.theme.RuncheckTheme
 import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val deepLinkRoute = mutableStateOf<String?>(null)
     private val appThemeViewModel: AppThemeViewModel by viewModels()
+    private val systemBarsReady = AtomicBoolean(false)
 
     @Inject
     lateinit var proPurchaseManager: ProPurchaseManager
@@ -39,9 +45,19 @@ class MainActivity : ComponentActivity() {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         splashScreen.setKeepOnScreenCondition {
-            appThemeViewModel.themeMode.value == null
+            shouldKeepSplashOnScreen(
+                themeMode = appThemeViewModel.themeMode.value,
+                systemBarsReady = systemBarsReady.get(),
+            )
         }
-        enableEdgeToEdge()
+        lifecycleScope.launch {
+            appThemeViewModel.themeMode
+                .filterNotNull()
+                .collect { themeMode ->
+                    applySystemBarAppearance(themeMode)
+                    systemBarsReady.set(true)
+                }
+        }
         checkDatabaseReset()
         deepLinkRoute.value = consumeNotificationRoute(intent)
         setContent {
@@ -57,6 +73,30 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun applySystemBarAppearance(themeMode: com.runcheck.domain.model.ThemeMode) {
+        val systemInDarkTheme =
+            resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+                Configuration.UI_MODE_NIGHT_YES
+        val appearance =
+            resolveSystemBarAppearance(
+                themeMode = themeMode,
+                systemInDarkTheme = systemInDarkTheme,
+            )
+        val style =
+            if (appearance.isDarkTheme) {
+                SystemBarStyle.dark(scrim = Color.TRANSPARENT)
+            } else {
+                SystemBarStyle.light(
+                    scrim = Color.TRANSPARENT,
+                    darkScrim = getColor(R.color.system_navigation_bar_contrast_scrim),
+                )
+            }
+        enableEdgeToEdge(
+            statusBarStyle = style,
+            navigationBarStyle = style,
+        )
     }
 
     override fun onNewIntent(intent: Intent) {

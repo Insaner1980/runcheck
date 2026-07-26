@@ -183,11 +183,15 @@ private fun RowScope.StorageGridCard(
         statusLabel =
             stringResource(
                 R.string.home_storage_used,
-                state.storageState.usagePercent.toInt().coerceIn(0, 100),
+                state.storageState.usagePercent
+                    .toInt()
+                    .coerceIn(0, 100),
             ),
         iconTint =
             statusColorForStoragePercent(
-                state.storageState.usagePercent.toInt().coerceIn(0, 100),
+                state.storageState.usagePercent
+                    .toInt()
+                    .coerceIn(0, 100),
             ),
         iconBackgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         onClick = onClick,

@@ -175,34 +175,9 @@ Skip if the power difference is under 25% — small variations are normal due to
 
 ---
 
-## Rule 5: App Battery Impact Analysis
+## Removed Rule 5: App Battery Impact Analysis
 
-### What it detects
-
-Apps with disproportionate battery consumption relative to their foreground usage time.
-
-### Trigger conditions
-
-- An app is in the top 3 by estimated battery drain but is NOT in the top 3 by foreground time
-- The disproportion factor is at least 2x (e.g., the app accounts for 20% of estimated drain but only 10% of foreground time)
-
-### Minimum data requirement
-
-7 days of app usage snapshots with corresponding battery readings. Battery drain attribution is estimated by correlating battery level drops with foreground app periods.
-
-### Significance threshold
-
-Skip if total foreground time for the flagged app is under 10 minutes in the evaluation window — too little data for reliable correlation. Also skip system apps and pre-installed apps that the user cannot uninstall (they cannot act on the insight).
-
-### Insight output
-
-- **Title example:** "[App name] using extra battery"
-- **Description example:** "Instagram used about 18% of your battery this week but was only active for 12% of your screen time. It may be doing significant background work."
-- **Actionability:** The user can check the app's battery settings, restrict background activity, or be aware of the cost.
-
-### Confidence note
-
-Battery drain per-app is an estimate based on temporal correlation, not a direct measurement. The insight description should use language like "about" and "estimated" rather than precise percentages. If current confidence is mostly LOW, downgrade the precision further or skip the insight.
+This proposed rule was rejected and is not a supported production rule. App foreground duration cannot establish another app's battery contribution. App Usage and weekly reports therefore show foreground duration only, and persisted rows from this removed rule are purged by supported-rule ID.
 
 ---
 

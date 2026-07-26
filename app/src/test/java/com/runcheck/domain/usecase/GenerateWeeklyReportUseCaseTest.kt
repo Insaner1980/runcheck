@@ -88,7 +88,12 @@ class GenerateWeeklyReportUseCaseTest {
             assertEquals(70.0, requireNotNull(result.report.speed.medianDownloadMbps), 0.001)
             assertEquals(15.0, requireNotNull(result.report.speed.medianUploadMbps), 0.001)
             assertEquals(40.0, requireNotNull(result.report.speed.medianLatencyMs), 0.001)
-            assertEquals("example.one", result.report.topApps.first().packageName)
+            assertEquals(
+                "example.one",
+                result.report.topApps
+                    .first()
+                    .packageName,
+            )
             assertEquals(WeeklyReportAvailability.ESTIMATED, result.report.coverage.availability)
         }
 
@@ -185,7 +190,12 @@ class GenerateWeeklyReportUseCaseTest {
                 )(period) as WeeklyReportGenerationResult.Available
 
             assertEquals(WeeklyReportAvailability.ESTIMATED, result.report.coverage.availability)
-            assertEquals(WeeklyReportAvailability.ESTIMATED, result.report.topApps.single().availability)
+            assertEquals(
+                WeeklyReportAvailability.ESTIMATED,
+                result.report.topApps
+                    .single()
+                    .availability,
+            )
         }
 
     @Test

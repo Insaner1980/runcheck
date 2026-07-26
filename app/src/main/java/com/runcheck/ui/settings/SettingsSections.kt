@@ -179,7 +179,7 @@ internal fun NotificationsSection( // NOSONAR
     onSetNotifLowStorage: (Boolean) -> Unit,
     onSetNotifChargeComplete: (Boolean) -> Unit,
     isPro: Boolean,
-    onSetWeeklyReportEnabled: (Boolean) -> Unit,
+    onWeeklyReportEnabledChange: (Boolean) -> Unit,
     onUpgradeToPro: () -> Unit,
 ) {
     val masterEnabled = preferences.notificationsEnabled
@@ -253,7 +253,7 @@ internal fun NotificationsSection( // NOSONAR
             checked = preferences.weeklyReportEnabled,
             onCheckedChange = { enabled ->
                 if (isPro) {
-                    onSetWeeklyReportEnabled(enabled)
+                    onWeeklyReportEnabledChange(enabled)
                 } else {
                     onUpgradeToPro()
                 }

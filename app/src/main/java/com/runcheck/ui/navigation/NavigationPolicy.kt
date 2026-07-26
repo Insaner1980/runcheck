@@ -71,7 +71,7 @@ fun topLevelNavigationAction(
     currentRoute: String?,
     destination: TopLevelDestination,
 ): TopLevelNavigationAction =
-    if (currentRoute == destination.screen.route) {
+    if (currentRoute?.let(::coldStartParentFor) == destination) {
         TopLevelNavigationAction.RESELECT
     } else {
         TopLevelNavigationAction.SWITCH

@@ -81,7 +81,9 @@ class WeeklyReportWorker
                         reportsChannelEnabled = notificationAllowed,
                     )
                 ) {
-                    WeeklyReportDeliveryDecision.HANDLE_WITHOUT_NOTIFICATION -> markProcessed(period)
+                    WeeklyReportDeliveryDecision.HANDLE_WITHOUT_NOTIFICATION -> {
+                        markProcessed(period)
+                    }
 
                     WeeklyReportDeliveryDecision.DELIVER -> {
                         when (val generated = generateWeeklyReport(period)) {
@@ -90,14 +92,18 @@ class WeeklyReportWorker
                                 markProcessed(period)
                             }
 
-                            WeeklyReportGenerationResult.Locked -> Unit
+                            WeeklyReportGenerationResult.Locked -> {
+                                Unit
+                            }
                         }
                     }
 
                     WeeklyReportDeliveryDecision.DISABLED,
                     WeeklyReportDeliveryDecision.PRO_INACTIVE,
                     WeeklyReportDeliveryDecision.ALREADY_PROCESSED,
-                    -> Unit
+                    -> {
+                        Unit
+                    }
                 }
                 scheduler.scheduleNextAfterCurrent()
                 Result.success()

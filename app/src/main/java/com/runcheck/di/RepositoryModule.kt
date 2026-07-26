@@ -1,6 +1,7 @@
 package com.runcheck.di
 
 import com.runcheck.data.appusage.AppBatteryUsageRepositoryImpl
+import com.runcheck.data.appusage.UnusedAppsRepositoryImpl
 import com.runcheck.data.battery.BatteryRepositoryImpl
 import com.runcheck.data.charger.ChargerRepositoryImpl
 import com.runcheck.data.device.DeviceProfileRepositoryImpl
@@ -15,7 +16,6 @@ import com.runcheck.data.storage.StorageRepositoryImpl
 import com.runcheck.data.thermal.ThermalRepositoryImpl
 import com.runcheck.data.thermal.ThrottlingRepositoryImpl
 import com.runcheck.data.weekly.WeeklyReportRepositoryImpl
-import com.runcheck.data.appusage.UnusedAppsRepositoryImpl
 import com.runcheck.domain.repository.AppBatteryUsageRepository
 import com.runcheck.domain.repository.ChargerRepository
 import com.runcheck.domain.repository.FileExportRepository

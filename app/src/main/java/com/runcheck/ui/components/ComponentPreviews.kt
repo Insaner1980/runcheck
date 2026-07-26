@@ -12,12 +12,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.runcheck.domain.model.Confidence
-import com.runcheck.ui.theme.RuncheckPreviews
+import com.runcheck.ui.theme.PreviewsRuncheckThemes
 import com.runcheck.ui.theme.RuncheckTheme
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 
-@RuncheckPreviews
+@PreviewsRuncheckThemes
 @Composable
 private fun ComponentStackPreview() {
     RuncheckTheme {

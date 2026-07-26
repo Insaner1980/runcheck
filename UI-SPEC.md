@@ -1838,7 +1838,7 @@ remain unseen until the next visible transition, preserving the app-shell badge.
 - A 28dp `RuncheckActionCard` dominates the first viewport with the outlined
   Speed icon, M-Lab NDT7 context, and a 56dp "Run speed test" CTA.
 - The Device tools section is a two-by-two `GridCard` bento:
-  Storage cleanup, Charger Comparison, App Battery Usage, and Weekly Report.
+  Storage cleanup, Charger Comparison, App Usage, and Weekly Report.
 - Bento subtitles are prose and therefore use `bodyMedium`, not the numeric
   measurement subtitle style.
 - All four Pro tools stay visible for Free users, expose the standard locked

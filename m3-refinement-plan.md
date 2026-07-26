@@ -184,7 +184,7 @@ Rules of thumb:
 - **High-impact:** (1) pill delete button + roomier rows; (2) 12dp-padded group headers — the list feels like Files by Google.
 
 ### App Usage
-- **Keep:** per-app card structure, progress bars, drain text.
+- **Keep:** per-app card structure, progress bars, and foreground-time text.
 - **Too dense:** every app is its own card at 8dp gaps → striped wall.
 - **Hero:** none needed.
 - **Grouping:** merge all app rows into **one list-group card** with rows (icon 40dp, 12dp vertical padding, progress bar under label), no dividers — spacing only. Top 3 apps could keep slightly larger rows.

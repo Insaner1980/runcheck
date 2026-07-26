@@ -15,7 +15,7 @@ ij_kotlin_name_count_to_use_star_import = 999
 ij_kotlin_name_count_to_use_star_import_for_members = 999
 max_line_length = 120
 ktlint_function_naming_ignore_when_annotated_with = Composable
-compose_allowed_composition_locals = LocalSpacing,LocalStatusColors,LocalReducedMotion,LocalNumericFontFamily,LocalUiTokens
+compose_allowed_composition_locals = LocalSpacing,LocalStatusColors,LocalReducedMotion,LocalNumericFontFamily,LocalUiTokens,LocalChartColors,LocalHeroCardColor
 
 [*.xml]
 indent_size = 4

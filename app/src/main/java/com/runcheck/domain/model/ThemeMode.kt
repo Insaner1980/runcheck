@@ -7,7 +7,6 @@ enum class ThemeMode {
     ;
 
     companion object {
-        fun fromStoredValue(value: String?): ThemeMode =
-            entries.firstOrNull { mode -> mode.name == value } ?: SYSTEM
+        fun fromStoredValue(value: String?): ThemeMode = entries.firstOrNull { mode -> mode.name == value } ?: SYSTEM
     }
 }

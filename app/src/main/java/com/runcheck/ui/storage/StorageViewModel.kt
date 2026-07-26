@@ -12,6 +12,7 @@ import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
+import com.runcheck.domain.usecase.StorageCleanupResult
 import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.messageOrRes
@@ -89,12 +90,17 @@ class StorageViewModel
         fun emptyTrash() {
             viewModelScope.launch {
                 if (!isProUser()) return@launch
-                val uris =
+                val urisResult =
                     try {
                         storageCleanup.getTrashedUris()
                     } catch (_: SecurityException) {
                         onTrashDeleteRequestFailed(UiText.Resource(R.string.cleanup_delete_permission_error))
                         return@launch
+                    }
+                val uris =
+                    when (urisResult) {
+                        is StorageCleanupResult.Available -> urisResult.value
+                        StorageCleanupResult.Locked -> return@launch
                     }
                 if (uris.isEmpty()) return@launch
                 _trashDeleteRequestUris.emit(uris)
