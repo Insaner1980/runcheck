@@ -1,6 +1,7 @@
 package com.runcheck.util
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -19,6 +20,7 @@ object RuncheckPermissionPolicy {
             Manifest.permission.ACCESS_COARSE_LOCATION,
         )
 
+    @SuppressLint("InlinedApi")
     fun mediaPermissionsForApi(apiLevel: Int = Build.VERSION.SDK_INT): List<String> =
         when {
             apiLevel >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
@@ -50,6 +52,7 @@ object RuncheckPermissionPolicy {
             }
         }
 
+    @SuppressLint("InlinedApi")
     fun mediaAccessStateForApi(
         apiLevel: Int = Build.VERSION.SDK_INT,
         isGranted: (String) -> Boolean,
@@ -85,6 +88,7 @@ object RuncheckPermissionPolicy {
     fun isNotificationRuntimePermissionRequired(apiLevel: Int = Build.VERSION.SDK_INT): Boolean =
         apiLevel >= Build.VERSION_CODES.TIRAMISU
 
+    @SuppressLint("InlinedApi")
     fun canPostNotifications(context: Context): Boolean =
         !isNotificationRuntimePermissionRequired() ||
             ContextCompat.checkSelfPermission(

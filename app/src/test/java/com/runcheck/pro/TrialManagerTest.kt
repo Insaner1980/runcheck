@@ -138,6 +138,38 @@ class TrialManagerTest {
     }
 
     @Test
+    fun `day 5 boundary is calculated from the exact trial start timestamp`() {
+        val startTimestamp = TimeUnit.DAYS.toMillis(10)
+        val justBeforeDay5 = startTimestamp + TimeUnit.DAYS.toMillis(5) - 1L
+        val atDay5 = startTimestamp + TimeUnit.DAYS.toMillis(5)
+
+        val beforeResolution =
+            TrialManager.resolveTrialState(startTimestamp, justBeforeDay5, false, justBeforeDay5)
+        val boundaryResolution =
+            TrialManager.resolveTrialState(startTimestamp, atDay5, false, atDay5)
+
+        assertEquals(3, beforeResolution.state.daysRemaining)
+        assertEquals(2, boundaryResolution.state.daysRemaining)
+    }
+
+    @Test
+    fun `trial expires at the exact day 7 boundary from its start timestamp`() {
+        val startTimestamp = TimeUnit.DAYS.toMillis(10)
+        val justBeforeDay7 = startTimestamp + TimeUnit.DAYS.toMillis(7) - 1L
+        val atDay7 = startTimestamp + TimeUnit.DAYS.toMillis(7)
+
+        val beforeResolution =
+            TrialManager.resolveTrialState(startTimestamp, justBeforeDay7, false, justBeforeDay7)
+        val boundaryResolution =
+            TrialManager.resolveTrialState(startTimestamp, atDay7, false, atDay7)
+
+        assertTrue(beforeResolution.state.isActive)
+        assertEquals(1, beforeResolution.state.daysRemaining)
+        assertFalse(boundaryResolution.state.isActive)
+        assertEquals(0, boundaryResolution.state.daysRemaining)
+    }
+
+    @Test
     fun `trial notification work names and tags expose separate roles`() {
         assertEquals("trial_notification_day5", TrialNotificationWorker.UNIQUE_WORK_DAY5)
         assertEquals("trial_notification_day7", TrialNotificationWorker.UNIQUE_WORK_DAY7)

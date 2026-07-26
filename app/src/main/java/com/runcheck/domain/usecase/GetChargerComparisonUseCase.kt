@@ -68,7 +68,7 @@ class GetChargerComparisonUseCase
             val endTime = session.endTime ?: return null
             val durationMinutes = (endTime - session.startTime) / 60_000
             val levelGain = (session.endLevel ?: session.startLevel) - session.startLevel
-            if (levelGain <= 0) return null
+            if (durationMinutes <= 0 || levelGain <= 0) return null
             return (durationMinutes * 100 / levelGain).toInt()
         }
     }

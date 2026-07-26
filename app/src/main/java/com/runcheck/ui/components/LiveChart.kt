@@ -182,6 +182,7 @@ private fun LiveChartCanvas(
         }
 
         if (newPointCount > 0 && canvasWidth > 0f) {
+            previousData = data.toList()
             val stepX = if (maxPoints > 1) canvasWidth / (maxPoints - 1) else canvasWidth
             animatedScrollOffset.stop()
             animatedScrollOffset.snapTo(animatedScrollOffset.value + (newPointCount * stepX))
@@ -192,6 +193,7 @@ private fun LiveChartCanvas(
                 )
             }
         } else {
+            previousData = data.toList()
             animatedScrollOffset.snapTo(0f)
         }
 
@@ -201,8 +203,6 @@ private fun LiveChartCanvas(
             1f,
             tween(MotionTokens.MEDIUM, easing = MotionTokens.EaseOut),
         )
-
-        previousData = data.toList()
     }
 
     Canvas(
@@ -320,7 +320,7 @@ private fun LiveChartCanvas(
     }
 }
 
-private fun appendedPointCount(
+internal fun appendedPointCount(
     previous: List<Float>,
     current: List<Float>,
 ): Int {

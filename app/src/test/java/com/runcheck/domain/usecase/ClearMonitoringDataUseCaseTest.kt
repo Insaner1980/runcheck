@@ -2,13 +2,16 @@ package com.runcheck.domain.usecase
 
 import com.runcheck.domain.repository.AppBatteryUsageRepository
 import com.runcheck.domain.repository.BatteryRepository
+import com.runcheck.domain.repository.ChargerRepository
 import com.runcheck.domain.repository.DatabaseTransactionRunner
+import com.runcheck.domain.repository.FileExportRepository
 import com.runcheck.domain.repository.InsightRepository
 import com.runcheck.domain.repository.NetworkRepository
 import com.runcheck.domain.repository.SpeedTestRepository
 import com.runcheck.domain.repository.StorageRepository
 import com.runcheck.domain.repository.ThermalRepository
 import com.runcheck.domain.repository.ThrottlingRepository
+import com.runcheck.domain.repository.UserPreferencesRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -26,6 +29,9 @@ class ClearMonitoringDataUseCaseTest {
     private lateinit var appBatteryUsageRepository: AppBatteryUsageRepository
     private lateinit var speedTestRepository: SpeedTestRepository
     private lateinit var insightRepository: InsightRepository
+    private lateinit var chargerRepository: ChargerRepository
+    private lateinit var userPreferencesRepository: UserPreferencesRepository
+    private lateinit var fileExportRepository: FileExportRepository
 
     private lateinit var useCase: ClearMonitoringDataUseCase
 
@@ -40,6 +46,9 @@ class ClearMonitoringDataUseCaseTest {
         appBatteryUsageRepository = mockk(relaxed = true)
         speedTestRepository = mockk(relaxed = true)
         insightRepository = mockk(relaxed = true)
+        chargerRepository = mockk(relaxed = true)
+        userPreferencesRepository = mockk(relaxed = true)
+        fileExportRepository = mockk(relaxed = true)
 
         useCase =
             ClearMonitoringDataUseCase(
@@ -52,6 +61,9 @@ class ClearMonitoringDataUseCaseTest {
                 appBatteryUsageRepository = appBatteryUsageRepository,
                 speedTestRepository = speedTestRepository,
                 insightRepository = insightRepository,
+                chargerRepository = chargerRepository,
+                userPreferencesRepository = userPreferencesRepository,
+                fileExportRepository = fileExportRepository,
             )
     }
 
@@ -66,6 +78,9 @@ class ClearMonitoringDataUseCaseTest {
             coEvery { appBatteryUsageRepository.deleteAll() } returns Unit
             coEvery { speedTestRepository.deleteAll() } returns Unit
             coEvery { insightRepository.clearAll() } returns Unit
+            coEvery { chargerRepository.deleteAll() } returns Unit
+            coEvery { userPreferencesRepository.clearMonitoringDataState() } returns Unit
+            coEvery { fileExportRepository.clearPreparedExports() } returns Unit
 
             useCase()
 
@@ -77,5 +92,8 @@ class ClearMonitoringDataUseCaseTest {
             coVerify(exactly = 1) { appBatteryUsageRepository.deleteAll() }
             coVerify(exactly = 1) { speedTestRepository.deleteAll() }
             coVerify(exactly = 1) { insightRepository.clearAll() }
+            coVerify(exactly = 1) { chargerRepository.deleteAll() }
+            coVerify(exactly = 1) { userPreferencesRepository.clearMonitoringDataState() }
+            coVerify(exactly = 1) { fileExportRepository.clearPreparedExports() }
         }
 }

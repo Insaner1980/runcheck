@@ -1,6 +1,7 @@
 package com.runcheck.util
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Files
@@ -50,6 +51,34 @@ class AndroidLintPolicyContractTest {
         val backupRules = appDir.resolve("src/main/res/xml/backup_rules.xml")
         assertTrue(Files.exists(backupRules))
         assertTrue(backupRules.readText().contains("<full-backup-content>"))
+    }
+
+    @Test
+    fun `backup rules exclude persistent app data from cloud and device transfer`() {
+        val dataExtractionRules = appDir.resolve("src/main/res/xml/data_extraction_rules.xml").readText()
+        val backupRules = appDir.resolve("src/main/res/xml/backup_rules.xml").readText()
+        val excludedDomains = listOf("root", "file", "database", "sharedpref", "external")
+
+        val cloudRules = dataExtractionRules.substringAfter("<cloud-backup>").substringBefore("</cloud-backup>")
+        val transferRules =
+            dataExtractionRules.substringAfter("<device-transfer>").substringBefore("</device-transfer>")
+        excludedDomains.forEach { domain ->
+            val exclusion = """<exclude domain="$domain" path="." />"""
+            assertTrue("Cloud backup must exclude $domain", cloudRules.contains(exclusion))
+            assertTrue("Device transfer must exclude $domain", transferRules.contains(exclusion))
+            assertTrue("Legacy backup must exclude $domain", backupRules.contains(exclusion))
+        }
+    }
+
+    @Test
+    fun `cellular fallback uses only its manifest declared phone state permission`() {
+        val manifest = appDir.resolve("src/main/AndroidManifest.xml").readText()
+        val networkDataSource =
+            appDir.resolve("src/main/java/com/runcheck/data/network/NetworkDataSource.kt").readText()
+
+        assertTrue(manifest.contains("android.permission.READ_BASIC_PHONE_STATE"))
+        assertTrue(networkDataSource.contains("android.Manifest.permission.READ_BASIC_PHONE_STATE"))
+        assertFalse(networkDataSource.contains("android.Manifest.permission.READ_PHONE_STATE"))
     }
 
     @Test

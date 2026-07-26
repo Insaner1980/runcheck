@@ -33,4 +33,6 @@ interface ChargerRepository {
     suspend fun getActiveSession(): ChargingSession?
 
     suspend fun deleteSessionsOlderThan(cutoff: Long)
+
+    suspend fun deleteAll()
 }

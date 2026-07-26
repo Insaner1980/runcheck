@@ -2,8 +2,8 @@ package com.runcheck.data.storage
 
 import android.app.PendingIntent
 import android.content.Context
-import android.net.Uri
 import android.os.Build
+import androidx.core.net.toUri
 import com.runcheck.domain.model.StorageDeleteFailure
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
@@ -40,7 +40,7 @@ class StorageCleanupHelper
                 var skippedCount = 0
                 uriStrings.forEach { uriString ->
                     try {
-                        val uri = Uri.parse(uriString)
+                        val uri = uriString.toUri()
                         if (context.contentResolver.delete(uri, null, null) > 0) {
                             deletedUris += uriString
                         }

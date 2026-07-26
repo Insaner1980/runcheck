@@ -29,6 +29,25 @@ object LearnArticleIds {
     const val HEALTH_SCORE = "health_score"
     const val SOFTWARE_VS_HARDWARE = "sw_vs_hw"
     const val BACKGROUND_MONITORING = "background_monitoring"
+
+    val all: Set<String> =
+        setOf(
+            BATTERY_HEALTH,
+            BATTERY_DRAIN,
+            BATTERY_CHARGING,
+            BATTERY_CURRENT_POWER,
+            THERMAL_NORMAL_TEMPS,
+            THERMAL_THROTTLING,
+            THERMAL_FEEDBACK,
+            NETWORK_SIGNAL,
+            NETWORK_WIFI_BANDS,
+            NETWORK_SPEED_TESTS,
+            STORAGE_SLOWDOWN,
+            STORAGE_BREAKDOWN,
+            HEALTH_SCORE,
+            SOFTWARE_VS_HARDWARE,
+            BACKGROUND_MONITORING,
+        )
 }
 
 data class LearnArticle(

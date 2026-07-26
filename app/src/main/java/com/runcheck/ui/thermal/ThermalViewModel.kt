@@ -13,6 +13,7 @@ import com.runcheck.domain.usecase.GetThrottlingHistoryUseCase
 import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
+import com.runcheck.ui.common.RefreshTracker
 import com.runcheck.ui.common.messageOrRes
 import com.runcheck.util.appendLiveValue
 import com.runcheck.util.getEnumOrDefault
@@ -44,6 +45,8 @@ class ThermalViewModel
     ) : ViewModel() {
         private val _uiState = MutableStateFlow<ThermalUiState>(ThermalUiState.Loading)
         val uiState: StateFlow<ThermalUiState> = _uiState.asStateFlow()
+        private val refreshTracker = RefreshTracker()
+        val isRefreshing: StateFlow<Boolean> = refreshTracker.isRefreshing
         private var loadJob: Job? = null
         private var historyJob: Job? = null
         private var selectedHistoryPeriod: HistoryPeriod
@@ -74,6 +77,7 @@ class ThermalViewModel
         }
 
         fun refresh() {
+            refreshTracker.start()
             loadThermalData()
         }
 
@@ -89,6 +93,7 @@ class ThermalViewModel
             loadJob = null
             historyJob?.cancel()
             historyJob = null
+            refreshTracker.finish()
         }
 
         fun setHistoryPeriod(period: HistoryPeriod) {
@@ -186,9 +191,11 @@ class ThermalViewModel
                         )
                     }.sample(333L)
                         .catch { e ->
+                            refreshTracker.finish()
                             _uiState.value = ThermalUiState.Error(e.messageOrRes(R.string.common_error_generic))
                         }.collect { state ->
                             _uiState.value = state
+                            refreshTracker.finish()
                         }
                 }
         }

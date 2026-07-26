@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- The current upstream NDT7 main commit still ships this consumer-rule option. -->
+    <issue id="GlobalOptionInConsumerRules">
+        <ignore regexp="ndt7-client-android-java" />
+    </issue>
+    <!-- Adaptive launcher icons must stay in v26 even though the app minSdk is 26. -->
+    <issue id="ObsoleteSdkInt">
+        <ignore path="src/main/res/mipmap-anydpi-v26" />
+    </issue>
+</lint>

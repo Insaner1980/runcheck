@@ -1,6 +1,7 @@
 package com.runcheck.service.monitor
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import com.runcheck.domain.model.BatteryHealth
@@ -28,11 +29,15 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
 
 class HealthMonitorWorkerTest {
@@ -48,6 +53,17 @@ class HealthMonitorWorkerTest {
     private val monitoringAlertStateStore: MonitoringAlertStateStore = mockk(relaxed = true)
     private val notificationHelper: NotificationHelper = mockk(relaxed = true)
 
+    @Before
+    fun setUp() {
+        mockkStatic(SystemClock::class)
+        every { SystemClock.uptimeMillis() } returns 1_000L
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic(SystemClock::class)
+    }
+
     @Test
     fun `doWork records heartbeat only after successful collection`() =
         runTest {
@@ -56,7 +72,11 @@ class HealthMonitorWorkerTest {
             val result = worker.doWork()
 
             assertEquals(ListenableWorker.Result.success(), result)
-            coVerify(exactly = 1) { monitoringStatusRepository.setLastWorkerHeartbeatAt(any()) }
+            coVerify(exactly = 1) {
+                monitoringStatusRepository.setLastWorkerHeartbeat(
+                    match { it.intervalMinutes == UserPreferences().monitoringInterval.minutes },
+                )
+            }
             coVerify(exactly = 1) { batteryRepository.saveReading(sampleBatteryState) }
             coVerify(exactly = 1) {
                 networkRepository.saveReading(match { it.latencyMs == 23 && it.connectionType == ConnectionType.WIFI })
@@ -79,7 +99,7 @@ class HealthMonitorWorkerTest {
             val result = worker.doWork()
 
             assertEquals(ListenableWorker.Result.retry(), result)
-            coVerify(exactly = 0) { monitoringStatusRepository.setLastWorkerHeartbeatAt(any()) }
+            coVerify(exactly = 0) { monitoringStatusRepository.setLastWorkerHeartbeat(any()) }
             coVerify(exactly = 0) { batteryRepository.saveReading(any()) }
             coVerify(exactly = 0) { monitoringAlertStateStore.update(any(), any()) }
         }
@@ -98,7 +118,7 @@ class HealthMonitorWorkerTest {
             val result = worker.doWork()
 
             assertEquals(ListenableWorker.Result.retry(), result)
-            coVerify(exactly = 0) { monitoringStatusRepository.setLastWorkerHeartbeatAt(any()) }
+            coVerify(exactly = 0) { monitoringStatusRepository.setLastWorkerHeartbeat(any()) }
             coVerify(exactly = 0) { batteryRepository.saveReading(any()) }
             coVerify(exactly = 0) { networkRepository.saveReading(any()) }
             coVerify(exactly = 0) { thermalRepository.saveReading(any()) }
@@ -137,7 +157,7 @@ class HealthMonitorWorkerTest {
             assertEquals(ListenableWorker.Result.success(), result)
             coVerify(exactly = 1) { batteryRepository.saveReading(sampleBatteryState) }
             coVerify(exactly = 1) { storageRepository.saveReading(sampleStorageState) }
-            coVerify(exactly = 0) { monitoringStatusRepository.setLastWorkerHeartbeatAt(any()) }
+            coVerify(exactly = 0) { monitoringStatusRepository.setLastWorkerHeartbeat(any()) }
         }
 
     private fun createWorker(

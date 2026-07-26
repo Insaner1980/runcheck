@@ -13,6 +13,7 @@ import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.StorageCleanupUseCase
+import com.runcheck.ui.common.RefreshTracker
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.messageOrRes
 import com.runcheck.util.appendLiveValue
@@ -50,6 +51,8 @@ class StorageViewModel
     ) : ViewModel() {
         private val _uiState = MutableStateFlow<StorageUiState>(StorageUiState.Loading)
         val uiState: StateFlow<StorageUiState> = _uiState.asStateFlow()
+        private val refreshTracker = RefreshTracker()
+        val isRefreshing: StateFlow<Boolean> = refreshTracker.isRefreshing
         private var loadJob: Job? = null
         private var historyJob: Job? = null
 
@@ -75,9 +78,11 @@ class StorageViewModel
             loadJob = null
             historyJob?.cancel()
             historyJob = null
+            refreshTracker.finish()
         }
 
         fun refresh() {
+            refreshTracker.start()
             loadStorageData()
         }
 
@@ -171,9 +176,11 @@ class StorageViewModel
                         )
                     }.sample(333L)
                         .catch { e ->
+                            refreshTracker.finish()
                             _uiState.value = StorageUiState.Error(e.messageOrRes(R.string.common_error_generic))
                         }.collect { state ->
                             _uiState.value = state
+                            refreshTracker.finish()
                         }
                 }
         }

@@ -125,6 +125,5 @@ class AppUsageViewModel
 
         override fun onCleared() {
             stopObserving()
-            super.onCleared()
         }
     }

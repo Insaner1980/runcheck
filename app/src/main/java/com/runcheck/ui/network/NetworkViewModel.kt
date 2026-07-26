@@ -16,6 +16,7 @@ import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.RunSpeedTestUseCase
+import com.runcheck.ui.common.RefreshTracker
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.messageOrRes
 import com.runcheck.util.appendLiveValue
@@ -58,6 +59,8 @@ class NetworkViewModel
     ) : ViewModel() {
         private val _networkUiState = MutableStateFlow<NetworkUiState>(NetworkUiState.Loading)
         val networkUiState: StateFlow<NetworkUiState> = _networkUiState.asStateFlow()
+        private val refreshTracker = RefreshTracker()
+        val isRefreshing: StateFlow<Boolean> = refreshTracker.isRefreshing
 
         private val liveSignalDbm = mutableListOf<Float>()
 
@@ -89,11 +92,13 @@ class NetworkViewModel
             historyJob = null
             historyNetworkJob?.cancel()
             historyNetworkJob = null
+            refreshTracker.finish()
             // Do NOT cancel speedTestJob here — it must survive config changes (rotation).
             // It runs in viewModelScope and will be cancelled in onCleared().
         }
 
         fun refresh() {
+            refreshTracker.start()
             loadNetworkData()
         }
 
@@ -308,6 +313,7 @@ class NetworkViewModel
             }
 
         private fun handleNetworkSnapshotError(error: Throwable) {
+            refreshTracker.finish()
             if (_networkUiState.value !is NetworkUiState.Success) {
                 _networkUiState.value =
                     NetworkUiState.Error(
@@ -331,6 +337,7 @@ class NetworkViewModel
                     liveSignalDbm = liveSignalDbm.toList(),
                 )
             }
+            refreshTracker.finish()
         }
 
         private fun handleNetworkHistoryError(error: Throwable) {
@@ -392,7 +399,6 @@ class NetworkViewModel
 
         override fun onCleared() {
             stopObserving()
-            super.onCleared()
         }
 
         private companion object {

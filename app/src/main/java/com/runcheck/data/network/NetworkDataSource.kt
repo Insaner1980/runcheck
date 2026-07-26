@@ -1,6 +1,5 @@
 package com.runcheck.data.network
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -560,19 +559,12 @@ class NetworkDataSource
                 android.Manifest.permission.ACCESS_FINE_LOCATION,
             ) == PermissionChecker.PERMISSION_GRANTED
 
-        private fun hasPhoneStatePermission(): Boolean {
-            val hasReadPhoneState =
+        private fun hasPhoneStatePermission(): Boolean =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                 PermissionChecker.checkSelfPermission(
                     context,
-                    Manifest.permission.READ_PHONE_STATE,
+                    android.Manifest.permission.READ_BASIC_PHONE_STATE,
                 ) == PermissionChecker.PERMISSION_GRANTED
-            if (hasReadPhoneState) return true
-            return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                PermissionChecker.checkSelfPermission(
-                    context,
-                    Manifest.permission.READ_BASIC_PHONE_STATE,
-                ) == PermissionChecker.PERMISSION_GRANTED
-        }
 
         private fun canReadWifiDetails(): Boolean = hasFineLocationPermission() && isLocationEnabled()
 

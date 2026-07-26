@@ -70,13 +70,15 @@ internal object WidgetDataProvider {
         val ep = entryPoint(context)
         return combine(
             ep.proStatusProvider().isProUser,
+            ep.userPreferencesRepository().getPreferences(),
             ep.batteryReadingDao().getLatestReading(),
-        ) { isPro, latestReading ->
-            when {
-                !isPro -> WidgetRenderState.Locked
-                latestReading == null -> WidgetRenderState.Empty
-                else -> WidgetRenderState.Content(latestReading.toBatteryWidgetSnapshot())
-            }
+        ) { isPro, preferences, latestReading ->
+            batteryWidgetRenderState(
+                isPro = isPro,
+                monitoringInterval = preferences.monitoringInterval,
+                reading = latestReading,
+                nowMillis = System.currentTimeMillis(),
+            )
         }
     }
 
@@ -190,6 +192,24 @@ internal fun healthWidgetRenderState(
             batteryLevel = battery.level,
         ),
     )
+}
+
+internal fun batteryWidgetRenderState(
+    isPro: Boolean,
+    monitoringInterval: MonitoringInterval,
+    reading: BatteryReadingEntity?,
+    nowMillis: Long,
+): WidgetRenderState<BatteryWidgetSnapshot> {
+    if (!isPro) return WidgetRenderState.Locked
+    val latestReading = reading ?: return WidgetRenderState.Empty
+    val staleThresholdMillis = MonitoringFreshnessPolicy.staleAfterMillis(monitoringInterval.minutes)
+    if (latestReading.timestamp < 0L ||
+        latestReading.timestamp > nowMillis ||
+        nowMillis - latestReading.timestamp > staleThresholdMillis
+    ) {
+        return WidgetRenderState.Stale
+    }
+    return WidgetRenderState.Content(latestReading.toBatteryWidgetSnapshot())
 }
 
 private const val HEALTH_INPUT_WINDOW_MS = 120_000L

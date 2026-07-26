@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
 import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.di.DatabaseModule
+import com.runcheck.pro.ProStateProvider
 import com.runcheck.service.monitor.NotificationHelper
 import com.runcheck.ui.navigation.RuncheckNavHost
 import com.runcheck.ui.navigation.Screen
@@ -30,6 +32,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var proPurchaseManager: ProPurchaseManager
 
+    @Inject
+    lateinit var proStateProvider: ProStateProvider
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -39,6 +44,7 @@ class MainActivity : ComponentActivity() {
             RuncheckTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     RuncheckNavHost(
+                        proStateProvider = proStateProvider,
                         deepLinkRoute = deepLinkRoute.value,
                         onConsumeDeepLink = { deepLinkRoute.value = null },
                     )
@@ -70,7 +76,7 @@ class MainActivity : ComponentActivity() {
     private fun checkDatabaseReset() {
         val prefs = getSharedPreferences(DatabaseModule.DB_EVENT_PREFS, MODE_PRIVATE)
         if (prefs.getBoolean(DatabaseModule.KEY_DB_RESET, false)) {
-            prefs.edit().remove(DatabaseModule.KEY_DB_RESET).apply()
+            prefs.edit { remove(DatabaseModule.KEY_DB_RESET) }
             Toast
                 .makeText(
                     this,

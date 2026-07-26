@@ -3,6 +3,7 @@ package com.runcheck.ui.pro
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -73,7 +74,7 @@ fun PurchaseThankYouContent(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(tokens.primaryButtonHeight),
+                    .defaultMinSize(minHeight = tokens.primaryButtonHeight),
             shape = MaterialTheme.shapes.large,
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
         ) {

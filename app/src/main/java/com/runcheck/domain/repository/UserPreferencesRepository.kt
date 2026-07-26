@@ -29,6 +29,8 @@ interface UserPreferencesRepository {
 
     suspend fun setSelectedChargerId(chargerId: Long?)
 
+    suspend fun clearMonitoringDataState()
+
     // New settings
     suspend fun setNotifLowBattery(enabled: Boolean)
 

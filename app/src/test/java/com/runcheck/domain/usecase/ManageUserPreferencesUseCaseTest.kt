@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class ManageUserPreferencesUseCaseTest {
@@ -74,4 +75,17 @@ class ManageUserPreferencesUseCaseTest {
             coVerify(exactly = 1) { repository.setAlertTempThreshold(42) }
             coVerify(exactly = 1) { repository.setAlertStorageThreshold(90) }
         }
+
+    @Test
+    fun `alert threshold setters reject values outside supported ranges`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            kotlinx.coroutines.test.runTest { useCase.setAlertBatteryThreshold(4) }
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            kotlinx.coroutines.test.runTest { useCase.setAlertTempThreshold(51) }
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            kotlinx.coroutines.test.runTest { useCase.setAlertStorageThreshold(100) }
+        }
+    }
 }

@@ -7,6 +7,9 @@ import com.runcheck.util.AppDispatchers
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,28 +24,65 @@ class FileExportRepositoryImpl
             withContext(dispatchers.io) {
                 val exportRoot =
                     File(context.cacheDir, EXPORT_DIR_NAME).apply {
-                        mkdirs()
+                        check(mkdirs() || isDirectory) { "Could not create export cache directory" }
                     }
-                exportRoot.listFiles()?.forEach(File::deleteRecursively)
+                val exportId = UUID.randomUUID().toString()
+                val stagingDir = File(exportRoot, ".staging_$exportId")
+                val exportDir = File(exportRoot, "export_$exportId")
+                var exportPrepared = false
 
-                val exportDir =
-                    File(exportRoot, "export_${System.currentTimeMillis()}").apply {
-                        mkdirs()
+                try {
+                    check(stagingDir.mkdir()) { "Could not create export staging directory" }
+                    files.forEach { (fileName, content) ->
+                        requireSafeExportFileName(fileName)
+                        File(stagingDir, fileName).writeText(content, Charsets.UTF_8)
                     }
-
-                files.map { (fileName, content) ->
-                    val file = File(exportDir, fileName)
-                    file.writeText(content, Charsets.UTF_8)
-                    FileProvider
-                        .getUriForFile(
-                            context,
-                            "${context.packageName}.fileprovider",
-                            file,
-                        ).toString()
+                    Files.move(
+                        stagingDir.toPath(),
+                        exportDir.toPath(),
+                        StandardCopyOption.ATOMIC_MOVE,
+                    )
+                    exportRoot.listFiles()?.forEach { cached ->
+                        if (cached != exportDir) cached.deleteRecursively()
+                    }
+                    val exportUris =
+                        files.keys.map { fileName ->
+                            FileProvider
+                                .getUriForFile(
+                                    context,
+                                    "${context.packageName}.fileprovider",
+                                    File(exportDir, fileName),
+                                ).toString()
+                        }
+                    exportPrepared = true
+                    exportUris
+                } finally {
+                    if (!exportPrepared) {
+                        stagingDir.deleteRecursively()
+                        exportDir.deleteRecursively()
+                    }
                 }
             }
+
+        override suspend fun clearPreparedExports() {
+            withContext(dispatchers.io) {
+                File(context.cacheDir, EXPORT_DIR_NAME).deleteRecursively()
+            }
+        }
 
         private companion object {
             private const val EXPORT_DIR_NAME = "exports"
         }
     }
+
+internal fun requireSafeExportFileName(fileName: String) {
+    require(
+        fileName.isNotBlank() &&
+            fileName.endsWith(".csv", ignoreCase = true) &&
+            fileName != ".csv" &&
+            '/' !in fileName &&
+            '\\' !in fileName &&
+            fileName != "." &&
+            fileName != "..",
+    ) { "Export filename must be a single CSV filename" }
+}

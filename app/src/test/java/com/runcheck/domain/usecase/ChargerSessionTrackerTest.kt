@@ -258,6 +258,8 @@ private class FakeChargerRepository : ChargerRepository {
     override suspend fun getActiveSession(): ChargingSession? = activeSession
 
     override suspend fun deleteSessionsOlderThan(cutoff: Long) = Unit
+
+    override suspend fun deleteAll() = Unit
 }
 
 private class FakeBatteryRepository(
@@ -312,6 +314,8 @@ private class FakeUserPreferencesRepository(
     override suspend fun setSelectedChargerId(chargerId: Long?) {
         selectedChargerId = chargerId
     }
+
+    override suspend fun clearMonitoringDataState() = Unit
 
     override suspend fun setNotifLowBattery(enabled: Boolean) = Unit
 

@@ -75,6 +75,37 @@ class EvaluateMonitoringAlertsUseCaseTest {
     }
 
     @Test
+    fun `threshold equality is inclusive only for low battery`() {
+        val decision =
+            useCase(
+                previous =
+                    MonitoringAlertSnapshot(
+                        batteryLevel = 21,
+                        batteryTempC = 41f,
+                        storageUsagePercent = 89f,
+                        chargingStatus = ChargingStatus.DISCHARGING,
+                    ),
+                current =
+                    MonitoringAlertSnapshot(
+                        batteryLevel = 20,
+                        batteryTempC = 42f,
+                        storageUsagePercent = 90f,
+                        chargingStatus = ChargingStatus.DISCHARGING,
+                    ),
+                preferences =
+                    UserPreferences(
+                        alertBatteryThreshold = 20,
+                        alertTempThreshold = 42,
+                        alertStorageThreshold = 90,
+                    ),
+            )
+
+        assertTrue(decision.lowBattery)
+        assertFalse(decision.highTemp)
+        assertFalse(decision.lowStorage)
+    }
+
+    @Test
     fun `staying beyond thresholds does not retrigger repeated alerts`() {
         val decision =
             useCase(
@@ -122,6 +153,55 @@ class EvaluateMonitoringAlertsUseCaseTest {
             )
 
         assertTrue(decision.chargeComplete)
+    }
+
+    @Test
+    fun `charge complete is disabled by default`() {
+        val decision =
+            useCase(
+                previous =
+                    MonitoringAlertSnapshot(
+                        batteryLevel = 99,
+                        batteryTempC = 36f,
+                        storageUsagePercent = 70f,
+                        chargingStatus = ChargingStatus.CHARGING,
+                    ),
+                current =
+                    MonitoringAlertSnapshot(
+                        batteryLevel = 100,
+                        batteryTempC = 35f,
+                        storageUsagePercent = 70f,
+                        chargingStatus = ChargingStatus.FULL,
+                    ),
+                preferences = UserPreferences(),
+            )
+
+        assertFalse(decision.chargeComplete)
+    }
+
+    @Test
+    fun `charge complete does not refire while debounce is set`() {
+        val decision =
+            useCase(
+                previous =
+                    MonitoringAlertSnapshot(
+                        batteryLevel = 99,
+                        batteryTempC = 36f,
+                        storageUsagePercent = 70f,
+                        chargingStatus = ChargingStatus.CHARGING,
+                    ),
+                current =
+                    MonitoringAlertSnapshot(
+                        batteryLevel = 100,
+                        batteryTempC = 35f,
+                        storageUsagePercent = 70f,
+                        chargingStatus = ChargingStatus.FULL,
+                    ),
+                preferences = UserPreferences(notifChargeComplete = true),
+                chargeCompleteFiredPreviously = true,
+            )
+
+        assertFalse(decision.chargeComplete)
     }
 
     @Test

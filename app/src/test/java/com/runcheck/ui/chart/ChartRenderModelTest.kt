@@ -105,6 +105,49 @@ class ChartRenderModelTest {
     }
 
     @Test
+    fun `chart downsampling preserves boundaries and isolated extrema`() {
+        val points =
+            (0 until 1_000).map { index ->
+                val value =
+                    when (index) {
+                        250 -> 100f
+                        750 -> -100f
+                        else -> 0f
+                    }
+                index.toLong() to value
+            }
+
+        val sampled = points.downsamplePairs(300)
+
+        assertEquals(points.first(), sampled.first())
+        assertEquals(points.last(), sampled.last())
+        assertTrue(sampled.contains(250L to 100f))
+        assertTrue(sampled.contains(750L to -100f))
+    }
+
+    @Test
+    fun `completed session is not reused when a new charge has no persisted sample yet`() {
+        val history =
+            listOf(
+                batteryReading(timestamp = 0L, level = 50),
+                batteryReading(timestamp = 15 * 60_000L, level = 60),
+                batteryReading(
+                    timestamp = 30 * 60_000L,
+                    level = 58,
+                    status = ChargingStatus.DISCHARGING.name,
+                ),
+            )
+
+        assertNull(
+            calculateChargingSessionSummary(
+                history = history,
+                currentLevel = 59,
+                chargingStatus = ChargingStatus.CHARGING,
+            ),
+        )
+    }
+
+    @Test
     fun `charging summary omits pace estimates for short flat sessions`() {
         val history =
             listOf(
@@ -147,6 +190,13 @@ class ChartRenderModelTest {
         assertEquals(10 * 60_000L, points.first().first)
         assertEquals(4.8f, points.first().second, 0.01f)
         assertEquals(40 * 60_000L, points.last().first)
+    }
+
+    @Test
+    fun `session chart breaks the line across missed monitoring samples`() {
+        val timestamps = listOf(0L, 15 * 60_000L, 60 * 60_000L)
+
+        assertEquals(setOf(2), findSessionLineBreakIndices(timestamps))
     }
 
     @Test
@@ -293,6 +343,19 @@ class ChartRenderModelTest {
         assertEquals(Color.Red.blue, matched.blue, 0.0f)
         assertEquals(1f, matched.alpha, 0.0f)
         assertEquals(defaultColor, outside)
+    }
+
+    @Test
+    fun `quality zone shared boundary uses the zone that starts at that boundary`() {
+        val zones =
+            listOf(
+                ChartQualityZone(minValue = 0f, maxValue = 35f, color = Color.Green),
+                ChartQualityZone(minValue = 35f, maxValue = 42f, color = Color.Yellow),
+                ChartQualityZone(minValue = 42f, maxValue = 60f, color = Color.Red),
+            )
+
+        assertEquals(Color.Yellow, qualityZoneColorForValue(35f, zones, Color.White))
+        assertEquals(Color.Red, qualityZoneColorForValue(42f, zones, Color.White))
     }
 
     private fun batteryReading(

@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.progressBarRangeInfo
@@ -79,7 +80,11 @@ fun TrialHomeCard(
                         if (isUrgent) {
                             stringResource(R.string.trial_ends_tomorrow)
                         } else {
-                            stringResource(R.string.trial_days_remaining, proState.trialDaysRemaining)
+                            pluralStringResource(
+                                R.plurals.trial_days_remaining,
+                                proState.trialDaysRemaining,
+                                proState.trialDaysRemaining,
+                            )
                         },
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,

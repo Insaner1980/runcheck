@@ -1,6 +1,6 @@
 package com.runcheck.ui.home
 
-import androidx.lifecycle.SavedStateHandle
+import android.os.SystemClock
 import com.runcheck.domain.insights.engine.InsightHomeRankingPolicy
 import com.runcheck.domain.insights.model.Insight
 import com.runcheck.domain.insights.model.InsightPriority
@@ -12,6 +12,7 @@ import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.MeasuredValue
+import com.runcheck.domain.model.MonitoringHeartbeat
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.SignalQuality
@@ -39,8 +40,12 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -52,6 +57,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
@@ -72,6 +78,7 @@ class HomeViewModelTest {
     private val manageUserPreferences: ManageUserPreferencesUseCase = mockk(relaxed = true)
 
     private val proStateFlow = MutableStateFlow(ProState())
+    private val proAccessReadyFlow = MutableStateFlow(true)
 
     private lateinit var viewModel: HomeViewModel
 
@@ -114,6 +121,8 @@ class HomeViewModelTest {
 
     @Before
     fun setup() {
+        mockkStatic(SystemClock::class)
+        every { SystemClock.uptimeMillis() } returns 1_000L
         every { getBatteryState() } returns flowOf(testBattery)
         every { getNetworkState() } returns flowOf(testNetwork)
         every { getThermalState() } returns flowOf(testThermal)
@@ -122,9 +131,17 @@ class HomeViewModelTest {
         every { insightRepository.getActiveInsights() } returns flowOf(emptyList())
         every { insightRepository.getUnseenCount() } returns flowOf(0)
         every { proStateProvider.proState } returns proStateFlow
+        every { proStateProvider.proAccessReady } returns proAccessReadyFlow
         every { manageUserPreferences.observePreferences() } returns flowOf(UserPreferences())
-        every { monitoringStatusRepository.observeLastWorkerHeartbeatAt() } returns
-            flowOf(System.currentTimeMillis())
+        every { monitoringStatusRepository.observeLastWorkerHeartbeat() } returns
+            flowOf(
+                MonitoringHeartbeat(
+                    recordedAtEpochMillis = System.currentTimeMillis(),
+                    recordedAtUptimeMillis = 0L,
+                    intervalMinutes = UserPreferences().monitoringInterval.minutes,
+                ),
+            )
+        coEvery { trialManager.isExpirationModalShown() } returns false
     }
 
     @After
@@ -133,11 +150,11 @@ class HomeViewModelTest {
             viewModel.stopObserving()
             advanceAll()
         }
+        unmockkStatic(SystemClock::class)
     }
 
     private fun createViewModel(): HomeViewModel =
         HomeViewModel(
-            savedStateHandle = SavedStateHandle(),
             getBatteryState = getBatteryState,
             getNetworkState = getNetworkState,
             getThermalState = getThermalState,
@@ -285,7 +302,7 @@ class HomeViewModelTest {
         }
 
     @Test
-    fun `expiration modal shows when trial expired and not dismissed this session`() =
+    fun `expiration modal shows when trial expired and not previously shown`() =
         runTest(mainDispatcherRule.testDispatcher) {
             proStateFlow.value =
                 ProState(
@@ -327,6 +344,163 @@ class HomeViewModelTest {
 
             val state = viewModel.uiState.value as HomeUiState.Success
             assertFalse("Expiration modal should be hidden after dismiss", state.showExpirationModal)
+            coVerify { trialManager.setExpirationModalShown() }
+
+            viewModel.stopObserving()
+        }
+
+    @Test
+    fun `home stays Loading until pro access is initialized`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            proAccessReadyFlow.value = false
+            proStateFlow.value = ProState(status = ProStatus.PRO_PURCHASED)
+
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceAll()
+
+            assertEquals(HomeUiState.Loading, viewModel.uiState.value)
+
+            proAccessReadyFlow.value = true
+            advanceAll()
+
+            val state = viewModel.uiState.value as HomeUiState.Success
+            assertEquals(ProStatus.PRO_PURCHASED, state.proState.status)
+            viewModel.stopObserving()
+        }
+
+    @Test
+    fun `home pro card state is mutually exclusive across transitions`() {
+        assertEquals(
+            HomeProCardState.TRIAL,
+            resolveHomeProCardState(ProStatus.TRIAL_ACTIVE, showUpgradeCard = false),
+        )
+        assertEquals(
+            HomeProCardState.EXPIRED_TRIAL,
+            resolveHomeProCardState(ProStatus.TRIAL_EXPIRED, showUpgradeCard = true),
+        )
+        assertEquals(
+            null,
+            resolveHomeProCardState(ProStatus.TRIAL_EXPIRED, showUpgradeCard = false),
+        )
+        assertEquals(
+            HomeProCardState.PRO,
+            resolveHomeProCardState(ProStatus.PRO_PURCHASED, showUpgradeCard = true),
+        )
+    }
+
+    @Test
+    fun `welcome sheet stays dismissed after observation restarts`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            var welcomeShown = false
+            proStateFlow.value =
+                ProState(
+                    status = ProStatus.TRIAL_ACTIVE,
+                    trialDaysRemaining = TrialManager.TRIAL_DURATION_DAYS,
+                    trialStartTimestamp = System.currentTimeMillis(),
+                )
+            coEvery { trialManager.isWelcomeShown() } answers { welcomeShown }
+            coEvery { trialManager.setWelcomeShown() } answers { welcomeShown = true }
+
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceAll()
+
+            assertTrue((viewModel.uiState.value as HomeUiState.Success).showWelcomeSheet)
+
+            viewModel.dismissWelcomeSheet()
+            advanceAll()
+            assertFalse((viewModel.uiState.value as HomeUiState.Success).showWelcomeSheet)
+
+            viewModel.stopObserving()
+            viewModel.startObserving()
+            advanceAll()
+
+            assertFalse((viewModel.uiState.value as HomeUiState.Success).showWelcomeSheet)
+            coVerify(exactly = 1) { trialManager.setWelcomeShown() }
+            viewModel.stopObserving()
+        }
+
+    @Test
+    fun `display sampling does not drop charger tracking transitions`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val batteryFlow = MutableStateFlow(testBattery)
+            every { getBatteryState() } returns batteryFlow
+
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            runCurrent()
+
+            val chargingBattery = testBattery.copy(chargingStatus = ChargingStatus.CHARGING)
+            batteryFlow.value = chargingBattery
+            runCurrent()
+
+            coVerify(exactly = 1) { chargerSessionTracker.onBatteryState(testBattery, any()) }
+            coVerify(exactly = 1) { chargerSessionTracker.onBatteryState(chargingBattery, any()) }
+            assertEquals(HomeUiState.Loading, viewModel.uiState.value)
+
+            advanceAll()
+
+            assertEquals(
+                ChargingStatus.CHARGING,
+                (viewModel.uiState.value as HomeUiState.Success).batteryState.chargingStatus,
+            )
+            viewModel.stopObserving()
+        }
+
+    @Test
+    fun `upstream flow failure replaces visible state with Error`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            every { getNetworkState() } returns
+                flow {
+                    emit(testNetwork)
+                    delay(334L)
+                    error("network source failed")
+                }
+
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            runCurrent()
+            advanceTimeBy(333L)
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value is HomeUiState.Success)
+
+            advanceTimeBy(1L)
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value is HomeUiState.Error)
+            viewModel.stopObserving()
+        }
+
+    @Test
+    fun `day 5 gate uses the exact persisted trial start boundary`() {
+        val trialStart = TimeUnit.DAYS.toMillis(10)
+        val day5Boundary = trialStart + TimeUnit.DAYS.toMillis(5)
+
+        assertFalse(hasReachedTrialDay(trialStart, day = 5, now = day5Boundary - 1L))
+        assertTrue(hasReachedTrialDay(trialStart, day = 5, now = day5Boundary))
+    }
+
+    @Test
+    fun `expiration modal stays hidden on a later launch after persisted acknowledgement`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            proStateFlow.value =
+                ProState(
+                    status = ProStatus.TRIAL_EXPIRED,
+                    trialDaysRemaining = 0,
+                    trialStartTimestamp = System.currentTimeMillis() - 10L * 24 * 60 * 60 * 1000,
+                )
+            coEvery { trialManager.isExpirationModalShown() } returns true
+            coEvery { trialManager.getUpgradeCardDismissCount() } returns 0
+            coEvery { trialManager.getUpgradeCardLastDismissTimestamp() } returns 0L
+
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceAll()
+
+            val state = viewModel.uiState.value as HomeUiState.Success
+            assertFalse("Acknowledged expiration modal should stay hidden", state.showExpirationModal)
 
             viewModel.stopObserving()
         }
@@ -395,6 +569,29 @@ class HomeViewModelTest {
 
             val state = viewModel.uiState.value as HomeUiState.Success
             assertFalse("Upgrade card should be hidden during 7-day cooldown", state.showUpgradeCard)
+
+            viewModel.stopObserving()
+        }
+
+    @Test
+    fun `upgrade card returns after persisted 7 day dismissal cooldown`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            proStateFlow.value =
+                ProState(
+                    status = ProStatus.TRIAL_EXPIRED,
+                    trialDaysRemaining = 0,
+                    trialStartTimestamp = System.currentTimeMillis() - 15L * 24 * 60 * 60 * 1000,
+                )
+            coEvery { trialManager.getUpgradeCardDismissCount() } returns 1
+            coEvery { trialManager.getUpgradeCardLastDismissTimestamp() } returns
+                System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000 - 1_000L
+
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceAll()
+
+            val state = viewModel.uiState.value as HomeUiState.Success
+            assertTrue("Upgrade card should return after the 7-day cooldown", state.showUpgradeCard)
 
             viewModel.stopObserving()
         }

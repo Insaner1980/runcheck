@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private val Context.trialDataStore: DataStore<Preferences> by preferencesDataStore("trial_state")
+
 data class TrialState(
     val isActive: Boolean = false,
     val daysRemaining: Int = 0,
@@ -103,22 +105,25 @@ class TrialManager
             }
         }
 
-        suspend fun isWelcomeShown(): Boolean {
+        suspend fun isWelcomeShown(): Boolean = isPromptShown(KEY_WELCOME_SHOWN)
+
+        suspend fun setWelcomeShown() = setPromptShown(KEY_WELCOME_SHOWN)
+
+        suspend fun isDay5PromptShown(): Boolean = isPromptShown(KEY_DAY5_PROMPT_SHOWN)
+
+        suspend fun setDay5PromptShown() = setPromptShown(KEY_DAY5_PROMPT_SHOWN)
+
+        suspend fun isExpirationModalShown(): Boolean = isPromptShown(KEY_EXPIRATION_MODAL_SHOWN)
+
+        suspend fun setExpirationModalShown() = setPromptShown(KEY_EXPIRATION_MODAL_SHOWN)
+
+        private suspend fun isPromptShown(key: Preferences.Key<Boolean>): Boolean {
             val preferences = readPreferencesOrNull() ?: return true
-            return preferences[KEY_WELCOME_SHOWN] ?: false
+            return preferences[key] ?: false
         }
 
-        suspend fun setWelcomeShown() {
-            context.trialDataStore.edit { it[KEY_WELCOME_SHOWN] = true }
-        }
-
-        suspend fun isDay5PromptShown(): Boolean {
-            val preferences = readPreferencesOrNull() ?: return true
-            return preferences[KEY_DAY5_PROMPT_SHOWN] ?: false
-        }
-
-        suspend fun setDay5PromptShown() {
-            context.trialDataStore.edit { it[KEY_DAY5_PROMPT_SHOWN] = true }
+        private suspend fun setPromptShown(key: Preferences.Key<Boolean>) {
+            context.trialDataStore.edit { it[key] = true }
         }
 
         suspend fun getUpgradeCardDismissCount(): Int {
@@ -199,13 +204,12 @@ class TrialManager
 
         companion object {
             const val TRIAL_DURATION_DAYS = 7
-            private val Context.trialDataStore: DataStore<Preferences>
-                by preferencesDataStore(name = "trial_state")
             private val KEY_TRIAL_START = longPreferencesKey("trial_start_timestamp")
             private val KEY_LAST_KNOWN_TIMESTAMP = longPreferencesKey("last_known_timestamp")
             private val KEY_CLOCK_TAMPERED = booleanPreferencesKey("clock_tampered")
             private val KEY_WELCOME_SHOWN = booleanPreferencesKey("trial_welcome_shown")
             private val KEY_DAY5_PROMPT_SHOWN = booleanPreferencesKey("day5_prompt_shown")
+            private val KEY_EXPIRATION_MODAL_SHOWN = booleanPreferencesKey("expiration_modal_shown")
             private val KEY_UPGRADE_DISMISS_COUNT = intPreferencesKey("upgrade_card_dismiss_count")
             private val KEY_UPGRADE_DISMISS_TIMESTAMP = longPreferencesKey("upgrade_card_last_dismiss_timestamp")
             private val CLOCK_TAMPER_TOLERANCE_MS = TimeUnit.HOURS.toMillis(1)

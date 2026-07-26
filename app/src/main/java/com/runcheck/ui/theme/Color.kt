@@ -15,6 +15,7 @@ val AccentBlue = Color(0xFF4A9EDE)
 val AccentAmber = Color(0xFFE8C44A)
 val AccentOrange = Color(0xFFF5963A)
 val AccentRed = Color(0xFFF06040)
+val StatusCritical = Color(0xFFF66A4C)
 val AccentLime = Color(0xFFC8E636)
 val AccentYellow = Color(0xFFF5D03A)
 

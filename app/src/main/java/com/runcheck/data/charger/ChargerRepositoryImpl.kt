@@ -68,6 +68,11 @@ class ChargerRepositoryImpl
         override suspend fun getActiveSession(): ChargingSession? = chargerDao.getActiveSession()?.toDomain()
 
         override suspend fun deleteSessionsOlderThan(cutoff: Long) = chargerDao.deleteSessionsOlderThan(cutoff)
+
+        override suspend fun deleteAll() {
+            chargerDao.deleteAllSessions()
+            chargerDao.deleteAllChargers()
+        }
     }
 
 private fun ChargerProfileEntity.toDomain() =

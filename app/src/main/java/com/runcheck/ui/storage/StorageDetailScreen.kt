@@ -137,6 +137,7 @@ fun StorageDetailScreen(
     viewModel: StorageViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val loadingDescription = stringResource(R.string.a11y_loading)
     val activity = context.findActivity()
@@ -262,6 +263,7 @@ fun StorageDetailScreen(
                 is StorageUiState.Success -> {
                     StorageContent(
                         state = state,
+                        isRefreshing = isRefreshing,
                         mediaAccessState = mediaAccessState,
                         hasAllMediaPermissions = missingMediaPermissions.isEmpty(),
                         shouldOpenMediaSettings = shouldOpenMediaSettings,
@@ -327,6 +329,7 @@ private fun TrashConfirmDialog(
 @Composable
 private fun StorageContent(
     state: StorageUiState.Success,
+    isRefreshing: Boolean,
     mediaAccessState: MediaAccessState,
     hasAllMediaPermissions: Boolean,
     shouldOpenMediaSettings: Boolean,
@@ -339,20 +342,12 @@ private fun StorageContent(
     onDismissInfoCard: (String) -> Unit = {},
     onPeriodChange: (HistoryPeriod) -> Unit = {},
 ) {
-    var isRefreshing by remember { mutableStateOf(false) }
     var activeInfoSheet by rememberInfoSheetState()
     val storage = state.storageState
 
-    LaunchedEffect(state) {
-        isRefreshing = false
-    }
-
     PullToRefreshWrapper(
         isRefreshing = isRefreshing,
-        onRefresh = {
-            isRefreshing = true
-            onRefresh()
-        },
+        onRefresh = onRefresh,
     ) {
         Column(
             modifier =

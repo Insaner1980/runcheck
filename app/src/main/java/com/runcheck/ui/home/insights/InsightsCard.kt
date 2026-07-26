@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -53,18 +54,20 @@ fun InsightsCard(
         }
 
         insights.forEach { insight ->
-            val navigationAction =
-                resolveInsightNavigationAction(
-                    insight = insight,
-                    isPro = state.isPro,
-                    navigationHandlers = navigationHandlers,
-                )
+            key(insight.id) {
+                val navigationAction =
+                    resolveInsightNavigationAction(
+                        insight = insight,
+                        isPro = state.isPro,
+                        navigationHandlers = navigationHandlers,
+                    )
 
-            InsightRow(
-                insight = insight,
-                onClick = navigationAction.onClick,
-                onDismiss = { onDismissInsight(insight.id) },
-            )
+                InsightRow(
+                    insight = insight,
+                    onClick = navigationAction.onClick,
+                    onDismiss = { onDismissInsight(insight.id) },
+                )
+            }
         }
     }
 }

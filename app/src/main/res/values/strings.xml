@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">runcheck</string>
     <string name="not_available">N/A</string>
 
     <!-- Navigation -->
     <string name="navigate_back">Back</string>
     <string name="navigate_menu">Menu</string>
-    <string name="a11y_progress_percent">%1$s, %2$d percent</string>
+    <string name="a11y_progress_percent" tools:ignore="PluralsCandidate">%1$s, %2$d percent</string>
     <string name="a11y_heat_strip">Battery temperature %1$s, %2$s</string>
     <string name="a11y_chart_trend">%1$s trend chart</string>
     <string name="a11y_chart_summary">%1$s. Range %2$s to %3$s. Latest %4$s. Trend %5$s.</string>
@@ -25,7 +25,6 @@
     <string name="home_storage_card">Storage</string>
     <string name="home_chargers_card">Chargers</string>
     <string name="home_app_usage_card">App Usage</string>
-    <string name="home_pro_title">Unlock runcheck Pro</string>
     <string name="home_chargers_desc">Test &amp; compare your chargers</string>
     <string name="home_health_score">HEALTH SCORE</string>
     <string name="home_device_good_shape">Your device is in %1$s shape.</string>
@@ -33,7 +32,6 @@
     <string name="home_quick_tools">QUICK TOOLS</string>
     <string name="home_speed_test">Speed Test</string>
     <string name="home_test_compare">Test &amp; compare</string>
-    <string name="home_pro_history_desc">History, charger testing, export &amp; more</string>
     <string name="home_insights_section_title">Insights</string>
     <string name="home_insights_view_all">View all</string>
     <string name="home_insights_title">Pro unlocked</string>
@@ -163,7 +161,7 @@
     <string name="battery_current_minimum">Minimum</string>
     <string name="battery_current_maximum">Maximum</string>
     <string name="value_milliamps_int">%1$d mA</string>
-    <string name="battery_remaining_mah">%1$s · ~%2$d mAh remaining</string>
+    <string name="battery_remaining_mah">%1$s · Estimated %2$d mAh remaining</string>
     <string name="battery_estimated_full_capacity">Estimated Full Capacity</string>
     <string name="battery_estimated_capacity_mah">%1$d mAh estimated</string>
 
@@ -587,9 +585,9 @@
 
     <!-- Widgets -->
     <string name="widget_battery_name">Battery Status</string>
-    <string name="widget_battery_description">Shows battery level, temperature, and current</string>
+    <string name="widget_battery_description">Shows battery level, temperature, and current. Requires runcheck Pro.</string>
     <string name="widget_health_name">Device Health</string>
-    <string name="widget_health_description">Shows overall health score with category indicators</string>
+    <string name="widget_health_description">Shows overall health score with category indicators. Requires runcheck Pro.</string>
     <string name="widget_health_score_label">Health Score</string>
     <string name="widget_health_score_with_status">%1$s · %2$s</string>
     <string name="widget_battery_short_label">Bat</string>
@@ -754,7 +752,10 @@
     <string name="trial_welcome_title">Welcome to runcheck Pro Trial</string>
     <string name="trial_welcome_subtitle">All Pro features are unlocked for 7 days. Explore everything.</string>
     <string name="trial_welcome_start">Start Exploring</string>
-    <string name="trial_days_remaining">Pro Trial — %1$d days remaining</string>
+    <plurals name="trial_days_remaining">
+        <item quantity="one">Pro Trial — %1$d day remaining</item>
+        <item quantity="other">Pro Trial — %1$d days remaining</item>
+    </plurals>
     <string name="trial_ends_tomorrow">Pro Trial ends tomorrow</string>
     <string name="trial_keep_pro">Keep Pro</string>
     <string name="trial_pro_trial_label">Pro Trial</string>
@@ -817,7 +818,7 @@
     </plurals>
     <string name="a11y_exporting_data">Exporting data</string>
     <string name="a11y_trial_dialog">Trial expired dialog</string>
-    <string name="a11y_health_score">Health score %1$d out of 100</string>
+    <string name="a11y_health_score" tools:ignore="PluralsCandidate">Health score %1$d out of 100</string>
     <string name="a11y_warning">Warning</string>
     <string name="a11y_stale_data_warning">Stale data warning</string>
     <string name="a11y_trial_expired">Trial expired</string>

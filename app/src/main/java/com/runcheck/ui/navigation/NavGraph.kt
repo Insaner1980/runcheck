@@ -22,6 +22,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.runcheck.pro.ProStateProvider
 import com.runcheck.ui.appusage.AppUsageScreen
 import com.runcheck.ui.battery.BatteryDetailScreen
 import com.runcheck.ui.charger.ChargerComparisonScreen
@@ -45,20 +46,25 @@ import com.runcheck.ui.thermal.ThermalDetailScreen
 
 @Composable
 fun RuncheckNavHost(
+    proStateProvider: ProStateProvider,
     modifier: Modifier = Modifier,
     deepLinkRoute: String? = null,
     onConsumeDeepLink: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     val reducedMotion = LocalReducedMotion.current
+    val proState by proStateProvider.proState.collectAsStateWithLifecycle()
+    val proAccessReady by proStateProvider.proAccessReady.collectAsStateWithLifecycle()
 
     // Navigate to the deep-link screen and consume so it doesn't re-fire
     val currentOnConsumeDeepLink by rememberUpdatedState(onConsumeDeepLink)
-    LaunchedEffect(deepLinkRoute) {
-        if (deepLinkRoute != null) {
-            navController.navigateNotificationRoute(deepLinkRoute)
-            currentOnConsumeDeepLink()
-        }
+    LaunchedEffect(deepLinkRoute, proAccessReady, proState.isPro) {
+        val resolvedRoute =
+            deepLinkRoute?.let { route ->
+                resolveProRoute(route, proAccessReady, proState.isPro)
+            } ?: return@LaunchedEffect
+        navController.navigateNotificationRoute(resolvedRoute)
+        currentOnConsumeDeepLink()
     }
 
     NavHost(
@@ -243,30 +249,34 @@ fun RuncheckNavHost(
             CleanupScreen(onBack = { navController.popBackStack() })
         }
         composable(Screen.Charger.route) {
-            ChargerComparisonScreen(
-                onBack = { navController.popBackStack() },
-                onUpgradeToPro = {
-                    navController.navigate(Screen.ProUpgrade.route) {
-                        launchSingleTop = true
-                        popUpTo(Screen.Charger.route) {
-                            inclusive = true
-                        }
-                    }
-                },
-            )
+            ProRouteGate(
+                route = Screen.Charger.route,
+                proAccessReady = proAccessReady,
+                isPro = proState.isPro,
+                onRedirect = { navController.redirectToProUpgrade(Screen.Charger.route) },
+            ) {
+                ChargerComparisonScreen(
+                    onBack = { navController.popBackStack() },
+                    onUpgradeToPro = {
+                        navController.redirectToProUpgrade(Screen.Charger.route)
+                    },
+                )
+            }
         }
         composable(Screen.AppUsage.route) {
-            AppUsageScreen(
-                onBack = { navController.popBackStack() },
-                onUpgradeToPro = {
-                    navController.navigate(Screen.ProUpgrade.route) {
-                        launchSingleTop = true
-                        popUpTo(Screen.AppUsage.route) {
-                            inclusive = true
-                        }
-                    }
-                },
-            )
+            ProRouteGate(
+                route = Screen.AppUsage.route,
+                proAccessReady = proAccessReady,
+                isPro = proState.isPro,
+                onRedirect = { navController.redirectToProUpgrade(Screen.AppUsage.route) },
+            ) {
+                AppUsageScreen(
+                    onBack = { navController.popBackStack() },
+                    onUpgradeToPro = {
+                        navController.redirectToProUpgrade(Screen.AppUsage.route)
+                    },
+                )
+            }
         }
         composable(Screen.Settings.route) {
             SettingsScreen(
@@ -375,6 +385,35 @@ fun RuncheckNavHost(
     }
 }
 
+@Composable
+private fun ProRouteGate(
+    route: String,
+    proAccessReady: Boolean,
+    isPro: Boolean,
+    onRedirect: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val currentOnRedirect by rememberUpdatedState(onRedirect)
+    when (resolveProRoute(route, proAccessReady, isPro)) {
+        route -> content()
+        Screen.ProUpgrade.route -> LaunchedEffect(route) { currentOnRedirect() }
+    }
+}
+
+internal fun resolveProRoute(
+    route: String,
+    proAccessReady: Boolean,
+    isPro: Boolean,
+): String? =
+    when {
+        route !in proOnlyRoutes -> route
+        !proAccessReady -> null
+        !isPro -> Screen.ProUpgrade.route
+        else -> route
+    }
+
+private val proOnlyRoutes = setOf(Screen.Charger.route, Screen.AppUsage.route)
+
 private fun NavHostController.navigateSingleTop(route: String) {
     navigate(route) {
         launchSingleTop = true
@@ -391,10 +430,22 @@ private fun NavHostController.navigateNotificationRoute(route: String) {
     }
 }
 
+private fun NavHostController.redirectToProUpgrade(restrictedRoute: String) {
+    navigate(Screen.ProUpgrade.route) {
+        launchSingleTop = true
+        popUpTo(restrictedRoute) {
+            inclusive = true
+        }
+    }
+}
+
 private fun NavHostController.navigateNested(
     parentRoute: String,
     childRoute: String,
 ) {
+    if (currentBackStackEntry?.destination?.route == childRoute) {
+        return
+    }
     navigateSingleTop(parentRoute)
     navigateSingleTop(childRoute)
 }
