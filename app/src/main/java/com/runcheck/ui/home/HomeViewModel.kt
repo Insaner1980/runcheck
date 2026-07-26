@@ -1,6 +1,6 @@
 package com.runcheck.ui.home
 
-import androidx.lifecycle.SavedStateHandle
+import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.runcheck.R
@@ -23,11 +23,12 @@ import com.runcheck.domain.usecase.GetSpeedTestHistoryUseCase
 import com.runcheck.domain.usecase.GetStorageStateUseCase
 import com.runcheck.domain.usecase.GetThermalStateUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
+import com.runcheck.pro.ProState
 import com.runcheck.pro.ProStateProvider
 import com.runcheck.pro.ProStatus
 import com.runcheck.pro.TrialManager
+import com.runcheck.pro.TrialPresentationState
 import com.runcheck.ui.common.messageOrRes
-import com.runcheck.util.getBooleanOrDefault
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -38,7 +39,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
@@ -48,7 +51,6 @@ import javax.inject.Inject
 class HomeViewModel
     @Inject
     constructor(
-        private val savedStateHandle: SavedStateHandle,
         private val getBatteryState: GetBatteryStateUseCase,
         private val getNetworkState: GetNetworkStateUseCase,
         private val getThermalState: GetThermalStateUseCase,
@@ -68,12 +70,6 @@ class HomeViewModel
         private var loadJob: Job? = null
         private var lastSeenInsightIds: Set<Long> = emptySet()
 
-        // Persisted across process death via SavedStateHandle
-        private var expirationModalShownThisSession: Boolean
-            get() = savedStateHandle.getBooleanOrDefault(KEY_EXPIRATION_MODAL_SHOWN, false)
-            set(value) {
-                savedStateHandle[KEY_EXPIRATION_MODAL_SHOWN] = value
-            }
         private var lastTrackedSessionStatus: com.runcheck.domain.model.ChargingStatus? = null
         private var lastTrackedSessionAt: Long = 0L
 
@@ -112,9 +108,12 @@ class HomeViewModel
             }
         }
 
-        fun dismissExpirationModal() {
-            expirationModalShownThisSession = true
-            updateSuccessState { copy(showExpirationModal = false) }
+        fun dismissExpirationModal(onDismissed: () -> Unit = {}) {
+            viewModelScope.launch {
+                trialManager.setExpirationModalShown()
+                updateSuccessState { copy(showExpirationModal = false) }
+                onDismissed()
+            }
         }
 
         fun dismissUpgradeCard() {
@@ -139,14 +138,15 @@ class HomeViewModel
                     val freshnessTicker = monitoringFreshnessTicker()
                     val monitoringStaleFlow =
                         combine(
-                            monitoringStatusRepository.observeLastWorkerHeartbeatAt(),
+                            monitoringStatusRepository.observeLastWorkerHeartbeat(),
                             preferencesFlow,
                             freshnessTicker,
-                        ) { lastHeartbeatAt, preferences, now ->
-                            isMonitoringStale(
-                                lastHeartbeatAt = lastHeartbeatAt,
-                                intervalMinutes = preferences.monitoringInterval.minutes,
-                                now = now,
+                        ) { heartbeat, preferences, tick ->
+                            MonitoringFreshnessPolicy.isStale(
+                                heartbeat = heartbeat,
+                                currentIntervalMinutes = preferences.monitoringInterval.minutes,
+                                currentUptimeMillis = tick.uptimeMillis,
+                                currentEpochMillis = tick.epochMillis,
                             )
                         }.distinctUntilChanged()
 
@@ -154,7 +154,7 @@ class HomeViewModel
                         combine(
                             getSpeedTestHistory.getLatest(),
                             freshnessTicker,
-                        ) { speedTest, now -> SpeedTestScoreContext(speedTest, now) }
+                        ) { speedTest, tick -> SpeedTestScoreContext(speedTest, tick.epochMillis) }
 
                     val dataFlow =
                         combine(
@@ -187,36 +187,53 @@ class HomeViewModel
                             insightRepository.getUnseenCount(),
                         ) { activeInsights, _ -> activeInsights }
 
+                    val readyProStateFlow =
+                        combine(
+                            proStateProvider.proState,
+                            proStateProvider.proAccessReady,
+                        ) { proState, ready -> proState.takeIf { ready } }
+                            .filterNotNull()
+
+                    val readyProPresentationFlow =
+                        combine(
+                            readyProStateFlow,
+                            trialManager.observePresentationState(),
+                        ) { proState, presentationState ->
+                            ProPresentationContext(
+                                proState = proState,
+                                presentationState = presentationState,
+                            )
+                        }
+
                     combine(
                         dataFlow,
                         insightFlow,
-                        proStateProvider.proState,
+                        readyProPresentationFlow,
                         preferencesFlow,
                         monitoringStaleFlow,
-                    ) { data, activeInsights, proState, preferences, monitoringStale ->
+                    ) { data, activeInsights, proPresentation, preferences, monitoringStale ->
+                        val proState = proPresentation.proState
+                        val presentationState = proPresentation.presentationState
                         val showWelcomeSheet =
                             proState.status == ProStatus.TRIAL_ACTIVE &&
-                                !trialManager.isWelcomeShown()
-
-                        val daysRemaining = proState.trialDaysRemaining
-                        val trialDaysElapsed = TrialManager.TRIAL_DURATION_DAYS - daysRemaining
+                                !presentationState.welcomeShown
 
                         val showDay5Banner =
                             proState.status == ProStatus.TRIAL_ACTIVE &&
-                                trialDaysElapsed >= 5 &&
-                                !trialManager.isDay5PromptShown()
+                                hasReachedTrialDay(proState.trialStartTimestamp, DAY_5) &&
+                                !presentationState.day5PromptShown
 
                         val showExpirationModal =
                             proState.status == ProStatus.TRIAL_EXPIRED &&
                                 proState.trialStartTimestamp > 0L &&
-                                !expirationModalShownThisSession
+                                !presentationState.expirationModalShown
 
                         val showUpgradeCard =
                             if (proState.status == ProStatus.TRIAL_EXPIRED &&
                                 proState.trialStartTimestamp > 0L
                             ) {
-                                val dismissCount = trialManager.getUpgradeCardDismissCount()
-                                val lastDismiss = trialManager.getUpgradeCardLastDismissTimestamp()
+                                val dismissCount = presentationState.upgradeCardDismissCount
+                                val lastDismiss = presentationState.upgradeCardLastDismissTimestamp
                                 val daysSinceDismiss =
                                     if (lastDismiss > 0L) {
                                         TimeUnit.MILLISECONDS
@@ -256,11 +273,12 @@ class HomeViewModel
                             showExpirationModal = showExpirationModal,
                             showUpgradeCard = showUpgradeCard,
                         )
+                    }.onEach { state ->
+                        maybeTrackChargerSession(state.batteryState)
                     }.sample(DISPLAY_UPDATE_INTERVAL_MS)
                         .catch { e ->
                             _uiState.value = HomeUiState.Error(e.messageOrRes(R.string.common_error_generic))
                         }.collect { state ->
-                            maybeTrackChargerSession(state.batteryState)
                             _uiState.value = state
                             maybeMarkInsightsSeen(state)
                         }
@@ -287,21 +305,18 @@ class HomeViewModel
 
         private fun monitoringFreshnessTicker() =
             flow {
-                emit(System.currentTimeMillis())
+                emit(freshnessTick())
                 while (true) {
                     delay(MONITORING_STALE_CHECK_INTERVAL_MS)
-                    emit(System.currentTimeMillis())
+                    emit(freshnessTick())
                 }
             }
 
-        private fun isMonitoringStale(
-            lastHeartbeatAt: Long?,
-            intervalMinutes: Int,
-            now: Long,
-        ): Boolean {
-            if (lastHeartbeatAt == null) return false
-            return now - lastHeartbeatAt > MonitoringFreshnessPolicy.staleAfterMillis(intervalMinutes)
-        }
+        private fun freshnessTick() =
+            FreshnessTick(
+                epochMillis = System.currentTimeMillis(),
+                uptimeMillis = SystemClock.uptimeMillis(),
+            )
 
         private suspend fun maybeTrackChargerSession(state: BatteryState) {
             val now = System.currentTimeMillis()
@@ -327,11 +342,29 @@ class HomeViewModel
             val nowMillis: Long,
         )
 
+        private data class ProPresentationContext(
+            val proState: ProState,
+            val presentationState: TrialPresentationState,
+        )
+
+        private data class FreshnessTick(
+            val epochMillis: Long,
+            val uptimeMillis: Long,
+        )
+
         companion object {
             private const val MAX_HOME_INSIGHTS = 3
+            private const val DAY_5 = 5
             private const val DISPLAY_UPDATE_INTERVAL_MS = 333L
             private const val CHARGER_SESSION_TRACK_INTERVAL_MS = 15_000L
             private const val MONITORING_STALE_CHECK_INTERVAL_MS = 15_000L
-            private const val KEY_EXPIRATION_MODAL_SHOWN = "expiration_modal_shown"
         }
     }
+
+internal fun hasReachedTrialDay(
+    trialStartTimestamp: Long,
+    day: Int,
+    now: Long = System.currentTimeMillis(),
+): Boolean =
+    trialStartTimestamp > 0L &&
+        now >= trialStartTimestamp + TimeUnit.DAYS.toMillis(day.toLong())

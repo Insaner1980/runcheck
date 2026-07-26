@@ -65,8 +65,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -85,7 +86,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.domain.model.HealthScore
 import com.runcheck.domain.model.HealthStatus
-import com.runcheck.pro.ProStatus
 import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.batteryHealthLabel
 import com.runcheck.ui.common.chargingStatusLabel
@@ -254,7 +254,7 @@ fun HomeScreen(
                 if (state.showExpirationModal) {
                     com.runcheck.ui.pro.TrialExpirationModal(
                         formattedPrice = null,
-                        onPurchase = onNavigateToProUpgrade,
+                        onPurchase = { viewModel.dismissExpirationModal(onNavigateToProUpgrade) },
                         onDismiss = { viewModel.dismissExpirationModal() },
                     )
                 }
@@ -280,7 +280,9 @@ private fun HomeContent(
     onNavigateToLearnArticle: (String) -> Unit = {},
     onDismissUpgradeCard: () -> Unit = {},
 ) {
-    val isWideScreen = LocalConfiguration.current.screenWidthDp >= 600
+    val windowInfo = LocalWindowInfo.current
+    val density = LocalDensity.current
+    val isWideScreen = with(density) { windowInfo.containerSize.width.toDp() } >= 600.dp
     val insightNavigationHandlers =
         remember(
             onNavigateToBattery,
@@ -299,6 +301,21 @@ private fun HomeContent(
                 onNavigateToCharger = onNavigateToCharger,
                 onNavigateToAppUsage = onNavigateToAppUsage,
                 onNavigateToProUpgrade = onNavigateToProUpgrade,
+            )
+        }
+
+    val insightsCardState =
+        remember(
+            state.insights,
+            state.totalInsightCount,
+            state.unseenInsightCount,
+            state.isPro,
+        ) {
+            InsightsCardState(
+                insights = state.insights,
+                totalInsightCount = state.totalInsightCount,
+                unseenInsightCount = state.unseenInsightCount,
+                isPro = state.isPro,
             )
         }
 
@@ -362,13 +379,7 @@ private fun HomeContent(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
 
             InsightsCard(
-                state =
-                    InsightsCardState(
-                        insights = state.insights,
-                        totalInsightCount = state.totalInsightCount,
-                        unseenInsightCount = state.unseenInsightCount,
-                        isPro = state.isPro,
-                    ),
+                state = insightsCardState,
                 navigationHandlers = insightNavigationHandlers,
                 onNavigateToInsights = onNavigateToInsights,
                 onDismissInsight = onDismissInsight,
@@ -389,8 +400,7 @@ private fun HomeContent(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
 
             HomeProStatusSection(
-                proStatus = state.proState.status,
-                onNavigateToProUpgrade = onNavigateToProUpgrade,
+                visible = state.proCardState == HomeProCardState.PRO,
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
@@ -404,19 +414,27 @@ private fun HomeTrialSection(
     onNavigateToProUpgrade: () -> Unit,
     onDismissUpgradeCard: () -> Unit,
 ) {
-    if (state.proState.status == ProStatus.TRIAL_ACTIVE) {
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-        TrialHomeCard(
-            proState = state.proState,
-            onNavigateToProUpgrade = onNavigateToProUpgrade,
-        )
-    } else if (state.showUpgradeCard) {
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-        PostExpirationUpgradeCard(
-            formattedPrice = null,
-            onNavigateToProUpgrade = onNavigateToProUpgrade,
-            onDismiss = onDismissUpgradeCard,
-        )
+    when (state.proCardState) {
+        HomeProCardState.TRIAL -> {
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
+            TrialHomeCard(
+                proState = state.proState,
+                onNavigateToProUpgrade = onNavigateToProUpgrade,
+            )
+        }
+
+        HomeProCardState.EXPIRED_TRIAL -> {
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
+            PostExpirationUpgradeCard(
+                formattedPrice = null,
+                onNavigateToProUpgrade = onNavigateToProUpgrade,
+                onDismiss = onDismissUpgradeCard,
+            )
+        }
+
+        HomeProCardState.PRO, null -> {
+            Unit
+        }
     }
 }
 

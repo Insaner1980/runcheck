@@ -75,7 +75,8 @@ Defined in `Color.kt` and exposed through `Theme.kt`.
 | `AccentBlue` | `#4A9EDE` | `primary`; primary actions, links, main accent |
 | `AccentAmber` | `#E8C44A` | `tertiary`; fair/warning status |
 | `AccentOrange` | `#F5963A` | poor status |
-| `AccentRed` | `#F06040` | `error`; critical/destructive status |
+| `AccentRed` | `#F06040` | `error`; error text and destructive actions |
+| `StatusCritical` | `#F66A4C` | critical status text and indicators on card surfaces |
 | `AccentLime` | `#C8E636` | storage/category accent |
 | `AccentYellow` | `#F5D03A` | storage/category accent |
 | `TextPrimary` | `#E8E8ED` | `onSurface`, `onBackground`; primary text |
@@ -128,7 +129,7 @@ Defined in `StatusColors.kt`.
 | `healthy` | `AccentTeal` |
 | `fair` | `AccentAmber` |
 | `poor` | `AccentOrange` |
-| `critical` | `AccentRed` |
+| `critical` | `StatusCritical` |
 | `neutral` | `TextSecondary` |
 | `unavailable` | `TextMuted` |
 

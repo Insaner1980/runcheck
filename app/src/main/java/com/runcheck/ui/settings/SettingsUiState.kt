@@ -6,6 +6,7 @@ import com.runcheck.ui.common.UiText
 
 data class SettingsUiState(
     val preferences: UserPreferences = UserPreferences(),
+    val preferencesLoaded: Boolean = false,
     val deviceProfile: DeviceProfileInfo? = null,
     val isPro: Boolean = false,
     val debugInsightsAvailable: Boolean = false,

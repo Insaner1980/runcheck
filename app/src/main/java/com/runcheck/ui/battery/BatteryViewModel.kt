@@ -1,5 +1,6 @@
 package com.runcheck.ui.battery
 
+import android.database.sqlite.SQLiteException
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -19,6 +20,7 @@ import com.runcheck.domain.usecase.GetBatteryStatisticsUseCase
 import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
+import com.runcheck.ui.common.RefreshTracker
 import com.runcheck.ui.common.messageOrRes
 import com.runcheck.util.ReleaseSafeLog
 import com.runcheck.util.appendLiveValue
@@ -52,6 +54,8 @@ class BatteryViewModel
     ) : ViewModel() {
         private val _uiState = MutableStateFlow<BatteryUiState>(BatteryUiState.Loading)
         val uiState: StateFlow<BatteryUiState> = _uiState.asStateFlow()
+        private val refreshTracker = RefreshTracker()
+        val isRefreshing: StateFlow<Boolean> = refreshTracker.isRefreshing
 
         private var selectedPeriod: HistoryPeriod
             get() = savedStateHandle.getEnumOrDefault(SELECTED_PERIOD_KEY, HistoryPeriod.DAY)
@@ -89,9 +93,11 @@ class BatteryViewModel
         fun stopObserving() {
             loadJob?.cancel()
             loadJob = null
+            refreshTracker.finish()
         }
 
         fun refresh() {
+            refreshTracker.start()
             statisticsLoaded = false
             loadBatteryData()
         }
@@ -114,16 +120,6 @@ class BatteryViewModel
             loadJob?.cancel()
             loadJob =
                 viewModelScope.launch {
-                    // Load statistics once (suspend, not a flow)
-                    if (!statisticsLoaded) {
-                        try {
-                            cachedStatistics = getBatteryStatistics()
-                        } catch (e: Exception) {
-                            ReleaseSafeLog.error("BatteryVM", "Statistics load failed", e)
-                        }
-                        statisticsLoaded = true
-                    }
-
                     combine(
                         getBatteryState(),
                         getBatteryHistory(selectedPeriod),
@@ -143,10 +139,12 @@ class BatteryViewModel
                         )
                     }.sample(333L)
                         .catch { e ->
+                            refreshTracker.finish()
                             ReleaseSafeLog.error("BatteryVM", "Battery data failed", e)
                             _uiState.value = BatteryUiState.Error(e.messageOrRes(R.string.common_error_generic))
                         }.collect { state ->
                             _uiState.value = state
+                            refreshTracker.finish()
                         }
                 }
         }
@@ -208,7 +206,7 @@ class BatteryViewModel
                 screenUsage = if (isDischarging) batteryScreenInsights.getScreenUsageStats() else null,
                 sleepAnalysis = if (isDischarging) batteryScreenInsights.getSleepAnalysis() else null,
                 temperatureUnit = preferences.temperatureUnit,
-                statistics = cachedStatistics,
+                statistics = loadStatisticsIfAllowed(isPro),
                 dismissedInfoCards = dismissedCards,
                 showInfoCards = preferences.showInfoCards,
                 liveCurrentMa = liveCurrentMa.toList(),
@@ -216,6 +214,19 @@ class BatteryViewModel
                 liveLevel = liveLevel.toList(),
                 liveVoltage = liveVoltage.toList(),
             )
+        }
+
+        private suspend fun loadStatisticsIfAllowed(isPro: Boolean): com.runcheck.domain.usecase.BatteryStatistics? {
+            if (!isPro) return null
+            if (!statisticsLoaded) {
+                try {
+                    cachedStatistics = getBatteryStatistics()
+                } catch (e: SQLiteException) {
+                    ReleaseSafeLog.error("BatteryVM", "Statistics load failed", e)
+                }
+                statisticsLoaded = true
+            }
+            return cachedStatistics
         }
 
         private fun currentStatsSessionChanged(

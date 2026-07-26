@@ -2,10 +2,17 @@ package com.runcheck.ui.learn
 
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.navigation.Screen
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LearnNavigationCatalogTest {
+    @Test
+    fun catalog_containsEveryDeclaredArticleIdExactlyOnce() {
+        assertEquals(15, LearnArticleCatalog.articles.size)
+        assertEquals(LearnArticleIds.all, LearnArticleCatalog.articles.map { it.id }.toSet())
+    }
+
     @Test
     fun articleCrossLinks_onlyUseDirectlyReachableRoutes() {
         val invalidLinks =

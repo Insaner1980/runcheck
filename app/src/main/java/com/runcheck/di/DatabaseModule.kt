@@ -1,6 +1,7 @@
 package com.runcheck.di
 
 import android.content.Context
+import androidx.core.content.edit
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
@@ -286,9 +287,9 @@ object DatabaseModule {
                             )
                             context
                                 .getSharedPreferences(DB_EVENT_PREFS, Context.MODE_PRIVATE)
-                                .edit()
-                                .putBoolean(KEY_DB_RESET, true)
-                                .apply()
+                                .edit {
+                                    putBoolean(KEY_DB_RESET, true)
+                                }
                         }
                     },
                 ).build()

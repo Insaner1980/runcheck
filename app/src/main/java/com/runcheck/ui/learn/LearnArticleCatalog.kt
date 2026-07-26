@@ -177,6 +177,15 @@ object LearnArticleCatalog {
         check(sections.flatMap(LearnTopicSection::articles) == articles) {
             "Learn topic sections are out of sync with the article catalog"
         }
+        val canonicalIds = articles.map(LearnArticle::id).toSet()
+        check(canonicalIds == LearnArticleIds.all) {
+            "Learn article IDs and catalog entries are out of sync"
+        }
+        articles.flatMap(LearnArticle::legacyIds).forEach { legacyId ->
+            check(legacyId !in canonicalIds) {
+                "Legacy learn article id shadows a canonical id: $legacyId"
+            }
+        }
     }
 
     private val articlesById: Map<String, LearnArticle> =

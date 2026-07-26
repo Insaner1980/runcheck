@@ -1,5 +1,6 @@
 package com.runcheck.data.storage
 
+import android.annotation.SuppressLint
 import android.content.ContentResolver
 import android.content.Context
 import android.database.ContentObserver
@@ -8,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.core.net.toUri
 import com.runcheck.R
 import com.runcheck.domain.model.CleanupGroupSummary
 import com.runcheck.domain.model.CleanupScanQuery
@@ -70,6 +72,7 @@ class MediaStoreScanner
                 TrashInfo(totalBytes = totalSize, itemCount = itemCount)
             }
 
+        @SuppressLint("InlinedApi")
         private fun queryTrashedCollection(
             collection: Uri,
             coroutineContext: CoroutineContext,
@@ -120,6 +123,7 @@ class MediaStoreScanner
                 uris
             }
 
+        @SuppressLint("InlinedApi")
         private fun queryTrashedUris(
             collection: Uri,
             coroutineContext: CoroutineContext,
@@ -158,7 +162,7 @@ class MediaStoreScanner
                     uriStrings.forEach { uriString ->
                         coroutineContext.ensureActive()
                         resolver
-                            .query(Uri.parse(uriString), arrayOf(MediaStore.MediaColumns._ID), null, null, null)
+                            .query(uriString.toUri(), arrayOf(MediaStore.MediaColumns._ID), null, null, null)
                             ?.use { cursor ->
                                 if (cursor.moveToFirst()) {
                                     add(uriString)

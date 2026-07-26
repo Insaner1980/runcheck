@@ -8,6 +8,7 @@ import android.os.Build
 import android.provider.MediaStore
 import android.util.LruCache
 import android.util.Size
+import androidx.core.net.toUri
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -46,7 +47,7 @@ suspend fun loadCleanupThumbnail(
         CleanupThumbnailCache.thumbnails.get(cacheKey)?.let { return@withContext it }
 
         try {
-            val uri = Uri.parse(uriString)
+            val uri = uriString.toUri()
             val bitmap =
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     context.contentResolver.loadThumbnail(uri, Size(sizePx, sizePx), null)

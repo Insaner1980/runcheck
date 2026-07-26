@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.PowerManager
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.ScreenUsageStats
 import com.runcheck.domain.model.SleepAnalysis
@@ -221,21 +222,20 @@ class ScreenStateTracker
         }
 
         private fun persistState(state: PersistedState) {
-            prefs
-                .edit()
-                .putBoolean(KEY_SCREEN_ON, state.screenOn)
-                .putLong(KEY_LAST_TRANSITION_TIME, state.lastTransitionTime)
-                .putInt(KEY_LAST_TRANSITION_LEVEL, state.lastTransitionLevel ?: INVALID_LEVEL)
-                .putLong(KEY_SCREEN_ON_DURATION_MS, state.screenOnDurationMs)
-                .putLong(KEY_SCREEN_OFF_DURATION_MS, state.screenOffDurationMs)
-                .putFloat(KEY_SCREEN_ON_DRAIN_PCT, state.screenOnDrainPct)
-                .putFloat(KEY_SCREEN_OFF_DRAIN_PCT, state.screenOffDrainPct)
-                .putLong(KEY_DEEP_SLEEP_DURATION_MS, state.deepSleepDurationMs)
-                .putLong(KEY_HELD_AWAKE_DURATION_MS, state.heldAwakeDurationMs)
-                .putLong(KEY_LAST_IDLE_CHECK_TIME, state.lastIdleCheckTime)
-                .putBoolean(KEY_LAST_IDLE_STATE, state.lastIdleState)
-                .putString(KEY_LAST_CHARGING_STATUS, state.lastChargingStatus.name)
-                .apply()
+            prefs.edit {
+                putBoolean(KEY_SCREEN_ON, state.screenOn)
+                putLong(KEY_LAST_TRANSITION_TIME, state.lastTransitionTime)
+                putInt(KEY_LAST_TRANSITION_LEVEL, state.lastTransitionLevel ?: INVALID_LEVEL)
+                putLong(KEY_SCREEN_ON_DURATION_MS, state.screenOnDurationMs)
+                putLong(KEY_SCREEN_OFF_DURATION_MS, state.screenOffDurationMs)
+                putFloat(KEY_SCREEN_ON_DRAIN_PCT, state.screenOnDrainPct)
+                putFloat(KEY_SCREEN_OFF_DRAIN_PCT, state.screenOffDrainPct)
+                putLong(KEY_DEEP_SLEEP_DURATION_MS, state.deepSleepDurationMs)
+                putLong(KEY_HELD_AWAKE_DURATION_MS, state.heldAwakeDurationMs)
+                putLong(KEY_LAST_IDLE_CHECK_TIME, state.lastIdleCheckTime)
+                putBoolean(KEY_LAST_IDLE_STATE, state.lastIdleState)
+                putString(KEY_LAST_CHARGING_STATUS, state.lastChargingStatus.name)
+            }
         }
 
         private fun createInitialState(

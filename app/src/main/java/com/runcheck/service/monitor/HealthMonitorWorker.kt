@@ -1,10 +1,12 @@
 package com.runcheck.service.monitor
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.runcheck.domain.model.BatteryState
+import com.runcheck.domain.model.MonitoringHeartbeat
 import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
@@ -144,7 +146,7 @@ class HealthMonitorWorker
             } || coreFailure
 
             if (!coreFailure) {
-                recordSuccessfulWorkerHeartbeat()
+                recordSuccessfulWorkerHeartbeat(preferences.monitoringInterval.minutes)
             }
 
             return if (coreFailure) resultForCoreFailure() else Result.success()
@@ -161,9 +163,15 @@ class HealthMonitorWorker
             return Result.success()
         }
 
-        private suspend fun recordSuccessfulWorkerHeartbeat() {
+        private suspend fun recordSuccessfulWorkerHeartbeat(intervalMinutes: Int) {
             try {
-                monitoringStatusRepository.setLastWorkerHeartbeatAt(System.currentTimeMillis())
+                monitoringStatusRepository.setLastWorkerHeartbeat(
+                    MonitoringHeartbeat(
+                        recordedAtEpochMillis = System.currentTimeMillis(),
+                        recordedAtUptimeMillis = SystemClock.uptimeMillis(),
+                        intervalMinutes = intervalMinutes,
+                    ),
+                )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

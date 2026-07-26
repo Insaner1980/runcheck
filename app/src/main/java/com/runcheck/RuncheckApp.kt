@@ -69,7 +69,7 @@ class RuncheckApp :
         // Update widgets when pro status changes
         launchSafely(dispatchers.default, "widget updates") {
             proManager.get().isProUser.distinctUntilChanged().collect {
-                RuncheckWidgets.updateAll(this@RuncheckApp)
+                updateWidgetsAfterProStateChange()
             }
         }
     }
@@ -103,6 +103,17 @@ class RuncheckApp :
             } catch (e: Exception) {
                 ReleaseSafeLog.error(TAG, "Application coroutine failed: $taskName", e)
             }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun updateWidgetsAfterProStateChange() {
+        try {
+            RuncheckWidgets.updateAll(this@RuncheckApp)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            ReleaseSafeLog.error(TAG, "Widget refresh failed after Pro state change", e)
         }
     }
 

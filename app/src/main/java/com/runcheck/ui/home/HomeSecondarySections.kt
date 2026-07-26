@@ -12,13 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.DataUsage
-import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.SignalCellularAlt
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.Star
@@ -35,7 +32,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
-import com.runcheck.pro.ProStatus
 import com.runcheck.ui.common.connectionDisplayLabel
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.formatTemperature
@@ -328,11 +324,8 @@ private fun HomeAppUsageQuickToolRow(
 }
 
 @Composable
-internal fun HomeProStatusSection(
-    proStatus: ProStatus,
-    onNavigateToProUpgrade: () -> Unit,
-) {
-    if (proStatus == ProStatus.PRO_PURCHASED) {
+internal fun HomeProStatusSection(visible: Boolean) {
+    if (visible) {
         Card(
             shape = MaterialTheme.shapes.large,
             colors = runcheckCardColors(),
@@ -362,45 +355,6 @@ internal fun HomeProStatusSection(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            }
-        }
-    } else if (proStatus == ProStatus.TRIAL_EXPIRED) {
-        Card(
-            onClick = onNavigateToProUpgrade,
-            shape = MaterialTheme.shapes.large,
-            colors = runcheckCardColors(),
-            elevation = runcheckCardElevation(),
-        ) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                IconCircle(
-                    icon = Icons.Outlined.Lock,
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.home_pro_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = stringResource(R.string.home_pro_history_desc),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
         }
     }

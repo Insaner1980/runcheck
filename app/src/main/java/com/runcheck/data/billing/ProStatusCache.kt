@@ -1,6 +1,7 @@
 package com.runcheck.data.billing
 
 import android.content.Context
+import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,7 +23,7 @@ class ProStatusCache
         fun getCachedProStatus(): Boolean = prefs.getBoolean(KEY_IS_PRO, false)
 
         fun setCachedProStatus(isPro: Boolean) {
-            prefs.edit().putBoolean(KEY_IS_PRO, isPro).apply()
+            prefs.edit { putBoolean(KEY_IS_PRO, isPro) }
         }
 
         companion object {

@@ -220,6 +220,30 @@ class GetChargerComparisonUseCaseTest {
         }
 
     @Test
+    fun `session ending before it started is excluded from time estimate`() =
+        runTest {
+            every { proStatusProvider.isPro() } returns true
+            every { chargerRepository.getChargerProfiles() } returns
+                flowOf(listOf(charger(1L, "Clock change")))
+            every { chargerRepository.getAllSessions() } returns
+                flowOf(
+                    listOf(
+                        session(
+                            chargerId = 1L,
+                            startTime = 10_000L,
+                            endTime = 5_000L,
+                            startLevel = 20,
+                            endLevel = 80,
+                        ),
+                    ),
+                )
+
+            val result = createUseCase().invoke().first()
+
+            assertNull(result.single().avgTimeToFullMinutes)
+        }
+
+    @Test
     fun `no sessions for a charger shows zero session count`() =
         runTest {
             every { proStatusProvider.isPro() } returns true

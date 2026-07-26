@@ -257,4 +257,6 @@ private class FakeChargerRepository(
     override suspend fun getActiveSession(): ChargingSession? = null
 
     override suspend fun deleteSessionsOlderThan(cutoff: Long) = Unit
+
+    override suspend fun deleteAll() = Unit
 }

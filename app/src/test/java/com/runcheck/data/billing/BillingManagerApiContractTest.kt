@@ -37,6 +37,42 @@ class BillingManagerApiContractTest {
     }
 
     @Test
+    fun `initialization keeps one BillingClient while connection is in progress`() {
+        assertTrue(
+            "Repeated initialization should reuse the existing BillingClient instead of registering another purchase listener",
+            billingManagerSource.contains("@Synchronized\n        fun initialize()") &&
+                billingManagerSource.contains("if (billingClient != null)"),
+        )
+    }
+
+    @Test
+    fun `purchase refresh can trigger automatic service reconnection`() {
+        val queryFunction =
+            billingManagerSource
+                .substringAfter("private suspend fun queryExistingPurchases()")
+                .substringBefore("private suspend fun queryProductDetails()")
+
+        assertFalse(
+            "queryPurchasesAsync must be called while disconnected so BillingClient auto reconnection can run",
+            queryFunction.contains("!client.isReady"),
+        )
+        assertTrue(
+            "A refresh may defer while the initial BillingClient connection is still being established",
+            queryFunction.contains("BillingClient.ConnectionState.CONNECTING"),
+        )
+        assertTrue(queryFunction.contains("client.queryPurchasesAsync(params)"))
+    }
+
+    @Test
+    fun `only one fallback reconnect can be scheduled at a time`() {
+        assertTrue(
+            "Concurrent Billing failures should not queue competing BillingClient replacements",
+            billingManagerSource.contains("@Synchronized\n        private fun scheduleReconnect()") &&
+                billingManagerSource.contains("if (reconnectJob?.isActive == true) return"),
+        )
+    }
+
+    @Test
     fun `production BillingManager does not suppress all Billing deprecations`() {
         assertFalse(
             "BillingManager should not hide future Billing API drift with a class-level DEPRECATION suppression",

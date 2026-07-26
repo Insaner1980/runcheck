@@ -1,5 +1,6 @@
 package com.runcheck.data.device
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.BatteryManager
 import android.os.Build
@@ -87,6 +88,7 @@ class DeviceCapabilityManager
             readings: List<Int>,
         ): SignConvention = Companion.inferSignConvention(isCharging, readings)
 
+        @SuppressLint("InlinedApi")
         private fun detectCycleCountAvailability(apiLevel: Int): Boolean {
             if (apiLevel < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return false
             val batteryIntent = BatteryIntentReader.readBatteryChangedStickyIntent(context)

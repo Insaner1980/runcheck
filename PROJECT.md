@@ -422,7 +422,7 @@ Trial and Pro UI handled on Home:
 - Purchased Pro status card
 - Top-level Insights summary available to all users, with the full list available from the dedicated Insights screen
 - Insight targets for Pro-only destinations such as Charger Comparison and App Usage are hidden for free users and visible for trial/Pro users
-- Monitoring stale state is derived from the last worker heartbeat and becomes stale after more than 3x the configured monitoring interval.
+- Monitoring stale state is derived from the last worker heartbeat and becomes stale after more than 3x the longer of the heartbeat's interval and the current interval, measured in awake uptime so deep-sleep gaps do not trigger the banner.
 - Home marks only its currently displayed unseen insight rows as seen through `InsightRepository.markSeen(ids)`.
 
 ---
@@ -774,8 +774,8 @@ Persistence technologies:
 - Room migrations are explicitly registered from 1→2 through 9→10
 - A destructive migration callback logs debug-only and records `destructive_migration_occurred` in `runcheck_db_events`
 - DataStore `settings` for user preferences, dismissed info cards, selected charger, and app-usage collection timestamp
-- DataStore `trial_state` for trial start, last-known timestamp, welcome/day-5 prompt state, and upgrade-card dismissal pacing
-- DataStore `monitoring_status` for the last successful periodic worker heartbeat
+- DataStore `trial_state` for trial start, last-known timestamp, welcome/day-5/expiration prompt state, and upgrade-card dismissal pacing
+- DataStore `monitoring_status` for the last successful periodic worker heartbeat's wall time, awake uptime, and monitoring interval
 - DataStore `monitoring_alert_state` for the previous alert snapshot and charge-complete debounce state
 - SharedPreferences `pro_status_cache` for synchronous cached purchase status during release cold start
 
@@ -950,7 +950,8 @@ Single dark theme — no light mode, no AMOLED toggle, no dynamic colors.
 | AccentTeal | `#5DE4C7` | `secondary` | Healthy status, positive values |
 | AccentAmber | `#E8C44A` | `tertiary` | Fair status, warnings |
 | AccentOrange | `#F5963A` | — | Poor status |
-| AccentRed | `#F06040` | `error` | Critical status, destructive actions |
+| AccentRed | `#F06040` | `error` | Error text and destructive actions |
+| StatusCritical | `#F66A4C` | — | Critical status text and indicators on cards |
 | AccentLime | `#C8E636` | — | Storage video category |
 | AccentYellow | `#F5D03A` | — | Storage audio category |
 
@@ -972,7 +973,7 @@ Used via `MaterialTheme.statusColors` extension. Always paired with icons or tex
 | Healthy | AccentTeal `#5DE4C7` | Battery ≥75%, Temp <35°C, Storage <75%, Signal Excellent/Good |
 | Fair | AccentAmber `#E8C44A` | Battery 50–74%, Temp 35–39°C, Storage 75–84%, Signal Fair |
 | Poor | AccentOrange `#F5963A` | Battery 25–49%, Temp 40–44°C, Storage 85–94%, Signal Poor |
-| Critical | AccentRed `#F06040` | Battery <25%, Temp ≥45°C, Storage ≥95%, No Signal |
+| Critical | StatusCritical `#F66A4C` | Battery <25%, Temp ≥45°C, Storage ≥95%, No Signal |
 
 **Confidence badges:**
 

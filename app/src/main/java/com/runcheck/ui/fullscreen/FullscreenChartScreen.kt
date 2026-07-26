@@ -1,5 +1,6 @@
 package com.runcheck.ui.fullscreen
 
+import android.content.pm.ActivityInfo
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,9 +31,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
@@ -55,6 +58,7 @@ import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.chart.sessionGraphMetricLabel
 import com.runcheck.ui.chart.sessionGraphWindowLabel
 import com.runcheck.ui.chart.signalQualityZones
+import com.runcheck.ui.common.findActivity
 import com.runcheck.ui.components.ProFeatureLockedState
 import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.components.TrendChartPresentation
@@ -76,6 +80,14 @@ fun FullscreenChartScreen(
     onSelectionChange: (source: String, metric: String, period: String) -> Unit = { _, _, _ -> },
     viewModel: FullscreenChartViewModel = hiltViewModel(),
 ) {
+    val activity = LocalContext.current.findActivity()
+    DisposableEffect(activity) {
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        onDispose {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+    }
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val title =
@@ -354,6 +366,7 @@ private fun FullscreenChartContent(
             yLabels = state.yLabels.ifEmpty { null },
             xLabels = state.xLabels.ifEmpty { null },
             showGrid = true,
+            lineBreakIndices = state.lineBreakIndices,
             qualityZones = qualityZones,
             tooltipFormatter = { index ->
                 formatChartTooltip(

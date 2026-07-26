@@ -303,6 +303,7 @@ private fun ChartRenderModel.toFullscreenUiState(
         FullscreenChartUiState.Success(
             chartData = chartData,
             chartTimestamps = chartTimestamps,
+            lineBreakIndices = lineBreakIndices,
             unit = unit,
             selectedMetric = selectedMetric,
             selectedPeriod = selectedPeriod,
@@ -348,6 +349,7 @@ sealed interface FullscreenChartUiState {
     data class Success(
         val chartData: List<Float>,
         val chartTimestamps: List<Long>,
+        val lineBreakIndices: Set<Int> = emptySet(),
         val unit: String,
         override val selectedMetric: String,
         override val selectedPeriod: String,

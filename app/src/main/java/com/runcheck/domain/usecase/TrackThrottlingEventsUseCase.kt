@@ -28,17 +28,20 @@ class TrackThrottlingEventsUseCase
         private val mutex = Mutex()
         private var activeEvent: ActiveThrottlingEvent? = null
 
-        suspend operator fun invoke(state: ThermalState) {
+        suspend operator fun invoke(
+            state: ThermalState,
+            wallClockMillis: Long = System.currentTimeMillis(),
+            elapsedRealtimeMillis: Long = System.nanoTime() / NANOS_PER_MILLISECOND,
+        ) {
             mutex.withLock {
                 val current = activeEvent ?: restoreOpenEvent()
                 when {
                     // Start new event
                     state.thermalStatus >= THROTTLING_THRESHOLD && current == null -> {
-                        val startTimeMs = System.currentTimeMillis()
                         val eventId =
                             throttlingRepository.insert(
                                 ThrottlingEvent(
-                                    timestamp = startTimeMs,
+                                    timestamp = wallClockMillis,
                                     thermalStatus = state.thermalStatus.name,
                                     batteryTempC = state.batteryTempC,
                                     cpuTempC = state.cpuTempC,
@@ -49,7 +52,8 @@ class TrackThrottlingEventsUseCase
                         activeEvent =
                             ActiveThrottlingEvent(
                                 id = eventId,
-                                startTimeMs = startTimeMs,
+                                startTimeMs = wallClockMillis,
+                                startElapsedRealtimeMs = elapsedRealtimeMillis,
                                 peakStatus = state.thermalStatus,
                             )
                     }
@@ -72,9 +76,7 @@ class TrackThrottlingEventsUseCase
                     state.thermalStatus < THROTTLING_THRESHOLD && current != null -> {
                         throttlingRepository.updateDuration(
                             id = current.id,
-                            durationMs =
-                                (System.currentTimeMillis() - current.startTimeMs)
-                                    .coerceAtLeast(0L),
+                            durationMs = current.durationUntil(wallClockMillis, elapsedRealtimeMillis),
                         )
                         activeEvent = null
                     }
@@ -87,6 +89,7 @@ class TrackThrottlingEventsUseCase
                 ActiveThrottlingEvent(
                     id = event.id,
                     startTimeMs = event.timestamp,
+                    startElapsedRealtimeMs = null,
                     peakStatus = ThermalStatus.valueOf(event.thermalStatus),
                 ).also { activeEvent = it }
             }
@@ -94,8 +97,18 @@ class TrackThrottlingEventsUseCase
         private data class ActiveThrottlingEvent(
             val id: Long,
             val startTimeMs: Long,
+            val startElapsedRealtimeMs: Long?,
             val peakStatus: ThermalStatus,
-        )
+        ) {
+            fun durationUntil(
+                wallClockMillis: Long,
+                elapsedRealtimeMillis: Long,
+            ): Long =
+                startElapsedRealtimeMs
+                    ?.let { start -> elapsedRealtimeMillis - start }
+                    ?.coerceAtLeast(0L)
+                    ?: (wallClockMillis - startTimeMs).coerceAtLeast(0L)
+        }
 
         /**
          * Abstraction for obtaining the current foreground app,
@@ -107,5 +120,6 @@ class TrackThrottlingEventsUseCase
 
         private companion object {
             val THROTTLING_THRESHOLD = ThermalStatus.SEVERE
+            const val NANOS_PER_MILLISECOND = 1_000_000L
         }
     }
