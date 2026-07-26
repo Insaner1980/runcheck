@@ -13,6 +13,7 @@ import com.runcheck.domain.repository.StorageRepository
 import com.runcheck.domain.repository.ThermalRepository
 import com.runcheck.domain.repository.ThrottlingRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 
 class ClearMonitoringDataUseCase
@@ -48,9 +49,9 @@ class ClearMonitoringDataUseCase
             var cleanupFailure: Throwable? = null
 
             suspend fun attemptCleanup(block: suspend () -> Unit) {
-                runCatching { block() }.exceptionOrNull()?.let { error ->
-                    cleanupFailure?.addSuppressed(error) ?: run { cleanupFailure = error }
-                }
+                val error = runCatching { block() }.exceptionOrNull() ?: return
+                if (error is CancellationException) throw error
+                cleanupFailure?.addSuppressed(error) ?: run { cleanupFailure = error }
             }
 
             attemptCleanup { userPreferencesRepository.clearMonitoringDataState() }

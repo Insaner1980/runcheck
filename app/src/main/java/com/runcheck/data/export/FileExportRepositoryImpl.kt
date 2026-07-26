@@ -47,8 +47,11 @@ class FileExportRepositoryImpl
                             exportDir.toPath(),
                             StandardCopyOption.ATOMIC_MOVE,
                         )
+                        val staleExportCutoffMillis = System.currentTimeMillis() - STALE_EXPORT_TTL_MS
                         exportRoot.listFiles()?.forEach { cached ->
-                            if (cached != exportDir) cached.deleteRecursively()
+                            if (cached != exportDir && cached.lastModified() < staleExportCutoffMillis) {
+                                cached.deleteRecursively()
+                            }
                         }
                         val exportUris =
                             files.keys.map { fileName ->
@@ -80,6 +83,7 @@ class FileExportRepositoryImpl
 
         private companion object {
             private const val EXPORT_DIR_NAME = "exports"
+            private const val STALE_EXPORT_TTL_MS = 15 * 60 * 1000L
         }
     }
 

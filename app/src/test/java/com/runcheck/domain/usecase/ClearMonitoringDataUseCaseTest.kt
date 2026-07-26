@@ -16,6 +16,7 @@ import com.runcheck.domain.repository.UserPreferencesRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertSame
 import org.junit.Before
@@ -115,5 +116,18 @@ class ClearMonitoringDataUseCaseTest {
             assertSame(preferenceFailure, thrown)
             coVerify(exactly = 1) { monitoringStatusRepository.clearLastWorkerHeartbeat() }
             coVerify(exactly = 1) { fileExportRepository.clearPreparedExports() }
+        }
+
+    @Test
+    fun `stops independent cleanup immediately when cancelled`() =
+        runTest {
+            val cancellation = CancellationException("cancelled")
+            coEvery { userPreferencesRepository.clearMonitoringDataState() } throws cancellation
+
+            val thrown = runCatching { useCase() }.exceptionOrNull()
+
+            assertSame(cancellation, thrown)
+            coVerify(exactly = 0) { monitoringStatusRepository.clearLastWorkerHeartbeat() }
+            coVerify(exactly = 0) { fileExportRepository.clearPreparedExports() }
         }
 }
