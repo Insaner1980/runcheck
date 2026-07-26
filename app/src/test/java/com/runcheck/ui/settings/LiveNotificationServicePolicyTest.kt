@@ -9,6 +9,7 @@ class LiveNotificationServicePolicyTest {
         assertEquals(
             LiveNotificationServiceAction.START,
             resolveLiveNotificationServiceAction(
+                preferencesLoaded = true,
                 enabled = true,
                 canPostNotifications = true,
                 isRunning = false,
@@ -17,6 +18,7 @@ class LiveNotificationServicePolicyTest {
         assertEquals(
             LiveNotificationServiceAction.NONE,
             resolveLiveNotificationServiceAction(
+                preferencesLoaded = true,
                 enabled = true,
                 canPostNotifications = false,
                 isRunning = false,
@@ -29,6 +31,7 @@ class LiveNotificationServicePolicyTest {
         assertEquals(
             LiveNotificationServiceAction.STOP,
             resolveLiveNotificationServiceAction(
+                preferencesLoaded = true,
                 enabled = false,
                 canPostNotifications = true,
                 isRunning = true,
@@ -37,8 +40,49 @@ class LiveNotificationServicePolicyTest {
         assertEquals(
             LiveNotificationServiceAction.STOP,
             resolveLiveNotificationServiceAction(
+                preferencesLoaded = true,
                 enabled = true,
                 canPostNotifications = false,
+                isRunning = true,
+            ),
+        )
+        assertEquals(
+            LiveNotificationServiceAction.NONE,
+            resolveLiveNotificationServiceAction(
+                preferencesLoaded = true,
+                enabled = true,
+                canPostNotifications = true,
+                isRunning = true,
+            ),
+        )
+        assertEquals(
+            LiveNotificationServiceAction.NONE,
+            resolveLiveNotificationServiceAction(
+                preferencesLoaded = true,
+                enabled = false,
+                canPostNotifications = true,
+                isRunning = false,
+            ),
+        )
+        assertEquals(
+            LiveNotificationServiceAction.NONE,
+            resolveLiveNotificationServiceAction(
+                preferencesLoaded = true,
+                enabled = true,
+                canPostNotifications = false,
+                isRunning = false,
+            ),
+        )
+    }
+
+    @Test
+    fun `unloaded preferences never reconcile the running service`() {
+        assertEquals(
+            LiveNotificationServiceAction.NONE,
+            resolveLiveNotificationServiceAction(
+                preferencesLoaded = false,
+                enabled = false,
+                canPostNotifications = true,
                 isRunning = true,
             ),
         )

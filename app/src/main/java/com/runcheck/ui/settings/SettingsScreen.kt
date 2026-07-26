@@ -108,11 +108,13 @@ internal enum class LiveNotificationServiceAction {
 }
 
 internal fun resolveLiveNotificationServiceAction(
+    preferencesLoaded: Boolean,
     enabled: Boolean,
     canPostNotifications: Boolean,
     isRunning: Boolean,
 ): LiveNotificationServiceAction =
     when {
+        !preferencesLoaded -> LiveNotificationServiceAction.NONE
         enabled && canPostNotifications && !isRunning -> LiveNotificationServiceAction.START
         (!enabled || !canPostNotifications) && isRunning -> LiveNotificationServiceAction.STOP
         else -> LiveNotificationServiceAction.NONE
@@ -161,14 +163,15 @@ fun SettingsScreen(
         )
     }
 
-    LifecycleResumeEffect(context, uiState.preferences.liveNotificationEnabled) {
+    LifecycleResumeEffect(context, uiState.preferencesLoaded, uiState.preferences.liveNotificationEnabled) {
         val canPostNotifications = RuncheckPermissionPolicy.canPostNotifications(context)
         hasNotificationPermission = canPostNotifications
-        if (!canPostNotifications && uiState.preferences.liveNotificationEnabled) {
+        if (uiState.preferencesLoaded && !canPostNotifications && uiState.preferences.liveNotificationEnabled) {
             viewModel.setLiveNotificationEnabled(false)
         }
         when (
             resolveLiveNotificationServiceAction(
+                preferencesLoaded = uiState.preferencesLoaded,
                 enabled = uiState.preferences.liveNotificationEnabled,
                 canPostNotifications = canPostNotifications,
                 isRunning = RealTimeMonitorService.isRunning,

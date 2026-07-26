@@ -14,6 +14,7 @@ class MonitoringFreshnessPolicyTest {
                 heartbeat = heartbeat,
                 currentIntervalMinutes = 15,
                 currentUptimeMillis = 1_000L + minutes(46),
+                currentEpochMillis = 1_000L,
             ),
         )
     }
@@ -27,6 +28,7 @@ class MonitoringFreshnessPolicyTest {
                 heartbeat = heartbeat,
                 currentIntervalMinutes = 15,
                 currentUptimeMillis = 1_000L + minutes(180) + 1L,
+                currentEpochMillis = 1_000L,
             ),
         )
     }
@@ -40,6 +42,7 @@ class MonitoringFreshnessPolicyTest {
                 heartbeat = heartbeat,
                 currentIntervalMinutes = 15,
                 currentUptimeMillis = 1_000L + minutes(20),
+                currentEpochMillis = 1_000L,
             ),
         )
     }
@@ -53,6 +56,7 @@ class MonitoringFreshnessPolicyTest {
                 heartbeat = heartbeat,
                 currentIntervalMinutes = 15,
                 currentUptimeMillis = 1_000L + minutes(45) + 1L,
+                currentEpochMillis = 1_000L,
             ),
         )
     }
@@ -64,19 +68,21 @@ class MonitoringFreshnessPolicyTest {
                 heartbeat = null,
                 currentIntervalMinutes = 15,
                 currentUptimeMillis = minutes(60),
+                currentEpochMillis = minutes(60),
             ),
         )
     }
 
     @Test
-    fun `heartbeat from a previous boot is not treated as confirmed stale`() {
+    fun `heartbeat from a previous boot uses wall clock age`() {
         val heartbeat = heartbeat(uptimeMillis = minutes(60), intervalMinutes = 15)
 
-        assertFalse(
+        assertTrue(
             MonitoringFreshnessPolicy.isStale(
                 heartbeat = heartbeat,
                 currentIntervalMinutes = 15,
                 currentUptimeMillis = minutes(5),
+                currentEpochMillis = heartbeat.recordedAtEpochMillis + minutes(45) + 1L,
             ),
         )
     }

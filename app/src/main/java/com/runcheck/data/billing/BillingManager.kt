@@ -134,9 +134,11 @@ class BillingManager
                     override fun onBillingSetupFinished(billingResult: BillingResult) {
                         when (billingResult.responseCode) {
                             BillingClient.BillingResponseCode.OK -> {
-                                reconnectAttempts = 0
-                                reconnectJob?.cancel()
-                                reconnectJob = null
+                                synchronized(this@BillingManager) {
+                                    reconnectAttempts = 0
+                                    reconnectJob?.cancel()
+                                    reconnectJob = null
+                                }
                                 _billingAvailable.value = true
                                 scope.launch {
                                     queryExistingPurchases()
@@ -453,7 +455,9 @@ class BillingManager
                 reconnectJob =
                     scope.launch {
                         delay(delayMs)
-                        reconnectJob = null
+                        synchronized(this@BillingManager) {
+                            reconnectJob = null
+                        }
                         reconnect()
                     }
             } else {
@@ -477,6 +481,7 @@ class BillingManager
             return if (messageRes != null) context.getString(messageRes) else fallback
         }
 
+        @Synchronized
         fun destroy() {
             reconnectJob?.cancel()
             reconnectJob = null

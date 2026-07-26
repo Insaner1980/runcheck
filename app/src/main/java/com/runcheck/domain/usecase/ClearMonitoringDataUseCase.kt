@@ -6,6 +6,7 @@ import com.runcheck.domain.repository.ChargerRepository
 import com.runcheck.domain.repository.DatabaseTransactionRunner
 import com.runcheck.domain.repository.FileExportRepository
 import com.runcheck.domain.repository.InsightRepository
+import com.runcheck.domain.repository.MonitoringStatusRepository
 import com.runcheck.domain.repository.NetworkRepository
 import com.runcheck.domain.repository.SpeedTestRepository
 import com.runcheck.domain.repository.StorageRepository
@@ -28,6 +29,7 @@ class ClearMonitoringDataUseCase
         private val insightRepository: InsightRepository,
         private val chargerRepository: ChargerRepository,
         private val userPreferencesRepository: UserPreferencesRepository,
+        private val monitoringStatusRepository: MonitoringStatusRepository,
         private val fileExportRepository: FileExportRepository,
     ) {
         suspend operator fun invoke() {
@@ -42,7 +44,18 @@ class ClearMonitoringDataUseCase
                 insightRepository.clearAll()
                 chargerRepository.deleteAll()
             }
-            userPreferencesRepository.clearMonitoringDataState()
-            fileExportRepository.clearPreparedExports()
+
+            var cleanupFailure: Throwable? = null
+
+            suspend fun attemptCleanup(block: suspend () -> Unit) {
+                runCatching { block() }.exceptionOrNull()?.let { error ->
+                    cleanupFailure?.addSuppressed(error) ?: run { cleanupFailure = error }
+                }
+            }
+
+            attemptCleanup { userPreferencesRepository.clearMonitoringDataState() }
+            attemptCleanup { monitoringStatusRepository.clearLastWorkerHeartbeat() }
+            attemptCleanup { fileExportRepository.clearPreparedExports() }
+            cleanupFailure?.let { throw it }
         }
     }

@@ -58,6 +58,12 @@ class MonitoringStatusRepositoryImpl
             }
         }
 
+        override suspend fun clearLastWorkerHeartbeat() {
+            context.monitoringStatusDataStore.edit { prefs ->
+                prefs.clear()
+            }
+        }
+
         private companion object {
             val KEY_LAST_WORKER_HEARTBEAT_AT = longPreferencesKey("last_worker_heartbeat_at")
             val KEY_LAST_WORKER_HEARTBEAT_UPTIME = longPreferencesKey("last_worker_heartbeat_uptime")

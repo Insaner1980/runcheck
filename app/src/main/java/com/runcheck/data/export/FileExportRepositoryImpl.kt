@@ -5,6 +5,8 @@ import androidx.core.content.FileProvider
 import com.runcheck.domain.repository.FileExportRepository
 import com.runcheck.util.AppDispatchers
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.file.Files
@@ -20,53 +22,59 @@ class FileExportRepositoryImpl
         @param:ApplicationContext private val context: Context,
         private val dispatchers: AppDispatchers,
     ) : FileExportRepository {
+        private val cacheMutex = Mutex()
+
         override suspend fun prepareExportShare(files: Map<String, String>): List<String> =
             withContext(dispatchers.io) {
-                val exportRoot =
-                    File(context.cacheDir, EXPORT_DIR_NAME).apply {
-                        check(mkdirs() || isDirectory) { "Could not create export cache directory" }
-                    }
-                val exportId = UUID.randomUUID().toString()
-                val stagingDir = File(exportRoot, ".staging_$exportId")
-                val exportDir = File(exportRoot, "export_$exportId")
-                var exportPrepared = false
-
-                try {
-                    check(stagingDir.mkdir()) { "Could not create export staging directory" }
-                    files.forEach { (fileName, content) ->
-                        requireSafeExportFileName(fileName)
-                        File(stagingDir, fileName).writeText(content, Charsets.UTF_8)
-                    }
-                    Files.move(
-                        stagingDir.toPath(),
-                        exportDir.toPath(),
-                        StandardCopyOption.ATOMIC_MOVE,
-                    )
-                    exportRoot.listFiles()?.forEach { cached ->
-                        if (cached != exportDir) cached.deleteRecursively()
-                    }
-                    val exportUris =
-                        files.keys.map { fileName ->
-                            FileProvider
-                                .getUriForFile(
-                                    context,
-                                    "${context.packageName}.fileprovider",
-                                    File(exportDir, fileName),
-                                ).toString()
+                cacheMutex.withLock {
+                    val exportRoot =
+                        File(context.cacheDir, EXPORT_DIR_NAME).apply {
+                            check(mkdirs() || isDirectory) { "Could not create export cache directory" }
                         }
-                    exportPrepared = true
-                    exportUris
-                } finally {
-                    if (!exportPrepared) {
-                        stagingDir.deleteRecursively()
-                        exportDir.deleteRecursively()
+                    val exportId = UUID.randomUUID().toString()
+                    val stagingDir = File(exportRoot, ".staging_$exportId")
+                    val exportDir = File(exportRoot, "export_$exportId")
+                    var exportPrepared = false
+
+                    try {
+                        check(stagingDir.mkdir()) { "Could not create export staging directory" }
+                        files.forEach { (fileName, content) ->
+                            requireSafeExportFileName(fileName)
+                            File(stagingDir, fileName).writeText(content, Charsets.UTF_8)
+                        }
+                        Files.move(
+                            stagingDir.toPath(),
+                            exportDir.toPath(),
+                            StandardCopyOption.ATOMIC_MOVE,
+                        )
+                        exportRoot.listFiles()?.forEach { cached ->
+                            if (cached != exportDir) cached.deleteRecursively()
+                        }
+                        val exportUris =
+                            files.keys.map { fileName ->
+                                FileProvider
+                                    .getUriForFile(
+                                        context,
+                                        "${context.packageName}.fileprovider",
+                                        File(exportDir, fileName),
+                                    ).toString()
+                            }
+                        exportPrepared = true
+                        exportUris
+                    } finally {
+                        if (!exportPrepared) {
+                            stagingDir.deleteRecursively()
+                            exportDir.deleteRecursively()
+                        }
                     }
                 }
             }
 
         override suspend fun clearPreparedExports() {
             withContext(dispatchers.io) {
-                File(context.cacheDir, EXPORT_DIR_NAME).deleteRecursively()
+                cacheMutex.withLock {
+                    File(context.cacheDir, EXPORT_DIR_NAME).deleteRecursively()
+                }
             }
         }
 

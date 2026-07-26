@@ -74,7 +74,10 @@ class HealthMonitorWorkerTest {
             assertEquals(ListenableWorker.Result.success(), result)
             coVerify(exactly = 1) {
                 monitoringStatusRepository.setLastWorkerHeartbeat(
-                    match { it.intervalMinutes == UserPreferences().monitoringInterval.minutes },
+                    match {
+                        it.intervalMinutes == UserPreferences().monitoringInterval.minutes &&
+                            it.recordedAtUptimeMillis == 1_000L
+                    },
                 )
             }
             coVerify(exactly = 1) { batteryRepository.saveReading(sampleBatteryState) }

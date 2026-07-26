@@ -8,11 +8,15 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -395,8 +399,22 @@ private fun ProRouteGate(
 ) {
     val currentOnRedirect by rememberUpdatedState(onRedirect)
     when (resolveProRoute(route, proAccessReady, isPro)) {
-        route -> content()
-        Screen.ProUpgrade.route -> LaunchedEffect(route) { currentOnRedirect() }
+        route -> {
+            content()
+        }
+
+        Screen.ProUpgrade.route -> {
+            LaunchedEffect(route) { currentOnRedirect() }
+        }
+
+        null -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+        }
     }
 }
 

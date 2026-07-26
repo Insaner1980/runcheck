@@ -35,6 +35,7 @@ import com.runcheck.pro.ProState
 import com.runcheck.pro.ProStateProvider
 import com.runcheck.pro.ProStatus
 import com.runcheck.pro.TrialManager
+import com.runcheck.pro.TrialPresentationState
 import com.runcheck.ui.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -79,6 +80,7 @@ class HomeViewModelTest {
 
     private val proStateFlow = MutableStateFlow(ProState())
     private val proAccessReadyFlow = MutableStateFlow(true)
+    private val trialPresentationFlow = MutableStateFlow(TrialPresentationState())
 
     private lateinit var viewModel: HomeViewModel
 
@@ -132,6 +134,7 @@ class HomeViewModelTest {
         every { insightRepository.getUnseenCount() } returns flowOf(0)
         every { proStateProvider.proState } returns proStateFlow
         every { proStateProvider.proAccessReady } returns proAccessReadyFlow
+        every { trialManager.observePresentationState() } returns trialPresentationFlow
         every { manageUserPreferences.observePreferences() } returns flowOf(UserPreferences())
         every { monitoringStatusRepository.observeLastWorkerHeartbeat() } returns
             flowOf(
@@ -141,7 +144,6 @@ class HomeViewModelTest {
                     intervalMinutes = UserPreferences().monitoringInterval.minutes,
                 ),
             )
-        coEvery { trialManager.isExpirationModalShown() } returns false
     }
 
     @After
@@ -234,8 +236,11 @@ class HomeViewModelTest {
                     trialDaysRemaining = 2,
                     trialStartTimestamp = System.currentTimeMillis() - 5L * 24 * 60 * 60 * 1000,
                 )
-            coEvery { trialManager.isWelcomeShown() } returns true
-            coEvery { trialManager.isDay5PromptShown() } returns true
+            trialPresentationFlow.value =
+                TrialPresentationState(
+                    welcomeShown = true,
+                    day5PromptShown = true,
+                )
 
             viewModel = createViewModel()
             viewModel.startObserving()
@@ -258,8 +263,7 @@ class HomeViewModelTest {
                     trialDaysRemaining = 2,
                     trialStartTimestamp = System.currentTimeMillis() - 5L * 24 * 60 * 60 * 1000,
                 )
-            coEvery { trialManager.isWelcomeShown() } returns true
-            coEvery { trialManager.isDay5PromptShown() } returns false
+            trialPresentationFlow.value = TrialPresentationState(welcomeShown = true)
 
             viewModel = createViewModel()
             viewModel.startObserving()
@@ -280,8 +284,7 @@ class HomeViewModelTest {
                     trialDaysRemaining = 2,
                     trialStartTimestamp = System.currentTimeMillis() - 5L * 24 * 60 * 60 * 1000,
                 )
-            coEvery { trialManager.isWelcomeShown() } returns true
-            coEvery { trialManager.isDay5PromptShown() } returns false
+            trialPresentationFlow.value = TrialPresentationState(welcomeShown = true)
 
             viewModel = createViewModel()
             viewModel.startObserving()
@@ -310,9 +313,6 @@ class HomeViewModelTest {
                     trialDaysRemaining = 0,
                     trialStartTimestamp = System.currentTimeMillis() - 10L * 24 * 60 * 60 * 1000,
                 )
-            coEvery { trialManager.getUpgradeCardDismissCount() } returns 0
-            coEvery { trialManager.getUpgradeCardLastDismissTimestamp() } returns 0L
-
             viewModel = createViewModel()
             viewModel.startObserving()
             advanceAll()
@@ -332,9 +332,6 @@ class HomeViewModelTest {
                     trialDaysRemaining = 0,
                     trialStartTimestamp = System.currentTimeMillis() - 10L * 24 * 60 * 60 * 1000,
                 )
-            coEvery { trialManager.getUpgradeCardDismissCount() } returns 0
-            coEvery { trialManager.getUpgradeCardLastDismissTimestamp() } returns 0L
-
             viewModel = createViewModel()
             viewModel.startObserving()
             advanceAll()
@@ -399,8 +396,11 @@ class HomeViewModelTest {
                     trialDaysRemaining = TrialManager.TRIAL_DURATION_DAYS,
                     trialStartTimestamp = System.currentTimeMillis(),
                 )
-            coEvery { trialManager.isWelcomeShown() } answers { welcomeShown }
-            coEvery { trialManager.setWelcomeShown() } answers { welcomeShown = true }
+            coEvery { trialManager.setWelcomeShown() } answers {
+                welcomeShown = true
+                trialPresentationFlow.value =
+                    trialPresentationFlow.value.copy(welcomeShown = welcomeShown)
+            }
 
             viewModel = createViewModel()
             viewModel.startObserving()
@@ -491,10 +491,10 @@ class HomeViewModelTest {
                     trialDaysRemaining = 0,
                     trialStartTimestamp = System.currentTimeMillis() - 10L * 24 * 60 * 60 * 1000,
                 )
-            coEvery { trialManager.isExpirationModalShown() } returns true
-            coEvery { trialManager.getUpgradeCardDismissCount() } returns 0
-            coEvery { trialManager.getUpgradeCardLastDismissTimestamp() } returns 0L
-
+            trialPresentationFlow.value =
+                TrialPresentationState(
+                    expirationModalShown = true,
+                )
             viewModel = createViewModel()
             viewModel.startObserving()
             advanceAll()
@@ -514,9 +514,6 @@ class HomeViewModelTest {
                     trialDaysRemaining = 0,
                     trialStartTimestamp = System.currentTimeMillis() - 10L * 24 * 60 * 60 * 1000,
                 )
-            coEvery { trialManager.getUpgradeCardDismissCount() } returns 0
-            coEvery { trialManager.getUpgradeCardLastDismissTimestamp() } returns 0L
-
             viewModel = createViewModel()
             viewModel.startObserving()
             advanceAll()
@@ -536,8 +533,11 @@ class HomeViewModelTest {
                     trialDaysRemaining = 0,
                     trialStartTimestamp = System.currentTimeMillis() - 10L * 24 * 60 * 60 * 1000,
                 )
-            coEvery { trialManager.getUpgradeCardDismissCount() } returns 3
-            coEvery { trialManager.getUpgradeCardLastDismissTimestamp() } returns System.currentTimeMillis()
+            trialPresentationFlow.value =
+                TrialPresentationState(
+                    upgradeCardDismissCount = 3,
+                    upgradeCardLastDismissTimestamp = System.currentTimeMillis(),
+                )
 
             viewModel = createViewModel()
             viewModel.startObserving()
@@ -559,9 +559,12 @@ class HomeViewModelTest {
                     trialStartTimestamp = System.currentTimeMillis() - 10L * 24 * 60 * 60 * 1000,
                 )
             // 1 dismiss, 2 days ago = should still be hidden (cooldown = 7 days)
-            coEvery { trialManager.getUpgradeCardDismissCount() } returns 1
-            coEvery { trialManager.getUpgradeCardLastDismissTimestamp() } returns
-                System.currentTimeMillis() - 2L * 24 * 60 * 60 * 1000
+            trialPresentationFlow.value =
+                TrialPresentationState(
+                    upgradeCardDismissCount = 1,
+                    upgradeCardLastDismissTimestamp =
+                        System.currentTimeMillis() - 2L * 24 * 60 * 60 * 1000,
+                )
 
             viewModel = createViewModel()
             viewModel.startObserving()
@@ -582,9 +585,12 @@ class HomeViewModelTest {
                     trialDaysRemaining = 0,
                     trialStartTimestamp = System.currentTimeMillis() - 15L * 24 * 60 * 60 * 1000,
                 )
-            coEvery { trialManager.getUpgradeCardDismissCount() } returns 1
-            coEvery { trialManager.getUpgradeCardLastDismissTimestamp() } returns
-                System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000 - 1_000L
+            trialPresentationFlow.value =
+                TrialPresentationState(
+                    upgradeCardDismissCount = 1,
+                    upgradeCardLastDismissTimestamp =
+                        System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000 - 1_000L,
+                )
 
             viewModel = createViewModel()
             viewModel.startObserving()

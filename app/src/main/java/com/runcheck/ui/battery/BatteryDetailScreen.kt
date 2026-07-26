@@ -759,11 +759,7 @@ private fun BatteryChargingSection( // NOSONAR
     if (state.isPro) {
         chargingSessionSummary
             ?.takeIf { summary ->
-                shouldShowRemainingChargePanel(
-                    isPro = state.isPro,
-                    summary = summary,
-                    currentLevel = battery.level,
-                )
+                summary.hasMeaningfulRemainingEstimate(battery.level)
             }?.let { summary ->
                 BatteryRemainingTimePanel(
                     summary = summary,

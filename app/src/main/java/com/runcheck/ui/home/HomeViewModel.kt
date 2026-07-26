@@ -23,9 +23,11 @@ import com.runcheck.domain.usecase.GetSpeedTestHistoryUseCase
 import com.runcheck.domain.usecase.GetStorageStateUseCase
 import com.runcheck.domain.usecase.GetThermalStateUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
+import com.runcheck.pro.ProState
 import com.runcheck.pro.ProStateProvider
 import com.runcheck.pro.ProStatus
 import com.runcheck.pro.TrialManager
+import com.runcheck.pro.TrialPresentationState
 import com.runcheck.ui.common.messageOrRes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
@@ -144,6 +146,7 @@ class HomeViewModel
                                 heartbeat = heartbeat,
                                 currentIntervalMinutes = preferences.monitoringInterval.minutes,
                                 currentUptimeMillis = tick.uptimeMillis,
+                                currentEpochMillis = tick.epochMillis,
                             )
                         }.distinctUntilChanged()
 
@@ -191,33 +194,46 @@ class HomeViewModel
                         ) { proState, ready -> proState.takeIf { ready } }
                             .filterNotNull()
 
+                    val readyProPresentationFlow =
+                        combine(
+                            readyProStateFlow,
+                            trialManager.observePresentationState(),
+                        ) { proState, presentationState ->
+                            ProPresentationContext(
+                                proState = proState,
+                                presentationState = presentationState,
+                            )
+                        }
+
                     combine(
                         dataFlow,
                         insightFlow,
-                        readyProStateFlow,
+                        readyProPresentationFlow,
                         preferencesFlow,
                         monitoringStaleFlow,
-                    ) { data, activeInsights, proState, preferences, monitoringStale ->
+                    ) { data, activeInsights, proPresentation, preferences, monitoringStale ->
+                        val proState = proPresentation.proState
+                        val presentationState = proPresentation.presentationState
                         val showWelcomeSheet =
                             proState.status == ProStatus.TRIAL_ACTIVE &&
-                                !trialManager.isWelcomeShown()
+                                !presentationState.welcomeShown
 
                         val showDay5Banner =
                             proState.status == ProStatus.TRIAL_ACTIVE &&
                                 hasReachedTrialDay(proState.trialStartTimestamp, DAY_5) &&
-                                !trialManager.isDay5PromptShown()
+                                !presentationState.day5PromptShown
 
                         val showExpirationModal =
                             proState.status == ProStatus.TRIAL_EXPIRED &&
                                 proState.trialStartTimestamp > 0L &&
-                                !trialManager.isExpirationModalShown()
+                                !presentationState.expirationModalShown
 
                         val showUpgradeCard =
                             if (proState.status == ProStatus.TRIAL_EXPIRED &&
                                 proState.trialStartTimestamp > 0L
                             ) {
-                                val dismissCount = trialManager.getUpgradeCardDismissCount()
-                                val lastDismiss = trialManager.getUpgradeCardLastDismissTimestamp()
+                                val dismissCount = presentationState.upgradeCardDismissCount
+                                val lastDismiss = presentationState.upgradeCardLastDismissTimestamp
                                 val daysSinceDismiss =
                                     if (lastDismiss > 0L) {
                                         TimeUnit.MILLISECONDS
@@ -324,6 +340,11 @@ class HomeViewModel
         private data class SpeedTestScoreContext(
             val speedTest: SpeedTestResult?,
             val nowMillis: Long,
+        )
+
+        private data class ProPresentationContext(
+            val proState: ProState,
+            val presentationState: TrialPresentationState,
         )
 
         private data class FreshnessTick(

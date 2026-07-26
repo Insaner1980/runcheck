@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -389,6 +390,13 @@ fun TrendChart(
             buildTrendLineGradientStops(data, qualityZones, lineColor)
         }
 
+    fun PointerInputScope.nearestPointIndex(x: Float): Int? {
+        val chartPad = chartStyle.chartPadding.toPx()
+        val chartLeft = yLabelWidth.toPx() + chartPad
+        val chartWidth = size.width - chartLeft - chartPad
+        return nearestChartPointIndex(x, chartLeft, chartWidth, data.size)
+    }
+
     Box(modifier = modifier) {
         Canvas(
             modifier =
@@ -410,16 +418,7 @@ fun TrendChart(
                                 .pointerInput(data, yLabelWidth) {
                                     detectTapGestures { offset ->
                                         if (sweepProgress.value < 1f) return@detectTapGestures
-                                        val leftPad = yLabelWidth.toPx()
-                                        val chartPad = chartStyle.chartPadding.toPx()
-                                        val chartLeft = leftPad + chartPad
-                                        val chartWidth = size.width - chartLeft - chartPad
-                                        nearestChartPointIndex(
-                                            offset.x,
-                                            chartLeft,
-                                            chartWidth,
-                                            data.size,
-                                        )?.let { index ->
+                                        nearestPointIndex(offset.x)?.let { index ->
                                             selectedIndex = if (selectedIndex == index) -1 else index
                                         }
                                     }
@@ -429,16 +428,7 @@ fun TrendChart(
                                         onDragStart = { offset ->
                                             allowTooltipDrag = sweepProgress.value >= 1f
                                             if (allowTooltipDrag) {
-                                                val leftPad = yLabelWidth.toPx()
-                                                val chartPad = chartStyle.chartPadding.toPx()
-                                                val chartLeft = leftPad + chartPad
-                                                val chartWidth = size.width - chartLeft - chartPad
-                                                nearestChartPointIndex(
-                                                    offset.x,
-                                                    chartLeft,
-                                                    chartWidth,
-                                                    data.size,
-                                                )?.let { index ->
+                                                nearestPointIndex(offset.x)?.let { index ->
                                                     selectedIndex = index
                                                 }
                                             }
@@ -451,16 +441,7 @@ fun TrendChart(
                                     ) { change, _ ->
                                         if (!allowTooltipDrag) return@detectHorizontalDragGestures
                                         change.consume()
-                                        val leftPad = yLabelWidth.toPx()
-                                        val chartPad = chartStyle.chartPadding.toPx()
-                                        val chartLeft = leftPad + chartPad
-                                        val chartWidth = size.width - chartLeft - chartPad
-                                        nearestChartPointIndex(
-                                            change.position.x,
-                                            chartLeft,
-                                            chartWidth,
-                                            data.size,
-                                        )?.let { index ->
+                                        nearestPointIndex(change.position.x)?.let { index ->
                                             selectedIndex = index
                                         }
                                     }

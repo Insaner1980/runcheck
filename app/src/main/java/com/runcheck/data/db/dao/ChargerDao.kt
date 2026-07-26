@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
 import com.runcheck.data.db.entity.ChargerProfileEntity
 import com.runcheck.data.db.entity.ChargingSessionEntity
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +25,12 @@ interface ChargerDao {
 
     @Query("DELETE FROM charging_sessions")
     suspend fun deleteAllSessions()
+
+    @Transaction
+    suspend fun deleteAllChargersAndSessions() {
+        deleteAllSessions()
+        deleteAllChargers()
+    }
 
     @Insert
     suspend fun insertSession(session: ChargingSessionEntity): Long

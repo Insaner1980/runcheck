@@ -7,4 +7,6 @@ interface MonitoringStatusRepository {
     fun observeLastWorkerHeartbeat(): Flow<MonitoringHeartbeat?>
 
     suspend fun setLastWorkerHeartbeat(heartbeat: MonitoringHeartbeat)
+
+    suspend fun clearLastWorkerHeartbeat()
 }

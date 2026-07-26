@@ -70,8 +70,7 @@ class ChargerRepositoryImpl
         override suspend fun deleteSessionsOlderThan(cutoff: Long) = chargerDao.deleteSessionsOlderThan(cutoff)
 
         override suspend fun deleteAll() {
-            chargerDao.deleteAllSessions()
-            chargerDao.deleteAllChargers()
+            chargerDao.deleteAllChargersAndSessions()
         }
     }
 
