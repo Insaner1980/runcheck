@@ -45,7 +45,7 @@ import com.runcheck.R
 import com.runcheck.pro.ProFeature
 import com.runcheck.pro.ProStatus
 import com.runcheck.ui.common.resolve
-import com.runcheck.ui.components.ExpressiveDetailScaffold
+import com.runcheck.ui.components.RuncheckDetailScaffold
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.uiTokens
@@ -59,7 +59,7 @@ fun ProUpgradeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    ExpressiveDetailScaffold(
+    RuncheckDetailScaffold(
         title = stringResource(R.string.pro_upgrade_title),
         onBack = onBack,
         modifier = modifier,

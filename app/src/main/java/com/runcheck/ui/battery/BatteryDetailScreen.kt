@@ -98,7 +98,6 @@ import com.runcheck.ui.common.temperatureBandLabel
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.ConfidenceBadge
 import com.runcheck.ui.components.DetailInfoBannerCandidate
-import com.runcheck.ui.components.ExpressiveDetailScaffold
 import com.runcheck.ui.components.InfoBanner
 import com.runcheck.ui.components.LearnTopicLink
 import com.runcheck.ui.components.LiveChart
@@ -107,7 +106,8 @@ import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.components.ProBadgePill
 import com.runcheck.ui.components.ProgressRing
 import com.runcheck.ui.components.PullToRefreshWrapper
-import com.runcheck.ui.components.RuncheckLoadingIndicator
+import com.runcheck.ui.components.RuncheckDetailScaffold
+import com.runcheck.ui.components.RuncheckProgressSpinner
 import com.runcheck.ui.components.SecondaryActionLink
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.TrendChart
@@ -158,7 +158,7 @@ fun BatteryDetailScreen(
         onStop = viewModel::stopObserving,
     )
 
-    ExpressiveDetailScaffold(
+    RuncheckDetailScaffold(
         title = stringResource(R.string.battery_title),
         onBack = onBack,
         modifier = modifier,
@@ -175,7 +175,7 @@ fun BatteryDetailScreen(
                         },
                     contentAlignment = Alignment.Center,
                 ) {
-                    RuncheckLoadingIndicator(contentDescription = loadingDescription)
+                    RuncheckProgressSpinner(contentDescription = loadingDescription)
                 }
             }
 

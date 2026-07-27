@@ -75,9 +75,9 @@ import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.AnimatedFloatText
-import com.runcheck.ui.components.ExpressiveDetailScaffold
 import com.runcheck.ui.components.MetricPill
-import com.runcheck.ui.components.RuncheckLoadingIndicator
+import com.runcheck.ui.components.RuncheckDetailScaffold
+import com.runcheck.ui.components.RuncheckProgressSpinner
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
@@ -107,7 +107,7 @@ fun SpeedTestScreen(
         onStop = viewModel::stopObserving,
     )
 
-    ExpressiveDetailScaffold(
+    RuncheckDetailScaffold(
         title = stringResource(R.string.speed_test_title),
         onBack = onBack,
         modifier = modifier,
@@ -124,7 +124,7 @@ fun SpeedTestScreen(
                             },
                     contentAlignment = Alignment.Center,
                 ) {
-                    RuncheckLoadingIndicator(contentDescription = loadingDescription)
+                    RuncheckProgressSpinner(contentDescription = loadingDescription)
                 }
             }
 

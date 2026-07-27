@@ -23,11 +23,11 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeFlexibleTopAppBar
-import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -37,7 +37,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -72,20 +71,20 @@ private const val FIXED_SELECTOR_OPTION_LIMIT = 4
 private const val SCROLLING_SELECTOR_OPTION_WIDTH_DP = 104
 private const val MINIMUM_TOUCH_TARGET_DP = 48
 
-internal data class ExpressiveSelectorLayoutPolicy(
+internal data class SelectorLayoutPolicy(
     val isScrollable: Boolean,
     val minimumOptionWidthDp: Int?,
     val minimumTouchTargetDp: Int = MINIMUM_TOUCH_TARGET_DP,
 )
 
-internal fun expressiveSelectorLayoutPolicy(optionCount: Int): ExpressiveSelectorLayoutPolicy =
+internal fun selectorLayoutPolicy(optionCount: Int): SelectorLayoutPolicy =
     if (optionCount > FIXED_SELECTOR_OPTION_LIMIT) {
-        ExpressiveSelectorLayoutPolicy(
+        SelectorLayoutPolicy(
             isScrollable = true,
             minimumOptionWidthDp = SCROLLING_SELECTOR_OPTION_WIDTH_DP,
         )
     } else {
-        ExpressiveSelectorLayoutPolicy(
+        SelectorLayoutPolicy(
             isScrollable = false,
             minimumOptionWidthDp = null,
         )
@@ -101,7 +100,8 @@ internal fun <T> platformTelemetryMeasurement(
     )
 
 @Composable
-fun ExpressiveDetailScaffold(
+@OptIn(ExperimentalMaterial3Api::class)
+fun RuncheckDetailScaffold(
     title: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -114,7 +114,7 @@ fun ExpressiveDetailScaffold(
                 .fillMaxSize()
                 .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeFlexibleTopAppBar(
+            LargeTopAppBar(
                 title = {
                     Text(
                         text = title,
@@ -153,14 +153,14 @@ fun ExpressiveDetailScaffold(
 }
 
 @Composable
-fun <T> ExpressiveSingleChoiceSelector(
+fun <T> RuncheckSingleChoiceSelector(
     options: List<T>,
     selected: T,
     labelFor: @Composable (T) -> String,
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val policy = expressiveSelectorLayoutPolicy(options.size)
+    val policy = selectorLayoutPolicy(options.size)
     val scrollState = rememberScrollState()
     Box(
         modifier =
@@ -417,7 +417,7 @@ fun LearnTopicLink(
 }
 
 @Composable
-fun ExpressiveEmptyState(
+fun RuncheckEmptyState(
     title: String,
     message: String,
     modifier: Modifier = Modifier,
@@ -459,7 +459,7 @@ fun ExpressiveEmptyState(
 }
 
 @Composable
-fun RuncheckLoadingIndicator(
+fun RuncheckProgressSpinner(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
 ) {
@@ -473,13 +473,13 @@ fun RuncheckLoadingIndicator(
             },
         )
     if (reducedMotion) {
-        LoadingIndicator(
+        CircularProgressIndicator(
             progress = { 0.6f },
             modifier = indicatorModifier,
             color = MaterialTheme.colorScheme.primary,
         )
     } else {
-        LoadingIndicator(
+        CircularProgressIndicator(
             modifier = indicatorModifier,
             color = MaterialTheme.colorScheme.primary,
         )
@@ -487,7 +487,7 @@ fun RuncheckLoadingIndicator(
 }
 
 @Composable
-fun RuncheckWavyProgress(
+fun RuncheckProgressGauge(
     progress: Float,
     contentDescription: String,
     modifier: Modifier = Modifier,
@@ -501,7 +501,7 @@ fun RuncheckWavyProgress(
                 durationMillis = if (reducedMotion) 0 else MotionTokens.RING,
                 easing = MotionTokens.EaseOut,
             ),
-        label = "runcheckWavyProgress",
+        label = "runcheckProgressGauge",
     )
 
     Box(
@@ -512,23 +512,11 @@ fun RuncheckWavyProgress(
             },
         contentAlignment = Alignment.Center,
     ) {
-        CircularWavyProgressIndicator(
+        CircularProgressIndicator(
             progress = { animatedProgress },
             modifier = Modifier.matchParentSize(),
             color = MaterialTheme.colorScheme.primary,
             trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            amplitude =
-                if (reducedMotion) {
-                    { 0f }
-                } else {
-                    WavyProgressIndicatorDefaults.indicatorAmplitude
-                },
-            waveSpeed =
-                if (reducedMotion) {
-                    0.dp
-                } else {
-                    WavyProgressIndicatorDefaults.CircularWavelength
-                },
         )
         content()
     }

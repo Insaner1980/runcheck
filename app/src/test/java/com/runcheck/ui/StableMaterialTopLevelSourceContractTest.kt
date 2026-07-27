@@ -8,14 +8,14 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.io.path.readText
 
-class ExpressiveTopLevelSourceContractTest {
+class StableMaterialTopLevelSourceContractTest {
     private val appDir: Path = findAppDir()
 
     @Test
-    fun `shared expressive wrappers exist behind one component boundary`() {
+    fun `shared stable Material wrappers exist behind one component boundary`() {
         val source =
             appDir
-                .resolve("src/main/java/com/runcheck/ui/components/ExpressiveComponents.kt")
+                .resolve("src/main/java/com/runcheck/ui/components/RuncheckComponents.kt")
                 .readText()
 
         REQUIRED_COMPONENTS.forEach { component ->
@@ -26,8 +26,8 @@ class ExpressiveTopLevelSourceContractTest {
                 .resolve("src/main/java/com/runcheck/ui/theme/ChartTheme.kt")
                 .readText()
         assertTrue("ChartTheme is missing", chartTheme.contains("fun ChartTheme("))
-        assertTrue(source.contains("LoadingIndicator("))
-        assertTrue(source.contains("CircularWavyProgressIndicator("))
+        assertTrue(source.contains("LargeTopAppBar("))
+        assertTrue(source.contains("CircularProgressIndicator("))
         assertTrue(source.contains("MaterialTheme.reducedMotion"))
         assertTrue(source.contains("MaterialTheme.uiTokens.touchTarget"))
 
@@ -35,7 +35,7 @@ class ExpressiveTopLevelSourceContractTest {
             appDir
                 .resolve("src/main/java/com/runcheck/ui/tools/ToolEntryScreens.kt")
                 .readText()
-        assertTrue(toolEntries.contains("ExpressiveDetailScaffold("))
+        assertTrue(toolEntries.contains("RuncheckDetailScaffold("))
 
         val trendChart =
             appDir
@@ -45,12 +45,12 @@ class ExpressiveTopLevelSourceContractTest {
     }
 
     @Test
-    fun `Home uses the expressive first viewport and no longer owns tool or expired Pro cards`() {
+    fun `Home uses the health first viewport and no longer owns tool or expired Pro cards`() {
         val home = appDir.resolve("src/main/java/com/runcheck/ui/home/HomeScreen.kt").readText()
         val secondary = appDir.resolve("src/main/java/com/runcheck/ui/home/HomeSecondarySections.kt").readText()
 
         assertTrue(home.contains("HomeHealthHero("))
-        assertTrue(home.contains("RuncheckWavyProgress("))
+        assertTrue(home.contains("RuncheckProgressGauge("))
         assertTrue(home.contains("rememberFormattedDateTime("))
         assertTrue(home.contains("ConfidenceBadge("))
         assertTrue(secondary.contains("BatteryGridCard("))
@@ -72,12 +72,12 @@ class ExpressiveTopLevelSourceContractTest {
     }
 
     @Test
-    fun `Insights uses a top-level filter and expressive states`() {
+    fun `Insights uses a top-level filter and shared stable states`() {
         val insights = appDir.resolve("src/main/java/com/runcheck/ui/insights/InsightsScreen.kt").readText()
 
-        assertTrue(insights.contains("ExpressiveSingleChoiceSelector("))
-        assertTrue(insights.contains("RuncheckLoadingIndicator("))
-        assertTrue(insights.contains("ExpressiveEmptyState("))
+        assertTrue(insights.contains("RuncheckSingleChoiceSelector("))
+        assertTrue(insights.contains("RuncheckProgressSpinner("))
+        assertTrue(insights.contains("RuncheckEmptyState("))
         assertFalse(insights.contains("DetailTopBar("))
 
         val homeInsights =
@@ -85,7 +85,7 @@ class ExpressiveTopLevelSourceContractTest {
                 .resolve("src/main/java/com/runcheck/ui/home/insights/InsightsCard.kt")
                 .readText()
         assertFalse(homeInsights.contains("if (insights.isEmpty()) return"))
-        assertTrue(homeInsights.contains("ExpressiveEmptyState("))
+        assertTrue(homeInsights.contains("RuncheckEmptyState("))
 
         val appUsage =
             appDir
@@ -136,15 +136,15 @@ class ExpressiveTopLevelSourceContractTest {
     private companion object {
         val REQUIRED_COMPONENTS =
             listOf(
-                "ExpressiveDetailScaffold",
-                "ExpressiveSingleChoiceSelector",
+                "RuncheckDetailScaffold",
+                "RuncheckSingleChoiceSelector",
                 "RuncheckActionCard",
                 "InfoBanner",
                 "StatusPill",
                 "LearnTopicLink",
-                "ExpressiveEmptyState",
-                "RuncheckLoadingIndicator",
-                "RuncheckWavyProgress",
+                "RuncheckEmptyState",
+                "RuncheckProgressSpinner",
+                "RuncheckProgressGauge",
                 "AppDisplayName",
             )
     }

@@ -18,7 +18,7 @@ Android device health diagnostics app built with Kotlin and Jetpack Compose. Sys
 - Widgets: Glance app widgets
 - Speed test backend: M-Lab NDT7
 - Build: Gradle Kotlin DSL
-- Build tooling: Gradle wrapper 9.4.0, AGP 9.1.1, Kotlin Gradle/Compose plugin 2.3.0, Kotlin runtime constraints 2.3.20, KSP 2.3.9, Compose BOM 2026.06.01 with the sole direct Compose override Material3 1.5.0-alpha24
+- Build tooling: Gradle wrapper 9.4.0, AGP 9.1.1, Kotlin Gradle/Compose plugin 2.3.0, Kotlin runtime constraints 2.3.20, KSP 2.3.9, Compose BOM 2026.06.01 with Material3 resolved from the BOM
 - Compile SDK: Android 17 (API 37)
 - Target SDK: Android 17 (API 37)
 - Min SDK: 26
@@ -75,7 +75,7 @@ Current version catalog highlights:
 | Hilt AndroidX / Hilt Work | `1.3.0` |
 | Room | `2.8.4` |
 | Compose BOM | `2026.06.01` |
-| Material3 direct override | `1.5.0-alpha24` |
+| Material3 | BOM-managed (`1.4.0`) |
 | Navigation Compose | `2.9.8` |
 | Lifecycle | `2.10.0` |
 | Activity Compose | `1.12.3` |

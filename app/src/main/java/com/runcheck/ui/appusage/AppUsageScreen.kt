@@ -68,12 +68,12 @@ import com.runcheck.domain.model.UnusedAppsPeriod
 import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.AppDisplayName
-import com.runcheck.ui.components.ExpressiveDetailScaffold
-import com.runcheck.ui.components.ExpressiveEmptyState
-import com.runcheck.ui.components.ExpressiveSingleChoiceSelector
 import com.runcheck.ui.components.IconCircle
 import com.runcheck.ui.components.ProFeatureLockedState
-import com.runcheck.ui.components.RuncheckLoadingIndicator
+import com.runcheck.ui.components.RuncheckDetailScaffold
+import com.runcheck.ui.components.RuncheckEmptyState
+import com.runcheck.ui.components.RuncheckProgressSpinner
+import com.runcheck.ui.components.RuncheckSingleChoiceSelector
 import com.runcheck.ui.components.resolveAppDisplayName
 import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
@@ -101,7 +101,7 @@ fun AppUsageScreen(
         onStop = viewModel::stopObserving,
     )
 
-    ExpressiveDetailScaffold(
+    RuncheckDetailScaffold(
         title = stringResource(R.string.app_usage_title),
         onBack = onBack,
         modifier = modifier,
@@ -109,7 +109,7 @@ fun AppUsageScreen(
         when (val state = uiState) {
             is AppUsageUiState.Loading -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    RuncheckLoadingIndicator(
+                    RuncheckProgressSpinner(
                         contentDescription = stringResource(R.string.a11y_loading),
                     )
                 }
@@ -204,7 +204,7 @@ private fun AppUsageContent(
     ) {
         item {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            ExpressiveSingleChoiceSelector(
+            RuncheckSingleChoiceSelector(
                 options = AppUsageMode.entries,
                 selected = selectedMode,
                 labelFor = { mode ->
@@ -223,7 +223,7 @@ private fun AppUsageContent(
         when {
             selectedMode == AppUsageMode.NOT_USED -> {
                 item {
-                    ExpressiveSingleChoiceSelector(
+                    RuncheckSingleChoiceSelector(
                         options = UnusedAppsPeriod.entries,
                         selected = unusedPeriod,
                         labelFor = { period ->
@@ -302,7 +302,7 @@ private fun AppUsageContent(
                                 .padding(vertical = MaterialTheme.spacing.lg),
                         contentAlignment = Alignment.Center,
                     ) {
-                        RuncheckLoadingIndicator(
+                        RuncheckProgressSpinner(
                             contentDescription = stringResource(R.string.a11y_loading),
                         )
                     }
@@ -412,7 +412,7 @@ private fun LazyListScope.unusedAppsItems(
                             .padding(vertical = MaterialTheme.spacing.lg),
                     contentAlignment = Alignment.Center,
                 ) {
-                    RuncheckLoadingIndicator(
+                    RuncheckProgressSpinner(
                         contentDescription = context.getString(R.string.a11y_loading),
                     )
                 }
@@ -421,7 +421,7 @@ private fun LazyListScope.unusedAppsItems(
 
         UnusedAppsUiState.Locked -> {
             item {
-                ExpressiveEmptyState(
+                RuncheckEmptyState(
                     title = context.getString(R.string.app_usage_mode_not_used),
                     message = context.getString(R.string.app_usage_unused_requires_pro),
                 )
@@ -471,7 +471,7 @@ private fun LazyListScope.unusedAppsItems(
         is UnusedAppsUiState.Error -> {
             item {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    ExpressiveEmptyState(
+                    RuncheckEmptyState(
                         title = context.getString(R.string.common_error_generic),
                         message = state.message.resolve(),
                     )
@@ -512,7 +512,7 @@ private fun LazyListScope.unusedAppsItems(
             }
             if (state.candidates.isEmpty()) {
                 item {
-                    ExpressiveEmptyState(
+                    RuncheckEmptyState(
                         title = context.getString(R.string.app_usage_unused_none_title),
                         message =
                             context.getString(

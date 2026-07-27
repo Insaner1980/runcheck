@@ -16,9 +16,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.ui.common.resolve
-import com.runcheck.ui.components.ExpressiveDetailScaffold
 import com.runcheck.ui.components.ProFeatureLockedState
-import com.runcheck.ui.components.RuncheckLoadingIndicator
+import com.runcheck.ui.components.RuncheckDetailScaffold
+import com.runcheck.ui.components.RuncheckProgressSpinner
 import com.runcheck.ui.navigation.ProtectedFeatureAccessState
 import com.runcheck.ui.navigation.protectedFeatureAccessState
 import com.runcheck.ui.theme.spacing
@@ -43,7 +43,7 @@ fun WeeklyReportEntryScreen(
             viewModel.load()
         }
     }
-    ExpressiveDetailScaffold(
+    RuncheckDetailScaffold(
         title = stringResource(R.string.weekly_report_title),
         onBack = onBack,
         modifier = modifier,
@@ -51,7 +51,7 @@ fun WeeklyReportEntryScreen(
         when (accessState) {
             ProtectedFeatureAccessState.WAITING_FOR_PRO_STATUS -> {
                 CenteredToolContent {
-                    RuncheckLoadingIndicator(contentDescription = loadingDescription)
+                    RuncheckProgressSpinner(contentDescription = loadingDescription)
                 }
             }
 
@@ -72,7 +72,7 @@ fun WeeklyReportEntryScreen(
                 when (val state = reportState) {
                     WeeklyReportUiState.Loading -> {
                         CenteredToolContent {
-                            RuncheckLoadingIndicator(contentDescription = loadingDescription)
+                            RuncheckProgressSpinner(contentDescription = loadingDescription)
                         }
                     }
 
@@ -123,7 +123,7 @@ fun ExportEntryScreen(
         availableContent()
         return
     }
-    ExpressiveDetailScaffold(
+    RuncheckDetailScaffold(
         title = stringResource(R.string.export_title),
         onBack = onBack,
         modifier = modifier,
@@ -131,7 +131,7 @@ fun ExportEntryScreen(
         when (accessState) {
             ProtectedFeatureAccessState.WAITING_FOR_PRO_STATUS -> {
                 CenteredToolContent {
-                    RuncheckLoadingIndicator(contentDescription = loadingDescription)
+                    RuncheckProgressSpinner(contentDescription = loadingDescription)
                 }
             }
 
@@ -174,14 +174,14 @@ fun CleanupEntryScreen(
         ProtectedFeatureAccessState.LOCKED,
         -> {
             val loadingDescription = stringResource(R.string.a11y_loading)
-            ExpressiveDetailScaffold(
+            RuncheckDetailScaffold(
                 title = stringResource(R.string.storage_cleanup_tools),
                 onBack = onBack,
                 modifier = modifier,
             ) {
                 if (accessState == ProtectedFeatureAccessState.WAITING_FOR_PRO_STATUS) {
                     CenteredToolContent {
-                        RuncheckLoadingIndicator(contentDescription = loadingDescription)
+                        RuncheckProgressSpinner(contentDescription = loadingDescription)
                     }
                 } else {
                     ProFeatureLockedState(

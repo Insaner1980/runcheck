@@ -35,9 +35,9 @@ import com.runcheck.domain.model.ThemeMode
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.components.CardSectionTitle
-import com.runcheck.ui.components.ExpressiveSingleChoiceSelector
 import com.runcheck.ui.components.ProBadgePill
-import com.runcheck.ui.components.RuncheckLoadingIndicator
+import com.runcheck.ui.components.RuncheckProgressSpinner
+import com.runcheck.ui.components.RuncheckSingleChoiceSelector
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.uiTokens
@@ -353,7 +353,7 @@ internal fun DisplaySection(
             color = MaterialTheme.colorScheme.onSurface,
         )
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-        ExpressiveSingleChoiceSelector(
+        RuncheckSingleChoiceSelector(
             options = ThemeMode.entries,
             selected = preferences.themeMode,
             labelFor = { mode ->
@@ -523,7 +523,7 @@ internal fun DebugInsightsSection(
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                RuncheckLoadingIndicator(
+                RuncheckProgressSpinner(
                     modifier = Modifier.size(tokens.iconMedium),
                     contentDescription = stringResource(R.string.settings_debug_insights_running),
                 )

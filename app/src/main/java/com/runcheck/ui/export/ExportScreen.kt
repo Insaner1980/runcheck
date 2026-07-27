@@ -22,8 +22,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.ui.common.resolve
-import com.runcheck.ui.components.ExpressiveDetailScaffold
-import com.runcheck.ui.components.RuncheckLoadingIndicator
+import com.runcheck.ui.components.RuncheckDetailScaffold
+import com.runcheck.ui.components.RuncheckProgressSpinner
 import com.runcheck.ui.settings.shareExportUris
 import com.runcheck.ui.theme.spacing
 
@@ -43,7 +43,7 @@ fun ExportScreen(
         }
     }
 
-    ExpressiveDetailScaffold(
+    RuncheckDetailScaffold(
         title = stringResource(R.string.export_title),
         onBack = onBack,
         modifier = modifier,
@@ -57,7 +57,7 @@ fun ExportScreen(
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
             ) {
                 if (state.isExporting) {
-                    RuncheckLoadingIndicator(
+                    RuncheckProgressSpinner(
                         contentDescription = stringResource(R.string.a11y_loading),
                     )
                 } else {

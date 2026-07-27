@@ -52,9 +52,9 @@ import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
-import com.runcheck.ui.components.ExpressiveEmptyState
-import com.runcheck.ui.components.ExpressiveSingleChoiceSelector
-import com.runcheck.ui.components.RuncheckLoadingIndicator
+import com.runcheck.ui.components.RuncheckEmptyState
+import com.runcheck.ui.components.RuncheckProgressSpinner
+import com.runcheck.ui.components.RuncheckSingleChoiceSelector
 import com.runcheck.ui.storage.MediaDeleteRequestResult
 import com.runcheck.ui.storage.buildMediaDeleteRequest
 import com.runcheck.ui.theme.runcheckCardColors
@@ -227,7 +227,7 @@ private fun CleanupScreenBody(
         // Connected filter selector
         if (cleanupType.filterOptions.isNotEmpty()) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            ExpressiveSingleChoiceSelector(
+            RuncheckSingleChoiceSelector(
                 options = cleanupType.filterOptions.indices.toList(),
                 selected = selectedFilterIndex.coerceIn(cleanupType.filterOptions.indices),
                 labelFor = { index -> stringResource(cleanupType.filterOptions[index].labelRes) },
@@ -251,7 +251,7 @@ private fun CleanupScreenBody(
                             },
                     contentAlignment = Alignment.Center,
                 ) {
-                    RuncheckLoadingIndicator(contentDescription = scanningDescription)
+                    RuncheckProgressSpinner(contentDescription = scanningDescription)
                 }
             }
 
@@ -260,7 +260,7 @@ private fun CleanupScreenBody(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
-                    ExpressiveEmptyState(
+                    RuncheckEmptyState(
                         title = stringResource(R.string.cleanup_no_files),
                         message = stringResource(R.string.cleanup_no_files_desc),
                     )
@@ -319,7 +319,7 @@ private fun CleanupScreenBody(
                             },
                     contentAlignment = Alignment.Center,
                 ) {
-                    RuncheckLoadingIndicator(contentDescription = deletingDescription)
+                    RuncheckProgressSpinner(contentDescription = deletingDescription)
                 }
             }
 
@@ -466,7 +466,7 @@ private fun LazyListScope.expandedGroupItems(
                         .padding(vertical = MaterialTheme.spacing.base),
                 contentAlignment = Alignment.Center,
             ) {
-                RuncheckLoadingIndicator(
+                RuncheckProgressSpinner(
                     contentDescription = stringResource(R.string.a11y_loading),
                 )
             }

@@ -17,7 +17,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import com.runcheck.R
 import com.runcheck.domain.insights.model.Insight
-import com.runcheck.ui.components.ExpressiveEmptyState
+import com.runcheck.ui.components.RuncheckEmptyState
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.theme.BadgeShape
 import com.runcheck.ui.theme.spacing
@@ -51,7 +51,7 @@ fun InsightsCard(
         }
 
         if (homeInsightsSectionShowsEmptyState(insights)) {
-            ExpressiveEmptyState(
+            RuncheckEmptyState(
                 title = stringResource(R.string.home_insights_empty_title),
                 message = stringResource(R.string.home_insights_empty_body),
             )

@@ -93,7 +93,6 @@ import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ActionCard
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailInfoBannerCandidate
-import com.runcheck.ui.components.ExpressiveDetailScaffold
 import com.runcheck.ui.components.InfoBanner
 import com.runcheck.ui.components.LearnTopicLink
 import com.runcheck.ui.components.ListRow
@@ -103,7 +102,8 @@ import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.ProgressRing
 import com.runcheck.ui.components.PullToRefreshWrapper
-import com.runcheck.ui.components.RuncheckLoadingIndicator
+import com.runcheck.ui.components.RuncheckDetailScaffold
+import com.runcheck.ui.components.RuncheckProgressSpinner
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SegmentData
 import com.runcheck.ui.components.SegmentedBar
@@ -230,7 +230,7 @@ fun StorageDetailScreen(
         onStop = viewModel::stopObserving,
     )
 
-    ExpressiveDetailScaffold(
+    RuncheckDetailScaffold(
         title = stringResource(R.string.storage_title),
         onBack = onBack,
         modifier = modifier,
@@ -247,7 +247,7 @@ fun StorageDetailScreen(
                         },
                     contentAlignment = Alignment.Center,
                 ) {
-                    RuncheckLoadingIndicator(contentDescription = loadingDescription)
+                    RuncheckProgressSpinner(contentDescription = loadingDescription)
                 }
             }
 

@@ -27,10 +27,10 @@ import com.runcheck.R
 import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ContentContainer
-import com.runcheck.ui.components.ExpressiveEmptyState
-import com.runcheck.ui.components.ExpressiveSingleChoiceSelector
 import com.runcheck.ui.components.PrimaryTopBar
-import com.runcheck.ui.components.RuncheckLoadingIndicator
+import com.runcheck.ui.components.RuncheckEmptyState
+import com.runcheck.ui.components.RuncheckProgressSpinner
+import com.runcheck.ui.components.RuncheckSingleChoiceSelector
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.home.insights.InsightNavigationHandlers
 import com.runcheck.ui.home.insights.InsightRow
@@ -62,7 +62,7 @@ fun InsightsScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
                     ) {
-                        RuncheckLoadingIndicator(contentDescription = loadingDescription)
+                        RuncheckProgressSpinner(contentDescription = loadingDescription)
                     }
                 }
             }
@@ -99,7 +99,7 @@ fun InsightsScreen(
                         Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
                         SectionHeader(text = stringResource(R.string.insights_filter_title))
-                        ExpressiveSingleChoiceSelector(
+                        RuncheckSingleChoiceSelector(
                             options = InsightFilter.entries,
                             selected = selectedFilter,
                             labelFor = { filter ->
@@ -126,7 +126,7 @@ fun InsightsScreen(
                         )
 
                         if (filteredInsights.isEmpty()) {
-                            ExpressiveEmptyState(
+                            RuncheckEmptyState(
                                 title = stringResource(R.string.insights_empty_title),
                                 message = stringResource(R.string.insights_screen_empty),
                             )

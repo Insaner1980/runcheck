@@ -22,7 +22,7 @@ class RuncheckThemeTest {
     }
 
     @Test
-    fun `dark scheme exposes the planned expressive roles`() {
+    fun `dark scheme exposes the planned Material roles`() {
         with(DarkRuncheckColorScheme) {
             assertColor(0xFF0B1E24, background)
             assertColor(0xFF0F2A35, surfaceContainerLow)
@@ -36,7 +36,7 @@ class RuncheckThemeTest {
     }
 
     @Test
-    fun `light scheme exposes the planned expressive roles`() {
+    fun `light scheme exposes the planned Material roles`() {
         with(LightRuncheckColorScheme) {
             assertColor(0xFFF4F7F8, background)
             assertColor(0xFFFFFFFF, surface)

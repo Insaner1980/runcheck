@@ -52,10 +52,10 @@ import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.common.resolve
-import com.runcheck.ui.components.ExpressiveDetailScaffold
-import com.runcheck.ui.components.ExpressiveEmptyState
 import com.runcheck.ui.components.ProFeatureLockedState
-import com.runcheck.ui.components.RuncheckLoadingIndicator
+import com.runcheck.ui.components.RuncheckDetailScaffold
+import com.runcheck.ui.components.RuncheckEmptyState
+import com.runcheck.ui.components.RuncheckProgressSpinner
 import com.runcheck.ui.components.StatusPill
 import com.runcheck.ui.components.StatusTone
 import com.runcheck.ui.theme.RuncheckPillShape
@@ -82,7 +82,7 @@ fun ChargerComparisonScreen(
         onStop = viewModel::stopObserving,
     )
 
-    ExpressiveDetailScaffold(
+    RuncheckDetailScaffold(
         title = stringResource(R.string.charger_title),
         onBack = onBack,
         modifier = modifier,
@@ -90,7 +90,7 @@ fun ChargerComparisonScreen(
         when (val state = uiState) {
             is ChargerUiState.Loading -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    RuncheckLoadingIndicator(
+                    RuncheckProgressSpinner(
                         contentDescription = stringResource(R.string.a11y_loading),
                     )
                 }
@@ -303,7 +303,7 @@ private fun SelectedChargerCard(
 @Composable
 private fun EmptyStateCard(onAddClick: () -> Unit) {
     InfoCardContainer {
-        ExpressiveEmptyState(
+        RuncheckEmptyState(
             title = stringResource(R.string.charger_no_chargers),
             message = stringResource(R.string.charger_empty_body),
             illustration = { ChargerEmptyIllustration() },

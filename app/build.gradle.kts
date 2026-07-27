@@ -262,12 +262,6 @@ java {
     }
 }
 
-kotlin {
-    compilerOptions {
-        optIn.add("androidx.compose.material3.ExperimentalMaterial3ExpressiveApi")
-    }
-}
-
 android {
     namespace = "com.runcheck"
     compileSdk = 37

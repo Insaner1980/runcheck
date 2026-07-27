@@ -80,7 +80,6 @@ import com.runcheck.ui.common.temperatureBandLabel
 import com.runcheck.ui.common.temperatureUnitRes
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailInfoBannerCandidate
-import com.runcheck.ui.components.ExpressiveDetailScaffold
 import com.runcheck.ui.components.HeatStrip
 import com.runcheck.ui.components.InfoBanner
 import com.runcheck.ui.components.LearnTopicLink
@@ -89,7 +88,8 @@ import com.runcheck.ui.components.MeasuredHeroValue
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.PullToRefreshWrapper
-import com.runcheck.ui.components.RuncheckLoadingIndicator
+import com.runcheck.ui.components.RuncheckDetailScaffold
+import com.runcheck.ui.components.RuncheckProgressSpinner
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SegmentedStatusBar
 import com.runcheck.ui.components.StatusDot
@@ -132,7 +132,7 @@ fun ThermalDetailScreen(
         onStop = viewModel::stopObserving,
     )
 
-    ExpressiveDetailScaffold(
+    RuncheckDetailScaffold(
         title = stringResource(R.string.thermal_title),
         onBack = onBack,
         modifier = modifier,
@@ -149,7 +149,7 @@ fun ThermalDetailScreen(
                         },
                     contentAlignment = Alignment.Center,
                 ) {
-                    RuncheckLoadingIndicator(contentDescription = loadingDescription)
+                    RuncheckProgressSpinner(contentDescription = loadingDescription)
                 }
             }
 

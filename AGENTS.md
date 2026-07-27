@@ -37,7 +37,7 @@ Dependency injection: Hilt. Database: Room. UI: Jetpack Compose + Material 3.
 - Database: Room
 - Preferences: DataStore
 - UI: Jetpack Compose + Material 3
-- Theme: Material 3 Expressive with persisted `SYSTEM`, `LIGHT`, and `DARK` modes
+- Theme: stable Material 3 with persisted `SYSTEM`, `LIGHT`, and `DARK` modes
 - Background work: WorkManager
 - Widgets: Glance; Battery, Health Score, and 4×2 Quick Glance
 - Speed test: M-Lab NDT7 (`ndt7-client-android`)

@@ -7,8 +7,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
@@ -17,7 +19,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -40,6 +41,7 @@ import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun CleanupBottomBar(
@@ -115,27 +117,33 @@ fun CleanupBottomBar(
 
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-                    HorizontalFloatingToolbar(
-                        expanded = true,
+                    Surface(
                         modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.surfaceContainer,
+                        shape = MaterialTheme.shapes.extraLarge,
                     ) {
-                        Button(
-                            onClick = onDelete,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors =
-                                ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                                ),
-                        ) {
-                            Text(
-                                pluralStringResource(
-                                    R.plurals.cleanup_free_action,
-                                    selectedCount,
-                                    formatStorageSize(context, selectedSize),
-                                    selectedCount,
-                                ),
-                            )
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            Button(
+                                onClick = onDelete,
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .defaultMinSize(minHeight = MaterialTheme.uiTokens.touchTarget),
+                                colors =
+                                    ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                                    ),
+                            ) {
+                                Text(
+                                    pluralStringResource(
+                                        R.plurals.cleanup_free_action,
+                                        selectedCount,
+                                        formatStorageSize(context, selectedSize),
+                                        selectedCount,
+                                    ),
+                                )
+                            }
                         }
                     }
                 }

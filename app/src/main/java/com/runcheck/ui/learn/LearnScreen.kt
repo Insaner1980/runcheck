@@ -16,8 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.runcheck.R
 import com.runcheck.ui.components.CardSectionTitle
-import com.runcheck.ui.components.ExpressiveDetailScaffold
-import com.runcheck.ui.components.ExpressiveSingleChoiceSelector
+import com.runcheck.ui.components.RuncheckDetailScaffold
+import com.runcheck.ui.components.RuncheckSingleChoiceSelector
 import com.runcheck.ui.theme.PreviewsRuncheckThemes
 import com.runcheck.ui.theme.RuncheckTheme
 import com.runcheck.ui.theme.spacing
@@ -34,12 +34,12 @@ fun LearnScreen(
     }
     val visibleSections = filterLearnSections(LearnArticleCatalog.sections, selectedTopic)
 
-    ExpressiveDetailScaffold(
+    RuncheckDetailScaffold(
         title = stringResource(R.string.learn_screen_title),
         onBack = onBack,
         modifier = modifier,
     ) {
-        ExpressiveSingleChoiceSelector(
+        RuncheckSingleChoiceSelector(
             options = LearnTopic.entries,
             selected = selectedTopic,
             labelFor = { topic -> stringResource(topic.labelRes) },

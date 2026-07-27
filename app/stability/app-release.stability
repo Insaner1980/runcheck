@@ -153,12 +153,6 @@ private fun com.runcheck.ui.battery.BatteryHistoryPanel(state: com.runcheck.ui.b
     - onNavigateToFullscreen: STABLE (function type)
 
 @Composable
-private fun com.runcheck.ui.battery.BatteryHistoryPreviewPlaceholder(): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-
-@Composable
 private fun com.runcheck.ui.battery.BatteryOverviewSection(state: com.runcheck.ui.battery.BatteryUiState.Success, battery: com.runcheck.domain.model.BatteryState, onDismissInfoCard: kotlin.Function1<kotlin.String, kotlin.Unit>, onNavigateToLearnArticle: kotlin.Function1<kotlin.String, kotlin.Unit>, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
@@ -405,6 +399,17 @@ public fun com.runcheck.ui.chart.ChartStatsRow(chartModel: com.runcheck.ui.chart
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
+private fun com.runcheck.ui.chart.HistoryPeriodEdgeFades(showStart: kotlin.Boolean, showEnd: kotlin.Boolean, color: androidx.compose.ui.graphics.Color, edgeWidth: androidx.compose.ui.unit.Dp, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - showStart: STABLE (primitive type)
+    - showEnd: STABLE (primitive type)
+    - color: STABLE (marked @Stable or @Immutable)
+    - edgeWidth: STABLE (marked @Stable or @Immutable)
+    - modifier: STABLE (marked @Stable or @Immutable)
+
+@Composable
 public fun com.runcheck.ui.chart.HistoryPeriodFilterChipRow(selected: com.runcheck.domain.model.HistoryPeriod, onSelect: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>, includeSinceUnplug: kotlin.Boolean): kotlin.Unit
   skippable: true
   restartable: true
@@ -412,6 +417,17 @@ public fun com.runcheck.ui.chart.HistoryPeriodFilterChipRow(selected: com.runche
     - selected: STABLE (class with no mutable properties)
     - onSelect: STABLE (function type)
     - includeSinceUnplug: STABLE (primitive type)
+
+@Composable
+public fun com.runcheck.ui.chart.HistoryPeriodSelectorRow(options: kotlin.collections.List<T of com.runcheck.ui.chart.HistoryPeriodSelectorRow>, selected: T of com.runcheck.ui.chart.HistoryPeriodSelectorRow, onSelect: kotlin.Function1<T of com.runcheck.ui.chart.HistoryPeriodSelectorRow, kotlin.Unit>, labelFor: @[Composable] androidx.compose.runtime.internal.ComposableFunction1<T of com.runcheck.ui.chart.HistoryPeriodSelectorRow, kotlin.String>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - options: RUNTIME (requires runtime check)
+    - selected: RUNTIME (requires runtime check)
+    - onSelect: STABLE (function type)
+    - labelFor: STABLE (composable function type)
+    - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
 public fun com.runcheck.ui.chart.batteryQualityZones(metric: com.runcheck.ui.chart.BatteryHistoryMetric, temperatureUnit: com.runcheck.domain.model.TemperatureUnit): kotlin.collections.List<com.runcheck.ui.components.ChartQualityZone>?
@@ -723,38 +739,6 @@ public fun com.runcheck.ui.components.DetailTopBar(title: kotlin.String, onBack:
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
-public fun com.runcheck.ui.components.ExpressiveDetailScaffold(title: kotlin.String, onBack: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, content: @[Composable] @[ExtensionFunctionType] androidx.compose.runtime.internal.ComposableFunction1<androidx.compose.foundation.layout.ColumnScope, kotlin.Unit>): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - title: STABLE (String is immutable)
-    - onBack: STABLE (function type)
-    - modifier: STABLE (marked @Stable or @Immutable)
-    - content: STABLE (composable function type)
-
-@Composable
-public fun com.runcheck.ui.components.ExpressiveEmptyState(title: kotlin.String, message: kotlin.String, modifier: androidx.compose.ui.Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector, illustration: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>?): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - title: STABLE (String is immutable)
-    - message: STABLE (String is immutable)
-    - modifier: STABLE (marked @Stable or @Immutable)
-    - icon: STABLE (marked @Stable or @Immutable)
-    - illustration: STABLE (composable function type)
-
-@Composable
-public fun com.runcheck.ui.components.ExpressiveSingleChoiceSelector(options: kotlin.collections.List<T of com.runcheck.ui.components.ExpressiveSingleChoiceSelector>, selected: T of com.runcheck.ui.components.ExpressiveSingleChoiceSelector, labelFor: @[Composable] androidx.compose.runtime.internal.ComposableFunction1<T of com.runcheck.ui.components.ExpressiveSingleChoiceSelector, kotlin.String>, onSelect: kotlin.Function1<T of com.runcheck.ui.components.ExpressiveSingleChoiceSelector, kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
-  skippable: false
-  restartable: true
-  params:
-    - options: RUNTIME (requires runtime check)
-    - selected: RUNTIME (requires runtime check)
-    - labelFor: STABLE (composable function type)
-    - onSelect: STABLE (function type)
-    - modifier: STABLE (marked @Stable or @Immutable)
-
-@Composable
 public fun com.runcheck.ui.components.GridCard(icon: androidx.compose.ui.graphics.vector.ImageVector, title: kotlin.String, subtitle: kotlin.String, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, subtitleColor: androidx.compose.ui.graphics.Color, statusLabel: kotlin.String?, statusColor: androidx.compose.ui.graphics.Color, iconTint: androidx.compose.ui.graphics.Color, iconBackgroundColor: androidx.compose.ui.graphics.Color, locked: kotlin.Boolean, subtitleStyle: com.runcheck.ui.components.GridCardSubtitleStyle): kotlin.Unit
   skippable: true
   restartable: true
@@ -987,15 +971,28 @@ public fun com.runcheck.ui.components.RuncheckActionCard(icon: androidx.compose.
     - iconTint: STABLE (marked @Stable or @Immutable)
 
 @Composable
-public fun com.runcheck.ui.components.RuncheckLoadingIndicator(modifier: androidx.compose.ui.Modifier, contentDescription: kotlin.String?): kotlin.Unit
+public fun com.runcheck.ui.components.RuncheckDetailScaffold(title: kotlin.String, onBack: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, content: @[Composable] @[ExtensionFunctionType] androidx.compose.runtime.internal.ComposableFunction1<androidx.compose.foundation.layout.ColumnScope, kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
+    - title: STABLE (String is immutable)
+    - onBack: STABLE (function type)
     - modifier: STABLE (marked @Stable or @Immutable)
-    - contentDescription: STABLE (class with no mutable properties)
+    - content: STABLE (composable function type)
 
 @Composable
-public fun com.runcheck.ui.components.RuncheckWavyProgress(progress: kotlin.Float, contentDescription: kotlin.String, modifier: androidx.compose.ui.Modifier, content: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>): kotlin.Unit
+public fun com.runcheck.ui.components.RuncheckEmptyState(title: kotlin.String, message: kotlin.String, modifier: androidx.compose.ui.Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector, illustration: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>?): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - title: STABLE (String is immutable)
+    - message: STABLE (String is immutable)
+    - modifier: STABLE (marked @Stable or @Immutable)
+    - icon: STABLE (marked @Stable or @Immutable)
+    - illustration: STABLE (composable function type)
+
+@Composable
+public fun com.runcheck.ui.components.RuncheckProgressGauge(progress: kotlin.Float, contentDescription: kotlin.String, modifier: androidx.compose.ui.Modifier, content: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -1003,6 +1000,25 @@ public fun com.runcheck.ui.components.RuncheckWavyProgress(progress: kotlin.Floa
     - contentDescription: STABLE (String is immutable)
     - modifier: STABLE (marked @Stable or @Immutable)
     - content: STABLE (composable function type)
+
+@Composable
+public fun com.runcheck.ui.components.RuncheckProgressSpinner(modifier: androidx.compose.ui.Modifier, contentDescription: kotlin.String?): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - modifier: STABLE (marked @Stable or @Immutable)
+    - contentDescription: STABLE (class with no mutable properties)
+
+@Composable
+public fun com.runcheck.ui.components.RuncheckSingleChoiceSelector(options: kotlin.collections.List<T of com.runcheck.ui.components.RuncheckSingleChoiceSelector>, selected: T of com.runcheck.ui.components.RuncheckSingleChoiceSelector, labelFor: @[Composable] androidx.compose.runtime.internal.ComposableFunction1<T of com.runcheck.ui.components.RuncheckSingleChoiceSelector, kotlin.String>, onSelect: kotlin.Function1<T of com.runcheck.ui.components.RuncheckSingleChoiceSelector, kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - options: RUNTIME (requires runtime check)
+    - selected: RUNTIME (requires runtime check)
+    - labelFor: STABLE (composable function type)
+    - onSelect: STABLE (function type)
+    - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
 public fun com.runcheck.ui.components.SecondaryActionLink(label: kotlin.String, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
@@ -1719,7 +1735,7 @@ private fun com.runcheck.ui.network.NetworkToolsSection(state: com.runcheck.ui.n
     - onInfoClick: STABLE (function type)
 
 @Composable
-private fun com.runcheck.ui.network.SignalHistoryCard(history: kotlin.collections.List<com.runcheck.domain.model.NetworkReading>, selectedPeriod: com.runcheck.domain.model.HistoryPeriod, selectedMetric: com.runcheck.ui.chart.NetworkHistoryMetric, historyLoadError: com.runcheck.ui.common.UiText?, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>, onMetricChange: kotlin.Function1<com.runcheck.ui.chart.NetworkHistoryMetric, kotlin.Unit>, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \): kotlin.Unit
+private fun com.runcheck.ui.network.SignalHistoryCard(history: kotlin.collections.List<com.runcheck.domain.model.NetworkReading>, selectedPeriod: com.runcheck.domain.model.HistoryPeriod, selectedMetric: com.runcheck.ui.chart.NetworkHistoryMetric, historyLoadError: com.runcheck.ui.common.UiText?, isPro: kotlin.Boolean, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>, onMetricChange: kotlin.Function1<com.runcheck.ui.chart.NetworkHistoryMetric, kotlin.Unit>, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \, onUpgradeToPro: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -1727,9 +1743,11 @@ private fun com.runcheck.ui.network.SignalHistoryCard(history: kotlin.collection
     - selectedPeriod: STABLE (class with no mutable properties)
     - selectedMetric: STABLE (class with no mutable properties)
     - historyLoadError: STABLE (marked @Stable or @Immutable)
+    - isPro: STABLE (primitive type)
     - onPeriodChange: STABLE (function type)
     - onMetricChange: STABLE (function type)
     - onNavigateToFullscreen: STABLE (function type)
+    - onUpgradeToPro: STABLE (function type)
 
 @Composable
 private fun com.runcheck.ui.network.SpeedMetricsCard(state: com.runcheck.ui.network.SpeedTestUiState, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
@@ -2271,14 +2289,16 @@ private fun com.runcheck.ui.storage.StorageHeroCard(storage: com.runcheck.domain
     - onNavigateToCacheArticle: STABLE (function type)
 
 @Composable
-private fun com.runcheck.ui.storage.StorageHistoryCard(history: kotlin.collections.List<com.runcheck.domain.model.StorageReading>, selectedPeriod: com.runcheck.domain.model.HistoryPeriod, historyLoadError: com.runcheck.ui.common.UiText?, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.storage.StorageHistoryCard(history: kotlin.collections.List<com.runcheck.domain.model.StorageReading>, selectedPeriod: com.runcheck.domain.model.HistoryPeriod, historyLoadError: com.runcheck.ui.common.UiText?, isPro: kotlin.Boolean, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
     - history: RUNTIME (requires runtime check)
     - selectedPeriod: STABLE (class with no mutable properties)
     - historyLoadError: STABLE (marked @Stable or @Immutable)
+    - isPro: STABLE (primitive type)
     - onPeriodChange: STABLE (function type)
+    - onUpgradeToPro: STABLE (function type)
 
 @Composable
 private fun com.runcheck.ui.storage.StorageMediaBreakdownCard(breakdown: com.runcheck.domain.model.MediaBreakdown, usedBytes: kotlin.Long): kotlin.Unit
@@ -2664,7 +2684,7 @@ private fun com.runcheck.ui.thermal.ThermalHeroCard(thermal: com.runcheck.domain
     - sessionMaxTemp: STABLE (class with no mutable properties)
 
 @Composable
-private fun com.runcheck.ui.thermal.ThermalHistoryCard(history: kotlin.collections.List<com.runcheck.domain.model.ThermalReading>, selectedPeriod: com.runcheck.domain.model.HistoryPeriod, historyLoadError: com.runcheck.ui.common.UiText?, temperatureUnit: com.runcheck.domain.model.TemperatureUnit, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.thermal.ThermalHistoryCard(history: kotlin.collections.List<com.runcheck.domain.model.ThermalReading>, selectedPeriod: com.runcheck.domain.model.HistoryPeriod, historyLoadError: com.runcheck.ui.common.UiText?, temperatureUnit: com.runcheck.domain.model.TemperatureUnit, isPro: kotlin.Boolean, onPeriodChange: kotlin.Function1<com.runcheck.domain.model.HistoryPeriod, kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -2672,7 +2692,9 @@ private fun com.runcheck.ui.thermal.ThermalHistoryCard(history: kotlin.collectio
     - selectedPeriod: STABLE (class with no mutable properties)
     - historyLoadError: STABLE (marked @Stable or @Immutable)
     - temperatureUnit: STABLE (class with no mutable properties)
+    - isPro: STABLE (primitive type)
     - onPeriodChange: STABLE (function type)
+    - onUpgradeToPro: STABLE (function type)
 
 @Composable
 private fun com.runcheck.ui.thermal.ThermalLiveCharts(thermal: com.runcheck.domain.model.ThermalState, temperatureUnit: com.runcheck.domain.model.TemperatureUnit, liveTempC: kotlin.collections.List<kotlin.Float>, liveHeadroom: kotlin.collections.List<kotlin.Float>): kotlin.Unit

@@ -46,8 +46,8 @@ import com.runcheck.ui.components.ConfidenceBadge
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.InfoBanner
 import com.runcheck.ui.components.PrimaryTopBar
-import com.runcheck.ui.components.RuncheckLoadingIndicator
-import com.runcheck.ui.components.RuncheckWavyProgress
+import com.runcheck.ui.components.RuncheckProgressGauge
+import com.runcheck.ui.components.RuncheckProgressSpinner
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.StatusPill
 import com.runcheck.ui.components.StatusTone
@@ -98,7 +98,7 @@ fun HomeScreen(
                             .semantics { liveRegion = LiveRegionMode.Polite },
                     contentAlignment = Alignment.Center,
                 ) {
-                    RuncheckLoadingIndicator(contentDescription = loadingDescription)
+                    RuncheckProgressSpinner(contentDescription = loadingDescription)
                 }
             }
 
@@ -340,7 +340,7 @@ private fun HealthScoreRing(
     score: Int,
     scoreDescription: String,
 ) {
-    RuncheckWavyProgress(
+    RuncheckProgressGauge(
         progress = score / 100f,
         contentDescription = scoreDescription,
         modifier = Modifier.size(148.dp),

@@ -36,7 +36,7 @@ Primary source files:
 
 ## 1. Product-Level Visual Constraints
 
-The app is a Kotlin/Jetpack Compose Android app using Material 3 Expressive.
+The app is a Kotlin/Jetpack Compose Android app using stable Material 3.
 The visual system supports system-selected, light, and dark theme modes.
 
 Current global constraints:
@@ -106,7 +106,7 @@ Defined in `Color.kt` and exposed through `Theme.kt`.
 ### 2.3 Material Color Scheme Mapping
 
 `RuncheckTheme(themeMode)` selects the fixed light or dark scheme and passes it
-to `MaterialExpressiveTheme` with `MotionScheme.expressive()`. Dynamic colors
+to `MaterialTheme`. Dynamic colors
 are not used.
 
 | Material role | Dark token | Light token |
@@ -448,8 +448,8 @@ Fullscreen chart route:
 
 Common detail pattern:
 
-- `ExpressiveDetailScaffold(fillMaxSize())`.
-- Collapsible `LargeFlexibleTopAppBar`.
+- `RuncheckDetailScaffold(fillMaxSize())`.
+- Collapsible `LargeTopAppBar`.
 - `ContentContainer`.
 - The scaffold owns horizontal 16dp content padding.
 - Vertical item spacing usually 12dp.
@@ -466,7 +466,7 @@ Screen-specific scroll containers:
 - Settings: vertical scroll column.
 - Learn and App Usage: `LazyColumn`.
 - Cleanup: `Scaffold` plus `LazyColumn`.
-- Charger: expressive detail scaffold plus `LazyColumn`.
+- Charger: stable detail scaffold plus `LazyColumn`.
 
 ---
 
@@ -784,7 +784,7 @@ Used on Home grid metrics.
 
 `EnumFilterChipRow`:
 
-- Delegates to `ExpressiveSingleChoiceSelector`.
+- Delegates to `RuncheckSingleChoiceSelector`.
 - Uses an equal-width Material 3 `SingleChoiceSegmentedButtonRow`.
 - Long labels are single-line and ellipsized.
 
@@ -799,17 +799,17 @@ Fullscreen chart controls:
 - Period selector first, metric selector second.
 - Gap: 4dp.
 
-### 7.23 Expressive Wrappers
+### 7.23 Stable Material 3 Components
 
-`ExpressiveComponents.kt` keeps reusable Material 3 Expressive surfaces behind
+`RuncheckComponents.kt` keeps reusable stable Material 3 surfaces behind
 one component boundary:
 
-- `ExpressiveDetailScaffold` combines a collapsible
-  `LargeFlexibleTopAppBar`, constrained content, and 16dp horizontal content
+- `RuncheckDetailScaffold` combines a collapsible
+  `LargeTopAppBar`, constrained content, and 16dp horizontal content
   padding. It is the implemented shell for Battery, Network, Thermal, Storage,
   Speed Test, Charger Comparison, App Usage, Learn, Export, and Pro Upgrade,
   plus protected tool entry states.
-- `ExpressiveSingleChoiceSelector<T>` renders connected, equal-width
+- `RuncheckSingleChoiceSelector<T>` renders connected, equal-width
   single-choice options when there are at most four choices. Longer sets use
   the same connected segmented shape in a horizontal scroll container, with
   104dp minimum option width, up to two label lines, and a 48dp minimum touch
@@ -826,12 +826,12 @@ one component boundary:
 - `SecondaryActionLink` is the compact text-and-arrow action for a related
   destination that must not compete with the screen's primary action.
 - `LearnTopicLink` is the shared full-width related-content link.
-- `ExpressiveEmptyState` provides an icon, title, and supporting message; its
+- `RuncheckEmptyState` provides an icon, title, and supporting message; its
   icon minimum size comes from `UiTokens.touchTarget`.
-- `RuncheckLoadingIndicator` owns the experimental morphing loading indicator.
-  Reduced motion renders a fixed determinate shape instead of continuous morphing.
-- `RuncheckWavyProgress` owns the circular wavy progress API. It uses the
-  1200ms ring token and removes wave amplitude and speed under reduced motion.
+- `RuncheckProgressSpinner` owns the stable circular wait indicator.
+  Reduced motion renders a fixed determinate indicator instead of continuous motion.
+- `RuncheckProgressGauge` owns the stable circular progress gauge. It uses the
+  1200ms ring token and removes interpolation under reduced motion.
 - `AppDisplayName` trims a real app label and otherwise derives a readable
   package-tail fallback. Callers may preserve their existing text style; App
   Usage uses `bodyMedium`.
@@ -1084,7 +1084,7 @@ First viewport:
 - `HomeHealthHero` uses the 28dp hero shape, hero surface color, and 24dp
   padding.
 - The overall score is rendered inside a 148dp determinate
-  `RuncheckWavyProgress`; the semantic description reports the score out of 100.
+  `RuncheckProgressGauge`; the semantic description reports the score out of 100.
 - A text `StatusPill` identifies Healthy, Fair, Poor, or Critical alongside the
   localized timestamp captured when the four live device-state flows emit.
 - `ConfidenceBadge` shows the actual `batteryState.currentMa.confidence` level
@@ -1106,7 +1106,7 @@ Home insights card:
 - Home passes at most one ranked insight to the shared card and always exposes
   the Insights link.
 - With no active insight, the section and View all action stay visible and the
-  shared `ExpressiveEmptyState` replaces the row.
+  shared `RuncheckEmptyState` replaces the row.
 - The unseen count remains visible next to the section heading.
 - Only `TrialHomeCard` for an active trial follows the insight. Home no longer
   owns quick tools, charger comparison, purchased-Pro, or expired-trial cards.
@@ -1115,7 +1115,7 @@ Home insights card:
 
 Structure:
 
-- `ExpressiveDetailScaffold` with collapsible large top app bar.
+- `RuncheckDetailScaffold` with collapsible large top app bar.
 - `PullToRefreshWrapper`.
 - Scroll column.
 - Horizontal padding: 16dp, owned by the scaffold.
@@ -1195,7 +1195,7 @@ Other battery panels:
 
 Structure:
 
-- `ExpressiveDetailScaffold` with collapsible large top app bar.
+- `RuncheckDetailScaffold` with collapsible large top app bar.
 - `PullToRefreshWrapper`.
 - Scroll column.
 - Horizontal padding: 16dp, owned by the scaffold.
@@ -1272,7 +1272,7 @@ WiFi name help:
 
 Structure:
 
-- `ExpressiveDetailScaffold` with collapsible large top app bar.
+- `RuncheckDetailScaffold` with collapsible large top app bar.
 - Scroll column.
 - Horizontal padding: 16dp, owned by the scaffold.
 - Vertical gap: 12dp.
@@ -1327,7 +1327,7 @@ Speed test hero:
 - Semantics role: button.
 - While a test is running, the action surface morphs toward a rounded rectangle,
   exposes "Stop speed test", and calls `NetworkViewModel.stopSpeedTest()`.
-- Loading uses `RuncheckLoadingIndicator`.
+- Loading uses `RuncheckProgressSpinner`.
 
 Speed metrics card:
 
@@ -1366,7 +1366,7 @@ History item:
 
 Structure:
 
-- `ExpressiveDetailScaffold` with collapsible large top app bar.
+- `RuncheckDetailScaffold` with collapsible large top app bar.
 - `PullToRefreshWrapper`.
 - `LazyColumn`.
 - Horizontal padding: 16dp, owned by the scaffold.
@@ -1432,7 +1432,7 @@ Throttling section:
 
 Structure:
 
-- `ExpressiveDetailScaffold` with collapsible large top app bar.
+- `RuncheckDetailScaffold` with collapsible large top app bar.
 - `PullToRefreshWrapper`.
 - Scroll column.
 - Horizontal padding: 16dp, owned by the scaffold.
@@ -1538,7 +1538,7 @@ Structure:
 
 Loading/scanning/deleting:
 
-- Centered `RuncheckLoadingIndicator`.
+- Centered `RuncheckProgressSpinner`.
 - Live region semantics for scanning/deleting.
 
 Unsupported state:
@@ -1649,7 +1649,7 @@ Cleanup success overlay:
 
 Structure:
 
-- `ExpressiveDetailScaffold`.
+- `RuncheckDetailScaffold`.
 - Loading/error/locked states centered.
 - Success content uses `LazyColumn`.
 - Horizontal padding: 16dp, owned by the scaffold.
@@ -1709,7 +1709,7 @@ App usage item:
 
 ### 9.8a Weekly Report
 
-- `ExpressiveDetailScaffold` owns the title, back action, and horizontal padding.
+- `RuncheckDetailScaffold` owns the title, back action, and horizontal padding.
 - Free users see the shared `ProFeatureLockedState`; the report use case is not
   invoked until Pro access is available.
 - The hero card shows the previous completed local Monday-to-Monday interval,
@@ -1725,7 +1725,7 @@ App usage item:
 
 Structure:
 
-- `ExpressiveDetailScaffold`.
+- `RuncheckDetailScaffold`.
 - Extended floating action button when profiles exist:
   - Container primary.
   - Content on-primary.
@@ -1754,7 +1754,7 @@ Selected charger card:
 
 Empty state:
 
-- Shared `ExpressiveEmptyState` with an outlined battery-charging and add icon
+- Shared `RuncheckEmptyState` with an outlined battery-charging and add icon
   illustration group.
 - Inline full-width Add charger CTA.
 - Charging sessions remain automatic; there is no manual Start session action.
@@ -1806,7 +1806,7 @@ Dialogs:
 Structure:
 
 - Top-level `PrimaryTopBar`; there is no back action.
-- Loading state: centered `RuncheckLoadingIndicator` inside `ContentContainer`.
+- Loading state: centered `RuncheckProgressSpinner` inside `ContentContainer`.
 - Error state:
   - Centered column.
   - Padding 24dp.
@@ -1817,11 +1817,11 @@ Structure:
   - Horizontal padding 16dp.
   - Vertical gap 8dp.
   - Top spacer 8dp.
-  - `SectionHeader` plus an equal-width `ExpressiveSingleChoiceSelector` for
+  - `SectionHeader` plus an equal-width `RuncheckSingleChoiceSelector` for
     All and Important.
   - Important includes High and Medium priorities.
   - Count text follows the selected filter.
-  - Empty results use `ExpressiveEmptyState`.
+  - Empty results use `RuncheckEmptyState`.
   - Insight rows use the shared `InsightRow`.
   - Bottom spacer 32dp.
 
@@ -1854,7 +1854,7 @@ remain unseen until the next visible transition, preserving the app-shell badge.
 
 Learn list:
 
-- `ExpressiveDetailScaffold`.
+- `RuncheckDetailScaffold`.
 - Connected topic selector with exactly Battery, Network, Thermal, Storage, and
   Privacy in that order.
 - Privacy contains a dedicated data-and-privacy article. The existing general
@@ -1990,7 +1990,7 @@ SettingsNavigationRow:
 Sections:
 
 - Display:
-  - System, Light, and Dark use `ExpressiveSingleChoiceSelector`.
+  - System, Light, and Dark use `RuncheckSingleChoiceSelector`.
   - The selection updates DataStore immediately through `SettingsViewModel`.
   - Temperature unit and info-card controls remain below the theme selector.
 - Monitoring:
@@ -2039,7 +2039,7 @@ Sections:
     vertical scroll.
 - Debug insights:
   - Appears after About and only when debug insight actions exist.
-  - Uses `RuncheckLoadingIndicator` while an action is running.
+  - Uses `RuncheckProgressSpinner` while an action is running.
   - Actions remain full-width outlined buttons and a text button.
 
 The implemented section order is Display, Monitoring, Notifications (including
@@ -2058,7 +2058,7 @@ Settings dialogs:
 
 Pro upgrade screen:
 
-- `ExpressiveDetailScaffold`.
+- `RuncheckDetailScaffold`.
 - Upgrade content:
   - Vertical scroll.
   - Horizontal padding: 16dp, owned by the scaffold.
@@ -2240,7 +2240,7 @@ Locked content:
 - Export waits for Pro status. Free users see `ProFeatureLockedState`; Pro users
   open the dedicated `ExportScreen`.
 - Export owns its own `ExportViewModel`, delegates CSV preparation to
-  `ExportDataUseCase.prepareExportShare()`, shows `RuncheckLoadingIndicator`
+  `ExportDataUseCase.prepareExportShare()`, shows `RuncheckProgressSpinner`
   while preparing, and launches the existing Android share flow when the URIs
   are ready.
 
@@ -2396,7 +2396,7 @@ Current UI state rules as implemented:
 
 - Home, Insights, Settings debug actions, Weekly Report and protected feature
   readiness, Battery, Network, Thermal, Storage, Speed Test, Cleanup, Charger,
-  App Usage, Fullscreen Chart, and Export use `RuncheckLoadingIndicator` for
+  App Usage, Fullscreen Chart, and Export use `RuncheckProgressSpinner` for
   their implemented loading paths.
 - Error states use body text and retry buttons where available.
 - Empty states use muted body text or card-based prompts.
@@ -2414,7 +2414,7 @@ UI behavior:
 - Top-level Home, Insights, Tools, and Settings use 16dp horizontal content padding.
 - Pro upgrade content uses the scaffold's 16dp horizontal padding.
 - Thermal hero uses 24dp horizontal/vertical padding.
-- Home health hero uses 24dp horizontal/vertical padding and a 148dp wavy ring.
+- Home health hero uses 24dp horizontal/vertical padding and a 148dp circular gauge.
 - Battery, Network, and Storage detail heroes use 16dp padding.
 - Fullscreen chart top bar uses 8dp horizontal padding and 4dp vertical
   padding.

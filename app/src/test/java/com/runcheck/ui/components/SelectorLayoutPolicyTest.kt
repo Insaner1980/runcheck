@@ -5,10 +5,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class ExpressiveSelectorPolicyTest {
+class SelectorLayoutPolicyTest {
     @Test
     fun `small selector shares the available row width`() {
-        val policy = expressiveSelectorLayoutPolicy(optionCount = 4)
+        val policy = selectorLayoutPolicy(optionCount = 4)
 
         assertFalse(policy.isScrollable)
         assertEquals(null, policy.minimumOptionWidthDp)
@@ -18,7 +18,7 @@ class ExpressiveSelectorPolicyTest {
     @Test
     fun `seven and eight option selectors scroll without shrinking labels or touch targets`() {
         listOf(7, 8).forEach { count ->
-            val policy = expressiveSelectorLayoutPolicy(optionCount = count)
+            val policy = selectorLayoutPolicy(optionCount = count)
 
             assertTrue("$count options must scroll", policy.isScrollable)
             assertTrue(

@@ -5,7 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import com.runcheck.ui.chart.FullscreenChartSource
-import com.runcheck.ui.components.ExpressiveSingleChoiceSelector
+import com.runcheck.ui.components.RuncheckSingleChoiceSelector
 import com.runcheck.ui.fullscreen.parseFullscreenChartSource
 
 @Composable
@@ -16,7 +16,7 @@ fun <T> EnumFilterChipRow(
     labelFor: @Composable (T) -> String,
     modifier: Modifier = Modifier,
 ) {
-    ExpressiveSingleChoiceSelector(
+    RuncheckSingleChoiceSelector(
         options = values.toList(),
         selected = selected,
         labelFor = labelFor,

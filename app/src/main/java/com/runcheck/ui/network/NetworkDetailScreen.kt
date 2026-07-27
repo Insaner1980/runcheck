@@ -92,7 +92,6 @@ import com.runcheck.ui.common.resolve
 import com.runcheck.ui.common.signalQualityLabel
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.DetailInfoBannerCandidate
-import com.runcheck.ui.components.ExpressiveDetailScaffold
 import com.runcheck.ui.components.InfoBanner
 import com.runcheck.ui.components.LearnTopicLink
 import com.runcheck.ui.components.LiveChart
@@ -101,7 +100,8 @@ import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.PullToRefreshWrapper
-import com.runcheck.ui.components.RuncheckLoadingIndicator
+import com.runcheck.ui.components.RuncheckDetailScaffold
+import com.runcheck.ui.components.RuncheckProgressSpinner
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SignalBars
 import com.runcheck.ui.components.TrendChart
@@ -180,7 +180,7 @@ fun NetworkDetailScreen(
         onStop = viewModel::stopObserving,
     )
 
-    ExpressiveDetailScaffold(
+    RuncheckDetailScaffold(
         title = stringResource(R.string.network_title),
         onBack = onBack,
         modifier = modifier,
@@ -197,7 +197,7 @@ fun NetworkDetailScreen(
                         },
                     contentAlignment = Alignment.Center,
                 ) {
-                    RuncheckLoadingIndicator(contentDescription = loadingDescription)
+                    RuncheckProgressSpinner(contentDescription = loadingDescription)
                 }
             }
 

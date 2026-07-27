@@ -6,7 +6,7 @@ import org.junit.Test
 
 class LearnTopicFilterTest {
     @Test
-    fun `topic choices match the five expressive filters`() {
+    fun `topic choices match the five stable filters`() {
         val expectedOrder =
             listOf(
                 LearnTopic.BATTERY,

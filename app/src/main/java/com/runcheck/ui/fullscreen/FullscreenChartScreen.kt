@@ -53,9 +53,9 @@ import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.chart.sessionGraphMetricLabel
 import com.runcheck.ui.chart.sessionGraphWindowLabel
 import com.runcheck.ui.chart.signalQualityZones
-import com.runcheck.ui.components.ExpressiveSingleChoiceSelector
 import com.runcheck.ui.components.ProFeatureLockedState
-import com.runcheck.ui.components.RuncheckLoadingIndicator
+import com.runcheck.ui.components.RuncheckProgressSpinner
+import com.runcheck.ui.components.RuncheckSingleChoiceSelector
 import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.components.TrendChartPresentation
 import com.runcheck.ui.theme.spacing
@@ -131,7 +131,7 @@ fun FullscreenChartScreen(
         when (val state = uiState) {
             is FullscreenChartUiState.Loading -> {
                 Box(contentModifier, contentAlignment = Alignment.Center) {
-                    RuncheckLoadingIndicator(
+                    RuncheckProgressSpinner(
                         contentDescription = stringResource(R.string.a11y_loading),
                     )
                 }
@@ -268,7 +268,7 @@ private fun FullscreenChartControls(
             labelFor = { period -> resolvePeriodLabel(source, period) },
             onSelect = onPeriodChange,
         )
-        ExpressiveSingleChoiceSelector(
+        RuncheckSingleChoiceSelector(
             options = metricOptions,
             selected = selectedMetric,
             labelFor = { metric -> resolveMetricLabel(source, metric) },
