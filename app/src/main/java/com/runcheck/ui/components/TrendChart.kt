@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import com.runcheck.R
+import com.runcheck.ui.chart.calculateChartViewport
 import com.runcheck.ui.chart.qualityZoneColorForValue
 import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.chartAxisTextStyle
@@ -115,6 +116,8 @@ private const val TRANSITION_SCAN_FADE_DURATION_MS = 240
 private const val FADE_OUT_DURATION_MS = 300
 private const val TRANSITION_OVERLAP_MS = 200
 private const val SCAN_LINE_START_ALPHA = 0.5f
+private val MINIMUM_PLOT_HEIGHT = 180.dp
+private val MINIMUM_Y_LABEL_SPACING = 32.dp
 
 private fun buildTrendLineGradientStops(
     data: List<Float>,
@@ -281,26 +284,10 @@ fun TrendChart(
         settledData = data
     }
 
-    val scaleValues =
-        remember(data, yLabels, qualityZones) {
-            buildList {
-                addAll(data)
-                yLabels?.forEach { add(it.value) }
-                qualityZones?.forEach { zone ->
-                    add(zone.minValue)
-                    add(zone.maxValue)
-                }
-            }
-        }
-    val minVal = scaleValues.minOrNull() ?: 0f
-    val maxVal = scaleValues.maxOrNull() ?: (minVal + 1f)
-    val range = (maxVal - minVal).coerceAtLeast(1f)
-
     val linePath = remember { Path() }
     val previousLinePath = remember { Path() }
     val stripPath = remember { Path() }
 
-    val hasYLabels = !yLabels.isNullOrEmpty()
     val hasXLabels = !xLabels.isNullOrEmpty()
 
     val textMeasurer = rememberTextMeasurer()
@@ -346,22 +333,11 @@ fun TrendChart(
     val gridColor = chartColors.grid.copy(alpha = 0.2f)
     val tooltipBgColor = MaterialTheme.colorScheme.surfaceContainer
     val tooltipLineColor = chartColors.selectedPoint.copy(alpha = 0.5f)
-    val measuredYLabels =
-        remember(yLabels, labelStyle, textMeasurer) {
-            yLabels?.map { it to textMeasurer.measure(it.label, labelStyle) }.orEmpty()
-        }
     val measuredXLabels =
         remember(xLabels, labelStyle, textMeasurer) {
             xLabels?.map { it to textMeasurer.measure(it.label, labelStyle) }.orEmpty()
         }
     val density = LocalDensity.current
-    val yLabelWidth =
-        if (hasYLabels) {
-            val maxWidth = measuredYLabels.maxOf { it.second.size.width }
-            with(density) { (maxWidth + chartStyle.yLabelGap.toPx()).toDp() }
-        } else {
-            0.dp
-        }
     val xLabelHeight =
         if (hasXLabels) {
             val maxHeight = measuredXLabels.maxOf { it.second.size.height }
@@ -375,7 +351,62 @@ fun TrendChart(
         } else {
             0.dp
         }
+    val resolvedChartHeight =
+        when (presentation) {
+            TrendChartPresentation.Embedded -> {
+                maxOf(
+                    chartHeight,
+                    MINIMUM_PLOT_HEIGHT + xLabelHeight + chartStyle.chartPadding * 2,
+                )
+            }
+
+            TrendChartPresentation.Fullscreen -> {
+                chartHeight
+            }
+        }
+    val availablePlotHeightPx =
+        with(density) {
+            (
+                resolvedChartHeight -
+                    xLabelHeight -
+                    chartStyle.chartPadding * 2
+            ).coerceAtLeast(1.dp)
+                .toPx()
+        }
+    val viewport =
+        remember(data, yLabels, qualityZones, availablePlotHeightPx) {
+            calculateChartViewport(
+                data = data,
+                explicitTicks = yLabels?.map(ChartYLabel::value).orEmpty(),
+                qualityZones = qualityZones.orEmpty(),
+                availableHeightPx = availablePlotHeightPx,
+                minimumLabelSpacingPx = with(density) { MINIMUM_Y_LABEL_SPACING.toPx() },
+            )
+        }
+    val retainedYLabels =
+        remember(yLabels, viewport) {
+            val retainedTicks = viewport?.ticks.orEmpty()
+            yLabels
+                ?.filter { label -> retainedTicks.any { tick -> tick == label.value } }
+                .orEmpty()
+        }
+    val measuredYLabels =
+        remember(retainedYLabels, labelStyle, textMeasurer) {
+            retainedYLabels.map { it to textMeasurer.measure(it.label, labelStyle) }
+        }
+    val hasYLabels = retainedYLabels.isNotEmpty()
+    val yLabelWidth =
+        if (hasYLabels) {
+            val maxWidth = measuredYLabels.maxOf { it.second.size.width }
+            with(density) { (maxWidth + chartStyle.yLabelGap.toPx()).toDp() }
+        } else {
+            0.dp
+        }
     val gestureEdgeGuardPx = with(density) { chartStyle.gestureEdgeGuard.toPx() }
+    val minVal = viewport?.minValue ?: 0f
+    val maxVal = viewport?.maxValue ?: 1f
+    val range = (maxVal - minVal).coerceAtLeast(1f)
+    val visibleQualityZones = viewport?.visibleZones.orEmpty()
 
     // Compute per-point gradient color stops from quality zones
     val lineGradientColors =
@@ -388,7 +419,7 @@ fun TrendChart(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(chartHeight)
+                    .height(resolvedChartHeight)
                     .then(
                         if (contentDescription == null) {
                             Modifier
@@ -496,7 +527,7 @@ fun TrendChart(
                     stepX >= chartStyle.pointMarkerRadius.toPx() * 3f
 
             // ── Quality zone bands ─────────────────────────────────────────
-            qualityZones?.forEach { zone ->
+            visibleQualityZones.forEach { zone ->
                 val yBottom = chartTop + chartHeight - ((zone.minValue - minVal) / range * chartHeight)
                 val yTop = chartTop + chartHeight - ((zone.maxValue - minVal) / range * chartHeight)
                 val clampedTop = yTop.coerceIn(chartTop, chartTop + chartHeight)
@@ -511,8 +542,8 @@ fun TrendChart(
             }
 
             // ── Grid lines ─────────────────────────────────────────────────
-            if (showGrid && yLabels != null) {
-                for (yLabel in yLabels) {
+            if (showGrid && retainedYLabels.isNotEmpty()) {
+                for (yLabel in retainedYLabels) {
                     val y = chartTop + chartHeight - ((yLabel.value - minVal) / range * chartHeight)
                     if (y in chartTop..chartTop + chartHeight) {
                         drawLine(
@@ -526,7 +557,7 @@ fun TrendChart(
             }
 
             // ── Y-axis labels ──────────────────────────────────────────────
-            if (yLabels != null) {
+            if (retainedYLabels.isNotEmpty()) {
                 for ((yLabel, measured) in measuredYLabels) {
                     val y = chartTop + chartHeight - ((yLabel.value - minVal) / range * chartHeight)
                     if (y in chartTop - chartPad..chartTop + chartHeight + chartPad) {

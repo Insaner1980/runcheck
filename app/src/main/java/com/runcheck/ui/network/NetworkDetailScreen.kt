@@ -65,6 +65,7 @@ import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SignalQuality
 import com.runcheck.domain.model.SpeedTestResult
+import com.runcheck.ui.chart.ChartPrimaryState
 import com.runcheck.ui.chart.ChartStatsRow
 import com.runcheck.ui.chart.FullscreenChartSource
 import com.runcheck.ui.chart.HistoryPeriodFilterChipRow
@@ -75,6 +76,7 @@ import com.runcheck.ui.chart.formatChartTooltip
 import com.runcheck.ui.chart.historyPeriodLabel
 import com.runcheck.ui.chart.networkHistoryMetricLabel
 import com.runcheck.ui.chart.rememberChartAccessibilitySummary
+import com.runcheck.ui.chart.resolveChartPrimaryState
 import com.runcheck.ui.chart.signalQualityZones
 import com.runcheck.ui.common.ApplyFullscreenChartSelectionResult
 import com.runcheck.ui.common.EnumFilterChipRow
@@ -488,78 +490,98 @@ private fun SignalHistoryCard(
             onSelect = onPeriodChange,
         )
 
-        HistoryLoadErrorMessage(error = historyLoadError)
-
-        if (chartModel.chartData.size >= 2) {
-            val chartAccessibilitySummary =
-                rememberChartAccessibilitySummary(
-                    title =
-                        stringResource(
-                            R.string.fullscreen_chart_title_network,
-                            networkHistoryMetricLabel(metric),
-                        ),
-                    chartData = chartModel.chartData,
-                    unit = chartModel.unit,
-                    decimals = chartModel.tooltipDecimals,
-                    timeContext =
-                        stringResource(
-                            R.string.a11y_chart_context_history,
-                            historyPeriodLabel(selectedPeriod),
-                        ),
-                )
-            val fullscreenSeed =
-                remember(chartModel, metric, selectedPeriod) {
-                    FullscreenChartUiState.Success(
+        val primaryState =
+            resolveChartPrimaryState(
+                isLoading = false,
+                error = historyLoadError?.resolve(),
+                isLocked = false,
+                dataPointCount = chartModel.chartData.size,
+                minimumDataPointCount = 2,
+            )
+        when (primaryState) {
+            ChartPrimaryState.Data -> {
+                val chartAccessibilitySummary =
+                    rememberChartAccessibilitySummary(
+                        title =
+                            stringResource(
+                                R.string.fullscreen_chart_title_network,
+                                networkHistoryMetricLabel(metric),
+                            ),
                         chartData = chartModel.chartData,
-                        chartTimestamps = chartModel.chartTimestamps,
                         unit = chartModel.unit,
-                        selectedMetric = metric.name,
-                        selectedPeriod = selectedPeriod.name,
-                        metricOptions = NetworkHistoryMetric.entries.map { it.name },
-                        periodOptions =
-                            HistoryPeriod.entries
-                                .filter { it != HistoryPeriod.SINCE_UNPLUG }
-                                .map { it.name },
-                        yLabels = chartModel.yLabels,
-                        xLabels = chartModel.xLabels,
-                        tooltipDecimals = chartModel.tooltipDecimals,
-                        tooltipTimeSkeleton = chartModel.tooltipTimeSkeleton,
+                        decimals = chartModel.tooltipDecimals,
+                        timeContext =
+                            stringResource(
+                                R.string.a11y_chart_context_history,
+                                historyPeriodLabel(selectedPeriod),
+                            ),
                     )
-                }
-            Text(
-                text = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${networkHistoryMetricLabel(metric)}",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            TrendChart(
-                data = chartModel.chartData,
-                modifier = Modifier.fillMaxWidth(),
-                contentDescription = chartAccessibilitySummary,
-                yLabels = chartModel.yLabels.ifEmpty { null },
-                xLabels = chartModel.xLabels.ifEmpty { null },
-                showGrid = true,
-                qualityZones = qualityZones,
-                tooltipFormatter = { index -> formatChartTooltip(chartModel, index) },
-                onExpandClick = {
-                    FullscreenChartSeedStore.prime(
-                        source = FullscreenChartSource.NETWORK_HISTORY,
-                        state = fullscreenSeed,
-                    )
-                    onNavigateToFullscreen(
-                        FullscreenChartSource.NETWORK_HISTORY.name,
-                        metric.name,
-                        selectedPeriod.name,
-                    )
-                },
-            )
+                val fullscreenSeed =
+                    remember(chartModel, metric, selectedPeriod) {
+                        FullscreenChartUiState.Success(
+                            chartData = chartModel.chartData,
+                            chartTimestamps = chartModel.chartTimestamps,
+                            unit = chartModel.unit,
+                            selectedMetric = metric.name,
+                            selectedPeriod = selectedPeriod.name,
+                            metricOptions = NetworkHistoryMetric.entries.map { it.name },
+                            periodOptions =
+                                HistoryPeriod.entries
+                                    .filter { it != HistoryPeriod.SINCE_UNPLUG }
+                                    .map { it.name },
+                            yLabels = chartModel.yLabels,
+                            xLabels = chartModel.xLabels,
+                            tooltipDecimals = chartModel.tooltipDecimals,
+                            tooltipTimeSkeleton = chartModel.tooltipTimeSkeleton,
+                        )
+                    }
+                Text(
+                    text = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${networkHistoryMetricLabel(metric)}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                TrendChart(
+                    data = chartModel.chartData,
+                    modifier = Modifier.fillMaxWidth(),
+                    contentDescription = chartAccessibilitySummary,
+                    yLabels = chartModel.yLabels.ifEmpty { null },
+                    xLabels = chartModel.xLabels.ifEmpty { null },
+                    showGrid = true,
+                    qualityZones = qualityZones,
+                    tooltipFormatter = { index -> formatChartTooltip(chartModel, index) },
+                    onExpandClick = {
+                        FullscreenChartSeedStore.prime(
+                            source = FullscreenChartSource.NETWORK_HISTORY,
+                            state = fullscreenSeed,
+                        )
+                        onNavigateToFullscreen(
+                            FullscreenChartSource.NETWORK_HISTORY.name,
+                            metric.name,
+                            selectedPeriod.name,
+                        )
+                    },
+                )
 
-            ChartStatsRow(chartModel = chartModel)
-        } else {
-            Text(
-                text = stringResource(R.string.network_history_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+                ChartStatsRow(chartModel = chartModel)
+            }
+
+            is ChartPrimaryState.Error -> {
+                HistoryLoadErrorMessage(error = historyLoadError)
+            }
+
+            ChartPrimaryState.InsufficientData -> {
+                Text(
+                    text = stringResource(R.string.network_history_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            ChartPrimaryState.Locked,
+            ChartPrimaryState.Loading,
+            -> {
+                Unit
+            }
         }
     }
 }

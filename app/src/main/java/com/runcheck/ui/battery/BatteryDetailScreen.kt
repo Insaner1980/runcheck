@@ -1,8 +1,6 @@
 package com.runcheck.ui.battery
 
-import android.os.Build
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,8 +39,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asComposeRenderEffect
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -68,8 +64,10 @@ import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.usecase.BatteryStatistics
 import com.runcheck.ui.chart.BatteryHistoryMetric
 import com.runcheck.ui.chart.ChargingSessionSummary
+import com.runcheck.ui.chart.ChartPrimaryState
 import com.runcheck.ui.chart.ChartStatsRow
 import com.runcheck.ui.chart.FullscreenChartSource
+import com.runcheck.ui.chart.HistoryPeriodFilterChipRow
 import com.runcheck.ui.chart.MAX_HISTORY_CHART_POINTS
 import com.runcheck.ui.chart.MAX_SESSION_CHART_POINTS
 import com.runcheck.ui.chart.SessionGraphMetric
@@ -83,6 +81,7 @@ import com.runcheck.ui.chart.hasGraphData
 import com.runcheck.ui.chart.historyMetricLabel
 import com.runcheck.ui.chart.historyPeriodLabel
 import com.runcheck.ui.chart.rememberChartAccessibilitySummary
+import com.runcheck.ui.chart.resolveChartPrimaryState
 import com.runcheck.ui.chart.sessionGraphMetricLabel
 import com.runcheck.ui.chart.sessionGraphWindowLabel
 import com.runcheck.ui.common.ApplyFullscreenChartSelectionResult
@@ -96,7 +95,6 @@ import com.runcheck.ui.common.plugTypeLabel
 import com.runcheck.ui.common.rememberSaveableEnumState
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.common.temperatureBandLabel
-import com.runcheck.ui.components.AreaChart
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.ConfidenceBadge
 import com.runcheck.ui.components.DetailInfoBannerCandidate
@@ -106,7 +104,6 @@ import com.runcheck.ui.components.LearnTopicLink
 import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.MetricRow
-import com.runcheck.ui.components.ProBadgePill
 import com.runcheck.ui.components.ProgressRing
 import com.runcheck.ui.components.PullToRefreshWrapper
 import com.runcheck.ui.components.RuncheckLoadingIndicator
@@ -1029,12 +1026,35 @@ private fun BatteryHistoryPanel(
     BatteryPanel {
         CardSectionTitle(text = stringResource(R.string.battery_history_title))
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-        if (state.isPro) {
-            EnumFilterChipRow(
-                values = HistoryPeriod.entries,
+        val chartModel =
+            remember(
+                state.history,
+                selectedMetric,
+                state.selectedPeriod,
+                state.temperatureUnit,
+            ) {
+                buildBatteryHistoryChartModel(
+                    history = state.history,
+                    metric = selectedMetric,
+                    period = state.selectedPeriod,
+                    temperatureUnit = state.temperatureUnit,
+                    maxPoints = MAX_HISTORY_CHART_POINTS,
+                )
+            }
+        val primaryState =
+            resolveChartPrimaryState(
+                isLoading = false,
+                error = null,
+                isLocked = !state.isPro,
+                dataPointCount = chartModel.chartData.size,
+                minimumDataPointCount = 2,
+            )
+
+        if (primaryState != ChartPrimaryState.Locked) {
+            HistoryPeriodFilterChipRow(
                 selected = state.selectedPeriod,
                 onSelect = onPeriodChange,
-                labelFor = { period -> historyPeriodLabel(period) },
+                includeSinceUnplug = true,
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
@@ -1047,25 +1067,12 @@ private fun BatteryHistoryPanel(
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        }
 
-            val chartModel =
-                remember(
-                    state.history,
-                    selectedMetric,
-                    state.selectedPeriod,
-                    state.temperatureUnit,
-                ) {
-                    buildBatteryHistoryChartModel(
-                        history = state.history,
-                        metric = selectedMetric,
-                        period = state.selectedPeriod,
-                        temperatureUnit = state.temperatureUnit,
-                        maxPoints = MAX_HISTORY_CHART_POINTS,
-                    )
-                }
-            val qualityZones = batteryQualityZones(selectedMetric, state.temperatureUnit)
+        val qualityZones = batteryQualityZones(selectedMetric, state.temperatureUnit)
 
-            if (chartModel.chartData.size >= 2) {
+        when (primaryState) {
+            ChartPrimaryState.Data -> {
                 val chartAccessibilitySummary =
                     rememberChartAccessibilitySummary(
                         title =
@@ -1128,11 +1135,21 @@ private fun BatteryHistoryPanel(
                     },
                 )
                 ChartStatsRow(chartModel = chartModel)
-            } else {
+            }
+
+            ChartPrimaryState.InsufficientData -> {
                 BatteryHistoryEmptyState()
             }
-        } else {
-            BatteryHistoryLockedState(onUpgradeToPro = onUpgradeToPro)
+
+            ChartPrimaryState.Locked -> {
+                BatteryHistoryLockedState(onUpgradeToPro = onUpgradeToPro)
+            }
+
+            is ChartPrimaryState.Error,
+            ChartPrimaryState.Loading,
+            -> {
+                Unit
+            }
         }
     }
 }
@@ -1143,7 +1160,6 @@ private fun BatteryHistoryLockedState(onUpgradeToPro: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
-        BatteryHistoryPreviewPlaceholder()
         Text(
             text = stringResource(R.string.pro_feature_battery_history_message),
             style = MaterialTheme.typography.bodyMedium,
@@ -1166,73 +1182,10 @@ private fun BatteryHistoryEmptyState() {
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
-        BatteryHistoryPreviewPlaceholder()
         Text(
             text = stringResource(R.string.battery_history_metric_unavailable),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun BatteryHistoryPreviewPlaceholder() {
-    val fakeData =
-        remember {
-            listOf(72f, 70f, 65f, 68f, 60f, 55f, 58f, 52f, 48f, 53f, 50f, 45f, 42f, 47f, 44f, 40f, 38f, 43f, 46f, 50f)
-        }
-    val chartColor = MaterialTheme.colorScheme.primary
-    val chartShape = MaterialTheme.shapes.large
-
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(148.dp)
-                .graphicsLayer {
-                    clip = true
-                    shape = chartShape
-                }.background(
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
-                    shape = chartShape,
-                ),
-    ) {
-        // Blurred fake area chart (blur requires API 31+)
-        val blurModifier =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                Modifier.graphicsLayer {
-                    renderEffect =
-                        android.graphics.RenderEffect
-                            .createBlurEffect(18f, 18f, android.graphics.Shader.TileMode.DECAL)
-                            .asComposeRenderEffect()
-                }
-            } else {
-                Modifier.graphicsLayer { alpha = 0.3f }
-            }
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(
-                        top = MaterialTheme.spacing.base,
-                        bottom = MaterialTheme.spacing.sm,
-                        start = MaterialTheme.spacing.sm,
-                        end = MaterialTheme.spacing.sm,
-                    ).then(blurModifier),
-        ) {
-            AreaChart(
-                data = fakeData,
-                modifier = Modifier.fillMaxSize(),
-                lineColor = chartColor,
-                animate = false,
-            )
-        }
-
-        ProBadgePill(
-            modifier =
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(MaterialTheme.spacing.sm),
         )
     }
 }

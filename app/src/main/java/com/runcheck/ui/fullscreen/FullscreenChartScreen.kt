@@ -38,6 +38,7 @@ import com.runcheck.R
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.ui.chart.BatteryHistoryMetric
 import com.runcheck.ui.chart.FullscreenChartSource
+import com.runcheck.ui.chart.HistoryPeriodSelectorRow
 import com.runcheck.ui.chart.NetworkHistoryMetric
 import com.runcheck.ui.chart.SessionGraphMetric
 import com.runcheck.ui.chart.SessionGraphWindow
@@ -259,7 +260,7 @@ private fun FullscreenChartControls(
     Column(
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
     ) {
-        ExpressiveSingleChoiceSelector(
+        HistoryPeriodSelectorRow(
             options = periodOptions,
             selected = selectedPeriod,
             labelFor = { period -> resolvePeriodLabel(source, period) },

@@ -69,6 +69,7 @@ import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.TrashInfo
+import com.runcheck.ui.chart.ChartPrimaryState
 import com.runcheck.ui.chart.ChartStatsRow
 import com.runcheck.ui.chart.HistoryPeriodFilterChipRow
 import com.runcheck.ui.chart.MAX_STORAGE_HISTORY_POINTS
@@ -77,6 +78,7 @@ import com.runcheck.ui.chart.buildStorageHistoryChartModel
 import com.runcheck.ui.chart.formatChartTooltip
 import com.runcheck.ui.chart.historyPeriodLabel
 import com.runcheck.ui.chart.rememberChartAccessibilitySummary
+import com.runcheck.ui.chart.resolveChartPrimaryState
 import com.runcheck.ui.chart.storageHistoryMetricLabel
 import com.runcheck.ui.chart.storageQualityZones
 import com.runcheck.ui.common.EnumFilterChipRow
@@ -880,49 +882,69 @@ private fun StorageHistoryCard(
                 onSelect = onPeriodChange,
             )
 
-            HistoryLoadErrorMessage(error = historyLoadError)
+            val primaryState =
+                resolveChartPrimaryState(
+                    isLoading = false,
+                    error = historyLoadError?.resolve(),
+                    isLocked = false,
+                    dataPointCount = chartModel.chartData.size,
+                    minimumDataPointCount = 2,
+                )
+            when (primaryState) {
+                ChartPrimaryState.Data -> {
+                    val chartAccessibilitySummary =
+                        rememberChartAccessibilitySummary(
+                            title =
+                                stringResource(
+                                    R.string.fullscreen_chart_title_storage,
+                                    storageHistoryMetricLabel(metric),
+                                ),
+                            chartData = chartModel.chartData,
+                            unit = chartModel.unit,
+                            decimals = chartModel.tooltipDecimals,
+                            timeContext =
+                                stringResource(
+                                    R.string.a11y_chart_context_history,
+                                    historyPeriodLabel(selectedPeriod),
+                                ),
+                        )
 
-            if (chartModel.chartData.size >= 2) {
-                val chartAccessibilitySummary =
-                    rememberChartAccessibilitySummary(
-                        title =
-                            stringResource(
-                                R.string.fullscreen_chart_title_storage,
-                                storageHistoryMetricLabel(metric),
-                            ),
-                        chartData = chartModel.chartData,
-                        unit = chartModel.unit,
-                        decimals = chartModel.tooltipDecimals,
-                        timeContext =
-                            stringResource(
-                                R.string.a11y_chart_context_history,
-                                historyPeriodLabel(selectedPeriod),
-                            ),
+                    Text(
+                        text = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${storageHistoryMetricLabel(metric)}",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    TrendChart(
+                        data = chartModel.chartData,
+                        modifier = Modifier.fillMaxWidth(),
+                        contentDescription = chartAccessibilitySummary,
+                        yLabels = chartModel.yLabels.ifEmpty { null },
+                        xLabels = chartModel.xLabels.ifEmpty { null },
+                        showGrid = true,
+                        qualityZones = storageQualityZones(metric),
+                        tooltipFormatter = { index -> formatChartTooltip(chartModel, index) },
                     )
 
-                Text(
-                    text = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${storageHistoryMetricLabel(metric)}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                TrendChart(
-                    data = chartModel.chartData,
-                    modifier = Modifier.fillMaxWidth(),
-                    contentDescription = chartAccessibilitySummary,
-                    yLabels = chartModel.yLabels.ifEmpty { null },
-                    xLabels = chartModel.xLabels.ifEmpty { null },
-                    showGrid = true,
-                    qualityZones = storageQualityZones(metric),
-                    tooltipFormatter = { index -> formatChartTooltip(chartModel, index) },
-                )
+                    ChartStatsRow(chartModel = chartModel)
+                }
 
-                ChartStatsRow(chartModel = chartModel)
-            } else {
-                Text(
-                    text = stringResource(R.string.network_history_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                is ChartPrimaryState.Error -> {
+                    HistoryLoadErrorMessage(error = historyLoadError)
+                }
+
+                ChartPrimaryState.InsufficientData -> {
+                    Text(
+                        text = stringResource(R.string.network_history_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                ChartPrimaryState.Locked,
+                ChartPrimaryState.Loading,
+                -> {
+                    Unit
+                }
             }
         }
     }
