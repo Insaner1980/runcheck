@@ -1,12 +1,11 @@
 package com.runcheck.ui.chart
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -15,8 +14,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
@@ -26,9 +26,11 @@ import androidx.compose.ui.semantics.collectionInfo
 import androidx.compose.ui.semantics.collectionItemInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 import kotlin.math.roundToInt
 
 @Composable
@@ -63,7 +65,12 @@ fun <T> HistoryPeriodSelectorRow(
     val density = LocalDensity.current
     val labels = options.map { option -> labelFor(option) }
 
-    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+    BoxWithConstraints(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(MaterialTheme.uiTokens.touchTarget),
+    ) {
         val policy =
             historyPeriodSelectorPolicy(
                 optionLabels = labels,
@@ -123,39 +130,50 @@ fun <T> HistoryPeriodSelectorRow(
             }
         }
 
-        if (listState.canScrollBackward) {
-            HistoryPeriodEdgeFade(
-                colors =
-                    listOf(
-                        MaterialTheme.colorScheme.surface,
-                        Color.Transparent,
-                    ),
-                modifier = Modifier.align(Alignment.CenterStart),
-            )
-        }
-        if (listState.canScrollForward) {
-            HistoryPeriodEdgeFade(
-                colors =
-                    listOf(
-                        Color.Transparent,
-                        MaterialTheme.colorScheme.surface,
-                    ),
-                modifier = Modifier.align(Alignment.CenterEnd),
+        if (listState.canScrollBackward || listState.canScrollForward) {
+            HistoryPeriodEdgeFades(
+                showStart = listState.canScrollBackward,
+                showEnd = listState.canScrollForward,
+                color = MaterialTheme.colorScheme.surface,
+                edgeWidth = MaterialTheme.spacing.lg,
+                modifier = Modifier.fillMaxSize(),
             )
         }
     }
 }
 
 @Composable
-private fun HistoryPeriodEdgeFade(
-    colors: List<Color>,
+private fun HistoryPeriodEdgeFades(
+    showStart: Boolean,
+    showEnd: Boolean,
+    color: Color,
+    edgeWidth: Dp,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier =
-            modifier
-                .fillMaxHeight()
-                .width(MaterialTheme.spacing.lg)
-                .background(Brush.horizontalGradient(colors)),
-    )
+    Canvas(modifier = modifier) {
+        val edgeWidthPx = edgeWidth.toPx().coerceAtMost(size.width)
+        if (showStart) {
+            drawRect(
+                brush =
+                    Brush.horizontalGradient(
+                        colors = listOf(color, Color.Transparent),
+                        startX = 0f,
+                        endX = edgeWidthPx,
+                    ),
+                size = Size(edgeWidthPx, size.height),
+            )
+        }
+        if (showEnd) {
+            drawRect(
+                brush =
+                    Brush.horizontalGradient(
+                        colors = listOf(Color.Transparent, color),
+                        startX = size.width - edgeWidthPx,
+                        endX = size.width,
+                    ),
+                topLeft = Offset(size.width - edgeWidthPx, 0f),
+                size = Size(edgeWidthPx, size.height),
+            )
+        }
+    }
 }

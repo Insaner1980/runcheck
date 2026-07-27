@@ -495,14 +495,14 @@ private fun StorageToolsSection(
     onEmptyTrash: () -> Unit,
     onUpgradeToPro: () -> Unit,
 ) {
-    if (state.isPro) {
-        StorageHistoryCard(
-            history = state.storageHistory,
-            selectedPeriod = state.selectedHistoryPeriod,
-            historyLoadError = state.historyLoadError,
-            onPeriodChange = onPeriodChange,
-        )
-    }
+    StorageHistoryCard(
+        history = state.storageHistory,
+        selectedPeriod = state.selectedHistoryPeriod,
+        historyLoadError = state.historyLoadError,
+        isPro = state.isPro,
+        onPeriodChange = onPeriodChange,
+        onUpgradeToPro = onUpgradeToPro,
+    )
 
     if (state.isPro) {
         StorageCleanupToolsSection(
@@ -840,7 +840,9 @@ private fun StorageHistoryCard(
     history: List<StorageReading>,
     selectedPeriod: HistoryPeriod,
     historyLoadError: UiText?,
+    isPro: Boolean,
     onPeriodChange: (HistoryPeriod) -> Unit,
+    onUpgradeToPro: () -> Unit,
 ) {
     val selectedMetricState = rememberSaveableEnumState(StorageHistoryMetric.USED_SPACE)
     val metric = selectedMetricState.value
@@ -870,26 +872,28 @@ private fun StorageHistoryCard(
         ) {
             CardSectionTitle(text = stringResource(R.string.storage_history))
 
-            EnumFilterChipRow(
-                values = StorageHistoryMetric.entries,
-                selected = metric,
-                onSelect = { selectedMetricState.value = it },
-                labelFor = { storageHistoryMetricLabel(it) },
-            )
-
-            HistoryPeriodFilterChipRow(
-                selected = selectedPeriod,
-                onSelect = onPeriodChange,
-            )
-
             val primaryState =
                 resolveChartPrimaryState(
                     isLoading = false,
                     error = historyLoadError?.resolve(),
-                    isLocked = false,
+                    isLocked = !isPro,
                     dataPointCount = chartModel.chartData.size,
                     minimumDataPointCount = 2,
                 )
+            if (primaryState != ChartPrimaryState.Locked) {
+                EnumFilterChipRow(
+                    values = StorageHistoryMetric.entries,
+                    selected = metric,
+                    onSelect = { selectedMetricState.value = it },
+                    labelFor = { storageHistoryMetricLabel(it) },
+                )
+
+                HistoryPeriodFilterChipRow(
+                    selected = selectedPeriod,
+                    onSelect = onPeriodChange,
+                )
+            }
+
             when (primaryState) {
                 ChartPrimaryState.Data -> {
                     val chartAccessibilitySummary =
@@ -940,7 +944,14 @@ private fun StorageHistoryCard(
                     )
                 }
 
-                ChartPrimaryState.Locked,
+                ChartPrimaryState.Locked -> {
+                    ProFeatureCalloutCard(
+                        message = stringResource(R.string.pro_feature_locked_generic),
+                        actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+                        onAction = onUpgradeToPro,
+                    )
+                }
+
                 ChartPrimaryState.Loading,
                 -> {
                     Unit

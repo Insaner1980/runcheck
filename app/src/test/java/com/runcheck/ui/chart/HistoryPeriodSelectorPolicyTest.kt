@@ -7,6 +7,41 @@ import org.junit.Test
 
 class HistoryPeriodSelectorPolicyTest {
     @Test
+    fun `empty selector has no scroll target announcement or animation`() {
+        val policy =
+            historyPeriodSelectorPolicy(
+                optionLabels = emptyList(),
+                selectedIndex = 4,
+                viewportWidthDp = 411,
+                fontScale = 2f,
+                reducedMotion = false,
+            )
+
+        assertFalse(policy.isScrollable)
+        assertEquals(0, policy.selectedItemScrollTarget)
+        assertEquals(0, policy.selectedItemPosition)
+        assertEquals(0, policy.optionCount)
+        assertFalse(policy.announcesSelectedState)
+        assertFalse(policy.animateSelectedItemScroll)
+    }
+
+    @Test
+    fun `out of range selection clamps to the final available period`() {
+        val policy =
+            historyPeriodSelectorPolicy(
+                optionLabels = listOf("24H", "7D", "30D"),
+                selectedIndex = 99,
+                viewportWidthDp = 411,
+                fontScale = 1f,
+                reducedMotion = false,
+            )
+
+        assertEquals(2, policy.selectedItemScrollTarget)
+        assertEquals(3, policy.selectedItemPosition)
+        assertEquals(3, policy.optionCount)
+    }
+
+    @Test
     fun `fifth period remains reachable and announced at compact width with large text`() {
         val policy =
             historyPeriodSelectorPolicy(

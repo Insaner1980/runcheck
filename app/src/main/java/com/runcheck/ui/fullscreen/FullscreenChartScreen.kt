@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.Button
@@ -304,6 +306,7 @@ private fun FullscreenChartContent(
     source: FullscreenChartSource,
     modifier: Modifier = Modifier,
 ) {
+    val scrollState = rememberScrollState()
     val qualityZones =
         when (source) {
             FullscreenChartSource.BATTERY_HISTORY -> {
@@ -342,27 +345,34 @@ private fun FullscreenChartContent(
                 else -> with(LocalDensity.current) { constraints.maxHeight.toDp() }
             }.coerceAtLeast(1.dp)
 
-        TrendChart(
-            data = state.chartData,
-            chartHeight = availableHeight,
-            modifier = Modifier.fillMaxWidth(),
-            contentDescription = chartAccessibilitySummary,
-            yLabels = state.yLabels.ifEmpty { null },
-            xLabels = state.xLabels.ifEmpty { null },
-            showGrid = true,
-            qualityZones = qualityZones,
-            tooltipFormatter = { index ->
-                formatChartTooltip(
-                    chartData = state.chartData,
-                    chartTimestamps = state.chartTimestamps,
-                    index = index,
-                    unit = state.unit,
-                    decimals = state.tooltipDecimals,
-                    timeSkeleton = state.tooltipTimeSkeleton,
-                )
-            },
-            presentation = TrendChartPresentation.Fullscreen,
-        )
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState),
+        ) {
+            TrendChart(
+                data = state.chartData,
+                chartHeight = availableHeight,
+                modifier = Modifier.fillMaxWidth(),
+                contentDescription = chartAccessibilitySummary,
+                yLabels = state.yLabels.ifEmpty { null },
+                xLabels = state.xLabels.ifEmpty { null },
+                showGrid = true,
+                qualityZones = qualityZones,
+                tooltipFormatter = { index ->
+                    formatChartTooltip(
+                        chartData = state.chartData,
+                        chartTimestamps = state.chartTimestamps,
+                        index = index,
+                        unit = state.unit,
+                        decimals = state.tooltipDecimals,
+                        timeSkeleton = state.tooltipTimeSkeleton,
+                    )
+                },
+                presentation = TrendChartPresentation.Fullscreen,
+            )
+        }
     }
 }
 

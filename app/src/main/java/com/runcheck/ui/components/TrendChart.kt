@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import com.runcheck.R
 import com.runcheck.ui.chart.calculateChartViewport
+import com.runcheck.ui.chart.chartValueFraction
 import com.runcheck.ui.chart.qualityZoneColorForValue
 import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.chartAxisTextStyle
@@ -165,6 +166,7 @@ fun TrendChart(
 ) {
     val reducedMotion = MaterialTheme.reducedMotion
     val chartColors = MaterialTheme.chartColors
+    val chartData = remember(data) { data.filter(Float::isFinite) }
 
     // Phase 1: Grid + axes fade in (0→1 over 200ms)
     val gridAlpha = remember { Animatable(if (reducedMotion) 1f else 0f) }
@@ -181,7 +183,7 @@ fun TrendChart(
     // Previous data for fade-out during data transitions
     var previousData by remember { mutableStateOf<List<Float>>(emptyList()) }
     var previousMinVal by remember { mutableFloatStateOf(0f) }
-    var previousRange by remember { mutableFloatStateOf(1f) }
+    var previousMaxVal by remember { mutableFloatStateOf(1f) }
     val fadeOutAlpha = remember { Animatable(0f) }
 
     var settledData by remember { mutableStateOf<List<Float>>(emptyList()) }
@@ -190,7 +192,7 @@ fun TrendChart(
     // Tracks whether the initial chart entry has started at least once.
     var hasStartedEntry by remember { mutableStateOf(false) }
 
-    LaunchedEffect(data, reducedMotion) {
+    LaunchedEffect(chartData, reducedMotion) {
         selectedIndex = -1
         emphasisData = emptyList()
 
@@ -201,8 +203,8 @@ fun TrendChart(
             emphasisAlpha.snapTo(1f)
             scanLineAlpha.snapTo(0f)
             fadeOutAlpha.snapTo(0f)
-            settledData = data
-            emphasisData = data
+            settledData = chartData
+            emphasisData = chartData
             hasStartedEntry = true
             return@LaunchedEffect
         }
@@ -214,10 +216,10 @@ fun TrendChart(
             gridAlpha.snapTo(0f)
             sweepProgress.snapTo(0f)
             emphasisAlpha.snapTo(0f)
-            scanLineAlpha.snapTo(if (data.isNotEmpty()) SCAN_LINE_START_ALPHA else 0f)
+            scanLineAlpha.snapTo(if (chartData.isNotEmpty()) SCAN_LINE_START_ALPHA else 0f)
 
             gridAlpha.animateTo(1f, tween(MotionTokens.SHORT, easing = MotionTokens.EaseOut))
-            if (data.isEmpty()) {
+            if (chartData.isEmpty()) {
                 sweepProgress.snapTo(1f)
                 scanLineAlpha.snapTo(0f)
                 return@LaunchedEffect
@@ -229,9 +231,9 @@ fun TrendChart(
             }
             sweepProgress.animateTo(1f, tween(INITIAL_SWEEP_DURATION_MS, easing = MotionTokens.SweepEasing))
             scanLineAlpha.snapTo(0f)
-            emphasisData = data
+            emphasisData = chartData
             emphasisAlpha.animateTo(1f, tween(MotionTokens.SHORT, easing = MotionTokens.EaseOut))
-            settledData = data
+            settledData = chartData
             return@LaunchedEffect
         }
 
@@ -243,15 +245,12 @@ fun TrendChart(
 
         previousData = fadeSource
         previousMinVal = fadeSource.minOrNull() ?: 0f
-        previousRange =
-            fadeSource
-                .let { source -> (source.maxOrNull() ?: 1f) - (source.minOrNull() ?: 0f) }
-                .coerceAtLeast(1f)
+        previousMaxVal = fadeSource.maxOrNull() ?: 1f
 
         gridAlpha.snapTo(1f)
         sweepProgress.snapTo(0f)
         emphasisAlpha.snapTo(0f)
-        scanLineAlpha.snapTo(if (data.isNotEmpty()) SCAN_LINE_START_ALPHA else 0f)
+        scanLineAlpha.snapTo(if (chartData.isNotEmpty()) SCAN_LINE_START_ALPHA else 0f)
 
         if (fadeSource.isNotEmpty()) {
             fadeOutAlpha.snapTo(1f)
@@ -266,7 +265,7 @@ fun TrendChart(
             fadeOutAlpha.snapTo(0f)
         }
 
-        if (data.isEmpty()) {
+        if (chartData.isEmpty()) {
             scanLineAlpha.snapTo(0f)
             sweepProgress.snapTo(1f)
             settledData = emptyList()
@@ -279,9 +278,9 @@ fun TrendChart(
         }
         sweepProgress.animateTo(1f, tween(MotionTokens.SWEEP, easing = MotionTokens.SweepEasing))
         scanLineAlpha.snapTo(0f)
-        emphasisData = data
+        emphasisData = chartData
         emphasisAlpha.animateTo(1f, tween(MotionTokens.SHORT, easing = MotionTokens.EaseOut))
-        settledData = data
+        settledData = chartData
     }
 
     val linePath = remember { Path() }
@@ -352,18 +351,10 @@ fun TrendChart(
             0.dp
         }
     val resolvedChartHeight =
-        when (presentation) {
-            TrendChartPresentation.Embedded -> {
-                maxOf(
-                    chartHeight,
-                    MINIMUM_PLOT_HEIGHT + xLabelHeight + chartStyle.chartPadding * 2,
-                )
-            }
-
-            TrendChartPresentation.Fullscreen -> {
-                chartHeight
-            }
-        }
+        maxOf(
+            chartHeight,
+            MINIMUM_PLOT_HEIGHT + xLabelHeight + chartStyle.chartPadding * 2,
+        )
     val availablePlotHeightPx =
         with(density) {
             (
@@ -374,9 +365,9 @@ fun TrendChart(
                 .toPx()
         }
     val viewport =
-        remember(data, yLabels, qualityZones, availablePlotHeightPx) {
+        remember(chartData, yLabels, qualityZones, availablePlotHeightPx) {
             calculateChartViewport(
-                data = data,
+                data = chartData,
                 explicitTicks = yLabels?.map(ChartYLabel::value).orEmpty(),
                 qualityZones = qualityZones.orEmpty(),
                 availableHeightPx = availablePlotHeightPx,
@@ -405,13 +396,12 @@ fun TrendChart(
     val gestureEdgeGuardPx = with(density) { chartStyle.gestureEdgeGuard.toPx() }
     val minVal = viewport?.minValue ?: 0f
     val maxVal = viewport?.maxValue ?: 1f
-    val range = (maxVal - minVal).coerceAtLeast(1f)
     val visibleQualityZones = viewport?.visibleZones.orEmpty()
 
     // Compute per-point gradient color stops from quality zones
     val lineGradientColors =
-        remember(data, qualityZones, lineColor) {
-            buildTrendLineGradientStops(data, qualityZones, lineColor)
+        remember(chartData, qualityZones, lineColor) {
+            buildTrendLineGradientStops(chartData, qualityZones, lineColor)
         }
 
     Box(modifier = modifier) {
@@ -432,7 +422,7 @@ fun TrendChart(
                     ).then(
                         if (tooltipFormatter != null) {
                             Modifier
-                                .pointerInput(data, yLabelWidth, gestureEdgeGuardPx) {
+                                .pointerInput(chartData, yLabelWidth, gestureEdgeGuardPx) {
                                     detectTapGestures { offset ->
                                         if (sweepProgress.value < 1f) return@detectTapGestures
                                         if (offset.x <= gestureEdgeGuardPx ||
@@ -444,15 +434,17 @@ fun TrendChart(
                                         val chartPad = chartStyle.chartPadding.toPx()
                                         val chartLeft = leftPad + chartPad
                                         val chartWidth = size.width - chartLeft - chartPad
-                                        if (chartWidth > 0 && data.isNotEmpty()) {
+                                        if (chartWidth > 0 && chartData.isNotEmpty()) {
                                             val fraction =
                                                 ((offset.x - chartLeft) / chartWidth).coerceIn(0f, 1f)
                                             val index =
-                                                (fraction * (data.size - 1)).toInt().coerceIn(0, data.lastIndex)
+                                                (fraction * (chartData.size - 1))
+                                                    .toInt()
+                                                    .coerceIn(0, chartData.lastIndex)
                                             selectedIndex = if (selectedIndex == index) -1 else index
                                         }
                                     }
-                                }.pointerInput(data, yLabelWidth, gestureEdgeGuardPx) {
+                                }.pointerInput(chartData, yLabelWidth, gestureEdgeGuardPx) {
                                     var allowTooltipDrag = false
                                     detectHorizontalDragGestures(
                                         onDragStart = { offset ->
@@ -464,13 +456,13 @@ fun TrendChart(
                                                 val chartPad = chartStyle.chartPadding.toPx()
                                                 val chartLeft = leftPad + chartPad
                                                 val chartWidth = size.width - chartLeft - chartPad
-                                                if (chartWidth > 0 && data.isNotEmpty()) {
+                                                if (chartWidth > 0 && chartData.isNotEmpty()) {
                                                     val fraction =
                                                         ((offset.x - chartLeft) / chartWidth).coerceIn(0f, 1f)
                                                     selectedIndex =
-                                                        (fraction * (data.size - 1))
+                                                        (fraction * (chartData.size - 1))
                                                             .toInt()
-                                                            .coerceIn(0, data.lastIndex)
+                                                            .coerceIn(0, chartData.lastIndex)
                                                 }
                                             }
                                         },
@@ -486,16 +478,16 @@ fun TrendChart(
                                         val chartPad = chartStyle.chartPadding.toPx()
                                         val chartLeft = leftPad + chartPad
                                         val chartWidth = size.width - chartLeft - chartPad
-                                        if (chartWidth > 0 && data.isNotEmpty()) {
+                                        if (chartWidth > 0 && chartData.isNotEmpty()) {
                                             val fraction =
                                                 ((change.position.x - chartLeft) / chartWidth).coerceIn(
                                                     0f,
                                                     1f,
                                                 )
                                             selectedIndex =
-                                                (fraction * (data.size - 1))
+                                                (fraction * (chartData.size - 1))
                                                     .toInt()
-                                                    .coerceIn(0, data.lastIndex)
+                                                    .coerceIn(0, chartData.lastIndex)
                                         }
                                     }
                                 }
@@ -512,12 +504,21 @@ fun TrendChart(
             val chartWidth = size.width - chartLeft - chartPad
             val chartHeight = size.height - chartTop - chartPad - xLabelHeightPx
             if (chartWidth <= 0f || chartHeight <= 0f) return@Canvas
-            val stepX = if (data.size > 1) chartWidth / (data.size - 1) else 0f
+
+            fun yForValue(value: Float): Float =
+                chartTop + chartHeight -
+                    chartValueFraction(value, minVal, maxVal) * chartHeight
+
+            fun previousYForValue(value: Float): Float =
+                chartTop + chartHeight -
+                    chartValueFraction(value, previousMinVal, previousMaxVal) * chartHeight
+
+            val stepX = if (chartData.size > 1) chartWidth / (chartData.size - 1) else 0f
             val dataRight =
                 when {
-                    data.isEmpty() -> chartLeft
-                    data.size == 1 -> chartLeft
-                    else -> chartLeft + stepX * (data.size - 1)
+                    chartData.isEmpty() -> chartLeft
+                    chartData.size == 1 -> chartLeft
+                    else -> chartLeft + stepX * (chartData.size - 1)
                 }
             val sweepX = (chartLeft + chartWidth * sweepProgress.value).coerceIn(chartLeft, chartLeft + chartWidth)
             val visibleSweepRight = sweepX.coerceAtMost(dataRight)
@@ -528,8 +529,8 @@ fun TrendChart(
 
             // ── Quality zone bands ─────────────────────────────────────────
             visibleQualityZones.forEach { zone ->
-                val yBottom = chartTop + chartHeight - ((zone.minValue - minVal) / range * chartHeight)
-                val yTop = chartTop + chartHeight - ((zone.maxValue - minVal) / range * chartHeight)
+                val yBottom = yForValue(zone.minValue)
+                val yTop = yForValue(zone.maxValue)
                 val clampedTop = yTop.coerceIn(chartTop, chartTop + chartHeight)
                 val clampedBottom = yBottom.coerceIn(chartTop, chartTop + chartHeight)
                 if (clampedBottom > clampedTop) {
@@ -544,7 +545,7 @@ fun TrendChart(
             // ── Grid lines ─────────────────────────────────────────────────
             if (showGrid && retainedYLabels.isNotEmpty()) {
                 for (yLabel in retainedYLabels) {
-                    val y = chartTop + chartHeight - ((yLabel.value - minVal) / range * chartHeight)
+                    val y = yForValue(yLabel.value)
                     if (y in chartTop..chartTop + chartHeight) {
                         drawLine(
                             color = gridColor.copy(alpha = gridColor.alpha * gridAlpha.value),
@@ -559,7 +560,7 @@ fun TrendChart(
             // ── Y-axis labels ──────────────────────────────────────────────
             if (retainedYLabels.isNotEmpty()) {
                 for ((yLabel, measured) in measuredYLabels) {
-                    val y = chartTop + chartHeight - ((yLabel.value - minVal) / range * chartHeight)
+                    val y = yForValue(yLabel.value)
                     if (y in chartTop - chartPad..chartTop + chartHeight + chartPad) {
                         drawText(
                             textLayoutResult = measured,
@@ -606,7 +607,7 @@ fun TrendChart(
 
                 previousData.forEachIndexed { i, value ->
                     val x = chartLeft + i * prevStepX
-                    val y = chartTop + chartHeight - ((value - previousMinVal) / previousRange * chartHeight)
+                    val y = previousYForValue(value)
                     if (i == 0) previousLinePath.moveTo(x, y) else previousLinePath.lineTo(x, y)
                 }
 
@@ -619,12 +620,12 @@ fun TrendChart(
 
             // ── Data line ──────────────────────────────────────────────────
             linePath.reset()
-            if (data.size >= 2 && visibleSweepRight > chartLeft) {
-                for (i in 0 until data.lastIndex) {
+            if (chartData.size >= 2 && visibleSweepRight > chartLeft) {
+                for (i in 0 until chartData.lastIndex) {
                     val x1 = chartLeft + i * stepX
                     val x2 = chartLeft + (i + 1) * stepX
-                    val y1 = chartTop + chartHeight - ((data[i] - minVal) / range * chartHeight)
-                    val y2 = chartTop + chartHeight - ((data[i + 1] - minVal) / range * chartHeight)
+                    val y1 = yForValue(chartData[i])
+                    val y2 = yForValue(chartData[i + 1])
 
                     if (i == 0) linePath.moveTo(x1, y1)
                     if (visibleSweepRight <= x1) break
@@ -650,12 +651,12 @@ fun TrendChart(
                 bottom = chartTop + chartHeight,
             ) {
                 // Strip-based gradient fill — alpha proportional to data value height
-                for (i in 0 until data.size - 1) {
+                for (i in 0 until chartData.size - 1) {
                     val x1 = chartLeft + i * stepX
                     val x2 = chartLeft + (i + 1) * stepX
                     if (visibleSweepRight <= x1) break
-                    val y1 = chartTop + chartHeight - ((data[i] - minVal) / range * chartHeight)
-                    val y2 = chartTop + chartHeight - ((data[i + 1] - minVal) / range * chartHeight)
+                    val y1 = yForValue(chartData[i])
+                    val y2 = yForValue(chartData[i + 1])
                     val visibleX2 = visibleSweepRight.coerceAtMost(x2)
                     val segmentFraction =
                         if (x2 > x1) {
@@ -664,7 +665,11 @@ fun TrendChart(
                             0f
                         }
                     val visibleY2 = lerp(y1, y2, segmentFraction)
-                    val avgNormalizedY = ((data[i] - minVal) / range + (data[i + 1] - minVal) / range) / 2f
+                    val avgNormalizedY =
+                        (
+                            chartValueFraction(chartData[i], minVal, maxVal) +
+                                chartValueFraction(chartData[i + 1], minVal, maxVal)
+                        ) / 2f
                     val topAlpha = lerp(0.08f, 0.30f, avgNormalizedY)
 
                     stripPath.reset()
@@ -710,10 +715,10 @@ fun TrendChart(
 
                 if (shouldDrawPointMarkers) {
                     val innerMarkerRadius = (chartStyle.pointMarkerRadius - 1.5.dp).coerceAtLeast(1.5.dp)
-                    for (i in data.indices) {
+                    for (i in chartData.indices) {
                         val x = chartLeft + i * stepX
                         if (x > visibleSweepRight) break
-                        val y = chartTop + chartHeight - ((data[i] - minVal) / range * chartHeight)
+                        val y = yForValue(chartData[i])
                         drawCircle(
                             color = lineColor.copy(alpha = 0.95f),
                             radius = chartStyle.pointMarkerRadius.toPx(),
@@ -728,8 +733,8 @@ fun TrendChart(
                 }
             }
 
-            if (data.size == 1 && sweepProgress.value > 0f) {
-                val y = chartTop + chartHeight - ((data.first() - minVal) / range * chartHeight)
+            if (chartData.size == 1 && sweepProgress.value > 0f) {
+                val y = yForValue(chartData.first())
                 drawCircle(
                     color = lineColor.copy(alpha = 0.95f),
                     radius = chartStyle.selectedPointInnerRadius.toPx(),
@@ -738,7 +743,7 @@ fun TrendChart(
             }
 
             // Draw scan line
-            if (scanLineAlpha.value > 0f && data.isNotEmpty() && sweepProgress.value < 1f) {
+            if (scanLineAlpha.value > 0f && chartData.isNotEmpty() && sweepProgress.value < 1f) {
                 drawSweepHead(
                     x = sweepX.coerceAtMost(chartLeft + chartWidth),
                     top = chartTop,
@@ -750,10 +755,10 @@ fun TrendChart(
             }
 
             // ── Last value emphasis ──────────────────────────────────────────
-            if (emphasisData == data && data.isNotEmpty() && emphasisAlpha.value > 0f) {
-                val lastIndex = data.lastIndex
+            if (emphasisData == chartData && chartData.isNotEmpty() && emphasisAlpha.value > 0f) {
+                val lastIndex = chartData.lastIndex
                 val lastX = chartLeft + lastIndex * stepX
-                val lastY = chartTop + chartHeight - ((data[lastIndex] - minVal) / range * chartHeight)
+                val lastY = yForValue(chartData[lastIndex])
 
                 // Glow circle (outer)
                 drawCircle(
@@ -781,9 +786,9 @@ fun TrendChart(
             }
 
             // ── Tooltip cursor ─────────────────────────────────────────────
-            if (selectedIndex in 0..data.lastIndex && tooltipFormatter != null) {
+            if (selectedIndex in 0..chartData.lastIndex && tooltipFormatter != null) {
                 val sx = chartLeft + selectedIndex * stepX
-                val sy = chartTop + chartHeight - ((data[selectedIndex] - minVal) / range * chartHeight)
+                val sy = yForValue(chartData[selectedIndex])
 
                 // Vertical cursor line
                 drawLine(

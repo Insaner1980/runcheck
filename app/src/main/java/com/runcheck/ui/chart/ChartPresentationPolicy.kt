@@ -12,6 +12,11 @@ data class ChartViewport(
     val visibleZones: List<ChartQualityZone>,
 )
 
+data class ChartSeries(
+    val data: List<Float>,
+    val timestamps: List<Long>,
+)
+
 sealed interface ChartPrimaryState {
     data object Loading : ChartPrimaryState
 
@@ -48,23 +53,29 @@ fun calculateChartViewport(
 
     val finiteTicks = explicitTicks.filter(Float::isFinite)
     val scaleValues = finiteData + finiteTicks
-    var minValue = scaleValues.min()
-    var maxValue = scaleValues.max()
+    var minValue = scaleValues.min().toDouble()
+    var maxValue = scaleValues.max().toDouble()
     if (minValue == maxValue) {
-        val symmetricPadding = maxOf(abs(minValue) * SINGLE_VALUE_PADDING_FRACTION, MINIMUM_SINGLE_VALUE_PADDING)
-        minValue -= symmetricPadding
-        maxValue += symmetricPadding
+        val symmetricPadding =
+            maxOf(
+                abs(minValue) * SINGLE_VALUE_PADDING_FRACTION,
+                MINIMUM_SINGLE_VALUE_PADDING,
+            )
+        minValue = (minValue - symmetricPadding).coerceAtLeast(-MAXIMUM_FINITE_FLOAT)
+        maxValue = (maxValue + symmetricPadding).coerceAtMost(MAXIMUM_FINITE_FLOAT)
     } else {
         val padding = (maxValue - minValue) * VIEWPORT_PADDING_FRACTION
-        minValue -= padding
-        maxValue += padding
+        minValue = (minValue - padding).coerceAtLeast(-MAXIMUM_FINITE_FLOAT)
+        maxValue = (maxValue + padding).coerceAtMost(MAXIMUM_FINITE_FLOAT)
     }
+    val viewportMin = minValue.toFloat()
+    val viewportMax = maxValue.toFloat()
 
     val retainedTicks =
-        selectVisibleTicks(
+        selectChartTicks(
             ticks = finiteTicks,
-            minValue = minValue,
-            maxValue = maxValue,
+            minValue = viewportMin,
+            maxValue = viewportMax,
             availableHeightPx = availableHeightPx,
             minimumLabelSpacingPx = minimumLabelSpacingPx,
         )
@@ -73,8 +84,8 @@ fun calculateChartViewport(
             val zoneMin = minOf(zone.minValue, zone.maxValue)
             val zoneMax = maxOf(zone.minValue, zone.maxValue)
             if (!zoneMin.isFinite() || !zoneMax.isFinite()) return@mapNotNull null
-            val clippedMin = maxOf(zoneMin, minValue)
-            val clippedMax = minOf(zoneMax, maxValue)
+            val clippedMin = maxOf(zoneMin, viewportMin)
+            val clippedMax = minOf(zoneMax, viewportMax)
             if (clippedMax <= clippedMin) {
                 null
             } else {
@@ -83,11 +94,38 @@ fun calculateChartViewport(
         }
 
     return ChartViewport(
-        minValue = minValue,
-        maxValue = maxValue,
+        minValue = viewportMin,
+        maxValue = viewportMax,
         ticks = retainedTicks,
         visibleZones = visibleZones,
     )
+}
+
+fun sanitizeChartSeries(
+    data: List<Float>,
+    timestamps: List<Long>,
+): ChartSeries {
+    val finitePoints =
+        data
+            .zip(timestamps)
+            .filter { (value, _) -> value.isFinite() }
+    return ChartSeries(
+        data = finitePoints.map { it.first },
+        timestamps = finitePoints.map { it.second },
+    )
+}
+
+fun chartValueFraction(
+    value: Float,
+    minValue: Float,
+    maxValue: Float,
+): Float {
+    if (!value.isFinite() || !minValue.isFinite() || !maxValue.isFinite()) return 0f
+    val range = maxValue.toDouble() - minValue.toDouble()
+    if (!range.isFinite() || range <= 0.0) return 0.5f
+    return ((value.toDouble() - minValue.toDouble()) / range)
+        .coerceIn(0.0, 1.0)
+        .toFloat()
 }
 
 fun resolveChartPrimaryState(
@@ -128,7 +166,7 @@ fun historyPeriodSelectorPolicy(
     return HistoryPeriodSelectorPolicy(
         isScrollable = isScrollable,
         selectedItemScrollTarget = safeSelectedIndex,
-        animateSelectedItemScroll = !reducedMotion,
+        animateSelectedItemScroll = optionCount > 0 && !reducedMotion,
         selectedItemPosition = if (optionCount == 0) 0 else safeSelectedIndex + 1,
         optionCount = optionCount,
         announcesSelectedState = optionCount > 0,
@@ -136,7 +174,7 @@ fun historyPeriodSelectorPolicy(
     )
 }
 
-private fun selectVisibleTicks(
+fun selectChartTicks(
     ticks: List<Float>,
     minValue: Float,
     maxValue: Float,
@@ -169,14 +207,13 @@ private fun selectVisibleTicks(
             }.distinct()
         }
 
-    val range = maxValue - minValue
-    if (range <= 0f || safeHeight <= 0f) return sampled.take(1)
+    if (maxValue <= minValue || safeHeight <= 0f) return sampled.take(1)
     return buildList {
         sampled.forEach { tick ->
-            val positionPx = (tick - minValue) / range * safeHeight
+            val positionPx = chartValueFraction(tick, minValue, maxValue) * safeHeight
             val previousPositionPx =
                 lastOrNull()?.let { previous ->
-                    (previous - minValue) / range * safeHeight
+                    chartValueFraction(previous, minValue, maxValue) * safeHeight
                 }
             if (previousPositionPx == null || positionPx - previousPositionPx >= safeSpacing) {
                 add(tick)
@@ -185,9 +222,10 @@ private fun selectVisibleTicks(
     }
 }
 
-private const val VIEWPORT_PADDING_FRACTION = 0.075f
-private const val SINGLE_VALUE_PADDING_FRACTION = 0.05f
-private const val MINIMUM_SINGLE_VALUE_PADDING = 1f
+private const val VIEWPORT_PADDING_FRACTION = 0.075
+private const val SINGLE_VALUE_PADDING_FRACTION = 0.05
+private const val MINIMUM_SINGLE_VALUE_PADDING = 1.0
+private val MAXIMUM_FINITE_FLOAT = Float.MAX_VALUE.toDouble()
 private const val MAXIMUM_Y_LABEL_COUNT = 4
 private const val MINIMUM_PERIOD_CHIP_WIDTH_DP = 64
 private const val PERIOD_CHIP_SPACING_DP = 12

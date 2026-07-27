@@ -227,6 +227,7 @@ private fun ThermalContent(
             thermalHistoryItems(
                 state = state,
                 onPeriodChange = onPeriodChange,
+                onUpgradeToPro = onUpgradeToPro,
             )
 
             throttlingSection(state = state, onUpgradeToPro = onUpgradeToPro)
@@ -338,17 +339,18 @@ private fun LazyListScope.thermalInfoCards(
 private fun LazyListScope.thermalHistoryItems(
     state: ThermalUiState.Success,
     onPeriodChange: (HistoryPeriod) -> Unit,
+    onUpgradeToPro: () -> Unit,
 ) {
-    if (state.isPro) {
-        item {
-            ThermalHistoryCard(
-                history = state.thermalHistory,
-                selectedPeriod = state.selectedHistoryPeriod,
-                historyLoadError = state.historyLoadError,
-                temperatureUnit = state.temperatureUnit,
-                onPeriodChange = onPeriodChange,
-            )
-        }
+    item {
+        ThermalHistoryCard(
+            history = state.thermalHistory,
+            selectedPeriod = state.selectedHistoryPeriod,
+            historyLoadError = state.historyLoadError,
+            temperatureUnit = state.temperatureUnit,
+            isPro = state.isPro,
+            onPeriodChange = onPeriodChange,
+            onUpgradeToPro = onUpgradeToPro,
+        )
     }
 }
 
@@ -699,7 +701,9 @@ private fun ThermalHistoryCard(
     selectedPeriod: HistoryPeriod,
     historyLoadError: UiText?,
     temperatureUnit: TemperatureUnit,
+    isPro: Boolean,
     onPeriodChange: (HistoryPeriod) -> Unit,
+    onUpgradeToPro: () -> Unit,
 ) {
     val selectedMetricState = rememberSaveableEnumState(ThermalHistoryMetric.BATTERY_TEMP)
     val metric = selectedMetricState.value
@@ -716,6 +720,14 @@ private fun ThermalHistoryCard(
         }
 
     val qualityZones = thermalQualityZones(temperatureUnit)
+    val primaryState =
+        resolveChartPrimaryState(
+            isLoading = false,
+            error = historyLoadError?.resolve(),
+            isLocked = !isPro,
+            dataPointCount = chartModel.chartData.size,
+            minimumDataPointCount = 2,
+        )
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -732,26 +744,20 @@ private fun ThermalHistoryCard(
         ) {
             CardSectionTitle(text = stringResource(R.string.thermal_history))
 
-            EnumFilterChipRow(
-                values = ThermalHistoryMetric.entries,
-                selected = metric,
-                onSelect = { selectedMetricState.value = it },
-                labelFor = { thermalHistoryMetricLabel(it) },
-            )
-
-            HistoryPeriodFilterChipRow(
-                selected = selectedPeriod,
-                onSelect = onPeriodChange,
-            )
-
-            val primaryState =
-                resolveChartPrimaryState(
-                    isLoading = false,
-                    error = historyLoadError?.resolve(),
-                    isLocked = false,
-                    dataPointCount = chartModel.chartData.size,
-                    minimumDataPointCount = 2,
+            if (primaryState != ChartPrimaryState.Locked) {
+                EnumFilterChipRow(
+                    values = ThermalHistoryMetric.entries,
+                    selected = metric,
+                    onSelect = { selectedMetricState.value = it },
+                    labelFor = { thermalHistoryMetricLabel(it) },
                 )
+
+                HistoryPeriodFilterChipRow(
+                    selected = selectedPeriod,
+                    onSelect = onPeriodChange,
+                )
+            }
+
             when (primaryState) {
                 ChartPrimaryState.Data -> {
                     val chartAccessibilitySummary =
@@ -802,7 +808,14 @@ private fun ThermalHistoryCard(
                     )
                 }
 
-                ChartPrimaryState.Locked,
+                ChartPrimaryState.Locked -> {
+                    ProFeatureCalloutCard(
+                        message = stringResource(R.string.pro_feature_thermal_log_message),
+                        actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+                        onAction = onUpgradeToPro,
+                    )
+                }
+
                 ChartPrimaryState.Loading,
                 -> {
                     Unit

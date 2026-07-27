@@ -456,9 +456,11 @@ private fun SignalHistoryCard(
     selectedPeriod: HistoryPeriod,
     selectedMetric: NetworkHistoryMetric,
     historyLoadError: UiText?,
+    isPro: Boolean,
     onPeriodChange: (HistoryPeriod) -> Unit,
     onMetricChange: (NetworkHistoryMetric) -> Unit,
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
+    onUpgradeToPro: () -> Unit,
 ) {
     val metric = selectedMetric
 
@@ -474,30 +476,32 @@ private fun SignalHistoryCard(
 
     // Quality zone bands (signal only — subtle background bands)
     val qualityZones = signalQualityZones(metric)
+    val primaryState =
+        resolveChartPrimaryState(
+            isLoading = false,
+            error = historyLoadError?.resolve(),
+            isLocked = !isPro,
+            dataPointCount = chartModel.chartData.size,
+            minimumDataPointCount = 2,
+        )
 
     NetworkPanel {
         CardSectionTitle(text = stringResource(R.string.network_section_signal_history))
 
-        EnumFilterChipRow(
-            values = NetworkHistoryMetric.entries,
-            selected = metric,
-            onSelect = onMetricChange,
-            labelFor = { networkHistoryMetricLabel(it) },
-        )
-
-        HistoryPeriodFilterChipRow(
-            selected = selectedPeriod,
-            onSelect = onPeriodChange,
-        )
-
-        val primaryState =
-            resolveChartPrimaryState(
-                isLoading = false,
-                error = historyLoadError?.resolve(),
-                isLocked = false,
-                dataPointCount = chartModel.chartData.size,
-                minimumDataPointCount = 2,
+        if (primaryState != ChartPrimaryState.Locked) {
+            EnumFilterChipRow(
+                values = NetworkHistoryMetric.entries,
+                selected = metric,
+                onSelect = onMetricChange,
+                labelFor = { networkHistoryMetricLabel(it) },
             )
+
+            HistoryPeriodFilterChipRow(
+                selected = selectedPeriod,
+                onSelect = onPeriodChange,
+            )
+        }
+
         when (primaryState) {
             ChartPrimaryState.Data -> {
                 val chartAccessibilitySummary =
@@ -577,7 +581,14 @@ private fun SignalHistoryCard(
                 )
             }
 
-            ChartPrimaryState.Locked,
+            ChartPrimaryState.Locked -> {
+                ProFeatureCalloutCard(
+                    message = stringResource(R.string.pro_feature_network_history_message),
+                    actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+                    onAction = onUpgradeToPro,
+                )
+            }
+
             ChartPrimaryState.Loading,
             -> {
                 Unit
@@ -911,23 +922,17 @@ private fun NetworkToolsSection( // NOSONAR
     onNavigateToLearnTopic: () -> Unit,
     onInfoClick: (String) -> Unit,
 ) {
-    if (state.isPro) {
-        SignalHistoryCard(
-            history = state.signalHistory,
-            selectedPeriod = state.selectedHistoryPeriod,
-            selectedMetric = selectedHistoryMetric,
-            historyLoadError = state.historyLoadError,
-            onPeriodChange = onPeriodChange,
-            onMetricChange = onHistoryMetricChange,
-            onNavigateToFullscreen = onNavigateToFullscreen,
-        )
-    } else {
-        ProFeatureCalloutCard(
-            message = stringResource(R.string.pro_feature_network_history_message),
-            actionLabel = stringResource(R.string.pro_feature_upgrade_action),
-            onAction = onUpgradeToPro,
-        )
-    }
+    SignalHistoryCard(
+        history = state.signalHistory,
+        selectedPeriod = state.selectedHistoryPeriod,
+        selectedMetric = selectedHistoryMetric,
+        historyLoadError = state.historyLoadError,
+        isPro = state.isPro,
+        onPeriodChange = onPeriodChange,
+        onMetricChange = onHistoryMetricChange,
+        onNavigateToFullscreen = onNavigateToFullscreen,
+        onUpgradeToPro = onUpgradeToPro,
+    )
 
     SpeedTestSummaryCard(
         lastResult = speedTestState.lastResult,

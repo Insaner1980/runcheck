@@ -3,11 +3,122 @@ package com.runcheck.ui.chart
 import androidx.compose.ui.graphics.Color
 import com.runcheck.ui.components.ChartQualityZone
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ChartViewportTest {
+    @Test
+    fun `empty and entirely non-finite data produce no viewport`() {
+        assertNull(
+            calculateChartViewport(
+                data = emptyList(),
+                explicitTicks = listOf(0f),
+                qualityZones = emptyList(),
+                availableHeightPx = 200f,
+                minimumLabelSpacingPx = 32f,
+            ),
+        )
+        assertNull(
+            calculateChartViewport(
+                data = listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY),
+                explicitTicks = emptyList(),
+                qualityZones = emptyList(),
+                availableHeightPx = 200f,
+                minimumLabelSpacingPx = 32f,
+            ),
+        )
+    }
+
+    @Test
+    fun `chart series filters non-finite values and their matching timestamps together`() {
+        val series =
+            sanitizeChartSeries(
+                data = listOf(10f, Float.NaN, 20f, Float.POSITIVE_INFINITY),
+                timestamps = listOf(100L, 200L, 300L, 400L),
+            )
+
+        assertEquals(listOf(10f, 20f), series.data)
+        assertEquals(listOf(100L, 300L), series.timestamps)
+        assertTrue(series.data.all(Float::isFinite))
+    }
+
+    @Test
+    fun `single and flat data receive finite symmetric padding`() {
+        val single =
+            calculateChartViewport(
+                data = listOf(-4f),
+                explicitTicks = emptyList(),
+                qualityZones = emptyList(),
+                availableHeightPx = 200f,
+                minimumLabelSpacingPx = 32f,
+            )
+        val flat =
+            calculateChartViewport(
+                data = listOf(42f, 42f, 42f),
+                explicitTicks = emptyList(),
+                qualityZones = emptyList(),
+                availableHeightPx = 200f,
+                minimumLabelSpacingPx = 32f,
+            )
+
+        requireNotNull(single)
+        requireNotNull(flat)
+        assertTrue(single.minValue < -4f)
+        assertTrue(single.maxValue > -4f)
+        assertTrue(flat.minValue < 42f)
+        assertTrue(flat.maxValue > 42f)
+        assertTrue(single.minValue.isFinite() && single.maxValue.isFinite())
+        assertTrue(flat.minValue.isFinite() && flat.maxValue.isFinite())
+    }
+
+    @Test
+    fun `extreme negative and positive values keep viewport and drawing fractions finite`() {
+        val viewport =
+            calculateChartViewport(
+                data = listOf(-Float.MAX_VALUE, Float.MAX_VALUE),
+                explicitTicks = emptyList(),
+                qualityZones = emptyList(),
+                availableHeightPx = 200f,
+                minimumLabelSpacingPx = 32f,
+            )
+
+        requireNotNull(viewport)
+        assertTrue(viewport.minValue.isFinite())
+        assertTrue(viewport.maxValue.isFinite())
+        val lowFraction = chartValueFraction(-Float.MAX_VALUE, viewport.minValue, viewport.maxValue)
+        val highFraction = chartValueFraction(Float.MAX_VALUE, viewport.minValue, viewport.maxValue)
+        assertTrue(lowFraction.isFinite())
+        assertTrue(highFraction.isFinite())
+        assertTrue(lowFraction in 0f..1f)
+        assertTrue(highFraction in 0f..1f)
+        assertTrue(lowFraction < highFraction)
+    }
+
+    @Test
+    fun `fahrenheit zones are clipped without expanding measured temperatures`() {
+        val viewport =
+            calculateChartViewport(
+                data = listOf(87.3f, 88.2f, 90.1f, 92.1f),
+                explicitTicks = listOf(88f, 90f, 92f),
+                qualityZones =
+                    listOf(
+                        ChartQualityZone(32f, 95f, Color.Green),
+                        ChartQualityZone(95f, 140f, Color.Red),
+                    ),
+                availableHeightPx = 200f,
+                minimumLabelSpacingPx = 32f,
+            )
+
+        requireNotNull(viewport)
+        assertTrue(viewport.minValue > 80f)
+        assertTrue(viewport.maxValue < 100f)
+        assertEquals(1, viewport.visibleZones.size)
+        assertFalse(viewport.visibleZones.any { it.maxValue > viewport.maxValue })
+    }
+
     @Test
     fun `quality zones are clipped without expanding a narrow data viewport`() {
         val viewport =

@@ -104,6 +104,7 @@ import com.runcheck.ui.components.LearnTopicLink
 import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.MetricRow
+import com.runcheck.ui.components.ProBadgePill
 import com.runcheck.ui.components.ProgressRing
 import com.runcheck.ui.components.PullToRefreshWrapper
 import com.runcheck.ui.components.RuncheckLoadingIndicator
@@ -1160,6 +1161,7 @@ private fun BatteryHistoryLockedState(onUpgradeToPro: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
+        ProBadgePill()
         Text(
             text = stringResource(R.string.pro_feature_battery_history_message),
             style = MaterialTheme.typography.bodyMedium,

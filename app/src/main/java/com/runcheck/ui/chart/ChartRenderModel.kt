@@ -65,8 +65,9 @@ fun buildBatteryHistoryChartModel(
         history
             .chartPointsFor(metric, temperatureUnit)
             .downsamplePairs(maxPoints)
-    val chartData = chartPoints.map { it.second }
-    val chartTimestamps = chartPoints.map { it.first }
+    val chartSeries = chartPoints.toSanitizedChartSeries()
+    val chartData = chartSeries.data
+    val chartTimestamps = chartSeries.timestamps
     val minValue = chartData.minOrNull()
     val maxValue = chartData.maxOrNull()
 
@@ -96,8 +97,9 @@ fun buildBatterySessionChartModel(
         summary.readings
             .graphPointsFor(metric, window)
             .downsamplePairs(maxPoints)
-    val chartData = chartPoints.map { it.second }
-    val chartTimestamps = chartPoints.map { it.first }
+    val chartSeries = chartPoints.toSanitizedChartSeries()
+    val chartData = chartSeries.data
+    val chartTimestamps = chartSeries.timestamps
     val minValue = chartData.minOrNull()
     val maxValue = chartData.maxOrNull()
 
@@ -128,8 +130,9 @@ fun buildNetworkHistoryChartModel(
                     }
                 value?.let { reading.timestamp to it }
             }.downsamplePairs(maxPoints)
-    val chartData = chartPoints.map { it.second }
-    val chartTimestamps = chartPoints.map { it.first }
+    val chartSeries = chartPoints.toSanitizedChartSeries()
+    val chartData = chartSeries.data
+    val chartTimestamps = chartSeries.timestamps
     val minValue = chartData.minOrNull()
     val maxValue = chartData.maxOrNull()
 
@@ -159,9 +162,12 @@ fun buildThermalHistoryChartModel(
                     }
                 value?.let { reading.timestamp to it }
             }.downsamplePairs(maxPoints)
-    val chartData = chartPoints.map { it.second }
-    val chartTimestamps = chartPoints.map { it.first }
-    val displayData = chartData.map { convertTemperature(it, temperatureUnit).toFloat() }
+    val chartSeries =
+        chartPoints.toSanitizedChartSeries { value ->
+            convertTemperature(value, temperatureUnit).toFloat()
+        }
+    val displayData = chartSeries.data
+    val chartTimestamps = chartSeries.timestamps
     val unit = if (temperatureUnit == TemperatureUnit.CELSIUS) " °C" else " °F"
     val min = displayData.minOrNull()
     val max = displayData.maxOrNull()
@@ -205,8 +211,9 @@ fun buildStorageHistoryChartModel(
                     }
                 reading.timestamp to value
             }.downsamplePairs(maxPoints)
-    val chartData = chartPoints.map { it.second }
-    val chartTimestamps = chartPoints.map { it.first }
+    val chartSeries = chartPoints.toSanitizedChartSeries()
+    val chartData = chartSeries.data
+    val chartTimestamps = chartSeries.timestamps
     val min = chartData.minOrNull()
     val max = chartData.maxOrNull()
 
@@ -222,3 +229,9 @@ fun buildStorageHistoryChartModel(
 
 private const val BYTES_PER_GB = 1_000_000_000.0
 private const val DEFAULT_TOOLTIP_TIME_SKELETON = "HmMMMd"
+
+private fun List<Pair<Long, Float>>.toSanitizedChartSeries(transform: (Float) -> Float = { it }): ChartSeries =
+    sanitizeChartSeries(
+        data = map { (_, value) -> transform(value) },
+        timestamps = map { (timestamp, _) -> timestamp },
+    )
