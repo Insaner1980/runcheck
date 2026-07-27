@@ -18,7 +18,7 @@ Android device health diagnostics app built with Kotlin and Jetpack Compose. Sys
 - Widgets: Glance app widgets
 - Speed test backend: M-Lab NDT7
 - Build: Gradle Kotlin DSL
-- Build tooling: Gradle wrapper 9.4.0, AGP 9.1.1, Kotlin Gradle/Compose plugin 2.3.0, Kotlin runtime constraints 2.3.20, KSP 2.3.9, Compose BOM 2026.06.01 with Material3 resolved from the BOM
+- Build tooling: Gradle wrapper 9.4.1, AGP 9.2.1, Kotlin Gradle/Compose plugin 2.3.0, Kotlin runtime constraints 2.3.20, KSP 2.3.9, Compose BOM 2026.06.01 with Material3 1.4.0 resolved from the BOM
 - Compile SDK: Android 17 (API 37)
 - Target SDK: Android 17 (API 37)
 - Min SDK: 26
@@ -54,7 +54,7 @@ Debug/release-specific insight tooling also lives outside the shared main source
 ### Build and dependency source of truth
 
 - `gradle/libs.versions.toml` is the source of truth for dependency and plugin versions.
-- `gradle/wrapper/gradle-wrapper.properties` pins Gradle to `9.4.0`.
+- `gradle/wrapper/gradle-wrapper.properties` pins Gradle to `9.4.1`.
 - `settings.gradle.kts` enforces centralized repositories with `RepositoriesMode.FAIL_ON_PROJECT_REPOS`.
 - Approved repositories are `google()`, `mavenCentral()`, and JitPack only for `com.github.m-lab`.
 - The app intentionally uses `org.jetbrains.kotlin.plugin.compose`; do not reintroduce `kotlin-android` unless the AGP/Kotlin integration model changes and is verified.
@@ -66,8 +66,8 @@ Current version catalog highlights:
 
 | Area | Current value |
 |------|---------------|
-| Gradle wrapper | `9.4.0` |
-| Android Gradle Plugin | `9.1.1` |
+| Gradle wrapper | `9.4.1` |
+| Android Gradle Plugin | `9.2.1` |
 | Kotlin Gradle / Compose plugin | `2.3.0` |
 | Kotlin runtime constraints | `2.3.20` |
 | KSP | `2.3.9` |
@@ -104,15 +104,15 @@ Current version catalog highlights:
 
 ### External version review snapshot
 
-Checked on 2026-07-02 against official Android, Kotlin, Compose, and Gradle documentation:
+Checked on 2026-07-27 against official Android, Kotlin, Compose, and Gradle documentation:
 
 - The repo is not on the newest available Android/Gradle ecosystem versions in every area; that is expected and should be reviewed deliberately.
-- AGP 9.1.x official notes list API 37 support and Gradle 9.3.1 minimum compatibility; this repo's Gradle 9.4.0 wrapper satisfies that baseline.
-- AGP 9.2.0 lists API 37.0 support and Gradle 9.4.1 as its minimum/default Gradle line; AGP 9.3.0 lists API 37 support and Gradle 9.5.0 as its minimum/default Gradle line. This repo currently uses AGP 9.1.1 with Gradle 9.4.0, so AGP upgrades should be evaluated with Android 17 stable SDK behavior, Qodana, CodeQL, Gradle wrapper, dependency verification, and Kotlin plugin behavior together.
+- AGP 9.2 supports API 37.0 and lists Gradle 9.4.1 as its minimum/default line; this repo uses AGP 9.2.1 with Gradle 9.4.1.
+- AGP 9.3.0 lists API 37 support and Gradle 9.5.0 as its minimum/default Gradle line. Future AGP upgrades should be evaluated with Android 17 stable SDK behavior, Qodana, CodeQL, Gradle wrapper, dependency verification, and Kotlin plugin behavior together.
 - Kotlin 2.3.20 is available upstream and the repo already constrains Kotlin stdlib adapter/runtime artifacts to 2.3.20, but the Gradle/Compose plugin remains 2.3.0. Do not treat this as a typo without checking AGP/Qodana/CodeQL runner behavior.
 - Kotlin 2.4.0 is newer than this repo's Kotlin plugin line, and Kotlin's official Gradle compatibility table lists support through Gradle 9.5.0 for current 2.4.0-era features. Treat it as a deliberate migration, not a routine patch bump.
 - Compose BOM controls Compose library versions, but the Compose compiler is managed through the Kotlin plugin in Kotlin 2.0+ projects. Any BOM bump should include Compose UI regression review, compose-rules compatibility, and dependency verification metadata.
-- Gradle 9.6.1 is available upstream; this repo currently uses 9.4.0. Wrapper bumps should be checked against AGP and all local wrappers.
+- Gradle 9.6.1 is available upstream; this repo currently uses 9.4.1. Wrapper bumps should be checked against AGP and all local wrappers.
 - Android 17 uses stable API level 37 in this checkout. Android 17 SDK setup expects the Android 17 platform and Android SDK Build-Tools 37.x line to be installed locally.
 
 External references used for this snapshot:
@@ -979,51 +979,71 @@ System, light, and dark modes — no AMOLED toggle and no dynamic colors. The pe
 
 | Token | Hex | Material3 Role | Usage |
 |-------|-----|----------------|-------|
-| BgPage | `#0B1E24` | `background`, `surface` | Page background |
-| BgCard | `#133040` | `surfaceContainer` | Card backgrounds |
-| BgCardDeep | `#0D2530` | — | Deeper card surfaces where explicitly used |
-| BgCardAlt | `#0F2A35` | `surfaceContainerLow` | Alternate card surfaces |
-| BgIconCircle | `#1A3A48` | `surfaceContainerHigh`, `surfaceContainerHighest`, `surfaceVariant` | Icon circle backgrounds |
+| BgPageDark | `#08171C` | `background`, `surface` | Page background |
+| Surface1Dark | `#0D2229` | `surfaceContainer`, `surfaceContainerLow` | Main card surfaces |
+| Surface2Dark | `#123039` | `surfaceContainerHigh` | Hero and emphasized surfaces |
+| Surface3Dark | `#183D47` | `surfaceContainerHighest`, `surfaceVariant` | Icon circles and tracks |
 
-**Accents:**
+**Light surfaces:**
 
 | Token | Hex | Material3 Role | Usage |
 |-------|-----|----------------|-------|
-| AccentBlue | `#4A9EDE` | `primary` | Primary accent, buttons, links, brand |
-| AccentTeal | `#5DE4C7` | `secondary` | Secondary accent |
-| AccentAmber | `#E8C44A` | `tertiary` | Warning accent |
-| AccentOrange | `#F5963A` | — | Category accent |
-| AccentRed | `#F06040` | `error` | Destructive actions |
-| AccentLime | `#C8E636` | — | Storage video category |
-| AccentYellow | `#F5D03A` | — | Storage audio category |
+| BgPageLight | `#DDE6EA` | `background` | Page background |
+| Surface1Light | `#FFFFFF` | `surface`, `surfaceContainer` | Main cards |
+| Surface2Light | `#F4F7F8` | `surfaceContainerLow` | Alternate surfaces |
+| Surface3Light | `#E8EFF2` | `surfaceContainerHigh`, `surfaceContainerHighest`, `surfaceVariant` | Raised visual layer |
+| LightCardBorder | `#7A939D` | `outline`, `outlineVariant` | 1dp light main-card border |
+
+**Domain accents:**
+
+| Domain | Dark | Light | Usage |
+|-------|-----|-----|-------|
+| Battery | `#FFB627` | `#9B5C00` | Small indicator/line/point |
+| Network | `#4EA8F5` | `#0B63B0` | Small indicator/line/point and primary role |
+| Thermal | `#FF7A45` | `#C24A12` | Small indicator/line/point |
+| Storage | `#35DDBE` | `#007A66` | Small indicator/line/point and secondary role |
+
+Domain accents are not large card fills. Health-gauge tracks remain neutral;
+only the indicator uses an accent.
+
+**Other accents:**
+
+| Token | Hex | Usage |
+|-------|-----|-------|
+| AccentOrange | `#F5963A` | Category accent |
+| AccentRed | `#F06040` | Destructive actions and dark error role |
+| AccentLime | `#C8E636` | Storage video category |
+| AccentYellow | `#F5D03A` | Storage audio category |
 
 **Text:**
 
 | Token | Hex | Material3 Role | Usage |
 |-------|-----|----------------|-------|
-| TextPrimary | `#F4F7F8` | `onSurface`, `onBackground` | Main text |
-| TextSecondary | `#B5C7CE` | `onSurfaceVariant` | Labels, descriptions |
-| TextMuted | `#7A949E` | `outline`, `outlineVariant` | Hints, dividers, disabled text |
-| TextOnLime | `#1A2E0A` | — | Text on lime-colored backgrounds |
+| TextPrimaryDark | `#F4FAFC` | dark `onSurface`, `onBackground` | Main text |
+| TextSecondaryDark | `#A9BEC6` | dark `onSurfaceVariant` | Labels, descriptions |
+| TextMutedDark | `#789099` | dark `outline`, `outlineVariant` | Hints and dividers |
+| TextPrimaryLight | `#172A32` | light `onSurface`, `onBackground` | Main text |
+| TextSecondaryLight | `#405A64` | light `onSurfaceVariant` | Labels and descriptions |
+| TextMutedLight | `#5B727C` | — | Muted light content |
 
 **Light Material roles:**
 
 | Material3 Role | Hex |
 |-------|------|
-| background | `#F4F7F8` |
+| background | `#DDE6EA` |
 | surface | `#FFFFFF` |
-| surfaceContainerLow | `#F0F4F5` |
-| surfaceContainer | `#E9EFF1` |
-| surfaceContainerHigh | `#DEE7EA` |
-| surfaceContainerHighest | `#D4E0E4` |
-| primary | `#246A9F` |
-| secondary | `#006B5A` |
-| tertiary | `#795F00` |
+| surfaceContainerLow | `#F4F7F8` |
+| surfaceContainer | `#FFFFFF` |
+| surfaceContainerHigh | `#E8EFF2` |
+| surfaceContainerHighest | `#E8EFF2` |
+| primary | `#0B63B0` |
+| secondary | `#007A66` |
+| tertiary | `#9B5C00` |
 | error | `#B3261E` |
-| onSurface | `#16262C` |
-| onSurfaceVariant | `#4E6570` |
-| outline | `#647A83` |
-| outlineVariant | `#C0CDD1` |
+| onSurface | `#172A32` |
+| onSurfaceVariant | `#405A64` |
+| outline | `#7A939D` |
+| outlineVariant | `#7A939D` |
 
 ### Status Colors
 
@@ -1044,9 +1064,9 @@ icon or text label for accessibility.
 
 | Badge | Background | Text |
 |-------|-----------|------|
-| Accurate | AccentBlue `#4A9EDE` | BgPage `#0B1E24` |
-| Estimated | AccentAmber `#E8C44A` | BgPage `#0B1E24` |
-| Unavailable | TextMuted `#7A949E` | TextPrimary `#F4F7F8` |
+| Accurate | Network dark `#4EA8F5` | Dark page `#08171C` |
+| Estimated | Battery dark `#FFB627` | Dark page `#08171C` |
+| Unavailable | Dark muted `#789099` | Dark primary `#F4FAFC` |
 
 ### Typography
 
@@ -1074,21 +1094,22 @@ icon or text label for accessibility.
 | labelMedium | 10sp | SemiBold |
 | labelSmall | 10sp | Medium |
 
-**Numeric text styles (JetBrains Mono):**
+**Signature and numeric text styles:**
 
-| Style | Base | Size | Usage |
+| Style | Family | Size | Usage |
 |-------|------|------|-------|
-| numericHeroDisplayTextStyle | displayLarge | 64sp Bold, -3sp tracking | Primary large hero displays |
-| numericHeroDisplayUnitTextStyle | headlineLarge | 28sp SemiBold | Units next to primary large hero displays |
-| numericHeroValueTextStyle | displayLarge | 48sp Bold | Large hero values |
-| numericHeroLargeValueTextStyle | displayLarge | 54sp | Battery level display |
-| numericHeroLevelTextStyle | displayLarge | 48sp Bold, -2sp tracking | Compact hero values |
-| numericHeroUnitTextStyle | headlineLarge | 20sp SemiBold | Units next to hero values |
-| numericRingValueTextStyle | displayMedium | 32sp Bold | ProgressRing center value |
-| numericSpeedHeroValueTextStyle | displaySmall | 40sp | Speed test hero display |
-| numericMetricDisplayTextStyle | displayLarge | 48sp Bold, -3sp tracking | Secondary hero numbers (dBm, latency) |
-| chartAxisTextStyle | labelSmall | 12sp | Chart axis labels |
-| chartTooltipTextStyle | bodySmall | 13sp | Chart tooltip values |
+| heroNumberTextStyle | JetBrains Mono | 64sp Bold, -3sp tracking | Primary large hero displays |
+| heroUnitTextStyle | Manrope | 24sp SemiBold | Units next to primary hero displays |
+| gaugeValueTextStyle | JetBrains Mono | 44sp Bold | Gauge and ring values |
+| cardMetricTextStyle | JetBrains Mono | 28sp Bold | Signature card metrics |
+| numericHeroLargeValueTextStyle | JetBrains Mono | 54sp | Battery level display |
+| numericHeroLevelTextStyle | JetBrains Mono | 44sp Bold, -2sp tracking | Compact hero values |
+| numericSpeedHeroValueTextStyle | JetBrains Mono | 40sp | Speed test hero display |
+| chartAxisTextStyle | JetBrains Mono | 12sp | Chart axis labels |
+| chartTooltipTextStyle | JetBrains Mono | 13sp | Chart tooltip values |
+
+Compatibility numeric extensions delegate to the canonical hero, unit, gauge,
+and card metric styles until each screen migration lands.
 
 ### Shapes & Spacing
 
@@ -1096,12 +1117,13 @@ icon or text label for accessibility.
 
 | Shape | Radius | Usage |
 |-------|--------|-------|
-| large | 16dp | Cards, panels, dialogs |
-| medium | 16dp | Regular cards and medium surfaces |
-| small | 8dp | Compact elements |
-| extraLarge | 28dp | Hero cards and large sheets |
+| large | 24dp | Main cards, panels, dialogs |
+| medium | 24dp | Regular cards and medium surfaces |
+| small | 12dp | Compact elements |
+| extraLarge | 32dp | Hero cards and large sheets |
+| HeroCardShape | alias of extraLarge | Compatibility name for hero cards |
 | RuncheckPillShape | 50% | Navigation indicators, badges, and pills |
-| BottomSheetShape | 28dp top corners | Modal bottom sheets |
+| BottomSheetShape | 32dp top corners | Modal bottom sheets |
 
 **Spacing grid (4dp base):**
 
@@ -1114,12 +1136,47 @@ icon or text label for accessibility.
 | base | 16dp | Card padding, section spacing |
 | lg | 24dp | Between sections |
 | xl | 32dp | Page margins, large separations |
+| screenHorizontal | 20dp | New screen migrations |
+| cardInternal | 20dp | Signature card content |
+| cardGap | 12dp | Signature card internal gap |
+| sectionGap | 28dp | Major section separation |
 
 **Dividers:** `outlineVariant.copy(alpha = 0.35f)` — no hardcoded colors.
 
-Shared UI dimensions such as touch targets, icon sizes, button heights, outline width, and Pro lock/badge alpha values live in `UiTokens`.
+Shared UI dimensions such as the 48dp touch target, icon sizes, button
+heights, 180dp chart plot minimum, 18dp hero gauge stroke, outline width, and
+Pro lock/badge alpha values live in `UiTokens`.
+
+Light-theme main cards use the centralized 1dp `LightCardBorder #7A939D`;
+dark-theme main cards have no general border. `ActionCard` retains one
+separate 1dp `outlineVariant` border at 35% alpha.
 
 **Contrast:** Minimum 4.5:1 body text, 3:1 large text (WCAG AA). Minimum touch target 48dp.
+
+### Motion
+
+- Named durations: instant 100ms, fast 180ms, medium 320ms, slow 520ms,
+  deliberate 900ms, counter 700ms, result stagger 80ms, list-item stagger
+  40ms, and chart-fill delay 200ms.
+- New `AnimatedCounter` uses the 700ms decelerate spec. Legacy
+  `AnimatedFloatText` intentionally keeps 200ms `FastOutSlowInEasing` for the
+  live speed-test callers.
+- Shared springs: gauge 0.72/180, chip 0.55/420, speed value 0.8/300.
+- All new motion honors `MaterialTheme.reducedMotion`.
+
+### Signature Components
+
+- `HeroGauge`: cached neutral 18dp track plus accent indicator, clamped
+  0..100, single combined semantic description, reduced-motion support.
+- `MetricTile`: domain identity, value/unit/label/status/confidence, 48dp
+  interaction, and reserved status/confidence slots for ready/loading/
+  unavailable transitions.
+- `StatBlock`: responsive label/value/unit/status block.
+- `StatusPill`: text plus optional outlined icon, minimum 48x32dp, one line.
+- `EmptyStateIllustration`: decorative semantics-hidden illustration,
+  title/message, optional CTA.
+- `AnimatedCounter`: Int/Float formatter/prefix/suffix/initial-value support
+  with final-value semantics.
 
 ### Logo
 

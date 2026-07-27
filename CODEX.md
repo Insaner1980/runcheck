@@ -229,35 +229,27 @@ Rules:
 
 - All animations must respect `LocalReducedMotion.current` or `MaterialTheme.reducedMotion`
 - Skip or shorten motion when reduced motion is enabled
-- Standard durations:
-  - `ProgressRing`: 1200ms
-  - `MiniBar`: 800ms
-  - `SegmentedBar`: 800ms
-  - `Thermometer`: 1200ms
-  - Battery wave: 2000ms loop
+- Named visual-system durations live in `MotionTokens`: instant 100ms, fast 180ms, medium 320ms, slow 520ms, deliberate 900ms, counter 700ms, result stagger 80ms, list-item stagger 40ms, and chart-fill delay 200ms
+- `AnimatedFloatText` intentionally preserves its legacy 200ms `FastOutSlowInEasing` motion for the live speed-test callers; new `AnimatedCounter` uses the 700ms decelerate spec
+- Shared springs are centralized: gauge 0.72/180, chip 0.55/420, and speed value 0.8/300
 
 ### 7. UI consistency
 
-- Background colors:
-  - `BgPage` `#0B1E24`
-  - `BgCard` `#133040`
-  - `BgCardAlt` `#0F2A35`
-  - `BgIconCircle` `#1A3A48`
-- Primary accent: blue `#4A9EDE`
-- Secondary accent: teal `#5DE4C7`
+- Dark surfaces: page `#08171C`, surface 1 `#0D2229`, surface 2 `#123039`, surface 3 `#183D47`; dark text is `#F4FAFC`, `#A9BEC6`, and `#789099`
+- Light surfaces: page `#DDE6EA`, surface 1 `#FFFFFF`, surface 2 `#F4F7F8`, surface 3 `#E8EFF2`; light text is `#172A32`, `#405A64`, and `#5B727C`
+- Domain accents are theme-aware: Battery `#FFB627`/`#9B5C00`, Network `#4EA8F5`/`#0B63B0`, Thermal `#FF7A45`/`#C24A12`, Storage `#35DDBE`/`#007A66` (dark/light)
 - Semantic status palette: Healthy `#006B57`, Fair `#795F00`, Poor `#9C4E00`, Critical `#B3261E`, Neutral `#4E6570`, Unavailable `#647A83`
 - Gauge arcs stay neutral white/gray; accent color is only for the indicator
 - Status colors use explicit opaque container/foreground pairs for small badges and dots only, never for large fills, and must always be paired with text or an icon
-- Typography:
-  - Manrope for body text
-  - JetBrains Mono for hero numbers and gauge values
-- Card radius: 16dp
-- Small-element radius: 8dp
-- No shadows, no elevation, no borders, except `ActionCards` with `1dp outlineVariant` at `35%` alpha
+- Typography uses Manrope for body text and hero units, and JetBrains Mono for hero numbers, gauge values, and card metrics. Signature sizes are 64sp hero number, 24sp hero unit, 44sp gauge value, and 28sp card metric
+- Main cards use 24dp corners, hero cards and bottom sheets use 32dp corners, and small elements use 12dp corners
+- Cards remain flat. Light-theme main cards use the centralized 1dp `LightCardBorder #7A939D`; dark-theme main cards have no general border. `ActionCard` keeps one separate 1dp `outlineVariant` border at 35% alpha and must not receive the general card border too
+- Signature components are `HeroGauge`, `MetricTile`, `StatBlock`, `StatusPill`, `EmptyStateIllustration`, and `AnimatedCounter`; use them as their screen migrations land instead of creating parallel variants
+- Screen horizontal and card internal padding are 20dp, card gap is 12dp, and section gap is 28dp
 - No dynamic colors. If a task changes visual design, follow `UI-SPEC.md` instead of inventing alternate tokens or component variants
 - English-only strings are intentional right now. Do not reintroduce partial localization without updating docs and string coverage together.
 - Icons: use `Icons.Outlined` exclusively — no `Icons.Default`, `Icons.Filled`, or `Icons.Rounded`
-- All padding/spacing values must be on the 4dp grid (2/4/8/12/16/24/32dp)
+- All padding/spacing values must be on the 4dp grid (2/4/8/12/16/20/24/28/32dp)
 - Shared touch targets, icon sizes, icon circles, and common CTA heights should come from `UiTokens` instead of being repeated in shared components
 - All animation durations must use `MotionTokens` constants, never bare `tween()` without explicit spec
 - All ViewModels with live state flows must use `.sample(333L)` to throttle UI updates

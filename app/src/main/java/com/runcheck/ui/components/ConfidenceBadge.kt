@@ -54,11 +54,7 @@ fun ConfidenceBadge(
         }
 
     val label =
-        when (confidence) {
-            Confidence.HIGH -> stringResource(R.string.confidence_accurate)
-            Confidence.LOW -> stringResource(R.string.confidence_estimated)
-            Confidence.UNAVAILABLE -> stringResource(R.string.confidence_unavailable)
-        }
+        stringResource(confidenceLabelResource(confidence))
 
     var targetScale by remember { mutableFloatStateOf(if (reducedMotion) 1f else 0.92f) }
     LaunchedEffect(Unit) { targetScale = 1f }
@@ -98,3 +94,10 @@ fun ConfidenceBadge(
         )
     }
 }
+
+internal fun confidenceLabelResource(confidence: Confidence): Int =
+    when (confidence) {
+        Confidence.HIGH -> R.string.confidence_accurate
+        Confidence.LOW -> R.string.confidence_estimated
+        Confidence.UNAVAILABLE -> R.string.confidence_unavailable
+    }

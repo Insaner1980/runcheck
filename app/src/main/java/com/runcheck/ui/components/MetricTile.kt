@@ -20,10 +20,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import com.runcheck.R
 import com.runcheck.domain.model.Confidence
@@ -53,6 +55,36 @@ internal data class MetricTilePresentation(
     val statusLabel: String?,
     val showLoadingIndicator: Boolean,
 )
+
+internal enum class MetricTileSlotVisibility {
+    VISIBLE,
+    PLACEHOLDER,
+}
+
+internal data class MetricTileSlotPolicy(
+    val status: MetricTileSlotVisibility,
+    val confidence: MetricTileSlotVisibility,
+)
+
+internal fun metricTileSlotPolicy(
+    state: MetricTileState,
+    hasStatus: Boolean,
+    hasConfidence: Boolean,
+): MetricTileSlotPolicy =
+    MetricTileSlotPolicy(
+        status =
+            if (state != MetricTileState.READY || hasStatus) {
+                MetricTileSlotVisibility.VISIBLE
+            } else {
+                MetricTileSlotVisibility.PLACEHOLDER
+            },
+        confidence =
+            if (state == MetricTileState.READY && hasConfidence) {
+                MetricTileSlotVisibility.VISIBLE
+            } else {
+                MetricTileSlotVisibility.PLACEHOLDER
+            },
+    )
 
 internal fun metricTilePresentation(
     state: MetricTileState,
@@ -111,6 +143,12 @@ fun MetricTile(
             unavailableLabel = unavailableLabel,
         )
     val tokens = MaterialTheme.uiTokens
+    val slotPolicy =
+        metricTileSlotPolicy(
+            state = state,
+            hasStatus = status != null,
+            hasConfidence = confidence != null,
+        )
     val accent = domain.accentColor()
     val icon = domain.outlinedIcon()
     val clickModifier =
@@ -186,16 +224,34 @@ fun MetricTile(
                     }
                 }
             }
-            if (presentation.statusLabel != null) {
+            MetricTileReservedSlot(visibility = slotPolicy.status) {
                 StatusPill(
-                    label = presentation.statusLabel,
+                    label = presentation.statusLabel ?: unavailableLabel,
                     tone = if (state == MetricTileState.UNAVAILABLE) StatusTone.UNAVAILABLE else statusTone,
                 )
             }
-            if (confidence != null && state == MetricTileState.READY) {
-                ConfidenceBadge(confidence = confidence)
+            MetricTileReservedSlot(visibility = slotPolicy.confidence) {
+                ConfidenceBadge(confidence = confidence ?: Confidence.HIGH)
             }
         }
+    }
+}
+
+@Composable
+private fun MetricTileReservedSlot(
+    visibility: MetricTileSlotVisibility,
+    content: @Composable () -> Unit,
+) {
+    val modifier =
+        if (visibility == MetricTileSlotVisibility.VISIBLE) {
+            Modifier
+        } else {
+            Modifier
+                .alpha(0f)
+                .clearAndSetSemantics {}
+        }
+    Box(modifier = modifier) {
+        content()
     }
 }
 

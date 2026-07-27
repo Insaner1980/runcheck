@@ -12,7 +12,7 @@ val RuncheckShapes =
         extraLarge = RoundedCornerShape(32.dp),
     )
 
-val HeroCardShape = RoundedCornerShape(32.dp)
+val HeroCardShape = RuncheckShapes.extraLarge
 
 val RuncheckPillShape = RoundedCornerShape(percent = 50)
 

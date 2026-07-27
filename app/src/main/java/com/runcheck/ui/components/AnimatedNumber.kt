@@ -1,6 +1,7 @@
 package com.runcheck.ui.components
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.TweenSpec
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +24,17 @@ internal fun <T> formatCounterText(
     prefix: String,
     suffix: String,
 ): String = "$prefix${formatter(value)}$suffix"
+
+internal enum class CounterMotion {
+    COUNTER,
+    LEGACY_FLOAT,
+}
+
+internal fun counterMotionSpec(motion: CounterMotion): TweenSpec<Float> =
+    when (motion) {
+        CounterMotion.COUNTER -> MotionTokens.counterTween()
+        CounterMotion.LEGACY_FLOAT -> MotionTokens.legacyFloatTween()
+    }
 
 @Composable
 fun AnimatedCounter(
@@ -56,6 +68,7 @@ fun AnimatedCounter(
         modifier = modifier,
         style = style,
         color = color,
+        motion = CounterMotion.COUNTER,
     )
 }
 
@@ -69,6 +82,31 @@ fun AnimatedCounter(
     suffix: String = "",
     style: TextStyle = MaterialTheme.typography.bodyLarge,
     color: Color = MaterialTheme.colorScheme.onSurface,
+) {
+    AnimatedFloatCounter(
+        value = value,
+        initialValue = initialValue,
+        formatter = formatter,
+        prefix = prefix,
+        suffix = suffix,
+        motion = CounterMotion.COUNTER,
+        modifier = modifier,
+        style = style,
+        color = color,
+    )
+}
+
+@Composable
+private fun AnimatedFloatCounter(
+    value: Float,
+    initialValue: Float,
+    formatter: (Float) -> String,
+    prefix: String,
+    suffix: String,
+    motion: CounterMotion,
+    style: TextStyle,
+    color: Color,
+    modifier: Modifier = Modifier,
 ) {
     AnimatedCounterText(
         value = value,
@@ -88,6 +126,7 @@ fun AnimatedCounter(
                 suffix = suffix,
             )
         },
+        motion = motion,
         modifier = modifier,
         style = style,
         color = color,
@@ -100,6 +139,7 @@ private fun AnimatedCounterText(
     initialValue: Float,
     finalText: String,
     visualFormatter: (Float) -> String,
+    motion: CounterMotion,
     style: TextStyle,
     color: Color,
     modifier: Modifier = Modifier,
@@ -113,7 +153,7 @@ private fun AnimatedCounterText(
         } else {
             animatedValue.animateTo(
                 targetValue = value,
-                animationSpec = MotionTokens.counterTween(),
+                animationSpec = counterMotionSpec(motion),
             )
         }
     }
@@ -137,11 +177,15 @@ fun AnimatedFloatText(
     decimalPlaces: Int = 1,
     suffix: String = "",
 ) {
-    AnimatedCounter(
+    AnimatedFloatCounter(
         value = value,
+        initialValue = 0f,
+        prefix = "",
+        motion = CounterMotion.LEGACY_FLOAT,
         modifier = modifier,
         formatter = { animatedValue -> formatDecimal(animatedValue, decimalPlaces) },
         suffix = suffix,
         style = style,
+        color = MaterialTheme.colorScheme.onSurface,
     )
 }

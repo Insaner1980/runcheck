@@ -27,7 +27,7 @@ private fun SignatureComponentsPreview() {
             label = "Device health",
             status = "Healthy",
             accent = MaterialTheme.domainColors.battery,
-            contentDescription = "Device health score, 82 out of 100, Healthy",
+            contentDescription = "Device health",
             animationKey = "preview",
             confidence = Confidence.HIGH,
             modifier = Modifier.fillMaxWidth(),
@@ -61,6 +61,15 @@ private fun SignatureComponentsPreview() {
 @Composable
 private fun ComponentStatesPreview() {
     PreviewSurface {
+        MetricTile(
+            domain = MetricDomain.THERMAL,
+            value = "36.5",
+            unit = "°C",
+            label = "Temperature",
+            status = "Healthy",
+            statusTone = StatusTone.HEALTHY,
+            confidence = Confidence.HIGH,
+        )
         MetricTile(
             domain = MetricDomain.THERMAL,
             value = "36.5",

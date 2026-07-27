@@ -1,5 +1,6 @@
 package com.runcheck.ui
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -52,6 +53,29 @@ class StableMaterialTopLevelSourceContractTest {
                 .resolve("src/main/java/com/runcheck/ui/components/TrendChart.kt")
                 .readText()
         assertTrue(trendChart.contains("MaterialTheme.chartColors"))
+    }
+
+    @Test
+    fun `signature drawing and card borders use their centralized policies`() {
+        val components = appDir.resolve("src/main/java/com/runcheck/ui/components")
+        val heroGauge = components.resolve("HeroGauge.kt").readText()
+        val gridCard = components.resolve("GridCard.kt").readText()
+        val metricTile = components.resolve("MetricTile.kt").readText()
+        val actionCard = components.resolve("ActionCard.kt").readText()
+
+        assertTrue(heroGauge.contains(".drawWithCache"))
+        assertFalse(heroGauge.contains("Canvas("))
+        assertFalse(heroGauge.contains("stateDescription"))
+        assertFalse(heroGauge.contains("progressBarRangeInfo"))
+        assertTrue(heroGauge.contains("R.string.hero_gauge_semantics"))
+        assertEquals(1, heroGauge.countOccurrences("this.contentDescription ="))
+        assertEquals(3, metricTile.countOccurrences("MetricTileReservedSlot("))
+        assertTrue(metricTile.contains(".alpha(0f)"))
+        assertTrue(metricTile.contains(".clearAndSetSemantics {}"))
+        assertEquals(1, gridCard.countOccurrences("border = runcheckCardBorder()"))
+        assertEquals(1, metricTile.countOccurrences("border = runcheckCardBorder()"))
+        assertEquals(1, actionCard.countOccurrences("border = runcheckOutlinedCardBorder()"))
+        assertFalse(actionCard.contains("runcheckCardBorder"))
     }
 
     @Test
@@ -142,6 +166,8 @@ class StableMaterialTopLevelSourceContractTest {
             .flatMap { path -> sequenceOf(path, path.resolve("app")) }
             .first { Files.exists(it.resolve("src/main/res")) && Files.exists(it.resolve("build.gradle.kts")) }
     }
+
+    private fun String.countOccurrences(token: String): Int = windowed(token.length).count { it == token }
 
     private companion object {
         val REQUIRED_COMPONENTS =

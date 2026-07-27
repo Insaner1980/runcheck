@@ -702,7 +702,7 @@ public fun com.runcheck.ui.components.AnimatedCounter(value: kotlin.Float, modif
     - color: STABLE (marked @Stable or @Immutable)
 
 @Composable
-private fun com.runcheck.ui.components.AnimatedCounterText(value: kotlin.Float, initialValue: kotlin.Float, finalText: kotlin.String, visualFormatter: kotlin.Function1<kotlin.Float, kotlin.String>, style: androidx.compose.ui.text.TextStyle, color: androidx.compose.ui.graphics.Color, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+private fun com.runcheck.ui.components.AnimatedCounterText(value: kotlin.Float, initialValue: kotlin.Float, finalText: kotlin.String, visualFormatter: kotlin.Function1<kotlin.Float, kotlin.String>, motion: com.runcheck.ui.components.CounterMotion, style: androidx.compose.ui.text.TextStyle, color: androidx.compose.ui.graphics.Color, modifier: androidx.compose.ui.Modifier): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -710,6 +710,22 @@ private fun com.runcheck.ui.components.AnimatedCounterText(value: kotlin.Float, 
     - initialValue: STABLE (primitive type)
     - finalText: STABLE (String is immutable)
     - visualFormatter: STABLE (function type)
+    - motion: STABLE (class with no mutable properties)
+    - style: STABLE (marked @Stable or @Immutable)
+    - color: STABLE (marked @Stable or @Immutable)
+    - modifier: STABLE (marked @Stable or @Immutable)
+
+@Composable
+private fun com.runcheck.ui.components.AnimatedFloatCounter(value: kotlin.Float, initialValue: kotlin.Float, formatter: kotlin.Function1<kotlin.Float, kotlin.String>, prefix: kotlin.String, suffix: kotlin.String, motion: com.runcheck.ui.components.CounterMotion, style: androidx.compose.ui.text.TextStyle, color: androidx.compose.ui.graphics.Color, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - value: STABLE (primitive type)
+    - initialValue: STABLE (primitive type)
+    - formatter: STABLE (function type)
+    - prefix: STABLE (String is immutable)
+    - suffix: STABLE (String is immutable)
+    - motion: STABLE (class with no mutable properties)
     - style: STABLE (marked @Stable or @Immutable)
     - color: STABLE (marked @Stable or @Immutable)
     - modifier: STABLE (marked @Stable or @Immutable)
@@ -964,6 +980,14 @@ public fun com.runcheck.ui.components.MetricTile(domain: com.runcheck.ui.compone
     - statusTone: STABLE (class with no mutable properties)
     - confidence: STABLE (class with no mutable properties)
     - onClick: STABLE (function type)
+
+@Composable
+private fun com.runcheck.ui.components.MetricTileReservedSlot(visibility: com.runcheck.ui.components.MetricTileSlotVisibility, content: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - visibility: STABLE (class with no mutable properties)
+    - content: STABLE (composable function type)
 
 @Composable
 public fun com.runcheck.ui.components.MiniBar(progress: kotlin.Float, modifier: androidx.compose.ui.Modifier, height: androidx.compose.ui.unit.Dp, trackColor: androidx.compose.ui.graphics.Color, fillColor: androidx.compose.ui.graphics.Color, animationDuration: kotlin.Int, contentDescription: kotlin.String?): kotlin.Unit

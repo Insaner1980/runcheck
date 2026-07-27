@@ -16,13 +16,14 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.runcheck.domain.model.ThemeMode
 
 val LocalReducedMotion = staticCompositionLocalOf { false }
 val LocalNumericFontFamily = staticCompositionLocalOf { JetBrainsMonoFontFamily }
 private val LocalHeroCardColor = staticCompositionLocalOf { Surface2Dark }
-private val LocalMainCardBorderEnabled = staticCompositionLocalOf { false }
+private val LocalMainCardBorderPolicy = staticCompositionLocalOf<MainCardBorderPolicy?> { null }
 
 @Immutable
 data class DomainColors(
@@ -49,6 +50,12 @@ internal val LightDomainColors =
     )
 
 private val LocalDomainColors = staticCompositionLocalOf { DarkDomainColors }
+
+@Immutable
+internal data class MainCardBorderPolicy(
+    val width: Dp,
+    val color: Color,
+)
 
 val MaterialTheme.reducedMotion: Boolean
     @Composable
@@ -85,17 +92,20 @@ fun runcheckHeroCardColors(): CardColors = CardDefaults.cardColors(containerColo
 @Composable
 fun runcheckCardElevation(): CardElevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
 
-internal fun mainCardBorderEnabled(darkTheme: Boolean): Boolean = !darkTheme
+internal fun mainCardBorderPolicy(darkTheme: Boolean): MainCardBorderPolicy? =
+    if (darkTheme) {
+        null
+    } else {
+        MainCardBorderPolicy(
+            width = UiTokens().outlineWidth,
+            color = LightCardBorder,
+        )
+    }
 
 @Composable
 fun runcheckCardBorder(): BorderStroke? =
-    if (LocalMainCardBorderEnabled.current) {
-        BorderStroke(
-            width = MaterialTheme.uiTokens.outlineWidth,
-            color = MaterialTheme.colorScheme.outline,
-        )
-    } else {
-        null
+    LocalMainCardBorderPolicy.current?.let { policy ->
+        BorderStroke(width = policy.width, color = policy.color)
     }
 
 @Composable
@@ -247,7 +257,7 @@ fun RuncheckTheme(
         LocalUiTokens provides UiTokens(),
         LocalHeroCardColor provides heroCardColor,
         LocalDomainColors provides domainColors,
-        LocalMainCardBorderEnabled provides mainCardBorderEnabled(darkTheme),
+        LocalMainCardBorderPolicy provides mainCardBorderPolicy(darkTheme),
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

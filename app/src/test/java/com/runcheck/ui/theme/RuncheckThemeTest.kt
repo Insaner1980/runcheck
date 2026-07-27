@@ -11,6 +11,8 @@ import com.runcheck.domain.model.ThemeMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -82,9 +84,12 @@ class RuncheckThemeTest {
     }
 
     @Test
-    fun `main card border is enabled only for light appearance`() {
-        assertFalse(mainCardBorderEnabled(darkTheme = true))
-        assertTrue(mainCardBorderEnabled(darkTheme = false))
+    fun `main card border policy uses the exact light theme outline`() {
+        assertNull(mainCardBorderPolicy(darkTheme = true))
+
+        val lightPolicy = requireNotNull(mainCardBorderPolicy(darkTheme = false))
+        assertEquals(1.dp, lightPolicy.width)
+        assertEquals(LightCardBorder, lightPolicy.color)
     }
 
     @Test
@@ -147,6 +152,7 @@ class RuncheckThemeTest {
         assertEquals(24f, RuncheckShapes.medium.cornerPx(), 0f)
         assertEquals(24f, RuncheckShapes.large.cornerPx(), 0f)
         assertEquals(32f, RuncheckShapes.extraLarge.cornerPx(), 0f)
+        assertSame(RuncheckShapes.extraLarge, HeroCardShape)
         assertEquals(32f, HeroCardShape.cornerPx(), 0f)
         assertEquals(32f, BottomSheetShape.cornerPx(), 0f)
         assertEquals(50f, RuncheckPillShape.cornerPx(), 0f)

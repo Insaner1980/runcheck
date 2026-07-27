@@ -47,8 +47,10 @@ Current global constraints:
 - Material 3 color roles are supplied by `DarkRuncheckColorScheme` and
   `LightRuncheckColorScheme`.
 - Cards are flat by default: zero tonal elevation and zero shadow elevation.
-- General cards have no border.
-- `ActionCard` and explicit outline buttons use 1dp outlines.
+- Light-theme main cards use the centralized 1dp `LightCardBorder`; dark-theme
+  main cards have no general border.
+- `ActionCard` keeps one separate 1dp outline and never stacks the general
+  main-card border. Explicit outline buttons also use 1dp outlines.
 - Primary UI icons use `Icons.Outlined` or `Icons.AutoMirrored.Outlined`.
 - Body text uses Manrope.
 - Large numeric values and chart labels use JetBrains Mono.
@@ -67,43 +69,40 @@ Defined in `Color.kt` and exposed through `Theme.kt`.
 
 | Token | Hex | Current Material role or usage |
 |---|---:|---|
-| `BgPage` | `#0B1E24` | `background`, `surface`; full page background |
-| `BgCard` | `#133040` | `surfaceContainer`; default card background |
-| `BgCardDeep` | `#0D2530` | `heroCardColor`; hero card background |
-| `BgCardAlt` | `#0F2A35` | `surfaceContainerLow`; alternate surfaces |
-| `BgIconCircle` | `#1A3A48` | `surfaceContainerHigh`, `surfaceContainerHighest`, `surfaceVariant`; icon circles and tracks |
-| `AccentTeal` | `#5DE4C7` | `secondary`; secondary accent |
-| `AccentBlue` | `#4A9EDE` | `primary`; primary actions, links, main accent |
-| `AccentAmber` | `#E8C44A` | `tertiary`; warning accent |
-| `AccentOrange` | `#F5963A` | category accent |
-| `AccentRed` | `#F06040` | `error`; destructive accent |
-| `AccentLime` | `#C8E636` | storage/category accent |
-| `AccentYellow` | `#F5D03A` | storage/category accent |
-| `TextPrimary` | `#F4F7F8` | `onSurface`, `onBackground`; primary text |
-| `TextSecondary` | `#B5C7CE` | `onSurfaceVariant`; labels/descriptions |
-| `TextMuted` | `#7A949E` | `outline`, `outlineVariant`; muted text/dividers |
-| `TextOnLime` | `#1A2E0A` | text on lime backgrounds |
+| `BgPageDark` | `#08171C` | `background`, `surface`; full page background |
+| `Surface1Dark` | `#0D2229` | `surfaceContainer`, `surfaceContainerLow`; default card background |
+| `Surface2Dark` | `#123039` | `surfaceContainerHigh`, `heroCardColor`; emphasized surfaces |
+| `Surface3Dark` | `#183D47` | `surfaceContainerHighest`, `surfaceVariant`; icon circles and tracks |
+| `TextPrimaryDark` | `#F4FAFC` | `onSurface`, `onBackground`; primary text |
+| `TextSecondaryDark` | `#A9BEC6` | `onSurfaceVariant`; labels/descriptions |
+| `TextMutedDark` | `#789099` | `outline`, `outlineVariant`; muted text/dividers |
 
 ### 2.2 Light Base Colors
 
 | Token | Hex | Current Material role |
 |---|---:|---|
-| `LightBackground` | `#F4F7F8` | `background` |
-| `LightSurface` | `#FFFFFF` | `surface` |
-| `LightSurfaceContainerLow` | `#F0F4F5` | `surfaceContainerLow` |
-| `LightSurfaceContainer` | `#E9EFF1` | `surfaceContainer` |
-| `LightSurfaceContainerHigh` | `#DEE7EA` | `surfaceContainerHigh` |
-| `LightSurfaceContainerHighest` | `#D4E0E4` | `surfaceContainerHighest` |
-| `LightPrimary` | `#246A9F` | `primary` |
-| `LightSecondary` | `#006B5A` | `secondary` |
-| `LightTertiary` | `#795F00` | `tertiary` |
-| `LightError` | `#B3261E` | `error` |
-| `LightOnSurface` | `#16262C` | `onSurface` |
-| `LightOnSurfaceVariant` | `#4E6570` | `onSurfaceVariant` |
-| `LightOutline` | `#647A83` | `outline` |
-| `LightOutlineVariant` | `#C0CDD1` | `outlineVariant` |
+| `BgPageLight` | `#DDE6EA` | `background` |
+| `Surface1Light` | `#FFFFFF` | `surface`, `surfaceContainer`, `surfaceContainerLowest` |
+| `Surface2Light` | `#F4F7F8` | `surfaceContainerLow` |
+| `Surface3Light` | `#E8EFF2` | `surfaceContainerHigh`, `surfaceContainerHighest`, `surfaceVariant` |
+| `LightCardBorder` | `#7A939D` | `outline`, `outlineVariant`; light main-card border |
+| `TextPrimaryLight` | `#172A32` | `onSurface`, `onBackground` |
+| `TextSecondaryLight` | `#405A64` | `onSurfaceVariant` |
+| `TextMutedLight` | `#5B727C` | muted light content |
 
-### 2.3 Material Color Scheme Mapping
+### 2.3 Domain Accents
+
+Domain accents identify indicators, lines, points, and other small emphasis.
+They are never large card fills.
+
+| Domain | Dark | Light |
+|---|---:|---:|
+| Battery | `#FFB627` | `#9B5C00` |
+| Network | `#4EA8F5` | `#0B63B0` |
+| Thermal | `#FF7A45` | `#C24A12` |
+| Storage | `#35DDBE` | `#007A66` |
+
+### 2.4 Material Color Scheme Mapping
 
 `RuncheckTheme(themeMode)` selects the fixed light or dark scheme and passes it
 to `MaterialTheme`. Dynamic colors
@@ -111,25 +110,27 @@ are not used.
 
 | Material role | Dark token | Light token |
 |---|---|---|
-| `background` | `BgPage` | `LightBackground` |
-| `surface` | `BgPage` | `LightSurface` |
-| `surfaceContainerLow` | `BgCardAlt` | `LightSurfaceContainerLow` |
-| `surfaceContainer` | `BgCard` | `LightSurfaceContainer` |
-| `surfaceContainerHigh` | `BgIconCircle` | `LightSurfaceContainerHigh` |
-| `surfaceContainerHighest` | `BgIconCircle` | `LightSurfaceContainerHighest` |
-| `primary` | `AccentBlue` | `LightPrimary` |
-| `secondary` | `AccentTeal` | `LightSecondary` |
-| `tertiary` | `AccentAmber` | `LightTertiary` |
+| `background` | `BgPageDark` | `BgPageLight` |
+| `surface` | `BgPageDark` | `Surface1Light` |
+| `surfaceContainerLow` | `Surface1Dark` | `Surface2Light` |
+| `surfaceContainer` | `Surface1Dark` | `Surface1Light` |
+| `surfaceContainerHigh` | `Surface2Dark` | `Surface3Light` |
+| `surfaceContainerHighest` | `Surface3Dark` | `Surface3Light` |
+| `primary` | `NetworkAccentDark` | `NetworkAccentLight` |
+| `secondary` | `StorageAccentDark` | `StorageAccentLight` |
+| `tertiary` | `BatteryAccentDark` | `BatteryAccentLight` |
 | `error` | `AccentRed` | `LightError` |
-| `onSurface` | `TextPrimary` | `LightOnSurface` |
-| `onSurfaceVariant` | `TextSecondary` | `LightOnSurfaceVariant` |
-| `outline` | `TextMuted` | `LightOutline` |
-| `outlineVariant` | `TextMuted` | `LightOutlineVariant` |
+| `onSurface` | `TextPrimaryDark` | `TextPrimaryLight` |
+| `onSurfaceVariant` | `TextSecondaryDark` | `TextSecondaryLight` |
+| `outline` | `TextMutedDark` | `LightCardBorder` |
+| `outlineVariant` | `TextMutedDark` | `LightCardBorder` |
 
 Theme extensions:
 
-- `MaterialTheme.heroCardColor`: `BgCardDeep` in dark mode,
-  `LightSurfaceContainerLow` in light mode
+- `MaterialTheme.heroCardColor`: `Surface2Dark` in dark mode,
+  `Surface1Light` in light mode
+- `MaterialTheme.domainColors`: appearance-specific Battery, Network, Thermal,
+  and Storage accents
 - `MaterialTheme.chartColors`: centralized appearance-specific grid, axis,
   line, fill, selected-point, and glow tokens
 - `MaterialTheme.iconCircleColor`: `surfaceContainerHighest`
@@ -137,9 +138,10 @@ Theme extensions:
 - `runcheckCardColors()`: `CardDefaults.cardColors(containerColor = surfaceContainer)`
 - `runcheckHeroCardColors()`: `CardDefaults.cardColors(containerColor = heroCardColor)`
 - `runcheckCardElevation()`: `CardDefaults.cardElevation(defaultElevation = 0.dp)`
+- `runcheckCardBorder()`: null in dark mode; 1dp `LightCardBorder` in light mode
 - `runcheckOutlinedCardBorder()`: 1dp `outlineVariant.copy(alpha = 0.35f)`
 
-### 2.4 Status Colors
+### 2.5 Status Colors
 
 Defined in `StatusColors.kt`.
 
@@ -153,7 +155,7 @@ Defined in `StatusColors.kt`.
 | `unavailable` | `#647A83` |
 
 Each status exposes an explicit opaque container and a foreground selected from
-`#0B1E24` and `#FFFFFF` by the greater WCAG contrast ratio.
+`#08171C` and `#FFFFFF` by the greater WCAG contrast ratio.
 
 Thresholds:
 
@@ -168,9 +170,9 @@ Confidence badge colors:
 
 | Confidence | Background | Text |
 |---|---|---|
-| Accurate/High | `AccentBlue` | `BgPage` |
-| Estimated/Low | `AccentAmber` | `BgPage` |
-| Unavailable | `TextMuted` | `TextPrimary` |
+| Accurate/High | Network dark `#4EA8F5` | Dark page `#08171C` |
+| Estimated/Low | Battery dark `#FFB627` | Dark page `#08171C` |
+| Unavailable | Dark muted `#789099` | Dark primary `#F4FAFC` |
 
 Storage media category colors from `categoryColor()`:
 
@@ -215,23 +217,24 @@ Font families:
 | `labelMedium` | 10sp | SemiBold | default | default |
 | `labelSmall` | 10sp | Medium | default | default |
 
-### 3.2 Numeric Extensions
+### 3.2 Signature and Numeric Extensions
 
-All styles below use JetBrains Mono.
+| Extension | Family | Size | Weight | Line height | Letter spacing |
+|---|---|---:|---|---:|---:|
+| `heroNumberTextStyle` | JetBrains Mono | 64sp | Bold | 64sp | `-3.sp` |
+| `heroUnitTextStyle` | Manrope | 24sp | SemiBold | 28sp | default |
+| `gaugeValueTextStyle` | JetBrains Mono | 44sp | Bold | 48sp | default |
+| `cardMetricTextStyle` | JetBrains Mono | 28sp | Bold | 32sp | default |
+| `numericHeroLargeValueTextStyle` | JetBrains Mono | 54sp | Bold | inherited | inherited |
+| `numericHeroLevelTextStyle` | JetBrains Mono | 44sp | Bold | 48sp | `-2.sp` |
+| `numericSpeedHeroValueTextStyle` | JetBrains Mono | 40sp | Bold | 44sp | default |
+| `chartAxisTextStyle` | JetBrains Mono | 12sp | labelSmall weight | 14sp | default |
+| `chartTooltipTextStyle` | JetBrains Mono | 13sp | bodySmall weight | 16sp | default |
 
-| Extension | Base or size | Weight | Line height | Letter spacing |
-|---|---:|---|---:|---:|
-| `numericHeroDisplayTextStyle` | 64sp | Bold | 64sp | `-3.sp` |
-| `numericHeroDisplayUnitTextStyle` | 28sp | SemiBold | 28sp | default |
-| `numericHeroValueTextStyle` | 48sp displayLarge | Bold | 48sp | inherited |
-| `numericHeroLevelTextStyle` | hero value | Bold | 48sp | `-2.sp` |
-| `numericHeroLargeValueTextStyle` | 54sp | Bold | 54sp | `-3.sp` |
-| `numericHeroUnitTextStyle` | headlineLarge | SemiBold | 20sp | default |
-| `numericRingValueTextStyle` | 32sp | Bold | 32sp | `-3.sp` |
-| `numericSpeedHeroValueTextStyle` | 40sp | Bold | 44sp | `-3.sp` |
-| `numericMetricDisplayTextStyle` | 48sp | Bold | 48sp | `-3.sp` |
-| `chartAxisTextStyle` | 12sp | labelSmall weight | 14sp | default |
-| `chartTooltipTextStyle` | 13sp | bodySmall weight | 16sp | default |
+Compatibility extensions map to these canonical styles while screen migration
+continues: hero display to `heroNumberTextStyle`, hero display/unit to
+`heroUnitTextStyle`, hero/ring values to `gaugeValueTextStyle`, and metric
+display to `cardMetricTextStyle`.
 
 Common usage:
 
@@ -260,11 +263,18 @@ Defined in `Spacing.kt`.
 | `base` | 16dp |
 | `lg` | 24dp |
 | `xl` | 32dp |
+| `screenHorizontal` | 20dp |
+| `cardInternal` | 20dp |
+| `cardGap` | 12dp |
+| `sectionGap` | 28dp |
 
 Common spacing patterns:
 
-- Screen horizontal padding: usually `base` 16dp.
-- Home cards and hero content: commonly `base` 16dp or `lg` 24dp.
+- New screen migrations use `screenHorizontal` 20dp.
+- New signature cards use `cardInternal` 20dp.
+- Signature card and section gaps use `cardGap` 12dp and `sectionGap` 28dp.
+- Existing screens remain on their current spacing until their planned
+  migrations; do not create screen-local replacements for these new tokens.
 - Detail screen vertical item gap: usually `md` 12dp.
 - Card internal padding: usually `base` 16dp.
 - Hero cards with stronger emphasis: 24dp horizontal/vertical in Home and
@@ -314,6 +324,12 @@ Defined in `UiTokens.kt`.
 | `outlineAlpha` | `0.35f` |
 | `lockScrimAlpha` | `0.18f` |
 | `proBadgeBackgroundAlpha` | `0.12f` |
+| `chartPlotMinimum` | 180dp |
+| `heroGaugeStroke` | 18dp |
+| `heroGaugeStartAngle` | 135 degrees |
+| `heroGaugeSweepAngle` | 270 degrees |
+| `statusPillMinWidth` | 48dp |
+| `statusPillMinHeight` | 32dp |
 
 ### 4.3 Shapes
 
@@ -321,14 +337,15 @@ Defined in `Shapes.kt`.
 
 | Shape | Value | Usage |
 |---|---|---|
-| `small` | 8dp rounded corners | small surfaces, file thumbnails, normal range block |
-| `medium` | 16dp rounded corners | regular cards and medium Material surfaces |
-| `large` | 16dp rounded corners | cards, dialogs, buttons |
-| `extraLarge` | 28dp rounded corners | hero cards and large Material surfaces |
+| `small` | 12dp rounded corners | small surfaces and compact elements |
+| `medium` | 24dp rounded corners | regular cards and medium Material surfaces |
+| `large` | 24dp rounded corners | main cards, dialogs, buttons |
+| `extraLarge` | 32dp rounded corners | hero cards and large Material surfaces |
+| `HeroCardShape` | alias of `extraLarge` | hero card compatibility name |
 | `RuncheckPillShape` | 50 percent rounded | pills and circular/fully rounded elements |
 | `NavigationIndicatorShape` | pill | navigation indicator |
 | `BadgeShape` | pill | badges |
-| `BottomSheetShape` | top start 28dp, top end 28dp | modal bottom sheets |
+| `BottomSheetShape` | top start 32dp, top end 32dp | modal bottom sheets |
 
 ### 4.4 Elevation, Borders, Dividers
 
@@ -336,9 +353,12 @@ Defined in `Shapes.kt`.
 - Most `Card` surfaces use `shape = MaterialTheme.shapes.large`,
   `colors = runcheckCardColors()`, and `elevation = runcheckCardElevation()`.
 - Hero cards use `runcheckHeroCardColors()`.
+- Main-card consumers use `runcheckCardBorder()`: a 1dp `LightCardBorder` in
+  light mode and null in dark mode.
 - Standard dividers use `outlineVariant.copy(alpha = 0.35f)`.
 - `ActionCard` uses `runcheckOutlinedCardBorder()`:
-  1dp `outlineVariant.copy(alpha = 0.35f)`.
+  one 1dp `outlineVariant.copy(alpha = 0.35f)` border, without the main-card
+  border.
 - `Surface` wrappers used for bottom bars and overlays use 0dp tonal elevation.
 
 ---
@@ -369,8 +389,16 @@ Current behavior:
 
 | Token | Value | Usage |
 |---|---:|---|
-| `SHORT` | 200ms | short text/value and emphasis transitions |
-| `MEDIUM` | 300ms | navigation, live chart glow, cleanup bars/overlay |
+| `INSTANT` | 100ms | immediate but visible transitions |
+| `FAST` / compatibility `SHORT` | 180ms | short transitions |
+| `MEDIUM` | 320ms | navigation, live chart glow, cleanup bars/overlay |
+| `SLOW` | 520ms | deliberate component transitions |
+| `DELIBERATE` | 900ms | high-emphasis transitions |
+| `COUNTER` | 700ms | new `AnimatedCounter` values |
+| `LEGACY_FLOAT` | 200ms | legacy `AnimatedFloatText` speed-test values |
+| `RESULT_STAGGER` | 80ms | result reveal stagger |
+| `LIST_ITEM_STAGGER` | 40ms | first six list items |
+| `CHART_FILL_DELAY` | 200ms | chart fill delay |
 | `SWEEP` | 800ms | mini bars, segmented bars, area chart, trend chart updates |
 | `RING` | 1200ms | progress rings |
 | `CONTINUOUS` | 2000ms | looping battery wave, thermal critical pulse |
@@ -384,19 +412,28 @@ Current behavior:
 
 Easings:
 
-- `EaseOut`: `FastOutSlowInEasing`
-- `SweepEasing`: `CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f)`
+- `StandardEasing`: `CubicBezierEasing(0.2f, 0f, 0f, 1f)`
+- `EmphasizedEasing`: `CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)`
+- `DecelerateEasing`: `CubicBezierEasing(0f, 0f, 0f, 1f)`
+- `AnimatedFloatText` compatibility: `FastOutSlowInEasing`
+- `EaseOut` and `SweepEasing` are compatibility aliases of `StandardEasing`.
 - Speed ping rotation uses `LinearEasing`.
+
+Shared springs:
+
+- Gauge: damping 0.72, stiffness 180.
+- Chip: damping 0.55, stiffness 420.
+- Speed value: damping 0.8, stiffness 300.
 
 ### 5.3 Navigation Motion
 
 Default route transitions in `NavGraph.kt`:
 
 - Forward enter: slide into container from Start direction plus fade in,
-  `MotionTokens.MEDIUM` 300ms.
-- Forward exit: slide out toward Start direction plus fade out, 300ms.
-- Pop enter: slide into container from End direction plus fade in, 300ms.
-- Pop exit: slide out toward End direction plus fade out, 300ms.
+  `MotionTokens.MEDIUM` 320ms.
+- Forward exit: slide out toward Start direction plus fade out, 320ms.
+- Pop enter: slide into container from End direction plus fade in, 320ms.
+- Pop exit: slide out toward End direction plus fade out, 320ms.
 
 Fullscreen chart route:
 
@@ -476,11 +513,12 @@ Screen-specific scroll containers:
 
 Used on Home grid metrics.
 
-- Card shape: large 16dp.
+- Card shape: large 24dp.
 - Colors: `runcheckCardColors()`.
+- Border: `runcheckCardBorder()` (1dp `LightCardBorder` in light mode, none in dark).
 - Elevation: 0dp.
 - Optional left status strip.
-- Status strip: 4dp wide, 16dp corner radius, full card height.
+- Status strip: 4dp wide and full card height; the parent card owns clipping.
 - Start padding: 16dp when status strip exists, otherwise 12dp.
 - End padding: 12dp.
 - Top/bottom padding: 16dp.
@@ -513,7 +551,7 @@ Used on Home grid metrics.
 ### 7.3 ActionCard
 
 - Full-width `Card`.
-- Shape: large 16dp.
+- Shape: large 24dp.
 - Colors: `runcheckCardColors()`.
 - Border: 1dp `outlineVariant.copy(alpha = 0.35f)`.
 - Elevation: 0dp.
@@ -656,9 +694,13 @@ Used on Home grid metrics.
 
 ### 7.14 AnimatedFloatText
 
-- `animateFloatAsState` target value.
-- Default duration: 200ms.
-- Reduced motion duration: 0ms.
+- Thin compatibility wrapper over the shared `AnimatedCounter` rendering
+  engine for the existing live speed-test callers.
+- Preserves its legacy 200ms `FastOutSlowInEasing` behavior.
+- New Int/Float `AnimatedCounter` calls use the 700ms decelerate spec and
+  support formatter, prefix, suffix, and initial value.
+- Reduced motion snaps to the final value.
+- Semantics expose the final formatted value throughout animation.
 - Uses `formatDecimal`.
 - Default text style: `bodyLarge`.
 - Default color: `onSurface`.
@@ -678,6 +720,47 @@ Used on Home grid metrics.
 - Style: `labelLarge`.
 - Color: `onSurfaceVariant`.
 - Heading semantics.
+- Optional trailing count and action are rendered only when supplied; the
+  action preserves a 48dp touch target.
+
+### 7.16a Signature Component Foundation
+
+`HeroGauge`:
+
+- Clamps finite values to 0..100 and maps non-finite input to 0.
+- Draws a neutral 18dp track and a domain-accent indicator over 270 degrees.
+- Caches density-dependent draw objects with `drawWithCache`.
+- Honors reduced motion and keys intentional restarts with `animationKey`.
+- Exposes one combined semantic description containing the short gauge name,
+  final value, status, and optional localized confidence. Descendant text and
+  the decorative drawing do not create duplicate accessibility nodes.
+
+`MetricTile`:
+
+- Uses one structural template for Battery, Network, Thermal, and Storage,
+  with appearance-specific domain accent and `Icons.Outlined` identity.
+- Uses `runcheckCardBorder()` and a minimum 48dp interactive surface.
+- Always reserves value, status, and confidence layout slots across ready,
+  loading, and unavailable states. Hidden placeholders are transparent and
+  removed from semantics so async transitions do not add focus noise.
+- Rendered font-scale 2.0 measurement remains a phase 8 device/UI-test gate;
+  the current contract is covered by pure policy tests and static previews.
+
+`StatBlock`:
+
+- Presents label, value, unit, and optional textual status without fixed text
+  width.
+
+`StatusPill`:
+
+- Presents text and an optional outlined decorative icon.
+- Uses a minimum 48dp width, 32dp height, and one-line ellipsis.
+- Status is textual and never encoded by color alone.
+
+`EmptyStateIllustration`:
+
+- Hides its outlined icon or custom illustration from semantics.
+- Presents title, message, and an optional 48dp CTA without external assets.
 
 ### 7.17 InfoIcon
 

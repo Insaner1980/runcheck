@@ -1,5 +1,6 @@
 package com.runcheck.ui.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -7,15 +8,45 @@ import org.junit.Test
 
 class SignatureComponentPolicyTest {
     @Test
-    fun `hero gauge clamps invalid and out of range values before display and semantics`() {
-        assertEquals(0f, heroGaugePresentation(Float.NaN, "Health", "Unavailable").value, 0f)
-        assertEquals(0f, heroGaugePresentation(-12f, "Health", "Poor").value, 0f)
-        assertEquals(100f, heroGaugePresentation(127f, "Health", "Healthy").value, 0f)
+    fun `hero gauge exposes one complete localized semantic description`() {
+        assertEquals(
+            0f,
+            heroGaugePresentation(Float.NaN, "Health", "Unavailable", null).value,
+            0f,
+        )
+        assertEquals(
+            0f,
+            heroGaugePresentation(-12f, "Health", "Poor", "Estimated").value,
+            0f,
+        )
+        assertEquals(
+            100f,
+            heroGaugePresentation(127f, "Health", "Healthy", "Accurate").value,
+            0f,
+        )
 
-        val presentation = heroGaugePresentation(72.4f, "Battery health", "Healthy")
+        val presentation =
+            heroGaugePresentation(
+                value = 72.4f,
+                semanticLabel = "Battery health",
+                status = "Healthy",
+                confidenceLabel = "Accurate",
+            )
         assertEquals(72f, presentation.value, 0f)
         assertEquals("72", presentation.displayValue)
-        assertEquals("Battery health, Healthy, 72%", presentation.stateDescription)
+        assertEquals(
+            HeroGaugeSemantics(
+                label = "Battery health",
+                valuePercent = "72%",
+                status = "Healthy",
+                confidence = "Accurate",
+            ),
+            presentation.semantics,
+        )
+        assertEquals(
+            null,
+            heroGaugePresentation(72.4f, "Battery health", "Healthy", null).semantics.confidence,
+        )
     }
 
     @Test
@@ -58,6 +89,38 @@ class SignatureComponentPolicyTest {
     }
 
     @Test
+    fun `metric tile reserves status and confidence slots for every async state`() {
+        val ready =
+            metricTileSlotPolicy(
+                state = MetricTileState.READY,
+                hasStatus = true,
+                hasConfidence = true,
+            )
+        assertEquals(MetricTileSlotVisibility.VISIBLE, ready.status)
+        assertEquals(MetricTileSlotVisibility.VISIBLE, ready.confidence)
+
+        val readyWithoutMetadata =
+            metricTileSlotPolicy(
+                state = MetricTileState.READY,
+                hasStatus = false,
+                hasConfidence = false,
+            )
+        assertEquals(MetricTileSlotVisibility.PLACEHOLDER, readyWithoutMetadata.status)
+        assertEquals(MetricTileSlotVisibility.PLACEHOLDER, readyWithoutMetadata.confidence)
+
+        listOf(MetricTileState.LOADING, MetricTileState.UNAVAILABLE).forEach { state ->
+            val policy =
+                metricTileSlotPolicy(
+                    state = state,
+                    hasStatus = true,
+                    hasConfidence = true,
+                )
+            assertEquals(MetricTileSlotVisibility.VISIBLE, policy.status)
+            assertEquals(MetricTileSlotVisibility.PLACEHOLDER, policy.confidence)
+        }
+    }
+
+    @Test
     fun `counter semantics always use the final formatted value`() {
         assertEquals(
             "≈ 42%",
@@ -77,5 +140,17 @@ class SignatureComponentPolicyTest {
                 suffix = " °C",
             ),
         )
+    }
+
+    @Test
+    fun `legacy float and counter animations retain separate motion contracts`() {
+        with(counterMotionSpec(CounterMotion.COUNTER)) {
+            assertEquals(700, durationMillis)
+            assertEquals(com.runcheck.ui.theme.MotionTokens.DecelerateEasing, easing)
+        }
+        with(counterMotionSpec(CounterMotion.LEGACY_FLOAT)) {
+            assertEquals(200, durationMillis)
+            assertEquals(FastOutSlowInEasing, easing)
+        }
     }
 }

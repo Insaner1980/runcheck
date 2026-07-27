@@ -1,6 +1,7 @@
 package com.runcheck.ui.theme
 
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.spring
@@ -32,6 +33,7 @@ object MotionTokens {
     const val SLOW = 520
     const val DELIBERATE = 900
     const val COUNTER = 700
+    const val LEGACY_FLOAT = 200
     const val RESULT_STAGGER = 80
     const val LIST_ITEM_STAGGER = 40
     const val CHART_FILL_DELAY = 200
@@ -89,6 +91,12 @@ object MotionTokens {
         tween(
             durationMillis = COUNTER,
             easing = DecelerateEasing,
+        )
+
+    fun <T> legacyFloatTween(): TweenSpec<T> =
+        tween(
+            durationMillis = LEGACY_FLOAT,
+            easing = FastOutSlowInEasing,
         )
 
     fun <T> speedValueSpring(): SpringSpec<T> =
