@@ -14,13 +14,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,7 +31,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -50,7 +47,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
@@ -64,7 +60,6 @@ import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.runcheckOutlinedCardBorder
 import com.runcheck.ui.theme.spacing
-import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.uiTokens
 
 private const val FIXED_SELECTOR_OPTION_LIMIT = 4
@@ -342,67 +337,6 @@ fun InfoBanner(
     )
 }
 
-enum class StatusTone {
-    HEALTHY,
-    FAIR,
-    POOR,
-    CRITICAL,
-    NEUTRAL,
-    UNAVAILABLE,
-}
-
-@Composable
-fun StatusPill(
-    label: String,
-    tone: StatusTone,
-    modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
-) {
-    val colors = MaterialTheme.statusColors
-    val (container, foreground) =
-        when (tone) {
-            StatusTone.HEALTHY -> colors.healthyContainer to colors.onHealthyContainer
-            StatusTone.FAIR -> colors.fairContainer to colors.onFairContainer
-            StatusTone.POOR -> colors.poorContainer to colors.onPoorContainer
-            StatusTone.CRITICAL -> colors.criticalContainer to colors.onCriticalContainer
-            StatusTone.NEUTRAL -> colors.neutralContainer to colors.onNeutralContainer
-            StatusTone.UNAVAILABLE -> colors.unavailableContainer to colors.onUnavailableContainer
-        }
-    val tokens = MaterialTheme.uiTokens
-
-    Surface(
-        modifier = modifier,
-        shape = MaterialTheme.shapes.small,
-        color = container,
-        contentColor = foreground,
-    ) {
-        androidx.compose.foundation.layout.Row(
-            modifier =
-                Modifier.padding(
-                    horizontal = tokens.badgeHorizontalPadding,
-                    vertical = tokens.badgeVerticalPadding,
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement =
-                androidx.compose.foundation.layout.Arrangement
-                    .spacedBy(MaterialTheme.spacing.xs),
-        ) {
-            if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(tokens.iconSmall),
-                )
-            }
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
-    }
-}
-
 @Composable
 fun LearnTopicLink(
     label: String,
@@ -414,48 +348,6 @@ fun LearnTopicLink(
         onClick = onClick,
         modifier = modifier,
     )
-}
-
-@Composable
-fun RuncheckEmptyState(
-    title: String,
-    message: String,
-    modifier: Modifier = Modifier,
-    icon: ImageVector = Icons.Outlined.Info,
-    illustration: (@Composable () -> Unit)? = null,
-) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(MaterialTheme.spacing.lg),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        if (illustration == null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier =
-                    Modifier.sizeIn(
-                        minWidth = MaterialTheme.uiTokens.touchTarget,
-                        minHeight = MaterialTheme.uiTokens.touchTarget,
-                    ),
-            )
-        } else {
-            illustration()
-        }
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
 }
 
 @Composable

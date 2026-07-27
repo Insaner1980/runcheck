@@ -6,11 +6,13 @@ import androidx.compose.ui.unit.dp
 
 val RuncheckShapes =
     Shapes(
-        small = RoundedCornerShape(8.dp),
-        medium = RoundedCornerShape(16.dp),
-        large = RoundedCornerShape(16.dp),
-        extraLarge = RoundedCornerShape(28.dp),
+        small = RoundedCornerShape(12.dp),
+        medium = RoundedCornerShape(24.dp),
+        large = RoundedCornerShape(24.dp),
+        extraLarge = RoundedCornerShape(32.dp),
     )
+
+val HeroCardShape = RoundedCornerShape(32.dp)
 
 val RuncheckPillShape = RoundedCornerShape(percent = 50)
 
@@ -18,4 +20,4 @@ val NavigationIndicatorShape = RuncheckPillShape
 
 val BadgeShape = RuncheckPillShape
 
-val BottomSheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+val BottomSheetShape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)

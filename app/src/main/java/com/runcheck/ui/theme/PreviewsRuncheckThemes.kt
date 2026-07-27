@@ -20,3 +20,23 @@ import androidx.compose.ui.tooling.preview.Preview
     uiMode = Configuration.UI_MODE_NIGHT_YES,
 )
 annotation class PreviewsRuncheckThemes
+
+@Preview(
+    name = "Light font 2.0",
+    group = "Font scale",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 915,
+    fontScale = 2f,
+    uiMode = Configuration.UI_MODE_NIGHT_NO,
+)
+@Preview(
+    name = "Dark font 2.0",
+    group = "Font scale",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 915,
+    fontScale = 2f,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+annotation class PreviewsRuncheckFontScale

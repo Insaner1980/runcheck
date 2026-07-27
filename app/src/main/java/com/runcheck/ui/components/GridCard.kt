@@ -23,6 +23,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.ui.theme.numericFontFamily
+import com.runcheck.ui.theme.runcheckCardBorder
 import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
@@ -80,6 +81,7 @@ fun GridCard(
             },
         shape = MaterialTheme.shapes.large,
         colors = runcheckCardColors(),
+        border = runcheckCardBorder(),
         elevation = runcheckCardElevation(),
     ) {
         Box(

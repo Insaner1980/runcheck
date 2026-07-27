@@ -22,43 +22,78 @@ val JetBrainsMonoFontFamily =
         Font(R.font.jetbrains_mono),
     )
 
+val HeroNumberTextStyle =
+    TextStyle(
+        fontFamily = JetBrainsMonoFontFamily,
+        fontSize = 64.sp,
+        fontWeight = FontWeight.Bold,
+        lineHeight = 64.sp,
+        letterSpacing = (-3).sp,
+    )
+
+val HeroUnitTextStyle =
+    TextStyle(
+        fontFamily = ManropeFontFamily,
+        fontSize = 24.sp,
+        fontWeight = FontWeight.SemiBold,
+        lineHeight = 28.sp,
+    )
+
+val GaugeValueTextStyle =
+    TextStyle(
+        fontFamily = JetBrainsMonoFontFamily,
+        fontSize = 44.sp,
+        fontWeight = FontWeight.Bold,
+        lineHeight = 48.sp,
+    )
+
+val CardMetricTextStyle =
+    TextStyle(
+        fontFamily = JetBrainsMonoFontFamily,
+        fontSize = 28.sp,
+        fontWeight = FontWeight.Bold,
+        lineHeight = 32.sp,
+    )
+
 val MaterialTheme.numericFontFamily: FontFamily
     @Composable
     @ReadOnlyComposable
     get() = LocalNumericFontFamily.current
 
+val MaterialTheme.heroNumberTextStyle: TextStyle
+    @Composable
+    @ReadOnlyComposable
+    get() = HeroNumberTextStyle
+
+val MaterialTheme.heroUnitTextStyle: TextStyle
+    @Composable
+    @ReadOnlyComposable
+    get() = HeroUnitTextStyle
+
+val MaterialTheme.gaugeValueTextStyle: TextStyle
+    @Composable
+    @ReadOnlyComposable
+    get() = GaugeValueTextStyle
+
+val MaterialTheme.cardMetricTextStyle: TextStyle
+    @Composable
+    @ReadOnlyComposable
+    get() = CardMetricTextStyle
+
 val MaterialTheme.numericHeroDisplayTextStyle: TextStyle
     @Composable
     @ReadOnlyComposable
-    get() =
-        typography.displayLarge.copy(
-            fontFamily = numericFontFamily,
-            fontSize = 64.sp,
-            fontWeight = FontWeight.Bold,
-            lineHeight = 64.sp,
-            letterSpacing = (-3).sp,
-        )
+    get() = HeroNumberTextStyle
 
 val MaterialTheme.numericHeroDisplayUnitTextStyle: TextStyle
     @Composable
     @ReadOnlyComposable
-    get() =
-        typography.headlineLarge.copy(
-            fontFamily = numericFontFamily,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.SemiBold,
-            lineHeight = 28.sp,
-        )
+    get() = HeroUnitTextStyle
 
 val MaterialTheme.numericHeroValueTextStyle: TextStyle
     @Composable
     @ReadOnlyComposable
-    get() =
-        typography.displayLarge.copy(
-            fontFamily = numericFontFamily,
-            fontWeight = FontWeight.Bold,
-            lineHeight = 48.sp,
-        )
+    get() = GaugeValueTextStyle
 
 val MaterialTheme.numericHeroLevelTextStyle: TextStyle
     @Composable
@@ -77,45 +112,22 @@ val MaterialTheme.numericHeroLargeValueTextStyle: TextStyle
 val MaterialTheme.numericHeroUnitTextStyle: TextStyle
     @Composable
     @ReadOnlyComposable
-    get() =
-        typography.headlineLarge.copy(
-            fontFamily = numericFontFamily,
-            fontWeight = FontWeight.SemiBold,
-            lineHeight = 20.sp,
-        )
+    get() = HeroUnitTextStyle
 
 val MaterialTheme.numericRingValueTextStyle: TextStyle
     @Composable
     @ReadOnlyComposable
-    get() =
-        typography.displayMedium.copy(
-            fontFamily = numericFontFamily,
-            fontSize = 32.sp,
-            lineHeight = 32.sp,
-            fontWeight = FontWeight.Bold,
-        )
+    get() = GaugeValueTextStyle
 
 val MaterialTheme.numericSpeedHeroValueTextStyle: TextStyle
     @Composable
     @ReadOnlyComposable
-    get() =
-        typography.displaySmall.copy(
-            fontFamily = numericFontFamily,
-            fontSize = 40.sp,
-            lineHeight = 44.sp,
-        )
+    get() = GaugeValueTextStyle.copy(fontSize = 40.sp, lineHeight = 44.sp)
 
 val MaterialTheme.numericMetricDisplayTextStyle: TextStyle
     @Composable
     @ReadOnlyComposable
-    get() =
-        typography.displayLarge.copy(
-            fontFamily = numericFontFamily,
-            fontSize = 48.sp,
-            fontWeight = FontWeight.Bold,
-            lineHeight = 48.sp,
-            letterSpacing = (-3).sp,
-        )
+    get() = CardMetricTextStyle
 
 val MaterialTheme.chartAxisTextStyle: TextStyle
     @Composable

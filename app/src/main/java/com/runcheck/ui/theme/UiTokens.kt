@@ -31,6 +31,12 @@ data class UiTokens(
     val outlineAlpha: Float = 0.35f,
     val lockScrimAlpha: Float = 0.18f,
     val proBadgeBackgroundAlpha: Float = 0.12f,
+    val chartPlotMinimum: Dp = 180.dp,
+    val heroGaugeStroke: Dp = 18.dp,
+    val heroGaugeStartAngle: Float = 135f,
+    val heroGaugeSweepAngle: Float = 270f,
+    val statusPillMinWidth: Dp = 48.dp,
+    val statusPillMinHeight: Dp = 32.dp,
 )
 
 val LocalUiTokens = staticCompositionLocalOf { UiTokens() }

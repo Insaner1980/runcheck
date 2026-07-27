@@ -12,11 +12,21 @@ class StableMaterialTopLevelSourceContractTest {
     private val appDir: Path = findAppDir()
 
     @Test
-    fun `shared stable Material wrappers exist behind one component boundary`() {
-        val source =
+    fun `shared stable Material wrappers exist behind focused component boundaries`() {
+        val sharedSource =
             appDir
                 .resolve("src/main/java/com/runcheck/ui/components/RuncheckComponents.kt")
                 .readText()
+        val signatureSource =
+            listOf(
+                "StatusPill.kt",
+                "EmptyStateIllustration.kt",
+            ).joinToString(separator = "\n") { fileName ->
+                appDir
+                    .resolve("src/main/java/com/runcheck/ui/components/$fileName")
+                    .readText()
+            }
+        val source = sharedSource + signatureSource
 
         REQUIRED_COMPONENTS.forEach { component ->
             assertTrue("$component is missing", source.contains("$component("))

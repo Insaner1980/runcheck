@@ -33,7 +33,7 @@ internal val LightChartColors =
         grid = LightRuncheckColorScheme.outlineVariant,
         axis = LightRuncheckColorScheme.onSurfaceVariant,
         line = LightRuncheckColorScheme.primary,
-        fill = LightRuncheckColorScheme.surfaceContainer,
+        fill = LightRuncheckColorScheme.surfaceContainerHigh,
         selectedPoint = LightRuncheckColorScheme.secondary,
         glow = LightRuncheckColorScheme.surfaceContainerHighest,
     )

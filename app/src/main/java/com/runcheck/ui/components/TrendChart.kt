@@ -61,6 +61,7 @@ import com.runcheck.ui.theme.chartAxisTextStyle
 import com.runcheck.ui.theme.chartColors
 import com.runcheck.ui.theme.chartTooltipTextStyle
 import com.runcheck.ui.theme.reducedMotion
+import com.runcheck.ui.theme.uiTokens
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -117,7 +118,6 @@ private const val TRANSITION_SCAN_FADE_DURATION_MS = 240
 private const val FADE_OUT_DURATION_MS = 300
 private const val TRANSITION_OVERLAP_MS = 200
 private const val SCAN_LINE_START_ALPHA = 0.5f
-private val MINIMUM_PLOT_HEIGHT = 180.dp
 private val MINIMUM_Y_LABEL_SPACING = 32.dp
 
 private fun buildTrendLineGradientStops(
@@ -166,6 +166,7 @@ fun TrendChart(
 ) {
     val reducedMotion = MaterialTheme.reducedMotion
     val chartColors = MaterialTheme.chartColors
+    val minimumPlotHeight = MaterialTheme.uiTokens.chartPlotMinimum
     val chartData = remember(data) { data.filter(Float::isFinite) }
 
     // Phase 1: Grid + axes fade in (0→1 over 200ms)
@@ -353,7 +354,7 @@ fun TrendChart(
     val resolvedChartHeight =
         maxOf(
             chartHeight,
-            MINIMUM_PLOT_HEIGHT + xLabelHeight + chartStyle.chartPadding * 2,
+            minimumPlotHeight + xLabelHeight + chartStyle.chartPadding * 2,
         )
     val availablePlotHeightPx =
         with(density) {

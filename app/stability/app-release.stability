@@ -674,6 +674,47 @@ public fun com.runcheck.ui.components.ActionCard(icon: androidx.compose.ui.graph
     - subtitle: STABLE (class with no mutable properties)
 
 @Composable
+public fun com.runcheck.ui.components.AnimatedCounter(value: kotlin.Int, modifier: androidx.compose.ui.Modifier, initialValue: kotlin.Int, formatter: kotlin.Function1<kotlin.Int, kotlin.String>, prefix: kotlin.String, suffix: kotlin.String, style: androidx.compose.ui.text.TextStyle, color: androidx.compose.ui.graphics.Color): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - value: STABLE (primitive type)
+    - modifier: STABLE (marked @Stable or @Immutable)
+    - initialValue: STABLE (primitive type)
+    - formatter: STABLE (function type)
+    - prefix: STABLE (String is immutable)
+    - suffix: STABLE (String is immutable)
+    - style: STABLE (marked @Stable or @Immutable)
+    - color: STABLE (marked @Stable or @Immutable)
+
+@Composable
+public fun com.runcheck.ui.components.AnimatedCounter(value: kotlin.Float, modifier: androidx.compose.ui.Modifier, initialValue: kotlin.Float, formatter: kotlin.Function1<kotlin.Float, kotlin.String>, prefix: kotlin.String, suffix: kotlin.String, style: androidx.compose.ui.text.TextStyle, color: androidx.compose.ui.graphics.Color): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - value: STABLE (primitive type)
+    - modifier: STABLE (marked @Stable or @Immutable)
+    - initialValue: STABLE (primitive type)
+    - formatter: STABLE (function type)
+    - prefix: STABLE (String is immutable)
+    - suffix: STABLE (String is immutable)
+    - style: STABLE (marked @Stable or @Immutable)
+    - color: STABLE (marked @Stable or @Immutable)
+
+@Composable
+private fun com.runcheck.ui.components.AnimatedCounterText(value: kotlin.Float, initialValue: kotlin.Float, finalText: kotlin.String, visualFormatter: kotlin.Function1<kotlin.Float, kotlin.String>, style: androidx.compose.ui.text.TextStyle, color: androidx.compose.ui.graphics.Color, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - value: STABLE (primitive type)
+    - initialValue: STABLE (primitive type)
+    - finalText: STABLE (String is immutable)
+    - visualFormatter: STABLE (function type)
+    - style: STABLE (marked @Stable or @Immutable)
+    - color: STABLE (marked @Stable or @Immutable)
+    - modifier: STABLE (marked @Stable or @Immutable)
+
+@Composable
 public fun com.runcheck.ui.components.AnimatedFloatText(value: kotlin.Float, modifier: androidx.compose.ui.Modifier, style: androidx.compose.ui.text.TextStyle, decimalPlaces: kotlin.Int, suffix: kotlin.String): kotlin.Unit
   skippable: true
   restartable: true
@@ -739,6 +780,19 @@ public fun com.runcheck.ui.components.DetailTopBar(title: kotlin.String, onBack:
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
+public fun com.runcheck.ui.components.EmptyStateIllustration(title: kotlin.String, message: kotlin.String, modifier: androidx.compose.ui.Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector, actionLabel: kotlin.String?, onAction: kotlin.Function0<kotlin.Unit>?, illustration: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>?): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - title: STABLE (String is immutable)
+    - message: STABLE (String is immutable)
+    - modifier: STABLE (marked @Stable or @Immutable)
+    - icon: STABLE (marked @Stable or @Immutable)
+    - actionLabel: STABLE (class with no mutable properties)
+    - onAction: STABLE (function type)
+    - illustration: STABLE (composable function type)
+
+@Composable
 public fun com.runcheck.ui.components.GridCard(icon: androidx.compose.ui.graphics.vector.ImageVector, title: kotlin.String, subtitle: kotlin.String, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, subtitleColor: androidx.compose.ui.graphics.Color, statusLabel: kotlin.String?, statusColor: androidx.compose.ui.graphics.Color, iconTint: androidx.compose.ui.graphics.Color, iconBackgroundColor: androidx.compose.ui.graphics.Color, locked: kotlin.Boolean, subtitleStyle: com.runcheck.ui.components.GridCardSubtitleStyle): kotlin.Unit
   skippable: true
   restartable: true
@@ -766,6 +820,20 @@ public fun com.runcheck.ui.components.HeatStrip(temperatureC: kotlin.Float, modi
     - temperatureUnit: STABLE (class with no mutable properties)
     - minTempC: STABLE (primitive type)
     - maxTempC: STABLE (primitive type)
+
+@Composable
+public fun com.runcheck.ui.components.HeroGauge(value: kotlin.Float, label: kotlin.String, status: kotlin.String, accent: androidx.compose.ui.graphics.Color, contentDescription: kotlin.String, animationKey: kotlin.String, modifier: androidx.compose.ui.Modifier, confidence: com.runcheck.domain.model.Confidence?): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - value: STABLE (primitive type)
+    - label: STABLE (String is immutable)
+    - status: STABLE (String is immutable)
+    - accent: STABLE (marked @Stable or @Immutable)
+    - contentDescription: STABLE (String is immutable)
+    - animationKey: STABLE (String is immutable)
+    - modifier: STABLE (marked @Stable or @Immutable)
+    - confidence: STABLE (class with no mutable properties)
 
 @Composable
 public fun com.runcheck.ui.components.IconCircle(icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: androidx.compose.ui.Modifier, tint: androidx.compose.ui.graphics.Color, backgroundColor: androidx.compose.ui.graphics.Color, size: androidx.compose.ui.unit.Dp, iconSize: androidx.compose.ui.unit.Dp): kotlin.Unit
@@ -882,6 +950,22 @@ public fun com.runcheck.ui.components.MetricRow(label: kotlin.String, value: kot
     - onInfoClick: STABLE (function type)
 
 @Composable
+public fun com.runcheck.ui.components.MetricTile(domain: com.runcheck.ui.components.MetricDomain, value: kotlin.String, unit: kotlin.String, label: kotlin.String, modifier: androidx.compose.ui.Modifier, state: com.runcheck.ui.components.MetricTileState, status: kotlin.String?, statusTone: com.runcheck.ui.components.StatusTone, confidence: com.runcheck.domain.model.Confidence?, onClick: kotlin.Function0<kotlin.Unit>?): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - domain: STABLE (class with no mutable properties)
+    - value: STABLE (String is immutable)
+    - unit: STABLE (String is immutable)
+    - label: STABLE (String is immutable)
+    - modifier: STABLE (marked @Stable or @Immutable)
+    - state: STABLE (class with no mutable properties)
+    - status: STABLE (class with no mutable properties)
+    - statusTone: STABLE (class with no mutable properties)
+    - confidence: STABLE (class with no mutable properties)
+    - onClick: STABLE (function type)
+
+@Composable
 public fun com.runcheck.ui.components.MiniBar(progress: kotlin.Float, modifier: androidx.compose.ui.Modifier, height: androidx.compose.ui.unit.Dp, trackColor: androidx.compose.ui.graphics.Color, fillColor: androidx.compose.ui.graphics.Color, animationDuration: kotlin.Int, contentDescription: kotlin.String?): kotlin.Unit
   skippable: true
   restartable: true
@@ -893,6 +977,13 @@ public fun com.runcheck.ui.components.MiniBar(progress: kotlin.Float, modifier: 
     - fillColor: STABLE (marked @Stable or @Immutable)
     - animationDuration: STABLE (primitive type)
     - contentDescription: STABLE (class with no mutable properties)
+
+@Composable
+private fun com.runcheck.ui.components.PreviewSurface(content: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - content: STABLE (composable function type)
 
 @Composable
 public fun com.runcheck.ui.components.PrimaryTopBar(title: kotlin.String, modifier: androidx.compose.ui.Modifier, onMenuClick: kotlin.Function0<kotlin.Unit>?, actions: @[Composable] @[ExtensionFunctionType] androidx.compose.runtime.internal.ComposableFunction1<androidx.compose.foundation.layout.RowScope, kotlin.Unit>): kotlin.Unit
@@ -1030,12 +1121,15 @@ public fun com.runcheck.ui.components.SecondaryActionLink(label: kotlin.String, 
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
-public fun com.runcheck.ui.components.SectionHeader(text: kotlin.String, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+public fun com.runcheck.ui.components.SectionHeader(text: kotlin.String, modifier: androidx.compose.ui.Modifier, count: kotlin.Int?, actionLabel: kotlin.String?, onAction: kotlin.Function0<kotlin.Unit>?): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - text: STABLE (String is immutable)
     - modifier: STABLE (marked @Stable or @Immutable)
+    - count: STABLE (class with no mutable properties)
+    - actionLabel: STABLE (class with no mutable properties)
+    - onAction: STABLE (function type)
 
 @Composable
 public fun com.runcheck.ui.components.SegmentedBar(segments: kotlin.collections.List<com.runcheck.ui.components.SegmentData>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
@@ -1076,6 +1170,18 @@ public fun com.runcheck.ui.components.SignalBars(signalQuality: com.runcheck.dom
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
+public fun com.runcheck.ui.components.StatBlock(label: kotlin.String, value: kotlin.String, unit: kotlin.String, modifier: androidx.compose.ui.Modifier, status: kotlin.String?, statusTone: com.runcheck.ui.components.StatusTone): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - label: STABLE (String is immutable)
+    - value: STABLE (String is immutable)
+    - unit: STABLE (String is immutable)
+    - modifier: STABLE (marked @Stable or @Immutable)
+    - status: STABLE (class with no mutable properties)
+    - statusTone: STABLE (class with no mutable properties)
+
+@Composable
 public fun com.runcheck.ui.components.StatusDot(color: androidx.compose.ui.graphics.Color, modifier: androidx.compose.ui.Modifier, size: androidx.compose.ui.unit.Dp): kotlin.Unit
   skippable: true
   restartable: true
@@ -1112,6 +1218,12 @@ public fun com.runcheck.ui.components.TrendChart(data: kotlin.collections.List<k
     - tooltipFormatter: STABLE (function type)
     - presentation: STABLE (class with no mutable properties)
     - onExpandClick: STABLE (function type)
+
+@Composable
+private fun com.runcheck.ui.components.accentColor(): androidx.compose.ui.graphics.Color
+  skippable: true
+  restartable: true
+  params:
 
 @Composable
 public fun com.runcheck.ui.components.info.CrossLinkButton(label: kotlin.String, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
@@ -2462,6 +2574,12 @@ public fun com.runcheck.ui.theme.RuncheckTheme(themeMode: com.runcheck.domain.mo
     - content: STABLE (composable function type)
 
 @Composable
+public fun com.runcheck.ui.theme.cardMetricTextStyle(): androidx.compose.ui.text.TextStyle
+  skippable: true
+  restartable: true
+  params:
+
+@Composable
 public fun com.runcheck.ui.theme.cardStrokeColor(): androidx.compose.ui.graphics.Color
   skippable: true
   restartable: true
@@ -2493,7 +2611,31 @@ public fun com.runcheck.ui.theme.chartTooltipTextStyle(): androidx.compose.ui.te
   params:
 
 @Composable
+public fun com.runcheck.ui.theme.domainColors(): com.runcheck.ui.theme.DomainColors
+  skippable: true
+  restartable: true
+  params:
+
+@Composable
+public fun com.runcheck.ui.theme.gaugeValueTextStyle(): androidx.compose.ui.text.TextStyle
+  skippable: true
+  restartable: true
+  params:
+
+@Composable
 public fun com.runcheck.ui.theme.heroCardColor(): androidx.compose.ui.graphics.Color
+  skippable: true
+  restartable: true
+  params:
+
+@Composable
+public fun com.runcheck.ui.theme.heroNumberTextStyle(): androidx.compose.ui.text.TextStyle
+  skippable: true
+  restartable: true
+  params:
+
+@Composable
+public fun com.runcheck.ui.theme.heroUnitTextStyle(): androidx.compose.ui.text.TextStyle
   skippable: true
   restartable: true
   params:
@@ -2566,6 +2708,12 @@ public fun com.runcheck.ui.theme.numericSpeedHeroValueTextStyle(): androidx.comp
 
 @Composable
 public fun com.runcheck.ui.theme.reducedMotion(): kotlin.Boolean
+  skippable: true
+  restartable: true
+  params:
+
+@Composable
+public fun com.runcheck.ui.theme.runcheckCardBorder(): androidx.compose.foundation.BorderStroke?
   skippable: true
   restartable: true
   params:
