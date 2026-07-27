@@ -3,9 +3,8 @@ package com.runcheck.ui.chart
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -69,7 +68,7 @@ fun <T> HistoryPeriodSelectorRow(
         modifier =
             modifier
                 .fillMaxWidth()
-                .height(MaterialTheme.uiTokens.touchTarget),
+                .heightIn(min = MaterialTheme.uiTokens.touchTarget),
     ) {
         val policy =
             historyPeriodSelectorPolicy(
@@ -136,7 +135,7 @@ fun <T> HistoryPeriodSelectorRow(
                 showEnd = listState.canScrollForward,
                 color = MaterialTheme.colorScheme.surface,
                 edgeWidth = MaterialTheme.spacing.lg,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.matchParentSize(),
             )
         }
     }

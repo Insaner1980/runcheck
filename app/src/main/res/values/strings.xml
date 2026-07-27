@@ -652,6 +652,7 @@
     <string name="pro_feature_upgrade_action">Upgrade in Settings</string>
     <string name="pro_feature_locked_generic">This feature requires runcheck Pro</string>
     <string name="pro_feature_battery_history_message">Week, month, and all-time battery history require runcheck Pro.</string>
+    <string name="pro_feature_thermal_history_message">Temperature history requires runcheck Pro.</string>
     <string name="pro_feature_thermal_log_message">Thermal throttling history requires runcheck Pro.</string>
     <string name="pro_feature_cleanup_message">Storage cleanup tools require runcheck Pro.</string>
     <string name="pro_feature_network_history_message">Signal history and extended speed test data require runcheck Pro.</string>

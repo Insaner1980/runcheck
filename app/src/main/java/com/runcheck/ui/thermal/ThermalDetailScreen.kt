@@ -810,7 +810,7 @@ private fun ThermalHistoryCard(
 
                 ChartPrimaryState.Locked -> {
                     ProFeatureCalloutCard(
-                        message = stringResource(R.string.pro_feature_thermal_log_message),
+                        message = stringResource(R.string.pro_feature_thermal_history_message),
                         actionLabel = stringResource(R.string.pro_feature_upgrade_action),
                         onAction = onUpgradeToPro,
                     )
