@@ -2,6 +2,7 @@ package com.runcheck.ui.chart
 
 import androidx.compose.ui.graphics.Color
 import com.runcheck.ui.components.ChartQualityZone
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -27,12 +28,11 @@ class ChartViewportTest {
         requireNotNull(viewport)
         assertTrue("The 0..100 zones must not become the viewport", viewport.minValue > 50f)
         assertTrue("The 0..100 zones must not become the viewport", viewport.maxValue < 90f)
-        assertTrue(
-            "Every visible zone must be clipped to the viewport",
-            viewport.visibleZones.all { zone ->
-                zone.minValue >= viewport.minValue && zone.maxValue <= viewport.maxValue
-            },
-        )
+        assertTrue("The viewport must expose at most four labels", viewport.ticks.size <= 4)
+        assertEquals("Only the intersecting quality zone is visible", 1, viewport.visibleZones.size)
+        val visibleZone = viewport.visibleZones.single()
+        assertEquals(viewport.minValue, visibleZone.minValue, 0f)
+        assertEquals(viewport.maxValue, visibleZone.maxValue, 0f)
     }
 
     @Test
@@ -54,5 +54,41 @@ class ChartViewportTest {
         requireNotNull(viewport)
         assertTrue(viewport.minValue > 25f)
         assertTrue(viewport.maxValue < 40f)
+        assertTrue("The viewport must expose at most four labels", viewport.ticks.size <= 4)
+    }
+
+    @Test
+    fun `available height removes ticks that cannot meet minimum vertical spacing`() {
+        val availableHeightPx = 72f
+        val minimumLabelSpacingPx = 32f
+        val requestedTicks = listOf(60f, 65f, 70f, 75f, 80f)
+        val viewport =
+            calculateChartViewport(
+                data = listOf(61f, 68f, 72f, 79f, 80f),
+                explicitTicks = requestedTicks,
+                qualityZones = emptyList(),
+                availableHeightPx = availableHeightPx,
+                minimumLabelSpacingPx = minimumLabelSpacingPx,
+            )
+
+        assertNotNull(viewport)
+        requireNotNull(viewport)
+        assertTrue(
+            "The height constraint must remove at least one requested tick",
+            viewport.ticks.size < requestedTicks.size,
+        )
+        val tickPositionsPx =
+            viewport.ticks
+                .map { tick ->
+                    (tick - viewport.minValue) /
+                        (viewport.maxValue - viewport.minValue) *
+                        availableHeightPx
+                }.sorted()
+        assertTrue(
+            "Retained ticks must meet the requested vertical spacing",
+            tickPositionsPx.zipWithNext().all { (first, second) ->
+                second - first >= minimumLabelSpacingPx
+            },
+        )
     }
 }
