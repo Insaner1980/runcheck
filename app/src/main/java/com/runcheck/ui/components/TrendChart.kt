@@ -119,6 +119,12 @@ private const val TRANSITION_OVERLAP_MS = 200
 private const val SCAN_LINE_START_ALPHA = 0.5f
 private val MINIMUM_Y_LABEL_SPACING = 32.dp
 
+internal class ChartDrawInRegistry {
+    private val drawnDatasetKeys = mutableSetOf<Any?>()
+
+    fun shouldAnimate(datasetKey: Any?): Boolean = drawnDatasetKeys.add(datasetKey)
+}
+
 @Composable
 fun TrendChart(
     data: List<Float>,
@@ -137,6 +143,7 @@ fun TrendChart(
     // Tooltip — called with data index when user taps/drags
     tooltipFormatter: ((index: Int) -> String)? = null,
     presentation: TrendChartPresentation = TrendChartPresentation.Embedded,
+    animationKey: Any? = null,
     // Fullscreen expand — when set, shows expand button overlay
     onExpandClick: (() -> Unit)? = null,
 ) {
@@ -168,12 +175,15 @@ fun TrendChart(
 
     // Tracks whether the initial chart entry has started at least once.
     var hasStartedEntry by remember { mutableStateOf(false) }
+    val drawInRegistry = remember { ChartDrawInRegistry() }
 
-    LaunchedEffect(chartData, reducedMotion) {
+    LaunchedEffect(chartData, animationKey, reducedMotion) {
         selectedIndex = -1
         emphasisData = emptyList()
+        val shouldAnimateEntry =
+            animationKey == null || drawInRegistry.shouldAnimate(animationKey)
 
-        if (reducedMotion) {
+        if (reducedMotion || !shouldAnimateEntry) {
             previousData = emptyList()
             gridAlpha.snapTo(1f)
             sweepProgress.snapTo(1f)

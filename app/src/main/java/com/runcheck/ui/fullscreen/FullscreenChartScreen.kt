@@ -28,6 +28,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -58,6 +59,7 @@ import com.runcheck.ui.components.RuncheckProgressSpinner
 import com.runcheck.ui.components.RuncheckSingleChoiceSelector
 import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.components.TrendChartPresentation
+import com.runcheck.ui.theme.domainColors
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.uiTokens
 
@@ -337,6 +339,18 @@ private fun FullscreenChartContent(
             decimals = state.tooltipDecimals,
             timeContext = resolveChartTimeContext(source, state.selectedPeriod),
         )
+    val chartAccent =
+        when (source) {
+            FullscreenChartSource.BATTERY_HISTORY,
+            FullscreenChartSource.BATTERY_SESSION,
+            -> MaterialTheme.domainColors.battery
+
+            FullscreenChartSource.NETWORK_HISTORY -> MaterialTheme.domainColors.network
+        }
+    val datasetKey =
+        remember(source, state.selectedMetric, state.selectedPeriod) {
+            listOf(source, state.selectedMetric, state.selectedPeriod)
+        }
 
     BoxWithConstraints(modifier = modifier) {
         val availableHeight =
@@ -355,6 +369,8 @@ private fun FullscreenChartContent(
                 data = state.chartData,
                 chartHeight = availableHeight,
                 modifier = Modifier.fillMaxWidth(),
+                lineColor = chartAccent,
+                fillColor = chartAccent,
                 contentDescription = chartAccessibilitySummary,
                 yLabels = state.yLabels.ifEmpty { null },
                 xLabels = state.xLabels.ifEmpty { null },
@@ -371,6 +387,7 @@ private fun FullscreenChartContent(
                     )
                 },
                 presentation = TrendChartPresentation.Fullscreen,
+                animationKey = datasetKey,
             )
         }
     }

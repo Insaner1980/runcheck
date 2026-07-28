@@ -778,12 +778,15 @@
     <string name="app_unknown_name">Unknown app</string>
     <string name="app_usage_no_data">No usage data available for the last 24 hours</string>
     <string name="app_usage_no_data_message">This can happen on a fresh install or right after granting usage access. Give Android a moment, then retry.</string>
+    <string name="app_usage_load_error_message">The recent foreground-time list could not be loaded. Try again.</string>
     <string name="app_usage_permission_title">Allow usage access</string>
     <string name="app_usage_permission_message">Android requires Usage Access permission before runcheck can show per-app foreground time. If a severe thermal throttling event happens, runcheck can also label that event with the foreground app name when this access is available.</string>
     <string name="app_usage_permission_open_settings">Open usage access</string>
     <string name="app_usage_time_hours_minutes">%1$dh %2$dm</string>
     <string name="app_usage_time_minutes">%1$dm</string>
     <string name="app_usage_percent">%1$d%%</string>
+    <string name="app_usage_total_foreground_time">Total foreground time</string>
+    <string name="app_usage_last_24_hours">Last 24 hours</string>
 
     <!-- Speed Test -->
     <string name="speed_test_title">Speed Test</string>

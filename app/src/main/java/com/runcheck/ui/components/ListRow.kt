@@ -1,6 +1,7 @@
 package com.runcheck.ui.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -30,6 +31,8 @@ fun ListRow(
     modifier: Modifier = Modifier,
     value: String = "",
     icon: ImageVector? = null,
+    supportingText: String? = null,
+    leading: @Composable (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
@@ -48,21 +51,33 @@ fun ListRow(
                 .padding(vertical = MaterialTheme.spacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(tokens.iconLarge),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        if (leading != null || icon != null) {
+            if (leading != null) {
+                leading()
+            } else if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(tokens.iconLarge),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Spacer(modifier = Modifier.width(MaterialTheme.spacing.md))
         }
-        Text(
-            text = label,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            if (supportingText != null) {
+                Text(
+                    text = supportingText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
         if (trailing != null) {
             trailing()
         } else {
