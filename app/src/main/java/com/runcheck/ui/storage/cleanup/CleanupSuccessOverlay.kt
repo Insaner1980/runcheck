@@ -52,8 +52,8 @@ fun CleanupSuccessOverlay(
 
     AnimatedVisibility(
         visible = visible,
-        enter = if (noMotion) EnterTransition.None else fadeIn(tween(MotionTokens.MEDIUM), initialAlpha = 0f),
-        exit = if (noMotion) ExitTransition.None else fadeOut(tween(MotionTokens.MEDIUM)),
+        enter = if (noMotion) EnterTransition.None else fadeIn(tween(MotionTokens.SUCCESS), initialAlpha = 0f),
+        exit = if (noMotion) ExitTransition.None else fadeOut(tween(MotionTokens.SUCCESS)),
         modifier = modifier,
     ) {
         Box(

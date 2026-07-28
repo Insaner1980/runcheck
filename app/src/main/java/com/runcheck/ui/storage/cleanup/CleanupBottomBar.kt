@@ -7,7 +7,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
@@ -37,10 +36,10 @@ import com.runcheck.R
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.components.MiniBar
 import com.runcheck.ui.theme.MotionTokens
+import com.runcheck.ui.theme.domainColors
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
-import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.uiTokens
 
 @Composable
@@ -111,40 +110,32 @@ fun CleanupBottomBar(
                             Modifier
                                 .fillMaxWidth()
                                 .height(4.dp),
-                        fillColor = MaterialTheme.statusColors.healthy,
+                        fillColor = MaterialTheme.domainColors.storage,
                         contentDescription = projectionDesc,
                     )
 
                     Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.surfaceContainer,
-                        shape = MaterialTheme.shapes.extraLarge,
+                    Button(
+                        onClick = onDelete,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .defaultMinSize(minHeight = MaterialTheme.uiTokens.touchTarget),
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.domainColors.storage,
+                                contentColor = MaterialTheme.colorScheme.surface,
+                            ),
                     ) {
-                        Row(modifier = Modifier.fillMaxWidth()) {
-                            Button(
-                                onClick = onDelete,
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .defaultMinSize(minHeight = MaterialTheme.uiTokens.touchTarget),
-                                colors =
-                                    ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary,
-                                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                                    ),
-                            ) {
-                                Text(
-                                    pluralStringResource(
-                                        R.plurals.cleanup_free_action,
-                                        selectedCount,
-                                        formatStorageSize(context, selectedSize),
-                                        selectedCount,
-                                    ),
-                                )
-                            }
-                        }
+                        Text(
+                            pluralStringResource(
+                                R.plurals.cleanup_free_action,
+                                selectedCount,
+                                formatStorageSize(context, selectedSize),
+                                selectedCount,
+                            ),
+                        )
                     }
                 }
             }

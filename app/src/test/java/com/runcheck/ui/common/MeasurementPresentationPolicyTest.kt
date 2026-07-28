@@ -2,7 +2,9 @@ package com.runcheck.ui.common
 
 import com.runcheck.domain.model.MediaCategory
 import com.runcheck.ui.network.SpeedTestPhase
+import com.runcheck.ui.network.SpeedTestStageState
 import com.runcheck.ui.network.SpeedTestUiState
+import com.runcheck.ui.network.stageStates
 import com.runcheck.ui.network.toMeasurementState
 import com.runcheck.ui.storage.cleanup.CleanupUiState
 import com.runcheck.ui.storage.cleanup.FileGroup
@@ -65,6 +67,37 @@ class MeasurementPresentationPolicyTest {
                 phase = SpeedTestPhase.Upload,
                 uploadProgress = 1.4f,
             ).toMeasurementState(),
+        )
+    }
+
+    @Test
+    fun speedTestTrailHasOnlyTheActualActiveStage() {
+        assertEquals(
+            listOf(
+                SpeedTestStageState.COMPLETED,
+                SpeedTestStageState.ACTIVE,
+                SpeedTestStageState.UPCOMING,
+                SpeedTestStageState.UPCOMING,
+            ),
+            SpeedTestPhase.Download.stageStates().map { it.second },
+        )
+        assertEquals(
+            listOf(
+                SpeedTestStageState.COMPLETED,
+                SpeedTestStageState.COMPLETED,
+                SpeedTestStageState.ACTIVE,
+                SpeedTestStageState.UPCOMING,
+            ),
+            SpeedTestPhase.Upload.stageStates().map { it.second },
+        )
+        assertEquals(
+            1,
+            SpeedTestPhase.Upload.stageStates().count { it.second == SpeedTestStageState.ACTIVE },
+        )
+        assertTrue(
+            SpeedTestPhase.Completed.stageStates().all {
+                it.second == SpeedTestStageState.COMPLETED
+            },
         )
     }
 

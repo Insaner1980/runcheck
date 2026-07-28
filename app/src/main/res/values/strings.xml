@@ -790,6 +790,11 @@
     <string name="speed_test_download">Download</string>
     <string name="speed_test_upload">Upload</string>
     <string name="speed_test_ping">Ping</string>
+    <string name="speed_test_completed">Completed</string>
+    <string name="speed_test_stage_state_completed">completed</string>
+    <string name="speed_test_stage_state_active">current</string>
+    <string name="speed_test_stage_state_upcoming">upcoming</string>
+    <string name="speed_test_stage_description">%1$s, %2$s</string>
     <string name="speed_test_jitter">Jitter</string>
     <string name="speed_test_server">Server</string>
     <string name="speed_test_connection">Connection</string>

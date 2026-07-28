@@ -24,6 +24,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.RadioButtonChecked
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.SignalCellularAlt
 import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.AlertDialog
@@ -43,19 +46,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -84,6 +84,7 @@ import com.runcheck.ui.components.rememberMeasurementIsResumed
 import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.PreviewsRuncheckThemes
 import com.runcheck.ui.theme.RuncheckTheme
+import com.runcheck.ui.theme.domainColors
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericSpeedHeroValueTextStyle
 import com.runcheck.ui.theme.reducedMotion
@@ -181,6 +182,8 @@ private fun SpeedTestContent(
             enabled = hasConnection || speedTestState.isRunning,
             onAction = if (speedTestState.isRunning) onStopSpeedTest else onStartSpeedTest,
         )
+
+        SpeedTestPhaseTrail(phase = speedTestState.phase)
 
         Text(
             text =
@@ -342,13 +345,9 @@ private fun SpeedTestHero(
             0f
         }
 
-    val accent = MaterialTheme.colorScheme.primary
-    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-    val surfaceColor = MaterialTheme.colorScheme.surface
-    val secondaryAccent = lerp(accent, onSurfaceColor, 0.18f)
+    val accent = MaterialTheme.domainColors.network
     val track = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
     val errorAccent = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-    val surfaceTone = surfaceColor
     val surfaceContainerTone = MaterialTheme.colorScheme.surfaceContainerHigh
 
     val targetProgress =
@@ -419,7 +418,7 @@ private fun SpeedTestHero(
                 Modifier
                     .size(248.dp)
                     .clip(actionShape)
-                    .background(accent.copy(alpha = if (state.phase == SpeedTestPhase.Idle) 0.12f else 0.08f)),
+                    .background(surfaceContainerTone),
         )
 
         Canvas(
@@ -433,22 +432,8 @@ private fun SpeedTestHero(
                     }.clickable(enabled = enabled) { onAction() },
         ) {
             val stroke = 16.dp.toPx()
-            val outerStroke = 2.dp.toPx()
             val arcSize = Size(this.size.width - stroke, this.size.height - stroke)
             val topLeft = Offset(stroke / 2, stroke / 2)
-
-            drawCircle(
-                brush =
-                    Brush.radialGradient(
-                        colors =
-                            listOf(
-                                accent.copy(alpha = 0.16f),
-                                surfaceContainerTone.copy(alpha = 0.88f),
-                                surfaceTone.copy(alpha = 0.96f),
-                            ),
-                    ),
-                radius = this.size.minDimension / 2.3f,
-            )
 
             drawArc(
                 color = track,
@@ -463,17 +448,9 @@ private fun SpeedTestHero(
             when (state.phase) {
                 SpeedTestPhase.Idle -> {
                     drawArc(
-                        brush =
-                            Brush.sweepGradient(
-                                listOf(
-                                    accent.copy(alpha = 0.0f),
-                                    accent.copy(alpha = 0.85f),
-                                    secondaryAccent.copy(alpha = 0.55f),
-                                    accent.copy(alpha = 0.0f),
-                                ),
-                            ),
+                        color = accent,
                         startAngle = 130f,
-                        sweepAngle = 220f,
+                        sweepAngle = 72f,
                         useCenter = false,
                         topLeft = topLeft,
                         size = arcSize,
@@ -484,17 +461,9 @@ private fun SpeedTestHero(
                 SpeedTestPhase.Ping -> {
                     rotate(rotation) {
                         drawArc(
-                            brush =
-                                Brush.sweepGradient(
-                                    listOf(
-                                        accent.copy(alpha = 0.0f),
-                                        secondaryAccent,
-                                        accent,
-                                        accent.copy(alpha = 0.0f),
-                                    ),
-                                ),
+                            color = accent,
                             startAngle = 145f,
-                            sweepAngle = 112f,
+                            sweepAngle = 72f,
                             useCenter = false,
                             topLeft = topLeft,
                             size = arcSize,
@@ -520,15 +489,7 @@ private fun SpeedTestHero(
                 SpeedTestPhase.Completed,
                 -> {
                     drawArc(
-                        brush =
-                            Brush.sweepGradient(
-                                listOf(
-                                    lerp(accent, onSurfaceColor, 0.06f),
-                                    accent,
-                                    lerp(accent, surfaceColor, 0.08f),
-                                    lerp(accent, onSurfaceColor, 0.05f),
-                                ),
-                            ),
+                        color = accent,
                         startAngle = 135f,
                         sweepAngle = 270f * progress,
                         useCenter = false,
@@ -538,16 +499,6 @@ private fun SpeedTestHero(
                     )
                 }
             }
-
-            drawArc(
-                color = accent.copy(alpha = 0.18f),
-                startAngle = 135f,
-                sweepAngle = 270f,
-                useCenter = false,
-                topLeft = Offset(topLeft.x + 14.dp.toPx(), topLeft.y + 14.dp.toPx()),
-                size = Size(arcSize.width - 28.dp.toPx(), arcSize.height - 28.dp.toPx()),
-                style = Stroke(width = outerStroke, cap = StrokeCap.Round),
-            )
         }
 
         when {
@@ -631,6 +582,93 @@ private fun SpeedTestHero(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SpeedTestPhaseTrail(phase: SpeedTestPhase) {
+    val stages = phase.stageStates()
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+    ) {
+        stages.chunked(2).forEach { rowStages ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+            ) {
+                rowStages.forEach { (stage, state) ->
+                    SpeedTestStageItem(
+                        stage = stage,
+                        state = state,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SpeedTestStageItem(
+    stage: SpeedTestStage,
+    state: SpeedTestStageState,
+    modifier: Modifier = Modifier,
+) {
+    val label =
+        when (stage) {
+            SpeedTestStage.PING -> stringResource(R.string.speed_test_ping)
+            SpeedTestStage.DOWNLOAD -> stringResource(R.string.speed_test_download)
+            SpeedTestStage.UPLOAD -> stringResource(R.string.speed_test_upload)
+            SpeedTestStage.COMPLETED -> stringResource(R.string.speed_test_completed)
+        }
+    val stateLabel =
+        when (state) {
+            SpeedTestStageState.COMPLETED -> stringResource(R.string.speed_test_stage_state_completed)
+            SpeedTestStageState.ACTIVE -> stringResource(R.string.speed_test_stage_state_active)
+            SpeedTestStageState.UPCOMING -> stringResource(R.string.speed_test_stage_state_upcoming)
+        }
+    val stageDescription = stringResource(R.string.speed_test_stage_description, label, stateLabel)
+    val accent = MaterialTheme.domainColors.network
+    val icon =
+        when (state) {
+            SpeedTestStageState.COMPLETED -> Icons.Outlined.CheckCircle
+            SpeedTestStageState.ACTIVE -> Icons.Outlined.RadioButtonChecked
+            SpeedTestStageState.UPCOMING -> Icons.Outlined.RadioButtonUnchecked
+        }
+    val contentColor =
+        when (state) {
+            SpeedTestStageState.ACTIVE -> accent
+            SpeedTestStageState.COMPLETED -> MaterialTheme.colorScheme.onSurface
+            SpeedTestStageState.UPCOMING -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
+
+    Row(
+        modifier =
+            modifier.clearAndSetSemantics {
+                contentDescription = stageDescription
+            },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = contentColor,
+            modifier = Modifier.size(20.dp),
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = contentColor,
+            fontWeight =
+                if (state == SpeedTestStageState.ACTIVE) {
+                    FontWeight.Bold
+                } else {
+                    FontWeight.Normal
+                },
+        )
     }
 }
 

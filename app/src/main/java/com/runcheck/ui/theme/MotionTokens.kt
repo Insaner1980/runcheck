@@ -38,6 +38,7 @@ object MotionTokens {
     const val LIST_ITEM_STAGGER = 40
     const val CHART_FILL_DELAY = 200
     const val MEASUREMENT_INDICATOR = MEDIUM
+    const val SUCCESS = MEDIUM
 
     // Compatibility aliases and component-specific timings.
     const val SHORT = FAST
