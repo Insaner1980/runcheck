@@ -32,6 +32,7 @@ import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.ListRow
 import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.theme.categoryColor
+import com.runcheck.ui.theme.domainColors
 import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
@@ -73,7 +74,7 @@ internal fun StorageCleanupToolsSection(
 
         ActionCard(
             icon = Icons.Outlined.Download,
-            iconTint = MaterialTheme.colorScheme.primary,
+            iconTint = MaterialTheme.domainColors.storage,
             title =
                 androidx.compose.ui.res
                     .stringResource(R.string.storage_old_downloads),

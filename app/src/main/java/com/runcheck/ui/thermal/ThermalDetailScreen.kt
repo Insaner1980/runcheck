@@ -103,6 +103,7 @@ import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.components.platformTelemetryMeasurement
 import com.runcheck.ui.components.selectDetailInfoBanner
+import com.runcheck.ui.theme.domainColors
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
 import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
@@ -659,7 +660,7 @@ private fun ThermalLiveCharts(
                 data = liveTempC,
                 currentValueLabel = formatTemperature(thermal.batteryTempC, temperatureUnit),
                 label = stringResource(R.string.thermal_battery_temp),
-                lineColor = statusColorForTemperature(thermal.batteryTempC),
+                lineColor = MaterialTheme.domainColors.thermal,
                 accessibilityDescription =
                     stringResource(
                         R.string.a11y_chart_trend,
@@ -679,9 +680,7 @@ private fun ThermalLiveCharts(
                         )
                     } ?: "\u2014",
                 label = stringResource(R.string.thermal_headroom),
-                lineColor =
-                    thermal.thermalHeadroom?.let { headroomColor(it) }
-                        ?: MaterialTheme.colorScheme.primary,
+                lineColor = MaterialTheme.domainColors.thermal,
                 accessibilityDescription =
                     stringResource(
                         R.string.a11y_chart_trend,
@@ -780,11 +779,13 @@ private fun ThermalHistoryCard(
                     Text(
                         text = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${thermalHistoryMetricLabel(metric)}",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.domainColors.thermal,
                     )
                     TrendChart(
                         data = chartModel.chartData,
                         modifier = Modifier.fillMaxWidth(),
+                        lineColor = MaterialTheme.domainColors.thermal,
+                        fillColor = MaterialTheme.domainColors.thermal,
                         contentDescription = chartAccessibilitySummary,
                         yLabels = chartModel.yLabels.ifEmpty { null },
                         xLabels = chartModel.xLabels.ifEmpty { null },

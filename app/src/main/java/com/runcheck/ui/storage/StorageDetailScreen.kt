@@ -117,6 +117,7 @@ import com.runcheck.ui.components.selectDetailInfoBanner
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.storage.MediaDeleteRequestResult
 import com.runcheck.ui.theme.categoryColor
+import com.runcheck.ui.theme.domainColors
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
 import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
@@ -125,7 +126,6 @@ import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.runcheckHeroCardColors
 import com.runcheck.ui.theme.spacing
-import com.runcheck.ui.theme.statusColorForStoragePercent
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.util.MediaAccessState
 import com.runcheck.util.RuncheckPermissionPolicy
@@ -665,7 +665,7 @@ private fun StorageHeroCard(
                         modifier = Modifier.size(100.dp),
                         strokeWidth = 6.dp,
                         trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        progressColor = statusColorForStoragePercent(usagePercent),
+                        progressColor = MaterialTheme.domainColors.storage,
                         contentDescription =
                             stringResource(
                                 R.string.a11y_progress_percent,
@@ -711,7 +711,7 @@ private fun StorageHeroCard(
                         data = liveUsagePercent,
                         currentValueLabel = stringResource(R.string.value_percent, usagePercent),
                         label = stringResource(R.string.storage_used),
-                        lineColor = statusColorForStoragePercent(usagePercent),
+                        lineColor = MaterialTheme.domainColors.storage,
                         yMin = 0f,
                         yMax = 100f,
                         accessibilityDescription =
@@ -916,11 +916,13 @@ private fun StorageHistoryCard(
                     Text(
                         text = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${storageHistoryMetricLabel(metric)}",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.domainColors.storage,
                     )
                     TrendChart(
                         data = chartModel.chartData,
                         modifier = Modifier.fillMaxWidth(),
+                        lineColor = MaterialTheme.domainColors.storage,
+                        fillColor = MaterialTheme.domainColors.storage,
                         contentDescription = chartAccessibilitySummary,
                         yLabels = chartModel.yLabels.ifEmpty { null },
                         xLabels = chartModel.xLabels.ifEmpty { null },
