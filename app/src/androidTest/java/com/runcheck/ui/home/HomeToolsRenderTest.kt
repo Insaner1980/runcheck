@@ -63,7 +63,7 @@ class HomeToolsRenderTest {
                 )
             val gaugeNode =
                 rendered
-                    .nodesContaining(expectedDescription)
+                    .nodesWithOwnTextContaining(expectedDescription)
                     .first { it.contentDescription?.toString() == expectedDescription }
             val gaugeBounds = Rect().also(gaugeNode::getBoundsInScreen)
 
@@ -179,7 +179,7 @@ class HomeToolsRenderTest {
 
             assertTrue(text.any { it.contains("No active insights") })
             assertTrue(text.any { it.contains("Open Insights to review") })
-            assertTrue(rendered.nodesContaining("INSIGHTS").any { it.isHeading })
+            assertTrue(rendered.nodesWithOwnTextContaining("INSIGHTS").any { it.isHeading })
             rendered.click("View all")
         }
 

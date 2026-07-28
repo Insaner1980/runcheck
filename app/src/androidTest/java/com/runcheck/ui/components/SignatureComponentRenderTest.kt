@@ -11,6 +11,7 @@ import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.ThemeMode
 import com.runcheck.ui.theme.RuncheckTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -65,8 +66,14 @@ class SignatureComponentRenderTest {
                                 )
                             }
                         }
-                    }.use {
-                        it.accessibilityNodeHeight("Battery health")
+                    }.use { rendered ->
+                        val metricTileHeight = rendered.accessibilityNodeHeight("Battery health")
+
+                        assertTrue(
+                            "The measured node must be the MetricTile semantics node, not the accessibility root",
+                            metricTileHeight < rendered.viewBounds().height(),
+                        )
+                        metricTileHeight
                     }
                 }
 

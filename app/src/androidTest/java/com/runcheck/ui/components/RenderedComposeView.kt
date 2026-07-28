@@ -45,26 +45,34 @@ internal class RenderedComposeView(
     fun accessibilityText(): List<String> = accessibilityRoot().descendantText()
 
     fun accessibilityNodeHeight(text: String): Int {
-        val matchingNodes = nodesContaining(text)
-        assertFalse("Expected an accessibility node containing $text", matchingNodes.isEmpty())
-        return matchingNodes.maxOf { node ->
-            Rect().also(node::getBoundsInScreen).height()
-        }
+        val node = nodeWithOwnTextContaining(text)
+        return Rect().also(node::getBoundsInScreen).height()
     }
 
-    fun nodeContaining(text: String): AccessibilityNodeInfo {
-        val matchingNodes = nodesContaining(text)
-        assertFalse("Expected an accessibility node containing $text", matchingNodes.isEmpty())
+    fun nodeWithOwnTextContaining(text: String): AccessibilityNodeInfo {
+        val matchingNodes = nodesWithOwnTextContaining(text)
+        assertFalse("Expected an accessibility node with its own text containing $text", matchingNodes.isEmpty())
         return matchingNodes.first()
     }
 
+    fun nodesWithOwnTextContaining(value: String): List<AccessibilityNodeInfo> =
+        accessibilityRoot()
+            .allNodes()
+            .filter { node ->
+                node.ownText().any { it.contains(value, ignoreCase = false) }
+            }
+
+    private fun nodesContainingDescendantText(value: String): List<AccessibilityNodeInfo> =
+        accessibilityRoot()
+            .allNodes()
+            .filter { node ->
+                node.descendantText().any { it.contains(value, ignoreCase = false) }
+            }
+
     fun clickableNodeContaining(text: String): AccessibilityNodeInfo {
         val matchingNode =
-            accessibilityRoot()
-                .allNodes()
-                .firstOrNull { node ->
-                    node.isClickable && node.descendantText().any { it.contains(text, ignoreCase = false) }
-                }
+            nodesContainingDescendantText(text)
+                .firstOrNull { node -> node.isClickable }
         assertTrue("Expected a clickable accessibility node containing $text", matchingNode != null)
         return checkNotNull(matchingNode)
     }
@@ -87,13 +95,6 @@ internal class RenderedComposeView(
             location[1] + composeView.height,
         )
     }
-
-    fun nodesContaining(value: String): List<AccessibilityNodeInfo> =
-        accessibilityRoot()
-            .allNodes()
-            .filter { node ->
-                node.descendantText().any { it.contains(value, ignoreCase = false) }
-            }
 
     private fun accessibilityRoot(): AccessibilityNodeInfo {
         repeat(20) {
@@ -124,12 +125,17 @@ private fun AccessibilityNodeInfo.allNodes(): List<AccessibilityNodeInfo> {
     return nodes
 }
 
+private fun AccessibilityNodeInfo.ownText(): List<String> =
+    buildList {
+        contentDescription?.toString()?.let(::add)
+        text?.toString()?.let(::add)
+    }
+
 private fun AccessibilityNodeInfo.descendantText(): List<String> {
     val text = mutableListOf<String>()
 
     fun visit(node: AccessibilityNodeInfo) {
-        node.contentDescription?.toString()?.let(text::add)
-        node.text?.toString()?.let(text::add)
+        text += node.ownText()
         repeat(node.childCount) { childIndex ->
             node.getChild(childIndex)?.let(::visit)
         }
