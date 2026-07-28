@@ -36,10 +36,10 @@ Legacy billing or ad-related code may still exist in the repo. Do not expand tha
 - Coroutine dispatchers: centralized through `AppDispatchers`; production code should not call coroutine builders with raw `Dispatchers.*`
 - Database: Room
 - Preferences: DataStore
-- UI: Jetpack Compose + Material 3
-- Theme: stable Material 3 with persisted `SYSTEM`, `LIGHT`, and `DARK` modes
+- UI: Jetpack Compose + stable Material 3; Compose BOM `2026.06.01` is the single library-version source and currently resolves Material 3 `1.4.0`
+- Theme: persisted `SYSTEM`, `LIGHT`, and `DARK` modes
 - Background work: WorkManager
-- Widgets: Glance; Battery, Health Score, and 4×2 Quick Glance
+- Widgets: Glance; Battery, Health Score, and responsive Quick Glance (2×2 compact, 3×2 standard, 4×2 expanded)
 - Speed test: M-Lab NDT7 (`ndt7-client-android`)
 - Build: Gradle Kotlin DSL
 - Compile SDK: Android 17 (API 37)
@@ -81,6 +81,7 @@ Home [top level]
 ├── Thermal Detail
 └── Storage Detail
 Insights [top level]
+└── Weekly Report [PRO]
 Tools [top level]
 ├── Speed Test
 ├── Storage Detail
@@ -89,7 +90,6 @@ Tools [top level]
 ├── App Usage [PRO]
 ├── Learn
 │   └── Learn Article
-├── Weekly Report
 └── Export [PRO]
 Settings [top level]
 └── Pro Upgrade
@@ -107,12 +107,14 @@ Current runtime systems:
 - `WeeklyReportWorker` retries while Pro state is unready, then reads only the previous completed local Monday-to-Monday interval, posts through the low-importance reports channel, records notification-denied periods as handled without catch-up, and schedules the next occurrence after terminal handling
 - App Usage's `Not used` mode is domain-Pro-gated and derives 30/60/90-day candidates from launcher-visible user apps plus `UsageStats`; bounded `StorageStatsManager` lookups run on `AppDispatchers.IO`, tolerate per-app failures, and cache only within one screen refresh session
 - `RealTimeMonitorService` is an opt-in live notification foreground service and must stay user-controlled from Settings
-- Battery, Health Score, and 4×2 Quick Glance widgets are backed by the existing Room health snapshot sources and treated as a Pro feature; free users are gated before snapshot or health-score work
+- Battery, Health Score, and responsive Quick Glance widgets are backed by the existing Room health snapshot sources and treated as a Pro feature; free users are gated before snapshot or health-score work
 - Widgets follow launcher/system day/night colors independently of the app's persisted `ThemeMode`; Quick Glance cells deep-link to Home, Battery, Storage, and Thermal
 - Storage may measure aggregate app cache as read-only data but cannot clear other apps' caches; cleanup remains limited to the existing MediaStore-backed categories and trash flow
 - Trial state currently counts as Pro access through `ProState.isPro`
 - `AppShellViewModel` combines Room insight state with Pro readiness for the four-item top-level navigation bar; the Insights badge counts visible unseen items, protected external routes wait for the initial Pro state, external routes rebuild their documented parent root without restoring stale child stacks, and Export renders the shared locked state until access is confirmed
-- Home now includes a rule-driven Insights surface backed by Room-persisted insight rows; Home shows a curated subset of up to three items and the full list lives in the dedicated Insights screen
+- Home now includes a rule-driven Insights surface backed by Room-persisted insight rows; Home shows at most one ranked item and the full list lives in the dedicated Insights screen
+- Home's implemented hierarchy is a health `HeroGauge`, four domain-specific `MetricTile`s, an Insights preview, and an active-trial card only when applicable
+- Insights owns the current-week summary and Weekly Report entry; Tools owns Speed Test, Storage Cleanup, Charger Comparison, App Usage, Learn, and Export
 - The multibound production `InsightRule` set is the supported-rule source of truth; repository observation and generation purge persisted rows for removed rule IDs before they can render
 - Debug-only insight seeding and manual regeneration live behind debug source-set wiring and must stay release-inaccessible
 
@@ -158,7 +160,7 @@ Project-specific check configuration lives in:
 - `.deepsec\`
 - `.github\dependabot.yml`
 
-Compose-rules versions are intentionally split while the project stays on Detekt 1.23.8: ktlint uses the current 0.5.x line with ktlint explicitly pinned to the compatible 1.8.x rule engine, and Detekt uses the latest 0.4.x line compatible with Detekt 1.x. Do not move Detekt compose-rules to 0.5.x without a Detekt 2.x migration.
+The project uses the Detekt 2 plugin id `dev.detekt` at `2.0.0-alpha.3`. Both ktlint and Detekt use compose-rules `0.5.9`, while the ktlint rule engine remains pinned to `1.8.0`; verify all three together before changing this toolchain.
 
 ## Architecture Rules
 
@@ -209,6 +211,7 @@ Pro features are:
 - Weekly Report
 - CSV Export
 - Widgets
+- Storage Cleanup
 
 Rules:
 
@@ -245,6 +248,9 @@ Rules:
 - Main cards use 24dp corners, hero cards and bottom sheets use 32dp corners, and small elements use 12dp corners
 - Cards remain flat. Light-theme main cards use the centralized 1dp `LightCardBorder #7A939D`; dark-theme main cards have no general border. `ActionCard` keeps one separate 1dp `outlineVariant` border at 35% alpha and must not receive the general card border too
 - Signature components are `HeroGauge`, `MetricTile`, `StatBlock`, `StatusPill`, `EmptyStateIllustration`, and `AnimatedCounter`; use them as their screen migrations land instead of creating parallel variants
+- History charts share `ChartViewport`: finite data plus explicit ticks determine the padded viewport, quality zones are clipped instead of expanding it, and at most four Y labels survive the pixel-spacing policy
+- Chart primary-state precedence is `loading → error → locked → insufficient → data`; one chart region renders exactly one of these states
+- History periods use a dedicated `LazyRow` of stable `FilterChip`s with 12dp spacing, selected-item scrolling, reduced-motion snapping, and conditional edge fades
 - Screen horizontal and card internal padding are 20dp, card gap is 12dp, and section gap is 28dp
 - No dynamic colors. If a task changes visual design, follow `UI-SPEC.md` instead of inventing alternate tokens or component variants
 - English-only strings are intentional right now. Do not reintroduce partial localization without updating docs and string coverage together.

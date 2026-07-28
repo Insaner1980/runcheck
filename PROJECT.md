@@ -203,6 +203,7 @@ Home [top level]
 ├── Thermal Detail
 └── Storage Detail
 Insights [top level]
+└── Weekly Report [PRO]
 Tools [top level]
 ├── Speed Test
 ├── Storage Detail
@@ -211,7 +212,6 @@ Tools [top level]
 ├── App Usage [PRO]
 ├── Learn
 │   └── Learn Article
-├── Weekly Report
 └── Export [PRO]
 Settings [top level]
 └── Pro Upgrade
@@ -244,7 +244,7 @@ State restoration details:
 - `SavedStateHandle` is used for route-backed or deep state that must survive recreation, including battery/network history period, cleanup filter selection, and fullscreen chart metric/period.
 - Free-tier entry into `charger` and `app_usage` routes redirects to `pro_upgrade`.
 - Top-level switches use `launchSingleTop`, restore saved state, and pop up to the graph start destination with state saving; reselecting the active item returns to its root.
-- Direct notification/deep-link routes rebuild their documented top-level parent root without restoring a previously saved child stack, then push the requested destination. Weekly Report belongs to Tools, and protected routes wait for the first Pro status before routing.
+- Direct notification/deep-link routes rebuild their documented top-level parent root without restoring a previously saved child stack, then push the requested destination. Weekly Report belongs to Insights, and protected routes wait for the first Pro status before routing.
 - Direct notification/deep-link routes accept the argument-free destinations in `Screen.directRoutes` plus validated cleanup, Learn article, and fullscreen chart route patterns.
 - The Insights navigation item shows the count of visible unseen Room-backed insights; Pro-only insight visibility is evaluated only after Pro status is ready.
 - Learn article cross-links are validated against direct routes at catalog initialization time. Cross-links to a top-level route use the same top-level state/back-stack policy instead of pushing a second top-level screen over the article.
@@ -313,7 +313,7 @@ Additional one-time weekly reporting behavior:
   - canceled when the toggle is off or Pro access is inactive; Pro expiry preserves the user's toggle selection
   - reads the previous completed local Monday 00:00 to Monday 00:00 interval with an exclusive end
   - notification denial or a disabled reports channel records that interval as handled, so permission restoration does not create a catch-up notification
-  - posts through the low-importance reports channel and opens Tools → Weekly Report
+  - posts through the low-importance reports channel and opens Insights → Weekly Report
   - endpoint-attributed app-usage aggregates are estimates: their recorded total may include activity before the interval or omit interval activity recorded by an endpoint outside it
 
 Supporting monitor components include:
@@ -341,7 +341,9 @@ Three responsive Glance widgets are present:
 
 - Battery widget with level, temperature, and available current
 - Health Score widget with the shared calculated score and battery level
-- 4×2 Quick Glance widget with health score, battery, free storage, and temperature
+- Quick Glance widget with health score, battery, free storage, and temperature;
+  the same 2×2 content grid is verified in 2×2 compact, 3×2 standard, and 4×2
+  expanded launcher hosts
 
 All three use one launcher/system-driven day/night `ColorProviders` palette; they do not read the app's persisted `ThemeMode`. Quick Glance reads the Health widget's existing coherent Room snapshot pipeline after that snapshot is extended with storage and thermal values, so no second health-score calculation exists. Its cells deep-link to Home, Battery, Storage, and Thermal through the validated direct-route policy.
 
@@ -430,32 +432,62 @@ Home is the single entry point and aggregates the latest device state from batte
 
 Main sections:
 
-- Health score hero with animated `ProgressRing` (1200ms arc fill)
-- Battery hero card
-- 2×2 quick status grid
-  - Network
-  - Thermal
-  - Charger comparison
-  - Storage
-- Rule-driven Insights summary backed by persisted Room insight rows, with Home showing a curated subset of up to three items and a dedicated full Insights screen
+- Health score hero built from the shared `HeroGauge`, four health subscores,
+  a textual status, measurement timestamp, and battery-current confidence
+- Domain-specific `MetricTile` grid in Battery, Network, Thermal, Storage order
+  - compact phones: 2×2 at normal font scale and one column from font scale 1.3
+  - screens at least 600dp wide: one row at normal font scale and two columns
+    from font scale 1.3
+- Rule-driven Insights preview backed by persisted Room insight rows, with Home
+  showing at most one ranked item or a purposeful empty state and a dedicated
+  full Insights screen
 - Home Insights are selected by `InsightHomeRankingPolicy`, which avoids showing multiple items from the same target bucket before filling remaining slots
-- Quick tools card
-  - Speed Test
-  - App Usage
-  - Learn
-- Trial / expired-trial / Pro state cards
+- Active-trial card only while `ProStatus.TRIAL_ACTIVE`; tools and purchased/
+  expired Pro cards are not part of the Home hierarchy
 
 Trial and Pro UI handled on Home:
 
 - Welcome sheet for trial onboarding
 - Day-5 trial snackbar/banner
 - Trial-expiration modal
-- Post-expiration upgrade card
-- Purchased Pro status card
 - Top-level Insights summary available to all users, with the full list available from the dedicated Insights screen
 - Insight targets for Pro-only destinations such as Charger Comparison and App Usage are hidden for free users and visible for trial/Pro users
 - Monitoring stale state is derived from the last worker heartbeat and becomes stale after more than 3x the configured monitoring interval.
 - Home marks only its currently displayed unseen insight rows as seen through `InsightRepository.markSeen(ids)`.
+
+---
+
+## Insights
+
+Insights is a top-level destination backed by persisted active insight rows.
+
+Current hierarchy:
+
+- All / Important single-choice filter with `rememberSaveable` selection
+- visible filtered count
+- `Needs attention` for High and Medium active insights
+- purposeful empty state with a Home action when the selected result is empty
+- `This week` summary backed by the existing Weekly Report use-case path
+- `Other insights` for remaining active rows
+
+The Weekly Report entry belongs to Insights and remains Pro-gated. There is no
+`Recently resolved` section because the presentation layer has no resolved
+history source; dismissed active rows are not relabeled as resolved.
+
+---
+
+## Tools
+
+Tools is a top-level action hierarchy:
+
+- Speed Test is the dominant `RuncheckActionCard`.
+- Storage Cleanup is a full-width storage-domain `ActionCard`.
+- Charger Comparison and App Usage form the two-column device-actions row.
+- Learn and Export are secondary utilities.
+
+Pro tools remain visible to free users with the shared locked semantics and
+route to the existing protected destinations. Weekly Report is not duplicated
+in Tools.
 
 ---
 
@@ -487,7 +519,9 @@ Battery-specific supporting behavior:
 - Design capacity is intentionally absent from the UI because no stable public design-capacity source is used.
 - Current stats are tracked in-memory and reset on status change
 - Session and history charts can open a fullscreen landscape chart route
-- History charts use "Instrument Sweep" animation (grid fade → illuminated sweep reveal → latest-value emphasis)
+- History charts share the finite-data `ChartViewport`, pixel-spaced tick policy,
+  clipped quality zones, and one-state chart precedence used by the other
+  history screens
 - Live charts use eased scroll interpolation and a single settling halo on new data; live current remains signed around a visible zero reference
 - Battery screen also consumes dismissed educational/info cards
 - Charger session tracking runs both from Home live observation and from `HealthMonitorWorker` so charge sessions can be updated in foreground and background.
@@ -723,7 +757,8 @@ Behavior:
 - Landscape-only while the route is visible
 - Supports battery history, battery session, and network history sources through `FullscreenChartSource`
 - Metric and period chip selections are stored in `SavedStateHandle`
-- Uses the same chart data model, tooltip formatting, and "Instrument Sweep" animation as embedded charts
+- Uses the same chart data model, tooltip formatting, viewport/tick policy,
+  clipped quality zones, and draw-in animation as embedded charts
 - The route itself is `fullscreen_chart/{source}/{metric}/{period}`.
 - Pro lock is applied for `BATTERY_HISTORY` and `NETWORK_HISTORY`; `BATTERY_SESSION` remains available as the current-session fullscreen source.
 - Selection changes are sent back to the previous route with `FullscreenChartResult.KEY_SOURCE`, `KEY_METRIC`, and `KEY_PERIOD`.
@@ -734,53 +769,28 @@ Behavior:
 
 Settings is broader than a simple preferences page and covers monitoring, privacy, export, purchase flow, and device capability info.
 
-Sections:
+Implemented section hierarchy:
 
-- Monitoring interval
-- Live Notification
-  - master toggle (opt-in, disabled by default)
-  - per-metric toggles: current, drain rate, temperature, screen stats, remaining time
-  - starts/stops `RealTimeMonitorService` foreground service
-- Notifications
-  - master notifications toggle
-  - weekly report toggle (selection persists across Pro expiry; inactive/free access prevents scheduling and delivery)
-  - low battery
-  - high temperature
-  - low storage
-  - charge complete
-- Alert thresholds
-  - low battery threshold
-  - temperature threshold
-  - low storage threshold
-- Display
-  - Celsius / Fahrenheit
-  - Show/hide info cards toggle
-- Data
-  - data retention
-  - CSV export
-  - reset info tips
-  - clear speed test results
-  - clear all data
-  - all destructive actions require confirmation dialog
-- Pro
-  - current Pro status
-  - upgrade CTA
-  - restore purchase
-- Device
-  - device model
-  - API level
-  - current-now reliability
-  - cycle-count availability
-  - thermal zone count
-- Debug Insights
-  - visible only when the injected `InsightDebugActions` implementation reports availability
-  - debug builds can seed deterministic demo insight data, regenerate insights from local data, and clear insight rows
-  - release builds bind `ReleaseSafeInsightDebugActions`, return unavailable/no-op behavior, and ship empty non-translatable release strings for this section
-- About
-  - version
-  - Play Store link
-  - privacy policy
-  - feedback email intent
+1. Appearance
+   - System / Light / Dark
+   - Celsius / Fahrenheit
+   - Show/hide info cards
+2. Monitoring
+   - monitoring interval and battery-optimization guidance
+   - opt-in Live Notification and its per-metric toggles
+   - device capability measurements
+3. Notifications
+   - master and alert toggles
+   - Pro-gated Weekly Report toggle
+   - low-battery, temperature, and storage thresholds
+4. Data and privacy
+   - retention, CSV export, reset tips, clear speed tests, and clear all data
+5. About and support
+   - version, Play Store, privacy policy, and feedback
+   - debug-only insight actions when the injected implementation is available
+6. Pro and trial
+   - widget availability/upgrade state
+   - current Pro status, purchase, and restore flow
 
 Notes:
 
@@ -1178,6 +1188,23 @@ separate 1dp `outlineVariant` border at 35% alpha.
 - `AnimatedCounter`: Int/Float formatter/prefix/suffix/initial-value support
   with final-value semantics.
 
+### History Chart Presentation
+
+- `ChartViewport` is calculated from finite data plus explicit visible ticks.
+- A 7.5% range padding is applied; a constant series receives symmetric
+  padding instead.
+- Quality zones are clipped to the viewport and never expand its range.
+- Y ticks are limited to four and removed when the measured pixel spacing is
+  too small.
+- Primary-state precedence is loading, error, locked, insufficient data, then
+  data. A chart region renders exactly one primary state.
+- History periods use a dedicated horizontally scrolling `LazyRow` of stable
+  `FilterChip`s with 12dp spacing. The selected period scrolls into view;
+  reduced motion snaps instead of animating, and edge fades appear only while
+  more content exists in that direction.
+- Embedded and fullscreen charts share the render model, viewport, tick policy,
+  quality-zone clipping, and accessibility summary.
+
 ### Logo
 
 Health-score arc (~210°) wrapping a phone silhouette, rendered in AccentBlue.
@@ -1189,8 +1216,8 @@ Icon source files in `icons/` directory (SVG masters + 512px PNG exports).
 
 Current test surface:
 
-- Unit tests: 83 Kotlin files under `app/src/test/java/com/runcheck/`
-- Instrumented tests: 1 Kotlin file under `app/src/androidTest/java/com/runcheck/`
+- Unit tests: 161 Kotlin files under `app/src/test/java/com/runcheck/`
+- Instrumented tests: 11 Kotlin files under `app/src/androidTest/java/com/runcheck/`
 - Android test assets include exported Room schemas for migration tests; current exported assets cover versions 6-10.
 - Shared coroutine main dispatcher rule lives in `ui/MainDispatcherRule.kt`.
 
@@ -1245,8 +1272,8 @@ GitHub Actions workflows in `.github/workflows/`:
 | `codeql.yml` | CodeQL security analysis (`java-kotlin`, manual `assembleDebug`) | Active |
 | `security.yml` | Semgrep SAST on PRs/main plus OWASP Dependency-Check on weekly/manual runs | Active; Semgrep is the push/PR code-scanning path. OWASP is kept out of push/PR code scanning because cold NVD updates can stall or return 503s; scheduled/manual runs use cache, bounded retries, a job timeout, a shorter non-blocking OWASP step timeout, and upload the report as an Actions artifact when produced |
 | `sonar.yml` | SonarCloud scan through Gradle (`assembleDebug`, `:app:jacocoDebugUnitTestReport`, `sonar`) | Active |
-| `qodana.yml` | JetBrains Qodana main-branch scan through `JetBrains/qodana-action` pinned at `v2026.1.3` | Uses the `jetbrains/qodana-jvm-community:2026.1` linter from `qodana.yaml` because the 2026.1 Android linter rejects AGP 9.1.x during IDE import |
-| `qodana_code_quality.yml` | JetBrains Qodana action pinned at `v2026.1.3` for `main`, `releases/*`, PRs, and manual dispatch | Uses the `jetbrains/qodana-jvm-community:2026.1` linter from `qodana.yaml` because the 2026.1 Android linter rejects AGP 9.1.x during IDE import |
+| `qodana.yml` | JetBrains Qodana main-branch scan through `JetBrains/qodana-action` pinned at `v2026.1.3` | Uses the `jetbrains/qodana-jvm-community:2026.1` linter retained after the documented Android-linter import failure on the previous AGP 9.1.x line; compatibility with the current AGP 9.2.1 line is not yet verified |
+| `qodana_code_quality.yml` | JetBrains Qodana action pinned at `v2026.1.3` for `main`, `releases/*`, PRs, and manual dispatch | Uses the same JVM Community linter; revalidate the Android linter against current AGP 9.2.1 before switching |
 
 External services:
 - **SonarCloud** — continuous code quality (`Insaner1980_runcheck`, org `insaner1980`). CI path is `.github/workflows/sonar.yml`; local path is `tools/sonar.ps1`.
@@ -1322,7 +1349,11 @@ App Usage reports foreground duration only. Android does not expose reliable bat
 
 ### Known Tool Limitations
 
-- **Qodana:** `qodana.yaml` documents that the Qodana Android linter 2026.1 rejects this repo's AGP 9.1.x during IDE import (`Latest supported version is AGP 9.0.0`). The workflows therefore run `jetbrains/qodana-jvm-community:2026.1` until JetBrains publishes or the project verifies an Android linter compatible with this AGP line. Re-test Qodana on every AGP/Gradle bump.
+- **Qodana:** `qodana.yaml` retains `jetbrains/qodana-jvm-community:2026.1`
+  after a documented Android-linter import failure on the previous AGP 9.1.x
+  line. The project now uses AGP 9.2.1 with Gradle 9.4.1, but Android-linter
+  compatibility with that current pair has not been verified. Re-test Qodana
+  before changing the linter and on every AGP/Gradle bump.
 - **CodeQL:** `.github/workflows/codeql.yml` pins `github/codeql-action/init` and `analyze` to `v4.36.2` and builds with `assembleDebug --no-configuration-cache`. Check the actual CodeQL Action runner and Kotlin extractor support before Kotlin plugin upgrades.
 - **Sonar:** AGP 9 support has had scanner-side compatibility churn. Keep `tools/sonar.ps1` and `.github/workflows/sonar.yml` verified when changing AGP, Gradle, or Kotlin.
 - **OWASP Dependency-Check:** NVD updates can take a very long time or return transient 503 responses, so PRs and ordinary main pushes run Semgrep/CodeQL/Qodana while Dependency-Check is reserved for weekly scheduled or manual runs with cache, bounded retries, a job timeout, and a shorter non-blocking OWASP step timeout. Dependency-Check reports are uploaded as Actions artifacts instead of GitHub Code scanning SARIF so stale dependency analyses do not keep fixed Dependabot issues open.

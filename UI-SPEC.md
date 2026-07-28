@@ -4,7 +4,7 @@ Code-derived visual specification for the runcheck Android app.
 
 This file describes only the UI that exists in the current Compose codebase.
 
-Audit date: 2026-07-24
+Audit date: 2026-07-28
 
 Primary source files:
 
@@ -406,7 +406,7 @@ Current behavior:
 | `FULLSCREEN_ENTER_SCALE` | 260ms | fullscreen chart enter scale |
 | `FULLSCREEN_ENTER_FADE` | 220ms | fullscreen chart enter fade/pop exit fade |
 | `FULLSCREEN_EXIT` | 180ms | fullscreen chart exit/pop enter fade |
-| `SPEED_GAUGE` | 1700ms | speed test idle pulse |
+| `SPEED_GAUGE` | 1700ms | retained speed-test compatibility token; the current hero has no idle loop |
 | `SPEED_SWEEP` | 1800ms | speed test ping sweep |
 | `SPEED_RESULT` | 700ms | speed test progress/result |
 
@@ -863,7 +863,7 @@ Used on Home grid metrics.
 - Message: `bodyMedium`.
 - Action: `OutlinedButton` with 1dp primary border.
 
-### 7.22 Connected Selection Rows
+### 7.22 Selection Rows
 
 `EnumFilterChipRow`:
 
@@ -873,13 +873,21 @@ Used on Home grid metrics.
 
 `HistoryPeriodFilterChipRow`:
 
-- Same visual behavior.
+- Uses a dedicated `LazyRow` of stable `FilterChip`s rather than the connected
+  selector.
+- Chip gap: 12dp.
+- Labels are one line and are not truncated by policy.
+- Selecting or restoring a period scrolls it into view.
+- Reduced motion uses immediate `scrollToItem`; normal motion uses
+  `animateScrollToItem`.
+- Conditional 24dp edge fades appear only in directions that can still scroll.
+- Collection and item-position semantics describe the row.
 - Omits `SINCE_UNPLUG` unless `includeSinceUnplug = true`.
 
 Fullscreen chart controls:
 
-- Two full-width connected selector rows.
-- Period selector first, metric selector second.
+- Dedicated horizontally scrolling period row first.
+- Full-width connected metric selector second.
 - Gap: 4dp.
 
 ### 7.23 Stable Material 3 Components
@@ -912,7 +920,8 @@ one component boundary:
 - `RuncheckEmptyState` provides an icon, title, and supporting message; its
   icon minimum size comes from `UiTokens.touchTarget`.
 - `RuncheckProgressSpinner` owns the stable circular wait indicator.
-  Reduced motion renders a fixed determinate indicator instead of continuous motion.
+  Reduced motion renders the shared static ring while preserving indeterminate
+  progress semantics and avoiding live-region announcements.
 - `RuncheckProgressGauge` owns the stable circular progress gauge. It uses the
   1200ms ring token and removes interpolation under reduced motion.
 - `AppDisplayName` trims a real app label and otherwise derives a readable
@@ -925,6 +934,33 @@ one component boundary:
 ---
 
 ## 8. Chart System
+
+### 8.0 Shared Presentation Policy
+
+`ChartPresentationPolicy.kt` owns the pure chart contracts shared by Battery,
+Network, Thermal, Storage, and fullscreen presentation.
+
+`ChartViewport`:
+
+- removes non-finite values before presentation;
+- returns no viewport for an empty finite series;
+- uses finite data plus explicit ticks as the only scale inputs;
+- adds 7.5 percent range padding, or symmetric padding for a constant series;
+- limits Y ticks to four and drops labels that violate the measured minimum
+  pixel spacing;
+- clips quality zones to the viewport instead of allowing zones to expand it.
+
+Chart primary-state precedence is:
+
+1. Loading.
+2. Error.
+3. Locked.
+4. Insufficient data.
+5. Data.
+
+One chart region renders exactly one primary state. Battery, Network, Thermal,
+and Storage history panels use this policy; fullscreen charts share the same
+sanitized render model, viewport, tick and quality-zone behavior.
 
 ### 8.1 TrendChart
 
@@ -1164,25 +1200,33 @@ Structure:
 First viewport:
 
 - A stale-monitoring `InfoBanner` appears only while `monitoringStale` is true.
-- `HomeHealthHero` uses the 28dp hero shape, hero surface color, and 24dp
-  padding.
-- The overall score is rendered inside a 148dp determinate
-  `RuncheckProgressGauge`; the semantic description reports the score out of 100.
+- `HomeHealthHero` uses the 32dp extra-large shape, hero surface color, 16dp
+  padding, and 8dp internal gaps.
+- The overall score is rendered by the shared `HeroGauge` with a neutral 18dp
+  track and combined score semantics.
+- Gauge size is 112dp at normal font scale and 144dp from font scale 1.3.
+- At normal font scale the gauge and four subscores share one row. From font
+  scale 1.3 they stack vertically.
 - A text `StatusPill` identifies Healthy, Fair, Poor, or Critical alongside the
   localized timestamp captured when the four live device-state flows emit.
 - `ConfidenceBadge` shows the actual `batteryState.currentMa.confidence` level
   and is labelled as battery-current confidence rather than overall-score
   confidence.
-- The hero does not repeat the four category breakdown rows.
+- The hero shows Battery, Network, Thermal, and Storage subscores in a compact
+  two-by-two breakdown.
 
 Home grid:
 
-- Wide layout: one row of four `GridCard`s with 8dp gaps.
-- Compact layout: two rows; row gap 12dp, column gap 8dp.
-- Grid cards use equal weights.
+- Wide layout: one row of four `MetricTile`s at normal font scale, two columns
+  from font scale 1.3.
+- Compact layout: two columns at normal font scale, one column from font scale
+  1.3.
+- Row gap: 12dp. Column gap: 8dp. Tiles use equal weights.
 - Grid order is Battery, Network, Thermal, Storage.
-- Each grid card pairs its semantic icon tint with text: charge/health,
+- Each domain tile pairs its semantic icon tint with text: charge/health,
   signal quality, temperature band, or storage-used percentage.
+- At 411×850dp and font scale 1.0, the initial viewport contains the hero and
+  all four domain tiles; the complete Insights section starts below the fold.
 
 Home insights card:
 
@@ -1374,34 +1418,23 @@ Speed test hero:
   - Top padding 8dp.
   - Size 286dp.
 - Main circular canvas size: 248dp.
-- Background pulse circle size: 248dp.
-- Idle pulse:
-  - Scale 0.96 to 1.04.
-  - Alpha 0.12 to 0.26.
-  - Duration 1700ms.
-  - Reverse repeat.
-  - Easing `MotionTokens.EaseOut`.
-  - Infinite transition exists only while the hero is idle.
-  - Disabled when reduced motion is true.
-- Non-idle background alpha: 0.08.
+- The clipped 248dp action surface uses `surfaceContainerHigh`.
+- The action shape is circular while idle and morphs to a 32dp rounded rectangle
+  while a test is running; reduced motion applies the target shape immediately.
 - Gauge stroke: 16dp.
-- Outer stroke: 2dp.
 - Track arc: start 135 degrees, sweep 270 degrees.
-- Idle decorative sweep arc: start 130 degrees, sweep 220 degrees.
+- Idle indicator arc: start 130 degrees, sweep 72 degrees.
 - Ping sweep:
   - Rotating arc start around 145 degrees.
-  - Sweep 112 degrees.
+  - Sweep 72 degrees.
   - Duration 1800ms linear.
-  - Infinite transition exists only during the Ping phase.
+  - Infinite transition exists only during the Ping phase while the measurement
+    lifecycle is resumed and reduced motion is disabled.
 - Failed arc: start 135 degrees, sweep 72 degrees, error color.
 - Download/upload/completed arc:
   - Start 135 degrees.
   - Sweep equals 270 degrees multiplied by progress.
   - Progress animation: 700ms FastOutSlowIn unless reduced motion.
-- Inner accent arc:
-  - Inset 14dp.
-  - Stroke 2dp.
-  - Alpha 0.18.
 - Center text:
   - Idle: `titleMedium`, SemiBold, primary.
   - Running/completed value: `numericSpeedHeroValueTextStyle` 40sp.
@@ -1415,7 +1448,8 @@ Speed test hero:
 Speed metrics card:
 
 - Card padding: 24dp horizontal, 16dp vertical.
-- Live region semantics.
+- Download, upload, ping, and jitter values are not live regions; the bounded
+  phase/instruction text owns measurement announcements.
 - Vertical gap: 16dp.
 - Two metric rows with 12dp horizontal gap.
 - Divider between rows.
@@ -1703,7 +1737,7 @@ Cleanup bottom bar:
   - Height 4dp.
   - Fill: healthy status color.
 - Bar/button gap: 8dp.
-- The action is hosted by `HorizontalFloatingToolbar`.
+- The action is hosted by a stable full-width bottom `Surface` and `Button`.
 - Delete button:
   - Full width.
   - Primary container and on-primary content.
@@ -1802,7 +1836,7 @@ App usage item:
 - Storage, thermal, and speed sections state unavailable data explicitly.
 - App ranking uses foreground duration only.
 - Weekly notifications use the low-importance Reports channel and open the
-  Tools parent before pushing Weekly Report.
+  Insights parent before pushing Weekly Report.
 
 ### 9.9 Charger Comparison
 
@@ -1904,7 +1938,12 @@ Structure:
     All and Important.
   - Important includes High and Medium priorities.
   - Count text follows the selected filter.
-  - Empty results use `RuncheckEmptyState`.
+  - Empty results use `EmptyStateIllustration` with a Home action.
+  - `Needs attention` contains filtered High and Medium active insights.
+  - `This week` always hosts the existing Weekly Report summary path; free
+    users receive the locked summary and Pro/trial users receive loading,
+    error, or report content.
+  - `Other insights` contains the remaining active rows.
   - Insight rows use the shared `InsightRow`.
   - Bottom spacer 32dp.
 
@@ -1914,24 +1953,29 @@ dismissal and destination behavior. `LifecycleStartStopEffect` tells
 `InsightsViewModel` when the top-level screen is started/stopped. Only while
 started are visible unseen rows submitted as seen; insights arriving off-screen
 remain unseen until the next visible transition, preserving the app-shell badge.
+There is no `Recently resolved` section because the current presentation API
+does not expose resolved history.
 
 ### 9.10a Tools
 
 - Top-level `PrimaryTopBar`; there is no back action.
 - A 28dp `RuncheckActionCard` dominates the first viewport with the outlined
   Speed icon, M-Lab NDT7 context, and a 56dp "Run speed test" CTA.
-- The Device tools section is a two-by-two `GridCard` bento:
-  Storage cleanup, Charger Comparison, App Usage, and Weekly Report.
-- Bento subtitles are prose and therefore use `bodyMedium`, not the numeric
+- Storage Cleanup is the next full-width `ActionCard` and opens the protected
+  `cleanup/LARGE_FILES` destination directly.
+- The Device tools section is one two-column `GridCard` row: Charger Comparison
+  and App Usage.
+- Their subtitles are prose and therefore use `bodyMedium`, not the numeric
   measurement subtitle style.
-- All four Pro tools stay visible for Free users, expose the standard locked
+- All three Pro tools stay visible for Free users, expose the standard locked
   semantics and `PRO` badge, and open their existing protected destination.
-- Storage cleanup opens the protected `cleanup/LARGE_FILES` destination
-  directly. Before constructing `CleanupScreen`, the entry waits for Pro state
-  and shows `ProFeatureLockedState` to Free users.
+- Before constructing `CleanupScreen`, the entry waits for Pro state and shows
+  `ProFeatureLockedState` to Free users.
 - Learn uses `LearnTopicLink`.
 - Export is a secondary `ListRow`; Free users see the same `ProBadgePill` and
   reach the standard Export locked state.
+- Weekly Report is not duplicated in Tools; its summary and entry live in
+  Insights.
 
 ### 9.11 Learn
 
@@ -2070,9 +2114,9 @@ SettingsNavigationRow:
 - Arrow: auto-mirrored outlined keyboard arrow, 18dp,
   `onSurfaceVariant`.
 
-Sections:
+Implemented groups and contained sections:
 
-- Display:
+- Appearance:
   - System, Light, and Dark use `RuncheckSingleChoiceSelector`.
   - The selection updates DataStore immediately through `SettingsViewModel`.
   - Temperature unit and info-card controls remain below the theme selector.
@@ -2083,7 +2127,7 @@ Sections:
   - Radio rows separated by dividers.
   - Battery optimization text uses healthy or error status depending state.
   - Help row uses `SettingsNavigationRow`.
-- Live notification:
+- Monitoring also contains Live notification:
   - Master `SettingsToggle`.
   - When enabled, divider, `titleSmall` label with top 4dp padding, 4dp
     spacer, then individual toggles.
@@ -2093,41 +2137,40 @@ Sections:
   - Child toggles disabled with 0.38 alpha when master disabled.
   - Muted warning: top spacer 8dp, `bodySmall`, error color, horizontal 4dp
     padding, clickable.
-- Alert thresholds:
+- Notifications also contains Alert thresholds:
   - Three `SettingsSlider`s separated by dividers.
   - Reset button appears only when thresholds differ from defaults.
-- Data:
+- Data and privacy:
   - Description: `bodySmall`, `onSurfaceVariant`.
   - Retention rows separated by dividers.
   - Export is a navigation row to the protected Export destination.
   - Reset/clear actions use `SettingsNavigationRow`.
   - Clear all label uses error color.
-- Widgets:
+- Pro and trial contains Widgets:
   - Pro users see an Available status.
   - Free users see a visible Pro badge and upgrade navigation.
-- Pro:
+- Pro and trial also contains Pro:
   - Status row uses healthy color when active.
   - Active Pro shows thank-you body text.
   - Non-Pro billing state shows full-width primary `Button`.
   - Restore purchase uses `SettingsNavigationRow`.
-- Measurement:
+- Monitoring also contains Device Capabilities:
   - Device name: `titleMedium`.
   - Summary: `bodyMedium`, `onSurfaceVariant`.
   - Metric rows use `MetricPill` with 12dp gaps.
   - Reliable status uses healthy; unreliable uses error.
-- About:
+- About and support:
   - Version text: `bodyMedium`, `onSurfaceVariant`.
   - Rows separated by dividers.
   - Open-source licenses dialog text max height: 420dp, bodySmall,
     vertical scroll.
-- Debug insights:
-  - Appears after About and only when debug insight actions exist.
+- About and support also contains Debug insights:
+  - Appears after About content and only when debug insight actions exist.
   - Uses `RuncheckProgressSpinner` while an action is running.
   - Actions remain full-width outlined buttons and a text button.
 
-The implemented section order is Display, Monitoring, Notifications (including
-thresholds and live notification), Data, Widgets, Pro, Device Capabilities,
-About, and debug-only insights.
+The implemented group order is Appearance, Monitoring, Notifications, Data and
+privacy, About and support, then Pro and trial.
 
 Settings dialogs:
 
@@ -2258,7 +2301,7 @@ Scaffold:
 - Controls:
   - Appear below header when state has selections.
   - Gap above controls: 4dp.
-  - Full-width connected period selector first.
+  - Dedicated horizontally scrolling period `FilterChip` row first.
   - Full-width connected metric selector second.
   - Gap: 4dp.
 - Content:
@@ -2313,8 +2356,8 @@ Locked content:
   second navigation-bar inset on top-level roots.
 - Switching top-level destinations preserves their state. Reselecting the
   active destination returns to that destination's root.
-- Weekly Report notifications rebuild the Tools root without restoring a saved
-  Tools child stack, then push Weekly Report. Protected external routes wait
+- Weekly Report notifications rebuild the Insights root without restoring a
+  saved Insights child stack, then push Weekly Report. Protected external routes wait
   for Pro status before routing so a cold start cannot expose gated content
   during billing initialization.
 - Learn article cross-links to Home, Insights, Tools, or Settings use the
@@ -2340,8 +2383,11 @@ Locked content:
   action fit the minimum height at font scales 1.0, 1.3, and 2.0; wider
   policies add current and the title. Its Android 12 default is 2×2 cells so
   `targetCellHeight` agrees with the two-cell height budget.
-- Quick Glance targets 4×2 and presents a 2×2 grid in this accessibility order:
-  Health Score, Battery, Free storage, Temperature.
+- Quick Glance declares a 110×120dp minimum and a 4×2 target, then presents
+  the same 2×2 grid in this accessibility order: Health Score, Battery, Free
+  storage, Temperature.
+- Pixel Launcher host verification covers 2×2 compact (179×182dp), 3×2
+  standard (276×182dp), and 4×2 expanded (373×182dp) sizes.
 - Quick Glance selects explicit typography budgets for 1.0, 1.3, and 2.0 font
   scales. Compact cells use shorter metric labels and a conservative
   glyph-width estimate to select a fitting font; visible text stays on one line
@@ -2361,6 +2407,8 @@ Locked content:
 - Receiver declarations are non-exported, require
   `android.permission.BIND_APPWIDGET`, and provide XML metadata plus day/night
   preview layouts.
+- Preview layouts use RemoteViews-compatible primitives and the same day/night
+  resource palette as the Glance hosts.
 
 ---
 
@@ -2376,6 +2424,8 @@ Current accessibility behaviors in code:
 - Icon buttons use Material defaults or explicit 48dp sizes.
 - Status is paired with text labels, icons, or semantic descriptions.
 - Charts expose content descriptions summarizing min, max, latest, and trend.
+- Reduced-motion `RuncheckProgressSpinner` uses a static ring with
+  indeterminate-progress semantics and no live region.
 - Progress visualizations expose progress semantics where implemented:
   - ProgressRing.
   - MiniBar when content description is provided.
@@ -2384,12 +2434,17 @@ Current accessibility behaviors in code:
   - Cleanup projection.
 - Cleanup scanning/deleting states use polite live regions.
 - Cleanup success overlay uses assertive live region.
-- Speed metrics card uses live region semantics.
+- Speed metrics values are not live regions; bounded phase/instruction text
+  owns announcements.
 - Settings sliders expose a label/value content description.
 - Cleanup group headers expose heading and expand/collapse semantics.
 - Cleanup rows expose checkbox role and toggle state.
 - Trial expiration modal exposes pane title semantics.
 - Decorative icons often clear semantics or set `contentDescription = null`.
+- Phase 8 device evidence verifies the interactive TalkBack focus order as
+  Refresh, Battery, Network, Thermal, Storage, View all, then the four top-level
+  destinations. Instrumented semantics tests cover headings, charts, statuses,
+  empty states, decorative content, and 48dp touch targets.
 
 ---
 
@@ -2448,12 +2503,12 @@ Current nested destinations:
 - Home -> Network -> Fullscreen Chart.
 - Home -> Thermal.
 - Home -> Storage.
+- Insights -> Weekly Report.
 - Tools -> Speed Test.
 - Tools -> Storage -> Cleanup by type.
 - Tools -> Charger Comparison.
 - Tools -> App Usage.
 - Tools -> Learn -> Learn Article.
-- Tools -> Weekly Report.
 - Tools -> Export.
 - Settings -> Pro Upgrade.
 

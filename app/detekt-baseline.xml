@@ -6,6 +6,8 @@
     <ID>CyclomaticComplexMethod:LearnArticleBodyFormatter.kt:LearnArticleBodyFormatter$fun parse: List&lt;LearnArticleBlock&gt;</ID>
     <ID>CyclomaticComplexMethod:UserPreferencesRepositoryImpl.kt:UserPreferencesRepositoryImpl$override fun getPreferences: Flow&lt;UserPreferences&gt;</ID>
     <ID>LargeClass:HealthScoreCalculatorTest.kt:HealthScoreCalculatorTest</ID>
+    <ID>LongMethod:AppUsageScreen.kt:private fun LazyListScope.unusedAppsItems</ID>
+    <ID>LongMethod:GenerateWeeklyReportUseCase.kt:internal fun aggregateWeeklyReport: WeeklyReport</ID>
     <ID>LongMethod:HealthMonitorWorker.kt:HealthMonitorWorker$override suspend fun doWork: Result</ID>
     <ID>LongMethod:HomeViewModel.kt:HomeViewModel$@OptIn(FlowPreview::class) private fun loadHome</ID>
     <ID>LongMethod:LearnArticleBodyFormatter.kt:LearnArticleBodyFormatter$fun parse: List&lt;LearnArticleBlock&gt;</ID>
@@ -22,6 +24,8 @@
     <ID>TooGenericExceptionCaught:MediaStoreScanner.kt:MediaStoreScanner$error: Exception</ID>
     <ID>TooGenericExceptionCaught:NetworkViewModel.kt:NetworkViewModel$error: Exception</ID>
     <ID>TooGenericExceptionCaught:RealTimeMonitorService.kt:RealTimeMonitorService$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:UnusedAppsRepositoryImpl.kt:UnusedAppsRepositoryImpl$error: Exception</ID>
+    <ID>TooGenericExceptionCaught:WeeklyReportViewModel.kt:WeeklyReportViewModel$e: Exception</ID>
     <ID>TooGenericExceptionThrown:NetworkViewModelTest.kt:NetworkViewModelTest$throw RuntimeException("Network timeout")</ID>
     <ID>TooManyFunctions:CleanupViewModel.kt:CleanupViewModel : ViewModel</ID>
     <ID>TooManyFunctions:MediaStoreScanner.kt:MediaStoreScanner</ID>
