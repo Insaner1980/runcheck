@@ -34,6 +34,8 @@ data class UiTokens(
     val chartPlotMinimum: Dp = 180.dp,
     val heroGaugeStroke: Dp = 18.dp,
     val homeHeroGaugeSize: Dp = 112.dp,
+    val homeHeroGaugeLargeFontSize: Dp = 144.dp,
+    val heroGaugeCompactPadding: Dp = 8.dp,
     val heroGaugeStartAngle: Float = 135f,
     val heroGaugeSweepAngle: Float = 270f,
     val statusPillMinWidth: Dp = 48.dp,

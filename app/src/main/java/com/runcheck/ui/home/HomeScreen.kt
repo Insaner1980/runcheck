@@ -36,7 +36,6 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
@@ -282,7 +281,7 @@ private fun HomeContent(
 }
 
 @Composable
-private fun HomeHealthHero(
+internal fun HomeHealthHero(
     healthScore: HealthScore,
     measurementTimestampMillis: Long,
     measurementConfidence: Confidence,
@@ -294,6 +293,12 @@ private fun HomeHealthHero(
     val scoreDescription = stringResource(R.string.a11y_health_score, score)
     val useExpandedLayout = LocalDensity.current.fontScale >= 1.3f
     val tokens = MaterialTheme.uiTokens
+    val gaugeSize =
+        if (useExpandedLayout) {
+            tokens.homeHeroGaugeLargeFontSize
+        } else {
+            tokens.homeHeroGaugeSize
+        }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -320,7 +325,7 @@ private fun HomeHealthHero(
                         statusLabel = statusLabel,
                         measurementConfidence = measurementConfidence,
                         scoreDescription = scoreDescription,
-                        modifier = Modifier.size(tokens.homeHeroGaugeSize),
+                        modifier = Modifier.size(gaugeSize),
                     )
                     HealthScoreBreakdown(
                         healthScore = healthScore,
@@ -338,7 +343,7 @@ private fun HomeHealthHero(
                         statusLabel = statusLabel,
                         measurementConfidence = measurementConfidence,
                         scoreDescription = scoreDescription,
-                        modifier = Modifier.size(tokens.homeHeroGaugeSize),
+                        modifier = Modifier.size(gaugeSize),
                     )
                     HealthScoreBreakdown(
                         healthScore = healthScore,
@@ -374,6 +379,7 @@ private fun HomeHeroGauge(
         animationKey = "home-health-score",
         confidence = measurementConfidence,
         showDetails = false,
+        contentPadding = MaterialTheme.uiTokens.heroGaugeCompactPadding,
         modifier = modifier,
     )
 }

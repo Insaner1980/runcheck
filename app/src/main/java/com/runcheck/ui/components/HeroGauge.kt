@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.unit.Dp
 import com.runcheck.R
 import com.runcheck.domain.model.Confidence
 import com.runcheck.ui.theme.MotionTokens
@@ -76,6 +77,7 @@ fun HeroGauge(
     modifier: Modifier = Modifier,
     confidence: Confidence? = null,
     showDetails: Boolean = true,
+    contentPadding: Dp = Dp.Unspecified,
 ) {
     val confidenceLabel = confidence?.let { stringResource(confidenceLabelResource(it)) }
     val presentation =
@@ -106,6 +108,12 @@ fun HeroGauge(
         }
     val reducedMotion = MaterialTheme.reducedMotion
     val tokens = MaterialTheme.uiTokens
+    val resolvedContentPadding =
+        if (contentPadding == Dp.Unspecified) {
+            MaterialTheme.spacing.cardInternal
+        } else {
+            contentPadding
+        }
     val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
     val animatedValue =
         remember(animationKey) {
@@ -163,7 +171,7 @@ fun HeroGauge(
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            modifier = Modifier.padding(MaterialTheme.spacing.cardInternal),
+            modifier = Modifier.padding(resolvedContentPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
         ) {
