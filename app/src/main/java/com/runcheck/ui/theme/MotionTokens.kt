@@ -37,6 +37,7 @@ object MotionTokens {
     const val RESULT_STAGGER = 80
     const val LIST_ITEM_STAGGER = 40
     const val CHART_FILL_DELAY = 200
+    const val MEASUREMENT_INDICATOR = MEDIUM
 
     // Compatibility aliases and component-specific timings.
     const val SHORT = FAST
@@ -70,6 +71,12 @@ object MotionTokens {
     fun <T> tweenShort() = tween<T>(durationMillis = SHORT)
 
     fun <T> tweenMedium() = tween<T>(durationMillis = MEDIUM)
+
+    fun <T> measurementIndicatorTween(reducedMotion: Boolean): TweenSpec<T> =
+        tween(
+            durationMillis = if (reducedMotion) INSTANT else MEASUREMENT_INDICATOR,
+            easing = StandardEasing,
+        )
 
     fun <T> tweenSweep() = tween<T>(durationMillis = SWEEP, easing = SweepEasing)
 

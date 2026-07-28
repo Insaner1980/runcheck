@@ -1,8 +1,6 @@
 package com.runcheck.ui.network
 
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -43,7 +41,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -72,8 +69,10 @@ import com.runcheck.domain.model.SpeedTestResult
 import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.connectionDisplayLabel
 import com.runcheck.ui.common.formatDecimal
+import com.runcheck.ui.common.measurementMotionPolicy
 import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.common.resolve
+import com.runcheck.ui.components.AnimatedCounter
 import com.runcheck.ui.components.AnimatedFloatText
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.RuncheckDetailScaffold
@@ -81,6 +80,7 @@ import com.runcheck.ui.components.RuncheckProgressSpinner
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
+import com.runcheck.ui.components.rememberMeasurementIsResumed
 import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.PreviewsRuncheckThemes
 import com.runcheck.ui.theme.RuncheckTheme
@@ -313,41 +313,16 @@ private fun SpeedTestHero(
     onAction: () -> Unit,
 ) {
     val reducedMotion = MaterialTheme.reducedMotion
-    val pulseScale: Float
-    val pulseAlpha: Float
-    if (!reducedMotion && state.phase == SpeedTestPhase.Idle) {
-        val idleTransition = rememberInfiniteTransition(label = "speed_test_idle")
-        pulseScale =
-            idleTransition
-                .animateFloat(
-                    initialValue = 0.96f,
-                    targetValue = 1.04f,
-                    animationSpec =
-                        infiniteRepeatable(
-                            animation = tween(durationMillis = MotionTokens.SPEED_GAUGE, easing = MotionTokens.EaseOut),
-                            repeatMode = RepeatMode.Reverse,
-                        ),
-                    label = "speed_test_pulse_scale",
-                ).value
-        pulseAlpha =
-            idleTransition
-                .animateFloat(
-                    initialValue = 0.12f,
-                    targetValue = 0.26f,
-                    animationSpec =
-                        infiniteRepeatable(
-                            animation = tween(durationMillis = MotionTokens.SPEED_GAUGE, easing = MotionTokens.EaseOut),
-                            repeatMode = RepeatMode.Reverse,
-                        ),
-                    label = "speed_test_pulse_alpha",
-                ).value
-    } else {
-        pulseScale = 1f
-        pulseAlpha = 0.12f
-    }
+    val measurementState = state.toMeasurementState()
+    val motionPolicy =
+        measurementMotionPolicy(
+            state = measurementState,
+            reducedMotion = reducedMotion,
+            isResumed = rememberMeasurementIsResumed(),
+        )
 
     val rotation =
-        if (!reducedMotion && state.phase == SpeedTestPhase.Ping) {
+        if (motionPolicy.showIndeterminateIndicator && state.phase == SpeedTestPhase.Ping) {
             val pingTransition = rememberInfiniteTransition(label = "speed_test_ping")
             pingTransition
                 .animateFloat(
@@ -355,7 +330,11 @@ private fun SpeedTestHero(
                     targetValue = 360f,
                     animationSpec =
                         infiniteRepeatable(
-                            animation = tween(durationMillis = MotionTokens.SPEED_SWEEP, easing = LinearEasing),
+                            animation =
+                                tween(
+                                    durationMillis = MotionTokens.SPEED_SWEEP,
+                                    easing = MotionTokens.SweepEasing,
+                                ),
                         ),
                     label = "speed_test_rotation",
                 ).value
@@ -373,13 +352,10 @@ private fun SpeedTestHero(
     val surfaceContainerTone = MaterialTheme.colorScheme.surfaceContainerHigh
 
     val targetProgress =
-        when (state.phase) {
-            SpeedTestPhase.Idle -> 0f
-            SpeedTestPhase.Ping -> 0.18f
-            SpeedTestPhase.Download -> state.downloadProgress.coerceIn(0f, 1f)
-            SpeedTestPhase.Upload -> state.uploadProgress.coerceIn(0f, 1f)
-            SpeedTestPhase.Completed -> 1f
-            is SpeedTestPhase.Failed -> 0f
+        when (measurementState) {
+            is com.runcheck.ui.common.MeasurementState.Sampling -> measurementState.progress ?: 0f
+            com.runcheck.ui.common.MeasurementState.Result -> 1f
+            else -> 0f
         }
 
     val progress by animateFloatAsState(
@@ -442,9 +418,8 @@ private fun SpeedTestHero(
             modifier =
                 Modifier
                     .size(248.dp)
-                    .scale(if (state.phase == SpeedTestPhase.Idle) pulseScale else 1f)
                     .clip(actionShape)
-                    .background(accent.copy(alpha = if (state.phase == SpeedTestPhase.Idle) pulseAlpha else 0.08f)),
+                    .background(accent.copy(alpha = if (state.phase == SpeedTestPhase.Idle) 0.12f else 0.08f)),
         )
 
         Canvas(
@@ -591,10 +566,10 @@ private fun SpeedTestHero(
 
             state.phase == SpeedTestPhase.Completed -> {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    AnimatedFloatText(
+                    AnimatedCounter(
                         value = centerValue,
                         style = MaterialTheme.numericSpeedHeroValueTextStyle,
-                        decimalPlaces = 1,
+                        formatter = { value -> formatDecimal(value, 1) },
                     )
                     Text(
                         text = stringResource(R.string.unit_mbps),

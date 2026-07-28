@@ -941,6 +941,15 @@ public fun com.runcheck.ui.components.MeasuredHeroValue(value: kotlin.String, un
     - unitStyle: STABLE (marked @Stable or @Immutable)
 
 @Composable
+internal fun com.runcheck.ui.components.MeasurementIndicator(state: com.runcheck.ui.common.MeasurementState, contentDescription: kotlin.String, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - state: STABLE (class with no mutable properties)
+    - contentDescription: STABLE (String is immutable)
+    - modifier: STABLE (marked @Stable or @Immutable)
+
+@Composable
 public fun com.runcheck.ui.components.MetricPill(label: kotlin.String, value: kotlin.String, modifier: androidx.compose.ui.Modifier, valueColor: androidx.compose.ui.graphics.Color, onInfoClick: kotlin.Function0<kotlin.Unit>?): kotlin.Unit
   skippable: true
   restartable: true
@@ -1299,6 +1308,12 @@ public fun com.runcheck.ui.components.info.InfoSheetHost(activeKey: kotlin.Strin
 
 @Composable
 public fun com.runcheck.ui.components.info.rememberInfoSheetState(): androidx.compose.runtime.MutableState<kotlin.String?>
+  skippable: true
+  restartable: true
+  params:
+
+@Composable
+internal fun com.runcheck.ui.components.rememberMeasurementIsResumed(): kotlin.Boolean
   skippable: true
   restartable: true
   params:

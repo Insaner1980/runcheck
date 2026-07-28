@@ -52,6 +52,7 @@ import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.MeasurementIndicator
 import com.runcheck.ui.components.RuncheckEmptyState
 import com.runcheck.ui.components.RuncheckProgressSpinner
 import com.runcheck.ui.components.RuncheckSingleChoiceSelector
@@ -251,7 +252,10 @@ private fun CleanupScreenBody(
                             },
                     contentAlignment = Alignment.Center,
                 ) {
-                    RuncheckProgressSpinner(contentDescription = scanningDescription)
+                    MeasurementIndicator(
+                        state = state.toMeasurementState(),
+                        contentDescription = scanningDescription,
+                    )
                 }
             }
 
@@ -319,7 +323,10 @@ private fun CleanupScreenBody(
                             },
                     contentAlignment = Alignment.Center,
                 ) {
-                    RuncheckProgressSpinner(contentDescription = deletingDescription)
+                    MeasurementIndicator(
+                        state = state.toMeasurementState(),
+                        contentDescription = deletingDescription,
+                    )
                 }
             }
 
