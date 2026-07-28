@@ -9,8 +9,8 @@ import androidx.compose.animation.core.tween
 
 /**
  * Centralized animation tokens for consistent motion throughout the app.
- * Component-specific timings (e.g., TrendChart sweep phases) remain local
- * to their components — only shared/repeated values belong here.
+ * Component-specific timings also live here so composables do not own bare
+ * millisecond values.
  */
 object MotionTokens {
     // ── Easings ─────────────────────────────────────────────────────────────────
@@ -37,6 +37,13 @@ object MotionTokens {
     const val RESULT_STAGGER = 80
     const val LIST_ITEM_STAGGER = 40
     const val CHART_FILL_DELAY = 200
+    const val CHART_PATH = DELIBERATE
+    const val CHART_SCAN_FADE_DELAY = 700
+    const val CHART_SCAN_FADE = 300
+    const val CHART_TRANSITION_SCAN_FADE_DELAY = 560
+    const val CHART_TRANSITION_SCAN_FADE = 240
+    const val CHART_DATA_FADE_OUT = 300
+    const val CHART_TRANSITION_OVERLAP = CHART_FILL_DELAY
     const val MEASUREMENT_INDICATOR = MEDIUM
     const val SUCCESS = MEDIUM
 

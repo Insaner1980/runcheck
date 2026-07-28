@@ -53,6 +53,10 @@ class StableMaterialTopLevelSourceContractTest {
                 .resolve("src/main/java/com/runcheck/ui/components/TrendChart.kt")
                 .readText()
         assertTrue(trendChart.contains("MaterialTheme.chartColors"))
+        assertTrue(trendChart.contains("MotionTokens.CHART_PATH"))
+        assertTrue(trendChart.contains("MotionTokens.DecelerateEasing"))
+        assertFalse(trendChart.contains("private const val INITIAL_SWEEP_DURATION_MS"))
+        assertFalse(trendChart.contains("private const val TRANSITION_OVERLAP_MS"))
     }
 
     @Test

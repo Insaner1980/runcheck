@@ -109,13 +109,6 @@ private data class TrendChartStyle(
     val tooltipTextStyle: TextStyle,
 )
 
-private const val INITIAL_SWEEP_DURATION_MS = 1000
-private const val SWEEP_SCAN_FADE_DELAY_MS = 700
-private const val SWEEP_SCAN_FADE_DURATION_MS = 300
-private const val TRANSITION_SCAN_FADE_DELAY_MS = 560
-private const val TRANSITION_SCAN_FADE_DURATION_MS = 240
-private const val FADE_OUT_DURATION_MS = 300
-private const val TRANSITION_OVERLAP_MS = 200
 private const val SCAN_LINE_START_ALPHA = 0.5f
 private val MINIMUM_Y_LABEL_SPACING = 32.dp
 
@@ -152,11 +145,11 @@ fun TrendChart(
     val minimumPlotHeight = MaterialTheme.uiTokens.chartPlotMinimum
     val chartData = remember(data) { data.filter(Float::isFinite) }
 
-    // Phase 1: Grid + axes fade in (0→1 over 200ms)
+    // Phase 1: Grid + axes fade in with the fast motion token.
     val gridAlpha = remember { Animatable(if (reducedMotion) 1f else 0f) }
-    // Phase 2: Oscilloscope sweep progress (0→1 over 1000ms)
+    // Phase 2: Oscilloscope sweep progress uses the 900 ms chart path token.
     val sweepProgress = remember { Animatable(if (reducedMotion) 1f else 0f) }
-    // Phase 3: Last value emphasis fade in (0→1 over 200ms)
+    // Phase 3: Last value emphasis fades in with the fast motion token.
     val emphasisAlpha = remember { Animatable(if (reducedMotion) 1f else 0f) }
     // Scan line opacity (fades out during final 30% of sweep)
     val scanLineAlpha = remember { Animatable(if (reducedMotion) 0f else 0.5f) }
@@ -213,10 +206,16 @@ fun TrendChart(
             }
 
             launch {
-                delay(SWEEP_SCAN_FADE_DELAY_MS.toLong())
-                scanLineAlpha.animateTo(0f, tween(SWEEP_SCAN_FADE_DURATION_MS))
+                delay(MotionTokens.CHART_SCAN_FADE_DELAY.toLong())
+                scanLineAlpha.animateTo(0f, tween(MotionTokens.CHART_SCAN_FADE))
             }
-            sweepProgress.animateTo(1f, tween(INITIAL_SWEEP_DURATION_MS, easing = MotionTokens.SweepEasing))
+            sweepProgress.animateTo(
+                1f,
+                tween(
+                    durationMillis = MotionTokens.CHART_PATH,
+                    easing = MotionTokens.DecelerateEasing,
+                ),
+            )
             scanLineAlpha.snapTo(0f)
             emphasisData = chartData
             emphasisAlpha.animateTo(1f, tween(MotionTokens.SHORT, easing = MotionTokens.EaseOut))
@@ -244,10 +243,10 @@ fun TrendChart(
             launch {
                 fadeOutAlpha.animateTo(
                     0f,
-                    tween(FADE_OUT_DURATION_MS, easing = MotionTokens.EaseOut),
+                    tween(MotionTokens.CHART_DATA_FADE_OUT, easing = MotionTokens.EaseOut),
                 )
             }
-            delay(TRANSITION_OVERLAP_MS.toLong())
+            delay(MotionTokens.CHART_TRANSITION_OVERLAP.toLong())
         } else {
             fadeOutAlpha.snapTo(0f)
         }
@@ -260,10 +259,16 @@ fun TrendChart(
         }
 
         launch {
-            delay(TRANSITION_SCAN_FADE_DELAY_MS.toLong())
-            scanLineAlpha.animateTo(0f, tween(TRANSITION_SCAN_FADE_DURATION_MS))
+            delay(MotionTokens.CHART_TRANSITION_SCAN_FADE_DELAY.toLong())
+            scanLineAlpha.animateTo(0f, tween(MotionTokens.CHART_TRANSITION_SCAN_FADE))
         }
-        sweepProgress.animateTo(1f, tween(MotionTokens.SWEEP, easing = MotionTokens.SweepEasing))
+        sweepProgress.animateTo(
+            1f,
+            tween(
+                durationMillis = MotionTokens.CHART_PATH,
+                easing = MotionTokens.DecelerateEasing,
+            ),
+        )
         scanLineAlpha.snapTo(0f)
         emphasisData = chartData
         emphasisAlpha.animateTo(1f, tween(MotionTokens.SHORT, easing = MotionTokens.EaseOut))

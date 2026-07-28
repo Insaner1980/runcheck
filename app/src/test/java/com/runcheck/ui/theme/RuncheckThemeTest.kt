@@ -187,6 +187,13 @@ class RuncheckThemeTest {
         assertEquals(80, MotionTokens.RESULT_STAGGER)
         assertEquals(40, MotionTokens.LIST_ITEM_STAGGER)
         assertEquals(200, MotionTokens.CHART_FILL_DELAY)
+        assertEquals(900, MotionTokens.CHART_PATH)
+        assertEquals(700, MotionTokens.CHART_SCAN_FADE_DELAY)
+        assertEquals(300, MotionTokens.CHART_SCAN_FADE)
+        assertEquals(560, MotionTokens.CHART_TRANSITION_SCAN_FADE_DELAY)
+        assertEquals(240, MotionTokens.CHART_TRANSITION_SCAN_FADE)
+        assertEquals(300, MotionTokens.CHART_DATA_FADE_OUT)
+        assertEquals(200, MotionTokens.CHART_TRANSITION_OVERLAP)
 
         with(MotionTokens.gaugeSpring<Float>()) {
             assertEquals(0.72f, dampingRatio, 0f)
