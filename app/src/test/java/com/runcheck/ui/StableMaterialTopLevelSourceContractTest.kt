@@ -122,7 +122,6 @@ class StableMaterialTopLevelSourceContractTest {
                     "RuncheckActionCard(",
                     "ActionCard(",
                     "ToolsBentoGrid(",
-                    "R.string.weekly_report_title",
                     "LearnTopicLink(",
                     "R.string.export_title",
                 ),
@@ -135,7 +134,6 @@ class StableMaterialTopLevelSourceContractTest {
             "onNavigateToCharger",
             "onNavigateToAppUsage",
             "onNavigateToLearn",
-            "onNavigateToWeeklyReport",
             "onNavigateToExport",
         ).forEach { handler ->
             assertTrue("$handler is missing", tools.contains(handler))
@@ -147,8 +145,10 @@ class StableMaterialTopLevelSourceContractTest {
         val insights = appDir.resolve("src/main/java/com/runcheck/ui/insights/InsightsScreen.kt").readText()
 
         assertTrue(insights.contains("RuncheckSingleChoiceSelector("))
+        assertTrue(insights.contains("rememberSaveable"))
         assertTrue(insights.contains("RuncheckProgressSpinner("))
-        assertTrue(insights.contains("RuncheckEmptyState("))
+        assertTrue(insights.contains("EmptyStateIllustration("))
+        assertTrue(insights.contains("WeeklyReportSummaryContent("))
         assertFalse(insights.contains("DetailTopBar("))
 
         val homeInsights =
@@ -173,12 +173,18 @@ class StableMaterialTopLevelSourceContractTest {
             source = settings,
             tokens =
                 listOf(
+                    "R.string.settings_group_appearance",
                     "DisplaySection(",
+                    "R.string.settings_group_monitoring",
                     "MonitoringSection(",
+                    "R.string.settings_group_notifications",
                     "NotificationsSection(",
+                    "R.string.settings_group_data_privacy",
                     "DataSection(",
+                    "R.string.settings_group_pro_trial",
                     "WidgetsSection(",
                     "ProSection(",
+                    "R.string.settings_group_about_support",
                     "SettingsAboutSection(",
                     "DebugInsightsSection(",
                 ),

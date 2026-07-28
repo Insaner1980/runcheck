@@ -139,7 +139,7 @@ class NavigationControllerBehaviorTest {
     }
 
     @Test
-    fun `external Weekly route resets a restored Tools detail stack`() {
+    fun `external Weekly route resets a restored Tools detail stack under Insights`() {
         navController.navigateTopLevel(TopLevelDestination.Tools)
         navController.navigate(Screen.SpeedTest.route)
 
@@ -147,7 +147,7 @@ class NavigationControllerBehaviorTest {
 
         assertEquals(Screen.WeeklyReport.route, navController.currentDestination?.route)
         navController.popBackStack()
-        assertEquals(Screen.Tools.route, navController.currentDestination?.route)
+        assertEquals(Screen.Insights.route, navController.currentDestination?.route)
         navController.popBackStack()
         assertEquals(Screen.Home.route, navController.currentDestination?.route)
     }

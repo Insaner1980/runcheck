@@ -109,7 +109,7 @@ class HomeToolsRenderTest {
 
     @Test
     fun toolsHierarchyInvokesEveryExistingNavigationCallback() {
-        val clickCounts = IntArray(7)
+        val clickCounts = IntArray(6)
 
         renderCompose(
             widthPx = COMPACT_WIDTH,
@@ -122,8 +122,7 @@ class HomeToolsRenderTest {
                     onNavigateToCharger = { clickCounts[2]++ },
                     onNavigateToAppUsage = { clickCounts[3]++ },
                     onNavigateToLearn = { clickCounts[4]++ },
-                    onNavigateToWeeklyReport = { clickCounts[5]++ },
-                    onNavigateToExport = { clickCounts[6]++ },
+                    onNavigateToExport = { clickCounts[5]++ },
                     hasProAccess = false,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -134,7 +133,6 @@ class HomeToolsRenderTest {
             rendered.click("Charger Comparison")
             rendered.click("App Usage")
             rendered.click("Learn")
-            rendered.click("Weekly Report")
             rendered.click("Export")
         }
 

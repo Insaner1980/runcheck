@@ -62,6 +62,8 @@ internal class RenderedComposeView(
                 node.ownText().any { it.contains(value, ignoreCase = false) }
             }
 
+    fun nodesContainingText(value: String): List<AccessibilityNodeInfo> = nodesContainingDescendantText(value)
+
     private fun nodesContainingDescendantText(value: String): List<AccessibilityNodeInfo> =
         accessibilityRoot()
             .allNodes()

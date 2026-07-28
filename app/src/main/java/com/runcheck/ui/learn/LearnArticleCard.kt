@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -14,8 +13,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.runcheck.R
+import com.runcheck.ui.theme.runcheckCardBorder
 import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
@@ -29,6 +28,7 @@ fun LearnArticleCard(
     Card(
         shape = MaterialTheme.shapes.large,
         colors = runcheckCardColors(),
+        border = runcheckCardBorder(),
         elevation = runcheckCardElevation(),
         modifier =
             modifier

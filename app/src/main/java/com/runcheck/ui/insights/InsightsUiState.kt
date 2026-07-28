@@ -24,6 +24,26 @@ enum class InsightFilter {
         }
 }
 
+data class InsightSections(
+    val needsAttention: List<Insight>,
+    val other: List<Insight>,
+)
+
+internal fun groupInsights(
+    insights: List<Insight>,
+    filter: InsightFilter,
+): InsightSections {
+    val filtered = filter.applyTo(insights)
+    return InsightSections(
+        needsAttention =
+            filtered.filter { insight ->
+                insight.priority == InsightPriority.HIGH ||
+                    insight.priority == InsightPriority.MEDIUM
+            },
+        other = filtered.filter { insight -> insight.priority == InsightPriority.LOW },
+    )
+}
+
 sealed interface InsightsUiState {
     data object Loading : InsightsUiState
 

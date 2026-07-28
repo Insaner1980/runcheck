@@ -196,6 +196,10 @@ fun RuncheckNavHost(
                     }
                 InsightsScreen(
                     navigationHandlers = insightNavigationHandlers,
+                    onNavigateHome = { navController.navigateTopLevel(TopLevelDestination.Home) },
+                    onNavigateToWeeklyReport = {
+                        navController.navigateSingleTop(Screen.WeeklyReport.route)
+                    },
                 )
             }
             composable(Screen.Tools.route) {
@@ -207,7 +211,6 @@ fun RuncheckNavHost(
                     onNavigateToCharger = { navController.navigateSingleTop(Screen.Charger.route) },
                     onNavigateToAppUsage = { navController.navigateSingleTop(Screen.AppUsage.route) },
                     onNavigateToLearn = { navController.navigateSingleTop(Screen.Learn.route) },
-                    onNavigateToWeeklyReport = { navController.navigateSingleTop(Screen.WeeklyReport.route) },
                     onNavigateToExport = { navController.navigateSingleTop(Screen.Export.route) },
                     hasProAccess = appShellState.hasProAccess,
                 )

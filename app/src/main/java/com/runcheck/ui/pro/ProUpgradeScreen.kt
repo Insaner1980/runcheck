@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BarChart
@@ -21,11 +20,11 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.DataUsage
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FileDownload
-import androidx.compose.material.icons.outlined.NoAccounts
 import androidx.compose.material.icons.outlined.Thermostat
 import androidx.compose.material.icons.outlined.Widgets
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -38,7 +37,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
@@ -46,6 +44,11 @@ import com.runcheck.pro.ProFeature
 import com.runcheck.pro.ProStatus
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.RuncheckDetailScaffold
+import com.runcheck.ui.components.StatusPill
+import com.runcheck.ui.components.StatusTone
+import com.runcheck.ui.theme.runcheckCardBorder
+import com.runcheck.ui.theme.runcheckCardColors
+import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.uiTokens
@@ -85,7 +88,7 @@ fun ProUpgradeScreen(
 }
 
 @Composable
-private fun ProUpgradeContent(
+internal fun ProUpgradeContent(
     uiState: ProUpgradeUiState,
     onPurchase: () -> Unit,
 ) {
@@ -110,6 +113,39 @@ private fun ProUpgradeContent(
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
+        when (uiState.proState.status) {
+            ProStatus.TRIAL_ACTIVE -> {
+                StatusPill(
+                    label =
+                        stringResource(
+                            R.string.trial_days_remaining,
+                            uiState.proState.trialDaysRemaining,
+                        ),
+                    tone = StatusTone.HEALTHY,
+                )
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            }
+
+            ProStatus.TRIAL_EXPIRED -> {
+                if (uiState.proState.trialStartTimestamp > 0L) {
+                    Text(
+                        text =
+                            uiState.formattedPrice?.let {
+                                stringResource(R.string.trial_expired_upgrade_with_price, it)
+                            } ?: stringResource(R.string.trial_expired_upgrade),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                }
+            }
+
+            ProStatus.PRO_PURCHASED -> {
+                Unit
+            }
+        }
+
         Text(
             text = stringResource(R.string.pro_upgrade_subtitle),
             style = MaterialTheme.typography.bodyLarge,
@@ -119,12 +155,27 @@ private fun ProUpgradeContent(
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
 
-        ProFeature.entries.forEach { feature ->
-            FeatureRow(
-                icon = featureIcon(feature),
-                label = stringResource(feature.labelResId()),
-            )
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.large,
+            colors = runcheckCardColors(),
+            border = runcheckCardBorder(),
+            elevation = runcheckCardElevation(),
+        ) {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(MaterialTheme.spacing.base),
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
+            ) {
+                uiState.features.forEach { feature ->
+                    FeatureRow(
+                        icon = featureIcon(feature),
+                        label = stringResource(feature.labelResId()),
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
@@ -214,6 +265,7 @@ private fun FeatureRow(
 
 @Composable
 private fun ProActiveContent() {
+    val tokens = MaterialTheme.uiTokens
     Column(
         modifier =
             Modifier
@@ -225,7 +277,7 @@ private fun ProActiveContent() {
         Icon(
             imageVector = Icons.Outlined.Check,
             contentDescription = null,
-            modifier = Modifier.size(64.dp),
+            modifier = Modifier.size(tokens.dialogIcon),
             tint = MaterialTheme.colorScheme.primary,
         )
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))

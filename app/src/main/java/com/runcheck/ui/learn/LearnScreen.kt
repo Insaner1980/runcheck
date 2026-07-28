@@ -15,9 +15,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.runcheck.R
-import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.RuncheckDetailScaffold
 import com.runcheck.ui.components.RuncheckSingleChoiceSelector
+import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.theme.PreviewsRuncheckThemes
 import com.runcheck.ui.theme.RuncheckTheme
 import com.runcheck.ui.theme.spacing
@@ -59,7 +59,7 @@ fun LearnScreen(
                     key = "header_${section.topic.name}",
                     contentType = "learn_header",
                 ) {
-                    CardSectionTitle(text = stringResource(section.topic.labelRes))
+                    SectionHeader(text = stringResource(section.topic.labelRes))
                 }
 
                 items(
@@ -94,7 +94,7 @@ fun LearnScreen(
                 key = "header_general",
                 contentType = "learn_header",
             ) {
-                CardSectionTitle(text = stringResource(R.string.learn_topic_general))
+                SectionHeader(text = stringResource(R.string.learn_topic_general))
             }
 
             items(

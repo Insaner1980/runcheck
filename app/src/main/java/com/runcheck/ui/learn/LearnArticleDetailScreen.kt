@@ -14,6 +14,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -95,7 +97,10 @@ private fun LearnArticleBlockItem(
         is LearnArticleBlock.Heading -> {
             LearnArticleText(
                 text = block.text,
-                modifier = modifier.fillMaxWidth(),
+                modifier =
+                    modifier
+                        .fillMaxWidth()
+                        .semantics { heading() },
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
             )

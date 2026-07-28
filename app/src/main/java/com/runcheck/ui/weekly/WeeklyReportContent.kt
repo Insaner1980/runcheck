@@ -2,6 +2,7 @@ package com.runcheck.ui.weekly
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,7 +18,13 @@ import androidx.compose.ui.res.stringResource
 import com.runcheck.R
 import com.runcheck.domain.model.WeeklyReport
 import com.runcheck.domain.model.WeeklyReportAvailability
+import com.runcheck.ui.common.resolve
+import com.runcheck.ui.components.RuncheckProgressSpinner
+import com.runcheck.ui.components.SecondaryActionLink
 import com.runcheck.ui.components.SectionHeader
+import com.runcheck.ui.components.StatBlock
+import com.runcheck.ui.components.StatusTone
+import com.runcheck.ui.theme.runcheckCardBorder
 import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
@@ -153,6 +160,101 @@ fun WeeklyReportContent(
 }
 
 @Composable
+fun WeeklyReportSummaryContent(
+    state: WeeklyReportUiState,
+    onOpenReport: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = runcheckCardColors(),
+        border = runcheckCardBorder(),
+        elevation = runcheckCardElevation(),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(MaterialTheme.spacing.base),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
+        ) {
+            when (state) {
+                WeeklyReportUiState.Loading -> {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+                    ) {
+                        RuncheckProgressSpinner(
+                            contentDescription = stringResource(R.string.a11y_loading),
+                        )
+                        Text(
+                            text = stringResource(R.string.weekly_report_summary_loading),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                WeeklyReportUiState.Locked -> {
+                    Text(
+                        text = stringResource(R.string.weekly_report_summary_locked),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                is WeeklyReportUiState.Error -> {
+                    Text(
+                        text = state.message.resolve(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+
+                is WeeklyReportUiState.Success -> {
+                    val summary = weeklyReportSummaryProjection(state.report)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+                    ) {
+                        StatBlock(
+                            label = stringResource(R.string.weekly_report_summary_days),
+                            value = summary.monitoredDays.toString(),
+                            unit = stringResource(R.string.weekly_report_summary_days_unit),
+                            modifier = Modifier.weight(1f),
+                        )
+                        StatBlock(
+                            label = stringResource(R.string.weekly_report_summary_samples),
+                            value = summary.sampleCount.toString(),
+                            unit = stringResource(R.string.weekly_report_summary_samples_unit),
+                            modifier = Modifier.weight(1f),
+                        )
+                        StatBlock(
+                            label = stringResource(R.string.weekly_report_summary_tests),
+                            value = summary.speedTestCount.toString(),
+                            unit = stringResource(R.string.weekly_report_summary_tests_unit),
+                            modifier = Modifier.weight(1f),
+                            status = availabilityText(summary.availability),
+                            statusTone =
+                                when (summary.availability) {
+                                    WeeklyReportAvailability.AVAILABLE -> StatusTone.HEALTHY
+                                    WeeklyReportAvailability.ESTIMATED -> StatusTone.FAIR
+                                    WeeklyReportAvailability.UNAVAILABLE -> StatusTone.UNAVAILABLE
+                                },
+                        )
+                    }
+                }
+            }
+
+            SecondaryActionLink(
+                label = stringResource(R.string.weekly_report_summary_action),
+                onClick = onOpenReport,
+            )
+        }
+    }
+}
+
+@Composable
 private fun WeeklyReportHero(report: WeeklyReport) {
     val start =
         DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date.from(report.period.startInclusive))
@@ -162,6 +264,7 @@ private fun WeeklyReportHero(report: WeeklyReport) {
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
         colors = runcheckCardColors(),
+        border = runcheckCardBorder(),
         elevation = runcheckCardElevation(),
     ) {
         Column(
@@ -203,6 +306,7 @@ private fun ReportSection(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
         colors = runcheckCardColors(),
+        border = runcheckCardBorder(),
         elevation = runcheckCardElevation(),
     ) {
         Column(

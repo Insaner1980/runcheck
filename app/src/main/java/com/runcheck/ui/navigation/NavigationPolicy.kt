@@ -45,13 +45,14 @@ fun coldStartParentFor(route: String): TopLevelDestination? =
                     Screen.SpeedTest.route,
                     Screen.Charger.route,
                     Screen.AppUsage.route,
-                    Screen.WeeklyReport.route,
                     Screen.Learn.route,
                     Screen.Export.route,
                 ) ||
                 route.matchesRoutePattern(Screen.Cleanup.ROUTE) ||
                 route.matchesRoutePattern(Screen.LearnTopic.ROUTE) ||
                 route.matchesRoutePattern(Screen.LearnArticle.ROUTE) -> TopLevelDestination.Tools
+
+            route == Screen.WeeklyReport.route -> TopLevelDestination.Insights
 
             route == Screen.ProUpgrade.route -> TopLevelDestination.Settings
 

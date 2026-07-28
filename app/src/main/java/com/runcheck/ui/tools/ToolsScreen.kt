@@ -13,7 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Apps
-import androidx.compose.material.icons.outlined.Assessment
 import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.CleaningServices
 import androidx.compose.material.icons.outlined.FileDownload
@@ -43,7 +42,6 @@ fun ToolsScreen(
     onNavigateToCharger: () -> Unit,
     onNavigateToAppUsage: () -> Unit,
     onNavigateToLearn: () -> Unit,
-    onNavigateToWeeklyReport: () -> Unit,
     onNavigateToExport: () -> Unit,
     modifier: Modifier = Modifier,
     hasProAccess: Boolean = false,
@@ -86,13 +84,6 @@ fun ToolsScreen(
                 )
 
                 SectionHeader(text = stringResource(R.string.tools_utilities))
-                ListRow(
-                    label = stringResource(R.string.weekly_report_title),
-                    icon = Icons.Outlined.Assessment,
-                    onClick = onNavigateToWeeklyReport,
-                    trailing = if (hasProAccess) null else ({ ProBadgePill() }),
-                    modifier = Modifier.fillMaxWidth(),
-                )
                 LearnTopicLink(
                     label = stringResource(R.string.learn_screen_title),
                     onClick = onNavigateToLearn,

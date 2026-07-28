@@ -80,11 +80,13 @@ import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.PrimaryTopBar
+import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.theme.numericFontFamily
+import com.runcheck.ui.theme.runcheckCardBorder
 import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
@@ -243,6 +245,7 @@ fun SettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
             ) {
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                SectionHeader(text = stringResource(R.string.settings_group_appearance))
                 DisplaySection(
                     preferences = uiState.preferences,
                     onSetThemeMode = viewModel::setThemeMode,
@@ -250,6 +253,7 @@ fun SettingsScreen(
                     onSetShowInfoCards = viewModel::setShowInfoCards,
                 )
 
+                SectionHeader(text = stringResource(R.string.settings_group_monitoring))
                 MonitoringSection(
                     context = context,
                     monitoringInterval = uiState.preferences.monitoringInterval,
@@ -260,6 +264,23 @@ fun SettingsScreen(
                     },
                 )
 
+                LiveNotificationSection(
+                    preferences = uiState.preferences,
+                    onLiveNotificationEnabledChange = updateLiveNotificationEnabled,
+                    onSetLiveNotifCurrent = viewModel::setLiveNotifCurrent,
+                    onSetLiveNotifDrainRate = viewModel::setLiveNotifDrainRate,
+                    onSetLiveNotifTemperature = viewModel::setLiveNotifTemperature,
+                    onSetLiveNotifScreenStats = viewModel::setLiveNotifScreenStats,
+                    onSetLiveNotifRemainingTime = viewModel::setLiveNotifRemainingTime,
+                )
+
+                SettingsMeasurementSection(
+                    uiState = uiState,
+                    context = context,
+                    onInfoClick = { activeInfoSheetState.value = it },
+                )
+
+                SectionHeader(text = stringResource(R.string.settings_group_notifications))
                 NotificationsSection(
                     context = context,
                     preferences = uiState.preferences,
@@ -284,16 +305,7 @@ fun SettingsScreen(
                     onResetThresholdsClick = { showResetThresholdsDialogState.value = true },
                 )
 
-                LiveNotificationSection(
-                    preferences = uiState.preferences,
-                    onLiveNotificationEnabledChange = updateLiveNotificationEnabled,
-                    onSetLiveNotifCurrent = viewModel::setLiveNotifCurrent,
-                    onSetLiveNotifDrainRate = viewModel::setLiveNotifDrainRate,
-                    onSetLiveNotifTemperature = viewModel::setLiveNotifTemperature,
-                    onSetLiveNotifScreenStats = viewModel::setLiveNotifScreenStats,
-                    onSetLiveNotifRemainingTime = viewModel::setLiveNotifRemainingTime,
-                )
-
+                SectionHeader(text = stringResource(R.string.settings_group_data_privacy))
                 DataSection(
                     uiState = uiState,
                     onSetDataRetention = viewModel::setDataRetention,
@@ -303,6 +315,7 @@ fun SettingsScreen(
                     onClearAllDataClick = { showClearDialogState.value = true },
                 )
 
+                SectionHeader(text = stringResource(R.string.settings_group_pro_trial))
                 WidgetsSection(
                     isPro = uiState.isPro,
                     onNavigateToProUpgrade = onNavigateToProUpgrade,
@@ -314,12 +327,7 @@ fun SettingsScreen(
                     onRefreshPurchaseStatus = viewModel::refreshPurchaseStatus,
                 )
 
-                SettingsMeasurementSection(
-                    uiState = uiState,
-                    context = context,
-                    onInfoClick = { activeInfoSheetState.value = it },
-                )
-
+                SectionHeader(text = stringResource(R.string.settings_group_about_support))
                 SettingsAboutSection(context = context)
 
                 DebugInsightsSection(
@@ -618,6 +626,7 @@ internal fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
     Card(
         shape = MaterialTheme.shapes.large,
         colors = runcheckCardColors(),
+        border = runcheckCardBorder(),
         elevation = runcheckCardElevation(),
     ) {
         Column(

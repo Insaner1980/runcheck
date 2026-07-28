@@ -57,7 +57,6 @@ class NavigationPolicyTest {
                 Screen.Cleanup("LARGE_FILES").route,
                 Screen.Charger.route,
                 Screen.AppUsage.route,
-                Screen.WeeklyReport.route,
                 Screen.Learn.route,
                 Screen.LearnArticle("battery_health").route,
                 Screen.Export.route,
@@ -69,6 +68,7 @@ class NavigationPolicyTest {
         toolsChildren.forEach { route ->
             assertSame(TopLevelDestination.Tools, coldStartParentFor(route))
         }
+        assertSame(TopLevelDestination.Insights, coldStartParentFor(Screen.WeeklyReport.route))
         assertSame(TopLevelDestination.Settings, coldStartParentFor(Screen.ProUpgrade.route))
     }
 
@@ -81,9 +81,9 @@ class NavigationPolicyTest {
     }
 
     @Test
-    fun `weekly report notification opens above Tools`() {
+    fun `weekly report notification opens above Insights`() {
         assertEquals(
-            listOf(Screen.Tools.route, Screen.WeeklyReport.route),
+            listOf(Screen.Insights.route, Screen.WeeklyReport.route),
             externalNavigationPlan(Screen.WeeklyReport.route),
         )
         assertTrue(Screen.isDirectRoute(Screen.WeeklyReport.route))

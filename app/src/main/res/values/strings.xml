@@ -55,6 +55,7 @@
     <string name="notification_weekly_report_title">Your weekly report is ready</string>
     <string name="notification_weekly_report_text">%1$d monitored days summarized</string>
     <string name="export_title">Export</string>
+    <string name="export_content_title">Share your runcheck data</string>
     <string name="export_settings_hint">CSV export remains available in Settings under Data.</string>
     <string name="a11y_progress_percent">%1$s, %2$d percent</string>
     <string name="hero_gauge_semantics">%1$s, %2$s%%, %3$s</string>
@@ -108,6 +109,20 @@
     <string name="insights_filter_title">Show insights</string>
     <string name="insights_filter_all">All</string>
     <string name="insights_filter_important">Important</string>
+    <string name="insights_needs_attention">Needs attention</string>
+    <string name="insights_this_week">This week</string>
+    <string name="insights_other">Other insights</string>
+    <string name="insights_filter_empty">No insights match this filter.</string>
+    <string name="insights_empty_home_action">Go to Home</string>
+    <string name="weekly_report_summary_loading">Preparing your latest recorded week…</string>
+    <string name="weekly_report_summary_locked">Weekly Report is available with Pro. Open it to review access.</string>
+    <string name="weekly_report_summary_days">Coverage</string>
+    <string name="weekly_report_summary_days_unit">days</string>
+    <string name="weekly_report_summary_samples">Recorded</string>
+    <string name="weekly_report_summary_samples_unit">samples</string>
+    <string name="weekly_report_summary_tests">Network</string>
+    <string name="weekly_report_summary_tests_unit">tests</string>
+    <string name="weekly_report_summary_action">Open Weekly Report</string>
     <string name="insight_priority_high">High priority</string>
     <string name="insight_priority_medium">Medium priority</string>
     <string name="insight_priority_low">Low priority</string>
@@ -517,6 +532,12 @@
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
+    <string name="settings_group_appearance">Appearance</string>
+    <string name="settings_group_monitoring">Monitoring</string>
+    <string name="settings_group_notifications">Notifications</string>
+    <string name="settings_group_data_privacy">Data and privacy</string>
+    <string name="settings_group_pro_trial">Pro and trial</string>
+    <string name="settings_group_about_support">About and support</string>
     <string name="settings_monitoring_interval">Monitoring Interval</string>
     <string name="settings_interval_15">15 minutes</string>
     <string name="settings_interval_30">30 minutes</string>
