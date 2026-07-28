@@ -181,12 +181,12 @@ class StableMaterialTopLevelSourceContractTest {
                     "NotificationsSection(",
                     "R.string.settings_group_data_privacy",
                     "DataSection(",
-                    "R.string.settings_group_pro_trial",
-                    "WidgetsSection(",
-                    "ProSection(",
                     "R.string.settings_group_about_support",
                     "SettingsAboutSection(",
                     "DebugInsightsSection(",
+                    "R.string.settings_group_pro_trial",
+                    "WidgetsSection(",
+                    "ProSection(",
                 ),
         )
     }

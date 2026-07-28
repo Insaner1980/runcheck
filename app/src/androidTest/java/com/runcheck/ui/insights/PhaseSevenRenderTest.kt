@@ -1,6 +1,9 @@
 package com.runcheck.ui.insights
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.saveable.LocalSaveableStateRegistry
+import androidx.compose.runtime.saveable.SaveableStateRegistry
 import androidx.compose.ui.Modifier
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.runcheck.domain.insights.model.Insight
@@ -91,41 +94,64 @@ class PhaseSevenRenderTest {
     }
 
     @Test
-    fun importantFilterRendersSelectedSemanticsAndHidesLowPriorityItems() {
+    fun importantFilterIsSelectedThroughUiAndSurvivesSaveRestore() {
         val high = insight(id = 1L, title = "High priority", priority = InsightPriority.HIGH)
         val low = insight(id = 2L, title = "Low priority", priority = InsightPriority.LOW)
+        val firstRegistry = SaveableStateRegistry(restoredValues = null) { true }
 
-        renderCompose(widthPx = COMPACT_WIDTH, heightPx = TALL_HEIGHT) {
+        val savedState =
+            renderInsightsWithSaveableState(
+                registry = firstRegistry,
+                insights = listOf(low, high),
+            ).use { rendered ->
+                rendered.activateOwnText("Important")
+                rendered.waitUntilTextAbsent("Low priority")
+                assertImportantFilterState(rendered)
+                firstRegistry.performSave()
+            }
+
+        val restoredRegistry = SaveableStateRegistry(restoredValues = savedState) { true }
+        renderInsightsWithSaveableState(
+            registry = restoredRegistry,
+            insights = listOf(low, high),
+        ).use(::assertImportantFilterState)
+    }
+
+    private fun renderInsightsWithSaveableState(
+        registry: SaveableStateRegistry,
+        insights: List<Insight>,
+    ) = renderCompose(widthPx = COMPACT_WIDTH, heightPx = TALL_HEIGHT) {
+        CompositionLocalProvider(LocalSaveableStateRegistry provides registry) {
             RuncheckTheme(themeMode = ThemeMode.DARK) {
-                InsightsContent(
-                    state = InsightsUiState.Success(insights = listOf(low, high), isPro = false),
+                RememberingInsightsContent(
+                    state = InsightsUiState.Success(insights = insights, isPro = false),
                     weeklyReportState = WeeklyReportUiState.Locked,
                     navigationHandlers = navigationHandlers,
                     onDismissInsight = {},
                     onNavigateHome = {},
                     onNavigateToWeeklyReport = {},
-                    selectedFilter = InsightFilter.IMPORTANT,
-                    onSelectFilter = {},
                     modifier = Modifier.fillMaxSize(),
                 )
             }
-        }.use { rendered ->
-            val textAfterSelection = rendered.accessibilityText()
-            assertTrue(textAfterSelection.any { it.contains("High priority") })
-            assertFalse(textAfterSelection.any { it.contains("Low priority") })
-            val importantNodes = rendered.nodesContainingText("Important")
-            assertTrue(
-                "Important semantics: " +
-                    importantNodes.joinToString { node ->
-                        "class=${node.className}, selected=${node.isSelected}, " +
-                            "state=${node.stateDescription}, text=${node.text}"
-                    },
-                importantNodes.any { node ->
-                    node.isSelected ||
-                        node.stateDescription?.toString() == "Selected"
-                },
-            )
         }
+    }
+
+    private fun assertImportantFilterState(rendered: com.runcheck.ui.components.RenderedComposeView) {
+        val textAfterSelection = rendered.accessibilityText()
+        assertTrue(textAfterSelection.any { it.contains("High priority") })
+        assertFalse(textAfterSelection.any { it.contains("Low priority") })
+        val importantNodes = rendered.nodesContainingText("Important")
+        assertTrue(
+            "Important semantics: " +
+                importantNodes.joinToString { node ->
+                    "class=${node.className}, selected=${node.isSelected}, " +
+                        "state=${node.stateDescription}, text=${node.text}"
+                },
+            importantNodes.any { node ->
+                node.isSelected ||
+                    node.stateDescription?.toString() == "Selected"
+            },
+        )
     }
 
     private fun insight(

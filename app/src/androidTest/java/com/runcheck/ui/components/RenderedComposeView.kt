@@ -1,6 +1,7 @@
 package com.runcheck.ui.components
 
 import android.graphics.Rect
+import android.os.SystemClock
 import android.view.ViewGroup
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.compose.runtime.Composable
@@ -44,6 +45,21 @@ internal class RenderedComposeView(
 ) : AutoCloseable {
     fun accessibilityText(): List<String> = accessibilityRoot().descendantText()
 
+    fun waitUntilTextAbsent(
+        text: String,
+        timeoutMillis: Long = 2_000L,
+    ) {
+        val deadline = SystemClock.uptimeMillis() + timeoutMillis
+        while (SystemClock.uptimeMillis() < deadline) {
+            if (accessibilityText().none { it.contains(text, ignoreCase = false) }) return
+            Thread.sleep(50L)
+        }
+        assertFalse(
+            "Expected accessibility text containing $text to disappear",
+            accessibilityText().any { it.contains(text, ignoreCase = false) },
+        )
+    }
+
     fun accessibilityNodeHeight(text: String): Int {
         val node = nodeWithOwnTextContaining(text)
         return Rect().also(node::getBoundsInScreen).height()
@@ -63,6 +79,30 @@ internal class RenderedComposeView(
             }
 
     fun nodesContainingText(value: String): List<AccessibilityNodeInfo> = nodesContainingDescendantText(value)
+
+    fun activateOwnText(text: String) {
+        val matchingNodes = nodesWithOwnTextContaining(text)
+        assertFalse("Expected an accessibility node with its own text containing $text", matchingNodes.isEmpty())
+        val textNode =
+            matchingNodes
+                .filter { node -> node.boundsArea() > 0L }
+                .minBy(AccessibilityNodeInfo::boundsArea)
+        val textBounds = Rect().also(textNode::getBoundsInScreen)
+        val clickTarget =
+            accessibilityRoot()
+                .allNodes()
+                .filter(AccessibilityNodeInfo::isClickable)
+                .filter { node ->
+                    Rect().also(node::getBoundsInScreen).contains(
+                        textBounds.centerX(),
+                        textBounds.centerY(),
+                    )
+                }.minByOrNull(AccessibilityNodeInfo::boundsArea)
+        assertTrue("Expected a clickable node at the own-text center for $text", clickTarget != null)
+        val clicked = checkNotNull(clickTarget).performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        assertTrue("Expected accessibility click action to succeed for $text", clicked)
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+    }
 
     private fun nodesContainingDescendantText(value: String): List<AccessibilityNodeInfo> =
         accessibilityRoot()
@@ -132,6 +172,12 @@ private fun AccessibilityNodeInfo.ownText(): List<String> =
         contentDescription?.toString()?.let(::add)
         text?.toString()?.let(::add)
     }
+
+private fun AccessibilityNodeInfo.boundsArea(): Long {
+    val bounds = Rect()
+    getBoundsInScreen(bounds)
+    return bounds.width().toLong() * bounds.height()
+}
 
 private fun AccessibilityNodeInfo.descendantText(): List<String> {
     val text = mutableListOf<String>()

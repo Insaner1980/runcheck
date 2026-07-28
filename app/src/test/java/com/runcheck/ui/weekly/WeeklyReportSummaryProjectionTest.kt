@@ -67,7 +67,7 @@ class WeeklyReportSummaryProjectionTest {
                 monitoredDays = 6,
                 sampleCount = 84,
                 speedTestCount = 3,
-                availability = WeeklyReportAvailability.ESTIMATED,
+                availability = WeeklyReportAvailability.AVAILABLE,
             ),
             weeklyReportSummaryProjection(report),
         )

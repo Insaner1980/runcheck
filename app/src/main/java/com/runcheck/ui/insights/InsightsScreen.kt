@@ -52,7 +52,6 @@ fun InsightsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val weeklyReportState by weeklyReportViewModel.uiState.collectAsStateWithLifecycle()
-    var selectedFilter by rememberSaveable { mutableStateOf(InsightFilter.ALL) }
     val loadingDescription = stringResource(R.string.a11y_loading)
 
     LifecycleStartStopEffect(
@@ -100,7 +99,7 @@ fun InsightsScreen(
                         weeklyReportViewModel.load()
                     }
                 }
-                InsightsContent(
+                RememberingInsightsContent(
                     state = state,
                     weeklyReportState =
                         if (state.isPro) {
@@ -112,12 +111,35 @@ fun InsightsScreen(
                     onDismissInsight = viewModel::dismissInsight,
                     onNavigateHome = onNavigateHome,
                     onNavigateToWeeklyReport = onNavigateToWeeklyReport,
-                    selectedFilter = selectedFilter,
-                    onSelectFilter = { selectedFilter = it },
                 )
             }
         }
     }
+}
+
+@Composable
+internal fun RememberingInsightsContent(
+    state: InsightsUiState.Success,
+    weeklyReportState: WeeklyReportUiState,
+    navigationHandlers: InsightNavigationHandlers,
+    onDismissInsight: (Long) -> Unit,
+    onNavigateHome: () -> Unit,
+    onNavigateToWeeklyReport: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var selectedFilter by rememberSaveable { mutableStateOf(InsightFilter.ALL) }
+
+    InsightsContent(
+        state = state,
+        weeklyReportState = weeklyReportState,
+        navigationHandlers = navigationHandlers,
+        onDismissInsight = onDismissInsight,
+        onNavigateHome = onNavigateHome,
+        onNavigateToWeeklyReport = onNavigateToWeeklyReport,
+        selectedFilter = selectedFilter,
+        onSelectFilter = { selectedFilter = it },
+        modifier = modifier,
+    )
 }
 
 @Composable

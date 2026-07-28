@@ -315,6 +315,16 @@ fun SettingsScreen(
                     onClearAllDataClick = { showClearDialogState.value = true },
                 )
 
+                SectionHeader(text = stringResource(R.string.settings_group_about_support))
+                SettingsAboutSection(context = context)
+
+                DebugInsightsSection(
+                    uiState = uiState,
+                    onSeedDemoInsights = viewModel::seedDemoInsights,
+                    onGenerateInsightsNow = viewModel::generateInsightsNow,
+                    onClearInsights = viewModel::clearInsights,
+                )
+
                 SectionHeader(text = stringResource(R.string.settings_group_pro_trial))
                 WidgetsSection(
                     isPro = uiState.isPro,
@@ -325,16 +335,6 @@ fun SettingsScreen(
                     uiState = uiState,
                     onPurchasePro = { activity?.let(viewModel::purchasePro) },
                     onRefreshPurchaseStatus = viewModel::refreshPurchaseStatus,
-                )
-
-                SectionHeader(text = stringResource(R.string.settings_group_about_support))
-                SettingsAboutSection(context = context)
-
-                DebugInsightsSection(
-                    uiState = uiState,
-                    onSeedDemoInsights = viewModel::seedDemoInsights,
-                    onGenerateInsightsNow = viewModel::generateInsightsNow,
-                    onClearInsights = viewModel::clearInsights,
                 )
 
                 SettingsTransientEffects(

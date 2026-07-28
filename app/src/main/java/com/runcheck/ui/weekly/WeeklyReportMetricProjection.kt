@@ -37,5 +37,5 @@ internal fun weeklyReportSummaryProjection(report: WeeklyReport): WeeklyReportSu
         monitoredDays = report.coverage.monitoredDays,
         sampleCount = report.coverage.sampleCount,
         speedTestCount = report.speed.testCount,
-        availability = report.availability,
+        availability = report.speed.availability,
     )
