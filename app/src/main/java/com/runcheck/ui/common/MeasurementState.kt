@@ -27,13 +27,10 @@ sealed interface MeasurementState {
 data class MeasurementMotionPolicy(
     val transitionKey: String,
     val displayProgress: Float?,
+    val isIndeterminate: Boolean,
     val showIndeterminateIndicator: Boolean,
     val announceFinalState: Boolean,
-) {
-    companion object {
-        const val STATIC_PROGRESS = 0.6f
-    }
-}
+)
 
 fun measurementMotionPolicy(
     state: MeasurementState,
@@ -46,7 +43,8 @@ fun measurementMotionPolicy(
             (state is MeasurementState.Sampling && progress == null) ||
             state is MeasurementState.Computing ||
             state is MeasurementState.Settling
-    val showIndeterminateIndicator = activeWithoutProgress && !reducedMotion && isResumed
+    val isIndeterminate = activeWithoutProgress
+    val showIndeterminateIndicator = isIndeterminate && !reducedMotion && isResumed
 
     return MeasurementMotionPolicy(
         transitionKey =
@@ -59,12 +57,8 @@ fun measurementMotionPolicy(
                 MeasurementState.Result -> "result"
                 is MeasurementState.Failed -> "failed"
             },
-        displayProgress =
-            progress ?: if (activeWithoutProgress && !showIndeterminateIndicator) {
-                MeasurementMotionPolicy.STATIC_PROGRESS
-            } else {
-                null
-            },
+        displayProgress = progress,
+        isIndeterminate = isIndeterminate,
         showIndeterminateIndicator = showIndeterminateIndicator,
         announceFinalState = state is MeasurementState.Result || state is MeasurementState.Failed,
     )

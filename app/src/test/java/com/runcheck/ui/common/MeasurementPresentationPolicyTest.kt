@@ -130,7 +130,7 @@ class MeasurementPresentationPolicyTest {
     }
 
     @Test
-    fun activeIndeterminateMotionRunsOnlyWhileResumedAndMotionIsEnabled() {
+    fun unknownProgressKeepsIndeterminateSemanticsWhenMotionStops() {
         val active =
             measurementMotionPolicy(
                 state = MeasurementState.Sampling(progress = null),
@@ -146,7 +146,8 @@ class MeasurementPresentationPolicyTest {
                 isResumed = true,
             )
         assertFalse(reduced.showIndeterminateIndicator)
-        assertEquals(MeasurementMotionPolicy.STATIC_PROGRESS, reduced.displayProgress)
+        assertTrue(reduced.isIndeterminate)
+        assertNull(reduced.displayProgress)
 
         val paused =
             measurementMotionPolicy(
@@ -155,7 +156,18 @@ class MeasurementPresentationPolicyTest {
                 isResumed = false,
             )
         assertFalse(paused.showIndeterminateIndicator)
-        assertEquals(MeasurementMotionPolicy.STATIC_PROGRESS, paused.displayProgress)
+        assertTrue(paused.isIndeterminate)
+        assertNull(paused.displayProgress)
+
+        val deleting =
+            measurementMotionPolicy(
+                state = MeasurementState.Computing,
+                reducedMotion = true,
+                isResumed = false,
+            )
+        assertFalse(deleting.showIndeterminateIndicator)
+        assertTrue(deleting.isIndeterminate)
+        assertNull(deleting.displayProgress)
     }
 
     @Test
