@@ -1,6 +1,5 @@
 package com.runcheck.ui.chart
 
-import androidx.compose.ui.graphics.Color
 import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.HistoryPeriod
@@ -277,22 +276,6 @@ class ChartRenderModelTest {
             listOf("-90", "-80", "-70", "-60", "-50"),
             buildNetworkYLabels(-95f, -50f).map { it.label },
         )
-    }
-
-    @Test
-    fun `quality zone color returns matched color at full alpha and default outside zones`() {
-        val defaultColor = Color.White
-        val zoneColor = Color.Red.copy(alpha = 0.08f)
-        val zones = listOf(ChartQualityZone(minValue = 40f, maxValue = 45f, color = zoneColor))
-
-        val matched = qualityZoneColorForValue(42f, zones, defaultColor)
-        val outside = qualityZoneColorForValue(30f, zones, defaultColor)
-
-        assertEquals(Color.Red.red, matched.red, 0.0f)
-        assertEquals(Color.Red.green, matched.green, 0.0f)
-        assertEquals(Color.Red.blue, matched.blue, 0.0f)
-        assertEquals(1f, matched.alpha, 0.0f)
-        assertEquals(defaultColor, outside)
     }
 
     private fun batteryReading(

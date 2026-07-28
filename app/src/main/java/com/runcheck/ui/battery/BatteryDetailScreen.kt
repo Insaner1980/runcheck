@@ -120,6 +120,7 @@ import com.runcheck.ui.fullscreen.FullscreenChartSeedStore
 import com.runcheck.ui.fullscreen.FullscreenChartUiState
 import com.runcheck.ui.fullscreen.sanitizeFullscreenMetric
 import com.runcheck.ui.fullscreen.sanitizeFullscreenPeriod
+import com.runcheck.ui.theme.domainColors
 import com.runcheck.ui.theme.heroCardColor
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
@@ -532,7 +533,7 @@ private fun BatteryOverviewSection( // NOSONAR
                     data = state.liveLevel,
                     currentValueLabel = stringResource(R.string.value_percent, battery.level),
                     label = stringResource(R.string.battery_level),
-                    lineColor = MaterialTheme.colorScheme.primary,
+                    lineColor = MaterialTheme.domainColors.battery,
                     yMin = 0f,
                     yMax = 100f,
                     accessibilityDescription =
@@ -555,7 +556,7 @@ private fun BatteryOverviewSection( // NOSONAR
                             temperatureUnit = state.temperatureUnit,
                         ),
                     label = stringResource(R.string.battery_temperature),
-                    lineColor = temperatureColor(battery.temperatureC),
+                    lineColor = MaterialTheme.domainColors.battery,
                     accessibilityDescription =
                         stringResource(
                             R.string.a11y_chart_trend,
@@ -576,7 +577,7 @@ private fun BatteryOverviewSection( // NOSONAR
                             (battery.voltageMv / 1000f).toDouble(),
                         ),
                     label = stringResource(R.string.battery_voltage),
-                    lineColor = MaterialTheme.statusColors.fair,
+                    lineColor = MaterialTheme.domainColors.battery,
                     accessibilityDescription =
                         stringResource(
                             R.string.a11y_chart_trend,
@@ -687,7 +688,7 @@ private fun BatteryChargingSection( // NOSONAR
                         battery.currentMa.value,
                     ),
                 label = stringResource(R.string.battery_live_current),
-                lineColor = MaterialTheme.colorScheme.primary,
+                lineColor = MaterialTheme.domainColors.battery,
                 referenceValue = 0f,
                 accessibilityDescription =
                     stringResource(R.string.a11y_battery_live_current_chart),
@@ -938,7 +939,7 @@ private fun BatteryHeroSection(
                         modifier = Modifier.size(100.dp),
                         strokeWidth = 6.dp,
                         trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        progressColor = statusColorForPercent(battery.level),
+                        progressColor = MaterialTheme.domainColors.battery,
                         contentDescription =
                             stringResource(
                                 R.string.a11y_progress_percent,
@@ -1110,11 +1111,13 @@ private fun BatteryHistoryPanel(
                 Text(
                     text = "${historyPeriodLabel(state.selectedPeriod)} · ${historyMetricLabel(selectedMetric)}",
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.domainColors.battery,
                 )
                 TrendChart(
                     data = chartModel.chartData,
                     modifier = Modifier.fillMaxWidth(),
+                    lineColor = MaterialTheme.domainColors.battery,
+                    fillColor = MaterialTheme.domainColors.battery,
                     contentDescription = chartAccessibilitySummary,
                     yLabels = chartModel.yLabels.ifEmpty { null },
                     xLabels = chartModel.xLabels.ifEmpty { null },
@@ -1404,11 +1407,13 @@ private fun BatterySessionGraphPanel(
             Text(
                 text = sessionGraphMetricLabel(selectedMetric),
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.domainColors.battery,
             )
             TrendChart(
                 data = chartModel.chartData,
                 modifier = Modifier.fillMaxWidth(),
+                lineColor = MaterialTheme.domainColors.battery,
+                fillColor = MaterialTheme.domainColors.battery,
                 contentDescription = chartAccessibilitySummary,
                 yLabels = chartModel.yLabels.ifEmpty { null },
                 xLabels = chartModel.xLabels.ifEmpty { null },

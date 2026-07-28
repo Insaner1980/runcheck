@@ -114,6 +114,7 @@ import com.runcheck.ui.fullscreen.FullscreenChartSeedStore
 import com.runcheck.ui.fullscreen.FullscreenChartUiState
 import com.runcheck.ui.fullscreen.sanitizeFullscreenMetric
 import com.runcheck.ui.fullscreen.sanitizeFullscreenPeriod
+import com.runcheck.ui.theme.domainColors
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
 import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
@@ -340,7 +341,7 @@ private fun NetworkHeroSection(
                             stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_dbm))
                         } ?: "—",
                     label = stringResource(R.string.network_signal_strength),
-                    lineColor = qualityColor,
+                    lineColor = MaterialTheme.domainColors.network,
                     accessibilityDescription =
                         stringResource(
                             R.string.a11y_chart_trend,
@@ -542,11 +543,13 @@ private fun SignalHistoryCard(
                 Text(
                     text = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${networkHistoryMetricLabel(metric)}",
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.domainColors.network,
                 )
                 TrendChart(
                     data = chartModel.chartData,
                     modifier = Modifier.fillMaxWidth(),
+                    lineColor = MaterialTheme.domainColors.network,
+                    fillColor = MaterialTheme.domainColors.network,
                     contentDescription = chartAccessibilitySummary,
                     yLabels = chartModel.yLabels.ifEmpty { null },
                     xLabels = chartModel.xLabels.ifEmpty { null },

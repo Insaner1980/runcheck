@@ -55,7 +55,6 @@ import androidx.compose.ui.util.lerp
 import com.runcheck.R
 import com.runcheck.ui.chart.calculateChartViewport
 import com.runcheck.ui.chart.chartValueFraction
-import com.runcheck.ui.chart.qualityZoneColorForValue
 import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.chartAxisTextStyle
 import com.runcheck.ui.theme.chartColors
@@ -119,29 +118,6 @@ private const val FADE_OUT_DURATION_MS = 300
 private const val TRANSITION_OVERLAP_MS = 200
 private const val SCAN_LINE_START_ALPHA = 0.5f
 private val MINIMUM_Y_LABEL_SPACING = 32.dp
-
-private fun buildTrendLineGradientStops(
-    data: List<Float>,
-    qualityZones: List<ChartQualityZone>?,
-    defaultColor: Color,
-): Array<Pair<Float, Color>>? {
-    if (qualityZones.isNullOrEmpty() || data.isEmpty()) return null
-
-    val colors =
-        data.map { value ->
-            qualityZoneColorForValue(value, qualityZones, defaultColor)
-        }
-    val uniqueColors = colors.distinct()
-    if (uniqueColors.size == 1) {
-        val solidColor = uniqueColors.first()
-        return arrayOf(0f to solidColor, 1f to solidColor)
-    }
-
-    val lastIndex = data.lastIndex.coerceAtLeast(1)
-    return Array(data.size) { index ->
-        (index.toFloat() / lastIndex).coerceIn(0f, 1f) to colors[index]
-    }
-}
 
 @Composable
 fun TrendChart(
@@ -398,12 +374,6 @@ fun TrendChart(
     val minVal = viewport?.minValue ?: 0f
     val maxVal = viewport?.maxValue ?: 1f
     val visibleQualityZones = viewport?.visibleZones.orEmpty()
-
-    // Compute per-point gradient color stops from quality zones
-    val lineGradientColors =
-        remember(chartData, qualityZones, lineColor) {
-            buildTrendLineGradientStops(chartData, qualityZones, lineColor)
-        }
 
     Box(modifier = modifier) {
         Canvas(
@@ -695,18 +665,7 @@ fun TrendChart(
                     )
                 }
 
-                if (lineGradientColors != null) {
-                    drawPath(
-                        path = linePath,
-                        brush =
-                            Brush.horizontalGradient(
-                                colorStops = lineGradientColors,
-                                startX = chartLeft,
-                                endX = dataRight.coerceAtLeast(chartLeft + 1f),
-                            ),
-                        style = Stroke(width = chartStyle.lineStrokeWidth.toPx(), cap = StrokeCap.Round),
-                    )
-                } else if (!linePath.isEmpty) {
+                if (!linePath.isEmpty) {
                     drawPath(
                         path = linePath,
                         color = lineColor,

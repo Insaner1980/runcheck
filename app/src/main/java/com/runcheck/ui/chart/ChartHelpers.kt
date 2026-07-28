@@ -518,25 +518,6 @@ fun storageQualityZones(metric: StorageHistoryMetric): List<ChartQualityZone>? {
     }
 }
 
-/**
- * Maps a [value] to the full-alpha color of the [ChartQualityZone] it falls within.
- * Zone colors are stored at low alpha (0.06f–0.08f) for background rendering;
- * this helper returns the color at full alpha, suitable for the data line.
- * Returns [defaultColor] when no zone matches.
- */
-fun qualityZoneColorForValue(
-    value: Float,
-    zones: List<ChartQualityZone>,
-    defaultColor: Color,
-): Color {
-    for (zone in zones) {
-        if (value >= zone.minValue && value <= zone.maxValue) {
-            return zone.color.copy(alpha = 1f)
-        }
-    }
-    return defaultColor
-}
-
 @Composable
 fun thermalHistoryMetricLabel(metric: ThermalHistoryMetric): String =
     when (metric) {
