@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -15,6 +16,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.style.TextOverflow
 import com.runcheck.R
 import com.runcheck.domain.insights.model.Insight
 import com.runcheck.ui.components.RuncheckEmptyState
@@ -38,10 +40,14 @@ fun InsightsCard(
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
         Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
         ) {
-            SectionHeader(text = stringResource(R.string.home_insights_section_title))
+            SectionHeader(
+                text = stringResource(R.string.home_insights_section_title),
+                modifier = Modifier.weight(1f),
+            )
             if (state.unseenInsightCount > 0) {
                 UnseenInsightsBadge(unseenInsightCount = state.unseenInsightCount)
             }
@@ -107,5 +113,7 @@ private fun UnseenInsightsBadge(unseenInsightCount: Int) {
                 ),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSecondaryContainer,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
     )
 }

@@ -84,25 +84,62 @@ class StableMaterialTopLevelSourceContractTest {
         val secondary = appDir.resolve("src/main/java/com/runcheck/ui/home/HomeSecondarySections.kt").readText()
 
         assertTrue(home.contains("HomeHealthHero("))
-        assertTrue(home.contains("RuncheckProgressGauge("))
+        assertTrue(home.contains("HeroGauge("))
+        assertTrue(home.contains("HealthScoreBreakdown("))
         assertTrue(home.contains("rememberFormattedDateTime("))
         assertTrue(home.contains("ConfidenceBadge("))
-        assertTrue(secondary.contains("BatteryGridCard("))
+        assertTrue(secondary.contains("BatteryMetricTile("))
+        assertTrue(secondary.contains("NetworkMetricTile("))
+        assertTrue(secondary.contains("ThermalMetricTile("))
+        assertTrue(secondary.contains("StorageMetricTile("))
+        assertEquals(4, secondary.countOccurrences("layout = MetricTileLayout.COMPACT"))
+        assertTrue(secondary.contains("homeMetricGridColumns("))
+        assertFalse(home.contains("RuncheckProgressGauge("))
+        assertFalse(secondary.contains("GridCard("))
         assertFalse(home.contains("BatteryHeroCard("))
         assertFalse(home.contains("HomeQuickToolsSection("))
         assertFalse(home.contains("HomeProStatusSection("))
         assertFalse(secondary.contains("ChargerGridCard("))
+        listOf(
+            "onNavigateToBattery",
+            "onNavigateToNetwork",
+            "onNavigateToThermal",
+            "onNavigateToStorage",
+            "onNavigateToInsights",
+        ).forEach { handler ->
+            assertTrue("$handler is missing", home.contains(handler) || secondary.contains(handler))
+        }
     }
 
     @Test
     fun `Tools uses one speed hero a bento grid and visible Pro locks`() {
         val tools = appDir.resolve("src/main/java/com/runcheck/ui/tools/ToolsScreen.kt").readText()
 
-        assertTrue(tools.contains("RuncheckActionCard("))
-        assertTrue(tools.contains("ToolsBentoGrid("))
+        assertInOrder(
+            source = tools,
+            tokens =
+                listOf(
+                    "RuncheckActionCard(",
+                    "ActionCard(",
+                    "ToolsBentoGrid(",
+                    "R.string.weekly_report_title",
+                    "LearnTopicLink(",
+                    "R.string.export_title",
+                ),
+        )
         assertTrue(tools.contains("locked = !hasProAccess"))
         assertTrue(tools.contains("subtitleStyle = GridCardSubtitleStyle.BODY"))
-        assertTrue(tools.contains("LearnTopicLink("))
+        listOf(
+            "onNavigateToSpeedTest",
+            "onNavigateToStorageCleanup",
+            "onNavigateToCharger",
+            "onNavigateToAppUsage",
+            "onNavigateToLearn",
+            "onNavigateToWeeklyReport",
+            "onNavigateToExport",
+        ).forEach { handler ->
+            assertTrue("$handler is missing", tools.contains(handler))
+        }
     }
 
     @Test

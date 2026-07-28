@@ -33,6 +33,7 @@ data class UiTokens(
     val proBadgeBackgroundAlpha: Float = 0.12f,
     val chartPlotMinimum: Dp = 180.dp,
     val heroGaugeStroke: Dp = 18.dp,
+    val homeHeroGaugeSize: Dp = 112.dp,
     val heroGaugeStartAngle: Float = 135f,
     val heroGaugeSweepAngle: Float = 270f,
     val statusPillMinWidth: Dp = 48.dp,

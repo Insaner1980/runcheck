@@ -75,6 +75,7 @@ fun HeroGauge(
     animationKey: String,
     modifier: Modifier = Modifier,
     confidence: Confidence? = null,
+    showDetails: Boolean = true,
 ) {
     val confidenceLabel = confidence?.let { stringResource(confidenceLabelResource(it)) }
     val presentation =
@@ -171,14 +172,16 @@ fun HeroGauge(
                 style = MaterialTheme.gaugeValueTextStyle,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            StatusPill(label = status, tone = StatusTone.NEUTRAL)
-            if (confidence != null) {
-                ConfidenceBadge(confidence = confidence)
+            if (showDetails) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                StatusPill(label = status, tone = StatusTone.NEUTRAL)
+                if (confidence != null) {
+                    ConfidenceBadge(confidence = confidence)
+                }
             }
         }
     }

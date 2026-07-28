@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Assessment
 import androidx.compose.material.icons.outlined.BatteryChargingFull
@@ -24,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.runcheck.R
+import com.runcheck.ui.components.ActionCard
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.GridCard
 import com.runcheck.ui.components.GridCardSubtitleStyle
@@ -33,6 +33,7 @@ import com.runcheck.ui.components.PrimaryTopBar
 import com.runcheck.ui.components.ProBadgePill
 import com.runcheck.ui.components.RuncheckActionCard
 import com.runcheck.ui.components.SectionHeader
+import com.runcheck.ui.theme.domainColors
 import com.runcheck.ui.theme.spacing
 
 @Composable
@@ -67,16 +68,31 @@ fun ToolsScreen(
                     onAction = onNavigateToSpeedTest,
                 )
 
+                ActionCard(
+                    icon = Icons.Outlined.CleaningServices,
+                    iconTint = MaterialTheme.domainColors.storage,
+                    title = stringResource(R.string.storage_cleanup_tools),
+                    subtitle = stringResource(R.string.tools_cleanup_subtitle),
+                    actionLabel = stringResource(R.string.tools_cleanup_action),
+                    onAction = onNavigateToStorageCleanup,
+                    locked = !hasProAccess,
+                )
+
                 SectionHeader(text = stringResource(R.string.tools_device_actions))
                 ToolsBentoGrid(
                     hasProAccess = hasProAccess,
-                    onNavigateToStorageCleanup = onNavigateToStorageCleanup,
                     onNavigateToCharger = onNavigateToCharger,
                     onNavigateToAppUsage = onNavigateToAppUsage,
-                    onNavigateToWeeklyReport = onNavigateToWeeklyReport,
                 )
 
-                SectionHeader(text = stringResource(R.string.tools_more))
+                SectionHeader(text = stringResource(R.string.tools_utilities))
+                ListRow(
+                    label = stringResource(R.string.weekly_report_title),
+                    icon = Icons.Outlined.Assessment,
+                    onClick = onNavigateToWeeklyReport,
+                    trailing = if (hasProAccess) null else ({ ProBadgePill() }),
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 LearnTopicLink(
                     label = stringResource(R.string.learn_screen_title),
                     onClick = onNavigateToLearn,
@@ -97,53 +113,27 @@ fun ToolsScreen(
 @Composable
 private fun ToolsBentoGrid(
     hasProAccess: Boolean,
-    onNavigateToStorageCleanup: () -> Unit,
     onNavigateToCharger: () -> Unit,
     onNavigateToAppUsage: () -> Unit,
-    onNavigateToWeeklyReport: () -> Unit,
 ) {
-    Column(
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-        ) {
-            ToolGridCard(
-                icon = Icons.Outlined.CleaningServices,
-                title = stringResource(R.string.storage_cleanup_tools),
-                subtitle = stringResource(R.string.tools_cleanup_subtitle),
-                locked = !hasProAccess,
-                onClick = onNavigateToStorageCleanup,
-            )
-            ToolGridCard(
-                icon = Icons.Outlined.BatteryChargingFull,
-                title = stringResource(R.string.charger_title),
-                subtitle = stringResource(R.string.tools_charger_subtitle),
-                locked = !hasProAccess,
-                onClick = onNavigateToCharger,
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-        ) {
-            ToolGridCard(
-                icon = Icons.Outlined.Apps,
-                title = stringResource(R.string.app_usage_title),
-                subtitle = stringResource(R.string.tools_app_usage_subtitle),
-                locked = !hasProAccess,
-                onClick = onNavigateToAppUsage,
-            )
-            ToolGridCard(
-                icon = Icons.Outlined.Assessment,
-                title = stringResource(R.string.weekly_report_title),
-                subtitle = stringResource(R.string.tools_weekly_report_subtitle),
-                locked = !hasProAccess,
-                onClick = onNavigateToWeeklyReport,
-            )
-        }
+        ToolGridCard(
+            icon = Icons.Outlined.BatteryChargingFull,
+            title = stringResource(R.string.charger_title),
+            subtitle = stringResource(R.string.tools_charger_subtitle),
+            locked = !hasProAccess,
+            onClick = onNavigateToCharger,
+        )
+        ToolGridCard(
+            icon = Icons.Outlined.Apps,
+            title = stringResource(R.string.app_usage_title),
+            subtitle = stringResource(R.string.tools_app_usage_subtitle),
+            locked = !hasProAccess,
+            onClick = onNavigateToAppUsage,
+        )
     }
 }
 

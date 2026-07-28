@@ -2,9 +2,9 @@ package com.runcheck.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,7 +13,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -26,10 +30,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,9 +50,9 @@ import com.runcheck.ui.common.resolve
 import com.runcheck.ui.common.scoreLabel
 import com.runcheck.ui.components.ConfidenceBadge
 import com.runcheck.ui.components.ContentContainer
+import com.runcheck.ui.components.HeroGauge
 import com.runcheck.ui.components.InfoBanner
 import com.runcheck.ui.components.PrimaryTopBar
-import com.runcheck.ui.components.RuncheckProgressGauge
 import com.runcheck.ui.components.RuncheckProgressSpinner
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.StatusPill
@@ -58,11 +64,10 @@ import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.pro.TrialExpirationModal
 import com.runcheck.ui.pro.TrialHomeCard
 import com.runcheck.ui.pro.TrialWelcomeSheet
-import com.runcheck.ui.theme.numericHeroDisplayTextStyle
-import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.runcheckHeroCardColors
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun HomeScreen(
@@ -87,7 +92,17 @@ fun HomeScreen(
     )
 
     Column(modifier = modifier.fillMaxSize()) {
-        PrimaryTopBar(title = stringResource(R.string.app_name))
+        PrimaryTopBar(
+            title = stringResource(R.string.app_name),
+            actions = {
+                IconButton(onClick = viewModel::refresh) {
+                    Icon(
+                        imageVector = Icons.Outlined.Refresh,
+                        contentDescription = stringResource(R.string.home_refresh),
+                    )
+                }
+            },
+        )
 
         when (val state = uiState) {
             is HomeUiState.Loading -> {
@@ -277,6 +292,8 @@ private fun HomeHealthHero(
     val status = HealthScore.statusFromScore(score)
     val statusLabel = scoreLabel(score)
     val scoreDescription = stringResource(R.string.a11y_health_score, score)
+    val useExpandedLayout = LocalDensity.current.fontScale >= 1.3f
+    val tokens = MaterialTheme.uiTokens
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -288,114 +305,201 @@ private fun HomeHealthHero(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
+                    .padding(MaterialTheme.spacing.base),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
         ) {
             SectionHeader(text = stringResource(R.string.home_health_score))
-            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                if (maxWidth < 280.dp) {
-                    Column(
+            if (useExpandedLayout) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+                ) {
+                    HomeHeroGauge(
+                        score = score,
+                        statusLabel = statusLabel,
+                        measurementConfidence = measurementConfidence,
+                        scoreDescription = scoreDescription,
+                        modifier = Modifier.size(tokens.homeHeroGaugeSize),
+                    )
+                    HealthScoreBreakdown(
+                        healthScore = healthScore,
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-                    ) {
-                        HealthScoreRing(
-                            score = score,
-                            scoreDescription = scoreDescription,
-                        )
-                        HealthHeroSummary(
-                            statusLabel = statusLabel,
-                            status = status,
-                            measurementTimestampMillis = measurementTimestampMillis,
-                            measurementConfidence = measurementConfidence,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        HealthScoreRing(
-                            score = score,
-                            scoreDescription = scoreDescription,
-                        )
-                        HealthHeroSummary(
-                            statusLabel = statusLabel,
-                            status = status,
-                            measurementTimestampMillis = measurementTimestampMillis,
-                            measurementConfidence = measurementConfidence,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    HomeHeroGauge(
+                        score = score,
+                        statusLabel = statusLabel,
+                        measurementConfidence = measurementConfidence,
+                        scoreDescription = scoreDescription,
+                        modifier = Modifier.size(tokens.homeHeroGaugeSize),
+                    )
+                    HealthScoreBreakdown(
+                        healthScore = healthScore,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
+            HealthMeasurementRow(
+                statusLabel = statusLabel,
+                status = status,
+                measurementTimestampMillis = measurementTimestampMillis,
+                measurementConfidence = measurementConfidence,
+                stackContent = useExpandedLayout,
+            )
         }
     }
 }
 
 @Composable
-private fun HealthScoreRing(
+private fun HomeHeroGauge(
     score: Int,
-    scoreDescription: String,
-) {
-    RuncheckProgressGauge(
-        progress = score / 100f,
-        contentDescription = scoreDescription,
-        modifier = Modifier.size(148.dp),
-    ) {
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                text = score.toString(),
-                style = MaterialTheme.numericHeroDisplayTextStyle,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = stringResource(R.string.unit_per_hundred),
-                style = MaterialTheme.numericHeroDisplayUnitTextStyle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = MaterialTheme.spacing.sm),
-            )
-        }
-    }
-}
-
-@Composable
-private fun HealthHeroSummary(
     statusLabel: String,
-    status: HealthStatus,
-    measurementTimestampMillis: Long,
     measurementConfidence: Confidence,
+    scoreDescription: String,
     modifier: Modifier = Modifier,
 ) {
-    val formattedMeasurementTime =
-        rememberFormattedDateTime(measurementTimestampMillis, "MMMdhm")
+    HeroGauge(
+        value = score.toFloat(),
+        label = stringResource(R.string.home_health_score),
+        status = statusLabel,
+        accent = MaterialTheme.colorScheme.onSurface,
+        contentDescription = scoreDescription,
+        animationKey = "home-health-score",
+        confidence = measurementConfidence,
+        showDetails = false,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun HealthScoreBreakdown(
+    healthScore: HealthScore,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
-        StatusPill(
-            label = statusLabel,
-            tone = status.toStatusTone(),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+        ) {
+            HealthSubscore(
+                label = stringResource(R.string.home_battery_card),
+                score = healthScore.batteryScore,
+            )
+            HealthSubscore(
+                label = stringResource(R.string.home_network_card),
+                score = healthScore.networkScore,
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+        ) {
+            HealthSubscore(
+                label = stringResource(R.string.home_thermal_card),
+                score = healthScore.thermalScore,
+            )
+            HealthSubscore(
+                label = stringResource(R.string.home_storage_card),
+                score = healthScore.storageScore,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RowScope.HealthSubscore(
+    label: String,
+    score: Int,
+) {
+    Column(
+        modifier =
+            Modifier
+                .weight(1f)
+                .semantics(mergeDescendants = true) {},
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xxs),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
         Text(
-            text =
-                stringResource(
-                    R.string.home_health_measured_at,
-                    formattedMeasurementTime,
-                ),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            text = stringResource(R.string.home_subscore_value, score.coerceIn(0, 100)),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
         )
+    }
+}
+
+@Composable
+private fun HealthMeasurementRow(
+    statusLabel: String,
+    status: HealthStatus,
+    measurementTimestampMillis: Long,
+    measurementConfidence: Confidence,
+    stackContent: Boolean,
+) {
+    val formattedMeasurementTime =
+        rememberFormattedDateTime(measurementTimestampMillis, "MMMdhm")
+    val measuredAt =
+        stringResource(
+            R.string.home_health_measured_at,
+            formattedMeasurementTime,
+        )
+    if (stackContent) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+        ) {
+            StatusPill(
+                label = statusLabel,
+                tone = status.toStatusTone(),
+            )
+            Text(
+                text = measuredAt,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
+            ) {
+                Text(
+                    text = stringResource(R.string.home_health_confidence_label),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                ConfidenceBadge(confidence = measurementConfidence)
+            }
+        }
+    } else {
         Row(
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            StatusPill(
+                label = statusLabel,
+                tone = status.toStatusTone(),
+            )
             Text(
-                text = stringResource(R.string.home_health_confidence_label),
-                style = MaterialTheme.typography.labelMedium,
+                text = measuredAt,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             ConfidenceBadge(confidence = measurementConfidence)
         }

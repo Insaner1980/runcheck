@@ -50,6 +50,11 @@ enum class MetricTileState {
     UNAVAILABLE,
 }
 
+enum class MetricTileLayout {
+    STANDARD,
+    COMPACT,
+}
+
 internal data class MetricTilePresentation(
     val displayValue: String,
     val statusLabel: String?,
@@ -131,6 +136,7 @@ fun MetricTile(
     statusTone: StatusTone = StatusTone.NEUTRAL,
     confidence: Confidence? = null,
     onClick: (() -> Unit)? = null,
+    layout: MetricTileLayout = MetricTileLayout.STANDARD,
 ) {
     val loadingLabel = stringResource(R.string.a11y_loading)
     val unavailableLabel = stringResource(R.string.not_available)
@@ -151,6 +157,19 @@ fun MetricTile(
         )
     val accent = domain.accentColor()
     val icon = domain.outlinedIcon()
+    val isCompact = layout == MetricTileLayout.COMPACT
+    val contentPadding =
+        if (isCompact) {
+            MaterialTheme.spacing.base
+        } else {
+            MaterialTheme.spacing.cardInternal
+        }
+    val contentGap =
+        if (isCompact) {
+            MaterialTheme.spacing.sm
+        } else {
+            MaterialTheme.spacing.cardGap
+        }
     val clickModifier =
         if (onClick == null) {
             Modifier
@@ -177,8 +196,8 @@ fun MetricTile(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.cardInternal),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.cardGap),
+                    .padding(contentPadding),
+            verticalArrangement = Arrangement.spacedBy(contentGap),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -189,6 +208,8 @@ fun MetricTile(
                     icon = icon,
                     tint = accent,
                     backgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    size = if (isCompact) tokens.compactIconCircle else tokens.iconCircle,
+                    iconSize = if (isCompact) tokens.iconLarge else tokens.iconCircleInner,
                 )
                 Text(
                     text = label,
@@ -224,15 +245,53 @@ fun MetricTile(
                     }
                 }
             }
-            MetricTileReservedSlot(visibility = slotPolicy.status) {
-                StatusPill(
-                    label = presentation.statusLabel ?: unavailableLabel,
-                    tone = if (state == MetricTileState.UNAVAILABLE) StatusTone.UNAVAILABLE else statusTone,
-                )
-            }
+            MetricTileMetadata(
+                slotPolicy = slotPolicy,
+                statusLabel = presentation.statusLabel ?: unavailableLabel,
+                statusTone = if (state == MetricTileState.UNAVAILABLE) StatusTone.UNAVAILABLE else statusTone,
+                confidence = confidence,
+                horizontal = isCompact,
+                showConfidenceSlot = !isCompact || confidence != null,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MetricTileMetadata(
+    slotPolicy: MetricTileSlotPolicy,
+    statusLabel: String,
+    statusTone: StatusTone,
+    confidence: Confidence?,
+    horizontal: Boolean,
+    showConfidenceSlot: Boolean,
+) {
+    val content: @Composable () -> Unit = {
+        MetricTileReservedSlot(visibility = slotPolicy.status) {
+            StatusPill(
+                label = statusLabel,
+                tone = statusTone,
+            )
+        }
+        if (showConfidenceSlot) {
             MetricTileReservedSlot(visibility = slotPolicy.confidence) {
                 ConfidenceBadge(confidence = confidence ?: Confidence.HIGH)
             }
+        }
+    }
+    if (horizontal) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            content()
+        }
+    } else {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.cardGap),
+        ) {
+            content()
         }
     }
 }

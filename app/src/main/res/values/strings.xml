@@ -13,6 +13,8 @@
     <string name="tools_speed_test_action">Run speed test</string>
     <string name="tools_device_actions">Device tools</string>
     <string name="tools_cleanup_subtitle">Find space to review</string>
+    <string name="tools_cleanup_action">Review storage</string>
+    <string name="tools_utilities">Utilities</string>
     <string name="tools_charger_subtitle">Compare saved chargers</string>
     <string name="tools_app_usage_subtitle">Review recent foreground use</string>
     <string name="tools_weekly_report_subtitle">See your weekly summary</string>
@@ -80,9 +82,13 @@
     <string name="home_pro_title">Unlock runcheck Pro</string>
     <string name="home_chargers_desc">Test &amp; compare your chargers</string>
     <string name="home_health_score">HEALTH SCORE</string>
+    <string name="home_refresh">Refresh device health</string>
+    <string name="home_subscore_value">%1$d/100</string>
     <string name="home_health_measured_at">Measured %1$s</string>
     <string name="home_health_confidence_label">Battery current confidence</string>
     <string name="home_storage_used">%1$d%% used</string>
+    <string name="home_storage_used_unit">%% used</string>
+    <string name="home_network_connection_unit">connection</string>
     <string name="home_device_good_shape">Your device is in %1$s shape.</string>
     <string name="home_temp_elevated">Temperature is slightly elevated.</string>
     <string name="home_quick_tools">QUICK TOOLS</string>

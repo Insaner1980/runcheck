@@ -21,6 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import com.runcheck.R
 import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.runcheckOutlinedCardBorder
@@ -36,10 +40,24 @@ fun ActionCard(
     onAction: () -> Unit,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
+    locked: Boolean = false,
 ) {
     val tokens = MaterialTheme.uiTokens
+    val lockedStateDescription =
+        if (locked) {
+            stringResource(R.string.a11y_locked_pro_feature)
+        } else {
+            null
+        }
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .semantics {
+                    if (lockedStateDescription != null) {
+                        stateDescription = lockedStateDescription
+                    }
+                },
         colors = runcheckCardColors(),
         border = runcheckOutlinedCardBorder(),
         elevation = runcheckCardElevation(),
@@ -74,6 +92,9 @@ fun ActionCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+            }
+            if (locked) {
+                ProBadgePill()
             }
             TextButton(onClick = onAction) {
                 Text(actionLabel)
