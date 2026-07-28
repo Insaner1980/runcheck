@@ -2,7 +2,6 @@ package com.runcheck.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,7 +39,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -366,15 +364,10 @@ fun RuncheckProgressSpinner(
             progressBarRangeInfo = ProgressBarRangeInfo.Indeterminate
         }
     if (reducedMotion) {
-        Canvas(modifier = indicatorModifier.size(MaterialTheme.uiTokens.touchTarget)) {
-            drawCircle(
-                color = indicatorColor,
-                style =
-                    Stroke(
-                        width = 4.dp.toPx(),
-                    ),
-            )
-        }
+        StaticProgressIndicator(
+            modifier = indicatorModifier,
+            color = indicatorColor,
+        )
     } else {
         CircularProgressIndicator(
             modifier = indicatorModifier,

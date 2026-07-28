@@ -183,7 +183,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeContent(
+internal fun HomeContent(
     state: HomeUiState.Success,
     onNavigateToBattery: () -> Unit,
     onNavigateToNetwork: () -> Unit,
@@ -225,9 +225,9 @@ private fun HomeContent(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
         ) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
 
             if (state.monitoringStale) {
                 InfoBanner(
@@ -239,6 +239,7 @@ private fun HomeContent(
                         onNavigateToLearnArticle(LearnArticleIds.BACKGROUND_MONITORING)
                     },
                 )
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
             }
 
             HomeHealthHero(
@@ -246,6 +247,7 @@ private fun HomeContent(
                 measurementTimestampMillis = state.measurementTimestampMillis,
                 measurementConfidence = state.batteryState.currentMa.confidence,
             )
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
 
             HomeGridSection(
                 state = state,
@@ -255,6 +257,7 @@ private fun HomeContent(
                 onNavigateToThermal = onNavigateToThermal,
                 onNavigateToStorage = onNavigateToStorage,
             )
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
 
             InsightsCard(
                 state =
@@ -269,6 +272,7 @@ private fun HomeContent(
             )
 
             if (state.proState.status == ProStatus.TRIAL_ACTIVE) {
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
                 TrialHomeCard(
                     proState = state.proState,
                     onNavigateToProUpgrade = onNavigateToProUpgrade,

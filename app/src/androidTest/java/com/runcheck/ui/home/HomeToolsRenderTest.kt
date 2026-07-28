@@ -184,6 +184,58 @@ class HomeToolsRenderTest {
         assertEquals(1, viewAllClicks)
     }
 
+    @Test
+    fun initialCompactHomeViewportNeverOrphansInsightsHeader() {
+        ThemeMode.entries.forEach { themeMode ->
+            renderCompose(
+                widthPx = COMPACT_WIDTH,
+                heightPx = HOME_INITIAL_CONTENT_HEIGHT,
+            ) {
+                NormalFontTheme(themeMode = themeMode) {
+                    HomeContent(
+                        state = homeState,
+                        onNavigateToBattery = {},
+                        onNavigateToNetwork = {},
+                        onNavigateToThermal = {},
+                        onNavigateToStorage = {},
+                        onNavigateToCharger = {},
+                        onNavigateToAppUsage = {},
+                        onNavigateToInsights = {},
+                        onDismissInsight = {},
+                        onNavigateToProUpgrade = {},
+                        onNavigateToLearnArticle = {},
+                    )
+                }
+            }.use { rendered ->
+                val viewport = rendered.viewBounds()
+                val headers =
+                    rendered
+                        .nodesWithOwnTextContaining("INSIGHTS")
+                        .filter { it.isHeading }
+                val emptyStates = rendered.nodesWithOwnTextContaining("No active insights")
+
+                assertEquals(
+                    "$themeMode must expose the Insights header with its empty state or keep both below the fold",
+                    headers.isNotEmpty(),
+                    emptyStates.isNotEmpty(),
+                )
+                if (headers.isNotEmpty()) {
+                    val headerBounds = Rect().also(headers.first()::getBoundsInScreen)
+                    val emptyStateBounds = Rect().also(emptyStates.first()::getBoundsInScreen)
+                    val headerVisible = Rect.intersects(viewport, headerBounds)
+                    val emptyStateVisible = Rect.intersects(viewport, emptyStateBounds)
+
+                    assertEquals(
+                        "$themeMode must show the Insights header with its empty state or keep both below the fold",
+                        headerVisible,
+                        emptyStateVisible,
+                    )
+                }
+                rendered.capturePng("home-$themeMode-empty-initial-content-411x638.png")
+            }
+        }
+    }
+
     private val homeState: HomeUiState.Success by lazy {
         val battery =
             BatteryState(
@@ -235,11 +287,14 @@ class HomeToolsRenderTest {
     }
 
     @androidx.compose.runtime.Composable
-    private fun NormalFontTheme(content: @androidx.compose.runtime.Composable () -> Unit) {
+    private fun NormalFontTheme(
+        themeMode: ThemeMode = ThemeMode.DARK,
+        content: @androidx.compose.runtime.Composable () -> Unit,
+    ) {
         CompositionLocalProvider(
             LocalDensity provides Density(density = 1f, fontScale = 1f),
         ) {
-            RuncheckTheme(themeMode = ThemeMode.DARK, content = content)
+            RuncheckTheme(themeMode = themeMode, content = content)
         }
     }
 
@@ -256,6 +311,7 @@ class HomeToolsRenderTest {
         const val COMPACT_WIDTH = 411
         const val HERO_TEST_HEIGHT = 600
         const val HOME_GRID_TEST_HEIGHT = 700
+        const val HOME_INITIAL_CONTENT_HEIGHT = 638
         const val TOOLS_TEST_HEIGHT = 1_600
         const val INSIGHTS_TEST_HEIGHT = 500
         const val LARGE_GAUGE_MINIMUM_PX = 140

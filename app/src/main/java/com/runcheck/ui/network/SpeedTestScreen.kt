@@ -676,7 +676,7 @@ private fun SpeedTestStageItem(
 // ── Combined metrics card (2x2 grid) ─────────────────────────────────────────────
 
 @Composable
-private fun SpeedMetricsCard(
+internal fun SpeedMetricsCard(
     state: SpeedTestUiState,
     onInfoClick: (String) -> Unit = {},
 ) {
@@ -692,8 +692,7 @@ private fun SpeedMetricsCard(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-                    .semantics { liveRegion = LiveRegionMode.Polite },
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // Row 1: Download + Upload

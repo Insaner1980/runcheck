@@ -40,6 +40,7 @@ data class UiTokens(
     val heroGaugeSweepAngle: Float = 270f,
     val statusPillMinWidth: Dp = 48.dp,
     val statusPillMinHeight: Dp = 32.dp,
+    val progressIndicatorStrokeWidth: Dp = 4.dp,
 )
 
 val LocalUiTokens = staticCompositionLocalOf { UiTokens() }

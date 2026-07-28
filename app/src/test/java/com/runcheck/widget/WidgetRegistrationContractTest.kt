@@ -26,6 +26,7 @@ class WidgetRegistrationContractTest {
         val info = quickInfo.readText()
         assertTrue(info.contains("""android:targetCellWidth="4""""))
         assertTrue(info.contains("""android:targetCellHeight="2""""))
+        assertTrue(info.contains("""android:minWidth="110dp""""))
         assertTrue(info.contains("""android:previewLayout="@layout/widget_quick_glance_preview""""))
     }
 

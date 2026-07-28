@@ -1017,7 +1017,7 @@ private fun calculateDrainRate(history: List<BatteryReading>): Float? {
 }
 
 @Composable
-private fun BatteryHistoryPanel(
+internal fun BatteryHistoryPanel(
     state: BatteryUiState.Success,
     selectedMetric: BatteryHistoryMetric,
     onMetricChange: (BatteryHistoryMetric) -> Unit,

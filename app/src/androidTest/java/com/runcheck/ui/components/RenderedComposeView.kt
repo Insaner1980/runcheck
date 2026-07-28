@@ -3,6 +3,7 @@ package com.runcheck.ui.components
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Rect
+import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.view.ViewGroup
 import android.view.accessibility.AccessibilityNodeInfo
@@ -13,6 +14,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.runcheck.MainActivity
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import java.io.File
+import java.io.FileOutputStream
 
 internal fun renderCompose(
     widthPx: Int? = null,
@@ -148,6 +151,30 @@ internal class RenderedComposeView(
         return bitmap
     }
 
+    fun capturePng(fileName: String): File {
+        require(fileName.endsWith(".png"))
+        require('/' !in fileName && '\\' !in fileName)
+        val outputDirectory =
+            File(
+                InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir(null),
+                "phase-eight-evidence",
+            ).apply { mkdirs() }
+        val outputFile = File(outputDirectory, fileName)
+        FileOutputStream(outputFile).use { output ->
+            check(captureBitmap().compress(Bitmap.CompressFormat.PNG, 100, output))
+        }
+        val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        listOf(
+            "mkdir -p $SHARED_EVIDENCE_DIRECTORY",
+            "cp ${outputFile.absolutePath} $SHARED_EVIDENCE_DIRECTORY/$fileName",
+        ).forEach { command ->
+            ParcelFileDescriptor.AutoCloseInputStream(uiAutomation.executeShellCommand(command)).use { output ->
+                output.readBytes()
+            }
+        }
+        return outputFile
+    }
+
     private fun accessibilityRoot(): AccessibilityNodeInfo {
         repeat(20) {
             InstrumentationRegistry
@@ -163,6 +190,8 @@ internal class RenderedComposeView(
         scenario.close()
     }
 }
+
+private const val SHARED_EVIDENCE_DIRECTORY = "/sdcard/Download/runcheck-phase-eight"
 
 private fun AccessibilityNodeInfo.allNodes(): List<AccessibilityNodeInfo> {
     val nodes = mutableListOf<AccessibilityNodeInfo>()
