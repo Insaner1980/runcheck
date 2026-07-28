@@ -30,6 +30,19 @@ class WidgetRegistrationContractTest {
     }
 
     @Test
+    fun `preview layouts use only remote views compatible spacing`() {
+        listOf(
+            "widget_battery_preview.xml",
+            "widget_health_preview.xml",
+            "widget_quick_glance_preview.xml",
+        ).forEach { fileName ->
+            val preview = appDir.resolve("src/main/res/layout/$fileName").readText()
+
+            assertFalse("$fileName must not use unsupported Space views", preview.contains("<Space"))
+        }
+    }
+
+    @Test
     fun `battery widget declares usable minimum bounds matched by responsive policy`() {
         val info = appDir.resolve("src/main/res/xml/battery_widget_info.xml").readText()
         val battery = appDir.resolve("src/main/java/com/runcheck/widget/BatteryWidget.kt").readText()
@@ -86,11 +99,11 @@ class WidgetRegistrationContractTest {
         val dayColors = appDir.resolve("src/main/res/values/colors.xml").readText()
         val nightColors = appDir.resolve("src/main/res/values-night/colors.xml").readText()
 
-        assertTrue(common.contains("ColorProvider(day ="))
-        assertTrue(common.contains("night ="))
+        assertTrue(common.contains("ColorProvider(R.color.widget_primary)"))
+        assertFalse(common.contains("androidx.compose.ui.graphics.Color"))
         assertFalse(common.contains("ThemeMode"))
-        assertTrue(dayColors.contains("""name="widget_background">#E9EFF1"""))
-        assertTrue(nightColors.contains("""name="widget_background">#133040"""))
+        assertTrue(dayColors.contains("""name="widget_background">#FFFFFF"""))
+        assertTrue(nightColors.contains("""name="widget_background">#0D2229"""))
     }
 
     @Test

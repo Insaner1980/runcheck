@@ -1,5 +1,7 @@
 package com.runcheck.ui.components
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Rect
 import android.os.SystemClock
 import android.view.ViewGroup
@@ -136,6 +138,14 @@ internal class RenderedComposeView(
             location[0] + composeView.width,
             location[1] + composeView.height,
         )
+    }
+
+    fun captureBitmap(): Bitmap {
+        val bitmap = Bitmap.createBitmap(composeView.width, composeView.height, Bitmap.Config.ARGB_8888)
+        scenario.onActivity {
+            composeView.draw(Canvas(bitmap))
+        }
+        return bitmap
     }
 
     private fun accessibilityRoot(): AccessibilityNodeInfo {

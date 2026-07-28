@@ -3,7 +3,6 @@ package com.runcheck.widget
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -13,7 +12,6 @@ import androidx.glance.action.clickable
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.background
-import androidx.glance.color.ColorProvider
 import androidx.glance.color.ColorProviders
 import androidx.glance.color.colorProviders
 import androidx.glance.layout.Alignment
@@ -23,88 +21,59 @@ import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider
 import com.runcheck.MainActivity
 import com.runcheck.R
 import com.runcheck.domain.model.HealthStatus
 import com.runcheck.service.monitor.NotificationHelper
 import com.runcheck.ui.navigation.Screen
-import com.runcheck.ui.theme.AccentAmber
-import com.runcheck.ui.theme.AccentBlue
-import com.runcheck.ui.theme.AccentRed
-import com.runcheck.ui.theme.AccentTeal
-import com.runcheck.ui.theme.BgCard
-import com.runcheck.ui.theme.BgIconCircle
-import com.runcheck.ui.theme.BgPage
-import com.runcheck.ui.theme.LightBackground
-import com.runcheck.ui.theme.LightError
-import com.runcheck.ui.theme.LightOnSurface
-import com.runcheck.ui.theme.LightOnSurfaceVariant
-import com.runcheck.ui.theme.LightOutline
-import com.runcheck.ui.theme.LightOutlineVariant
-import com.runcheck.ui.theme.LightPrimary
-import com.runcheck.ui.theme.LightSecondary
-import com.runcheck.ui.theme.LightSurface
-import com.runcheck.ui.theme.LightSurfaceContainer
-import com.runcheck.ui.theme.LightSurfaceContainerHigh
-import com.runcheck.ui.theme.LightSurfaceContainerHighest
-import com.runcheck.ui.theme.StatusCritical
-import com.runcheck.ui.theme.StatusFair
-import com.runcheck.ui.theme.StatusHealthy
-import com.runcheck.ui.theme.StatusPoor
-import com.runcheck.ui.theme.TextMuted
-import com.runcheck.ui.theme.TextPrimary
-import com.runcheck.ui.theme.TextSecondary
-import com.runcheck.ui.theme.WidgetStatusCriticalNight
-import com.runcheck.ui.theme.WidgetStatusPoorNight
-import androidx.glance.unit.ColorProvider as GlanceColorProvider
 
 internal val RuncheckWidgetColors: ColorProviders =
     colorProviders(
-        primary = ColorProvider(day = LightPrimary, night = AccentBlue),
-        onPrimary = ColorProvider(day = LightSurface, night = BgPage),
-        primaryContainer = ColorProvider(day = LightSurfaceContainerHigh, night = BgIconCircle),
-        onPrimaryContainer = ColorProvider(day = LightOnSurface, night = TextPrimary),
-        secondary = ColorProvider(day = LightSecondary, night = AccentTeal),
-        onSecondary = ColorProvider(day = LightSurface, night = BgPage),
-        secondaryContainer = ColorProvider(day = LightSurfaceContainerHighest, night = BgIconCircle),
-        onSecondaryContainer = ColorProvider(day = LightOnSurface, night = TextPrimary),
-        tertiary = ColorProvider(day = LightPrimary, night = AccentBlue),
-        onTertiary = ColorProvider(day = LightSurface, night = BgPage),
-        tertiaryContainer = ColorProvider(day = LightSurfaceContainer, night = BgCard),
-        onTertiaryContainer = ColorProvider(day = LightOnSurface, night = TextPrimary),
-        error = ColorProvider(day = LightError, night = AccentRed),
-        errorContainer = ColorProvider(day = LightError, night = AccentRed),
-        onError = ColorProvider(day = LightSurface, night = BgPage),
-        onErrorContainer = ColorProvider(day = LightSurface, night = BgPage),
-        background = ColorProvider(day = LightBackground, night = BgPage),
-        onBackground = ColorProvider(day = LightOnSurface, night = TextPrimary),
-        surface = ColorProvider(day = LightSurface, night = BgPage),
-        onSurface = ColorProvider(day = LightOnSurface, night = TextPrimary),
-        surfaceVariant = ColorProvider(day = LightSurfaceContainerHighest, night = BgIconCircle),
-        onSurfaceVariant = ColorProvider(day = LightOnSurfaceVariant, night = TextSecondary),
-        outline = ColorProvider(day = LightOutline, night = TextMuted),
-        inverseOnSurface = ColorProvider(day = LightSurface, night = BgPage),
-        inverseSurface = ColorProvider(day = LightOnSurface, night = TextPrimary),
-        inversePrimary = ColorProvider(day = LightPrimary, night = AccentBlue),
-        widgetBackground = ColorProvider(day = LightSurfaceContainer, night = BgCard),
+        primary = ColorProvider(R.color.widget_primary),
+        onPrimary = ColorProvider(R.color.widget_on_primary),
+        primaryContainer = ColorProvider(R.color.widget_primary_container),
+        onPrimaryContainer = ColorProvider(R.color.widget_on_primary_container),
+        secondary = ColorProvider(R.color.widget_secondary),
+        onSecondary = ColorProvider(R.color.widget_on_secondary),
+        secondaryContainer = ColorProvider(R.color.widget_secondary_container),
+        onSecondaryContainer = ColorProvider(R.color.widget_on_secondary_container),
+        tertiary = ColorProvider(R.color.widget_tertiary),
+        onTertiary = ColorProvider(R.color.widget_on_tertiary),
+        tertiaryContainer = ColorProvider(R.color.widget_tertiary_container),
+        onTertiaryContainer = ColorProvider(R.color.widget_on_tertiary_container),
+        error = ColorProvider(R.color.widget_error),
+        errorContainer = ColorProvider(R.color.widget_error),
+        onError = ColorProvider(R.color.widget_on_error),
+        onErrorContainer = ColorProvider(R.color.widget_on_error),
+        background = ColorProvider(R.color.widget_page_background),
+        onBackground = ColorProvider(R.color.widget_on_surface),
+        surface = ColorProvider(R.color.widget_surface),
+        onSurface = ColorProvider(R.color.widget_on_surface),
+        surfaceVariant = ColorProvider(R.color.widget_surface_variant),
+        onSurfaceVariant = ColorProvider(R.color.widget_on_surface_variant),
+        outline = ColorProvider(R.color.widget_outline),
+        inverseOnSurface = ColorProvider(R.color.widget_surface),
+        inverseSurface = ColorProvider(R.color.widget_on_surface),
+        inversePrimary = ColorProvider(R.color.widget_primary),
+        widgetBackground = ColorProvider(R.color.widget_background),
     )
 
 internal data class WidgetStatusTone(
     val name: String,
-    val day: Color,
-    val night: Color,
+    val colorRes: Int,
 ) {
-    val provider: GlanceColorProvider = ColorProvider(day = day, night = night)
+    val provider: ColorProvider = ColorProvider(colorRes)
 }
 
 internal object RuncheckWidgetStatusPalette {
-    val healthy = WidgetStatusTone("healthy", StatusHealthy, AccentTeal)
-    val fair = WidgetStatusTone("fair", StatusFair, AccentAmber)
-    val poor = WidgetStatusTone("poor", StatusPoor, WidgetStatusPoorNight)
-    val critical = WidgetStatusTone("critical", StatusCritical, WidgetStatusCriticalNight)
+    val healthy = WidgetStatusTone("healthy", R.color.widget_status_healthy)
+    val fair = WidgetStatusTone("fair", R.color.widget_status_fair)
+    val poor = WidgetStatusTone("poor", R.color.widget_status_poor)
+    val critical = WidgetStatusTone("critical", R.color.widget_status_critical)
     val all = listOf(healthy, fair, poor, critical)
 
-    fun forHealthStatus(status: HealthStatus): GlanceColorProvider =
+    fun forHealthStatus(status: HealthStatus): ColorProvider =
         when (status) {
             HealthStatus.HEALTHY -> healthy.provider
             HealthStatus.FAIR -> fair.provider

@@ -2,7 +2,29 @@
 <resources>
     <color name="splash_background">#1A3A48</color>
     <color name="system_navigation_bar_contrast_scrim">#8016262C</color>
-    <color name="widget_background">#E9EFF1</color>
-    <color name="widget_on_surface">#16262C</color>
-    <color name="widget_on_surface_variant">#4E6570</color>
+    <color name="widget_page_background">#DDE6EA</color>
+    <color name="widget_background">#FFFFFF</color>
+    <color name="widget_surface">#FFFFFF</color>
+    <color name="widget_surface_variant">#E8EFF2</color>
+    <color name="widget_on_surface">#172A32</color>
+    <color name="widget_on_surface_variant">#405A64</color>
+    <color name="widget_outline">#7A939D</color>
+    <color name="widget_primary">#0B63B0</color>
+    <color name="widget_on_primary">#FFFFFF</color>
+    <color name="widget_primary_container">#E8EFF2</color>
+    <color name="widget_on_primary_container">#172A32</color>
+    <color name="widget_secondary">#007A66</color>
+    <color name="widget_on_secondary">#FFFFFF</color>
+    <color name="widget_secondary_container">#E8EFF2</color>
+    <color name="widget_on_secondary_container">#172A32</color>
+    <color name="widget_tertiary">#9B5C00</color>
+    <color name="widget_on_tertiary">#FFFFFF</color>
+    <color name="widget_tertiary_container">#FFFFFF</color>
+    <color name="widget_on_tertiary_container">#172A32</color>
+    <color name="widget_error">#B3261E</color>
+    <color name="widget_on_error">#FFFFFF</color>
+    <color name="widget_status_healthy">#006B57</color>
+    <color name="widget_status_fair">#795F00</color>
+    <color name="widget_status_poor">#9C4E00</color>
+    <color name="widget_status_critical">#B3261E</color>
 </resources>

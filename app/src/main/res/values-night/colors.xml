@@ -1,6 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="widget_background">#133040</color>
-    <color name="widget_on_surface">#F4F7F8</color>
-    <color name="widget_on_surface_variant">#B5C7CE</color>
+    <color name="widget_page_background">#08171C</color>
+    <color name="widget_background">#0D2229</color>
+    <color name="widget_surface">#08171C</color>
+    <color name="widget_surface_variant">#183D47</color>
+    <color name="widget_on_surface">#F4FAFC</color>
+    <color name="widget_on_surface_variant">#A9BEC6</color>
+    <color name="widget_outline">#789099</color>
+    <color name="widget_primary">#4EA8F5</color>
+    <color name="widget_on_primary">#08171C</color>
+    <color name="widget_primary_container">#183D47</color>
+    <color name="widget_on_primary_container">#F4FAFC</color>
+    <color name="widget_secondary">#35DDBE</color>
+    <color name="widget_on_secondary">#08171C</color>
+    <color name="widget_secondary_container">#183D47</color>
+    <color name="widget_on_secondary_container">#F4FAFC</color>
+    <color name="widget_tertiary">#FFB627</color>
+    <color name="widget_on_tertiary">#08171C</color>
+    <color name="widget_tertiary_container">#123039</color>
+    <color name="widget_on_tertiary_container">#F4FAFC</color>
+    <color name="widget_error">#F06040</color>
+    <color name="widget_on_error">#08171C</color>
+    <color name="widget_status_healthy">#35DDBE</color>
+    <color name="widget_status_fair">#FFB627</color>
+    <color name="widget_status_poor">#FFB77D</color>
+    <color name="widget_status_critical">#FFB4AB</color>
 </resources>

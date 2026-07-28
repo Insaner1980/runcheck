@@ -21,6 +21,7 @@ import androidx.glance.appwidget.provideContent
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
+import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
@@ -377,7 +378,7 @@ private fun QuickGlanceCell(
     Column(
         modifier =
             modifier
-                .fillMaxSize()
+                .fillMaxHeight()
                 .clickable(actionStartActivity(widgetNavigationIntent(context, model.metric.route)))
                 .semantics {
                     contentDescription = model.accessibilityLabel
