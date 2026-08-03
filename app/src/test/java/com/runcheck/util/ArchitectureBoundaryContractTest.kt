@@ -1,5 +1,6 @@
 package com.runcheck.util
 
+import com.runcheck.testutil.findRootDir
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Files
@@ -93,10 +94,4 @@ class ArchitectureBoundaryContractTest {
         val lineNumber: Int,
         val line: String,
     )
-
-    private fun findRootDir(): Path {
-        val start = Paths.get("").toAbsolutePath()
-        return generateSequence(start) { it.parent }
-            .first { Files.exists(it.resolve("gradle/libs.versions.toml")) }
-    }
 }

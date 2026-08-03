@@ -1048,38 +1048,37 @@ Health breakdown row:
 - A disconnected network row shows `Unrated` with the unavailable status color instead of `0%` with critical styling.
 - Numeric value: `titleMedium` with JetBrains Mono.
 
-Battery hero card on Home:
+Home status mosaic:
 
-- Card background: default `surfaceContainer`.
-- Padding: 24dp horizontal, 16dp vertical.
-- Header: `SectionHeader`.
-- Numeric battery value: 54sp `numericHeroLargeValueTextStyle`.
-- Percent unit: `headlineLarge` using numeric font.
-- Unit padding: start 2dp, bottom 12dp.
-- Decorative battery icon wrapper: 130dp.
-- Metrics row gap: 12dp.
-
-Home battery charge icon:
-
-- Canvas size: 80dp by 124dp.
-- Battery cap: 18dp by 5dp.
-- Cap radius: 2dp.
-- Body top offset: cap height + 1dp.
-- Body stroke: 2dp.
-- Body corner radius: 12dp.
-- Fill inset: 4dp.
-- Fill corner radius: 8dp.
-- Charging wave amplitude: 3dp.
-- Charging loop duration: 2000ms linear.
-- Wave is disabled by reduced motion.
-- Text inside uses `labelLarge`, numeric font, bold.
-- Icon semantics cleared.
-
-Home grid:
-
-- Wide layout: one row of four `GridCard`s with 8dp gaps.
-- Compact layout: two rows; row gap 12dp, column gap 8dp.
-- Grid cards use equal weights.
+- Fixed two-column layout with 12dp gaps and an effective 20dp page inset.
+- Slot A spans both columns and has a 168dp minimum height.
+- Slot B is the left column below A and has a 268dp minimum height.
+- Slots C and D stack in the right column and each have a 128dp minimum
+  height.
+- Battery always occupies B. Network, Thermal, and Storage are sorted by their
+  measurement assessment, worst first, into A, C, and D. Equal severities use
+  Network, Thermal, Storage order.
+- Healthy tiles use the fixed category color at full saturation: Battery
+  `#3EA391`, Network `#5A96C9`, Thermal `#CE8A45`, Storage `#8A9A38`.
+- Healthy tile text uses the page background color at full opacity.
+- Fair, Poor, and Critical tiles use `surfaceContainer`. Their category and
+  context use `onSurfaceVariant`, values use `onSurface`, and the status word
+  uses the matching status color.
+- All tile typography, including numeric values and suffixes, uses Manrope.
+- Network shows signal dBm as the main value, followed after 6dp by the Wi-Fi
+  standard or the mobile generation/carrier descriptor in the slot suffix
+  style.
+- Battery tier comes from `batteryScore`; Network from `signalQuality`; Thermal
+  from the existing temperature thresholds; Storage from the existing usage
+  thresholds.
+- Tile corners are 22dp.
+- Tile padding is 18dp top, 17dp horizontal, and 20dp bottom.
+- Category labels stay at the top and value blocks stay pinned to the bottom.
+- Tiles have no icons, badges, borders, dividers, overlays, or decorative
+  status marks.
+- Each tile opens its matching detail screen.
+- Slot-specific type scales live in `Type.kt`; mosaic dimensions live in
+  `UiTokens`.
 
 Quick tools:
 
@@ -2269,7 +2268,7 @@ UI behavior:
 - Cleanup bottom spacer is 80dp to clear the bottom action bar.
 - Open-source licenses dialog text is capped at 420dp height.
 - Fullscreen empty content is capped at 420dp width.
-- Home grid changes layout at 600dp screen width.
+- Home status mosaic keeps the same slot geometry at every screen width.
 - `ContentContainer` caps content at 600dp even on wider screens.
 - `BgCardDeep` exists and is used for hero cards, even though the older
   background table may not mention it.

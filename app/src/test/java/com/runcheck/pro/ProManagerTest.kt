@@ -55,6 +55,34 @@ class ProManagerTest {
         Dispatchers.resetMain()
     }
 
+    private fun configureAccess(
+        trialState: TrialState,
+        purchased: Boolean,
+        initializeResult: Boolean = trialState.isActive,
+    ) {
+        coEvery { trialManager.initialize() } returns initializeResult
+        trialStateFlow.value = trialState
+        isProUserFlow.value = purchased
+    }
+
+    private fun activeTrialState(
+        daysRemaining: Int,
+        startTimestamp: Long = System.currentTimeMillis(),
+    ): TrialState =
+        TrialState(
+            isActive = true,
+            daysRemaining = daysRemaining,
+            startTimestamp = startTimestamp,
+            isFirstLaunch = false,
+        )
+
+    private fun expiredTrialState(ageDays: Long): TrialState =
+        TrialState(
+            isActive = false,
+            daysRemaining = 0,
+            startTimestamp = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(ageDays),
+        )
+
     @Test
     fun `initial state before initialize is default ProState`() {
         val state = proManager.proState.value
@@ -92,15 +120,7 @@ class ProManagerTest {
     fun `trial started and within period emits TRIAL_ACTIVE`() =
         runTest(testDispatcher) {
             val trialStart = System.currentTimeMillis()
-            coEvery { trialManager.initialize() } returns true
-            trialStateFlow.value =
-                TrialState(
-                    isActive = true,
-                    daysRemaining = 5,
-                    startTimestamp = trialStart,
-                    isFirstLaunch = false,
-                )
-            isProUserFlow.value = false
+            configureAccess(activeTrialState(daysRemaining = 5, startTimestamp = trialStart), purchased = false)
 
             proManager.initialize()
             advanceUntilIdle()
@@ -267,15 +287,7 @@ class ProManagerTest {
     fun `purchase during active trial transitions to PRO_PURCHASED`() =
         runTest(testDispatcher) {
             val trialStart = System.currentTimeMillis()
-            coEvery { trialManager.initialize() } returns true
-            trialStateFlow.value =
-                TrialState(
-                    isActive = true,
-                    daysRemaining = 5,
-                    startTimestamp = trialStart,
-                    isFirstLaunch = false,
-                )
-            isProUserFlow.value = false
+            configureAccess(activeTrialState(daysRemaining = 5, startTimestamp = trialStart), purchased = false)
 
             proManager.initialize()
             advanceUntilIdle()
@@ -333,14 +345,7 @@ class ProManagerTest {
     @Test
     fun `isPro returns false for TRIAL_EXPIRED`() =
         runTest(testDispatcher) {
-            coEvery { trialManager.initialize() } returns false
-            trialStateFlow.value =
-                TrialState(
-                    isActive = false,
-                    daysRemaining = 0,
-                    startTimestamp = System.currentTimeMillis() - 10 * 24 * 60 * 60 * 1000L,
-                )
-            isProUserFlow.value = false
+            configureAccess(expiredTrialState(ageDays = 10), purchased = false)
 
             proManager.initialize()
             advanceUntilIdle()
@@ -351,14 +356,7 @@ class ProManagerTest {
     @Test
     fun `isPro returns true for PRO_PURCHASED`() =
         runTest(testDispatcher) {
-            coEvery { trialManager.initialize() } returns false
-            trialStateFlow.value =
-                TrialState(
-                    isActive = false,
-                    daysRemaining = 0,
-                    startTimestamp = System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000L,
-                )
-            isProUserFlow.value = true
+            configureAccess(expiredTrialState(ageDays = 30), purchased = true)
 
             proManager.initialize()
             advanceUntilIdle()
@@ -369,14 +367,7 @@ class ProManagerTest {
     @Test
     fun `hasFeature returns true when pro is active`() =
         runTest(testDispatcher) {
-            coEvery { trialManager.initialize() } returns false
-            trialStateFlow.value =
-                TrialState(
-                    isActive = false,
-                    daysRemaining = 0,
-                    startTimestamp = System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000L,
-                )
-            isProUserFlow.value = true
+            configureAccess(expiredTrialState(ageDays = 30), purchased = true)
 
             proManager.initialize()
             advanceUntilIdle()
@@ -389,14 +380,7 @@ class ProManagerTest {
     @Test
     fun `hasFeature returns false when trial expired and not purchased`() =
         runTest(testDispatcher) {
-            coEvery { trialManager.initialize() } returns false
-            trialStateFlow.value =
-                TrialState(
-                    isActive = false,
-                    daysRemaining = 0,
-                    startTimestamp = System.currentTimeMillis() - 10 * 24 * 60 * 60 * 1000L,
-                )
-            isProUserFlow.value = false
+            configureAccess(expiredTrialState(ageDays = 10), purchased = false)
 
             proManager.initialize()
             advanceUntilIdle()

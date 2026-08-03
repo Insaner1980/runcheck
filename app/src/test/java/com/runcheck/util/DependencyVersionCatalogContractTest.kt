@@ -1,5 +1,6 @@
 package com.runcheck.util
 
+import com.runcheck.testutil.findRootDir
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Files
@@ -103,11 +104,5 @@ class DependencyVersionCatalogContractTest {
             .firstOrNull { (actual, expected) -> actual != expected }
             ?.let { (actual, expected) -> actual > expected }
             ?: (actualParts.size >= minimumParts.size)
-    }
-
-    private fun findRootDir(): Path {
-        val start = Paths.get("").toAbsolutePath()
-        return generateSequence(start) { it.parent }
-            .first { Files.exists(it.resolve("gradle/libs.versions.toml")) }
     }
 }

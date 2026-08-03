@@ -118,17 +118,19 @@ class FullscreenChartViewModelTest {
             manageUserPreferences = manageUserPreferences,
         )
 
+    private fun batteryHistorySavedState(): SavedStateHandle =
+        SavedStateHandle(
+            mapOf(
+                "source" to FullscreenChartSource.BATTERY_HISTORY.name,
+                "metric" to BatteryHistoryMetric.LEVEL.name,
+                "period" to HistoryPeriod.DAY.name,
+            ),
+        )
+
     @Test
     fun `selected metric and period are written back to saved state`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            val savedStateHandle =
-                SavedStateHandle(
-                    mapOf(
-                        "source" to FullscreenChartSource.BATTERY_HISTORY.name,
-                        "metric" to BatteryHistoryMetric.LEVEL.name,
-                        "period" to HistoryPeriod.DAY.name,
-                    ),
-                )
+            val savedStateHandle = batteryHistorySavedState()
 
             val viewModel = createViewModel(savedStateHandle)
             advanceUntilIdle()
@@ -145,14 +147,7 @@ class FullscreenChartViewModelTest {
     @Test
     fun `new ViewModel from same SavedStateHandle restores battery history selections after process death`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            val savedStateHandle =
-                SavedStateHandle(
-                    mapOf(
-                        "source" to FullscreenChartSource.BATTERY_HISTORY.name,
-                        "metric" to BatteryHistoryMetric.LEVEL.name,
-                        "period" to HistoryPeriod.DAY.name,
-                    ),
-                )
+            val savedStateHandle = batteryHistorySavedState()
 
             val firstViewModel = createViewModel(savedStateHandle)
             advanceUntilIdle()
@@ -227,14 +222,7 @@ class FullscreenChartViewModelTest {
             every { isProUser() } returns false
             every { observeProAccess() } returns proAccess
 
-            val savedStateHandle =
-                SavedStateHandle(
-                    mapOf(
-                        "source" to FullscreenChartSource.BATTERY_HISTORY.name,
-                        "metric" to BatteryHistoryMetric.LEVEL.name,
-                        "period" to HistoryPeriod.DAY.name,
-                    ),
-                )
+            val savedStateHandle = batteryHistorySavedState()
 
             val viewModel = createViewModel(savedStateHandle)
             advanceUntilIdle()
@@ -316,14 +304,7 @@ class FullscreenChartViewModelTest {
                 )
             every { getBatteryHistory(any()) } returns liveHistory
 
-            val savedStateHandle =
-                SavedStateHandle(
-                    mapOf(
-                        "source" to FullscreenChartSource.BATTERY_HISTORY.name,
-                        "metric" to BatteryHistoryMetric.LEVEL.name,
-                        "period" to HistoryPeriod.DAY.name,
-                    ),
-                )
+            val savedStateHandle = batteryHistorySavedState()
 
             val viewModel = createViewModel(savedStateHandle)
             advanceUntilIdle()

@@ -2,7 +2,6 @@ package com.runcheck.domain.insights.rules
 
 import com.runcheck.domain.insights.analysis.BatteryDrainAnalyzer
 import com.runcheck.domain.insights.analysis.dischargingPairs
-import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.model.InsightCandidate
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
@@ -19,12 +18,8 @@ class BaselineAnomalyRule
     constructor(
         private val batteryRepository: BatteryRepository,
         private val batteryDrainAnalyzer: BatteryDrainAnalyzer,
-    ) : InsightRule {
-        override val ruleId: String = RULE_ID
-
-        override suspend fun evaluate(now: Long): List<InsightCandidate> = buildCandidate(now)?.let(::listOf).orEmpty()
-
-        private suspend fun buildCandidate(now: Long): InsightCandidate? {
+    ) : SingleCandidateInsightRule(RULE_ID) {
+        override suspend fun buildCandidate(now: Long): InsightCandidate? {
             val currentWindowStart = now - CURRENT_WINDOW_MS
             val baselineStart = currentWindowStart - BASELINE_WINDOW_MS
             val readings =

@@ -85,16 +85,16 @@ class ScreenStateTracker
         override fun onPowerConnected() {
             synchronized(lock) {
                 val now = System.currentTimeMillis()
-                val state = synchronizeState(now, persist = false)
-                persistState(resetAll(state, now, getCurrentChargingStatus()))
+                synchronizeState(now, persist = false)
+                persistState(resetAll(now, getCurrentChargingStatus()))
             }
         }
 
         override fun onPowerDisconnected() {
             synchronized(lock) {
                 val now = System.currentTimeMillis()
-                val state = synchronizeState(now, persist = false)
-                persistState(resetAll(state, now, getCurrentChargingStatus()))
+                synchronizeState(now, persist = false)
+                persistState(resetAll(now, getCurrentChargingStatus()))
             }
         }
 
@@ -265,7 +265,7 @@ class ScreenStateTracker
             chargingStatus: ChargingStatus,
         ): PersistedState =
             if (state.lastChargingStatus != chargingStatus) {
-                resetAll(state, now, chargingStatus)
+                resetAll(now, chargingStatus)
             } else {
                 state
             }
@@ -361,26 +361,9 @@ class ScreenStateTracker
         }
 
         private fun resetAll(
-            state: PersistedState,
             now: Long,
             chargingStatus: ChargingStatus,
-        ): PersistedState {
-            val screenOn = powerManager.isInteractive
-            return state.copy(
-                screenOn = screenOn,
-                lastTransitionTime = now,
-                lastTransitionLevel = getCurrentBatteryLevel(),
-                screenOnDurationMs = 0L,
-                screenOffDurationMs = 0L,
-                screenOnDrainPct = 0f,
-                screenOffDrainPct = 0f,
-                deepSleepDurationMs = 0L,
-                heldAwakeDurationMs = 0L,
-                lastIdleCheckTime = now,
-                lastIdleState = !screenOn && getCurrentIdleState(),
-                lastChargingStatus = chargingStatus,
-            )
-        }
+        ): PersistedState = createInitialState(now, chargingStatus)
 
         private fun getCurrentChargingStatus(): ChargingStatus {
             val batteryIntent = BatteryIntentReader.readBatteryChangedStickyIntent(context)

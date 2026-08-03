@@ -14,6 +14,7 @@ import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.common.RefreshTracker
+import com.runcheck.ui.common.RefreshableViewModelState
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.messageOrRes
 import com.runcheck.util.appendLiveValue
@@ -49,12 +50,9 @@ class StorageViewModel
         private val manageUserPreferences: ManageUserPreferencesUseCase,
         private val getStorageHistory: GetStorageHistoryUseCase,
     ) : ViewModel() {
-        private val _uiState = MutableStateFlow<StorageUiState>(StorageUiState.Loading)
-        val uiState: StateFlow<StorageUiState> = _uiState.asStateFlow()
-        private val refreshTracker = RefreshTracker()
-        val isRefreshing: StateFlow<Boolean> = refreshTracker.isRefreshing
-        private var loadJob: Job? = null
-        private var historyJob: Job? = null
+        private val screenState = RefreshableViewModelState<StorageUiState>(StorageUiState.Loading)
+        val uiState = screenState.uiState
+        val isRefreshing = screenState.isRefreshing
 
         private var selectedHistoryPeriod: HistoryPeriod
             get() = savedStateHandle.getEnumOrDefault(SELECTED_HISTORY_PERIOD_KEY, HistoryPeriod.WEEK)
@@ -68,21 +66,17 @@ class StorageViewModel
         val trashDeleteRequestUris: SharedFlow<List<String>> = _trashDeleteRequestUris.asSharedFlow()
 
         fun startObserving() {
-            if (loadJob?.isActive == true) return
+            if (screenState.loadJob?.isActive == true) return
             loadStorageData()
             loadHistory()
         }
 
         fun stopObserving() {
-            loadJob?.cancel()
-            loadJob = null
-            historyJob?.cancel()
-            historyJob = null
-            refreshTracker.finish()
+            screenState.stop()
         }
 
         fun refresh() {
-            refreshTracker.start()
+            screenState.refreshTracker.start()
             loadStorageData()
         }
 
@@ -111,7 +105,7 @@ class StorageViewModel
         }
 
         fun onTrashDeleteRequestFailed(message: UiText) {
-            _uiState.value = StorageUiState.Error(message)
+            screenState.mutableUiState.value = StorageUiState.Error(message)
         }
 
         @OptIn(ExperimentalCoroutinesApi::class)
@@ -126,18 +120,18 @@ class StorageViewModel
         }
 
         private fun loadHistory() {
-            historyJob?.cancel()
-            historyJob =
+            screenState.historyJob?.cancel()
+            screenState.historyJob =
                 viewModelScope.launch {
                     getStorageHistory(selectedHistoryPeriod)
                         .catch { e ->
-                            _uiState.update { current ->
+                            screenState.mutableUiState.update { current ->
                                 (current as? StorageUiState.Success)?.copy(
                                     historyLoadError = e.messageOrRes(R.string.common_error_generic),
                                 ) ?: current
                             }
                         }.collect { readings ->
-                            _uiState.update { current ->
+                            screenState.mutableUiState.update { current ->
                                 (current as? StorageUiState.Success)?.copy(
                                     storageHistory = readings,
                                     selectedHistoryPeriod = selectedHistoryPeriod,
@@ -150,8 +144,8 @@ class StorageViewModel
 
         @OptIn(FlowPreview::class)
         private fun loadStorageData() {
-            loadJob?.cancel()
-            loadJob =
+            screenState.loadJob?.cancel()
+            screenState.loadJob =
                 viewModelScope.launch {
                     combine(
                         getStorageState(),
@@ -163,7 +157,7 @@ class StorageViewModel
                             liveUsagePercent.appendLiveValue(state.usagePercent)
                             lastObservedStorageState = state
                         }
-                        val currentSuccess = _uiState.value as? StorageUiState.Success
+                        val currentSuccess = screenState.mutableUiState.value as? StorageUiState.Success
                         StorageUiState.Success(
                             storageState = state,
                             isPro = isPro,
@@ -176,11 +170,12 @@ class StorageViewModel
                         )
                     }.sample(333L)
                         .catch { e ->
-                            refreshTracker.finish()
-                            _uiState.value = StorageUiState.Error(e.messageOrRes(R.string.common_error_generic))
+                            screenState.refreshTracker.finish()
+                            screenState.mutableUiState.value =
+                                StorageUiState.Error(e.messageOrRes(R.string.common_error_generic))
                         }.collect { state ->
-                            _uiState.value = state
-                            refreshTracker.finish()
+                            screenState.mutableUiState.value = state
+                            screenState.refreshTracker.finish()
                         }
                 }
         }

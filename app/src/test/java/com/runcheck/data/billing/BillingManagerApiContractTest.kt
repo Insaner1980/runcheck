@@ -1,5 +1,6 @@
 package com.runcheck.data.billing
 
+import com.runcheck.testutil.findRootDir
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -78,11 +79,5 @@ class BillingManagerApiContractTest {
             "BillingManager should not hide future Billing API drift with a class-level DEPRECATION suppression",
             billingManagerSource.contains("@Suppress(\"DEPRECATION\")"),
         )
-    }
-
-    private fun findRootDir(): Path {
-        val start = Paths.get("").toAbsolutePath()
-        return generateSequence(start) { it.parent }
-            .first { Files.exists(it.resolve("gradle/libs.versions.toml")) }
     }
 }

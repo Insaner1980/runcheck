@@ -1,5 +1,7 @@
 package com.runcheck.data.insights.debug
 
+import com.runcheck.data.battery.toDomain
+import com.runcheck.data.charger.toDomain
 import com.runcheck.data.db.dao.AppBatteryUsageDao
 import com.runcheck.data.db.dao.BatteryReadingDao
 import com.runcheck.data.db.dao.ChargerDao
@@ -190,38 +192,7 @@ class InsightTestDataSeederTest {
         )
     }
 
-    private fun BatteryReadingEntity.toDomain() =
-        BatteryReading(
-            id = id,
-            timestamp = timestamp,
-            level = level,
-            voltageMv = voltageMv,
-            temperatureC = temperatureC,
-            currentMa = currentMa,
-            currentConfidence = currentConfidence,
-            status = status,
-            plugType = plugType,
-            health = health,
-            cycleCount = cycleCount,
-            healthPct = healthPct,
-        )
-
     private fun ChargerProfileEntity.toDomain(id: Long) = ChargerProfile(id = id, name = name, created = created)
-
-    private fun ChargingSessionEntity.toDomain() =
-        ChargingSession(
-            id = id,
-            chargerId = chargerId,
-            startTime = startTime,
-            endTime = endTime,
-            startLevel = startLevel,
-            endLevel = endLevel,
-            avgCurrentMa = avgCurrentMa,
-            maxCurrentMa = maxCurrentMa,
-            avgVoltageMv = avgVoltageMv,
-            avgPowerMw = avgPowerMw,
-            plugType = plugType,
-        )
 
     private fun NetworkReadingEntity.toDomain() =
         NetworkReading(timestamp, type, signalDbm, wifiSpeedMbps, wifiFrequency, carrier, networkSubtype, latencyMs)

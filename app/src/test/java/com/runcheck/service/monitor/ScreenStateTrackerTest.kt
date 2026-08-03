@@ -38,24 +38,35 @@ class ScreenStateTrackerTest {
         every { batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) } returns 60
     }
 
-    @Test
-    fun `persisted screen usage survives tracker recreation`() {
-        val now = System.currentTimeMillis()
+    private fun persistScreenState(
+        timestamp: Long,
+        level: Int = 60,
+        screenOffDurationMs: Long = 0L,
+        screenOffDrainPct: Float = 0f,
+        deepSleepDurationMs: Long = 0L,
+        heldAwakeDurationMs: Long = 0L,
+    ) {
         prefs
             .edit()
             .putBoolean("screen_on", false)
-            .putLong("last_transition_time", now)
-            .putInt("last_transition_level", 60)
+            .putLong("last_transition_time", timestamp)
+            .putInt("last_transition_level", level)
             .putLong("screen_on_duration_ms", 0L)
-            .putLong("screen_off_duration_ms", 90 * 60_000L)
+            .putLong("screen_off_duration_ms", screenOffDurationMs)
             .putFloat("screen_on_drain_pct", 0f)
-            .putFloat("screen_off_drain_pct", 3f)
-            .putLong("deep_sleep_duration_ms", 0L)
-            .putLong("held_awake_duration_ms", 0L)
-            .putLong("last_idle_check_time", now)
+            .putFloat("screen_off_drain_pct", screenOffDrainPct)
+            .putLong("deep_sleep_duration_ms", deepSleepDurationMs)
+            .putLong("held_awake_duration_ms", heldAwakeDurationMs)
+            .putLong("last_idle_check_time", timestamp)
             .putBoolean("last_idle_state", false)
             .putString("last_charging_status", ChargingStatus.DISCHARGING.name)
             .commit()
+    }
+
+    @Test
+    fun `persisted screen usage survives tracker recreation`() {
+        val now = System.currentTimeMillis()
+        persistScreenState(timestamp = now, screenOffDurationMs = 90 * 60_000L, screenOffDrainPct = 3f)
 
         val tracker = ScreenStateTracker(context)
 
@@ -72,21 +83,7 @@ class ScreenStateTrackerTest {
     @Test
     fun `recreation attributes elapsed drain to the persisted screen state before reconciling`() {
         val persistedAt = System.currentTimeMillis() - 5 * 60_000L
-        prefs
-            .edit()
-            .putBoolean("screen_on", false)
-            .putLong("last_transition_time", persistedAt)
-            .putInt("last_transition_level", 60)
-            .putLong("screen_on_duration_ms", 0L)
-            .putLong("screen_off_duration_ms", 0L)
-            .putFloat("screen_on_drain_pct", 0f)
-            .putFloat("screen_off_drain_pct", 0f)
-            .putLong("deep_sleep_duration_ms", 0L)
-            .putLong("held_awake_duration_ms", 0L)
-            .putLong("last_idle_check_time", persistedAt)
-            .putBoolean("last_idle_state", false)
-            .putString("last_charging_status", ChargingStatus.DISCHARGING.name)
-            .commit()
+        persistScreenState(persistedAt)
         every { powerManager.isInteractive } returns true
         every { batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) } returns 58
 
@@ -103,21 +100,7 @@ class ScreenStateTrackerTest {
     @Test
     fun `screen drain is capped at total battery capacity`() {
         val now = System.currentTimeMillis() - 2 * 60_000L
-        prefs
-            .edit()
-            .putBoolean("screen_on", false)
-            .putLong("last_transition_time", now)
-            .putInt("last_transition_level", 100)
-            .putLong("screen_on_duration_ms", 0L)
-            .putLong("screen_off_duration_ms", 2 * 60_000L)
-            .putFloat("screen_on_drain_pct", 0f)
-            .putFloat("screen_off_drain_pct", 99f)
-            .putLong("deep_sleep_duration_ms", 0L)
-            .putLong("held_awake_duration_ms", 0L)
-            .putLong("last_idle_check_time", now)
-            .putBoolean("last_idle_state", false)
-            .putString("last_charging_status", ChargingStatus.DISCHARGING.name)
-            .commit()
+        persistScreenState(timestamp = now, level = 100, screenOffDurationMs = 2 * 60_000L, screenOffDrainPct = 99f)
         every { batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) } returns 95
 
         val stats = ScreenStateTracker(context).getScreenUsageStats()
@@ -129,21 +112,13 @@ class ScreenStateTrackerTest {
     @Test
     fun `charging status change clears persisted usage and sleep data`() {
         val now = System.currentTimeMillis()
-        prefs
-            .edit()
-            .putBoolean("screen_on", false)
-            .putLong("last_transition_time", now)
-            .putInt("last_transition_level", 60)
-            .putLong("screen_on_duration_ms", 0L)
-            .putLong("screen_off_duration_ms", 45 * 60_000L)
-            .putFloat("screen_on_drain_pct", 0f)
-            .putFloat("screen_off_drain_pct", 2f)
-            .putLong("deep_sleep_duration_ms", 20 * 60_000L)
-            .putLong("held_awake_duration_ms", 25 * 60_000L)
-            .putLong("last_idle_check_time", now)
-            .putBoolean("last_idle_state", false)
-            .putString("last_charging_status", ChargingStatus.DISCHARGING.name)
-            .commit()
+        persistScreenState(
+            timestamp = now,
+            screenOffDurationMs = 45 * 60_000L,
+            screenOffDrainPct = 2f,
+            deepSleepDurationMs = 20 * 60_000L,
+            heldAwakeDurationMs = 25 * 60_000L,
+        )
 
         val tracker = ScreenStateTracker(context)
 
@@ -156,21 +131,7 @@ class ScreenStateTrackerTest {
     @Test
     fun `cold start idle reconciliation avoids backfilling unknown held awake time`() {
         val now = System.currentTimeMillis() - 60 * 60_000L
-        prefs
-            .edit()
-            .putBoolean("screen_on", false)
-            .putLong("last_transition_time", now)
-            .putInt("last_transition_level", 60)
-            .putLong("screen_on_duration_ms", 0L)
-            .putLong("screen_off_duration_ms", 0L)
-            .putFloat("screen_on_drain_pct", 0f)
-            .putFloat("screen_off_drain_pct", 0f)
-            .putLong("deep_sleep_duration_ms", 0L)
-            .putLong("held_awake_duration_ms", 0L)
-            .putLong("last_idle_check_time", now)
-            .putBoolean("last_idle_state", false)
-            .putString("last_charging_status", ChargingStatus.DISCHARGING.name)
-            .commit()
+        persistScreenState(now)
         every { powerManager.isDeviceIdleMode } returns true
 
         val tracker = ScreenStateTracker(context)

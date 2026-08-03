@@ -1,6 +1,5 @@
 package com.runcheck.domain.insights.rules
 
-import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.model.InsightCandidate
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
@@ -15,12 +14,8 @@ class ChargerPerformanceRule
     @Inject
     constructor(
         private val chargerRepository: ChargerRepository,
-    ) : InsightRule {
-        override val ruleId: String = RULE_ID
-
-        override suspend fun evaluate(now: Long): List<InsightCandidate> = buildCandidate(now)?.let(::listOf).orEmpty()
-
-        private suspend fun buildCandidate(now: Long): InsightCandidate? {
+    ) : SingleCandidateInsightRule(RULE_ID) {
+        override suspend fun buildCandidate(now: Long): InsightCandidate? {
             val summaries = loadSummaries(now) ?: return null
             val comparison = summaries.findComparison() ?: return null
             if (comparison.percentSlower < MINIMUM_SLOWER_PERCENT) return null

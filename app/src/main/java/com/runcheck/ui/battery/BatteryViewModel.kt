@@ -71,8 +71,6 @@ class BatteryViewModel
         private var currentMax: Int = Int.MIN_VALUE
         private var lastPlugType: PlugType? = null
         private var lastSelectedChargerId: Long? = null
-        private var lastTrackedSessionStatus: ChargingStatus? = null
-        private var lastTrackedSessionAt: Long = 0L
 
         // Live chart ring buffers (keep last 60 values ≈ ~1-5 min depending on sample rate)
         private val liveCurrentMa = mutableListOf<Float>()
@@ -163,7 +161,7 @@ class BatteryViewModel
 
             if (state != lastObservedBatteryState) {
                 batteryScreenInsights.updateChargingStatus(state.chargingStatus)
-                maybeTrackChargerSession(state)
+                chargerSessionTracker.onObservedBatteryState(state)
 
                 if (state.currentMa.confidence != Confidence.UNAVAILABLE) {
                     liveCurrentMa.appendLiveValue(state.currentMa.value.toFloat())
@@ -246,17 +244,6 @@ class BatteryViewModel
             return powerSourceChanged || selectedChargerChanged
         }
 
-        private suspend fun maybeTrackChargerSession(state: BatteryState) {
-            val now = System.currentTimeMillis()
-            if (lastTrackedSessionStatus != state.chargingStatus ||
-                now - lastTrackedSessionAt >= CHARGER_SESSION_TRACK_INTERVAL_MS
-            ) {
-                chargerSessionTracker.onBatteryState(state, now)
-                lastTrackedSessionStatus = state.chargingStatus
-                lastTrackedSessionAt = now
-            }
-        }
-
         private data class BatteryUpdate(
             val state: BatteryState,
             val history: List<BatteryReading>,
@@ -270,7 +257,6 @@ class BatteryViewModel
         }
 
         companion object {
-            private const val CHARGER_SESSION_TRACK_INTERVAL_MS = 15_000L
             private const val SELECTED_PERIOD_KEY = "battery_selected_period"
         }
     }

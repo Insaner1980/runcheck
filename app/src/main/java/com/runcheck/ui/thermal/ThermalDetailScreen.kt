@@ -6,6 +6,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -54,6 +55,7 @@ import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
 import com.runcheck.domain.model.ThrottlingEvent
 import com.runcheck.ui.chart.ChartStatsRow
+import com.runcheck.ui.chart.HistoryChartContent
 import com.runcheck.ui.chart.HistoryPeriodFilterChipRow
 import com.runcheck.ui.chart.MAX_THERMAL_HISTORY_POINTS
 import com.runcheck.ui.chart.ThermalHistoryMetric
@@ -65,7 +67,6 @@ import com.runcheck.ui.chart.thermalHistoryMetricLabel
 import com.runcheck.ui.chart.thermalQualityZones
 import com.runcheck.ui.common.EnumFilterChipRow
 import com.runcheck.ui.common.HistoryLoadErrorMessage
-import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.formatTemperature
@@ -76,18 +77,23 @@ import com.runcheck.ui.common.resolve
 import com.runcheck.ui.common.temperatureBandLabel
 import com.runcheck.ui.common.temperatureUnitRes
 import com.runcheck.ui.components.CardSectionTitle
+import com.runcheck.ui.components.CenteredLoadingState
+import com.runcheck.ui.components.CenteredRetryState
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.HeatStrip
 import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.ObservedScreenScaffold
 import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.PullToRefreshWrapper
+import com.runcheck.ui.components.RuncheckCard
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SegmentedStatusBar
 import com.runcheck.ui.components.StatusDot
 import com.runcheck.ui.components.StatusSegment
 import com.runcheck.ui.components.TrendChart
+import com.runcheck.ui.components.collectObservedScreenState
 import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.info.InfoSheetContent
@@ -115,55 +121,32 @@ fun ThermalDetailScreen(
     onNavigateToLearnArticle: (articleId: String) -> Unit = {},
     viewModel: ThermalViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
-    val loadingDescription = stringResource(R.string.a11y_loading)
+    val screenState = collectObservedScreenState(viewModel.uiState, viewModel.isRefreshing)
 
-    LifecycleStartStopEffect(
+    ObservedScreenScaffold(
         onStart = viewModel::startObserving,
         onStop = viewModel::stopObserving,
-    )
-
-    Column(modifier = modifier.fillMaxSize()) {
-        DetailTopBar(
-            title = stringResource(R.string.thermal_title),
-            onBack = onBack,
-        )
+        modifier = modifier,
+        topBar = { DetailTopBar(title = stringResource(R.string.thermal_title), onBack = onBack) },
+    ) {
         ContentContainer {
-            when (val state = uiState) {
+            when (val state = screenState.uiState) {
                 is ThermalUiState.Loading -> {
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .semantics {
-                                contentDescription = loadingDescription
-                                liveRegion =
-                                    LiveRegionMode.Polite
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                    CenteredLoadingState(description = screenState.loadingDescription)
                 }
 
                 is ThermalUiState.Error -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                        ) {
-                            Text(state.message.resolve())
-                            TextButton(onClick = { viewModel.refresh() }) {
-                                Text(stringResource(R.string.common_retry))
-                            }
-                        }
-                    }
+                    CenteredRetryState(
+                        message = state.message.resolve(),
+                        onRetry = viewModel::refresh,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
                 }
 
                 is ThermalUiState.Success -> {
                     ThermalContent(
                         state = state,
-                        isRefreshing = isRefreshing,
+                        isRefreshing = screenState.isRefreshing,
                         onRefresh = { viewModel.refresh() },
                         onUpgradeToPro = onUpgradeToPro,
                         onNavigateToLearnArticle = onNavigateToLearnArticle,
@@ -409,88 +392,80 @@ private fun ThermalHeroCard(
             )
         }
 
-    Card(
-        shape = MaterialTheme.shapes.large,
+    RuncheckCard(
         colors = runcheckHeroCardColors(),
-        elevation = runcheckCardElevation(),
+        contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.lg, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = MaterialTheme.spacing.lg, vertical = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start,
-            ) {
-                SectionHeader(stringResource(R.string.thermal_battery_temp))
-            }
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
-
-            // Large typographic temperature
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    text = formatTemperatureValue(thermal.batteryTempC, temperatureUnit),
-                    style = MaterialTheme.numericHeroDisplayTextStyle,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = stringResource(temperatureUnitRes(temperatureUnit)),
-                    style = MaterialTheme.numericHeroDisplayUnitTextStyle,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 2.dp, bottom = 12.dp),
-                )
-            }
-
-            Text(
-                text = bandLabel,
-                style = MaterialTheme.typography.titleMedium,
-                color = tempColor,
-            )
-
-            if (sessionMinTemp != null && sessionMaxTemp != null &&
-                sessionMinTemp != sessionMaxTemp
-            ) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text =
-                        buildAnnotatedString {
-                            withStyle(SpanStyle(color = statusColorForTemperature(sessionMinTemp))) {
-                                append(
-                                    stringResource(
-                                        R.string.value_direction_down,
-                                        formatTemperature(sessionMinTemp, temperatureUnit),
-                                    ),
-                                )
-                            }
-                            append(" · ")
-                            withStyle(SpanStyle(color = statusColorForTemperature(sessionMaxTemp))) {
-                                append(
-                                    stringResource(
-                                        R.string.value_direction_up,
-                                        formatTemperature(sessionMaxTemp, temperatureUnit),
-                                    ),
-                                )
-                            }
-                        },
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
-
-            // Segmented thermal status bar
-            SegmentedStatusBar(
-                segments = thermalSegments,
-                currentValue = thermal.batteryTempC,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            SectionHeader(stringResource(R.string.thermal_battery_temp))
         }
+
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
+
+        // Large typographic temperature
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                text = formatTemperatureValue(thermal.batteryTempC, temperatureUnit),
+                style = MaterialTheme.numericHeroDisplayTextStyle,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = stringResource(temperatureUnitRes(temperatureUnit)),
+                style = MaterialTheme.numericHeroDisplayUnitTextStyle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 2.dp, bottom = 12.dp),
+            )
+        }
+
+        Text(
+            text = bandLabel,
+            style = MaterialTheme.typography.titleMedium,
+            color = tempColor,
+        )
+
+        if (sessionMinTemp != null && sessionMaxTemp != null &&
+            sessionMinTemp != sessionMaxTemp
+        ) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text =
+                    buildAnnotatedString {
+                        withStyle(SpanStyle(color = statusColorForTemperature(sessionMinTemp))) {
+                            append(
+                                stringResource(
+                                    R.string.value_direction_down,
+                                    formatTemperature(sessionMinTemp, temperatureUnit),
+                                ),
+                            )
+                        }
+                        append(" · ")
+                        withStyle(SpanStyle(color = statusColorForTemperature(sessionMaxTemp))) {
+                            append(
+                                stringResource(
+                                    R.string.value_direction_up,
+                                    formatTemperature(sessionMaxTemp, temperatureUnit),
+                                ),
+                            )
+                        }
+                    },
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
+
+        // Segmented thermal status bar
+        SegmentedStatusBar(
+            segments = thermalSegments,
+            currentValue = thermal.batteryTempC,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
     }
 }
 
@@ -557,71 +532,61 @@ private fun ThermalMetricsCard(
             else -> statusColors.healthy
         }
 
-    Card(
-        shape = MaterialTheme.shapes.large,
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
+    RuncheckCard(
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
+        // Row 1: CPU Temperature + Thermal Headroom
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
+            verticalAlignment = Alignment.Top,
         ) {
-            // Row 1: CPU Temperature + Thermal Headroom
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
-                verticalAlignment = Alignment.Top,
-            ) {
-                MetricPill(
-                    label = stringResource(R.string.thermal_cpu_temp),
-                    value = cpuTempValue,
-                    valueColor = cpuTempColor,
-                    onInfoClick = { onInfoClick("cpuTemp") },
-                    modifier = Modifier.weight(1f),
-                )
-                MetricPill(
-                    label = stringResource(R.string.thermal_headroom),
-                    value = headroomValue,
-                    valueColor = headroomValueColor,
-                    onInfoClick = { onInfoClick("thermalHeadroom") },
-                    modifier = Modifier.weight(1f),
-                )
-            }
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-
-            // Row 2: Thermal Status + Throttling
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
-                verticalAlignment = Alignment.Top,
-            ) {
-                MetricPill(
-                    label = stringResource(R.string.thermal_status),
-                    value = statusValue,
-                    valueColor = statusValueColor,
-                    onInfoClick = { onInfoClick("thermalStatus") },
-                    modifier = Modifier.weight(1f),
-                )
-                MetricPill(
-                    label = stringResource(R.string.thermal_throttling),
-                    value = throttlingValue,
-                    valueColor = throttlingValueColor,
-                    onInfoClick = { onInfoClick("throttling") },
-                    modifier = Modifier.weight(1f),
-                )
-            }
-
-            ThermalLiveCharts(
-                thermal = thermal,
-                temperatureUnit = temperatureUnit,
-                liveTempC = liveTempC,
-                liveHeadroom = liveHeadroom,
+            MetricPill(
+                label = stringResource(R.string.thermal_cpu_temp),
+                value = cpuTempValue,
+                valueColor = cpuTempColor,
+                onInfoClick = { onInfoClick("cpuTemp") },
+                modifier = Modifier.weight(1f),
+            )
+            MetricPill(
+                label = stringResource(R.string.thermal_headroom),
+                value = headroomValue,
+                valueColor = headroomValueColor,
+                onInfoClick = { onInfoClick("thermalHeadroom") },
+                modifier = Modifier.weight(1f),
             )
         }
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+
+        // Row 2: Thermal Status + Throttling
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
+            verticalAlignment = Alignment.Top,
+        ) {
+            MetricPill(
+                label = stringResource(R.string.thermal_status),
+                value = statusValue,
+                valueColor = statusValueColor,
+                onInfoClick = { onInfoClick("thermalStatus") },
+                modifier = Modifier.weight(1f),
+            )
+            MetricPill(
+                label = stringResource(R.string.thermal_throttling),
+                value = throttlingValue,
+                valueColor = throttlingValueColor,
+                onInfoClick = { onInfoClick("throttling") },
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        ThermalLiveCharts(
+            thermal = thermal,
+            temperatureUnit = temperatureUnit,
+            liveTempC = liveTempC,
+            liveHeadroom = liveHeadroom,
+        )
     }
 }
 
@@ -699,78 +664,36 @@ private fun ThermalHistoryCard(
 
     val qualityZones = thermalQualityZones(temperatureUnit)
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
-        shape = MaterialTheme.shapes.large,
+    RuncheckCard(
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-        ) {
-            CardSectionTitle(text = stringResource(R.string.thermal_history))
+        CardSectionTitle(text = stringResource(R.string.thermal_history))
 
-            EnumFilterChipRow(
-                values = ThermalHistoryMetric.entries,
-                selected = metric,
-                onSelect = { selectedMetricState.value = it },
-                labelFor = { thermalHistoryMetricLabel(it) },
-            )
+        EnumFilterChipRow(
+            values = ThermalHistoryMetric.entries,
+            selected = metric,
+            onSelect = { selectedMetricState.value = it },
+            labelFor = { thermalHistoryMetricLabel(it) },
+        )
 
-            HistoryPeriodFilterChipRow(
-                selected = selectedPeriod,
-                onSelect = onPeriodChange,
-            )
+        HistoryPeriodFilterChipRow(
+            selected = selectedPeriod,
+            onSelect = onPeriodChange,
+        )
 
-            HistoryLoadErrorMessage(error = historyLoadError)
+        HistoryLoadErrorMessage(error = historyLoadError)
 
-            if (chartModel.chartData.size >= 2) {
-                val chartAccessibilitySummary =
-                    rememberChartAccessibilitySummary(
-                        title =
-                            stringResource(
-                                R.string.fullscreen_chart_title_thermal,
-                                thermalHistoryMetricLabel(metric),
-                            ),
-                        chartData = chartModel.chartData,
-                        unit = chartModel.unit,
-                        decimals = chartModel.tooltipDecimals,
-                        timeContext =
-                            stringResource(
-                                R.string.a11y_chart_context_history,
-                                historyPeriodLabel(selectedPeriod),
-                            ),
-                    )
-
-                Text(
-                    text = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${thermalHistoryMetricLabel(metric)}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                TrendChart(
-                    data = chartModel.chartData,
-                    modifier = Modifier.fillMaxWidth(),
-                    contentDescription = chartAccessibilitySummary,
-                    yLabels = chartModel.yLabels.ifEmpty { null },
-                    xLabels = chartModel.xLabels.ifEmpty { null },
-                    showGrid = true,
-                    qualityZones = qualityZones,
-                    tooltipFormatter = { index -> formatChartTooltip(chartModel, index) },
-                )
-
-                ChartStatsRow(chartModel = chartModel)
-            } else {
-                Text(
-                    text = stringResource(R.string.network_history_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+        HistoryChartContent(
+            accessibilityTitle =
+                stringResource(
+                    R.string.fullscreen_chart_title_thermal,
+                    thermalHistoryMetricLabel(metric),
+                ),
+            label = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${thermalHistoryMetricLabel(metric)}",
+            periodLabel = historyPeriodLabel(selectedPeriod),
+            chartModel = chartModel,
+            qualityZones = qualityZones,
+        )
     }
 }
 
@@ -814,84 +737,76 @@ private fun ThrottlingEventItem(
             else -> MaterialTheme.statusColors.fair
         }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
+    RuncheckCard(
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
     ) {
-        Column(
-            modifier = Modifier.padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
+        Text(
+            text = formattedTime,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                StatusDot(color = statusColor)
+                Text(
+                    text = event.thermalStatus,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
             Text(
-                text = formattedTime,
-                style = MaterialTheme.typography.labelMedium,
+                text = formatTemperature(event.batteryTempC, temperatureUnit),
+                style =
+                    MaterialTheme.typography.bodyMedium.copy(
+                        fontFamily = MaterialTheme.numericFontFamily,
+                    ),
+                color = statusColorForTemperature(event.batteryTempC),
+            )
+        }
+
+        event.cpuTempC?.let { cpuTemp ->
+            Text(
+                text =
+                    stringResource(
+                        R.string.value_label_colon,
+                        stringResource(R.string.thermal_cpu_temp),
+                        formatTemperature(cpuTemp, temperatureUnit),
+                    ),
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    StatusDot(color = statusColor)
-                    Text(
-                        text = event.thermalStatus,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
+        event.foregroundApp?.let { app ->
+            Text(
+                text = app,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        event.durationMs?.let { duration ->
+            val minutes = duration / 60_000
+            val seconds = (duration % 60_000) / 1000
+            val durationText =
+                if (minutes > 0) {
+                    stringResource(R.string.value_duration_minutes_seconds, minutes, seconds)
+                } else {
+                    stringResource(R.string.value_duration_seconds, seconds)
                 }
-                Text(
-                    text = formatTemperature(event.batteryTempC, temperatureUnit),
-                    style =
-                        MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = MaterialTheme.numericFontFamily,
-                        ),
-                    color = statusColorForTemperature(event.batteryTempC),
-                )
-            }
-
-            event.cpuTempC?.let { cpuTemp ->
-                Text(
-                    text =
-                        stringResource(
-                            R.string.value_label_colon,
-                            stringResource(R.string.thermal_cpu_temp),
-                            formatTemperature(cpuTemp, temperatureUnit),
-                        ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            event.foregroundApp?.let { app ->
-                Text(
-                    text = app,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            event.durationMs?.let { duration ->
-                val minutes = duration / 60_000
-                val seconds = (duration % 60_000) / 1000
-                val durationText =
-                    if (minutes > 0) {
-                        stringResource(R.string.value_duration_minutes_seconds, minutes, seconds)
-                    } else {
-                        stringResource(R.string.value_duration_seconds, seconds)
-                    }
-                Text(
-                    text = stringResource(R.string.thermal_event_duration, durationText),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Text(
+                text = stringResource(R.string.thermal_event_duration, durationText),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

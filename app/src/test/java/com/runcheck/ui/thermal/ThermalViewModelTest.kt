@@ -65,13 +65,9 @@ class ThermalViewModelTest {
     @Test
     fun `startObserving emits success state with live thermal buffers and session bounds`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            val thermalFlow = MutableStateFlow(thermalState(tempC = 34f, headroom = 0.6f))
-            every { getThermalState() } returns thermalFlow
-            viewModel = createViewModel()
+            val thermalFlow = startThermalFlow()
 
             try {
-                viewModel.startObserving()
-                advanceThermalSample()
                 thermalFlow.value = thermalState(tempC = 38f, headroom = 0.4f)
                 advanceThermalSample()
 
@@ -91,11 +87,7 @@ class ThermalViewModelTest {
     @Test
     fun `refresh finishes when live source emits the same state`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            val thermalFlow = MutableStateFlow(thermalState(tempC = 34f, headroom = 0.6f))
-            every { getThermalState() } returns thermalFlow
-            viewModel = createViewModel()
-            viewModel.startObserving()
-            advanceThermalSample()
+            startThermalFlow()
 
             viewModel.refresh()
 
@@ -109,13 +101,9 @@ class ThermalViewModelTest {
     @Test
     fun `screen re-entry starts a new thermal session from its first emission`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            val thermalFlow = MutableStateFlow(thermalState(tempC = 34f, headroom = 0.6f))
-            every { getThermalState() } returns thermalFlow
-            viewModel = createViewModel()
+            val thermalFlow = startThermalFlow()
 
             try {
-                viewModel.startObserving()
-                advanceThermalSample()
                 thermalFlow.value = thermalState(tempC = 38f, headroom = 0.4f)
                 advanceThermalSample()
                 viewModel.stopObserving()
@@ -218,6 +206,14 @@ class ThermalViewModelTest {
         mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(334L)
         mainDispatcherRule.testDispatcher.scheduler.runCurrent()
     }
+
+    private fun startThermalFlow(): MutableStateFlow<ThermalState> =
+        MutableStateFlow(thermalState(tempC = 34f, headroom = 0.6f)).also { thermalFlow ->
+            every { getThermalState() } returns thermalFlow
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceThermalSample()
+        }
 
     private fun thermalState(
         tempC: Float,

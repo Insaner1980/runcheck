@@ -2,21 +2,12 @@ package com.runcheck.ui.home
 
 import android.content.Intent
 import android.provider.Settings
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,25 +15,22 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.DataUsage
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.SignalCellularAlt
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material.icons.outlined.Thermostat
 import androidx.compose.material.icons.outlined.WarningAmber
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,21 +41,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.RoundRect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -75,39 +56,27 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.domain.model.HealthScore
-import com.runcheck.domain.model.HealthStatus
-import com.runcheck.ui.common.LifecycleStartStopEffect
-import com.runcheck.ui.common.batteryHealthLabel
-import com.runcheck.ui.common.chargingStatusLabel
-import com.runcheck.ui.common.connectionDisplayLabel
-import com.runcheck.ui.common.formatPercent
-import com.runcheck.ui.common.formatStorageSize
-import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.common.healthStatusLabel
-import com.runcheck.ui.common.plugTypeLabel
 import com.runcheck.ui.common.resolve
-import com.runcheck.ui.common.scoreLabel
-import com.runcheck.ui.common.signalQualityLabel
-import com.runcheck.ui.common.temperatureBandLabel
+import com.runcheck.ui.components.CenteredLoadingState
+import com.runcheck.ui.components.CenteredRetryState
 import com.runcheck.ui.components.ContentContainer
-import com.runcheck.ui.components.GridCard
 import com.runcheck.ui.components.IconCircle
 import com.runcheck.ui.components.ListRow
-import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.ObservedScreenScaffold
 import com.runcheck.ui.components.PrimaryTopBar
 import com.runcheck.ui.components.ProBadgePill
 import com.runcheck.ui.components.SectionHeader
-import com.runcheck.ui.components.StatusDot
+import com.runcheck.ui.components.collectObservedScreenState
 import com.runcheck.ui.home.insights.InsightNavigationHandlers
 import com.runcheck.ui.home.insights.InsightsCard
 import com.runcheck.ui.home.insights.InsightsCardState
@@ -115,28 +84,21 @@ import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.pro.PostExpirationUpgradeCard
 import com.runcheck.ui.pro.TrialHomeCard
 import com.runcheck.ui.pro.TrialWelcomeSheet
-import com.runcheck.ui.theme.MotionTokens
-import com.runcheck.ui.theme.forHealthStatus
-import com.runcheck.ui.theme.heroCardColor
-import com.runcheck.ui.theme.numericFontFamily
-import com.runcheck.ui.theme.numericHeroDisplayTextStyle
-import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
-import com.runcheck.ui.theme.numericHeroLargeValueTextStyle
-import com.runcheck.ui.theme.reducedMotion
+import com.runcheck.ui.theme.homeHealthContextTextStyle
+import com.runcheck.ui.theme.homeHealthScoreTextStyle
+import com.runcheck.ui.theme.homeHealthScoreUnitTextStyle
+import com.runcheck.ui.theme.homeHealthStatusTextStyle
 import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
-import com.runcheck.ui.theme.runcheckHeroCardColors
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColor
-import com.runcheck.ui.theme.statusColorForPercent
-import com.runcheck.ui.theme.statusColorForSignalQuality
-import com.runcheck.ui.theme.statusColorForStoragePercent
-import com.runcheck.ui.theme.statusColorForTemperature
 import com.runcheck.ui.theme.statusColors
+import com.runcheck.ui.theme.uiTokens
 import com.runcheck.util.ReleaseSafeLog
-import kotlin.math.sin
+import kotlinx.coroutines.delay
 
 private const val TAG = "HomeScreen"
+private const val MINUTE_MILLIS = 60_000L
 
 @Composable
 fun HomeScreen(
@@ -155,60 +117,39 @@ fun HomeScreen(
     onNavigateToLearnArticle: (String) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val loadingDescription = stringResource(R.string.a11y_loading)
+    val screenState = collectObservedScreenState(viewModel.uiState, viewModel.isRefreshing)
 
-    LifecycleStartStopEffect(
+    ObservedScreenScaffold(
         onStart = viewModel::startObserving,
         onStop = viewModel::stopObserving,
-    )
-
-    Column(modifier = modifier.fillMaxSize()) {
-        PrimaryTopBar(
-            title = stringResource(R.string.app_name),
-            actions = {
-                IconButton(onClick = onNavigateToSettings) {
-                    Icon(
-                        imageVector = Icons.Outlined.Settings,
-                        contentDescription = stringResource(R.string.settings_title),
-                        tint = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            },
-        )
-
-        when (val state = uiState) {
+        modifier = modifier,
+        topBar = {
+            PrimaryTopBar(
+                title = stringResource(R.string.app_name),
+                actions = {
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(
+                            imageVector = Icons.Outlined.Settings,
+                            contentDescription = stringResource(R.string.settings_title),
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(MaterialTheme.uiTokens.iconXXLarge),
+                        )
+                    }
+                },
+            )
+        },
+    ) {
+        when (val state = screenState.uiState) {
             is HomeUiState.Loading -> {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .semantics {
-                                contentDescription = loadingDescription
-                                liveRegion = LiveRegionMode.Polite
-                            },
-                    contentAlignment = Alignment.Center,
-                ) { CircularProgressIndicator() }
+                CenteredLoadingState(description = screenState.loadingDescription)
             }
 
             is HomeUiState.Error -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                    ) {
-                        Text(
-                            text = state.message.resolve(),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        TextButton(onClick = { viewModel.refresh() }) {
-                            Text(stringResource(R.string.common_retry))
-                        }
-                    }
-                }
+                CenteredRetryState(
+                    message = state.message.resolve(),
+                    onRetry = viewModel::refresh,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
             }
 
             is HomeUiState.Success -> {
@@ -230,19 +171,24 @@ fun HomeScreen(
                 Box(modifier = Modifier.fillMaxSize()) {
                     HomeContent(
                         state = state,
-                        onNavigateToBattery = onNavigateToBattery,
-                        onNavigateToNetwork = onNavigateToNetwork,
-                        onNavigateToThermal = onNavigateToThermal,
-                        onNavigateToStorage = onNavigateToStorage,
-                        onNavigateToCharger = onNavigateToCharger,
-                        onNavigateToSpeedTest = onNavigateToSpeedTest,
-                        onNavigateToAppUsage = onNavigateToAppUsage,
-                        onNavigateToInsights = onNavigateToInsights,
+                        navigation =
+                            HomeNavigationActions(
+                                onNavigateToBattery = onNavigateToBattery,
+                                onNavigateToNetwork = onNavigateToNetwork,
+                                onNavigateToThermal = onNavigateToThermal,
+                                onNavigateToStorage = onNavigateToStorage,
+                                onNavigateToCharger = onNavigateToCharger,
+                                onNavigateToSpeedTest = onNavigateToSpeedTest,
+                                onNavigateToAppUsage = onNavigateToAppUsage,
+                                onNavigateToInsights = onNavigateToInsights,
+                                onNavigateToProUpgrade = onNavigateToProUpgrade,
+                                onNavigateToLearn = onNavigateToLearn,
+                                onNavigateToLearnArticle = onNavigateToLearnArticle,
+                            ),
                         onDismissInsight = { viewModel.dismissInsight(it) },
-                        onNavigateToProUpgrade = onNavigateToProUpgrade,
-                        onNavigateToLearn = onNavigateToLearn,
-                        onNavigateToLearnArticle = onNavigateToLearnArticle,
                         onDismissUpgradeCard = { viewModel.dismissUpgradeCard() },
+                        isRefreshing = screenState.isRefreshing,
+                        onRefresh = viewModel::refresh,
                     )
 
                     SnackbarHost(
@@ -263,44 +209,41 @@ fun HomeScreen(
     }
 }
 
+private data class HomeNavigationActions(
+    val onNavigateToBattery: () -> Unit,
+    val onNavigateToNetwork: () -> Unit,
+    val onNavigateToThermal: () -> Unit,
+    val onNavigateToStorage: () -> Unit,
+    val onNavigateToCharger: () -> Unit,
+    val onNavigateToSpeedTest: () -> Unit,
+    val onNavigateToAppUsage: () -> Unit,
+    val onNavigateToInsights: () -> Unit,
+    val onNavigateToProUpgrade: () -> Unit,
+    val onNavigateToLearn: () -> Unit,
+    val onNavigateToLearnArticle: (String) -> Unit,
+)
+
 @Composable
 private fun HomeContent(
     state: HomeUiState.Success,
-    onNavigateToBattery: () -> Unit,
-    onNavigateToNetwork: () -> Unit,
-    onNavigateToThermal: () -> Unit,
-    onNavigateToStorage: () -> Unit,
-    onNavigateToCharger: () -> Unit,
-    onNavigateToSpeedTest: () -> Unit,
-    onNavigateToAppUsage: () -> Unit,
-    onNavigateToInsights: () -> Unit,
+    navigation: HomeNavigationActions,
     onDismissInsight: (Long) -> Unit,
-    onNavigateToProUpgrade: () -> Unit,
-    onNavigateToLearn: () -> Unit = {},
-    onNavigateToLearnArticle: (String) -> Unit = {},
+    isRefreshing: Boolean,
     onDismissUpgradeCard: () -> Unit = {},
+    onRefresh: () -> Unit,
 ) {
-    val windowInfo = LocalWindowInfo.current
-    val density = LocalDensity.current
-    val isWideScreen = with(density) { windowInfo.containerSize.width.toDp() } >= 600.dp
     val insightNavigationHandlers =
         remember(
-            onNavigateToBattery,
-            onNavigateToNetwork,
-            onNavigateToThermal,
-            onNavigateToStorage,
-            onNavigateToCharger,
-            onNavigateToAppUsage,
-            onNavigateToProUpgrade,
+            navigation,
         ) {
             InsightNavigationHandlers(
-                onNavigateToBattery = onNavigateToBattery,
-                onNavigateToNetwork = onNavigateToNetwork,
-                onNavigateToThermal = onNavigateToThermal,
-                onNavigateToStorage = onNavigateToStorage,
-                onNavigateToCharger = onNavigateToCharger,
-                onNavigateToAppUsage = onNavigateToAppUsage,
-                onNavigateToProUpgrade = onNavigateToProUpgrade,
+                onNavigateToBattery = navigation.onNavigateToBattery,
+                onNavigateToNetwork = navigation.onNavigateToNetwork,
+                onNavigateToThermal = navigation.onNavigateToThermal,
+                onNavigateToStorage = navigation.onNavigateToStorage,
+                onNavigateToCharger = navigation.onNavigateToCharger,
+                onNavigateToAppUsage = navigation.onNavigateToAppUsage,
+                onNavigateToProUpgrade = navigation.onNavigateToProUpgrade,
             )
         }
 
@@ -328,52 +271,61 @@ private fun HomeContent(
                     .padding(horizontal = MaterialTheme.spacing.base)
                     .navigationBarsPadding(),
         ) {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+            val spacing = MaterialTheme.spacing
+
+            Spacer(modifier = Modifier.height(43.dp))
+
+            HealthScoreHero(
+                healthScore = state.healthScore,
+                lastUpdatedAtEpochMillis = state.lastUpdatedAtEpochMillis,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = spacing.xs),
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            HomeFullCheckButton(
+                isRefreshing = isRefreshing,
+                onClick = onRefresh,
+                modifier = Modifier.padding(horizontal = spacing.xs),
+            )
+
+            Spacer(modifier = Modifier.height(44.dp))
 
             if (state.monitoringStale) {
                 MonitoringStaleWarning(
-                    onLearnWhy = { onNavigateToLearnArticle(LearnArticleIds.BACKGROUND_MONITORING) },
+                    onLearnWhy = {
+                        navigation.onNavigateToLearnArticle(LearnArticleIds.BACKGROUND_MONITORING)
+                    },
                 )
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
+                Spacer(modifier = Modifier.height(spacing.md))
             }
-
-            HomeStatusSummary(state = state)
 
             HomeTrialSection(
                 state = state,
-                onNavigateToProUpgrade = onNavigateToProUpgrade,
+                onNavigateToProUpgrade = navigation.onNavigateToProUpgrade,
                 onDismissUpgradeCard = onDismissUpgradeCard,
             )
 
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
+            if (state.monitoringStale ||
+                state.proCardState == HomeProCardState.TRIAL ||
+                state.proCardState == HomeProCardState.EXPIRED_TRIAL
+            ) {
+                Spacer(modifier = Modifier.height(spacing.md))
+            }
 
-            HealthScoreCard(
-                healthScore = state.healthScore,
-                isNetworkConnected = state.networkState.isConnected,
-                batteryTempC = state.thermalState.batteryTempC,
-                onNavigateToBattery = onNavigateToBattery,
-                onNavigateToThermal = onNavigateToThermal,
-                onNavigateToNetwork = onNavigateToNetwork,
-                onNavigateToStorage = onNavigateToStorage,
-            )
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-
-            BatteryHeroCard(
-                battery = state.batteryState,
-                onClick = onNavigateToBattery,
-            )
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-
-            HomeGridSection(
+            HomeStatusTiles(
                 state = state,
-                isWideScreen = isWideScreen,
-                onNavigateToNetwork = onNavigateToNetwork,
-                onNavigateToThermal = onNavigateToThermal,
-                onNavigateToCharger = onNavigateToCharger,
-                onNavigateToStorage = onNavigateToStorage,
-                onNavigateToProUpgrade = onNavigateToProUpgrade,
+                onNavigateToBattery = navigation.onNavigateToBattery,
+                onNavigateToNetwork = navigation.onNavigateToNetwork,
+                onNavigateToThermal = navigation.onNavigateToThermal,
+                onNavigateToStorage = navigation.onNavigateToStorage,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = spacing.xs),
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
@@ -381,7 +333,7 @@ private fun HomeContent(
             InsightsCard(
                 state = insightsCardState,
                 navigationHandlers = insightNavigationHandlers,
-                onNavigateToInsights = onNavigateToInsights,
+                onNavigateToInsights = navigation.onNavigateToInsights,
                 onDismissInsight = onDismissInsight,
             )
 
@@ -391,10 +343,10 @@ private fun HomeContent(
 
             HomeQuickToolsSection(
                 isPro = state.isPro,
-                onNavigateToSpeedTest = onNavigateToSpeedTest,
-                onNavigateToAppUsage = onNavigateToAppUsage,
-                onNavigateToProUpgrade = onNavigateToProUpgrade,
-                onNavigateToLearn = onNavigateToLearn,
+                onNavigateToSpeedTest = navigation.onNavigateToSpeedTest,
+                onNavigateToAppUsage = navigation.onNavigateToAppUsage,
+                onNavigateToProUpgrade = navigation.onNavigateToProUpgrade,
+                onNavigateToLearn = navigation.onNavigateToLearn,
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
@@ -405,6 +357,78 @@ private fun HomeContent(
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
         }
+    }
+}
+
+@Composable
+private fun HomeFullCheckButton(
+    isRefreshing: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val contentColor = MaterialTheme.colorScheme.background
+    val contentDescription = stringResource(R.string.home_full_check_content_description)
+    val runningStateDescription = stringResource(R.string.home_full_check_state_running)
+    val labelStyle: TextStyle =
+        MaterialTheme.typography.labelLarge.copy(
+            fontSize = 17.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = (-0.01).em,
+        )
+
+    Button(
+        onClick = onClick,
+        enabled = !isRefreshing,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(MaterialTheme.uiTokens.homePrimaryActionHeight)
+                .semantics {
+                    this.contentDescription = contentDescription
+                    if (isRefreshing) {
+                        stateDescription = runningStateDescription
+                    }
+                },
+        shape = CircleShape,
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = contentColor,
+                disabledContainerColor = MaterialTheme.colorScheme.primary,
+                disabledContentColor = contentColor,
+            ),
+        elevation =
+            ButtonDefaults.buttonElevation(
+                defaultElevation = 0.dp,
+                pressedElevation = 0.dp,
+                focusedElevation = 0.dp,
+                hoveredElevation = 0.dp,
+                disabledElevation = 0.dp,
+            ),
+        contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.base),
+    ) {
+        if (isRefreshing) {
+            CircularProgressIndicator(
+                modifier =
+                    Modifier
+                        .size(MaterialTheme.uiTokens.iconMedium)
+                        .clearAndSetSemantics {},
+                color = contentColor,
+                strokeWidth = 3.dp,
+            )
+            Spacer(modifier = Modifier.size(width = 10.dp, height = 0.dp))
+        }
+        Text(
+            text =
+                stringResource(
+                    if (isRefreshing) {
+                        R.string.home_full_check_running
+                    } else {
+                        R.string.home_full_check
+                    },
+                ),
+            style = labelStyle,
+        )
     }
 }
 
@@ -436,30 +460,6 @@ private fun HomeTrialSection(
             Unit
         }
     }
-}
-
-@Composable
-private fun HomeStatusSummary(state: HomeUiState.Success) {
-    val batteryStatus = chargingStatusLabel(state.batteryState.chargingStatus)
-    val networkStatus =
-        connectionDisplayLabel(
-            connectionType = state.networkState.connectionType,
-            wifiSsid = state.networkState.wifiSsid,
-            networkSubtype = state.networkState.networkSubtype,
-        )
-    val temperatureBand = temperatureBandLabel(state.thermalState.batteryTempC)
-
-    Text(
-        text =
-            stringResource(
-                R.string.home_status_summary,
-                batteryStatus,
-                temperatureBand,
-                networkStatus,
-            ),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
 }
 
 @Composable
@@ -524,503 +524,93 @@ private fun MonitoringStaleWarning(onLearnWhy: () -> Unit) {
 }
 
 @Composable
-private fun HealthScoreCard(
+private fun HealthScoreHero(
     healthScore: HealthScore,
-    isNetworkConnected: Boolean,
-    batteryTempC: Float,
-    onNavigateToBattery: () -> Unit,
-    onNavigateToThermal: () -> Unit,
-    onNavigateToNetwork: () -> Unit,
-    onNavigateToStorage: () -> Unit,
+    lastUpdatedAtEpochMillis: Long,
+    modifier: Modifier = Modifier,
 ) {
     val score = healthScore.overallScore
-    val statusLabel = scoreLabel(score)
-    val formattedSummary = stringResource(R.string.home_device_good_shape, statusLabel.lowercase())
-    val statusWord = statusLabel.lowercase()
-    val scoreColor = statusColorForPercent(score)
-    val annotatedSummary =
-        remember(formattedSummary, statusWord, scoreColor) {
-            buildAnnotatedString {
-                val startIndex = formattedSummary.indexOf(statusWord)
-                if (startIndex >= 0) {
-                    append(formattedSummary.substring(0, startIndex))
-                    withStyle(
-                        SpanStyle(
-                            color = scoreColor,
-                            fontWeight = FontWeight.Bold,
-                        ),
-                    ) {
-                        append(statusWord)
-                    }
-                    append(formattedSummary.substring(startIndex + statusWord.length))
-                } else {
-                    append(formattedSummary)
-                }
+    val healthScoreDescription = stringResource(R.string.a11y_health_score, score)
+    val spacing = MaterialTheme.spacing
+    val scoreColor = statusColor(healthScore.status)
+    val minutesSinceUpdate by
+        produceState(
+            initialValue =
+                elapsedWholeMinutes(
+                    lastUpdatedAtEpochMillis = lastUpdatedAtEpochMillis,
+                    currentEpochMillis = System.currentTimeMillis(),
+                ),
+            key1 = lastUpdatedAtEpochMillis,
+        ) {
+            while (true) {
+                val elapsedMillis =
+                    (System.currentTimeMillis() - lastUpdatedAtEpochMillis).coerceAtLeast(0L)
+                value = (elapsedMillis / MINUTE_MILLIS).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+                delay(MINUTE_MILLIS - (elapsedMillis % MINUTE_MILLIS))
             }
         }
+    val scoreBrush =
+        Brush.verticalGradient(
+            colors =
+                listOf(
+                    lerp(scoreColor, MaterialTheme.colorScheme.onSurface, 0.28f),
+                    scoreColor,
+                ),
+        )
 
-    val batteryLabel = stringResource(R.string.home_battery_card)
-    val thermalLabel = stringResource(R.string.home_thermal_card)
-    val networkLabel = stringResource(R.string.home_network_card)
-    val storageLabel = stringResource(R.string.home_storage_card)
-
-    Card(
-        shape = MaterialTheme.shapes.large,
-        colors = runcheckHeroCardColors(),
-        elevation = runcheckCardElevation(),
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.Start,
     ) {
-        Column(
+        Row(
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start,
-            ) {
-                SectionHeader(stringResource(R.string.home_health_score))
-            }
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
-            val healthScoreDescription = stringResource(R.string.a11y_health_score, score)
-
-            // Large typographic score
-            Row(
-                verticalAlignment = Alignment.Bottom,
-                modifier =
-                    Modifier.semantics(mergeDescendants = true) {
+                    .semantics(mergeDescendants = true) {
                         contentDescription = healthScoreDescription
                         liveRegion = LiveRegionMode.Polite
                     },
-            ) {
-                Text(
-                    text = score.toString(),
-                    style = MaterialTheme.numericHeroDisplayTextStyle,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = stringResource(R.string.unit_per_hundred),
-                    style = MaterialTheme.numericHeroDisplayUnitTextStyle,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 4.dp, bottom = 12.dp),
-                )
-            }
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-
+            horizontalArrangement = Arrangement.spacedBy(spacing.sm + spacing.xxs),
+        ) {
             Text(
-                text = annotatedSummary,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = score.toString(),
+                style = MaterialTheme.homeHealthScoreTextStyle.copy(brush = scoreBrush),
+                modifier = Modifier.alignByBaseline(),
             )
-
-            if (batteryTempC >= 38f) {
-                Text(
-                    text = stringResource(R.string.home_temp_elevated),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.statusColors.poor,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
-
-            // Category health overview bar
-            HealthCategoryBar(
-                batteryScore = healthScore.batteryScore,
-                thermalScore = healthScore.thermalScore,
-                networkScore = healthScore.networkScore,
-                isNetworkConnected = isNetworkConnected,
-                storageScore = healthScore.storageScore,
-                batteryLabel = batteryLabel,
-                thermalLabel = thermalLabel,
-                networkLabel = networkLabel,
-                storageLabel = storageLabel,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
-
-            HealthBreakdownRow(
-                label = batteryLabel,
-                value = formatPercent(healthScore.batteryScore),
-                status = HealthScore.statusFromScore(healthScore.batteryScore),
-                onClick = onNavigateToBattery,
-            )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-            HealthBreakdownRow(
-                label = thermalLabel,
-                value = formatPercent(healthScore.thermalScore),
-                status = HealthScore.statusFromScore(healthScore.thermalScore),
-                onClick = onNavigateToThermal,
-            )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-            HealthBreakdownRow(
-                label = networkLabel,
-                value =
-                    if (isNetworkConnected) {
-                        formatPercent(healthScore.networkScore)
-                    } else {
-                        stringResource(R.string.score_unrated)
-                    },
-                status = HealthScore.statusFromScore(healthScore.networkScore),
-                isRated = isNetworkConnected,
-                onClick = onNavigateToNetwork,
-            )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-            HealthBreakdownRow(
-                label = storageLabel,
-                value = formatPercent(healthScore.storageScore),
-                status = HealthScore.statusFromScore(healthScore.storageScore),
-                onClick = onNavigateToStorage,
+            Text(
+                text = stringResource(R.string.unit_per_hundred),
+                style = MaterialTheme.homeHealthScoreUnitTextStyle,
+                color = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.alignByBaseline(),
             )
         }
-    }
-}
 
-@Composable
-private fun BatteryHeroCard(
-    battery: com.runcheck.domain.model.BatteryState,
-    onClick: () -> Unit,
-) {
-    Card(
-        onClick = onClick,
-        shape = MaterialTheme.shapes.large,
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-        ) {
-            SectionHeader(stringResource(R.string.home_battery_card))
+        Spacer(modifier = Modifier.height(3.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            text = battery.level.toString(),
-                            style = MaterialTheme.numericHeroLargeValueTextStyle,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = stringResource(R.string.unit_percent),
-                            style =
-                                MaterialTheme.typography.headlineLarge.copy(
-                                    fontFamily = MaterialTheme.numericFontFamily,
-                                ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 2.dp, bottom = 12.dp),
-                        )
-                    }
-                    Text(
-                        text = chargingStatusLabel(battery.chargingStatus),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-
-                HomeBatteryChargeIcon(
-                    level = battery.level,
-                    isCharging = battery.chargingStatus == com.runcheck.domain.model.ChargingStatus.CHARGING,
-                    progress = battery.level / 100f,
-                    modifier = Modifier.size(130.dp),
-                )
-            }
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
-                verticalAlignment = Alignment.Top,
-            ) {
-                MetricPill(
-                    label = stringResource(R.string.battery_health),
-                    value = batteryHealthLabel(battery.health),
-                    valueColor =
-                        if (battery.health == com.runcheck.domain.model.BatteryHealth.GOOD) {
-                            MaterialTheme.statusColors.healthy
-                        } else {
-                            MaterialTheme.statusColors.fair
-                        },
-                    modifier = Modifier.weight(1f),
-                )
-                MetricPill(
-                    label = stringResource(R.string.battery_plug_type),
-                    value = plugTypeLabel(battery.plugType),
-                    valueColor = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun HealthBreakdownRow(
-    label: String,
-    value: String,
-    status: HealthStatus,
-    onClick: () -> Unit,
-    isRated: Boolean = true,
-) {
-    val statusText =
-        if (isRated) {
-            healthStatusLabel(status)
-        } else {
-            stringResource(R.string.score_unrated)
-        }
-    val clickLabel = label
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .defaultMinSize(minHeight = 48.dp)
-                .clickable(onClick = onClick, onClickLabel = clickLabel)
-                .semantics(mergeDescendants = true) {
-                    stateDescription = statusText
-                }.padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        StatusDot(
-            color = if (isRated) statusColor(status) else MaterialTheme.statusColors.unavailable,
-            modifier = Modifier.padding(end = MaterialTheme.spacing.sm),
-        )
         Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f),
+            text = healthStatusLabel(healthScore.status),
+            style = MaterialTheme.homeHealthStatusTextStyle,
+            color = statusColor(healthScore.status),
         )
+
+        Spacer(modifier = Modifier.height(spacing.sm))
+
         Text(
-            text = value,
-            style =
-                MaterialTheme.typography.titleMedium.copy(
-                    fontFamily = MaterialTheme.numericFontFamily,
+            text =
+                pluralStringResource(
+                    R.plurals.home_health_context,
+                    minutesSinceUpdate,
+                    minutesSinceUpdate,
                 ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.homeHealthContextTextStyle,
+            color = MaterialTheme.colorScheme.outline,
         )
     }
 }
 
-@Composable
-private fun HomeBatteryChargeIcon(
-    level: Int,
-    isCharging: Boolean,
-    progress: Float,
-    modifier: Modifier = Modifier,
-) {
-    val fillLevel = progress.coerceIn(0f, 1f)
-    val reducedMotion = MaterialTheme.reducedMotion
-
-    val wavePhase =
-        if (isCharging && !reducedMotion && fillLevel in 0.01f..0.99f) {
-            val infiniteTransition = rememberInfiniteTransition(label = "batteryWave")
-            val phase by infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 2f * Math.PI.toFloat(),
-                animationSpec =
-                    infiniteRepeatable(
-                        animation = tween(durationMillis = MotionTokens.CONTINUOUS, easing = LinearEasing),
-                    ),
-                label = "wavePhase",
-            )
-            phase
-        } else {
-            0f
-        }
-
-    val outlineColor = MaterialTheme.colorScheme.onSurfaceVariant
-    val fillColor = statusColorForPercent(level)
-    val textColor =
-        if (fillLevel > 0.55f) {
-            MaterialTheme.colorScheme.onPrimary
-        } else {
-            MaterialTheme.colorScheme.onSurface
-        }
-
-    val clipPath = remember { Path() }
-    val wavePath = remember { Path() }
-
-    Box(
-        modifier = modifier.clearAndSetSemantics {},
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(
-            modifier = Modifier.size(width = 80.dp, height = 124.dp),
-        ) {
-            val capWidth = 18.dp.toPx()
-            val capHeight = 5.dp.toPx()
-            val capRadius = 2.dp.toPx()
-            val bodyTop = capHeight + 1.dp.toPx()
-            val bodyHeight = size.height - bodyTop
-            val strokeW = 2.dp.toPx()
-            val cornerRadius = 12.dp.toPx()
-            val inset = 4.dp.toPx()
-            val waveAmplitude = 3.dp.toPx()
-
-            // Terminal cap
-            drawRoundRect(
-                color = outlineColor,
-                topLeft = Offset((size.width - capWidth) / 2f, 0f),
-                size = Size(capWidth, capHeight),
-                cornerRadius = CornerRadius(capRadius, capRadius),
-            )
-
-            // Battery body outline
-            drawRoundRect(
-                color = outlineColor,
-                topLeft = Offset(0f, bodyTop),
-                size = Size(size.width, bodyHeight),
-                cornerRadius = CornerRadius(cornerRadius, cornerRadius),
-                style = Stroke(width = strokeW),
-            )
-
-            // Fill area
-            if (fillLevel > 0f) {
-                val fillAreaTop = bodyTop + strokeW + inset
-                val fillAreaBottom = bodyTop + bodyHeight - strokeW - inset
-                val fillAreaLeft = strokeW + inset
-                val fillAreaRight = size.width - strokeW - inset
-                val fillAreaHeight = fillAreaBottom - fillAreaTop
-                val fillTop = fillAreaBottom - fillAreaHeight * fillLevel
-                val fillCorner = 8.dp.toPx()
-
-                clipPath.reset()
-                clipPath.addRoundRect(
-                    RoundRect(
-                        left = fillAreaLeft,
-                        top = fillAreaTop,
-                        right = fillAreaRight,
-                        bottom = fillAreaBottom,
-                        cornerRadius = CornerRadius(fillCorner, fillCorner),
-                    ),
-                )
-                clipPath(clipPath) {
-                    val showWave = isCharging && !reducedMotion && fillLevel in 0.01f..0.99f
-
-                    if (showWave) {
-                        wavePath.reset()
-                        wavePath.moveTo(fillAreaLeft, fillTop)
-                        val waveWidth = fillAreaRight - fillAreaLeft
-                        val steps = 40
-                        for (i in 0..steps) {
-                            val x = fillAreaLeft + waveWidth * i / steps
-                            val y =
-                                fillTop + waveAmplitude *
-                                    sin(
-                                        wavePhase + 2f * Math.PI.toFloat() * i / steps,
-                                    )
-                            wavePath.lineTo(x, y)
-                        }
-                        wavePath.lineTo(fillAreaRight, fillAreaBottom)
-                        wavePath.lineTo(fillAreaLeft, fillAreaBottom)
-                        wavePath.close()
-                        drawPath(
-                            path = wavePath,
-                            brush =
-                                Brush.verticalGradient(
-                                    colors = listOf(fillColor, fillColor.copy(alpha = 0.6f)),
-                                    startY = fillTop,
-                                    endY = fillAreaBottom,
-                                ),
-                        )
-                    } else {
-                        drawRect(
-                            brush =
-                                Brush.verticalGradient(
-                                    colors = listOf(fillColor, fillColor.copy(alpha = 0.6f)),
-                                    startY = fillTop,
-                                    endY = fillAreaBottom,
-                                ),
-                            topLeft = Offset(fillAreaLeft, fillTop),
-                            size = Size(fillAreaRight - fillAreaLeft, fillAreaBottom - fillTop),
-                        )
-                    }
-                }
-            }
-        }
-
-        // Overlaid level text (participates in semantics tree)
-        Text(
-            text = level.toString(),
-            style =
-                MaterialTheme.typography.labelLarge.copy(
-                    fontFamily = MaterialTheme.numericFontFamily,
-                    fontWeight = FontWeight.Bold,
-                ),
-            color = textColor,
-        )
-    }
-}
-
-@Composable
-private fun HealthCategoryBar(
-    batteryScore: Int,
-    thermalScore: Int,
-    networkScore: Int,
-    isNetworkConnected: Boolean,
-    storageScore: Int,
-    batteryLabel: String,
-    thermalLabel: String,
-    networkLabel: String,
-    storageLabel: String,
-    modifier: Modifier = Modifier,
-) {
-    val statusColors = MaterialTheme.statusColors
-    val scores =
-        listOf(
-            batteryLabel to statusColors.forHealthStatus(HealthScore.statusFromScore(batteryScore)),
-            thermalLabel to statusColors.forHealthStatus(HealthScore.statusFromScore(thermalScore)),
-            networkLabel to
-                if (isNetworkConnected) {
-                    statusColors.forHealthStatus(HealthScore.statusFromScore(networkScore))
-                } else {
-                    statusColors.unavailable
-                },
-            storageLabel to statusColors.forHealthStatus(HealthScore.statusFromScore(storageScore)),
-        )
-
-    Column(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(3.dp),
-        ) {
-            scores.forEach { (_, color) ->
-                Box(
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .height(6.dp)
-                            .background(
-                                color = color,
-                                shape = RoundedCornerShape(4.dp),
-                            ),
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            scores.forEach { (label, color) ->
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = color,
-                )
-            }
-        }
-    }
-}
+internal fun elapsedWholeMinutes(
+    lastUpdatedAtEpochMillis: Long,
+    currentEpochMillis: Long,
+): Int =
+    ((currentEpochMillis - lastUpdatedAtEpochMillis).coerceAtLeast(0L) / MINUTE_MILLIS)
+        .coerceAtMost(Int.MAX_VALUE.toLong())
+        .toInt()

@@ -7,9 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
@@ -17,7 +15,6 @@ import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Storage
-import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -31,9 +28,8 @@ import com.runcheck.ui.components.ActionCard
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.ListRow
 import com.runcheck.ui.components.MetricRow
+import com.runcheck.ui.components.RuncheckCard
 import com.runcheck.ui.theme.categoryColor
-import com.runcheck.ui.theme.runcheckCardColors
-import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 
@@ -322,19 +318,9 @@ internal fun StoragePanel(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
-        shape = MaterialTheme.shapes.large,
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-            content = content,
-        )
-    }
+    RuncheckCard(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+        content = content,
+    )
 }

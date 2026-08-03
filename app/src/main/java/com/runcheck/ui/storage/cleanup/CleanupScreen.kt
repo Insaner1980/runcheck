@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -57,10 +56,9 @@ import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
+import com.runcheck.ui.components.RuncheckCard
 import com.runcheck.ui.storage.MediaDeleteRequestResult
 import com.runcheck.ui.storage.buildMediaDeleteRequest
-import com.runcheck.ui.theme.runcheckCardColors
-import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
 import kotlinx.coroutines.flow.Flow
 
@@ -288,30 +286,19 @@ private fun CleanupScreenBody(
 
             is CleanupUiState.UnsupportedVersion -> {
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.large,
-                    colors = runcheckCardColors(),
-                    elevation = runcheckCardElevation(),
+                RuncheckCard(
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
                 ) {
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(MaterialTheme.spacing.base),
-                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.cleanup_not_supported_version_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = stringResource(R.string.cleanup_not_supported_version_message),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    Text(
+                        text = stringResource(R.string.cleanup_not_supported_version_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = stringResource(R.string.cleanup_not_supported_version_message),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
 

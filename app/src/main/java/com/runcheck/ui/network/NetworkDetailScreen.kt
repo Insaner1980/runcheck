@@ -66,6 +66,7 @@ import com.runcheck.domain.model.SignalQuality
 import com.runcheck.domain.model.SpeedTestResult
 import com.runcheck.ui.chart.ChartStatsRow
 import com.runcheck.ui.chart.FullscreenChartSource
+import com.runcheck.ui.chart.HistoryChartContent
 import com.runcheck.ui.chart.HistoryPeriodFilterChipRow
 import com.runcheck.ui.chart.MAX_NETWORK_HISTORY_POINTS
 import com.runcheck.ui.chart.NetworkHistoryMetric
@@ -88,13 +89,17 @@ import com.runcheck.ui.common.rememberSaveableEnumState
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.common.signalQualityLabel
 import com.runcheck.ui.components.CardSectionTitle
+import com.runcheck.ui.components.CenteredLoadingState
+import com.runcheck.ui.components.CenteredRetryState
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.components.ProFeatureCalloutCard
-import com.runcheck.ui.components.PullToRefreshWrapper
+import com.runcheck.ui.components.RefreshableDetailColumn
+import com.runcheck.ui.components.RuncheckCard
+import com.runcheck.ui.components.RuncheckCardSurface
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SignalBars
 import com.runcheck.ui.components.TrendChart
@@ -183,32 +188,15 @@ fun NetworkDetailScreen(
         ContentContainer {
             when (val state = networkUiState) {
                 is NetworkUiState.Loading -> {
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .semantics {
-                                contentDescription = loadingDescription
-                                liveRegion =
-                                    LiveRegionMode.Polite
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                    CenteredLoadingState(description = loadingDescription)
                 }
 
                 is NetworkUiState.Error -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                        ) {
-                            Text(state.message.resolve())
-                            TextButton(onClick = { viewModel.refresh() }) {
-                                Text(stringResource(R.string.common_retry))
-                            }
-                        }
-                    }
+                    CenteredRetryState(
+                        message = state.message.resolve(),
+                        onRetry = viewModel::refresh,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
                 }
 
                 is NetworkUiState.Success -> {
@@ -254,132 +242,122 @@ private fun NetworkHeroSection(
             MaterialTheme.statusColors.unavailable
         }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
+    RuncheckCard(
         colors = runcheckHeroCardColors(),
-        elevation = runcheckCardElevation(),
-        shape = MaterialTheme.shapes.large,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+        SectionHeader(text = stringResource(R.string.network_title))
+
+        // Quality label + SignalBars row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            SectionHeader(text = stringResource(R.string.network_title))
+            Text(
+                text = qualityLabel,
+                style = MaterialTheme.typography.headlineLarge,
+                color = qualityColor,
+            )
+            SignalBars(
+                signalQuality = networkState.signalQuality,
+                qualityLabel = qualityLabel,
+                modifier = Modifier.height(32.dp),
+            )
+        }
 
-            // Quality label + SignalBars row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = qualityLabel,
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = qualityColor,
-                )
-                SignalBars(
-                    signalQuality = networkState.signalQuality,
-                    qualityLabel = qualityLabel,
-                    modifier = Modifier.height(32.dp),
-                )
-            }
-
-            // Large dBm + latency display
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg),
-                verticalAlignment = Alignment.Bottom,
-            ) {
-                networkState.signalDbm?.let { dbm ->
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            text = dbm.toString(),
-                            style = MaterialTheme.numericMetricDisplayTextStyle,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = stringResource(R.string.unit_dbm),
-                            style = MaterialTheme.numericHeroDisplayUnitTextStyle,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 2.dp, bottom = 8.dp),
-                        )
-                    }
-                }
-                networkState.latencyMs?.let { ms ->
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            text = ms.toString(),
-                            style = MaterialTheme.numericMetricDisplayTextStyle,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = stringResource(R.string.unit_ms),
-                            style = MaterialTheme.numericHeroDisplayUnitTextStyle,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 2.dp, bottom = 8.dp),
-                        )
-                    }
+        // Large dBm + latency display
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            networkState.signalDbm?.let { dbm ->
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = dbm.toString(),
+                        style = MaterialTheme.numericMetricDisplayTextStyle,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = stringResource(R.string.unit_dbm),
+                        style = MaterialTheme.numericHeroDisplayUnitTextStyle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 2.dp, bottom = 8.dp),
+                    )
                 }
             }
-
-            if (liveSignalDbm.size >= 2) {
-                LiveChart(
-                    data = liveSignalDbm,
-                    currentValueLabel =
-                        networkState.signalDbm?.let {
-                            stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_dbm))
-                        } ?: "—",
-                    label = stringResource(R.string.network_signal_strength),
-                    lineColor = qualityColor,
-                    accessibilityDescription =
-                        stringResource(
-                            R.string.a11y_chart_trend,
-                            stringResource(R.string.network_signal_strength),
-                        ),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+            networkState.latencyMs?.let { ms ->
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = ms.toString(),
+                        style = MaterialTheme.numericMetricDisplayTextStyle,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = stringResource(R.string.unit_ms),
+                        style = MaterialTheme.numericHeroDisplayUnitTextStyle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 2.dp, bottom = 8.dp),
+                    )
+                }
             }
+        }
 
-            Row(
+        if (liveSignalDbm.size >= 2) {
+            LiveChart(
+                data = liveSignalDbm,
+                currentValueLabel =
+                    networkState.signalDbm?.let {
+                        stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_dbm))
+                    } ?: "—",
+                label = stringResource(R.string.network_signal_strength),
+                lineColor = qualityColor,
+                accessibilityDescription =
+                    stringResource(
+                        R.string.a11y_chart_trend,
+                        stringResource(R.string.network_signal_strength),
+                    ),
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-                verticalAlignment = Alignment.Top,
-            ) {
-                MetricPill(
-                    label = stringResource(R.string.network_latency),
-                    value =
-                        networkState.latencyMs?.let {
-                            stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_ms))
-                        } ?: stringResource(R.string.placeholder_dash),
-                    modifier = Modifier.weight(1f),
-                    onInfoClick = { onInfoClick("latency") },
-                )
-                MetricPill(
-                    label = bandwidthPillLabel(networkState),
-                    value = bandwidthPillValue(networkState),
-                    modifier = Modifier.weight(1f),
-                    onInfoClick = { onInfoClick("bandwidth") },
-                )
-                MetricPill(
-                    label = bandPillLabel(networkState),
-                    value = bandPillValue(networkState),
-                    modifier = Modifier.weight(1f),
-                    onInfoClick = {
-                        onInfoClick(
-                            if (networkState.connectionType ==
-                                ConnectionType.WIFI
-                            ) {
-                                "frequency"
-                            } else {
-                                "bandwidth"
-                            },
-                        )
-                    },
-                )
-            }
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
+            verticalAlignment = Alignment.Top,
+        ) {
+            MetricPill(
+                label = stringResource(R.string.network_latency),
+                value =
+                    networkState.latencyMs?.let {
+                        stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_ms))
+                    } ?: stringResource(R.string.placeholder_dash),
+                modifier = Modifier.weight(1f),
+                onInfoClick = { onInfoClick("latency") },
+            )
+            MetricPill(
+                label = bandwidthPillLabel(networkState),
+                value = bandwidthPillValue(networkState),
+                modifier = Modifier.weight(1f),
+                onInfoClick = { onInfoClick("bandwidth") },
+            )
+            MetricPill(
+                label = bandPillLabel(networkState),
+                value = bandPillValue(networkState),
+                modifier = Modifier.weight(1f),
+                onInfoClick = {
+                    onInfoClick(
+                        if (networkState.connectionType ==
+                            ConnectionType.WIFI
+                        ) {
+                            "frequency"
+                        } else {
+                            "bandwidth"
+                        },
+                    )
+                },
+            )
         }
     }
 }
@@ -494,77 +472,47 @@ private fun SignalHistoryCard(
 
         HistoryLoadErrorMessage(error = historyLoadError)
 
-        if (chartModel.chartData.size >= 2) {
-            val chartAccessibilitySummary =
-                rememberChartAccessibilitySummary(
-                    title =
-                        stringResource(
-                            R.string.fullscreen_chart_title_network,
-                            networkHistoryMetricLabel(metric),
-                        ),
+        val fullscreenSeed =
+            remember(chartModel, metric, selectedPeriod) {
+                FullscreenChartUiState.Success(
                     chartData = chartModel.chartData,
+                    chartTimestamps = chartModel.chartTimestamps,
                     unit = chartModel.unit,
-                    decimals = chartModel.tooltipDecimals,
-                    timeContext =
-                        stringResource(
-                            R.string.a11y_chart_context_history,
-                            historyPeriodLabel(selectedPeriod),
-                        ),
+                    selectedMetric = metric.name,
+                    selectedPeriod = selectedPeriod.name,
+                    metricOptions = NetworkHistoryMetric.entries.map { it.name },
+                    periodOptions =
+                        HistoryPeriod.entries
+                            .filter { it != HistoryPeriod.SINCE_UNPLUG }
+                            .map { it.name },
+                    yLabels = chartModel.yLabels,
+                    xLabels = chartModel.xLabels,
+                    tooltipDecimals = chartModel.tooltipDecimals,
+                    tooltipTimeSkeleton = chartModel.tooltipTimeSkeleton,
                 )
-            val fullscreenSeed =
-                remember(chartModel, metric, selectedPeriod) {
-                    FullscreenChartUiState.Success(
-                        chartData = chartModel.chartData,
-                        chartTimestamps = chartModel.chartTimestamps,
-                        unit = chartModel.unit,
-                        selectedMetric = metric.name,
-                        selectedPeriod = selectedPeriod.name,
-                        metricOptions = NetworkHistoryMetric.entries.map { it.name },
-                        periodOptions =
-                            HistoryPeriod.entries
-                                .filter { it != HistoryPeriod.SINCE_UNPLUG }
-                                .map { it.name },
-                        yLabels = chartModel.yLabels,
-                        xLabels = chartModel.xLabels,
-                        tooltipDecimals = chartModel.tooltipDecimals,
-                        tooltipTimeSkeleton = chartModel.tooltipTimeSkeleton,
-                    )
-                }
-            Text(
-                text = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${networkHistoryMetricLabel(metric)}",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            TrendChart(
-                data = chartModel.chartData,
-                modifier = Modifier.fillMaxWidth(),
-                contentDescription = chartAccessibilitySummary,
-                yLabels = chartModel.yLabels.ifEmpty { null },
-                xLabels = chartModel.xLabels.ifEmpty { null },
-                showGrid = true,
-                qualityZones = qualityZones,
-                tooltipFormatter = { index -> formatChartTooltip(chartModel, index) },
-                onExpandClick = {
-                    FullscreenChartSeedStore.prime(
-                        source = FullscreenChartSource.NETWORK_HISTORY,
-                        state = fullscreenSeed,
-                    )
-                    onNavigateToFullscreen(
-                        FullscreenChartSource.NETWORK_HISTORY.name,
-                        metric.name,
-                        selectedPeriod.name,
-                    )
-                },
-            )
-
-            ChartStatsRow(chartModel = chartModel)
-        } else {
-            Text(
-                text = stringResource(R.string.network_history_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+            }
+        HistoryChartContent(
+            accessibilityTitle =
+                stringResource(
+                    R.string.fullscreen_chart_title_network,
+                    networkHistoryMetricLabel(metric),
+                ),
+            label = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${networkHistoryMetricLabel(metric)}",
+            periodLabel = historyPeriodLabel(selectedPeriod),
+            chartModel = chartModel,
+            qualityZones = qualityZones,
+            onExpandClick = {
+                FullscreenChartSeedStore.prime(
+                    source = FullscreenChartSource.NETWORK_HISTORY,
+                    state = fullscreenSeed,
+                )
+                onNavigateToFullscreen(
+                    FullscreenChartSource.NETWORK_HISTORY.name,
+                    metric.name,
+                    selectedPeriod.name,
+                )
+            },
+        )
     }
 }
 
@@ -717,63 +665,52 @@ private fun NetworkContent(
             if (grants[Manifest.permission.ACCESS_FINE_LOCATION] == true) onRefresh()
         }
 
-    PullToRefreshWrapper(
+    RefreshableDetailColumn(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
-        ) {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-            NetworkOverviewSection(
-                state = state,
-                networkState = networkState,
-                hasLocationPermission = hasLocationPermission,
-                locationEnabled = locationEnabled,
-                locationRequestAttempted = locationRequestAttempted,
-                activity = activity,
-                onDismissInfoCard = onDismissInfoCard,
-                onNavigateToLearnArticle = onNavigateToLearnArticle,
-                onRequestLocationPermission = {
-                    locationPermissionLauncher.launch(
-                        RuncheckPermissionPolicy.wifiDetailLocationPermissions.toTypedArray(),
+        NetworkOverviewSection(
+            state = state,
+            networkState = networkState,
+            hasLocationPermission = hasLocationPermission,
+            locationEnabled = locationEnabled,
+            locationRequestAttempted = locationRequestAttempted,
+            activity = activity,
+            onDismissInfoCard = onDismissInfoCard,
+            onNavigateToLearnArticle = onNavigateToLearnArticle,
+            onRequestLocationPermission = {
+                locationPermissionLauncher.launch(
+                    RuncheckPermissionPolicy.wifiDetailLocationPermissions.toTypedArray(),
+                )
+            },
+            onOpenLocationHelp = {
+                if (!hasLocationPermission) {
+                    context.startActivity(
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.fromParts("package", context.packageName, null)
+                        },
                     )
-                },
-                onOpenLocationHelp = {
-                    if (!hasLocationPermission) {
-                        context.startActivity(
-                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                data = Uri.fromParts("package", context.packageName, null)
-                            },
-                        )
-                    } else if (!locationEnabled) {
-                        context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                    }
-                },
-                onInfoClick = { activeInfoSheetState.value = it },
-            )
+                } else if (!locationEnabled) {
+                    context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                }
+            },
+            onInfoClick = { activeInfoSheetState.value = it },
+        )
 
-            NetworkToolsSection(
-                state = state,
-                speedTestState = speedTestState,
-                selectedHistoryMetric = selectedNetworkHistoryMetricState.value,
-                onHistoryMetricChange = { selectedNetworkHistoryMetricState.value = it },
-                onPeriodChange = onPeriodChange,
-                onNavigateToFullscreen = onNavigateToFullscreen,
-                onNavigateToSpeedTest = onNavigateToSpeedTest,
-                onUpgradeToPro = onUpgradeToPro,
-                onNavigateToLearnArticle = onNavigateToLearnArticle,
-                onInfoClick = { activeInfoSheetState.value = it },
-            )
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
-        }
+        NetworkToolsSection(
+            state = state,
+            speedTestState = speedTestState,
+            selectedHistoryMetric = selectedNetworkHistoryMetricState.value,
+            onHistoryMetricChange = { selectedNetworkHistoryMetricState.value = it },
+            onPeriodChange = onPeriodChange,
+            onNavigateToFullscreen = onNavigateToFullscreen,
+            onNavigateToSpeedTest = onNavigateToSpeedTest,
+            onUpgradeToPro = onUpgradeToPro,
+            onNavigateToLearnArticle = onNavigateToLearnArticle,
+            onInfoClick = { activeInfoSheetState.value = it },
+        )
     }
 
     InfoSheetHost(
@@ -996,12 +933,7 @@ private fun WifiNameHelpCard(
             }
         }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
-    ) {
+    RuncheckCardSurface {
         Row(
             modifier =
                 Modifier

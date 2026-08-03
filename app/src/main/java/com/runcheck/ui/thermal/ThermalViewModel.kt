@@ -14,6 +14,7 @@ import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.common.RefreshTracker
+import com.runcheck.ui.common.RefreshableViewModelState
 import com.runcheck.ui.common.messageOrRes
 import com.runcheck.util.appendLiveValue
 import com.runcheck.util.getEnumOrDefault
@@ -43,12 +44,9 @@ class ThermalViewModel
         private val manageUserPreferences: ManageUserPreferencesUseCase,
         private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase,
     ) : ViewModel() {
-        private val _uiState = MutableStateFlow<ThermalUiState>(ThermalUiState.Loading)
-        val uiState: StateFlow<ThermalUiState> = _uiState.asStateFlow()
-        private val refreshTracker = RefreshTracker()
-        val isRefreshing: StateFlow<Boolean> = refreshTracker.isRefreshing
-        private var loadJob: Job? = null
-        private var historyJob: Job? = null
+        private val screenState = RefreshableViewModelState<ThermalUiState>(ThermalUiState.Loading)
+        val uiState = screenState.uiState
+        val isRefreshing = screenState.isRefreshing
         private var selectedHistoryPeriod: HistoryPeriod
             get() = savedStateHandle.getEnumOrDefault(SELECTED_HISTORY_PERIOD_KEY, HistoryPeriod.DAY)
             set(value) {
@@ -77,23 +75,19 @@ class ThermalViewModel
         }
 
         fun refresh() {
-            refreshTracker.start()
+            screenState.refreshTracker.start()
             loadThermalData()
         }
 
         fun startObserving() {
-            if (loadJob?.isActive == true) return
+            if (screenState.loadJob?.isActive == true) return
             resetSessionMeasurements()
             loadThermalData()
             loadHistory()
         }
 
         fun stopObserving() {
-            loadJob?.cancel()
-            loadJob = null
-            historyJob?.cancel()
-            historyJob = null
-            refreshTracker.finish()
+            screenState.stop()
         }
 
         fun setHistoryPeriod(period: HistoryPeriod) {
@@ -113,7 +107,7 @@ class ThermalViewModel
             liveTempC.clear()
             liveHeadroom.clear()
             lastObservedThermalState = null
-            _uiState.update { current ->
+            screenState.mutableUiState.update { current ->
                 (current as? ThermalUiState.Success)?.copy(
                     sessionMinTemp = null,
                     sessionMaxTemp = null,
@@ -124,18 +118,18 @@ class ThermalViewModel
         }
 
         private fun loadHistory() {
-            historyJob?.cancel()
-            historyJob =
+            screenState.historyJob?.cancel()
+            screenState.historyJob =
                 viewModelScope.launch {
                     getThermalHistory(selectedHistoryPeriod)
                         .catch { e ->
-                            _uiState.update { current ->
+                            screenState.mutableUiState.update { current ->
                                 (current as? ThermalUiState.Success)?.copy(
                                     historyLoadError = e.messageOrRes(R.string.common_error_generic),
                                 ) ?: current
                             }
                         }.collect { readings ->
-                            _uiState.update { current ->
+                            screenState.mutableUiState.update { current ->
                                 (current as? ThermalUiState.Success)?.copy(
                                     thermalHistory = readings,
                                     selectedHistoryPeriod = selectedHistoryPeriod,
@@ -148,8 +142,8 @@ class ThermalViewModel
 
         @OptIn(FlowPreview::class)
         private fun loadThermalData() {
-            loadJob?.cancel()
-            loadJob =
+            screenState.loadJob?.cancel()
+            screenState.loadJob =
                 viewModelScope.launch {
                     combine(
                         getThermalState(),
@@ -173,7 +167,7 @@ class ThermalViewModel
                             lastObservedThermalState = thermalState
                         }
 
-                        val currentSuccess = _uiState.value as? ThermalUiState.Success
+                        val currentSuccess = screenState.mutableUiState.value as? ThermalUiState.Success
                         ThermalUiState.Success(
                             thermalState = thermalState,
                             throttlingEvents = events,
@@ -191,11 +185,12 @@ class ThermalViewModel
                         )
                     }.sample(333L)
                         .catch { e ->
-                            refreshTracker.finish()
-                            _uiState.value = ThermalUiState.Error(e.messageOrRes(R.string.common_error_generic))
+                            screenState.refreshTracker.finish()
+                            screenState.mutableUiState.value =
+                                ThermalUiState.Error(e.messageOrRes(R.string.common_error_generic))
                         }.collect { state ->
-                            _uiState.value = state
-                            refreshTracker.finish()
+                            screenState.mutableUiState.value = state
+                            screenState.refreshTracker.finish()
                         }
                 }
         }

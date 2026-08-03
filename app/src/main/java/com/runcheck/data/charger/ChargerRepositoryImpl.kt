@@ -81,7 +81,7 @@ private fun ChargerProfileEntity.toDomain() =
         created = created,
     )
 
-private fun ChargingSessionEntity.toDomain() =
+internal fun ChargingSessionEntity.toDomain() =
     ChargingSession(
         id = id,
         chargerId = chargerId,

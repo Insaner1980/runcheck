@@ -1,11 +1,7 @@
 package com.runcheck.ui.network
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -16,8 +12,7 @@ import com.runcheck.domain.model.NetworkState
 import com.runcheck.ui.common.isUnknownValue
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.MetricRow
-import com.runcheck.ui.theme.runcheckCardColors
-import com.runcheck.ui.theme.runcheckCardElevation
+import com.runcheck.ui.components.RuncheckCard
 import com.runcheck.ui.theme.spacing
 
 @Composable
@@ -30,13 +25,7 @@ internal fun ConnectionDetailsCard(
 
         MetricRow(
             label = stringResource(R.string.network_connection_type),
-            value =
-                when (networkState.connectionType) {
-                    ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
-                    ConnectionType.CELLULAR -> stringResource(R.string.connection_cellular)
-                    ConnectionType.VPN -> stringResource(R.string.connection_vpn)
-                    ConnectionType.NONE -> stringResource(R.string.connection_none)
-                },
+            value = networkState.connectionType.shortLabel(),
             onInfoClick = { onInfoClick("connectionType") },
         )
 
@@ -222,19 +211,18 @@ internal fun NetworkPanel(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
-        shape = MaterialTheme.shapes.large,
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-            content = content,
-        )
-    }
+    RuncheckCard(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+        content = content,
+    )
 }
+
+@Composable
+internal fun ConnectionType.shortLabel(): String =
+    when (this) {
+        ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
+        ConnectionType.CELLULAR -> stringResource(R.string.connection_cellular)
+        ConnectionType.VPN -> stringResource(R.string.connection_vpn)
+        ConnectionType.NONE -> stringResource(R.string.connection_none)
+    }

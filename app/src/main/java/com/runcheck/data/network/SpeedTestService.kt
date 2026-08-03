@@ -6,6 +6,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import com.runcheck.R
 import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SpeedTestConnectionInfo
 import com.runcheck.domain.model.SpeedTestProgress
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -385,10 +386,10 @@ class SpeedTestService
 
         private data class ValidatedNetwork(
             val network: Network,
-            val info: NetworkDataSource.NetworkInfo,
+            val info: NetworkState,
         )
 
-        private fun NetworkDataSource.NetworkInfo.toConnectionInfo(): SpeedTestConnectionInfo {
+        private fun NetworkState.toConnectionInfo(): SpeedTestConnectionInfo {
             val subtype =
                 when (connectionType) {
                     ConnectionType.WIFI -> wifiStandard

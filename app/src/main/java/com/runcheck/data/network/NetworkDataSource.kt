@@ -24,6 +24,7 @@ import androidx.core.content.PermissionChecker
 import androidx.core.location.LocationManagerCompat
 import com.runcheck.R
 import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SignalQuality
 import com.runcheck.domain.model.classifyNetworkSignalQuality
 import com.runcheck.util.AppDispatchers
@@ -66,7 +67,7 @@ class NetworkDataSource
         @Volatile
         private var cachedWifiDetails: WifiDetails? = null
 
-        private val networkInfoFlow: Flow<NetworkInfo> by lazy {
+        private val networkInfoFlow: Flow<NetworkState> by lazy {
             callbackFlow {
                 var currentDefaultNetwork: Network? = null
                 var currentCapabilities: NetworkCapabilities? = null
@@ -76,7 +77,7 @@ class NetworkDataSource
                     val info =
                         currentCapabilities?.let { capabilities ->
                             buildNetworkInfo(capabilities, currentLinkProperties)
-                        } ?: NetworkInfo.disconnected()
+                        } ?: NetworkState.disconnected()
                     trySend(info)
                 }
 
@@ -182,23 +183,23 @@ class NetworkDataSource
             )
         }
 
-        fun getNetworkInfo(): Flow<NetworkInfo> = networkInfoFlow
+        fun getNetworkInfo(): Flow<NetworkState> = networkInfoFlow
 
-        fun getCurrentNetworkInfoSnapshot(): NetworkInfo {
+        fun getCurrentNetworkInfoSnapshot(): NetworkState {
             val activeNetwork = connectivityManager.activeNetwork
             val capabilities = activeNetwork?.let(connectivityManager::getNetworkCapabilities)
             val linkProperties = activeNetwork?.let(connectivityManager::getLinkProperties)
             return if (capabilities != null) {
                 buildNetworkInfo(capabilities, linkProperties)
             } else {
-                NetworkInfo.disconnected()
+                NetworkState.disconnected()
             }
         }
 
         internal fun getNetworkInfoFromCallback(
             capabilities: NetworkCapabilities,
             linkProperties: android.net.LinkProperties? = null,
-        ): NetworkInfo = buildNetworkInfo(capabilities, linkProperties)
+        ): NetworkState = buildNetworkInfo(capabilities, linkProperties)
 
         fun hasValidatedConnection(): Boolean {
             val activeNetwork = connectivityManager.activeNetwork ?: return false
@@ -211,7 +212,7 @@ class NetworkDataSource
         private fun buildNetworkInfo(
             capabilities: NetworkCapabilities,
             linkProperties: android.net.LinkProperties?,
-        ): NetworkInfo {
+        ): NetworkState {
             val isWifi = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
             val isCellular = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
             val isVpn =
@@ -320,7 +321,7 @@ class NetworkDataSource
                     null
                 }
 
-            return NetworkInfo(
+            return NetworkState(
                 connectionType = connectionType,
                 signalDbm = signalDbm,
                 signalAsu = signalAsu,
@@ -343,7 +344,7 @@ class NetworkDataSource
             )
         }
 
-        private fun kotlinx.coroutines.channels.ProducerScope<NetworkInfo>.emitCurrentNetworkInfo() {
+        private fun kotlinx.coroutines.channels.ProducerScope<NetworkState>.emitCurrentNetworkInfo() {
             trySend(getCurrentNetworkInfoSnapshot())
         }
 
@@ -654,37 +655,6 @@ class NetworkDataSource
                 null
             } else {
                 normalized
-            }
-        }
-
-        data class NetworkInfo(
-            val connectionType: ConnectionType,
-            val signalDbm: Int?,
-            val signalAsu: Int? = null,
-            val signalQuality: SignalQuality,
-            val wifiSsid: String? = null,
-            val wifiSpeedMbps: Int? = null,
-            val wifiFrequencyMhz: Int? = null,
-            val carrier: String? = null,
-            val networkSubtype: String? = null,
-            val estimatedDownstreamKbps: Int? = null,
-            val estimatedUpstreamKbps: Int? = null,
-            val isMetered: Boolean? = null,
-            val isRoaming: Boolean? = null,
-            val isVpn: Boolean? = null,
-            val ipAddresses: List<String> = emptyList(),
-            val dnsServers: List<String> = emptyList(),
-            val mtuBytes: Int? = null,
-            val wifiBssid: String? = null,
-            val wifiStandard: String? = null,
-        ) {
-            companion object {
-                fun disconnected() =
-                    NetworkInfo(
-                        connectionType = ConnectionType.NONE,
-                        signalDbm = null,
-                        signalQuality = SignalQuality.NO_SIGNAL,
-                    )
             }
         }
 

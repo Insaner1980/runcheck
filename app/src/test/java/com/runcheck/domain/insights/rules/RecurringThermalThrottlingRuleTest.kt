@@ -48,7 +48,7 @@ class RecurringThermalThrottlingRuleTest {
                             8L * 60L * 1000L,
                     ),
                 )
-            val rule = RecurringThermalThrottlingRule(FakeThrottlingRepository(events))
+            val rule = RecurringThermalThrottlingRule(TestThrottlingRepository(events))
 
             val insights = rule.evaluate(now)
 
@@ -89,7 +89,7 @@ class RecurringThermalThrottlingRuleTest {
                             1L * 60L * 1000L,
                     ),
                 )
-            val rule = RecurringThermalThrottlingRule(FakeThrottlingRepository(events))
+            val rule = RecurringThermalThrottlingRule(TestThrottlingRepository(events))
 
             val insights = rule.evaluate(now)
 
@@ -107,7 +107,7 @@ class RecurringThermalThrottlingRuleTest {
                     throttlingEvent(id = 2L, timestamp = now - 1L * dayMs),
                     throttlingEvent(id = 3L, timestamp = now + 1L),
                 )
-            val rule = RecurringThermalThrottlingRule(FakeThrottlingRepository(events))
+            val rule = RecurringThermalThrottlingRule(TestThrottlingRepository(events))
 
             val insights = rule.evaluate(now)
 
@@ -127,33 +127,3 @@ private fun throttlingEvent(
     foregroundApp = null,
     durationMs = 60L * 1000L,
 )
-
-private class FakeThrottlingRepository(
-    private val events: List<ThrottlingEvent>,
-) : ThrottlingRepository {
-    override fun getRecentEvents(limit: Int): Flow<List<ThrottlingEvent>> = emptyFlow()
-
-    override suspend fun getEventsSinceSync(since: Long): List<ThrottlingEvent> =
-        events.filter { it.timestamp >= since }
-
-    override suspend fun insert(event: ThrottlingEvent): Long = 0L
-
-    override suspend fun getOpenEvent(): ThrottlingEvent? = null
-
-    override suspend fun updateSnapshot(
-        id: Long,
-        thermalStatus: String,
-        batteryTempC: Float,
-        cpuTempC: Float?,
-        foregroundApp: String?,
-    ) = Unit
-
-    override suspend fun updateDuration(
-        id: Long,
-        durationMs: Long,
-    ) = Unit
-
-    override suspend fun deleteOlderThan(cutoff: Long) = Unit
-
-    override suspend fun deleteAll() = Unit
-}

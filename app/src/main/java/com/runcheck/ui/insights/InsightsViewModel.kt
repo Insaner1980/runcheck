@@ -6,6 +6,7 @@ import com.runcheck.R
 import com.runcheck.domain.insights.policy.visibleForProAccess
 import com.runcheck.domain.repository.InsightRepository
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
+import com.runcheck.ui.common.changedUnseenIds
 import com.runcheck.ui.common.messageOrRes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,18 +62,9 @@ class InsightsViewModel
         }
 
         private fun maybeMarkSeen(state: InsightsUiState.Success) {
-            val unseenIds =
-                state.insights
-                    .filterNot { it.seen }
-                    .map { it.id }
-                    .toSet()
-            if (unseenIds.isEmpty()) {
-                lastSeenInsightIds = emptySet()
-                return
-            }
-            if (unseenIds == lastSeenInsightIds) return
-
+            val unseenIds = state.insights.changedUnseenIds(lastSeenInsightIds) ?: return
             lastSeenInsightIds = unseenIds
+            if (unseenIds.isEmpty()) return
             viewModelScope.launch {
                 insightRepository.markSeen(unseenIds)
             }

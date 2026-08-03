@@ -41,6 +41,22 @@ class GetBatteryStatisticsUseCaseTest {
         healthPct = null,
     )
 
+    private suspend fun calculate(readings: List<BatteryReading>) =
+        run {
+            coEvery { batteryRepository.getReadingsSinceSync(any()) } returns readings
+            useCase(periodDays = 7)
+        }
+
+    private fun readings(
+        levels: List<Int>,
+        statuses: List<String> = List(levels.size) { "DISCHARGING" },
+    ): List<BatteryReading> {
+        require(levels.size == statuses.size)
+        return levels.mapIndexed { index, level ->
+            reading(timestamp = 1000L + index * HOUR_MS, level = level, status = statuses[index])
+        }
+    }
+
     @Test
     fun `empty readings returns null`() =
         runTest {
@@ -68,16 +84,7 @@ class GetBatteryStatisticsUseCaseTest {
     fun `normal discharge cycle calculates correct totals`() =
         runTest {
             // 80 -> 70 -> 60: discharged 20%, charged 0%
-            val hourMs = 3_600_000L
-            val readings =
-                listOf(
-                    reading(timestamp = 1000L, level = 80),
-                    reading(timestamp = 1000L + hourMs, level = 70),
-                    reading(timestamp = 1000L + 2 * hourMs, level = 60),
-                )
-            coEvery { batteryRepository.getReadingsSinceSync(any()) } returns readings
-
-            val result = useCase(periodDays = 7)
+            val result = calculate(readings(listOf(80, 70, 60)))
 
             assertNotNull(result)
             val stats = requireNotNull(result)
@@ -92,18 +99,13 @@ class GetBatteryStatisticsUseCaseTest {
             // 50 -> 60 -> 70 -> 65 -> 55
             // Charge: (60-50) + (70-60) = 20
             // Discharge: (70-65) + (65-55) = 15
-            val hourMs = 3_600_000L
-            val readings =
-                listOf(
-                    reading(timestamp = 1000L, level = 50, status = "CHARGING"),
-                    reading(timestamp = 1000L + hourMs, level = 60, status = "CHARGING"),
-                    reading(timestamp = 1000L + 2 * hourMs, level = 70, status = "CHARGING"),
-                    reading(timestamp = 1000L + 3 * hourMs, level = 65, status = "DISCHARGING"),
-                    reading(timestamp = 1000L + 4 * hourMs, level = 55, status = "DISCHARGING"),
+            val result =
+                calculate(
+                    readings(
+                        levels = listOf(50, 60, 70, 65, 55),
+                        statuses = listOf("CHARGING", "CHARGING", "CHARGING", "DISCHARGING", "DISCHARGING"),
+                    ),
                 )
-            coEvery { batteryRepository.getReadingsSinceSync(any()) } returns readings
-
-            val result = useCase(periodDays = 7)
 
             assertNotNull(result)
             val stats = requireNotNull(result)
@@ -114,24 +116,25 @@ class GetBatteryStatisticsUseCaseTest {
     @Test
     fun `session count detection counts charge session starts`() =
         runTest {
-            val hourMs = 3_600_000L
             // Two separate charging sessions:
             // Session 1: DISCHARGING -> CHARGING -> CHARGING
             // Session 2: DISCHARGING -> CHARGING -> DISCHARGING
             val readings =
-                listOf(
-                    reading(timestamp = 1000L, level = 80, status = "DISCHARGING"),
-                    reading(timestamp = 1000L + hourMs, level = 75, status = "DISCHARGING"),
-                    reading(timestamp = 1000L + 2 * hourMs, level = 76, status = "CHARGING"), // session 1 start
-                    reading(timestamp = 1000L + 3 * hourMs, level = 85, status = "CHARGING"),
-                    reading(timestamp = 1000L + 4 * hourMs, level = 80, status = "DISCHARGING"),
-                    reading(timestamp = 1000L + 5 * hourMs, level = 75, status = "DISCHARGING"),
-                    reading(timestamp = 1000L + 6 * hourMs, level = 76, status = "CHARGING"), // session 2 start
-                    reading(timestamp = 1000L + 7 * hourMs, level = 90, status = "DISCHARGING"),
+                readings(
+                    levels = listOf(80, 75, 76, 85, 80, 75, 76, 90),
+                    statuses =
+                        listOf(
+                            "DISCHARGING",
+                            "DISCHARGING",
+                            "CHARGING",
+                            "CHARGING",
+                            "DISCHARGING",
+                            "DISCHARGING",
+                            "CHARGING",
+                            "DISCHARGING",
+                        ),
                 )
-            coEvery { batteryRepository.getReadingsSinceSync(any()) } returns readings
-
-            val result = useCase(periodDays = 7)
+            val result = calculate(readings)
 
             assertNotNull(result)
             assertEquals(2, requireNotNull(result).chargeSessions)
@@ -140,17 +143,8 @@ class GetBatteryStatisticsUseCaseTest {
     @Test
     fun `average drain rate calculated from discharging pairs`() =
         runTest {
-            val hourMs = 3_600_000L
             // 3 discharging readings, each 1 hour apart, draining 5% per hour
-            val readings =
-                listOf(
-                    reading(timestamp = 1000L, level = 90, status = "DISCHARGING"),
-                    reading(timestamp = 1000L + hourMs, level = 85, status = "DISCHARGING"),
-                    reading(timestamp = 1000L + 2 * hourMs, level = 80, status = "DISCHARGING"),
-                )
-            coEvery { batteryRepository.getReadingsSinceSync(any()) } returns readings
-
-            val result = useCase(periodDays = 7)
+            val result = calculate(readings(listOf(90, 85, 80)))
 
             assertNotNull(result)
             // Total drain = 5 + 5 = 10% over 2 hours = 5%/hr
@@ -162,17 +156,8 @@ class GetBatteryStatisticsUseCaseTest {
     @Test
     fun `full charge estimate hours calculated from drain rate`() =
         runTest {
-            val hourMs = 3_600_000L
             // 10% per hour drain
-            val readings =
-                listOf(
-                    reading(timestamp = 1000L, level = 100, status = "DISCHARGING"),
-                    reading(timestamp = 1000L + hourMs, level = 90, status = "DISCHARGING"),
-                    reading(timestamp = 1000L + 2 * hourMs, level = 80, status = "DISCHARGING"),
-                )
-            coEvery { batteryRepository.getReadingsSinceSync(any()) } returns readings
-
-            val result = useCase(periodDays = 7)
+            val result = calculate(readings(listOf(100, 90, 80)))
 
             assertNotNull(result)
             // 10% per hour -> full charge estimate = 100/10 = 10 hours
@@ -184,17 +169,8 @@ class GetBatteryStatisticsUseCaseTest {
     @Test
     fun `no discharging readings produces null drain rate`() =
         runTest {
-            val hourMs = 3_600_000L
             // Only charging readings
-            val readings =
-                listOf(
-                    reading(timestamp = 1000L, level = 50, status = "CHARGING"),
-                    reading(timestamp = 1000L + hourMs, level = 60, status = "CHARGING"),
-                    reading(timestamp = 1000L + 2 * hourMs, level = 70, status = "CHARGING"),
-                )
-            coEvery { batteryRepository.getReadingsSinceSync(any()) } returns readings
-
-            val result = useCase(periodDays = 7)
+            val result = calculate(readings(listOf(50, 60, 70), List(3) { "CHARGING" }))
 
             assertNotNull(result)
             val stats = requireNotNull(result)
@@ -205,17 +181,8 @@ class GetBatteryStatisticsUseCaseTest {
     @Test
     fun `very low drain rate produces null full charge estimate`() =
         runTest {
-            val hourMs = 3_600_000L
             // Drain rate near zero: 0 actual drain in discharging readings
-            val readings =
-                listOf(
-                    reading(timestamp = 1000L, level = 80, status = "DISCHARGING"),
-                    reading(timestamp = 1000L + hourMs, level = 80, status = "DISCHARGING"),
-                    reading(timestamp = 1000L + 2 * hourMs, level = 80, status = "DISCHARGING"),
-                )
-            coEvery { batteryRepository.getReadingsSinceSync(any()) } returns readings
-
-            val result = useCase(periodDays = 7)
+            val result = calculate(readings(listOf(80, 80, 80)))
 
             assertNotNull(result)
             // drain is 0%/hr which is < 0.1, so fullChargeEstimateHours should be null
@@ -225,17 +192,8 @@ class GetBatteryStatisticsUseCaseTest {
     @Test
     fun `readings are sorted by timestamp regardless of input order`() =
         runTest {
-            val hourMs = 3_600_000L
             // Supply readings out of order
-            val readings =
-                listOf(
-                    reading(timestamp = 1000L + 2 * hourMs, level = 60, status = "DISCHARGING"),
-                    reading(timestamp = 1000L, level = 80, status = "DISCHARGING"),
-                    reading(timestamp = 1000L + hourMs, level = 70, status = "DISCHARGING"),
-                )
-            coEvery { batteryRepository.getReadingsSinceSync(any()) } returns readings
-
-            val result = useCase(periodDays = 7)
+            val result = calculate(readings(listOf(80, 70, 60)).reversed())
 
             assertNotNull(result)
             // Should still correctly compute: 80->70->60, discharged = 20
@@ -250,17 +208,8 @@ class GetBatteryStatisticsUseCaseTest {
     @Test
     fun `level increasing during discharge counts as charged`() =
         runTest {
-            val hourMs = 3_600_000L
             // Level goes up by 1 even during "DISCHARGING" status (edge case)
-            val readings =
-                listOf(
-                    reading(timestamp = 1000L, level = 50, status = "DISCHARGING"),
-                    reading(timestamp = 1000L + hourMs, level = 51, status = "DISCHARGING"),
-                    reading(timestamp = 1000L + 2 * hourMs, level = 48, status = "DISCHARGING"),
-                )
-            coEvery { batteryRepository.getReadingsSinceSync(any()) } returns readings
-
-            val result = useCase(periodDays = 7)
+            val result = calculate(readings(listOf(50, 51, 48)))
 
             assertNotNull(result)
             // +1 from 50->51 is charged, -3 from 51->48 is discharged
@@ -272,20 +221,15 @@ class GetBatteryStatisticsUseCaseTest {
     @Test
     fun `NOT_CHARGING status counts as discharging pair for drain rate`() =
         runTest {
-            val hourMs = 3_600_000L
-            val readings =
-                listOf(
-                    reading(timestamp = 1000L, level = 80, status = "NOT_CHARGING"),
-                    reading(timestamp = 1000L + hourMs, level = 75, status = "NOT_CHARGING"),
-                    reading(timestamp = 1000L + 2 * hourMs, level = 70, status = "NOT_CHARGING"),
-                )
-            coEvery { batteryRepository.getReadingsSinceSync(any()) } returns readings
-
-            val result = useCase(periodDays = 7)
+            val result = calculate(readings(listOf(80, 75, 70), List(3) { "NOT_CHARGING" }))
 
             assertNotNull(result)
             val stats = requireNotNull(result)
             assertNotNull(stats.avgDrainRatePctPerHour)
             assertEquals(5f, requireNotNull(stats.avgDrainRatePctPerHour), 0.1f)
         }
+
+    private companion object {
+        const val HOUR_MS = 3_600_000L
+    }
 }

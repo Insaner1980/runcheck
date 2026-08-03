@@ -4,6 +4,7 @@ import androidx.paging.PagingData
 import com.runcheck.domain.model.AppBatteryUsage
 import com.runcheck.domain.model.AppUsageListSummary
 import com.runcheck.domain.repository.AppBatteryUsageRepository
+import com.runcheck.testutil.TestAppBatteryUsageRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
@@ -52,7 +53,7 @@ class HeavyAppUsageRuleTest {
                         estimatedDrainMah = null,
                     ),
                 )
-            val rule = HeavyAppUsageRule(FakeAppBatteryUsageRepository(readings))
+            val rule = HeavyAppUsageRule(TestAppBatteryUsageRepository(readings))
 
             val insights = rule.evaluate(now)
 
@@ -97,26 +98,10 @@ class HeavyAppUsageRuleTest {
                         estimatedDrainMah = null,
                     ),
                 )
-            val rule = HeavyAppUsageRule(FakeAppBatteryUsageRepository(readings))
+            val rule = HeavyAppUsageRule(TestAppBatteryUsageRepository(readings))
 
             val insights = rule.evaluate(now)
 
             assertTrue(insights.isEmpty())
         }
-}
-
-private class FakeAppBatteryUsageRepository(
-    private val usages: List<AppBatteryUsage>,
-) : AppBatteryUsageRepository {
-    override fun getAggregatedUsageSince(since: Long): Flow<PagingData<AppBatteryUsage>> = emptyFlow()
-
-    override fun getUsageSummarySince(since: Long): Flow<AppUsageListSummary> = emptyFlow()
-
-    override suspend fun getUsageSinceSync(since: Long): List<AppBatteryUsage> = usages.filter { it.timestamp >= since }
-
-    override suspend fun collectUsageSnapshot() = Unit
-
-    override suspend fun deleteOlderThan(cutoff: Long) = Unit
-
-    override suspend fun deleteAll() = Unit
 }

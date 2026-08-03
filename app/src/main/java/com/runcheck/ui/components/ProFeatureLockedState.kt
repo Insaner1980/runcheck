@@ -25,7 +25,6 @@ fun ProFeatureLockedState(
     onAction: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val accentColor = MaterialTheme.colorScheme.primary
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
@@ -48,13 +47,22 @@ fun ProFeatureLockedState(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            OutlinedButton(
-                onClick = onAction,
-                border = BorderStroke(1.dp, accentColor),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = accentColor),
-            ) {
-                Text(actionLabel)
-            }
+            ProFeatureActionButton(actionLabel = actionLabel, onAction = onAction)
         }
+    }
+}
+
+@Composable
+internal fun ProFeatureActionButton(
+    actionLabel: String,
+    onAction: () -> Unit,
+) {
+    val accentColor = MaterialTheme.colorScheme.primary
+    OutlinedButton(
+        onClick = onAction,
+        border = BorderStroke(1.dp, accentColor),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = accentColor),
+    ) {
+        Text(actionLabel)
     }
 }

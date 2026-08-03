@@ -81,16 +81,11 @@ class ExportDataUseCaseTest {
         runTest {
             coEvery { batteryRepository.getAllReadings() } returns
                 listOf(
-                    BatteryReading(
-                        timestamp = 1_700_000_000_000L,
-                        level = 80,
+                    batteryReading(
                         voltageMv = 4000,
                         temperatureC = 30f,
                         currentMa = -400,
                         currentConfidence = "HIGH,MEDIUM", // contains comma
-                        status = "DISCHARGING",
-                        plugType = "NONE",
-                        health = "GOOD",
                         cycleCount = null,
                         healthPct = null,
                     ),
@@ -111,16 +106,11 @@ class ExportDataUseCaseTest {
         runTest {
             coEvery { batteryRepository.getAllReadings() } returns
                 listOf(
-                    BatteryReading(
-                        timestamp = 1_700_000_000_000L,
-                        level = 80,
+                    batteryReading(
                         voltageMv = 4000,
                         temperatureC = 30f,
                         currentMa = -400,
                         currentConfidence = "says \"hello\"", // contains quotes
-                        status = "DISCHARGING",
-                        plugType = "NONE",
-                        health = "GOOD",
                         cycleCount = null,
                         healthPct = null,
                     ),
@@ -218,21 +208,7 @@ class ExportDataUseCaseTest {
     fun `battery export has correct column count`() =
         runTest {
             coEvery { batteryRepository.getAllReadings() } returns
-                listOf(
-                    BatteryReading(
-                        timestamp = 1_700_000_000_000L,
-                        level = 80,
-                        voltageMv = 4200,
-                        temperatureC = 32.5f,
-                        currentMa = -450,
-                        currentConfidence = "HIGH",
-                        status = "DISCHARGING",
-                        plugType = "NONE",
-                        health = "GOOD",
-                        cycleCount = 150,
-                        healthPct = 95,
-                    ),
-                )
+                listOf(batteryReading())
 
             val csv = useCase.exportBatteryCsv()
             val lines = csv.lines().filter { it.isNotBlank() }
@@ -252,21 +228,7 @@ class ExportDataUseCaseTest {
     fun `battery export formats values correctly`() =
         runTest {
             coEvery { batteryRepository.getAllReadings() } returns
-                listOf(
-                    BatteryReading(
-                        timestamp = 1_700_000_000_000L,
-                        level = 80,
-                        voltageMv = 4200,
-                        temperatureC = 32.5f,
-                        currentMa = -450,
-                        currentConfidence = "HIGH",
-                        status = "DISCHARGING",
-                        plugType = "NONE",
-                        health = "GOOD",
-                        cycleCount = 150,
-                        healthPct = 95,
-                    ),
-                )
+                listOf(batteryReading())
 
             val csv = useCase.exportBatteryCsv()
             val dataLine = csv.lines().drop(1).first { it.isNotBlank() }
@@ -284,16 +246,9 @@ class ExportDataUseCaseTest {
         runTest {
             coEvery { batteryRepository.getAllReadings() } returns
                 listOf(
-                    BatteryReading(
-                        timestamp = 1_700_000_000_000L,
-                        level = 80,
-                        voltageMv = 4200,
-                        temperatureC = 32.5f,
+                    batteryReading(
                         currentMa = null,
                         currentConfidence = "UNAVAILABLE",
-                        status = "DISCHARGING",
-                        plugType = "NONE",
-                        health = "GOOD",
                         cycleCount = null,
                         healthPct = null,
                     ),
@@ -439,16 +394,9 @@ class ExportDataUseCaseTest {
         runTest {
             coEvery { batteryRepository.getAllReadings() } returns
                 listOf(
-                    BatteryReading(
-                        timestamp = 1_700_000_000_000L,
-                        level = 80,
-                        voltageMv = 4200,
+                    batteryReading(
                         temperatureC = 30f,
                         currentMa = null,
-                        currentConfidence = "HIGH",
-                        status = "DISCHARGING",
-                        plugType = "NONE",
-                        health = "GOOD",
                         cycleCount = null,
                         healthPct = null,
                     ),
@@ -464,6 +412,27 @@ class ExportDataUseCaseTest {
                 timestampField.contains("T"),
             )
         }
+
+    private fun batteryReading(
+        voltageMv: Int = 4200,
+        temperatureC: Float = 32.5f,
+        currentMa: Int? = -450,
+        currentConfidence: String = "HIGH",
+        cycleCount: Int? = 150,
+        healthPct: Int? = 95,
+    ) = BatteryReading(
+        timestamp = 1_700_000_000_000L,
+        level = 80,
+        voltageMv = voltageMv,
+        temperatureC = temperatureC,
+        currentMa = currentMa,
+        currentConfidence = currentConfidence,
+        status = "DISCHARGING",
+        plugType = "NONE",
+        health = "GOOD",
+        cycleCount = cycleCount,
+        healthPct = healthPct,
+    )
 
     // --- Thermal status formatting ---
 

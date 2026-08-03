@@ -37,6 +37,7 @@ Legacy billing or ad-related code may still exist in the repo. Do not expand tha
 - Database: Room
 - Preferences: DataStore
 - UI: Jetpack Compose + Material 3
+- Shared orchestration: insight rules extend `SingleCandidateInsightRule` or its specialized bases, while reusable screen, card, and chart structure lives in `ui/components/` and `ui/chart/`; extend these primitives instead of copying their pipelines
 - Background work: WorkManager
 - Widgets: Glance
 - Speed test: M-Lab NDT7 (`ndt7-client-android`)
@@ -135,6 +136,8 @@ PowerShell wrappers live in `tools/` and forward through `tools\Invoke-RuncheckP
 Report-reading phrase conventions live in `PROJECT.md` under "Report-reading convention"; use that list when the user says "lue lint-tulokset" or "lue security-tulokset" instead of inferring a shorter report list from wrapper summaries.
 
 When `osv-scanner`, gitleaks, TruffleHog, or PMD are missing from `PATH`, the shared Android-check wrappers may download and cache verified tool binaries under `.gradle\android-check-tools\`; offline first runs can therefore skip or fail before a cached tool exists. The OSV source scan excludes `.deepsec` so Android-check's own DeepSec tooling dependencies do not fail app dependency scans.
+
+Build-tool transitive security versions are centralized as `runcheck.buildTools.*` properties in `gradle.properties`. Root `build.gradle.kts` applies them only to the affected build, lint, ktlint, and Unified Test Platform configurations; do not replace this with app-runtime-wide forcing or package-level OSV suppression.
 
 Do not run the heavy `lc`, `sc`, Sonar, Dependency-Check, MobSF, DeepSec, or full Gradle verification paths unless the user explicitly asks or they are required to unblock the task. Prefer `-PlanOnly`, task listing, targeted config checks, and narrow tests first.
 

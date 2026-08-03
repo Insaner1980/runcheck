@@ -24,64 +24,85 @@ class ChargerSessionTracker
     ) {
         private val mutex = Mutex()
         private var lastProcessedTimestamp = Long.MIN_VALUE
+        private var lastObservedStatus: ChargingStatus? = null
+        private var lastObservationTimestamp = 0L
 
         suspend fun onBatteryState(
             state: BatteryState,
             timestamp: Long = System.currentTimeMillis(),
         ) {
             mutex.withLock {
+                processBatteryState(state, timestamp)
+            }
+        }
+
+        suspend fun onObservedBatteryState(
+            state: BatteryState,
+            timestamp: Long = System.currentTimeMillis(),
+        ) {
+            mutex.withLock {
                 if (timestamp < lastProcessedTimestamp) return@withLock
+                if (lastObservedStatus == state.chargingStatus &&
+                    timestamp - lastObservationTimestamp < OBSERVATION_INTERVAL_MS
+                ) {
+                    return@withLock
+                }
+                processBatteryState(state, timestamp)
+                lastObservedStatus = state.chargingStatus
+                lastObservationTimestamp = timestamp
+            }
+        }
 
-                val selectedChargerId = userPreferencesRepository.getSelectedChargerId()
-                val activeSession = chargerRepository.getActiveSession()
-                val isCharging = state.chargingStatus == ChargingStatus.CHARGING
+        private suspend fun processBatteryState(
+            state: BatteryState,
+            timestamp: Long,
+        ) {
+            if (timestamp < lastProcessedTimestamp) return
 
-                when {
-                    isCharging && selectedChargerId != null && activeSession == null -> {
-                        chargerRepository.insertSession(
-                            ChargingSession(
-                                chargerId = selectedChargerId,
-                                startTime = timestamp,
-                                endTime = null,
-                                startLevel = state.level,
-                                endLevel = null,
-                                avgCurrentMa = null,
-                                maxCurrentMa = null,
-                                avgVoltageMv = null,
-                                avgPowerMw = null,
-                                plugType = state.plugType.name,
-                            ),
-                        )
-                    }
+            val selectedChargerId = userPreferencesRepository.getSelectedChargerId()
+            val activeSession = chargerRepository.getActiveSession()
+            val isCharging = state.chargingStatus == ChargingStatus.CHARGING
 
-                    isCharging && selectedChargerId != null && activeSession != null &&
-                        activeSession.chargerId != selectedChargerId -> {
-                        transactionRunner.runInTransaction {
-                            completeSession(activeSession, state, timestamp)
-                            chargerRepository.insertSession(
-                                ChargingSession(
-                                    chargerId = selectedChargerId,
-                                    startTime = timestamp,
-                                    endTime = null,
-                                    startLevel = state.level,
-                                    endLevel = null,
-                                    avgCurrentMa = null,
-                                    maxCurrentMa = null,
-                                    avgVoltageMv = null,
-                                    avgPowerMw = null,
-                                    plugType = state.plugType.name,
-                                ),
-                            )
-                        }
-                    }
+            when {
+                isCharging && selectedChargerId != null && activeSession == null -> {
+                    startSession(selectedChargerId, state, timestamp)
+                }
 
-                    activeSession != null && (!isCharging || selectedChargerId == null) -> {
+                isCharging && selectedChargerId != null && activeSession != null &&
+                    activeSession.chargerId != selectedChargerId -> {
+                    transactionRunner.runInTransaction {
                         completeSession(activeSession, state, timestamp)
+                        startSession(selectedChargerId, state, timestamp)
                     }
                 }
 
-                lastProcessedTimestamp = timestamp
+                activeSession != null && (!isCharging || selectedChargerId == null) -> {
+                    completeSession(activeSession, state, timestamp)
+                }
             }
+
+            lastProcessedTimestamp = timestamp
+        }
+
+        private suspend fun startSession(
+            chargerId: Long,
+            state: BatteryState,
+            timestamp: Long,
+        ) {
+            chargerRepository.insertSession(
+                ChargingSession(
+                    chargerId = chargerId,
+                    startTime = timestamp,
+                    endTime = null,
+                    startLevel = state.level,
+                    endLevel = null,
+                    avgCurrentMa = null,
+                    maxCurrentMa = null,
+                    avgVoltageMv = null,
+                    avgPowerMw = null,
+                    plugType = state.plugType.name,
+                ),
+            )
         }
 
         private suspend fun completeSession(
@@ -138,5 +159,9 @@ class ChargerSessionTracker
                 avgVoltageMv = effectiveVoltageValues.averageOrNull(),
                 avgPowerMw = effectivePowerValues.averageOrNull(),
             )
+        }
+
+        private companion object {
+            const val OBSERVATION_INTERVAL_MS = 15_000L
         }
     }

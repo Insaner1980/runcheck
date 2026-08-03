@@ -7,7 +7,6 @@ import com.runcheck.domain.insights.analysis.TimeWindowAligner
 import com.runcheck.domain.insights.analysis.dischargingPairs
 import com.runcheck.domain.insights.analysis.toDrainSample
 import com.runcheck.domain.insights.analysis.toTimeIntervals
-import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.model.InsightCandidate
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
@@ -27,24 +26,17 @@ class HeatAcceleratedBatteryWearRule
         private val thermalRepository: ThermalRepository,
         private val batteryDrainAnalyzer: BatteryDrainAnalyzer,
         private val timeWindowAligner: TimeWindowAligner,
-    ) : InsightRule {
-        override val ruleId: String = RULE_ID
+    ) : ContextualBatteryDrainRule<HeatDrainSamples>(RULE_ID) {
+        override fun createCandidate(
+            now: Long,
+            comparison: DrainRateComparison,
+            samples: HeatDrainSamples,
+        ): InsightCandidate? =
+            samples.peakHotTemperature?.let { peakTemperature ->
+                createInsightCandidate(now, comparison, peakTemperature, samples.confidence)
+            }
 
-        override suspend fun evaluate(now: Long): List<InsightCandidate> = buildCandidate(now)?.let(::listOf).orEmpty()
-
-        private suspend fun buildCandidate(now: Long): InsightCandidate? {
-            val input = loadInput(now) ?: return null
-            val samples = classifyDrainSamples(input)
-            val comparison = samples.compareDrainRates() ?: return null
-            val peakHotTemperature = samples.peakHotTemperature ?: return null
-
-            return buildCandidate(
-                now = now,
-                comparison = comparison,
-                peakHotTemperature = peakHotTemperature,
-                confidence = samples.confidence,
-            )
-        }
+        override suspend fun loadSamples(now: Long): HeatDrainSamples? = loadInput(now)?.let(::classifyDrainSamples)
 
         private suspend fun loadInput(now: Long): HeatDrainInput? {
             val batteryReadings = batteryRepository.getReadingsSinceSync(now - LOOKBACK_MS)
@@ -97,16 +89,17 @@ class HeatAcceleratedBatteryWearRule
             )
         }
 
-        private fun HeatDrainSamples.compareDrainRates(): DrainRateComparison? =
-            takeIf { it.hasEnoughSamples }
+        override fun compareSamples(samples: HeatDrainSamples): DrainRateComparison? =
+            samples
+                .takeIf { it.hasEnoughSamples }
                 ?.let {
                     batteryDrainAnalyzer.compareAverageDrainRates(
-                        currentSamples = hotDrainSamples,
-                        previousSamples = coolDrainSamples,
+                        currentSamples = samples.hotDrainSamples,
+                        previousSamples = samples.coolDrainSamples,
                     )
                 }?.takeIf { it.changeRatio >= MINIMUM_DRAIN_RATIO }
 
-        private fun buildCandidate(
+        private fun createInsightCandidate(
             now: Long,
             comparison: DrainRateComparison,
             peakHotTemperature: Float,
@@ -191,7 +184,7 @@ private data class HeatDrainInput(
     val thermalReadings: List<ThermalReading>,
 )
 
-private data class HeatDrainSamples(
+data class HeatDrainSamples(
     val hotDrainSamples: List<DrainSample>,
     val coolDrainSamples: List<DrainSample>,
     val hotTemperatures: List<Float>,

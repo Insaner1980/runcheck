@@ -4,18 +4,23 @@ import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.model.NetworkState
+import com.runcheck.domain.model.StorageReading
+import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalReading
 import com.runcheck.domain.model.ThermalState
+import com.runcheck.domain.model.ThrottlingEvent
 import com.runcheck.domain.repository.BatteryRepository
 import com.runcheck.domain.repository.NetworkRepository
+import com.runcheck.domain.repository.StorageRepository
 import com.runcheck.domain.repository.ThermalRepository
+import com.runcheck.domain.repository.ThrottlingRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
 internal const val INSIGHT_TEST_HOUR_MS = 60L * 60L * 1000L
 
 internal class TestBatteryRepository(
-    private val readings: List<BatteryReading>,
+    private val readings: List<BatteryReading> = emptyList(),
 ) : BatteryRepository {
     override fun getBatteryState(): Flow<BatteryState> = emptyFlow()
 
@@ -64,6 +69,28 @@ internal class TestNetworkRepository(
     override suspend fun deleteAll() = Unit
 }
 
+internal class TestStorageRepository(
+    private val readings: List<StorageReading>,
+) : StorageRepository {
+    override fun getStorageState(): Flow<StorageState> = emptyFlow()
+
+    override fun getReadingsSince(
+        since: Long,
+        limit: Int?,
+    ): Flow<List<StorageReading>> = emptyFlow()
+
+    override suspend fun saveReading(state: StorageState) = Unit
+
+    override suspend fun getAllReadings(): List<StorageReading> = readings
+
+    override suspend fun getReadingsSinceSync(since: Long): List<StorageReading> =
+        readings.filter { it.timestamp >= since }
+
+    override suspend fun deleteOlderThan(cutoff: Long) = Unit
+
+    override suspend fun deleteAll() = Unit
+}
+
 internal class TestThermalRepository(
     private val readings: List<ThermalReading>,
 ) : ThermalRepository {
@@ -80,6 +107,37 @@ internal class TestThermalRepository(
     override suspend fun saveReading(state: ThermalState) = Unit
 
     override suspend fun getAllReadings(): List<ThermalReading> = readings
+
+    override suspend fun deleteOlderThan(cutoff: Long) = Unit
+
+    override suspend fun deleteAll() = Unit
+}
+
+internal class TestThrottlingRepository(
+    private val events: List<ThrottlingEvent> = emptyList(),
+) : ThrottlingRepository {
+    override fun getRecentEvents(limit: Int): Flow<List<ThrottlingEvent>> =
+        kotlinx.coroutines.flow.flowOf(events.take(limit))
+
+    override suspend fun getEventsSinceSync(since: Long): List<ThrottlingEvent> =
+        events.filter { it.timestamp >= since }
+
+    override suspend fun insert(event: ThrottlingEvent): Long = 0L
+
+    override suspend fun getOpenEvent(): ThrottlingEvent? = null
+
+    override suspend fun updateSnapshot(
+        id: Long,
+        thermalStatus: String,
+        batteryTempC: Float,
+        cpuTempC: Float?,
+        foregroundApp: String?,
+    ) = Unit
+
+    override suspend fun updateDuration(
+        id: Long,
+        durationMs: Long,
+    ) = Unit
 
     override suspend fun deleteOlderThan(cutoff: Long) = Unit
 
@@ -128,17 +186,35 @@ internal fun thermalReading(
         throttling = thermalStatus >= 3,
     )
 
-internal fun heatDrainThermalReadings(now: Long): List<ThermalReading> =
-    listOf(
-        thermalReading(now - 42L * INSIGHT_TEST_HOUR_MS, 34.0f, 1),
-        thermalReading(now - 36L * INSIGHT_TEST_HOUR_MS, 33.7f, 0),
-        thermalReading(now - 30L * INSIGHT_TEST_HOUR_MS, 34.4f, 1),
-        thermalReading(now - 24L * INSIGHT_TEST_HOUR_MS, 34.2f, 1),
-        thermalReading(now - 18L * INSIGHT_TEST_HOUR_MS, 41.0f, 3),
-        thermalReading(now - 12L * INSIGHT_TEST_HOUR_MS, 42.5f, 4),
-        thermalReading(now - 6L * INSIGHT_TEST_HOUR_MS, 43.2f, 4),
-        thermalReading(now, 42.8f, 3),
-    )
+internal fun heatDrainThermalReadings(
+    now: Long,
+    moderate: Boolean = false,
+): List<ThermalReading> {
+    val coolReadings =
+        listOf(
+            thermalReading(now - 42L * INSIGHT_TEST_HOUR_MS, 34.0f, 1),
+            thermalReading(now - 36L * INSIGHT_TEST_HOUR_MS, 33.7f, 0),
+            thermalReading(now - 30L * INSIGHT_TEST_HOUR_MS, 34.4f, 1),
+            thermalReading(now - 24L * INSIGHT_TEST_HOUR_MS, 34.2f, 1),
+        )
+    val hotReadings =
+        if (moderate) {
+            listOf(
+                thermalReading(now - 18L * INSIGHT_TEST_HOUR_MS, 40.5f, 2),
+                thermalReading(now - 12L * INSIGHT_TEST_HOUR_MS, 40.8f, 2),
+                thermalReading(now - 6L * INSIGHT_TEST_HOUR_MS, 41.0f, 2),
+                thermalReading(now, 41.2f, 2),
+            )
+        } else {
+            listOf(
+                thermalReading(now - 18L * INSIGHT_TEST_HOUR_MS, 41.0f, 3),
+                thermalReading(now - 12L * INSIGHT_TEST_HOUR_MS, 42.5f, 4),
+                thermalReading(now - 6L * INSIGHT_TEST_HOUR_MS, 43.2f, 4),
+                thermalReading(now, 42.8f, 3),
+            )
+        }
+    return coolReadings + hotReadings
+}
 
 internal fun networkReading(
     timestamp: Long,
@@ -159,14 +235,17 @@ internal fun networkReading(
         latencyMs = latencyMs,
     )
 
-internal fun weakCellularDrainReadings(now: Long): List<NetworkReading> =
+internal fun weakCellularDrainReadings(
+    now: Long,
+    weakSignalDbm: Int? = null,
+): List<NetworkReading> =
     listOf(
         networkReading(now - 42L * INSIGHT_TEST_HOUR_MS, "CELLULAR", -96, 100),
         networkReading(now - 36L * INSIGHT_TEST_HOUR_MS, "CELLULAR", -98, 100),
         networkReading(now - 30L * INSIGHT_TEST_HOUR_MS, "CELLULAR", -97, 100),
         networkReading(now - 24L * INSIGHT_TEST_HOUR_MS, "CELLULAR", -95, 100),
-        networkReading(now - 18L * INSIGHT_TEST_HOUR_MS, "CELLULAR", -113, 100),
-        networkReading(now - 12L * INSIGHT_TEST_HOUR_MS, "CELLULAR", -116, 100),
-        networkReading(now - 6L * INSIGHT_TEST_HOUR_MS, "CELLULAR", -118, 100),
-        networkReading(now, "CELLULAR", -115, 100),
+        networkReading(now - 18L * INSIGHT_TEST_HOUR_MS, "CELLULAR", weakSignalDbm ?: -113, 100),
+        networkReading(now - 12L * INSIGHT_TEST_HOUR_MS, "CELLULAR", weakSignalDbm ?: -116, 100),
+        networkReading(now - 6L * INSIGHT_TEST_HOUR_MS, "CELLULAR", weakSignalDbm ?: -118, 100),
+        networkReading(now, "CELLULAR", weakSignalDbm ?: -115, 100),
     )

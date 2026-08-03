@@ -132,19 +132,7 @@ class InsightTestDataSeeder
                 val progress = index / lastIndex.toFloat()
                 val level = interpolateInt(startLevel, endLevel, progress)
                 batteryReadingDao.insert(
-                    BatteryReadingEntity(
-                        timestamp = start + (index * intervalMs),
-                        level = level,
-                        voltageMv = 4020 - (index * 3),
-                        temperatureC = 29.5f + ((index % 5) * 0.2f),
-                        currentMa = -420 - (index * 2),
-                        currentConfidence = "HIGH",
-                        status = "DISCHARGING",
-                        plugType = "NONE",
-                        health = "GOOD",
-                        cycleCount = 312,
-                        healthPct = 90,
-                    ),
+                    demoBatteryReading(start, index, intervalMs, level, currentStep = 2),
                 )
             }
         }
@@ -156,22 +144,30 @@ class InsightTestDataSeeder
         ) {
             levels.forEachIndexed { index, level ->
                 batteryReadingDao.insert(
-                    BatteryReadingEntity(
-                        timestamp = start + (index * intervalMs),
-                        level = level,
-                        voltageMv = 4020 - (index * 3),
-                        temperatureC = 29.5f + ((index % 5) * 0.2f),
-                        currentMa = -420 - (index * 3),
-                        currentConfidence = "HIGH",
-                        status = "DISCHARGING",
-                        plugType = "NONE",
-                        health = "GOOD",
-                        cycleCount = 312,
-                        healthPct = 90,
-                    ),
+                    demoBatteryReading(start, index, intervalMs, level, currentStep = 3),
                 )
             }
         }
+
+        private fun demoBatteryReading(
+            start: Long,
+            index: Int,
+            intervalMs: Long,
+            level: Int,
+            currentStep: Int,
+        ) = BatteryReadingEntity(
+            timestamp = start + (index * intervalMs),
+            level = level,
+            voltageMv = 4020 - (index * 3),
+            temperatureC = 29.5f + ((index % 5) * 0.2f),
+            currentMa = -420 - (index * currentStep),
+            currentConfidence = "HIGH",
+            status = "DISCHARGING",
+            plugType = "NONE",
+            health = "GOOD",
+            cycleCount = 312,
+            healthPct = 90,
+        )
 
         private suspend fun seedNetworkReadings(now: Long) {
             val currentStart = now - (7L * DAY_MS)

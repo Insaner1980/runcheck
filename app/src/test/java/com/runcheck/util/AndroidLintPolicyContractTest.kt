@@ -1,5 +1,6 @@
 package com.runcheck.util
 
+import com.runcheck.testutil.findAppDir
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -111,11 +112,4 @@ class AndroidLintPolicyContractTest {
         } else {
             null
         }
-
-    private fun findAppDir(): Path {
-        val start = Paths.get("").toAbsolutePath()
-        return generateSequence(start) { it.parent }
-            .flatMap { path -> sequenceOf(path, path.resolve("app")) }
-            .first { Files.exists(it.resolve("src/main/res")) && Files.exists(it.resolve("build.gradle.kts")) }
-    }
 }

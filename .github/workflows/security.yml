@@ -20,18 +20,19 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.13'
       - name: Install Semgrep
-        run: python -m pip install --disable-pip-version-check semgrep==1.167.0
+        run: python -m pip install --disable-pip-version-check semgrep==1.171.0
       - run: >
           semgrep scan
           --error
+          --strict
           --metrics=off
           --quiet
           --config config/semgrep/runcheck-security.yml
@@ -42,7 +43,7 @@ jobs:
           --sarif
           --output semgrep.sarif
           .
-      - uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a # v4.37.1
+      - uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
         if: always() && hashFiles('semgrep.sarif') != ''
         with:
           sarif_file: semgrep.sarif
@@ -56,7 +57,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -85,7 +86,6 @@ jobs:
             ${{ runner.os }}-dependency-check-data-
 
       - name: OWASP Dependency-Check
-        continue-on-error: true
         timeout-minutes: 35
         run: ./gradlew :app:dependencyCheckAnalyze --no-daemon --no-configuration-cache --console=plain
         env:

@@ -64,6 +64,36 @@ class GetChargerComparisonUseCaseTest {
         plugType = "USB",
     )
 
+    private suspend fun compare(
+        chargers: List<ChargerProfile>,
+        sessions: List<ChargingSession>,
+    ) = run {
+        every { proStatusProvider.isPro() } returns true
+        every { chargerRepository.getChargerProfiles() } returns flowOf(chargers)
+        every { chargerRepository.getAllSessions() } returns flowOf(sessions)
+        createUseCase().invoke().first()
+    }
+
+    private fun chargingSpeedSessions(secondAverageCurrentMa: Int?): List<ChargingSession> =
+        listOf(
+            session(
+                chargerId = 1L,
+                startTime = 1000L,
+                endTime = 3_601_000L,
+                startLevel = 20,
+                endLevel = 80,
+                avgCurrentMa = 2000,
+            ),
+            session(
+                chargerId = 1L,
+                startTime = 5_000_000L,
+                endTime = 8_600_000L,
+                startLevel = 30,
+                endLevel = 90,
+                avgCurrentMa = secondAverageCurrentMa,
+            ),
+        )
+
     @Test
     fun `non-Pro user returns empty flow`() =
         runTest {
@@ -153,35 +183,11 @@ class GetChargerComparisonUseCaseTest {
     @Test
     fun `avg charging speed calculated correctly from multiple sessions`() =
         runTest {
-            every { proStatusProvider.isPro() } returns true
-            every { chargerRepository.getChargerProfiles() } returns
-                flowOf(
-                    listOf(charger(1L, "USB-C")),
+            val result =
+                compare(
+                    chargers = listOf(charger(1L, "USB-C")),
+                    sessions = chargingSpeedSessions(secondAverageCurrentMa = 3000),
                 )
-            every { chargerRepository.getAllSessions() } returns
-                flowOf(
-                    listOf(
-                        session(
-                            chargerId = 1L,
-                            startTime = 1000L,
-                            endTime = 3_601_000L,
-                            startLevel = 20,
-                            endLevel = 80,
-                            avgCurrentMa = 2000,
-                        ),
-                        session(
-                            chargerId = 1L,
-                            startTime = 5_000_000L,
-                            endTime = 8_600_000L,
-                            startLevel = 30,
-                            endLevel = 90,
-                            avgCurrentMa = 3000,
-                        ),
-                    ),
-                )
-
-            useCase = createUseCase()
-            val result = useCase().first()
 
             assertEquals(1, result.size)
             assertEquals(2, result[0].sessionCount)
@@ -338,35 +344,11 @@ class GetChargerComparisonUseCaseTest {
     @Test
     fun `sessions with null avgCurrentMa are excluded from speed average`() =
         runTest {
-            every { proStatusProvider.isPro() } returns true
-            every { chargerRepository.getChargerProfiles() } returns
-                flowOf(
-                    listOf(charger(1L, "Mixed")),
+            val result =
+                compare(
+                    chargers = listOf(charger(1L, "Mixed")),
+                    sessions = chargingSpeedSessions(secondAverageCurrentMa = null),
                 )
-            every { chargerRepository.getAllSessions() } returns
-                flowOf(
-                    listOf(
-                        session(
-                            chargerId = 1L,
-                            startTime = 1000L,
-                            endTime = 3_601_000L,
-                            startLevel = 20,
-                            endLevel = 80,
-                            avgCurrentMa = 2000,
-                        ),
-                        session(
-                            chargerId = 1L,
-                            startTime = 5_000_000L,
-                            endTime = 8_600_000L,
-                            startLevel = 30,
-                            endLevel = 90,
-                            avgCurrentMa = null, // no data
-                        ),
-                    ),
-                )
-
-            useCase = createUseCase()
-            val result = useCase().first()
 
             assertEquals(1, result.size)
             // Only the first session's 2000 mA contributes

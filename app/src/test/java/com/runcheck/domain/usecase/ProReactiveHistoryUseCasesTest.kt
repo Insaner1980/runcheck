@@ -1,5 +1,6 @@
 package com.runcheck.domain.usecase
 
+import com.runcheck.domain.insights.rules.TestThrottlingRepository
 import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.NetworkReading
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -37,15 +39,9 @@ class ProReactiveHistoryUseCasesTest {
             val proStatusProvider = FakeProStatusProvider(initial = false)
             val useCase = GetBatteryHistoryUseCase(repo, proStatusProvider)
 
-            val emissionsDeferred = async { useCase(HistoryPeriod.ALL).take(2).toList() }
-            advanceUntilIdle()
+            val emissions = collectAfterProUnlock(proStatusProvider, useCase(HistoryPeriod.ALL))
 
-            proStatusProvider.setPro(true)
-            val emissions = emissionsDeferred.await()
-
-            assertEquals(2, emissions.size)
-            assertTrue(repo.requestedSince[0] >= System.currentTimeMillis() - HistoryPeriod.DAY.durationMs - 5_000L)
-            assertEquals(0L, repo.requestedSince[1])
+            assertAllPeriodRequery(emissions, repo.requestedSince)
         }
 
     @Test
@@ -55,29 +51,19 @@ class ProReactiveHistoryUseCasesTest {
             val proStatusProvider = FakeProStatusProvider(initial = false)
             val useCase = GetNetworkHistoryUseCase(repo, proStatusProvider)
 
-            val emissionsDeferred = async { useCase(HistoryPeriod.ALL).take(2).toList() }
-            advanceUntilIdle()
+            val emissions = collectAfterProUnlock(proStatusProvider, useCase(HistoryPeriod.ALL))
 
-            proStatusProvider.setPro(true)
-            val emissions = emissionsDeferred.await()
-
-            assertEquals(2, emissions.size)
-            assertTrue(repo.requestedSince[0] >= System.currentTimeMillis() - HistoryPeriod.DAY.durationMs - 5_000L)
-            assertEquals(0L, repo.requestedSince[1])
+            assertAllPeriodRequery(emissions, repo.requestedSince)
         }
 
     @Test
     fun `throttling history updates when pro unlocks`() =
         runTest {
-            val repo = FakeThrottlingRepository()
+            val repo = TestThrottlingRepository(listOf(testThrottlingEvent))
             val proStatusProvider = FakeProStatusProvider(initial = false)
             val useCase = GetThrottlingHistoryUseCase(repo, proStatusProvider)
 
-            val emissionsDeferred = async { useCase().take(2).toList() }
-            advanceUntilIdle()
-
-            proStatusProvider.setPro(true)
-            val emissions = emissionsDeferred.await()
+            val emissions = collectAfterProUnlock(proStatusProvider, useCase())
 
             assertEquals(
                 listOf(
@@ -95,11 +81,7 @@ class ProReactiveHistoryUseCasesTest {
             val proStatusProvider = FakeProStatusProvider(initial = false)
             val useCase = GetStorageHistoryUseCase(repo, proStatusProvider)
 
-            val emissionsDeferred = async { useCase(HistoryPeriod.ALL).take(2).toList() }
-            advanceUntilIdle()
-
-            proStatusProvider.setPro(true)
-            val emissions = emissionsDeferred.await()
+            val emissions = collectAfterProUnlock(proStatusProvider, useCase(HistoryPeriod.ALL))
 
             assertEquals(listOf(emptyList<StorageReading>(), listOf(testStorageReading)), emissions)
             assertEquals(listOf(0L), repo.requestedSince)
@@ -112,15 +94,31 @@ class ProReactiveHistoryUseCasesTest {
             val proStatusProvider = FakeProStatusProvider(initial = false)
             val useCase = GetThermalHistoryUseCase(repo, proStatusProvider)
 
-            val emissionsDeferred = async { useCase(HistoryPeriod.ALL).take(2).toList() }
-            advanceUntilIdle()
-
-            proStatusProvider.setPro(true)
-            val emissions = emissionsDeferred.await()
+            val emissions = collectAfterProUnlock(proStatusProvider, useCase(HistoryPeriod.ALL))
 
             assertEquals(listOf(emptyList<ThermalReading>(), listOf(testThermalReading)), emissions)
             assertEquals(listOf(0L), repo.requestedSince)
         }
+}
+
+private fun <T> assertAllPeriodRequery(
+    emissions: List<List<T>>,
+    requestedSince: List<Long>,
+) {
+    assertEquals(2, emissions.size)
+    assertTrue(requestedSince[0] >= System.currentTimeMillis() - HistoryPeriod.DAY.durationMs - 5_000L)
+    assertEquals(0L, requestedSince[1])
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+private suspend fun <T> TestScope.collectAfterProUnlock(
+    proStatusProvider: FakeProStatusProvider,
+    history: Flow<List<T>>,
+): List<List<T>> {
+    val emissionsDeferred = async { history.take(2).toList() }
+    advanceUntilIdle()
+    proStatusProvider.setPro(true)
+    return emissionsDeferred.await()
 }
 
 private class FakeProStatusProvider(
@@ -191,56 +189,16 @@ private class FakeNetworkRepository : NetworkRepository {
     override suspend fun deleteAll() = Unit
 }
 
-private class FakeThrottlingRepository : ThrottlingRepository {
-    override fun getRecentEvents(limit: Int): Flow<List<ThrottlingEvent>> =
-        flowOf(
-            listOf(
-                ThrottlingEvent(
-                    id = 1L,
-                    timestamp = 1_000L,
-                    thermalStatus = "SEVERE",
-                    batteryTempC = 43f,
-                    cpuTempC = null,
-                    foregroundApp = null,
-                    durationMs = null,
-                ),
-            ),
-        )
-
-    override suspend fun getEventsSinceSync(since: Long): List<ThrottlingEvent> =
-        listOf(
-            ThrottlingEvent(
-                id = 1L,
-                timestamp = 1_000L,
-                thermalStatus = "SEVERE",
-                batteryTempC = 43f,
-                cpuTempC = null,
-                foregroundApp = null,
-                durationMs = null,
-            ),
-        )
-
-    override suspend fun insert(event: ThrottlingEvent): Long = 0L
-
-    override suspend fun getOpenEvent(): ThrottlingEvent? = null
-
-    override suspend fun updateSnapshot(
-        id: Long,
-        thermalStatus: String,
-        batteryTempC: Float,
-        cpuTempC: Float?,
-        foregroundApp: String?,
-    ) = Unit
-
-    override suspend fun updateDuration(
-        id: Long,
-        durationMs: Long,
-    ) = Unit
-
-    override suspend fun deleteOlderThan(cutoff: Long) = Unit
-
-    override suspend fun deleteAll() = Unit
-}
+private val testThrottlingEvent =
+    ThrottlingEvent(
+        id = 1L,
+        timestamp = 1_000L,
+        thermalStatus = "SEVERE",
+        batteryTempC = 43f,
+        cpuTempC = null,
+        foregroundApp = null,
+        durationMs = null,
+    )
 
 private val testStorageReading =
     StorageReading(

@@ -16,46 +16,14 @@ class StoragePressureProjectionRuleTest {
     @Test
     fun `returns storage insight when projection is under 30 days`() =
         runTest {
-            val dayMs = 24L * 60L * 60L * 1000L
-            val now = 30L * dayMs
-            val readings =
-                listOf(
-                    StorageReading(
-                        timestamp = now - 6L * dayMs,
-                        totalBytes = 100_000L,
-                        availableBytes = 40_000L,
-                        appsBytes = 0L,
-                        mediaBytes = 0L,
-                    ),
-                    StorageReading(
-                        timestamp = now - 4L * dayMs,
-                        totalBytes = 100_000L,
-                        availableBytes = 30_000L,
-                        appsBytes = 0L,
-                        mediaBytes = 0L,
-                    ),
-                    StorageReading(
-                        timestamp = now - 2L * dayMs,
-                        totalBytes = 100_000L,
-                        availableBytes = 20_000L,
-                        appsBytes = 0L,
-                        mediaBytes = 0L,
-                    ),
-                    StorageReading(
-                        timestamp = now,
-                        totalBytes = 100_000L,
-                        availableBytes = 10_000L,
-                        appsBytes = 0L,
-                        mediaBytes = 0L,
-                    ),
-                )
+            val readings = projectionReadings(40_000L, 30_000L, 20_000L, 10_000L)
             val rule =
                 StoragePressureProjectionRule(
-                    storageRepository = FakeStorageRepository(readings),
+                    storageRepository = TestStorageRepository(readings),
                     storageGrowthAnalyzer = StorageGrowthAnalyzer(),
                 )
 
-            val insights = rule.evaluate(now)
+            val insights = rule.evaluate(NOW)
 
             assertEquals(1, insights.size)
             val insight = insights.single()
@@ -69,46 +37,14 @@ class StoragePressureProjectionRuleTest {
     @Test
     fun `returns empty when storage trend is stable or improving`() =
         runTest {
-            val dayMs = 24L * 60L * 60L * 1000L
-            val now = 30L * dayMs
-            val readings =
-                listOf(
-                    StorageReading(
-                        timestamp = now - 6L * dayMs,
-                        totalBytes = 100_000L,
-                        availableBytes = 40_000L,
-                        appsBytes = 0L,
-                        mediaBytes = 0L,
-                    ),
-                    StorageReading(
-                        timestamp = now - 4L * dayMs,
-                        totalBytes = 100_000L,
-                        availableBytes = 45_000L,
-                        appsBytes = 0L,
-                        mediaBytes = 0L,
-                    ),
-                    StorageReading(
-                        timestamp = now - 2L * dayMs,
-                        totalBytes = 100_000L,
-                        availableBytes = 50_000L,
-                        appsBytes = 0L,
-                        mediaBytes = 0L,
-                    ),
-                    StorageReading(
-                        timestamp = now,
-                        totalBytes = 100_000L,
-                        availableBytes = 55_000L,
-                        appsBytes = 0L,
-                        mediaBytes = 0L,
-                    ),
-                )
+            val readings = projectionReadings(40_000L, 45_000L, 50_000L, 55_000L)
             val rule =
                 StoragePressureProjectionRule(
-                    storageRepository = FakeStorageRepository(readings),
+                    storageRepository = TestStorageRepository(readings),
                     storageGrowthAnalyzer = StorageGrowthAnalyzer(),
                 )
 
-            val insights = rule.evaluate(now)
+            val insights = rule.evaluate(NOW)
 
             assertTrue(insights.isEmpty())
         }
@@ -116,22 +52,14 @@ class StoragePressureProjectionRuleTest {
     @Test
     fun `returns medium priority projection for thirty day bucket`() =
         runTest {
-            val dayMs = 24L * 60L * 60L * 1000L
-            val now = 30L * dayMs
-            val readings =
-                listOf(
-                    storage(now - 6L * dayMs, availableBytes = 88_000L),
-                    storage(now - 4L * dayMs, availableBytes = 82_000L),
-                    storage(now - 2L * dayMs, availableBytes = 76_000L),
-                    storage(now, availableBytes = 70_000L),
-                )
+            val readings = projectionReadings(88_000L, 82_000L, 76_000L, 70_000L)
             val rule =
                 StoragePressureProjectionRule(
-                    storageRepository = FakeStorageRepository(readings),
+                    storageRepository = TestStorageRepository(readings),
                     storageGrowthAnalyzer = StorageGrowthAnalyzer(),
                 )
 
-            val insight = rule.evaluate(now).single()
+            val insight = rule.evaluate(NOW).single()
 
             assertEquals("30d", insight.dedupeKey)
             assertEquals(InsightPriority.MEDIUM, insight.priority)
@@ -147,26 +75,14 @@ class StoragePressureProjectionRuleTest {
         appsBytes = 0L,
         mediaBytes = 0L,
     )
-}
 
-private class FakeStorageRepository(
-    private val readings: List<StorageReading>,
-) : StorageRepository {
-    override fun getStorageState(): Flow<StorageState> = emptyFlow()
+    private fun projectionReadings(vararg availableBytes: Long) =
+        availableBytes.mapIndexed { index, bytes ->
+            storage(NOW - (6L - index * 2L) * DAY_MS, bytes)
+        }
 
-    override suspend fun saveReading(state: StorageState) = Unit
-
-    override fun getReadingsSince(
-        since: Long,
-        limit: Int?,
-    ): Flow<List<StorageReading>> = emptyFlow()
-
-    override suspend fun getReadingsSinceSync(since: Long): List<StorageReading> =
-        readings.filter { it.timestamp >= since }
-
-    override suspend fun getAllReadings(): List<StorageReading> = readings
-
-    override suspend fun deleteOlderThan(cutoff: Long) = Unit
-
-    override suspend fun deleteAll() = Unit
+    private companion object {
+        const val DAY_MS = 24L * 60L * 60L * 1000L
+        const val NOW = 30L * DAY_MS
+    }
 }

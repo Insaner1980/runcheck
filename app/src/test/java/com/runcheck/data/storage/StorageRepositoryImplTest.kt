@@ -7,6 +7,7 @@ import com.runcheck.domain.model.MediaBreakdown
 import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.usecase.CalculateFillRateUseCase
+import com.runcheck.testutil.assertRepositoryReads
 import com.runcheck.util.TestAppDispatchers
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -61,10 +62,12 @@ class StorageRepositoryImplTest {
             coEvery { storageReadingDao.getReadingsSinceSync(10L) } returns listOf(entity)
             coEvery { storageReadingDao.getAll() } returns listOf(entity)
 
-            assertEquals(listOf(expected), repository.getReadingsSince(10L, limit = null).first())
-            assertEquals(listOf(expected), repository.getReadingsSince(10L, limit = 1).first())
-            assertEquals(listOf(expected), repository.getReadingsSinceSync(10L))
-            assertEquals(listOf(expected), repository.getAllReadings())
+            assertRepositoryReads(
+                listOf(expected),
+                { repository.getReadingsSince(10L, it) },
+                { repository.getReadingsSinceSync(10L) },
+                repository::getAllReadings,
+            )
         }
 
     @Test

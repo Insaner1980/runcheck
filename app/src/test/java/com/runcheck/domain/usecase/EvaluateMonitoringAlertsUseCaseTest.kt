@@ -133,48 +133,14 @@ class EvaluateMonitoringAlertsUseCaseTest {
 
     @Test
     fun `charge complete only fires on charging to full transition`() {
-        val decision =
-            useCase(
-                previous =
-                    MonitoringAlertSnapshot(
-                        batteryLevel = 99,
-                        batteryTempC = 36f,
-                        storageUsagePercent = 70f,
-                        chargingStatus = ChargingStatus.CHARGING,
-                    ),
-                current =
-                    MonitoringAlertSnapshot(
-                        batteryLevel = 100,
-                        batteryTempC = 35f,
-                        storageUsagePercent = 70f,
-                        chargingStatus = ChargingStatus.FULL,
-                    ),
-                preferences = UserPreferences(notifChargeComplete = true),
-            )
+        val decision = chargeCompleteDecision(UserPreferences(notifChargeComplete = true))
 
         assertTrue(decision.chargeComplete)
     }
 
     @Test
     fun `charge complete is disabled by default`() {
-        val decision =
-            useCase(
-                previous =
-                    MonitoringAlertSnapshot(
-                        batteryLevel = 99,
-                        batteryTempC = 36f,
-                        storageUsagePercent = 70f,
-                        chargingStatus = ChargingStatus.CHARGING,
-                    ),
-                current =
-                    MonitoringAlertSnapshot(
-                        batteryLevel = 100,
-                        batteryTempC = 35f,
-                        storageUsagePercent = 70f,
-                        chargingStatus = ChargingStatus.FULL,
-                    ),
-                preferences = UserPreferences(),
-            )
+        val decision = chargeCompleteDecision(UserPreferences())
 
         assertFalse(decision.chargeComplete)
     }
@@ -182,27 +148,23 @@ class EvaluateMonitoringAlertsUseCaseTest {
     @Test
     fun `charge complete does not refire while debounce is set`() {
         val decision =
-            useCase(
-                previous =
-                    MonitoringAlertSnapshot(
-                        batteryLevel = 99,
-                        batteryTempC = 36f,
-                        storageUsagePercent = 70f,
-                        chargingStatus = ChargingStatus.CHARGING,
-                    ),
-                current =
-                    MonitoringAlertSnapshot(
-                        batteryLevel = 100,
-                        batteryTempC = 35f,
-                        storageUsagePercent = 70f,
-                        chargingStatus = ChargingStatus.FULL,
-                    ),
+            chargeCompleteDecision(
                 preferences = UserPreferences(notifChargeComplete = true),
                 chargeCompleteFiredPreviously = true,
             )
 
         assertFalse(decision.chargeComplete)
     }
+
+    private fun chargeCompleteDecision(
+        preferences: UserPreferences,
+        chargeCompleteFiredPreviously: Boolean = false,
+    ) = useCase(
+        previous = MonitoringAlertSnapshot(99, 36f, 70f, ChargingStatus.CHARGING),
+        current = MonitoringAlertSnapshot(100, 35f, 70f, ChargingStatus.FULL),
+        preferences = preferences,
+        chargeCompleteFiredPreviously = chargeCompleteFiredPreviously,
+    )
 
     @Test
     fun `individual toggles stay independent`() {

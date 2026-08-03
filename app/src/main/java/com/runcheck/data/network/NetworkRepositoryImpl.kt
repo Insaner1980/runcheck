@@ -30,30 +30,7 @@ class NetworkRepositoryImpl
             networkDataSource
                 .getNetworkInfo()
                 .sample(DISPLAY_UPDATE_INTERVAL_MS)
-                .map { info ->
-                    NetworkState(
-                        connectionType = info.connectionType,
-                        signalDbm = info.signalDbm,
-                        signalAsu = info.signalAsu,
-                        signalQuality = info.signalQuality,
-                        wifiSsid = info.wifiSsid,
-                        wifiSpeedMbps = info.wifiSpeedMbps,
-                        wifiFrequencyMhz = info.wifiFrequencyMhz,
-                        carrier = info.carrier,
-                        networkSubtype = info.networkSubtype,
-                        latencyMs = null,
-                        estimatedDownstreamKbps = info.estimatedDownstreamKbps,
-                        estimatedUpstreamKbps = info.estimatedUpstreamKbps,
-                        isMetered = info.isMetered,
-                        isRoaming = info.isRoaming,
-                        isVpn = info.isVpn,
-                        ipAddresses = info.ipAddresses,
-                        dnsServers = info.dnsServers,
-                        mtuBytes = info.mtuBytes,
-                        wifiBssid = info.wifiBssid,
-                        wifiStandard = info.wifiStandard,
-                    )
-                }.conflate()
+                .conflate()
 
         override suspend fun measureLatency(): Int? {
             if (!networkDataSource.hasValidatedConnection()) {

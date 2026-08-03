@@ -1,5 +1,6 @@
 package com.runcheck.domain.usecase
 
+import com.runcheck.domain.insights.rules.TestBatteryRepository
 import com.runcheck.domain.model.BatteryHealth
 import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.BatteryState
@@ -27,7 +28,7 @@ class ChargerSessionTrackerTest {
     fun `starts a new session when selected charger begins charging`() =
         runTest {
             val chargerRepository = FakeChargerRepository()
-            val batteryRepository = FakeBatteryRepository()
+            val batteryRepository = TestBatteryRepository()
             val preferencesRepository = FakeUserPreferencesRepository(selectedChargerId = 7L)
             val tracker =
                 ChargerSessionTracker(
@@ -67,7 +68,7 @@ class ChargerSessionTrackerTest {
                         )
                 }
             val batteryRepository =
-                FakeBatteryRepository(
+                TestBatteryRepository(
                     readings =
                         listOf(
                             reading(timestamp = 2_000L, currentMa = 2000, voltageMv = 5000),
@@ -111,7 +112,7 @@ class ChargerSessionTrackerTest {
             val tracker =
                 ChargerSessionTracker(
                     chargerRepository,
-                    FakeBatteryRepository(),
+                    TestBatteryRepository(),
                     FakeUserPreferencesRepository(selectedChargerId = 8L),
                     transactionRunner,
                 )
@@ -133,7 +134,7 @@ class ChargerSessionTrackerTest {
             val tracker =
                 ChargerSessionTracker(
                     chargerRepository,
-                    FakeBatteryRepository(),
+                    TestBatteryRepository(),
                     FakeUserPreferencesRepository(selectedChargerId = 7L),
                     transactionRunner,
                 )
@@ -260,32 +261,6 @@ private class FakeChargerRepository : ChargerRepository {
     override suspend fun deleteSessionsOlderThan(cutoff: Long) = Unit
 
     override suspend fun deleteAll() = Unit
-}
-
-private class FakeBatteryRepository(
-    private val readings: List<BatteryReading> = emptyList(),
-) : BatteryRepository {
-    override fun getBatteryState(): Flow<BatteryState> = emptyFlow()
-
-    override fun getReadingsSince(
-        since: Long,
-        limit: Int?,
-    ): Flow<List<BatteryReading>> = flowOf(emptyList())
-
-    override suspend fun saveReading(state: BatteryState) = Unit
-
-    override suspend fun getAllReadings(): List<BatteryReading> = readings
-
-    override suspend fun getReadingsSinceSync(since: Long): List<BatteryReading> =
-        readings.filter { it.timestamp >= since }
-
-    override suspend fun deleteOlderThan(cutoff: Long) = Unit
-
-    override suspend fun deleteAll() = Unit
-
-    override suspend fun getLastChargingTimestamp(): Long? = null
-
-    override suspend fun getLatestReadingTimestamp(): Long? = null
 }
 
 private class FakeUserPreferencesRepository(
