@@ -67,8 +67,8 @@ class DependencyVersionCatalogContractTest {
         val detektPluginId = versionsCatalog.pluginIdFor("detekt")
 
         assertTrue(
-            "Detekt version $detektVersion is older than the AGP 9.1.1 compatible 2.0.0-alpha.3 line",
-            detektVersion == "2.0.0-alpha.3",
+            "Detekt version $detektVersion is not the verified 2.0.0-alpha.5 release",
+            detektVersion == "2.0.0-alpha.5",
         )
         assertTrue(
             "compose-rules Detekt version $composeRulesDetektVersion is not on the Detekt 2 compatible 0.5.9 line",
