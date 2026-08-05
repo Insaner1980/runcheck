@@ -8,6 +8,7 @@ function Resolve-RuncheckProjectCheck {
         $candidateRoots.Add($env:ANDROID_CHECK_ROOT)
     }
 
+    $candidateRoots.Add("C:\Dev\Android-check")
     $siblingRoot = Join-Path (Split-Path -Parent $repoRoot) "Android-check"
     $candidateRoots.Add($siblingRoot)
 

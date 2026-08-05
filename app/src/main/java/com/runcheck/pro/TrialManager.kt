@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private val Context.trialDataStore: DataStore<Preferences> by preferencesDataStore("trial_state")
+
 data class TrialState(
     val isActive: Boolean = false,
     val daysRemaining: Int = 0,
@@ -199,8 +201,6 @@ class TrialManager
 
         companion object {
             const val TRIAL_DURATION_DAYS = 7
-            private val Context.trialDataStore: DataStore<Preferences>
-                by preferencesDataStore(name = "trial_state")
             private val KEY_TRIAL_START = longPreferencesKey("trial_start_timestamp")
             private val KEY_LAST_KNOWN_TIMESTAMP = longPreferencesKey("last_known_timestamp")
             private val KEY_CLOCK_TAMPERED = booleanPreferencesKey("clock_tampered")
