@@ -35,7 +35,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -173,6 +172,7 @@ fun NetworkDetailScreen(
     viewModel: NetworkViewModel = hiltViewModel(),
 ) {
     val networkUiState by viewModel.networkUiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val loadingDescription = stringResource(R.string.a11y_loading)
     val speedTestState by viewModel.speedTestState.collectAsStateWithLifecycle()
 
@@ -219,6 +219,7 @@ fun NetworkDetailScreen(
             is NetworkUiState.Success -> {
                 NetworkContent(
                     state = state,
+                    isRefreshing = isRefreshing,
                     speedTestState = speedTestState,
                     onRefresh = { viewModel.refresh() },
                     onNavigateToSpeedTest = onNavigateToSpeedTest,
@@ -696,6 +697,7 @@ private fun SpeedTestSummaryCard(
 @Composable
 private fun NetworkContent(
     state: NetworkUiState.Success,
+    isRefreshing: Boolean,
     speedTestState: SpeedTestUiState,
     onRefresh: () -> Unit,
     onNavigateToSpeedTest: () -> Unit,
@@ -709,7 +711,6 @@ private fun NetworkContent(
     fullscreenResultPeriod: String? = null,
     onConsumeFullscreenResult: () -> Unit = {},
 ) {
-    var isRefreshing by remember { mutableStateOf(false) }
     val activeInfoSheetState = rememberInfoSheetState()
     val selectedNetworkHistoryMetricState = rememberSaveableEnumState(NetworkHistoryMetric.SIGNAL)
 
@@ -750,16 +751,9 @@ private fun NetworkContent(
             if (grants[Manifest.permission.ACCESS_FINE_LOCATION] == true) onRefresh()
         }
 
-    LaunchedEffect(state) {
-        isRefreshing = false
-    }
-
     PullToRefreshWrapper(
         isRefreshing = isRefreshing,
-        onRefresh = {
-            isRefreshing = true
-            onRefresh()
-        },
+        onRefresh = onRefresh,
     ) {
         Column(
             modifier =

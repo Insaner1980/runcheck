@@ -21,6 +21,7 @@ data class ChartRenderModel(
     val tooltipDecimals: Int = 0,
     val tooltipTimeSkeleton: String = DEFAULT_TOOLTIP_TIME_SKELETON,
     val temperatureUnit: TemperatureUnit? = null,
+    val lineBreakIndices: Set<Int> = emptySet(),
 ) {
     val minValue: Float? get() = chartData.minOrNull()
     val maxValue: Float? get() = chartData.maxOrNull()
@@ -100,6 +101,7 @@ fun buildBatterySessionChartModel(
     val chartSeries = chartPoints.toSanitizedChartSeries()
     val chartData = chartSeries.data
     val chartTimestamps = chartSeries.timestamps
+    val lineBreakIndices = findSessionLineBreakIndices(chartTimestamps)
     val minValue = chartData.minOrNull()
     val maxValue = chartData.maxOrNull()
 
@@ -111,8 +113,16 @@ fun buildBatterySessionChartModel(
         xLabels = if (chartTimestamps.size >= 2) buildSessionXLabels(chartTimestamps) else emptyList(),
         tooltipDecimals = if (metric == SessionGraphMetric.POWER) 1 else 0,
         tooltipTimeSkeleton = "Hm",
+        lineBreakIndices = lineBreakIndices,
     )
 }
+
+internal fun findSessionLineBreakIndices(chartTimestamps: List<Long>): Set<Int> =
+    chartTimestamps
+        .zipWithNext()
+        .mapIndexedNotNull { index, (start, end) ->
+            (index + 1).takeIf { end - start > MAX_SESSION_SAMPLE_GAP_MS }
+        }.toSet()
 
 fun buildNetworkHistoryChartModel(
     history: List<NetworkReading>,

@@ -12,6 +12,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.runcheck.domain.model.AlertThresholds
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.model.TemperatureUnit
@@ -89,10 +90,16 @@ class UserPreferencesRepositoryImpl
                     notifHighTemp = prefs[KEY_NOTIF_HIGH_TEMP] ?: true,
                     notifLowStorage = prefs[KEY_NOTIF_LOW_STORAGE] ?: true,
                     notifChargeComplete = prefs[KEY_NOTIF_CHARGE_COMPLETE] ?: false,
-                    alertBatteryThreshold = prefs[KEY_ALERT_BATTERY] ?: 20,
-                    alertTempThreshold = prefs[KEY_ALERT_TEMP] ?: 42,
-                    alertStorageThreshold = prefs[KEY_ALERT_STORAGE] ?: 90,
                     themeMode = ThemeMode.fromStoredValue(prefs[KEY_THEME_MODE]),
+                    alertBatteryThreshold =
+                        (prefs[KEY_ALERT_BATTERY] ?: AlertThresholds.DEFAULT_BATTERY_PERCENT)
+                            .coerceIn(AlertThresholds.MIN_BATTERY_PERCENT, AlertThresholds.MAX_BATTERY_PERCENT),
+                    alertTempThreshold =
+                        (prefs[KEY_ALERT_TEMP] ?: AlertThresholds.DEFAULT_TEMPERATURE_C)
+                            .coerceIn(AlertThresholds.MIN_TEMPERATURE_C, AlertThresholds.MAX_TEMPERATURE_C),
+                    alertStorageThreshold =
+                        (prefs[KEY_ALERT_STORAGE] ?: AlertThresholds.DEFAULT_STORAGE_PERCENT)
+                            .coerceIn(AlertThresholds.MIN_STORAGE_PERCENT, AlertThresholds.MAX_STORAGE_PERCENT),
                     temperatureUnit =
                         prefs[KEY_TEMP_UNIT]
                             ?.let { stored -> enumValueOrNull<TemperatureUnit>(stored) }
@@ -151,6 +158,13 @@ class UserPreferencesRepositoryImpl
                 } else {
                     prefs[KEY_SELECTED_CHARGER_ID] = chargerId
                 }
+            }
+        }
+
+        override suspend fun clearMonitoringDataState() {
+            context.dataStore.edit { prefs ->
+                prefs.remove(KEY_APP_USAGE_LAST_COLLECTED_AT)
+                prefs.remove(KEY_SELECTED_CHARGER_ID)
             }
         }
 

@@ -1,5 +1,6 @@
 package com.runcheck.ui.common
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
 import android.os.LocaleList
@@ -37,6 +38,7 @@ fun formatStorageSize(
 
 fun appDisplayLocale(): Locale = appEnglishLocale
 
+@SuppressLint("AppBundleLocaleChanges")
 private fun Context.withAppDisplayLocale(): Context {
     val configuration = Configuration(resources.configuration)
     configuration.setLocales(LocaleList(appDisplayLocale()))

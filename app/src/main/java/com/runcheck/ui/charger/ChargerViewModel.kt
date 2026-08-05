@@ -122,6 +122,5 @@ class ChargerViewModel
 
         override fun onCleared() {
             stopObserving()
-            super.onCleared()
         }
     }

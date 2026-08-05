@@ -29,13 +29,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
@@ -173,8 +174,8 @@ fun HomeScreen(
                 if (state.showExpirationModal) {
                     TrialExpirationModal(
                         formattedPrice = null,
-                        onPurchase = onNavigateToProUpgrade,
-                        onDismiss = viewModel::dismissExpirationModal,
+                        onPurchase = { viewModel.dismissExpirationModal(onNavigateToProUpgrade) },
+                        onDismiss = { viewModel.dismissExpirationModal() },
                     )
                 }
             }
@@ -196,7 +197,9 @@ internal fun HomeContent(
     onNavigateToProUpgrade: () -> Unit,
     onNavigateToLearnArticle: (String) -> Unit,
 ) {
-    val isWideScreen = LocalConfiguration.current.screenWidthDp >= 600
+    val windowInfo = LocalWindowInfo.current
+    val density = LocalDensity.current
+    val isWideScreen = with(density) { windowInfo.containerSize.width.toDp() } >= 600.dp
     val insightNavigationHandlers =
         remember(
             onNavigateToBattery,
@@ -215,6 +218,19 @@ internal fun HomeContent(
                 onNavigateToCharger = onNavigateToCharger,
                 onNavigateToAppUsage = onNavigateToAppUsage,
                 onNavigateToProUpgrade = onNavigateToProUpgrade,
+            )
+        }
+
+    val insightsCardState =
+        remember(
+            state.insights,
+            state.unseenInsightCount,
+            state.isPro,
+        ) {
+            InsightsCardState(
+                insights = state.insights,
+                unseenInsightCount = state.unseenInsightCount,
+                isPro = state.isPro,
             )
         }
 
@@ -260,12 +276,7 @@ internal fun HomeContent(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
 
             InsightsCard(
-                state =
-                    InsightsCardState(
-                        insights = state.insights.take(1),
-                        unseenInsightCount = state.unseenInsightCount,
-                        isPro = state.isPro,
-                    ),
+                state = insightsCardState,
                 navigationHandlers = insightNavigationHandlers,
                 onNavigateToInsights = onNavigateToInsights,
                 onDismissInsight = onDismissInsight,

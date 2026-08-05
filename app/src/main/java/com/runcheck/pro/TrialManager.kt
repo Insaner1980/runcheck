@@ -16,14 +16,20 @@ import androidx.work.WorkManager
 import com.runcheck.util.ReleaseSafeLog
 import com.runcheck.worker.TrialNotificationWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private val Context.trialDataStore: DataStore<Preferences> by preferencesDataStore("trial_state")
 
 data class TrialState(
     val isActive: Boolean = false,
@@ -31,6 +37,14 @@ data class TrialState(
     val startTimestamp: Long = 0L,
     val isFirstLaunch: Boolean = false,
     val clockTampered: Boolean = false,
+)
+
+data class TrialPresentationState(
+    val welcomeShown: Boolean = false,
+    val day5PromptShown: Boolean = false,
+    val expirationModalShown: Boolean = false,
+    val upgradeCardDismissCount: Int = 0,
+    val upgradeCardLastDismissTimestamp: Long = 0L,
 )
 
 internal data class TrialStateResolution(
@@ -103,32 +117,41 @@ class TrialManager
             }
         }
 
-        suspend fun isWelcomeShown(): Boolean {
-            val preferences = readPreferencesOrNull() ?: return true
-            return preferences[KEY_WELCOME_SHOWN] ?: false
-        }
+        fun observePresentationState(): Flow<TrialPresentationState> =
+            context.trialDataStore.data
+                .map { preferences ->
+                    TrialPresentationState(
+                        welcomeShown = preferences[KEY_WELCOME_SHOWN] ?: false,
+                        day5PromptShown = preferences[KEY_DAY5_PROMPT_SHOWN] ?: false,
+                        expirationModalShown = preferences[KEY_EXPIRATION_MODAL_SHOWN] ?: false,
+                        upgradeCardDismissCount = preferences[KEY_UPGRADE_DISMISS_COUNT] ?: 0,
+                        upgradeCardLastDismissTimestamp = preferences[KEY_UPGRADE_DISMISS_TIMESTAMP] ?: 0L,
+                    )
+                }.catch { error ->
+                    if (error is IOException) {
+                        ReleaseSafeLog.error(TAG, "Failed to observe trial presentation state", error)
+                        emit(
+                            TrialPresentationState(
+                                welcomeShown = true,
+                                day5PromptShown = true,
+                                expirationModalShown = true,
+                                upgradeCardDismissCount = Int.MAX_VALUE,
+                                upgradeCardLastDismissTimestamp = System.currentTimeMillis(),
+                            ),
+                        )
+                    } else {
+                        throw error
+                    }
+                }.distinctUntilChanged()
 
-        suspend fun setWelcomeShown() {
-            context.trialDataStore.edit { it[KEY_WELCOME_SHOWN] = true }
-        }
+        suspend fun setWelcomeShown() = setPromptShown(KEY_WELCOME_SHOWN)
 
-        suspend fun isDay5PromptShown(): Boolean {
-            val preferences = readPreferencesOrNull() ?: return true
-            return preferences[KEY_DAY5_PROMPT_SHOWN] ?: false
-        }
+        suspend fun setDay5PromptShown() = setPromptShown(KEY_DAY5_PROMPT_SHOWN)
 
-        suspend fun setDay5PromptShown() {
-            context.trialDataStore.edit { it[KEY_DAY5_PROMPT_SHOWN] = true }
-        }
+        suspend fun setExpirationModalShown() = setPromptShown(KEY_EXPIRATION_MODAL_SHOWN)
 
-        suspend fun getUpgradeCardDismissCount(): Int {
-            val preferences = readPreferencesOrNull() ?: return Int.MAX_VALUE
-            return preferences[KEY_UPGRADE_DISMISS_COUNT] ?: 0
-        }
-
-        suspend fun getUpgradeCardLastDismissTimestamp(): Long {
-            val preferences = readPreferencesOrNull() ?: return System.currentTimeMillis()
-            return preferences[KEY_UPGRADE_DISMISS_TIMESTAMP] ?: 0L
+        private suspend fun setPromptShown(key: Preferences.Key<Boolean>) {
+            context.trialDataStore.edit { it[key] = true }
         }
 
         suspend fun incrementUpgradeCardDismiss() {
@@ -199,13 +222,12 @@ class TrialManager
 
         companion object {
             const val TRIAL_DURATION_DAYS = 7
-            private val Context.trialDataStore: DataStore<Preferences>
-                by preferencesDataStore(name = "trial_state")
             private val KEY_TRIAL_START = longPreferencesKey("trial_start_timestamp")
             private val KEY_LAST_KNOWN_TIMESTAMP = longPreferencesKey("last_known_timestamp")
             private val KEY_CLOCK_TAMPERED = booleanPreferencesKey("clock_tampered")
             private val KEY_WELCOME_SHOWN = booleanPreferencesKey("trial_welcome_shown")
             private val KEY_DAY5_PROMPT_SHOWN = booleanPreferencesKey("day5_prompt_shown")
+            private val KEY_EXPIRATION_MODAL_SHOWN = booleanPreferencesKey("expiration_modal_shown")
             private val KEY_UPGRADE_DISMISS_COUNT = intPreferencesKey("upgrade_card_dismiss_count")
             private val KEY_UPGRADE_DISMISS_TIMESTAMP = longPreferencesKey("upgrade_card_last_dismiss_timestamp")
             private val CLOCK_TAMPER_TOLERANCE_MS = TimeUnit.HOURS.toMillis(1)

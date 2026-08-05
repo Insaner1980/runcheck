@@ -133,6 +133,33 @@ class NetworkViewModelTest {
         }
 
     @Test
+    fun `refresh failure clears indicator while preserving existing success`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            var failRefresh = false
+            every { getMeasuredNetworkState() } answers {
+                if (failRefresh) {
+                    flow { throw IllegalStateException("refresh failed") }
+                } else {
+                    MutableStateFlow(testNetworkState)
+                }
+            }
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceNetworkSample()
+            val successBeforeRefresh = viewModel.networkUiState.value
+
+            failRefresh = true
+            viewModel.refresh()
+            assertTrue(viewModel.isRefreshing.value)
+            runCurrent()
+
+            assertFalse(viewModel.isRefreshing.value)
+            assertEquals(successBeforeRefresh, viewModel.networkUiState.value)
+            verify(exactly = 2) { getMeasuredNetworkState() }
+            viewModel.stopObserving()
+        }
+
+    @Test
     fun `speed test transitions through phases correctly`() =
         runTest(mainDispatcherRule.testDispatcher) {
             every { getMeasuredNetworkState() } returns MutableStateFlow(testNetworkState)

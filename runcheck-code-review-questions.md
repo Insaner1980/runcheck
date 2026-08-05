@@ -165,7 +165,7 @@ Important: LLM reviewers often hallucinate. They invent bugs that don't exist, f
 
 ---
 
-### Q20. DAO query correctness
+### Q20. DAO query correctness SEURAAVA
 
 Review DAO SQL for off-by-one time-window boundaries (inclusive vs exclusive timestamps), epoch unit mismatches (seconds vs milliseconds), and LIMIT/ORDER combinations that could return the wrong rows. Fix confirmed query bugs.
 

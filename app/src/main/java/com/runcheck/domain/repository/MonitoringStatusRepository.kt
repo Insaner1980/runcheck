@@ -1,9 +1,12 @@
 package com.runcheck.domain.repository
 
+import com.runcheck.domain.model.MonitoringHeartbeat
 import kotlinx.coroutines.flow.Flow
 
 interface MonitoringStatusRepository {
-    fun observeLastWorkerHeartbeatAt(): Flow<Long?>
+    fun observeLastWorkerHeartbeat(): Flow<MonitoringHeartbeat?>
 
-    suspend fun setLastWorkerHeartbeatAt(timestamp: Long)
+    suspend fun setLastWorkerHeartbeat(heartbeat: MonitoringHeartbeat)
+
+    suspend fun clearLastWorkerHeartbeat()
 }

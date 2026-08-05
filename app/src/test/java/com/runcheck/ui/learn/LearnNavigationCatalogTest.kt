@@ -8,6 +8,12 @@ import org.junit.Test
 
 class LearnNavigationCatalogTest {
     @Test
+    fun catalog_containsEveryDeclaredArticleIdExactlyOnce() {
+        assertEquals(17, LearnArticleCatalog.articles.size)
+        assertEquals(LearnArticleIds.all, LearnArticleCatalog.articles.map { it.id }.toSet())
+    }
+
+    @Test
     fun articleCrossLinks_onlyUseDirectlyReachableRoutes() {
         val invalidLinks =
             LearnArticleCatalog.articles.mapNotNull { article ->

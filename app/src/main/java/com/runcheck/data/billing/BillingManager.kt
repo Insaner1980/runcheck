@@ -28,6 +28,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -83,6 +84,7 @@ class BillingManager
         private var cachedProductDetails: com.android.billingclient.api.ProductDetails? = null
         private var cachedFormattedPrice: String? = null
         private var reconnectAttempts = 0
+        private var reconnectJob: Job? = null
         private val initComplete = CompletableDeferred<Unit>()
 
         override fun isPro(): Boolean = _isProUser.value
@@ -91,6 +93,7 @@ class BillingManager
 
         suspend fun awaitInitialized() = initComplete.await()
 
+        @Synchronized
         fun initialize() {
             // Debug builds always have Pro enabled for development
             if (BuildConfig.DEBUG) {
@@ -100,8 +103,10 @@ class BillingManager
                 return
             }
 
-            if (billingClient?.isReady == true) {
-                initComplete.complete(Unit)
+            if (billingClient != null) {
+                if (billingClient?.isReady == true) {
+                    initComplete.complete(Unit)
+                }
                 return
             }
 
@@ -129,7 +134,11 @@ class BillingManager
                     override fun onBillingSetupFinished(billingResult: BillingResult) {
                         when (billingResult.responseCode) {
                             BillingClient.BillingResponseCode.OK -> {
-                                reconnectAttempts = 0
+                                synchronized(this@BillingManager) {
+                                    reconnectAttempts = 0
+                                    reconnectJob?.cancel()
+                                    reconnectJob = null
+                                }
                                 _billingAvailable.value = true
                                 scope.launch {
                                     queryExistingPurchases()
@@ -182,7 +191,9 @@ class BillingManager
 
         private suspend fun queryExistingPurchases(): ProPurchaseRefreshResult {
             val client = billingClient ?: return ProPurchaseRefreshResult.UNAVAILABLE
-            if (!client.isReady) return ProPurchaseRefreshResult.UNAVAILABLE
+            if (client.connectionState == BillingClient.ConnectionState.CONNECTING) {
+                return ProPurchaseRefreshResult.UNAVAILABLE
+            }
             val params =
                 QueryPurchasesParams
                     .newBuilder()
@@ -434,14 +445,21 @@ class BillingManager
             proStatusCache.setCachedProStatus(isPro)
         }
 
+        @Synchronized
         private fun scheduleReconnect() {
+            if (reconnectJob?.isActive == true) return
+
             if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                 val delayMs = RECONNECT_BASE_DELAY_MS * (1L shl reconnectAttempts)
                 reconnectAttempts++
-                scope.launch {
-                    delay(delayMs)
-                    reconnect()
-                }
+                reconnectJob =
+                    scope.launch {
+                        delay(delayMs)
+                        synchronized(this@BillingManager) {
+                            reconnectJob = null
+                        }
+                        reconnect()
+                    }
             } else {
                 initComplete.complete(Unit)
             }
@@ -463,7 +481,10 @@ class BillingManager
             return if (messageRes != null) context.getString(messageRes) else fallback
         }
 
+        @Synchronized
         fun destroy() {
+            reconnectJob?.cancel()
+            reconnectJob = null
             scope.cancel()
             billingClient?.endConnection()
             billingClient = null

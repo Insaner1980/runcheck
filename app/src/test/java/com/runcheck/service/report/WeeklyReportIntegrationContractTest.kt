@@ -20,7 +20,7 @@ class WeeklyReportIntegrationContractTest {
 
         assertTrue(source.contains("weeklyReportScheduler"))
         assertTrue(source.contains("weeklyReportEnabled"))
-        assertTrue(source.contains("proStatusReady"))
+        assertTrue(source.contains("proAccessReady"))
         assertTrue(source.contains("distinctUntilChanged"))
     }
 

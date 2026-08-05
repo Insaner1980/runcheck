@@ -1,5 +1,6 @@
 package com.runcheck.data.thermal
 
+import android.os.SystemClock
 import com.runcheck.data.db.dao.ThermalReadingDao
 import com.runcheck.data.db.entity.ThermalReadingEntity
 import com.runcheck.data.device.DeviceProfileProvider
@@ -48,7 +49,11 @@ class ThermalRepositoryImpl
                             isThrottling = thermalStatus >= ThermalStatus.SEVERE,
                         )
                     }.onEach { state ->
-                        trackThrottlingEvents(state)
+                        trackThrottlingEvents(
+                            state = state,
+                            wallClockMillis = System.currentTimeMillis(),
+                            elapsedRealtimeMillis = SystemClock.elapsedRealtime(),
+                        )
                     },
                 )
             }.flowOn(dispatchers.io)

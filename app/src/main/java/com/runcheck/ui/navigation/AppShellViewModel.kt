@@ -52,7 +52,7 @@ class AppShellViewModel
                         .getActiveInsights()
                         .catch { emit(emptyList()) },
                     proStateProvider.proState,
-                    proStateProvider.proStatusReady,
+                    proStateProvider.proAccessReady,
                 ) { insights, proState, proStatusReady ->
                     AppShellUiState(
                         unseenInsightCount =

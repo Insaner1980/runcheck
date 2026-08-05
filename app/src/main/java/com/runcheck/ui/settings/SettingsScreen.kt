@@ -1,8 +1,8 @@
 package com.runcheck.ui.settings
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
@@ -58,17 +58,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.BuildConfig
 import com.runcheck.R
+import com.runcheck.domain.model.AlertThresholds
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.service.monitor.NotificationHelper
@@ -98,12 +101,29 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 internal const val TAG = "SettingsScreen"
-internal const val DEFAULT_ALERT_BATTERY_THRESHOLD = 20
-internal const val DEFAULT_ALERT_TEMPERATURE_THRESHOLD = 42
-internal const val DEFAULT_ALERT_STORAGE_THRESHOLD = 90
 internal const val DISABLED_CONTENT_ALPHA = 0.38f
 
+internal enum class LiveNotificationServiceAction {
+    START,
+    STOP,
+    NONE,
+}
+
+internal fun resolveLiveNotificationServiceAction(
+    preferencesLoaded: Boolean,
+    enabled: Boolean,
+    canPostNotifications: Boolean,
+    isRunning: Boolean,
+): LiveNotificationServiceAction =
+    when {
+        !preferencesLoaded -> LiveNotificationServiceAction.NONE
+        enabled && canPostNotifications && !isRunning -> LiveNotificationServiceAction.START
+        (!enabled || !canPostNotifications) && isRunning -> LiveNotificationServiceAction.STOP
+        else -> LiveNotificationServiceAction.NONE
+    }
+
 @Composable
+@SuppressLint("InlinedApi")
 fun SettingsScreen(
     modifier: Modifier = Modifier,
     onNavigateToLearnArticle: (String) -> Unit = {},
@@ -146,12 +166,31 @@ fun SettingsScreen(
         )
     }
 
-    LifecycleResumeEffect(context, uiState.preferences.liveNotificationEnabled) {
+    LifecycleResumeEffect(context, uiState.preferencesLoaded, uiState.preferences.liveNotificationEnabled) {
         val canPostNotifications = RuncheckPermissionPolicy.canPostNotifications(context)
         hasNotificationPermission = canPostNotifications
-        if (!canPostNotifications && uiState.preferences.liveNotificationEnabled) {
+        if (uiState.preferencesLoaded && !canPostNotifications && uiState.preferences.liveNotificationEnabled) {
             viewModel.setLiveNotificationEnabled(false)
-            stopLiveNotificationService()
+        }
+        when (
+            resolveLiveNotificationServiceAction(
+                preferencesLoaded = uiState.preferencesLoaded,
+                enabled = uiState.preferences.liveNotificationEnabled,
+                canPostNotifications = canPostNotifications,
+                isRunning = RealTimeMonitorService.isRunning,
+            )
+        ) {
+            LiveNotificationServiceAction.START -> {
+                context.startForegroundService(Intent(context, RealTimeMonitorService::class.java))
+            }
+
+            LiveNotificationServiceAction.STOP -> {
+                stopLiveNotificationService()
+            }
+
+            LiveNotificationServiceAction.NONE -> {
+                Unit
+            }
         }
         val nm = context.getSystemService(android.app.NotificationManager::class.java)
         alertsEffectivelyEnabled = canPostNotifications &&
@@ -173,8 +212,6 @@ fun SettingsScreen(
             if (granted) {
                 if (permissionRequestedForLive) {
                     viewModel.setLiveNotificationEnabled(true)
-                    val serviceIntent = Intent(context, RealTimeMonitorService::class.java)
-                    context.startForegroundService(serviceIntent)
                 } else {
                     viewModel.setNotifications(true)
                 }
@@ -192,7 +229,6 @@ fun SettingsScreen(
                 }
                 if (permissionRequestedForLive) {
                     viewModel.setLiveNotificationEnabled(false)
-                    stopLiveNotificationService()
                 }
             }
             permissionRequestedForLive = false
@@ -208,13 +244,6 @@ fun SettingsScreen(
             requestNotificationPermission(true)
         } else {
             viewModel.setLiveNotificationEnabled(enabled)
-            val serviceIntent = Intent(context, RealTimeMonitorService::class.java)
-            if (enabled) {
-                context.startForegroundService(serviceIntent)
-            } else {
-                serviceIntent.action = RealTimeMonitorService.ACTION_STOP
-                context.startService(serviceIntent)
-            }
         }
     }
 
@@ -537,7 +566,7 @@ private fun SettingsAboutSection(context: android.content.Context) {
                     context.startActivity(
                         Intent(
                             Intent.ACTION_VIEW,
-                            Uri.parse("market://details?id=${context.packageName}"),
+                            "market://details?id=${context.packageName}".toUri(),
                         ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                     )
                 } catch (_: Exception) {
@@ -570,7 +599,7 @@ private fun SettingsAboutSection(context: android.content.Context) {
                 try {
                     context.startActivity(
                         Intent(Intent.ACTION_SENDTO).apply {
-                            data = Uri.parse("mailto:")
+                            data = "mailto:".toUri()
                             putExtra(
                                 Intent.EXTRA_SUBJECT,
                                 context.getString(R.string.feedback_email_subject),
@@ -588,10 +617,10 @@ private fun SettingsAboutSection(context: android.content.Context) {
 
 @Composable
 private fun OpenSourceLicensesDialog(onDismiss: () -> Unit) {
-    val context = LocalContext.current
+    val resources = LocalResources.current
     val notices =
-        remember(context) {
-            context.resources
+        remember(resources) {
+            resources
                 .openRawResource(R.raw.third_party_notices)
                 .bufferedReader()
                 .use { it.readText() }
@@ -828,7 +857,7 @@ private fun openExternalUri(
     uri: String,
 ) {
     context.startActivity(
-        Intent(Intent.ACTION_VIEW, Uri.parse(uri)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        Intent(Intent.ACTION_VIEW, uri.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
     )
 }
 
@@ -861,7 +890,7 @@ internal fun shareExportUris(
     context: android.content.Context,
     exportUriStrings: List<String>,
 ) {
-    val parsedUris = exportUriStrings.map(Uri::parse)
+    val parsedUris = exportUriStrings.map { it.toUri() }
     val shareIntent =
         if (parsedUris.size == 1) {
             Intent(Intent.ACTION_SEND).apply {
@@ -874,6 +903,10 @@ internal fun shareExportUris(
             Intent(Intent.ACTION_SEND_MULTIPLE).apply {
                 type = "text/csv"
                 putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(parsedUris))
+                clipData =
+                    android.content.ClipData.newRawUri(null, parsedUris.first()).apply {
+                        parsedUris.drop(1).forEach { uri -> addItem(android.content.ClipData.Item(uri)) }
+                    }
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
         }
@@ -881,6 +914,9 @@ internal fun shareExportUris(
     context.startActivity(Intent.createChooser(shareIntent, chooserTitle))
 }
 
-internal val LOW_BATTERY_THRESHOLD_VALUES = (5..50 step 5).toList()
-internal val TEMPERATURE_THRESHOLD_VALUES = (35..50).toList()
-internal val LOW_STORAGE_THRESHOLD_VALUES = listOf(70, 75, 80, 85, 90, 95, 99)
+internal val LOW_BATTERY_THRESHOLD_VALUES =
+    (AlertThresholds.MIN_BATTERY_PERCENT..AlertThresholds.MAX_BATTERY_PERCENT step 5).toList()
+internal val TEMPERATURE_THRESHOLD_VALUES =
+    (AlertThresholds.MIN_TEMPERATURE_C..AlertThresholds.MAX_TEMPERATURE_C).toList()
+internal val LOW_STORAGE_THRESHOLD_VALUES =
+    (AlertThresholds.MIN_STORAGE_PERCENT..95 step 5).toList() + AlertThresholds.MAX_STORAGE_PERCENT

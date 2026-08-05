@@ -74,6 +74,7 @@ class SettingsViewModel
                     _uiState.update { current ->
                         current.copy(
                             preferences = settings.preferences,
+                            preferencesLoaded = true,
                             deviceProfile = settings.deviceProfile,
                             isPro = isPro,
                             billingAvailable = billingAvailable,

@@ -28,6 +28,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
+import com.runcheck.domain.model.AlertThresholds
 import com.runcheck.domain.model.DataRetention
 import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.model.TemperatureUnit
@@ -285,9 +286,9 @@ internal fun AlertThresholdsSection(
     onResetThresholdsClick: () -> Unit,
 ) {
     val isDefault =
-        preferences.alertBatteryThreshold == DEFAULT_ALERT_BATTERY_THRESHOLD &&
-            preferences.alertTempThreshold == DEFAULT_ALERT_TEMPERATURE_THRESHOLD &&
-            preferences.alertStorageThreshold == DEFAULT_ALERT_STORAGE_THRESHOLD
+        preferences.alertBatteryThreshold == AlertThresholds.DEFAULT_BATTERY_PERCENT &&
+            preferences.alertTempThreshold == AlertThresholds.DEFAULT_TEMPERATURE_C &&
+            preferences.alertStorageThreshold == AlertThresholds.DEFAULT_STORAGE_PERCENT
 
     SettingsCard {
         CardSectionTitle(text = stringResource(R.string.settings_alert_thresholds))

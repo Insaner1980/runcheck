@@ -2,13 +2,18 @@ package com.runcheck.domain.usecase
 
 import com.runcheck.domain.repository.AppBatteryUsageRepository
 import com.runcheck.domain.repository.BatteryRepository
+import com.runcheck.domain.repository.ChargerRepository
 import com.runcheck.domain.repository.DatabaseTransactionRunner
+import com.runcheck.domain.repository.FileExportRepository
 import com.runcheck.domain.repository.InsightRepository
+import com.runcheck.domain.repository.MonitoringStatusRepository
 import com.runcheck.domain.repository.NetworkRepository
 import com.runcheck.domain.repository.SpeedTestRepository
 import com.runcheck.domain.repository.StorageRepository
 import com.runcheck.domain.repository.ThermalRepository
 import com.runcheck.domain.repository.ThrottlingRepository
+import com.runcheck.domain.repository.UserPreferencesRepository
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 
 class ClearMonitoringDataUseCase
@@ -23,6 +28,10 @@ class ClearMonitoringDataUseCase
         private val appBatteryUsageRepository: AppBatteryUsageRepository,
         private val speedTestRepository: SpeedTestRepository,
         private val insightRepository: InsightRepository,
+        private val chargerRepository: ChargerRepository,
+        private val userPreferencesRepository: UserPreferencesRepository,
+        private val monitoringStatusRepository: MonitoringStatusRepository,
+        private val fileExportRepository: FileExportRepository,
     ) {
         suspend operator fun invoke() {
             transactionRunner.runInTransaction {
@@ -34,6 +43,20 @@ class ClearMonitoringDataUseCase
                 appBatteryUsageRepository.deleteAll()
                 speedTestRepository.deleteAll()
                 insightRepository.clearAll()
+                chargerRepository.deleteAll()
             }
+
+            var cleanupFailure: Throwable? = null
+
+            suspend fun attemptCleanup(block: suspend () -> Unit) {
+                val error = runCatching { block() }.exceptionOrNull() ?: return
+                if (error is CancellationException) throw error
+                cleanupFailure?.addSuppressed(error) ?: run { cleanupFailure = error }
+            }
+
+            attemptCleanup { userPreferencesRepository.clearMonitoringDataState() }
+            attemptCleanup { monitoringStatusRepository.clearLastWorkerHeartbeat() }
+            attemptCleanup { fileExportRepository.clearPreparedExports() }
+            cleanupFailure?.let { throw it }
         }
     }

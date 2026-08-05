@@ -98,6 +98,25 @@ class TrackThrottlingEventsUseCaseTest {
         }
 
     @Test
+    fun `wall clock rollback does not change active event duration`() =
+        runTest {
+            useCase(
+                state = thermalState(ThermalStatus.SEVERE),
+                wallClockMillis = 10_000L,
+                elapsedRealtimeMillis = 1_000L,
+            )
+            useCase(
+                state = thermalState(ThermalStatus.NONE),
+                wallClockMillis = 5_000L,
+                elapsedRealtimeMillis = 4_000L,
+            )
+
+            coVerify(exactly = 1) {
+                throttlingRepository.updateDuration(id = 1L, durationMs = 3_000L)
+            }
+        }
+
+    @Test
     fun `consecutive SEVERE calls do not create duplicate events`() =
         runTest {
             useCase(thermalState(ThermalStatus.SEVERE))

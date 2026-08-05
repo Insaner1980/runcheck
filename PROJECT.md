@@ -452,7 +452,7 @@ Trial and Pro UI handled on Home:
 - Trial-expiration modal
 - Top-level Insights summary available to all users, with the full list available from the dedicated Insights screen
 - Insight targets for Pro-only destinations such as Charger Comparison and App Usage are hidden for free users and visible for trial/Pro users
-- Monitoring stale state is derived from the last worker heartbeat and becomes stale after more than 3x the configured monitoring interval.
+- Monitoring stale state is derived from the last worker heartbeat and becomes stale after more than 3x the longer of the heartbeat's interval and the current interval, measured in awake uptime so deep-sleep gaps do not trigger the banner.
 - Home marks only its currently displayed unseen insight rows as seen through `InsightRepository.markSeen(ids)`.
 
 ---
@@ -826,8 +826,8 @@ Persistence technologies:
 - Room migrations are explicitly registered from 1→2 through 9→10
 - A destructive migration callback logs debug-only and records `destructive_migration_occurred` in `runcheck_db_events`
 - DataStore `settings` for user preferences, weekly-report enablement and last handled period, dismissed info cards, selected charger, and app-usage collection timestamp
-- DataStore `trial_state` for trial start, last-known timestamp, welcome/day-5 prompt state, and upgrade-card dismissal pacing
-- DataStore `monitoring_status` for the last successful periodic worker heartbeat
+- DataStore `trial_state` for trial start, last-known timestamp, welcome/day-5/expiration prompt state, and upgrade-card dismissal pacing
+- DataStore `monitoring_status` for the last successful periodic worker heartbeat's wall time, awake uptime, and monitoring interval
 - DataStore `monitoring_alert_state` for the previous alert snapshot and charge-complete debounce state
 - SharedPreferences `pro_status_cache` for synchronous cached purchase status during release cold start
 

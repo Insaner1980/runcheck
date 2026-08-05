@@ -15,6 +15,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.core.content.edit
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -122,7 +123,7 @@ class MainActivity : ComponentActivity() {
     private fun checkDatabaseReset() {
         val prefs = getSharedPreferences(DatabaseModule.DB_EVENT_PREFS, MODE_PRIVATE)
         if (prefs.getBoolean(DatabaseModule.KEY_DB_RESET, false)) {
-            prefs.edit().remove(DatabaseModule.KEY_DB_RESET).apply()
+            prefs.edit { remove(DatabaseModule.KEY_DB_RESET) }
             Toast
                 .makeText(
                     this,

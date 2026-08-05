@@ -19,11 +19,14 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -40,6 +43,36 @@ class StorageViewModelTest {
     private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase = mockk()
     private val manageUserPreferences: ManageUserPreferencesUseCase = mockk()
     private val getStorageHistory: GetStorageHistoryUseCase = mockk()
+
+    @Test
+    fun `refresh finishes when live source emits the same state`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val storageState =
+                MutableStateFlow(
+                    StorageState(
+                        totalBytes = 1L,
+                        availableBytes = 1L,
+                        usedBytes = 0L,
+                        usagePercent = 0f,
+                    ),
+                )
+            every { getStorageState() } returns storageState
+            every { observeProAccess() } returns flowOf(false)
+            every { manageInfoCardDismissals.observeDismissedCardIds() } returns flowOf(emptySet())
+            every { manageUserPreferences.observePreferences() } returns flowOf(UserPreferences())
+            every { getStorageHistory(HistoryPeriod.WEEK) } returns flowOf(emptyList())
+            val viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceStorageSample()
+
+            viewModel.refresh()
+
+            assertTrue(viewModel.isRefreshing.value)
+            advanceStorageSample()
+            assertFalse(viewModel.isRefreshing.value)
+            verify(exactly = 2) { getStorageState() }
+            viewModel.stopObserving()
+        }
 
     @Test
     fun `empty trash does not query trashed uris without pro access`() =
@@ -130,4 +163,10 @@ class StorageViewModelTest {
             manageUserPreferences = manageUserPreferences,
             getStorageHistory = getStorageHistory,
         )
+
+    private fun advanceStorageSample() {
+        mainDispatcherRule.testDispatcher.scheduler.runCurrent()
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(334L)
+        mainDispatcherRule.testDispatcher.scheduler.runCurrent()
+    }
 }

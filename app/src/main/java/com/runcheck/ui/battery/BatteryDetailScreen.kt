@@ -20,13 +20,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -104,6 +102,7 @@ import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.components.ProBadgePill
+import com.runcheck.ui.components.ProFeatureLockedState
 import com.runcheck.ui.components.ProgressRing
 import com.runcheck.ui.components.PullToRefreshWrapper
 import com.runcheck.ui.components.RuncheckDetailScaffold
@@ -152,6 +151,7 @@ fun BatteryDetailScreen(
     viewModel: BatteryViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val loadingDescription = stringResource(R.string.a11y_loading)
 
     LifecycleStartStopEffect(
@@ -197,6 +197,7 @@ fun BatteryDetailScreen(
             is BatteryUiState.Success -> {
                 BatteryContent(
                     state = state,
+                    isRefreshing = isRefreshing,
                     onRefresh = { viewModel.refresh() },
                     onPeriodChange = { viewModel.setHistoryPeriod(it) },
                     onNavigateToCharger = onNavigateToCharger,
@@ -218,6 +219,7 @@ fun BatteryDetailScreen(
 @Composable
 private fun BatteryContent(
     state: BatteryUiState.Success,
+    isRefreshing: Boolean,
     onRefresh: () -> Unit,
     onPeriodChange: (HistoryPeriod) -> Unit,
     onNavigateToCharger: () -> Unit,
@@ -232,7 +234,6 @@ private fun BatteryContent(
     onConsumeFullscreenResult: () -> Unit = {},
 ) {
     val activeInfoSheetState = rememberInfoSheetState()
-    var isRefreshing by remember { mutableStateOf(false) }
     val battery = state.batteryState
     val selectedHistoryMetricState = rememberSaveableEnumState(BatteryHistoryMetric.LEVEL)
     val selectedSessionMetricState = rememberSaveableEnumState(SessionGraphMetric.CURRENT)
@@ -302,16 +303,9 @@ private fun BatteryContent(
             )
         }
 
-    LaunchedEffect(state) {
-        isRefreshing = false
-    }
-
     PullToRefreshWrapper(
         isRefreshing = isRefreshing,
-        onRefresh = {
-            isRefreshing = true
-            onRefresh()
-        },
+        onRefresh = onRefresh,
     ) {
         Column(
             modifier =
@@ -339,6 +333,7 @@ private fun BatteryContent(
                 onSessionMetricChange = { selectedSessionMetricState.value = it },
                 selectedSessionWindow = sessionWindow,
                 onSessionWindowChange = { selectedSessionWindowState.value = it },
+                onUpgradeToPro = onUpgradeToPro,
                 onNavigateToFullscreen = onNavigateToFullscreen,
                 onInfoClick = { activeInfoSheetState.value = it },
             )
@@ -600,6 +595,7 @@ private fun BatteryChargingSection( // NOSONAR
     onSessionMetricChange: (SessionGraphMetric) -> Unit,
     selectedSessionWindow: SessionGraphWindow,
     onSessionWindowChange: (SessionGraphWindow) -> Unit,
+    onUpgradeToPro: () -> Unit,
     onNavigateToFullscreen: (source: String, metric: String, period: String) -> Unit,
     onInfoClick: (String) -> Unit,
 ) {
@@ -759,18 +755,6 @@ private fun BatteryChargingSection( // NOSONAR
     }
 
     chargingSessionSummary?.let { summary ->
-        if (
-            shouldShowRemainingChargePanel(
-                isPro = state.isPro,
-                summary = summary,
-                currentLevel = battery.level,
-            )
-        ) {
-            BatteryRemainingTimePanel(
-                summary = summary,
-                currentLevel = battery.level,
-            )
-        }
         if (summary.hasGraphData()) {
             BatterySessionGraphPanel(
                 summary = summary,
@@ -826,10 +810,22 @@ private fun BatteryFooterSection( // NOSONAR
             onNavigateToFullscreen = onNavigateToFullscreen,
         )
 
-        if (state.isPro && state.statistics != null) {
-            BatteryStatisticsPanel(
-                statistics = state.statistics,
-                onInfoClick = onInfoClick,
+        if (state.isPro) {
+            state.statistics?.let { statistics ->
+                BatteryStatisticsPanel(
+                    statistics = statistics,
+                    onInfoClick = onInfoClick,
+                )
+            }
+        } else {
+            BatteryProLockedPanel(
+                title = stringResource(R.string.battery_stats_section),
+                message =
+                    stringResource(
+                        R.string.pro_feature_locked_message,
+                        stringResource(R.string.battery_stats_section),
+                    ),
+                onUpgradeToPro = onUpgradeToPro,
             )
         }
 
@@ -985,12 +981,17 @@ private fun BatteryHeroSection(
                         modifier = Modifier.weight(1f),
                         onInfoClick = { onInfoClick("drainRate") },
                     )
-                    MetricPill(
-                        label = stringResource(R.string.battery_power),
-                        value = powerText,
+                    Column(
                         modifier = Modifier.weight(1f),
-                        onInfoClick = { onInfoClick("powerW") },
-                    )
+                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
+                    ) {
+                        MetricPill(
+                            label = stringResource(R.string.battery_power),
+                            value = powerText,
+                            onInfoClick = { onInfoClick("powerW") },
+                        )
+                        ConfidenceBadge(confidence = battery.currentMa.confidence)
+                    }
                     MetricPill(
                         label = stringResource(R.string.battery_remaining),
                         value = remainingText,
@@ -1159,6 +1160,22 @@ internal fun BatteryHistoryPanel(
 }
 
 @Composable
+private fun BatteryProLockedPanel(
+    title: String,
+    message: String,
+    onUpgradeToPro: () -> Unit,
+) {
+    BatteryPanel {
+        ProFeatureLockedState(
+            title = title,
+            message = message,
+            actionLabel = stringResource(R.string.pro_feature_upgrade_action),
+            onAction = onUpgradeToPro,
+        )
+    }
+}
+
+@Composable
 private fun BatteryHistoryLockedState(onUpgradeToPro: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -1170,14 +1187,6 @@ private fun BatteryHistoryLockedState(onUpgradeToPro: () -> Unit) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        OutlinedButton(
-            onClick = onUpgradeToPro,
-            modifier = Modifier.fillMaxWidth(),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
-        ) {
-            Text(stringResource(R.string.pro_feature_upgrade_action))
-        }
     }
 }
 
@@ -1393,6 +1402,7 @@ private fun BatterySessionGraphPanel(
                     FullscreenChartUiState.Success(
                         chartData = chartModel.chartData,
                         chartTimestamps = chartModel.chartTimestamps,
+                        lineBreakIndices = chartModel.lineBreakIndices,
                         unit = chartModel.unit,
                         selectedMetric = selectedMetric.name,
                         selectedPeriod = selectedWindow.name,
@@ -1418,6 +1428,7 @@ private fun BatterySessionGraphPanel(
                 yLabels = chartModel.yLabels.ifEmpty { null },
                 xLabels = chartModel.xLabels.ifEmpty { null },
                 showGrid = true,
+                lineBreakIndices = chartModel.lineBreakIndices,
                 tooltipFormatter = { index -> formatChartTooltip(chartModel, index) },
                 onExpandClick = {
                     FullscreenChartSeedStore.prime(

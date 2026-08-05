@@ -21,6 +21,7 @@ import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.MainDispatcherRule
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -33,6 +34,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -149,10 +151,29 @@ class BatteryViewModelTest {
     }
 
     @Test
+    fun `refresh finishes when live source emits the same state`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val batteryState = MutableStateFlow(makeBatteryState())
+            every { getBatteryState() } returns batteryState
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceBatterySample()
+
+            viewModel.refresh()
+
+            assertTrue(viewModel.isRefreshing.value)
+            advanceBatterySample()
+            assertFalse(viewModel.isRefreshing.value)
+            verify(exactly = 2) { getBatteryState() }
+            viewModel.stopObserving()
+        }
+
+    @Test
     fun `battery data loads into Success with correct values`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val testState = makeBatteryState(level = 72, currentMa = -500)
             every { getBatteryState() } returns MutableStateFlow(testState)
+            every { observeProAccess() } returns flowOf(true)
 
             viewModel = createViewModel()
             viewModel.startObserving()
@@ -170,6 +191,30 @@ class BatteryViewModelTest {
             assertNotNull("Statistics should be loaded", success.statistics)
 
             verify { batteryScreenInsights.updateChargingStatus(ChargingStatus.DISCHARGING) }
+            viewModel.stopObserving()
+        }
+
+    @Test
+    fun `statistics are not fetched until pro access is granted`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val proAccess = MutableStateFlow(false)
+            every { getBatteryState() } returns MutableStateFlow(makeBatteryState())
+            every { observeProAccess() } returns proAccess
+
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceBatterySample()
+
+            val freeState = viewModel.uiState.value as BatteryUiState.Success
+            assertNull(freeState.statistics)
+            coVerify(exactly = 0) { getBatteryStatistics(any()) }
+
+            proAccess.value = true
+            advanceBatterySample()
+
+            val proState = viewModel.uiState.value as BatteryUiState.Success
+            assertNotNull(proState.statistics)
+            coVerify(exactly = 1) { getBatteryStatistics(any()) }
             viewModel.stopObserving()
         }
 

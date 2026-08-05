@@ -1,5 +1,6 @@
 package com.runcheck.domain.usecase
 
+import com.runcheck.domain.model.AlertThresholds
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.model.ThemeMode
 import com.runcheck.domain.model.UserPreferences
@@ -37,14 +38,17 @@ class ManageUserPreferencesUseCase
         }
 
         suspend fun setAlertBatteryThreshold(value: Int) {
+            require(value in AlertThresholds.MIN_BATTERY_PERCENT..AlertThresholds.MAX_BATTERY_PERCENT)
             userPreferencesRepository.setAlertBatteryThreshold(value)
         }
 
         suspend fun setAlertTempThreshold(value: Int) {
+            require(value in AlertThresholds.MIN_TEMPERATURE_C..AlertThresholds.MAX_TEMPERATURE_C)
             userPreferencesRepository.setAlertTempThreshold(value)
         }
 
         suspend fun setAlertStorageThreshold(value: Int) {
+            require(value in AlertThresholds.MIN_STORAGE_PERCENT..AlertThresholds.MAX_STORAGE_PERCENT)
             userPreferencesRepository.setAlertStorageThreshold(value)
         }
 

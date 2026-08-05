@@ -16,6 +16,7 @@ import com.runcheck.ui.MainDispatcherRule
 import com.runcheck.ui.common.UiText
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -84,6 +86,24 @@ class ThermalViewModelTest {
             } finally {
                 viewModel.stopObserving()
             }
+        }
+
+    @Test
+    fun `refresh finishes when live source emits the same state`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val thermalFlow = MutableStateFlow(thermalState(tempC = 34f, headroom = 0.6f))
+            every { getThermalState() } returns thermalFlow
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceThermalSample()
+
+            viewModel.refresh()
+
+            assertTrue(viewModel.isRefreshing.value)
+            advanceThermalSample()
+            assertFalse(viewModel.isRefreshing.value)
+            verify(exactly = 2) { getThermalState() }
+            viewModel.stopObserving()
         }
 
     @Test

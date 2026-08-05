@@ -16,6 +16,7 @@ import com.runcheck.ui.components.ChartQualityZone
 import com.runcheck.ui.components.ChartXLabel
 import com.runcheck.ui.components.ChartYLabel
 import com.runcheck.ui.theme.statusColors
+import kotlin.math.floor
 import kotlin.math.roundToInt
 
 // ── Constants ───────────────────────────────────────────────────────────────────
@@ -23,21 +24,69 @@ import kotlin.math.roundToInt
 private const val RECENT_SESSION_SAMPLE_COUNT = 4
 private const val MIN_SESSION_SPEED_DURATION_MS = 10 * 60_000L
 private const val MIN_RECENT_SPEED_DURATION_MS = 5 * 60_000L
-private const val MAX_DELIVERY_INTERVAL_MS = 30 * 60_000L
+internal const val MAX_SESSION_SAMPLE_GAP_MS = 30 * 60_000L
 private const val MIN_ESTIMATE_PACE_PER_HOUR = 0.25f
 private const val TARGET_CHARGE_EIGHTY = 80
 private const val TARGET_CHARGE_FULL = 100
 
 // ── Downsampling ────────────────────────────────────────────────────────────────
 
-fun <T> List<T>.downsamplePairs(maxPoints: Int): List<T> {
-    if (size <= maxPoints || maxPoints <= 1) return this
-    val lastIdx = lastIndex
+fun List<Pair<Long, Float>>.downsamplePairs(maxPoints: Int): List<Pair<Long, Float>> {
+    if (maxPoints <= 0) return emptyList()
+    if (size <= maxPoints) return this
+    if (maxPoints == 1) return listOf(first())
+    if (maxPoints == 2) return listOf(first(), last())
+
+    val bucketSize = (size - 2).toDouble() / (maxPoints - 2)
+    val originTimestamp = first().first
+    var selectedIndex = 0
+
     return buildList(maxPoints) {
-        for (index in 0 until maxPoints) {
-            val sourceIndex = ((index.toLong() * lastIdx) / (maxPoints - 1)).toInt()
-            add(this@downsamplePairs[sourceIndex])
+        add(this@downsamplePairs.first())
+
+        for (bucketIndex in 0 until maxPoints - 2) {
+            val averageStart =
+                (floor((bucketIndex + 1) * bucketSize).toInt() + 1)
+                    .coerceAtMost(this@downsamplePairs.size)
+            val averageEnd =
+                (floor((bucketIndex + 2) * bucketSize).toInt() + 1)
+                    .coerceAtMost(this@downsamplePairs.size)
+            val averageRange = this@downsamplePairs.subList(averageStart, averageEnd)
+            val averageTimestamp =
+                averageRange.sumOf { (timestamp, _) -> (timestamp - originTimestamp).toDouble() } /
+                    averageRange.size
+            val averageValue = averageRange.sumOf { (_, value) -> value.toDouble() } / averageRange.size
+
+            val rangeStart = floor(bucketIndex * bucketSize).toInt() + 1
+            val rangeEnd =
+                (floor((bucketIndex + 1) * bucketSize).toInt() + 1)
+                    .coerceAtMost(this@downsamplePairs.lastIndex)
+            val selected = this@downsamplePairs[selectedIndex]
+            val selectedTimestamp = (selected.first - originTimestamp).toDouble()
+            var largestArea = Double.NEGATIVE_INFINITY
+            var nextSelectedIndex = rangeStart
+
+            for (candidateIndex in rangeStart until rangeEnd) {
+                val candidate = this@downsamplePairs[candidateIndex]
+                val candidateTimestamp = (candidate.first - originTimestamp).toDouble()
+                val area =
+                    kotlin.math.abs(
+                        (selectedTimestamp - averageTimestamp) *
+                            (candidate.second - selected.second).toDouble() -
+                            (selectedTimestamp - candidateTimestamp) *
+                            (averageValue - selected.second.toDouble()),
+                    )
+                if (area > largestArea) {
+                    largestArea = area
+                    nextSelectedIndex = candidateIndex
+                }
+            }
+
+            selectedIndex = nextSelectedIndex
+            add(this@downsamplePairs[selectedIndex])
         }
+
+        add(this@downsamplePairs.last())
     }
 }
 
@@ -106,8 +155,8 @@ fun calculateChargingSessionSummary(
     if (chargingStatus != ChargingStatus.CHARGING || history.isEmpty()) return null
 
     val sorted = history.sortedBy { it.timestamp }
-    val latestChargingIndex = sorted.indexOfLast { it.status == ChargingStatus.CHARGING.name }
-    if (latestChargingIndex == -1) return null
+    val latestChargingIndex = sorted.lastIndex
+    if (sorted[latestChargingIndex].status != ChargingStatus.CHARGING.name) return null
 
     var startIndex = latestChargingIndex
     while (startIndex > 0 && sorted[startIndex - 1].status == ChargingStatus.CHARGING.name) {
@@ -183,7 +232,7 @@ private fun sessionDeliveredMah(session: List<BatteryReading>): Int? {
         val startCurrent = start.currentMa
         val endCurrent = end.currentMa
         val durationMs = end.timestamp - start.timestamp
-        if (startCurrent != null && endCurrent != null && durationMs in 1..MAX_DELIVERY_INTERVAL_MS) {
+        if (startCurrent != null && endCurrent != null && durationMs in 1..MAX_SESSION_SAMPLE_GAP_MS) {
             val averageCurrent = ((startCurrent + endCurrent) / 2f).coerceAtLeast(0f)
             deliveredMah += averageCurrent * (durationMs / 3_600_000f)
             hasIntervals = true
@@ -516,6 +565,25 @@ fun storageQualityZones(metric: StorageHistoryMetric): List<ChartQualityZone>? {
             null
         }
     }
+}
+
+/**
+ * Maps a [value] to the full-alpha color of the [ChartQualityZone] it falls within.
+ * Zone colors are stored at low alpha (0.06f–0.08f) for background rendering;
+ * this helper returns the color at full alpha, suitable for the data line.
+ * Returns [defaultColor] when no zone matches.
+ */
+fun qualityZoneColorForValue(
+    value: Float,
+    zones: List<ChartQualityZone>,
+    defaultColor: Color,
+): Color {
+    for (zone in zones.asReversed()) {
+        if (value >= zone.minValue && value <= zone.maxValue) {
+            return zone.color.copy(alpha = 1f)
+        }
+    }
+    return defaultColor
 }
 
 @Composable

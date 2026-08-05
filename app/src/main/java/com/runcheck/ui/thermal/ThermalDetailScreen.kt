@@ -25,7 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -126,6 +125,7 @@ fun ThermalDetailScreen(
     viewModel: ThermalViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val loadingDescription = stringResource(R.string.a11y_loading)
 
     LifecycleStartStopEffect(
@@ -171,6 +171,7 @@ fun ThermalDetailScreen(
             is ThermalUiState.Success -> {
                 ThermalContent(
                     state = state,
+                    isRefreshing = isRefreshing,
                     onRefresh = { viewModel.refresh() },
                     onUpgradeToPro = onUpgradeToPro,
                     onNavigateToLearnArticle = onNavigateToLearnArticle,
@@ -186,6 +187,7 @@ fun ThermalDetailScreen(
 @Composable
 private fun ThermalContent(
     state: ThermalUiState.Success,
+    isRefreshing: Boolean,
     onRefresh: () -> Unit,
     onUpgradeToPro: () -> Unit,
     onNavigateToLearnArticle: (articleId: String) -> Unit,
@@ -194,19 +196,11 @@ private fun ThermalContent(
     onPeriodChange: (HistoryPeriod) -> Unit,
 ) {
     var activeInfoSheet by rememberInfoSheetState()
-    var isRefreshing by remember { mutableStateOf(false) }
     val thermal = state.thermalState
-
-    LaunchedEffect(state) {
-        isRefreshing = false
-    }
 
     PullToRefreshWrapper(
         isRefreshing = isRefreshing,
-        onRefresh = {
-            isRefreshing = true
-            onRefresh()
-        },
+        onRefresh = onRefresh,
     ) {
         LazyColumn(
             modifier =

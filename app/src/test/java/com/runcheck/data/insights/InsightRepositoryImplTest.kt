@@ -29,7 +29,7 @@ class InsightRepositoryImplTest {
         runTest {
             val insightDao: InsightDao = mockk(relaxed = true)
             val repository = createRepository(insightDao)
-            coEvery { insightDao.getByRule("battery_rule") } returns
+            coEvery { insightDao.getByRules(setOf("battery_rule")) } returns
                 listOf(
                     insightEntity(
                         id = 5L,
@@ -83,7 +83,7 @@ class InsightRepositoryImplTest {
                     dismissed = true,
                     seen = true,
                 )
-            coEvery { insightDao.getByRule("battery_rule") } returns listOf(dismissed)
+            coEvery { insightDao.getByRules(setOf("battery_rule")) } returns listOf(dismissed)
 
             repository.replaceGenerationResults(
                 candidatesByRule = mapOf("battery_rule" to emptyList()),
@@ -104,11 +104,39 @@ class InsightRepositoryImplTest {
             )
 
             val inserted = slot<List<InsightEntity>>()
-            coVerify(exactly = 1) { insightDao.deleteUndismissedByRule("battery_rule") }
+            coVerify(exactly = 1) { insightDao.deleteUndismissedByRules(setOf("battery_rule")) }
             coVerify(exactly = 0) { insightDao.deleteByIds(listOf(5L)) }
             coVerify(exactly = 1) { insightDao.insertAll(capture(inserted)) }
             assertEquals(5L, inserted.captured.single().id)
             assertEquals(true, inserted.captured.single().dismissed)
+        }
+
+    @Test
+    fun `multiple rule results use batched dao operations`() =
+        runTest {
+            val insightDao: InsightDao = mockk(relaxed = true)
+            val repository =
+                createRepository(
+                    insightDao,
+                    rules = setOf(insightRule("battery_rule"), insightRule("thermal_rule")),
+                )
+            coEvery { insightDao.getByRules(setOf("battery_rule", "thermal_rule")) } returns emptyList()
+
+            repository.replaceGenerationResults(
+                candidatesByRule =
+                    mapOf(
+                        "battery_rule" to listOf(insightCandidate(ruleId = "battery_rule")),
+                        "thermal_rule" to listOf(insightCandidate(ruleId = "thermal_rule")),
+                    ),
+                now = 500L,
+            )
+
+            val inserted = slot<List<InsightEntity>>()
+            coVerify(exactly = 1) {
+                insightDao.getByRules(setOf("battery_rule", "thermal_rule"))
+            }
+            coVerify(exactly = 1) { insightDao.insertAll(capture(inserted)) }
+            assertEquals(setOf("battery_rule", "thermal_rule"), inserted.captured.map { it.ruleId }.toSet())
         }
 
     @Test

@@ -18,8 +18,8 @@ interface InsightDao {
     )
     fun observeUndismissedInsights(): Flow<List<InsightEntity>>
 
-    @Query("SELECT * FROM insights WHERE rule_id = :ruleId")
-    suspend fun getByRule(ruleId: String): List<InsightEntity>
+    @Query("SELECT * FROM insights WHERE rule_id IN (:ruleIds)")
+    suspend fun getByRules(ruleIds: Set<String>): List<InsightEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(insights: List<InsightEntity>)
@@ -30,8 +30,8 @@ interface InsightDao {
     @Query("DELETE FROM insights WHERE rule_id NOT IN (:supportedRuleIds)")
     suspend fun deleteUnsupportedRuleIds(supportedRuleIds: Set<String>)
 
-    @Query("DELETE FROM insights WHERE rule_id = :ruleId AND dismissed = 0")
-    suspend fun deleteUndismissedByRule(ruleId: String)
+    @Query("DELETE FROM insights WHERE rule_id IN (:ruleIds) AND dismissed = 0")
+    suspend fun deleteUndismissedByRules(ruleIds: Set<String>)
 
     @Query("DELETE FROM insights WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<Long>)

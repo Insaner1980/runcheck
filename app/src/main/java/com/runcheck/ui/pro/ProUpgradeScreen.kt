@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -34,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -117,8 +119,9 @@ internal fun ProUpgradeContent(
             ProStatus.TRIAL_ACTIVE -> {
                 StatusPill(
                     label =
-                        stringResource(
-                            R.string.trial_days_remaining,
+                        pluralStringResource(
+                            R.plurals.trial_days_remaining,
+                            uiState.proState.trialDaysRemaining,
                             uiState.proState.trialDaysRemaining,
                         ),
                     tone = StatusTone.HEALTHY,
@@ -186,7 +189,7 @@ internal fun ProUpgradeContent(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(tokens.primaryButtonHeight),
+                    .defaultMinSize(minHeight = tokens.primaryButtonHeight),
             shape = MaterialTheme.shapes.large,
             colors =
                 ButtonDefaults.buttonColors(

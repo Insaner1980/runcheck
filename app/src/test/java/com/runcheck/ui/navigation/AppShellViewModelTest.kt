@@ -89,7 +89,7 @@ class AppShellViewModelTest {
             every { insightRepository.getActiveInsights() } returns
                 flow { throw IllegalStateException("Room unavailable") }
             every { proStateProvider.proState } returns proState
-            every { proStateProvider.proStatusReady } returns MutableStateFlow(true)
+            every { proStateProvider.proAccessReady } returns MutableStateFlow(true)
 
             val viewModel = AppShellViewModel(insightRepository, proStateProvider)
             advanceTimeBy(334L)
@@ -103,7 +103,7 @@ class AppShellViewModelTest {
     private fun stubFlows() {
         every { insightRepository.getActiveInsights() } returns insights
         every { proStateProvider.proState } returns proState
-        every { proStateProvider.proStatusReady } returns proStatusReady
+        every { proStateProvider.proAccessReady } returns proStatusReady
     }
 
     private fun testInsight(
