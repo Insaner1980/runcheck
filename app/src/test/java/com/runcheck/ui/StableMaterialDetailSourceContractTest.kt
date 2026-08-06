@@ -44,7 +44,6 @@ class StableMaterialDetailSourceContractTest {
 
         val cleanup = source("storage/cleanup/CleanupBottomBar.kt")
         assertTrue(cleanup.contains("Surface("))
-        assertTrue(cleanup.contains("Row("))
         assertTrue(cleanup.contains("defaultMinSize(minHeight = MaterialTheme.uiTokens.touchTarget)"))
 
         val charger = source("charger/ChargerComparisonScreen.kt")

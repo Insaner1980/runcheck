@@ -9,10 +9,13 @@ import java.nio.file.Paths
 import kotlin.io.path.readText
 
 class BillingManagerApiContractTest {
+    // Normalise line endings so the multi-line source assertions below behave the
+    // same on Windows checkouts (CRLF) as they do on CI (LF).
     private val billingManagerSource: String =
         findRootDir()
             .resolve("app/src/main/java/com/runcheck/data/billing/BillingManager.kt")
             .readText()
+            .replace("\r\n", "\n")
 
     @Test
     fun `BillingClient builder enables Play Billing auto service reconnection`() {
