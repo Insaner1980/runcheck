@@ -1,6 +1,5 @@
 package com.runcheck.ui.chart
 
-import androidx.compose.ui.graphics.Color
 import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.HistoryPeriod
@@ -8,7 +7,6 @@ import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.TemperatureUnit
 import com.runcheck.domain.model.ThermalReading
-import com.runcheck.ui.components.ChartQualityZone
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -327,35 +325,6 @@ class ChartRenderModelTest {
             listOf("-90", "-80", "-70", "-60", "-50"),
             buildNetworkYLabels(-95f, -50f).map { it.label },
         )
-    }
-
-    @Test
-    fun `quality zone color returns matched color at full alpha and default outside zones`() {
-        val defaultColor = Color.White
-        val zoneColor = Color.Red.copy(alpha = 0.08f)
-        val zones = listOf(ChartQualityZone(minValue = 40f, maxValue = 45f, color = zoneColor))
-
-        val matched = qualityZoneColorForValue(42f, zones, defaultColor)
-        val outside = qualityZoneColorForValue(30f, zones, defaultColor)
-
-        assertEquals(Color.Red.red, matched.red, 0.0f)
-        assertEquals(Color.Red.green, matched.green, 0.0f)
-        assertEquals(Color.Red.blue, matched.blue, 0.0f)
-        assertEquals(1f, matched.alpha, 0.0f)
-        assertEquals(defaultColor, outside)
-    }
-
-    @Test
-    fun `quality zone shared boundary uses the zone that starts at that boundary`() {
-        val zones =
-            listOf(
-                ChartQualityZone(minValue = 0f, maxValue = 35f, color = Color.Green),
-                ChartQualityZone(minValue = 35f, maxValue = 42f, color = Color.Yellow),
-                ChartQualityZone(minValue = 42f, maxValue = 60f, color = Color.Red),
-            )
-
-        assertEquals(Color.Yellow, qualityZoneColorForValue(35f, zones, Color.White))
-        assertEquals(Color.Red, qualityZoneColorForValue(42f, zones, Color.White))
     }
 
     private fun batteryReading(

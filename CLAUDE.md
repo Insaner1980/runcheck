@@ -7,7 +7,7 @@ runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device
 ## Tech Stack
 
 - **Language:** Kotlin 2.3.0 (via AGP 9.1.1 built-in Kotlin)
-- **UI:** Jetpack Compose with Material 3 (BOM 2026.03.00), single dark theme
+- **UI:** Jetpack Compose with Material 3 (BOM 2026.06.01), system/light/dark themes
 - **Min SDK:** 26 (Android 8.0)
 - **Target SDK:** Android 17 (API 37)
 - **Compile SDK:** Android 17 (API 37)
@@ -74,7 +74,8 @@ app/src/main/java/com/runcheck/
 │   ├── fullscreen/    # FullscreenChartScreen + ViewModel (landscape-only)
 │   ├── components/    # 34 shared composables (see Components below)
 │   │   └── info/      # InfoSheetContent, InfoIcon, InfoBottomSheet, InfoCard, InfoCardCatalog, CrossLinkButton
-│   └── navigation/    # NavGraph + Screen sealed class (push-based from Home)
+│   └── navigation/    # NavGraph + Screen sealed class, TopLevelDestination,
+│                      #   AppShellViewModel (bottom nav bar + deep links)
 ├── pro/               # Pro/trial state management
 ├── billing/           # Billing state helpers
 ├── widget/            # Glance widgets (BatteryWidget, HealthWidget, WidgetDataProvider)
@@ -135,15 +136,15 @@ Do not annotate:
 
 ## Design System
 
-- **Single dark theme** — no light mode, no AMOLED toggle, no dynamic colors
+- **System, light, and dark themes** — `ThemeMode` (SYSTEM / LIGHT / DARK) stored in DataStore and selected in Settings; light colors live in `values/`, dark in `values-night/`. No AMOLED toggle, no dynamic colors.
 - **Dark palette:**
   - BgPage = `#0B1E24`, BgCard = `#133040`, BgCardDeep = `#0D2530`, BgCardAlt = `#0F2A35`, BgIconCircle = `#1A3A48`
   - Accent Blue `#4A9EDE` (primary), Accent Teal `#5DE4C7` (secondary), Accent Amber `#E8C44A`
   - Accent Orange `#F5963A`, Accent Red `#F06040`, Accent Lime `#C8E636`, Accent Yellow `#F5D03A`
   - TextPrimary `#E8E8ED`, TextSecondary `#90A8B0`, TextMuted `#7A949E`, TextOnLime `#1A2E0A`
 - **Typography:** Manrope (custom, body/headers) + JetBrains Mono (numeric displays) via `MaterialTheme.typography` and `MaterialTheme.numericFontFamily`
-- **Navigation:** Push-based from single Home screen (no bottom nav bar), includes Learn section
-- **Insights UX:** Home shows a curated subset of up to three insight cards; the full active list lives in a dedicated Insights screen
+- **Navigation:** Four-item bottom navigation bar (Home, Insights, Tools, Settings) defined by `topLevelDestinations`; detail screens are pushed from there. Learn lives under Tools.
+- **Insights UX:** Home shows at most one ranked insight card; the full active list lives in a dedicated Insights screen
 - **Cards:** Flat backgrounds, no borders, no shadows, no elevation, 16dp rounded corners
 - **Tonal layering:** Hero cards use `BgCardDeep` (#0D2530), data cards use `BgCard` (#133040) — creates "recessed instrument panel" depth
 - **Hero sections:** Typography-dominant — large 64sp JetBrains Mono values with smaller 28sp units, ProgressRing reduced to 100dp decorative role in Battery/Storage
@@ -151,7 +152,7 @@ Do not annotate:
   - Layout: ContentContainer, GridCard (with StatusStrip), ListRow, MetricPill, MetricRow, ActionCard
   - Status: SegmentedStatusBar, StatusStrip (Modifier extension)
   - Indicators: ProgressRing, MiniBar, StatusDot, ConfidenceBadge, SignalBars
-  - Charts: TrendChart (oscilloscope sweep, status gradient line, quality zones, tap/drag tooltip), AreaChart (oscilloscope sweep), LiveChart (smooth scroll, glow pulse), HeatStrip, SegmentedBar, SegmentedBarLegend
+  - Charts: TrendChart (oscilloscope sweep, quality zone bands, session gap breaks, tap/drag tooltip), AreaChart (oscilloscope sweep), LiveChart (smooth scroll, glow pulse), HeatStrip, SegmentedBar, SegmentedBarLegend
   - Navigation: PrimaryTopBar, DetailTopBar
   - Typography: AnimatedNumber (AnimatedIntText, AnimatedFloatText), SectionHeader, CardSectionTitle, IconCircle
   - Pro: ProBadgePill, ProFeatureCalloutCard, ProFeatureLockedState
@@ -174,7 +175,7 @@ Do not annotate:
   - ProgressRing: 1200ms ease-out (`FastOutSlowInEasing`) from 0 to target
   - MiniBar: 800ms ease-out from 0 to target
   - TrendChart "Instrument Sweep": 3-phase entry (grid fade 200ms → oscilloscope sweep 1000ms with scan line → emphasis 200ms), data transitions (fade-out 300ms → sweep 800ms), `CubicBezierEasing(0.25, 0.1, 0.25, 1)` for sweep
-  - TrendChart visual: status gradient line (color follows quality zones), height-proportional fill alpha (peaks 0.30, valleys 0.08), last value emphasis (glow dot + dashed line to Y-axis)
+  - TrendChart visual: line color carries domain identity (`MaterialTheme.domainColors`), status is read from the quality zone bands behind it — the line is never recolored by value. Height-proportional fill alpha (peaks 0.30, valleys 0.08), last value emphasis (glow dot + dashed line to Y-axis), line breaks across session gaps
   - AreaChart: same oscilloscope sweep (800ms) + height-proportional fill
   - LiveChart: smooth scroll interpolation (150ms linear) on new data + glow pulse (300ms, radius 8→5dp, alpha 0.5→0.3)
   - All chart animations respect `MaterialTheme.reducedMotion` (instant when true)
@@ -220,7 +221,7 @@ The storage detail screen provides monitoring and cleanup tools:
 
 - **Persisted insights:** Room-backed insight rows generated from historical device data rather than transient UI-only suggestions
 - **Generation:** `InsightGenerationWorker` runs on the monitoring scheduler lifecycle and refreshes insight rows in the background
-- **Home preview:** Home shows a curated subset of up to three insights to reduce noise
+- **Home preview:** Home shows at most one ranked insight to reduce noise; `UI-SPEC.md` is the source of truth for this limit
 - **Dedicated screen:** A separate Insights screen exposes the full active list, unseen count behavior, dismiss actions, and destination deep links
 - **Ranking policy:** Home preview prefers one strong insight per destination area before filling remaining slots
 - **Release safety:** The default `InsightDebugActions` implementation is a release-safe no-op; debug builds override it with deterministic seeding/regeneration tools
@@ -262,9 +263,9 @@ Three-tier in-app educational system explaining technical metrics and concepts t
 
 ### Tier 3 — Learn Section (standalone screen)
 - Accessible from Home screen Quick Tools card (Learn `ListRow` with `MenuBook` icon)
-- `LearnScreen`: scrollable list of `LearnArticleCard` composables grouped by `LearnTopic` (Battery, Temperature, Network, Storage, General) with `CardSectionTitle` per group
+- `LearnScreen`: scrollable list of `LearnArticleCard` composables grouped by `LearnTopic` (Battery, Network, Thermal, Storage, Privacy) plus an uncategorized General surface, with `CardSectionTitle` per group
 - `LearnArticleDetailScreen`: body text parsed with `## ` headers → `titleSmall`, `\n\n` paragraph breaks → `bodyMedium`, `CrossLinkButton` for navigating to relevant detail screens
-- Article catalog: `LearnArticleCatalog` object with 15 articles (Battery 4, Temperature 3, Network 3, Storage 2, General 3)
+- Article catalog: `LearnArticleCatalog` object with 17 articles (Battery 4, Temperature 3, Network 3, Storage 3, Privacy 1, General 3). `LearnArticleIds.all` must stay in sync — the catalog asserts this at init.
 - Navigation: `Screen.Learn` + `Screen.LearnArticle(articleId)` routes in NavGraph
 - **Not Pro-gated** — all educational content is free
 
@@ -363,7 +364,7 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 - `docs/storage-cleanup-spec.md` — Storage cleanup implementation (CleanupScreen, delete flow, thumbnails, category groups, success overlay)
 - `docs/settings-enhancements-spec.md` — Settings enhancements (per-alert notifications, alert thresholds, temperature unit, data management, grouped layout)
 - `docs/info-tooltips-spec.md` — Info tooltip system (superseded by `educational-content-system.md`)
-- `docs/superpowers/specs/2026-03-24-chart-animation-design.md` — Chart animation "Instrument Sweep" design spec (oscilloscope sweep, status gradient line, improved fill, LiveChart smooth scroll)
+- `docs/superpowers/specs/2026-03-24-chart-animation-design.md` — Chart animation "Instrument Sweep" design spec (oscilloscope sweep, improved fill, LiveChart smooth scroll). Its status gradient line was dropped in the UI redesign: line color now carries domain identity and status comes from the zone bands.
 - `docs/ui-consistency-audit.md` — UI consistency findings and fixes
 - `docs/ui-reference.md` — UI component reference and patterns
 - `docs/release-checklist.md` — Release build and Play Store checklist
