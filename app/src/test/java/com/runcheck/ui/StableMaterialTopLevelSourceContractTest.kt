@@ -1,5 +1,6 @@
 package com.runcheck.ui
 
+import com.runcheck.util.readContractText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -7,7 +8,6 @@ import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.io.path.readText
 
 class StableMaterialTopLevelSourceContractTest {
     private val appDir: Path = findAppDir()
@@ -17,7 +17,7 @@ class StableMaterialTopLevelSourceContractTest {
         val sharedSource =
             appDir
                 .resolve("src/main/java/com/runcheck/ui/components/RuncheckComponents.kt")
-                .readText()
+                .readContractText()
         val signatureSource =
             listOf(
                 "StatusPill.kt",
@@ -25,7 +25,7 @@ class StableMaterialTopLevelSourceContractTest {
             ).joinToString(separator = "\n") { fileName ->
                 appDir
                     .resolve("src/main/java/com/runcheck/ui/components/$fileName")
-                    .readText()
+                    .readContractText()
             }
         val source = sharedSource + signatureSource
 
@@ -35,7 +35,7 @@ class StableMaterialTopLevelSourceContractTest {
         val chartTheme =
             appDir
                 .resolve("src/main/java/com/runcheck/ui/theme/ChartTheme.kt")
-                .readText()
+                .readContractText()
         assertTrue("ChartTheme is missing", chartTheme.contains("fun ChartTheme("))
         assertTrue(source.contains("LargeTopAppBar("))
         assertTrue(source.contains("CircularProgressIndicator("))
@@ -45,13 +45,13 @@ class StableMaterialTopLevelSourceContractTest {
         val toolEntries =
             appDir
                 .resolve("src/main/java/com/runcheck/ui/tools/ToolEntryScreens.kt")
-                .readText()
+                .readContractText()
         assertTrue(toolEntries.contains("RuncheckDetailScaffold("))
 
         val trendChart =
             appDir
                 .resolve("src/main/java/com/runcheck/ui/components/TrendChart.kt")
-                .readText()
+                .readContractText()
         assertTrue(trendChart.contains("MaterialTheme.chartColors"))
         assertTrue(trendChart.contains("MotionTokens.CHART_PATH"))
         assertTrue(trendChart.contains("MotionTokens.DecelerateEasing"))
@@ -62,10 +62,10 @@ class StableMaterialTopLevelSourceContractTest {
     @Test
     fun `signature drawing and card borders use their centralized policies`() {
         val components = appDir.resolve("src/main/java/com/runcheck/ui/components")
-        val heroGauge = components.resolve("HeroGauge.kt").readText()
-        val gridCard = components.resolve("GridCard.kt").readText()
-        val metricTile = components.resolve("MetricTile.kt").readText()
-        val actionCard = components.resolve("ActionCard.kt").readText()
+        val heroGauge = components.resolve("HeroGauge.kt").readContractText()
+        val gridCard = components.resolve("GridCard.kt").readContractText()
+        val metricTile = components.resolve("MetricTile.kt").readContractText()
+        val actionCard = components.resolve("ActionCard.kt").readContractText()
 
         assertTrue(heroGauge.contains(".drawWithCache"))
         assertFalse(heroGauge.contains("Canvas("))
@@ -84,8 +84,8 @@ class StableMaterialTopLevelSourceContractTest {
 
     @Test
     fun `Home uses the health first viewport and no longer owns tool or expired Pro cards`() {
-        val home = appDir.resolve("src/main/java/com/runcheck/ui/home/HomeScreen.kt").readText()
-        val secondary = appDir.resolve("src/main/java/com/runcheck/ui/home/HomeSecondarySections.kt").readText()
+        val home = appDir.resolve("src/main/java/com/runcheck/ui/home/HomeScreen.kt").readContractText()
+        val secondary = appDir.resolve("src/main/java/com/runcheck/ui/home/HomeSecondarySections.kt").readContractText()
 
         assertTrue(home.contains("HomeHealthHero("))
         assertTrue(home.contains("HeroGauge("))
@@ -117,7 +117,7 @@ class StableMaterialTopLevelSourceContractTest {
 
     @Test
     fun `Tools uses one speed hero a bento grid and visible Pro locks`() {
-        val tools = appDir.resolve("src/main/java/com/runcheck/ui/tools/ToolsScreen.kt").readText()
+        val tools = appDir.resolve("src/main/java/com/runcheck/ui/tools/ToolsScreen.kt").readContractText()
 
         assertInOrder(
             source = tools,
@@ -146,7 +146,7 @@ class StableMaterialTopLevelSourceContractTest {
 
     @Test
     fun `Insights uses a top-level filter and shared stable states`() {
-        val insights = appDir.resolve("src/main/java/com/runcheck/ui/insights/InsightsScreen.kt").readText()
+        val insights = appDir.resolve("src/main/java/com/runcheck/ui/insights/InsightsScreen.kt").readContractText()
 
         assertTrue(insights.contains("RuncheckSingleChoiceSelector("))
         assertTrue(insights.contains("rememberSaveable"))
@@ -158,20 +158,20 @@ class StableMaterialTopLevelSourceContractTest {
         val homeInsights =
             appDir
                 .resolve("src/main/java/com/runcheck/ui/home/insights/InsightsCard.kt")
-                .readText()
+                .readContractText()
         assertFalse(homeInsights.contains("if (insights.isEmpty()) return"))
         assertTrue(homeInsights.contains("RuncheckEmptyState("))
 
         val appUsage =
             appDir
                 .resolve("src/main/java/com/runcheck/ui/appusage/AppUsageScreen.kt")
-                .readText()
+                .readContractText()
         assertTrue(appUsage.contains("style = MaterialTheme.typography.bodyMedium"))
     }
 
     @Test
     fun `Settings orders the required top-level sections`() {
-        val settings = appDir.resolve("src/main/java/com/runcheck/ui/settings/SettingsScreen.kt").readText()
+        val settings = appDir.resolve("src/main/java/com/runcheck/ui/settings/SettingsScreen.kt").readContractText()
 
         assertInOrder(
             source = settings,

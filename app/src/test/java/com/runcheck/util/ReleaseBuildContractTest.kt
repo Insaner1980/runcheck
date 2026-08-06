@@ -5,14 +5,13 @@ import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.io.path.readText
 
 class ReleaseBuildContractTest {
     private val appDir: Path = findAppDir()
 
     @Test
     fun `release artifact tasks require a published version code floor`() {
-        val buildFile = appDir.resolve("build.gradle.kts").readText()
+        val buildFile = appDir.resolve("build.gradle.kts").readContractText()
 
         assertTrue(buildFile.contains("val currentReleaseVersionCode ="))
         assertTrue(buildFile.contains("versionCode = currentReleaseVersionCode"))
@@ -25,7 +24,7 @@ class ReleaseBuildContractTest {
 
     @Test
     fun `release upload artifacts include version and version code in copied filenames`() {
-        val buildFile = appDir.resolve("build.gradle.kts").readText()
+        val buildFile = appDir.resolve("build.gradle.kts").readContractText()
 
         assertTrue(buildFile.contains("""tasks.register<Copy>("copyReleaseArtifacts")"""))
         assertTrue(

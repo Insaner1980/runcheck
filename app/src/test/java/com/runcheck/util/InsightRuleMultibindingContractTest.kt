@@ -6,7 +6,6 @@ import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.io.path.readText
 
 class InsightRuleMultibindingContractTest {
     private val appDir: Path = findAppDir()
@@ -43,7 +42,7 @@ class InsightRuleMultibindingContractTest {
         val consumers =
             productionKotlinFiles()
                 .filter { path ->
-                    val text = path.readText()
+                    val text = path.readContractText()
                     text.contains("Set<@JvmSuppressWildcards InsightRule>") ||
                         text.contains("Set<InsightRule>")
                 }.map { appDir.relativize(it).toString().replace('\\', '/') }
@@ -57,7 +56,7 @@ class InsightRuleMultibindingContractTest {
             consumers,
         )
 
-        val engineText = insightEngine.readText()
+        val engineText = insightEngine.readContractText()
         val forbiddenOrderOperations =
             listOf(
                 "rules.first",
@@ -80,13 +79,13 @@ class InsightRuleMultibindingContractTest {
 
     private fun insightRuleBindings(): List<String> =
         insightRuleBindingPattern
-            .findAll(insightsModule.readText())
+            .findAll(insightsModule.readContractText())
             .map { it.groupValues[1] }
             .toList()
 
     private fun insightRuleSources(): List<InsightRuleSource> =
         productionKotlinFiles().flatMap { path ->
-            val text = path.readText()
+            val text = path.readContractText()
             insightRuleClassPattern
                 .findAll(text)
                 .map { match ->

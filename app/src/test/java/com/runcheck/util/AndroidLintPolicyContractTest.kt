@@ -7,7 +7,6 @@ import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.io.path.readText
 
 class AndroidLintPolicyContractTest {
     private val appDir: Path = findAppDir()
@@ -20,7 +19,7 @@ class AndroidLintPolicyContractTest {
                 .use { paths ->
                     paths
                         .filter { it.toString().endsWith(".kt") }
-                        .map { path -> appDir.relativize(path) to path.readText() }
+                        .map { path -> appDir.relativize(path) to path.readContractText() }
                         .toList()
                 }
 
@@ -40,23 +39,23 @@ class AndroidLintPolicyContractTest {
 
     @Test
     fun `manifest declares explicit data extraction rules`() {
-        val manifest = appDir.resolve("src/main/AndroidManifest.xml").readText()
+        val manifest = appDir.resolve("src/main/AndroidManifest.xml").readContractText()
         assertTrue(manifest.contains("""android:dataExtractionRules="@xml/data_extraction_rules""""))
         assertTrue(manifest.contains("""android:fullBackupContent="@xml/backup_rules""""))
 
         val dataExtractionRules = appDir.resolve("src/main/res/xml/data_extraction_rules.xml")
         assertTrue(Files.exists(dataExtractionRules))
-        assertTrue(dataExtractionRules.readText().contains("<data-extraction-rules>"))
+        assertTrue(dataExtractionRules.readContractText().contains("<data-extraction-rules>"))
 
         val backupRules = appDir.resolve("src/main/res/xml/backup_rules.xml")
         assertTrue(Files.exists(backupRules))
-        assertTrue(backupRules.readText().contains("<full-backup-content>"))
+        assertTrue(backupRules.readContractText().contains("<full-backup-content>"))
     }
 
     @Test
     fun `backup rules exclude persistent app data from cloud and device transfer`() {
-        val dataExtractionRules = appDir.resolve("src/main/res/xml/data_extraction_rules.xml").readText()
-        val backupRules = appDir.resolve("src/main/res/xml/backup_rules.xml").readText()
+        val dataExtractionRules = appDir.resolve("src/main/res/xml/data_extraction_rules.xml").readContractText()
+        val backupRules = appDir.resolve("src/main/res/xml/backup_rules.xml").readContractText()
         val excludedDomains = listOf("root", "file", "database", "sharedpref", "external")
 
         val cloudRules = dataExtractionRules.substringAfter("<cloud-backup>").substringBefore("</cloud-backup>")
@@ -72,9 +71,9 @@ class AndroidLintPolicyContractTest {
 
     @Test
     fun `cellular fallback uses only its manifest declared phone state permission`() {
-        val manifest = appDir.resolve("src/main/AndroidManifest.xml").readText()
+        val manifest = appDir.resolve("src/main/AndroidManifest.xml").readContractText()
         val networkDataSource =
-            appDir.resolve("src/main/java/com/runcheck/data/network/NetworkDataSource.kt").readText()
+            appDir.resolve("src/main/java/com/runcheck/data/network/NetworkDataSource.kt").readContractText()
 
         assertTrue(manifest.contains("android.permission.READ_BASIC_PHONE_STATE"))
         assertTrue(networkDataSource.contains("android.Manifest.permission.READ_BASIC_PHONE_STATE"))
@@ -83,7 +82,7 @@ class AndroidLintPolicyContractTest {
 
     @Test
     fun `manifest keeps App Startup provider while disabling WorkManager default initializer`() {
-        val manifest = appDir.resolve("src/main/AndroidManifest.xml").readText()
+        val manifest = appDir.resolve("src/main/AndroidManifest.xml").readContractText()
 
         assertTrue(manifest.contains("""android:name="androidx.startup.InitializationProvider""""))
         assertTrue(manifest.contains("""tools:node="merge""""))

@@ -1,19 +1,19 @@
 package com.runcheck.ui.navigation
 
+import com.runcheck.util.readContractText
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.io.path.readText
 
 class AppShellSourceContractTest {
     private val appDir: Path = findAppDir()
 
     @Test
     fun `root app shell uses Scaffold and a four destination NavigationBar`() {
-        val source = appDir.resolve("src/main/java/com/runcheck/ui/navigation/NavGraph.kt").readText()
+        val source = appDir.resolve("src/main/java/com/runcheck/ui/navigation/NavGraph.kt").readContractText()
 
         assertTrue(source.contains("Scaffold("))
         assertTrue(source.contains("NavigationBar("))
@@ -23,7 +23,7 @@ class AppShellSourceContractTest {
 
     @Test
     fun `top level switching uses the official multiple back stack options`() {
-        val source = appDir.resolve("src/main/java/com/runcheck/ui/navigation/NavGraph.kt").readText()
+        val source = appDir.resolve("src/main/java/com/runcheck/ui/navigation/NavGraph.kt").readContractText()
 
         assertTrue(source.contains("launchSingleTop = true"))
         assertTrue(source.contains("restoreState = true"))
@@ -33,7 +33,7 @@ class AppShellSourceContractTest {
 
     @Test
     fun `Home no longer owns a Settings action`() {
-        val source = appDir.resolve("src/main/java/com/runcheck/ui/home/HomeScreen.kt").readText()
+        val source = appDir.resolve("src/main/java/com/runcheck/ui/home/HomeScreen.kt").readContractText()
 
         assertFalse(source.contains("onNavigateToSettings"))
         assertFalse(source.contains("Icons.Outlined.Settings"))
@@ -41,9 +41,9 @@ class AppShellSourceContractTest {
 
     @Test
     fun `top level content delegates bottom insets to the root Scaffold`() {
-        val home = appDir.resolve("src/main/java/com/runcheck/ui/home/HomeScreen.kt").readText()
-        val insights = appDir.resolve("src/main/java/com/runcheck/ui/insights/InsightsScreen.kt").readText()
-        val navGraph = appDir.resolve("src/main/java/com/runcheck/ui/navigation/NavGraph.kt").readText()
+        val home = appDir.resolve("src/main/java/com/runcheck/ui/home/HomeScreen.kt").readContractText()
+        val insights = appDir.resolve("src/main/java/com/runcheck/ui/insights/InsightsScreen.kt").readContractText()
+        val navGraph = appDir.resolve("src/main/java/com/runcheck/ui/navigation/NavGraph.kt").readContractText()
 
         assertFalse(home.contains("navigationBarsPadding"))
         assertFalse(insights.contains("navigationBarsPadding"))
@@ -58,8 +58,8 @@ class AppShellSourceContractTest {
 
     @Test
     fun `top level destinations do not expose an Up action`() {
-        val insights = appDir.resolve("src/main/java/com/runcheck/ui/insights/InsightsScreen.kt").readText()
-        val settings = appDir.resolve("src/main/java/com/runcheck/ui/settings/SettingsScreen.kt").readText()
+        val insights = appDir.resolve("src/main/java/com/runcheck/ui/insights/InsightsScreen.kt").readContractText()
+        val settings = appDir.resolve("src/main/java/com/runcheck/ui/settings/SettingsScreen.kt").readContractText()
 
         assertTrue(insights.contains("PrimaryTopBar("))
         assertFalse(insights.contains("DetailTopBar("))
@@ -69,7 +69,7 @@ class AppShellSourceContractTest {
 
     @Test
     fun `Export route uses the standard Pro locked state`() {
-        val tools = appDir.resolve("src/main/java/com/runcheck/ui/tools/ToolEntryScreens.kt").readText()
+        val tools = appDir.resolve("src/main/java/com/runcheck/ui/tools/ToolEntryScreens.kt").readContractText()
 
         assertTrue(tools.contains("ProFeatureLockedState("))
         assertTrue(tools.contains("ProtectedFeatureAccessState.WAITING_FOR_PRO_STATUS"))

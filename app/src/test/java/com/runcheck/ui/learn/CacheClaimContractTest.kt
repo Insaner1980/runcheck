@@ -1,23 +1,23 @@
 package com.runcheck.ui.learn
 
+import com.runcheck.util.readContractText
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.io.path.readText
 
 class CacheClaimContractTest {
     private val appDir = findAppDir()
 
     @Test
     fun `cache guidance states the read only boundary and links to Android settings`() {
-        val strings = appDir.resolve("src/main/res/values/strings.xml").readText()
+        val strings = appDir.resolve("src/main/res/values/strings.xml").readContractText()
         val storageScreen =
-            appDir.resolve("src/main/java/com/runcheck/ui/storage/StorageDetailScreen.kt").readText()
+            appDir.resolve("src/main/java/com/runcheck/ui/storage/StorageDetailScreen.kt").readContractText()
         val storageSupport =
-            appDir.resolve("src/main/java/com/runcheck/ui/storage/StorageDetailSupport.kt").readText()
+            appDir.resolve("src/main/java/com/runcheck/ui/storage/StorageDetailSupport.kt").readContractText()
 
         assertTrue(strings.contains("cannot clear other apps’ caches"))
         assertTrue(strings.contains("""name="learn_storage_cache_limits_title""""))
@@ -39,7 +39,7 @@ class CacheClaimContractTest {
 
     @Test
     fun `storage guidance distinguishes cache measurement settings and cleanup categories`() {
-        val strings = appDir.resolve("src/main/res/values/strings.xml").readText()
+        val strings = appDir.resolve("src/main/res/values/strings.xml").readContractText()
         val slowdownBody =
             Regex(
                 """<string name="learn_storage_slowdown_body"[^>]*>(.*?)</string>""",
@@ -57,8 +57,8 @@ class CacheClaimContractTest {
     fun `user facing copy does not claim runcheck clears cache ram or speeds up the phone`() {
         val userFacingCopy =
             buildString {
-                append(appDir.resolve("src/main/res/values/strings.xml").readText())
-                append(appDir.parent.resolve("docs/play-store-listing.md").readText())
+                append(appDir.resolve("src/main/res/values/strings.xml").readContractText())
+                append(appDir.parent.resolve("docs/play-store-listing.md").readContractText())
             }.lowercase()
         val forbiddenClaims =
             listOf(
@@ -76,7 +76,7 @@ class CacheClaimContractTest {
 
     @Test
     fun `store listing states the cache boundary and all current widgets`() {
-        val listing = appDir.parent.resolve("docs/play-store-listing.md").readText()
+        val listing = appDir.parent.resolve("docs/play-store-listing.md").readContractText()
 
         assertTrue(listing.contains("cannot clear other apps' caches"))
         assertTrue(listing.contains("Quick Glance"))

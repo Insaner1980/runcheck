@@ -5,14 +5,13 @@ import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.io.path.readText
 
 class DependencyVersionCatalogContractTest {
     private val rootDir: Path = findRootDir()
 
     @Test
     fun `KSP plugin stays on the verified current release line`() {
-        val versionsCatalog = rootDir.resolve("gradle/libs.versions.toml").readText()
+        val versionsCatalog = rootDir.resolve("gradle/libs.versions.toml").readContractText()
         val kspVersion = versionsCatalog.versionFor("ksp")
 
         assertTrue(
@@ -23,7 +22,7 @@ class DependencyVersionCatalogContractTest {
 
     @Test
     fun `WorkManager stays on the periodic reschedule fix release line`() {
-        val versionsCatalog = rootDir.resolve("gradle/libs.versions.toml").readText()
+        val versionsCatalog = rootDir.resolve("gradle/libs.versions.toml").readContractText()
         val workManagerVersion = versionsCatalog.versionFor("workmanager")
 
         assertTrue(
@@ -34,8 +33,8 @@ class DependencyVersionCatalogContractTest {
 
     @Test
     fun `Android toolchain stays on the verified Hilt 1_4 compatible release line`() {
-        val versionsCatalog = rootDir.resolve("gradle/libs.versions.toml").readText()
-        val wrapperProperties = rootDir.resolve("gradle/wrapper/gradle-wrapper.properties").readText()
+        val versionsCatalog = rootDir.resolve("gradle/libs.versions.toml").readContractText()
+        val wrapperProperties = rootDir.resolve("gradle/wrapper/gradle-wrapper.properties").readContractText()
 
         val agpVersion = versionsCatalog.versionFor("agp")
         val hiltAndroidxVersion = versionsCatalog.versionFor("hiltAndroidx")
@@ -61,7 +60,7 @@ class DependencyVersionCatalogContractTest {
 
     @Test
     fun `Detekt stays on the verified AGP 9 compatible plugin line`() {
-        val versionsCatalog = rootDir.resolve("gradle/libs.versions.toml").readText()
+        val versionsCatalog = rootDir.resolve("gradle/libs.versions.toml").readContractText()
         val detektVersion = versionsCatalog.versionFor("detekt")
         val composeRulesDetektVersion = versionsCatalog.versionFor("composeRulesDetekt")
         val detektPluginId = versionsCatalog.pluginIdFor("detekt")

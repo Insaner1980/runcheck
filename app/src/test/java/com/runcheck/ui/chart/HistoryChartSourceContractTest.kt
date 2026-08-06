@@ -1,5 +1,6 @@
 package com.runcheck.ui.chart
 
+import com.runcheck.util.readContractText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -11,7 +12,7 @@ class HistoryChartSourceContractTest {
     fun `period selector uses a touch target minimum without capping large text height`() {
         val source =
             File("src/main/java/com/runcheck/ui/chart/HistoryPeriodFilterChipRow.kt")
-                .readText()
+                .readContractText()
 
         assertTrue(source.contains(".heightIn(min = MaterialTheme.uiTokens.touchTarget)"))
         assertFalse(source.contains(".height(MaterialTheme.uiTokens.touchTarget)"))
@@ -22,8 +23,8 @@ class HistoryChartSourceContractTest {
     fun `temperature history and throttling logs use distinct pro messages`() {
         val source =
             File("src/main/java/com/runcheck/ui/thermal/ThermalDetailScreen.kt")
-                .readText()
-        val strings = File("src/main/res/values/strings.xml").readText()
+                .readContractText()
+        val strings = File("src/main/res/values/strings.xml").readContractText()
 
         assertTrue(
             strings.contains(

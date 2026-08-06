@@ -1,12 +1,12 @@
 package com.runcheck.worker
 
+import com.runcheck.util.readContractText
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.io.path.readText
 
 class TrialNotificationWorkerDependencyContractTest {
     private val rootDir: Path = findRootDir()
@@ -16,11 +16,11 @@ class TrialNotificationWorkerDependencyContractTest {
         val workerSource =
             rootDir
                 .resolve("app/src/main/java/com/runcheck/worker/TrialNotificationWorker.kt")
-                .readText()
+                .readContractText()
         val systemBindingsSource =
             rootDir
                 .resolve("app/src/main/java/com/runcheck/di/SystemBindingsModule.kt")
-                .readText()
+                .readContractText()
         val refresherPath =
             rootDir.resolve("app/src/main/java/com/runcheck/billing/ProPurchaseStatusRefresher.kt")
 
@@ -36,7 +36,7 @@ class TrialNotificationWorkerDependencyContractTest {
         assertTrue(
             "ProPurchaseStatusRefresher should own initialization-aware purchase refresh",
             Files.exists(refresherPath) &&
-                refresherPath.readText().contains("refreshPurchaseStatusAfterInitialization"),
+                refresherPath.readContractText().contains("refreshPurchaseStatusAfterInitialization"),
         )
         assertTrue(
             "SystemBindingsModule should bind ProPurchaseStatusRefresher to BillingManager",

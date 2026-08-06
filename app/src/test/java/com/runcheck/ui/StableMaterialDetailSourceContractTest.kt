@@ -1,12 +1,12 @@
 package com.runcheck.ui
 
+import com.runcheck.util.readContractText
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.io.path.readText
 
 class StableMaterialDetailSourceContractTest {
     private val appDir: Path = findAppDir()
@@ -14,7 +14,7 @@ class StableMaterialDetailSourceContractTest {
     @Test
     fun `primary details use one stable scaffold banner progress and learn link`() {
         PRIMARY_DETAILS.forEach { relativePath ->
-            val source = appDir.resolve(relativePath).readText()
+            val source = appDir.resolve(relativePath).readContractText()
 
             assertTrue("$relativePath must use RuncheckDetailScaffold", source.contains("RuncheckDetailScaffold("))
             assertTrue("$relativePath must use RuncheckProgressSpinner", source.contains("RuncheckProgressSpinner("))
@@ -29,7 +29,7 @@ class StableMaterialDetailSourceContractTest {
         val source =
             appDir
                 .resolve("src/main/java/com/runcheck/ui/common/ChartSelection.kt")
-                .readText()
+                .readContractText()
 
         assertTrue(source.contains("RuncheckSingleChoiceSelector("))
         assertFalse(source.contains("FilterChip("))
@@ -58,7 +58,7 @@ class StableMaterialDetailSourceContractTest {
         assertTrue(appUsage.contains("app.packageName"))
         assertTrue(appUsage.contains("AppDisplayName("))
         assertFalse(appUsage.contains("estimatedDrainMah"))
-        val strings = appDir.resolve("src/main/res/values/strings.xml").readText()
+        val strings = appDir.resolve("src/main/res/values/strings.xml").readContractText()
         assertFalse(strings.contains("app_usage_drain"))
 
         val learn = source("learn/LearnScreen.kt")
@@ -92,7 +92,7 @@ class StableMaterialDetailSourceContractTest {
         assertTrue(thermal.contains("platformTelemetryMeasurement("))
         assertTrue(thermal.contains("MeasuredHeroValue("))
         val sharedComponents =
-            appDir.resolve("src/main/java/com/runcheck/ui/components/RuncheckComponents.kt").readText()
+            appDir.resolve("src/main/java/com/runcheck/ui/components/RuncheckComponents.kt").readContractText()
         assertTrue(sharedComponents.contains("ConfidenceBadge(confidence = confidence)"))
     }
 
@@ -109,7 +109,7 @@ class StableMaterialDetailSourceContractTest {
 
     @Test
     fun `storage explains cache measurement as read only`() {
-        val strings = appDir.resolve("src/main/res/values/strings.xml").readText()
+        val strings = appDir.resolve("src/main/res/values/strings.xml").readContractText()
 
         assertTrue(strings.contains("can measure cache storage"))
         assertTrue(strings.contains("cannot clear other apps"))
@@ -118,7 +118,7 @@ class StableMaterialDetailSourceContractTest {
     private fun source(relativePath: String): String =
         appDir
             .resolve("src/main/java/com/runcheck/ui/$relativePath")
-            .readText()
+            .readContractText()
 
     private fun findAppDir(): Path {
         val start = Paths.get("").toAbsolutePath()

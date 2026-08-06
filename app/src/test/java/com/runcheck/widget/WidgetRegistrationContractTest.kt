@@ -1,19 +1,19 @@
 package com.runcheck.widget
 
+import com.runcheck.util.readContractText
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.io.path.readText
 
 class WidgetRegistrationContractTest {
     private val appDir = findAppDir()
 
     @Test
     fun `all three widget receivers and previews are registered`() {
-        val manifest = appDir.resolve("src/main/AndroidManifest.xml").readText()
+        val manifest = appDir.resolve("src/main/AndroidManifest.xml").readContractText()
         val quickInfo = appDir.resolve("src/main/res/xml/quick_glance_widget_info.xml")
         val quickPreview = appDir.resolve("src/main/res/layout/widget_quick_glance_preview.xml")
 
@@ -23,7 +23,7 @@ class WidgetRegistrationContractTest {
         assertTrue(manifest.contains("@xml/quick_glance_widget_info"))
         assertTrue(Files.exists(quickInfo))
         assertTrue(Files.exists(quickPreview))
-        val info = quickInfo.readText()
+        val info = quickInfo.readContractText()
         assertTrue(info.contains("""android:targetCellWidth="4""""))
         assertTrue(info.contains("""android:targetCellHeight="2""""))
         assertTrue(info.contains("""android:minWidth="110dp""""))
@@ -37,7 +37,7 @@ class WidgetRegistrationContractTest {
             "widget_health_preview.xml",
             "widget_quick_glance_preview.xml",
         ).forEach { fileName ->
-            val preview = appDir.resolve("src/main/res/layout/$fileName").readText()
+            val preview = appDir.resolve("src/main/res/layout/$fileName").readContractText()
 
             assertFalse("$fileName must not use unsupported Space views", preview.contains("<Space"))
         }
@@ -45,8 +45,8 @@ class WidgetRegistrationContractTest {
 
     @Test
     fun `battery widget declares usable minimum bounds matched by responsive policy`() {
-        val info = appDir.resolve("src/main/res/xml/battery_widget_info.xml").readText()
-        val battery = appDir.resolve("src/main/java/com/runcheck/widget/BatteryWidget.kt").readText()
+        val info = appDir.resolve("src/main/res/xml/battery_widget_info.xml").readContractText()
+        val battery = appDir.resolve("src/main/java/com/runcheck/widget/BatteryWidget.kt").readContractText()
 
         assertTrue(info.contains("""android:minWidth="110dp""""))
         assertTrue(info.contains("""android:minHeight="72dp""""))
@@ -59,7 +59,7 @@ class WidgetRegistrationContractTest {
 
     @Test
     fun `quick glance applies one line limits and explicit cell semantics`() {
-        val source = appDir.resolve("src/main/java/com/runcheck/widget/QuickGlanceWidget.kt").readText()
+        val source = appDir.resolve("src/main/java/com/runcheck/widget/QuickGlanceWidget.kt").readContractText()
 
         assertTrue(source.contains("maxLines = presentation.valueMaxLines"))
         assertTrue(source.contains("maxLines = presentation.labelMaxLines"))
@@ -70,7 +70,7 @@ class WidgetRegistrationContractTest {
 
     @Test
     fun `health widget description matches implemented score status and battery content`() {
-        val strings = appDir.resolve("src/main/res/values/strings.xml").readText()
+        val strings = appDir.resolve("src/main/res/values/strings.xml").readContractText()
 
         assertTrue(
             strings.contains(
@@ -82,7 +82,7 @@ class WidgetRegistrationContractTest {
 
     @Test
     fun `shared stale state copy applies to every widget data type`() {
-        val strings = appDir.resolve("src/main/res/values/strings.xml").readText()
+        val strings = appDir.resolve("src/main/res/values/strings.xml").readContractText()
         val staleMessage =
             Regex("""<string name="widget_stale_data_message">(.*?)</string>""")
                 .find(strings)
@@ -96,9 +96,9 @@ class WidgetRegistrationContractTest {
 
     @Test
     fun `widget theme uses day and night providers without app theme mode`() {
-        val common = appDir.resolve("src/main/java/com/runcheck/widget/WidgetCommon.kt").readText()
-        val dayColors = appDir.resolve("src/main/res/values/colors.xml").readText()
-        val nightColors = appDir.resolve("src/main/res/values-night/colors.xml").readText()
+        val common = appDir.resolve("src/main/java/com/runcheck/widget/WidgetCommon.kt").readContractText()
+        val dayColors = appDir.resolve("src/main/res/values/colors.xml").readContractText()
+        val nightColors = appDir.resolve("src/main/res/values-night/colors.xml").readContractText()
 
         assertTrue(common.contains("ColorProvider(R.color.widget_primary)"))
         assertFalse(common.contains("androidx.compose.ui.graphics.Color"))
@@ -109,7 +109,7 @@ class WidgetRegistrationContractTest {
 
     @Test
     fun `all widget refresh updates quick glance too`() {
-        val provider = appDir.resolve("src/main/java/com/runcheck/widget/WidgetDataProvider.kt").readText()
+        val provider = appDir.resolve("src/main/java/com/runcheck/widget/WidgetDataProvider.kt").readContractText()
 
         assertTrue(provider.contains("BatteryWidget().updateAll(context)"))
         assertTrue(provider.contains("HealthWidget().updateAll(context)"))

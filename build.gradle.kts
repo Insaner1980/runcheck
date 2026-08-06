@@ -92,7 +92,8 @@ project(":app") {
 
 val prepareSonarAndroidLintReport by tasks.registering {
     group = "verification"
-    description = "Writes an empty Android Lint XML import for SonarCloud; tools/lc.ps1 owns real Android Lint findings."
+    description =
+        "Writes an empty Android Lint XML import for SonarCloud; tools/lc.ps1 owns real Android Lint findings."
 
     val reportFile = layout.projectDirectory.file("app/build/reports/lint-results-debug.xml")
 

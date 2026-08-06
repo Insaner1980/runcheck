@@ -5,14 +5,13 @@ import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.io.path.readText
 
 class ComposeStabilityBaselineContractTest {
     private val appDir: Path = findAppDir()
 
     @Test
     fun `compose stability validation is strict and backed by a baseline`() {
-        val buildFile = appDir.resolve("build.gradle.kts").readText()
+        val buildFile = appDir.resolve("build.gradle.kts").readContractText()
         assertTrue(buildFile.contains("stabilityValidation"))
         assertTrue(buildFile.contains("failOnStabilityChange.set(true)"))
         assertTrue(buildFile.contains("allowMissingBaseline.set(false)"))
@@ -25,7 +24,7 @@ class ComposeStabilityBaselineContractTest {
         baselines.forEach { baseline ->
             assertTrue("Compose stability baseline is missing at $baseline", Files.exists(baseline))
 
-            val baselineText = baseline.readText()
+            val baselineText = baseline.readContractText()
             assertTrue(baselineText.contains("@Composable"))
             assertTrue(baselineText.contains("com.runcheck."))
         }

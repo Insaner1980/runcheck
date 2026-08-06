@@ -5,15 +5,18 @@ import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.io.path.readText
 
 class OpenSourceNoticesContractTest {
     private val appDir: Path = findAppDir()
 
     @Test
     fun `settings exposes open source licenses notice`() {
-        val settingsScreen = appDir.resolve("src/main/java/com/runcheck/ui/settings/SettingsScreen.kt").readText()
-        val strings = appDir.resolve("src/main/res/values/strings.xml").readText()
+        val settingsScreen =
+            appDir
+                .resolve(
+                    "src/main/java/com/runcheck/ui/settings/SettingsScreen.kt",
+                ).readContractText()
+        val strings = appDir.resolve("src/main/res/values/strings.xml").readContractText()
 
         assertTrue(settingsScreen.contains("R.raw.third_party_notices"))
         assertTrue(settingsScreen.contains("settings_open_source_licenses"))
@@ -22,7 +25,7 @@ class OpenSourceNoticesContractTest {
 
     @Test
     fun `third party notices cover production license surface`() {
-        val notices = appDir.resolve("src/main/res/raw/third_party_notices.txt").readText()
+        val notices = appDir.resolve("src/main/res/raw/third_party_notices.txt").readContractText()
         val expectedSnippets =
             listOf(
                 "AndroidX and Jetpack Compose",
