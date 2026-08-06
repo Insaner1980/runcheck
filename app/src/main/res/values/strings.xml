@@ -539,6 +539,8 @@
     <string name="billing_service_unavailable">Google Play Billing is temporarily unavailable. Try again shortly.</string>
     <string name="billing_network_error">Could not reach Google Play. Check your connection and try again.</string>
     <string name="billing_item_unavailable">This purchase is not available right now.</string>
+    <string name="billing_insufficient_funds">Payment was declined because there are insufficient funds. Choose another payment method and try again.</string>
+    <string name="billing_user_ineligible">This account is not eligible for this purchase.</string>
     <string name="billing_already_owned">You already own runcheck Pro. Restoring now.</string>
     <string name="settings_version">Version %1$s</string>
 

@@ -18,7 +18,7 @@ class BillingManagerApiContractTest {
     @Test
     fun `BillingClient builder enables Play Billing auto service reconnection`() {
         assertTrue(
-            "BillingClient builder should call enableAutoServiceReconnection() for Play Billing 8.x disconnected-call handling",
+            "BillingClient builder should call enableAutoServiceReconnection() for disconnected-call handling",
             billingManagerSource.contains(".enableAutoServiceReconnection()"),
         )
     }
@@ -79,5 +79,31 @@ class BillingManagerApiContractTest {
             "BillingManager should not hide future Billing API drift with a class-level DEPRECATION suppression",
             billingManagerSource.contains("@Suppress(\"DEPRECATION\")"),
         )
+    }
+
+    @Test
+    fun `purchase flow errors preserve Billing 9 sub response details`() {
+        assertTrue(
+            "Both launch and purchase-update BillingResults must pass the Billing 9 sub response code to user-safe mapping",
+            billingManagerSource.contains("result.onPurchasesUpdatedSubResponseCode") &&
+                billingManagerSource.contains("billingResult.onPurchasesUpdatedSubResponseCode"),
+        )
+    }
+
+    @Test
+    fun `unacknowledged purchases do not unlock pro before acknowledgement succeeds`() {
+        val syncPurchasesSource =
+            billingManagerSource
+                .substringAfter("internal suspend fun syncPurchases(")
+                .substringBefore("private suspend fun acknowledgePurchaseWithRetry")
+
+        assertTrue(syncPurchasesSource.contains("acknowledgementResults"))
+        assertTrue(syncPurchasesSource.contains("acknowledgePurchaseWithRetry(purchase)"))
+        assertTrue(
+            "Pro state must be updated only inside the successful acknowledgement branch",
+            syncPurchasesSource.indexOf("acknowledgementResults.any") <
+                syncPurchasesSource.indexOf("updateProState(true)"),
+        )
+        assertTrue(syncPurchasesSource.contains("ProPurchaseRefreshResult.UNAVAILABLE"))
     }
 }

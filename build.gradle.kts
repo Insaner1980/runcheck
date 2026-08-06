@@ -134,7 +134,7 @@ project(":app") {
     }
 }
 
-val prepareSonarAndroidLintReport by tasks.registering {
+val prepareSonarAndroidLintReport = tasks.register("prepareSonarAndroidLintReport") {
     group = "verification"
     description = "Writes an empty Android Lint XML import for SonarCloud; tools/lc.ps1 owns real Android Lint findings."
 

@@ -10,8 +10,8 @@ This document is the detailed current-state map for architecture reviews, code-r
 
 Snapshot rules:
 
-- Last source-backed refresh: **2026-07-30**.
-- At refresh time the checkout was on `codex/julkaise-paikalliset-muutokset-20260726`, based on commit `55adffe`.
+- Last source-backed refresh: **2026-08-03**.
+- At refresh time the checkout was on `codex/julkaise-paikalliset-muutokset-20260726`, based on commit `cf1cea8c025ab3a978e1877c6a8af45bfee6e2ea` plus the documented dependency-upgrade working-tree changes.
 - The snapshot describes the complete current working tree, including uncommitted and untracked files, not only that base commit.
 - This is a checkout snapshot, not an API compatibility promise, release note, or proof that every runtime path has been exercised on a physical device.
 - If this document conflicts with executable code or configuration, the executable source wins and this document must be corrected.
@@ -52,7 +52,7 @@ The highest-risk review surfaces are layer boundaries, Android API guards, measu
 - Widgets: Glance app widgets
 - Speed test backend: M-Lab NDT7
 - Build: Gradle Kotlin DSL
-- Build tooling: Gradle wrapper 9.4.1, AGP 9.2.1, Kotlin Gradle/Compose plugin 2.3.0, Kotlin runtime constraints 2.3.20, KSP 2.3.9, Compose BOM 2026.06.01
+- Build tooling: Gradle wrapper 9.6.1, AGP 9.2.1, Kotlin Gradle/Compose plugin 2.3.0, Kotlin runtime constraints 2.3.20, KSP 2.3.9, Compose BOM 2026.06.01
 - Compile SDK: Android 17 (API 37)
 - Target SDK: Android 17 (API 37)
 - Min SDK: 26
@@ -89,7 +89,7 @@ Debug/release-specific insight tooling also lives outside the shared main source
 
 - `gradle/libs.versions.toml` is the source of truth for dependency and plugin versions.
 - `gradle.properties` owns the `runcheck.buildTools.*` security versions for vulnerable transitive build-tool dependencies. Root `build.gradle.kts` applies these pins only to the matching buildscript, ktlint, Android Lint, and Unified Test Platform configurations; application runtime configurations remain unaffected.
-- `gradle/wrapper/gradle-wrapper.properties` pins Gradle to `9.4.1` and verifies the distribution with a checked-in SHA-256.
+- `gradle/wrapper/gradle-wrapper.properties` pins Gradle to `9.6.1` and verifies the binary distribution with Gradle's published SHA-256.
 - `settings.gradle.kts` enforces centralized repositories with `RepositoriesMode.FAIL_ON_PROJECT_REPOS`.
 - Approved repositories are `google()`, `mavenCentral()`, and JitPack only for `com.github.m-lab`.
 - The app intentionally uses `org.jetbrains.kotlin.plugin.compose`; do not reintroduce `kotlin-android` unless the AGP/Kotlin integration model changes and is verified.
@@ -101,7 +101,7 @@ Current version catalog highlights:
 
 | Area | Current value |
 |------|---------------|
-| Gradle wrapper | `9.4.1` |
+| Gradle wrapper | `9.6.1` |
 | Android Gradle Plugin | `9.2.1` |
 | Kotlin Gradle / Compose plugin | `2.3.0` |
 | Kotlin runtime constraints | `2.3.20` |
@@ -113,19 +113,20 @@ Current version catalog highlights:
 | Navigation Compose | `2.9.8` |
 | Lifecycle | `2.11.0` |
 | Kotlin coroutines | `1.11.0` |
-| Activity Compose | `1.12.3` |
+| Activity Compose | `1.13.0` |
 | Core KTX | `1.19.0` |
 | WorkManager | `2.11.2` |
 | DataStore | `1.2.1` |
-| Paging | `3.3.6` |
-| Play Billing | `8.3.0` |
+| Paging | `3.5.0` |
+| Play Billing | `9.1.0` |
 | Glance | `1.1.1` |
 | M-Lab NDT7 client | `e0cb663613eb252a7793216ad28cf54a35677b8f` |
-| OkHttp | `4.12.0` |
-| Gson | `2.11.0` |
+| OkHttp | `5.4.0` |
+| Gson | `2.14.0` |
 | kotlinx.serialization JSON | `1.11.0` |
-| Sentry debug-only core | `8.49.0` |
-| Dependency Analysis Gradle plugin | `3.16.1` |
+| MockK | `1.14.11` |
+| Sentry debug-only core | `8.51.0` |
+| Dependency Analysis Gradle plugin | `3.17.0` |
 | ktlint rule engine | `1.8.0` |
 | ktlint Gradle plugin | `14.2.0` |
 | Detekt | `2.0.0-alpha.3` |
@@ -139,15 +140,17 @@ Current version catalog highlights:
 
 ### External version review snapshot
 
-Checked on 2026-07-30 against official Android, Kotlin, Compose, and Gradle documentation:
+Checked on 2026-08-03 against official Android, Kotlin, Compose Stability Analyzer, and Gradle documentation:
 
 - The repo is intentionally not on the newest available version in every area. Upgrade candidates must be evaluated as a compatible set, not as isolated numbers.
-- AGP 9.2 officially supports API 37 and requires Gradle 9.4.1 and JDK 17. This checkout's AGP 9.2.1, Gradle 9.4.1, compile/target SDK 37, and Java 17 therefore match that published compatibility baseline.
-- AGP 9.3 is newer and requires Gradle 9.5.0. Moving to it is a coordinated AGP/Gradle/Qodana/CodeQL/Sonar/dependency-verification migration, not a patch-only change.
+- AGP 9.2 officially supports API 37 and requires at least Gradle 9.4.1 and JDK 17. This checkout keeps AGP 9.2.1 and Java target 17 while using a verified Gradle 9.6.1 wrapper.
+- AGP 9.3.1, Kotlin 2.4.10, KSP 2.3.10, Hilt 2.60.1, Detekt 2.0.0-alpha.5, and Compose Stability Analyzer 0.8.0 were tested as one coordinated upgrade. Both analyzer 0.8.0 and fallback 0.7.0 fail debug and release compilation with `ClassCastException: FirExtensionRegistrarAdapter$Companion cannot be cast to ProjectExtensionDescriptor`. The complete core batch was therefore restored to AGP 9.2.1, Kotlin plugin 2.3.0, Kotlin runtime 2.3.20, KSP 2.3.9, Hilt 2.59.2, Detekt 2.0.0-alpha.3, and analyzer 0.7.0; the analyzer remains enabled.
+- This compatibility exception may be removed only after an upstream Compose Stability Analyzer release supports the Kotlin 2.4 compiler line and both debug and release stability checks pass without baseline or task bypasses.
 - Kotlin 2.3.20 is available upstream and the repo already constrains Kotlin stdlib adapter/runtime artifacts to 2.3.20, but the Gradle/Compose plugin remains 2.3.0. Do not treat this as a typo without checking AGP/Qodana/CodeQL runner behavior.
 - Kotlin 2.4.0 is newer than this repo's Kotlin plugin line, and Kotlin's official Gradle compatibility table lists support through Gradle 9.5.0 for current 2.4.0-era features. Treat it as a deliberate migration, not a routine patch bump.
 - Compose BOM controls Compose library versions, but the Compose compiler is managed through the Kotlin plugin in Kotlin 2.0+ projects. Any BOM bump should include Compose UI regression review, compose-rules compatibility, and dependency verification metadata.
-- Gradle 9.6.1 is available upstream; this repo currently uses 9.4.1. A wrapper bump must remain inside the selected AGP compatibility envelope and update wrapper verification metadata.
+- Gradle 9.6.1 is in use with its official distribution checksum; wrapper configuration, configuration-cache reuse, and the retained AGP 9.2.1 toolchain have been verified locally.
+- Gradle build caching remains disabled. The planned cache evaluation depended on retaining Kotlin 2.4.10, so it was not enabled under the compatibility fallback.
 - Android 17 uses stable API level 37 in this checkout. Android 17 SDK setup expects the Android 17 platform and Android SDK Build-Tools 37.x line to be installed locally.
 
 External references used for this snapshot:
@@ -932,6 +935,8 @@ Current product behavior:
 - Debug builds can override the product id with `RUNCHECK_PRO_PRODUCT_ID`; release builds keep the checked-in product id so release artifacts are reproducible.
 - Pending purchases are tracked separately and do not unlock Pro until purchased
 - Purchased but unacknowledged purchases are acknowledged with up to 3 retries
+- A purchased item unlocks Pro only after it was already acknowledged or acknowledgement succeeds; exhausted acknowledgement retries keep the entitlement inactive and emit a safe generic purchase error
+- Billing 9 purchase sub-response codes distinguish insufficient funds and user ineligibility; unknown codes fall back to a known response-code message or a generic localized error without exposing SDK debug text
 - Cached Pro state is restored synchronously in release builds to avoid a free-tier flash while Billing queries run
 
 Pro-gated areas currently include:
@@ -1232,11 +1237,11 @@ GitHub Actions workflows in `.github/workflows/`:
 
 | Workflow | Purpose | Status |
 |----------|---------|--------|
-| `codeql.yml` | CodeQL security analysis (`java-kotlin`, manual `assembleDebug`) | Active on main pushes, main PRs, manual dispatch, and weekly schedule; CodeQL Action `v4.37.3`, checkout `v7.0.1`, setup-java `v5.6.0`, setup-android `v4.0.1` |
+| `codeql.yml` | CodeQL security analysis (`java-kotlin`, manual `assembleDebug`) | Active on main pushes, main PRs, manual dispatch, and weekly schedule; CodeQL Action `v4.37.5`, checkout `v7.0.1`, setup-java `v5.6.0`, setup-android `v4.0.1` |
 | `security.yml` | Semgrep SAST on PRs/main plus OWASP Dependency-Check on weekly/manual runs | Active; Semgrep `1.171.0` is the push/PR code-scanning path. OWASP is kept out of push/PR code scanning because cold NVD updates can stall or return 503s; scheduled/manual runs use cache, bounded retries, a 45-minute job timeout, a 35-minute analysis timeout, and upload the report as an Actions artifact when produced |
 | `sonar.yml` | SonarCloud scan through Gradle (`assembleDebug`, `:app:jacocoDebugUnitTestReport`, `sonar`) | Active |
-| `qodana.yml` | JetBrains Qodana main-branch scan through `JetBrains/qodana-action` pinned at `v2026.1.3` | Uses `jetbrains/qodana-jvm-community:2026.1`; retained after the documented AGP 9.1.x Android-linter import failure, while current AGP 9.2.1 Android-linter compatibility remains unverified |
-| `qodana_code_quality.yml` | JetBrains Qodana action pinned at `v2026.1.3` for `main`, `releases/*`, PRs, and manual dispatch | Uses the same JVM Community linter; current AGP 9.2.1 Android-linter compatibility remains unverified |
+| `qodana.yml` | JetBrains Qodana main-branch scan through `JetBrains/qodana-action` pinned at `v2026.2.0` | Uses `jetbrains/qodana-jvm-community:2026.1`; retained after the documented AGP 9.1.x Android-linter import failure, while current AGP 9.2.1 Android-linter compatibility remains unverified |
+| `qodana_code_quality.yml` | JetBrains Qodana action pinned at `v2026.2.0` for `main`, `releases/*`, PRs, and manual dispatch | Uses the same JVM Community linter; current AGP 9.2.1 Android-linter compatibility remains unverified |
 
 External services:
 - **SonarCloud** — continuous code quality (`Insaner1980_runcheck`, org `insaner1980`). CI path is `.github/workflows/sonar.yml`; local path is `tools/sonar.ps1`.
@@ -1248,7 +1253,7 @@ Local PowerShell wrappers:
 - `tools/bc.ps1` (`bc`) — shared `build-check` wrapper for the configured `:app:assembleDebug` build surface
 - `tools/tc.ps1` (`tc`) — shared `test-check` wrapper for the configured `:app:testDebugUnitTest` test surface
 - `tools/ac.ps1` (`ac`) — Android security surface: project Semgrep, mobsfscan, and DeepSec custom report
-- `tools/dc.ps1` (`dc`) — Gradle dependency verification, OSV Scanner, and OWASP Dependency-Check
+- `tools/dc.ps1` (`dc`) — Gradle dependency verification, OSV Scanner, and OWASP Dependency-Check; the single `app` module uses `:app:dependencyCheckAnalyze` because the aggregate task can succeed with an empty dependency report and is rejected fail-closed
 - `tools/ss.ps1` (`ss`) — gitleaks, TruffleHog, and Semgrep secrets
 - `tools/ds.ps1` (`ds`) — DeepSec custom scan/report/revalidate paths
 - `tools/ms.ps1` (`ms`) — mobsfscan
@@ -1318,7 +1323,7 @@ Rules are Hilt multibindings into `Set<InsightRule>`. `InsightEngine` filters ge
 ### Known Tool Limitations
 
 - **Qodana:** `qodana.yaml` still records the original AGP 9.1.x Android-linter import failure and selects `jetbrains/qodana-jvm-community:2026.1`. The app has since moved to AGP 9.2.1, so the recorded Android-linter incompatibility is historical evidence, not fresh proof for the current AGP line. Keep the JVM linter until the Android linter is explicitly re-tested, and update the comment/result together.
-- **CodeQL:** `.github/workflows/codeql.yml` pins `github/codeql-action/init` and `analyze` to `v4.37.3` and builds with `assembleDebug --no-configuration-cache`. Check the actual CodeQL Action runner and Kotlin extractor support before Kotlin plugin upgrades.
+- **CodeQL:** `.github/workflows/codeql.yml` pins `github/codeql-action/init` and `analyze` to `v4.37.5` and builds with `assembleDebug --no-configuration-cache`. Check the actual CodeQL Action runner and Kotlin extractor support before Kotlin plugin upgrades.
 - **Sonar:** AGP 9 support has had scanner-side compatibility churn. Keep `tools/sonar.ps1` and `.github/workflows/sonar.yml` verified when changing AGP, Gradle, or Kotlin.
 - **OWASP Dependency-Check:** NVD updates can take a very long time or return transient 503 responses, so PRs and ordinary main pushes run Semgrep/CodeQL/Qodana while Dependency-Check is reserved for weekly scheduled or manual runs with cache, bounded retries, a job timeout, and a shorter non-blocking OWASP step timeout. Dependency-Check reports are uploaded as Actions artifacts instead of GitHub Code scanning SARIF so stale dependency analyses do not keep fixed Dependabot issues open.
 

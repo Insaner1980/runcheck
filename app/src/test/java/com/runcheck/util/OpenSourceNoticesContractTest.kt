@@ -34,6 +34,7 @@ class OpenSourceNoticesContractTest {
                 "e0cb663613eb252a7793216ad28cf54a35677b8f",
                 "OkHttp and Okio",
                 "Gson",
+                "Compose Stability Analyzer runtime",
                 "Guava ListenableFuture",
                 "Manrope font",
                 "JetBrains Mono font",
