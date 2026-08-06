@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 1254" width="1254" height="1254" role="img" aria-labelledby="rcTitle">
+  <title id="rcTitle">runcheck</title>
+  <defs>
+    <!-- Logon muoto: koukku (U-kaari + nuolenhannan lovi) seka nuoli. -->
+    <clipPath id="rcClip">
+      <path d="M 244.19,428.39 A 221.5,221.5 0 0 1 465.69,206.89 L 805.5,206.89 A 221.5,221.5 0 0 1 1027,428.39 L 1027,1300 L 940.02,1300 L 940.02,433.92 A 143.6,143.6 0 0 0 796.42,290.32 L 543.98,290.32 A 147,147 0 0 0 396.98,437.32 L 396.98,634.45 A 1,1 0 0 1 395.23,635.12 L 325.68,557.51 A 5.5,5.5 0 0 0 317.5,557.51 L 245.93,637.12 A 1,1 0 0 1 244.19,636.46 Z"/>
+      <path d="M 317.24,603.28 L 139.77,804.01 A 5.5,5.5 0 0 0 144.69,813.1 L 236.42,799.65 A 4,4 0 0 1 241,803.6 L 241,1300 L 402.57,1300 L 402.57,803.5 A 4,4 0 0 1 407.17,799.55 L 498.66,813.25 A 5.5,5.5 0 0 0 503.6,804.17 L 325.93,603.27 A 5.8,5.8 0 0 0 317.24,603.28 Z"/>
+    </clipPath>
+    <!-- Vari kulkee polkua pitkin, ei suorassa linjassa: siksi kolme osaa. -->
+    <!-- A = suora vaakaosa -->
+    <linearGradient id="rcA" gradientUnits="userSpaceOnUse" x1="500" y1="248.6" x2="805.5" y2="248.6"><stop offset="0.0000" stop-color="#EAE9EE"/><stop offset="0.0818" stop-color="#E9E9EE"/><stop offset="0.1637" stop-color="#E7E9ED"/><stop offset="0.2455" stop-color="#E2EAED"/><stop offset="0.3273" stop-color="#DBEAEC"/><stop offset="0.4092" stop-color="#D2E9EA"/><stop offset="0.4910" stop-color="#C8E8E8"/><stop offset="0.5728" stop-color="#BDE7E6"/><stop offset="0.6547" stop-color="#B3E6E4"/><stop offset="0.7365" stop-color="#ABE5E3"/><stop offset="0.8183" stop-color="#A0E3E1"/><stop offset="0.9002" stop-color="#95E3DF"/><stop offset="0.9820" stop-color="#8BE2DD"/><stop offset="1.0000" stop-color="#89E2DD"/></linearGradient>
+    <!-- C = suora pystyosa -->
+    <linearGradient id="rcC" gradientUnits="userSpaceOnUse" x1="983.51" y1="426.62" x2="983.51" y2="541.5"><stop offset="0.0000" stop-color="#39A7E4"/><stop offset="0.1295" stop-color="#39A5E6"/><stop offset="0.3471" stop-color="#37A1E7"/><stop offset="0.5648" stop-color="#369EE9"/><stop offset="0.7824" stop-color="#369CE9"/><stop offset="1.0000" stop-color="#369BE9"/></linearGradient>
+    <!-- B = kulma sektoreina; naapurisektorien paatevarit tasmaavat -> ei saumoja -->
+    <linearGradient id="rcW0" gradientUnits="userSpaceOnUse" x1="805.52" y1="248.22" x2="828.76" y2="249.75"><stop offset="0.0000" stop-color="#89E2DD"/><stop offset="0.1667" stop-color="#88E2DD"/><stop offset="0.3333" stop-color="#86E1DC"/><stop offset="0.5000" stop-color="#84E1DC"/><stop offset="0.6667" stop-color="#82E1DC"/><stop offset="0.8333" stop-color="#81E1DC"/><stop offset="1.0000" stop-color="#7FE1DB"/></linearGradient>
+    <linearGradient id="rcW1" gradientUnits="userSpaceOnUse" x1="828.81" y1="249.75" x2="851.65" y2="254.3"><stop offset="0.0000" stop-color="#7FE1DB"/><stop offset="0.1667" stop-color="#7EE0DB"/><stop offset="0.3333" stop-color="#7CE0DB"/><stop offset="0.5000" stop-color="#7BE0DB"/><stop offset="0.6667" stop-color="#79E0DA"/><stop offset="0.8333" stop-color="#77DFDA"/><stop offset="1.0000" stop-color="#75DFDA"/></linearGradient>
+    <linearGradient id="rcW2" gradientUnits="userSpaceOnUse" x1="851.69" y1="254.31" x2="873.74" y2="261.79"><stop offset="0.0000" stop-color="#75DFDA"/><stop offset="0.1667" stop-color="#73DEDA"/><stop offset="0.3333" stop-color="#71DEDA"/><stop offset="0.5000" stop-color="#6FDDD9"/><stop offset="0.6667" stop-color="#6DDDD9"/><stop offset="0.8333" stop-color="#6BDCD8"/><stop offset="1.0000" stop-color="#69DCD8"/></linearGradient>
+    <linearGradient id="rcW3" gradientUnits="userSpaceOnUse" x1="873.79" y1="261.81" x2="894.67" y2="272.11"><stop offset="0.0000" stop-color="#69DCD8"/><stop offset="0.1667" stop-color="#67DBD8"/><stop offset="0.3333" stop-color="#65DBD8"/><stop offset="0.5000" stop-color="#63DAD7"/><stop offset="0.6667" stop-color="#61DAD7"/><stop offset="0.8333" stop-color="#5FD9D7"/><stop offset="1.0000" stop-color="#5DD9D7"/></linearGradient>
+    <linearGradient id="rcW4" gradientUnits="userSpaceOnUse" x1="894.72" y1="272.14" x2="914.08" y2="285.07"><stop offset="0.0000" stop-color="#5DD9D7"/><stop offset="0.1667" stop-color="#5BD8D7"/><stop offset="0.3333" stop-color="#5AD7D7"/><stop offset="0.5000" stop-color="#58D6D7"/><stop offset="0.6667" stop-color="#57D6D7"/><stop offset="0.8333" stop-color="#55D5D7"/><stop offset="1.0000" stop-color="#54D4D7"/></linearGradient>
+    <linearGradient id="rcW5" gradientUnits="userSpaceOnUse" x1="914.12" y1="285.1" x2="931.62" y2="300.46"><stop offset="0.0000" stop-color="#54D4D7"/><stop offset="0.1667" stop-color="#52D3D7"/><stop offset="0.3333" stop-color="#51D2D7"/><stop offset="0.5000" stop-color="#50D1D7"/><stop offset="0.6667" stop-color="#4ED0D7"/><stop offset="0.8333" stop-color="#4DCFD8"/><stop offset="1.0000" stop-color="#4CCDD8"/></linearGradient>
+    <linearGradient id="rcW6" gradientUnits="userSpaceOnUse" x1="931.66" y1="300.49" x2="947.01" y2="318"><stop offset="0.0000" stop-color="#4CCDD8"/><stop offset="0.1667" stop-color="#4ACCD8"/><stop offset="0.3333" stop-color="#49CBD8"/><stop offset="0.5000" stop-color="#48CAD8"/><stop offset="0.6667" stop-color="#47C8D8"/><stop offset="0.8333" stop-color="#46C7D8"/><stop offset="1.0000" stop-color="#45C6D9"/></linearGradient>
+    <linearGradient id="rcW7" gradientUnits="userSpaceOnUse" x1="947.04" y1="318.04" x2="959.98" y2="337.4"><stop offset="0.0000" stop-color="#45C6D9"/><stop offset="0.1667" stop-color="#44C5D9"/><stop offset="0.3333" stop-color="#43C4D9"/><stop offset="0.5000" stop-color="#42C2D9"/><stop offset="0.6667" stop-color="#41C1D9"/><stop offset="0.8333" stop-color="#40C0DA"/><stop offset="1.0000" stop-color="#40BFDA"/></linearGradient>
+    <linearGradient id="rcW8" gradientUnits="userSpaceOnUse" x1="960" y1="337.44" x2="970.3" y2="358.33"><stop offset="0.0000" stop-color="#40BFDA"/><stop offset="0.1667" stop-color="#3FBEDA"/><stop offset="0.3333" stop-color="#3FBDDB"/><stop offset="0.5000" stop-color="#3EBCDB"/><stop offset="0.6667" stop-color="#3EBBDC"/><stop offset="0.8333" stop-color="#3EBADC"/><stop offset="1.0000" stop-color="#3DB8DC"/></linearGradient>
+    <linearGradient id="rcW9" gradientUnits="userSpaceOnUse" x1="970.32" y1="358.37" x2="977.81" y2="380.42"><stop offset="0.0000" stop-color="#3DB8DC"/><stop offset="0.1667" stop-color="#3DB7DD"/><stop offset="0.3333" stop-color="#3DB6DD"/><stop offset="0.5000" stop-color="#3CB5DD"/><stop offset="0.6667" stop-color="#3CB4DE"/><stop offset="0.8333" stop-color="#3CB3DE"/><stop offset="1.0000" stop-color="#3BB2DE"/></linearGradient>
+    <linearGradient id="rcW10" gradientUnits="userSpaceOnUse" x1="977.82" y1="380.47" x2="982.36" y2="403.31"><stop offset="0.0000" stop-color="#3BB2DE"/><stop offset="0.1667" stop-color="#3BB1DF"/><stop offset="0.3333" stop-color="#3BB0DF"/><stop offset="0.5000" stop-color="#3AAFDF"/><stop offset="0.6667" stop-color="#3AAEE0"/><stop offset="0.8333" stop-color="#3AADE0"/><stop offset="1.0000" stop-color="#39ACE1"/></linearGradient>
+    <linearGradient id="rcW11" gradientUnits="userSpaceOnUse" x1="982.37" y1="403.36" x2="983.89" y2="426.59"><stop offset="0.0000" stop-color="#39ACE1"/><stop offset="0.1667" stop-color="#39ABE1"/><stop offset="0.3333" stop-color="#39AAE2"/><stop offset="0.5000" stop-color="#39AAE2"/><stop offset="0.6667" stop-color="#39A9E3"/><stop offset="0.8333" stop-color="#39A8E4"/><stop offset="1.0000" stop-color="#39A7E4"/></linearGradient>
+  </defs>
+  <g clip-path="url(#rcClip)">
+    <rect x="-10" y="-10" width="815.5" height="1274" fill="url(#rcA)"/>
+    <path d="M 805.5,426.62 L 797.12,26.71 L 866,31.22 Z" fill="url(#rcW0)"/>
+    <path d="M 805.5,426.62 L 849.39,29.03 L 917.09,42.5 Z" fill="url(#rcW1)"/>
+    <path d="M 805.5,426.62 L 900.91,38.16 L 966.28,60.35 Z" fill="url(#rcW2)"/>
+    <path d="M 805.5,426.62 L 950.8,53.94 L 1012.71,84.47 Z" fill="url(#rcW3)"/>
+    <path d="M 805.5,426.62 L 998.2,76.1 L 1055.6,114.45 Z" fill="url(#rcW4)"/>
+    <path d="M 805.5,426.62 L 1042.3,104.25 L 1094.2,149.76 Z" fill="url(#rcW5)"/>
+    <path d="M 805.5,426.62 L 1082.36,137.91 L 1127.87,189.81 Z" fill="url(#rcW6)"/>
+    <path d="M 805.5,426.62 L 1117.67,176.52 L 1156.02,233.92 Z" fill="url(#rcW7)"/>
+    <path d="M 805.5,426.62 L 1147.64,219.41 L 1178.17,281.32 Z" fill="url(#rcW8)"/>
+    <path d="M 805.5,426.62 L 1171.76,265.84 L 1193.95,331.2 Z" fill="url(#rcW9)"/>
+    <path d="M 805.5,426.62 L 1189.62,315.02 L 1203.08,382.72 Z" fill="url(#rcW10)"/>
+    <path d="M 805.5,426.62 L 1200.9,366.11 L 1205.41,434.99 Z" fill="url(#rcW11)"/>
+    <rect x="803.5" y="424.62" width="460.5" height="839.38" fill="url(#rcC)"/>
+  </g>
+</svg>

@@ -52,7 +52,7 @@ The highest-risk review surfaces are layer boundaries, Android API guards, measu
 - Widgets: Glance app widgets
 - Speed test backend: M-Lab NDT7
 - Build: Gradle Kotlin DSL
-- Build tooling: Gradle wrapper 9.6.1, AGP 9.2.1, Kotlin Gradle/Compose plugin 2.3.0, Kotlin runtime constraints 2.3.20, KSP 2.3.9, Compose BOM 2026.06.01
+- Build tooling: Gradle wrapper 9.6.1, AGP 9.2.1, Kotlin Gradle/Compose plugin 2.4.10, Kotlin runtime constraints 2.3.20, KSP 2.3.9, Compose BOM 2026.06.01
 - Compile SDK: Android 17 (API 37)
 - Target SDK: Android 17 (API 37)
 - Min SDK: 26
@@ -103,10 +103,10 @@ Current version catalog highlights:
 |------|---------------|
 | Gradle wrapper | `9.6.1` |
 | Android Gradle Plugin | `9.2.1` |
-| Kotlin Gradle / Compose plugin | `2.3.0` |
+| Kotlin Gradle / Compose plugin | `2.4.10` |
 | Kotlin runtime constraints | `2.3.20` |
 | KSP | `2.3.9` |
-| Hilt | `2.59.2` |
+| Hilt | `2.60.1` |
 | Hilt AndroidX / Hilt Work | `1.4.0` |
 | Room | `2.8.4` |
 | Compose BOM | `2026.06.01` |
@@ -129,12 +129,12 @@ Current version catalog highlights:
 | Dependency Analysis Gradle plugin | `3.17.0` |
 | ktlint rule engine | `1.8.0` |
 | ktlint Gradle plugin | `14.2.0` |
-| Detekt | `2.0.0-alpha.3` |
+| Detekt | `2.0.0-alpha.5` |
 | compose-rules for ktlint | `0.5.9` |
 | compose-rules for Detekt | `0.5.9` |
 | OWASP Dependency-Check Gradle plugin | `12.2.2` |
 | SonarQube Gradle plugin | `7.3.1.8318` |
-| Compose Stability Analyzer | `0.7.0` |
+| Compose Stability Analyzer | `0.12.0` |
 | Google Android Security Lints | `1.0.4` |
 | JaCoCo | `0.8.14` |
 
@@ -144,8 +144,9 @@ Checked on 2026-08-03 against official Android, Kotlin, Compose Stability Analyz
 
 - The repo is intentionally not on the newest available version in every area. Upgrade candidates must be evaluated as a compatible set, not as isolated numbers.
 - AGP 9.2 officially supports API 37 and requires at least Gradle 9.4.1 and JDK 17. This checkout keeps AGP 9.2.1 and Java target 17 while using a verified Gradle 9.6.1 wrapper.
-- AGP 9.3.1, Kotlin 2.4.10, KSP 2.3.10, Hilt 2.60.1, Detekt 2.0.0-alpha.5, and Compose Stability Analyzer 0.8.0 were tested as one coordinated upgrade. Both analyzer 0.8.0 and fallback 0.7.0 fail debug and release compilation with `ClassCastException: FirExtensionRegistrarAdapter$Companion cannot be cast to ProjectExtensionDescriptor`. The complete core batch was therefore restored to AGP 9.2.1, Kotlin plugin 2.3.0, Kotlin runtime 2.3.20, KSP 2.3.9, Hilt 2.59.2, Detekt 2.0.0-alpha.3, and analyzer 0.7.0; the analyzer remains enabled.
-- This compatibility exception may be removed only after an upstream Compose Stability Analyzer release supports the Kotlin 2.4 compiler line and both debug and release stability checks pass without baseline or task bypasses.
+- History (2026-08-03): AGP 9.3.1, Kotlin 2.4.10, KSP 2.3.10, Hilt 2.60.1, Detekt 2.0.0-alpha.5, and Compose Stability Analyzer 0.8.0 were tested as one coordinated upgrade. Both analyzer 0.8.0 and fallback 0.7.0 failed debug and release compilation with `ClassCastException: FirExtensionRegistrarAdapter$Companion cannot be cast to ProjectExtensionDescriptor`, so the core batch was rolled back to Kotlin plugin 2.3.0 and analyzer 0.7.0.
+- Resolved (2026-08-06): analyzer 0.12.0 supports the Kotlin 2.4 compiler line. The toolchain is now AGP 9.2.1, Kotlin plugin 2.4.10, Kotlin runtime 2.3.20, KSP 2.3.9, Hilt 2.60.1, Detekt 2.0.0-alpha.5, and analyzer 0.12.0; both debug and release stability variants regenerate without baseline or task bypasses.
+- That exit criterion (an upstream analyzer release supporting the Kotlin 2.4 compiler line, with both debug and release stability checks passing without baseline or task bypasses) has been met, so the exception no longer applies.
 - Kotlin 2.3.20 is available upstream and the repo already constrains Kotlin stdlib adapter/runtime artifacts to 2.3.20, but the Gradle/Compose plugin remains 2.3.0. Do not treat this as a typo without checking AGP/Qodana/CodeQL runner behavior.
 - Kotlin 2.4.0 is newer than this repo's Kotlin plugin line, and Kotlin's official Gradle compatibility table lists support through Gradle 9.5.0 for current 2.4.0-era features. Treat it as a deliberate migration, not a routine patch bump.
 - Compose BOM controls Compose library versions, but the Compose compiler is managed through the Kotlin plugin in Kotlin 2.0+ projects. Any BOM bump should include Compose UI regression review, compose-rules compatibility, and dependency verification metadata.

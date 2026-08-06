@@ -6,7 +6,7 @@ runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device
 
 ## Tech Stack
 
-- **Language:** Kotlin Gradle/Compose plugin 2.3.0 with Kotlin runtime constraints 2.3.20
+- **Language:** Kotlin Gradle/Compose plugin 2.4.10 with Kotlin runtime constraints 2.3.20
 - **UI:** Jetpack Compose with Material 3 (BOM 2026.06.01), single dark theme
 - **Min SDK:** 26 (Android 8.0)
 - **Target SDK:** Android 17 (API 37)
@@ -14,7 +14,7 @@ runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device
 - **Architecture:** MVVM with Clean Architecture layers (data → domain → ui)
 - **Database:** Room 2.8.4 for local historical data
 - **Async:** Kotlin Coroutines 1.11.0 + Flow
-- **DI:** Hilt 2.59.2
+- **DI:** Hilt 2.60.1
 - **Charts:** Custom Compose components (TrendChart with axes/grid/tooltip/quality zones, AreaChart, HeatStrip, SegmentedBar)
 - **Build:** Gradle 9.6.1 with Kotlin DSL, AGP 9.2.1, KSP 2.3.9
 - **Localization:** English only (Finnish translations preserved in git history for future use)
@@ -326,7 +326,7 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 ## Build & Release
 
 - Use a single `app` module (no multi-module until necessary)
-- **Static analysis:** ktlint (rule engine 1.8.0, compose-rules 0.5.9) + Detekt 2.0.0-alpha.3 (`dev.detekt`, compose-rules 0.5.9) + Android Lint + Compose Stability Analyzer 0.7.0
+- **Static analysis:** ktlint (rule engine 1.8.0, compose-rules 0.6.3) + Detekt 2.0.0-alpha.5 (`dev.detekt`, compose-rules 0.6.3) + Android Lint + Compose Stability Analyzer 0.12.0
 - ProGuard/R8 minification enabled for release builds
 - Generate signed APK/AAB for Play Store
 - Version code: manually increment `versionCode` in `app/build.gradle.kts` before each Play upload
@@ -334,7 +334,7 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 
 ## Build Notes
 
-- AGP 9.2.1 built-in Kotlin handles Kotlin compilation; `kotlin.compose` plugin is applied separately for Compose compiler support. The AGP 9.3.1 / Kotlin 2.4.10 upgrade remains blocked until Compose Stability Analyzer supports that compiler line.
+- AGP 9.2.1 built-in Kotlin handles Kotlin compilation; `kotlin.compose` plugin is applied separately for Compose compiler support. The Kotlin 2.4.10 blocker is resolved: Compose Stability Analyzer 0.12.0 supports that compiler line and both stability variants regenerate cleanly. AGP itself remains on 9.2.1.
 - `android.disallowKotlinSourceSets=false` is needed for KSP generated sources with AGP 9
 - `BatteryManager.BATTERY_PROPERTY_CHARGING_CYCLE_COUNT` and `STATE_OF_HEALTH` are not in the public SDK — use raw integer constants (8 and 12)
 - Pull-to-refresh uses `PullToRefreshBox` (not the deprecated `PullToRefreshContainer`)

@@ -27,7 +27,9 @@ pluginManagement {
                 includeGroupByRegex("jakarta\\..*")
                 includeGroupByRegex("javax\\..*")
                 includeGroupByRegex("net\\.(gpedro|java|ltgt|sf).*")
-                includeGroupByRegex("org\\.(anarres|apache|assertj|bitbucket|bouncycastle|checkerframework|ec4j|eclipse).*")
+                includeGroupByRegex(
+                    "org\\.(anarres|apache|assertj|bitbucket|bouncycastle|checkerframework|ec4j|eclipse).*",
+                )
                 includeGroupByRegex("org\\.(glassfish|gradle|hamcrest|jdom|jetbrains|jlleitschuh|json|jsoup|junit).*")
                 includeGroupByRegex("org\\.(jspecify|jvnet|mockito|ow2|owasp|semver4j|slf4j|sonarqube|sonarsource).*")
                 includeGroupByRegex("org\\.(sonatype|tensorflow|tukaani|yaml).*")

@@ -61,14 +61,23 @@ allprojects {
             val coordinate = "${requested.group}:${requested.name}"
             val fixedVersion =
                 when {
-                    configurationName == "ktlint" -> ktlintSecurityOverrides[coordinate]
+                    configurationName == "ktlint" -> {
+                        ktlintSecurityOverrides[coordinate]
+                    }
+
                     configurationName == "androidLintTool" ||
-                        configurationName.startsWith("unified-test-platform-android-test-plugin-result-listener") ->
+                        configurationName.startsWith("unified-test-platform-android-test-plugin-result-listener") -> {
                         lintToolSecurityOverrides[coordinate]
                             ?: nettyBuildToolVersion.takeIf { requested.group == "io.netty" }
-                    configurationName.startsWith("unified-test-platform-") && requested.group == "io.netty" ->
+                    }
+
+                    configurationName.startsWith("unified-test-platform-") && requested.group == "io.netty" -> {
                         nettyBuildToolVersion
-                    else -> null
+                    }
+
+                    else -> {
+                        null
+                    }
                 }
 
             if (fixedVersion != null) {
@@ -134,29 +143,31 @@ project(":app") {
     }
 }
 
-val prepareSonarAndroidLintReport = tasks.register("prepareSonarAndroidLintReport") {
-    group = "verification"
-    description = "Writes an empty Android Lint XML import for SonarCloud; tools/lc.ps1 owns real Android Lint findings."
+val prepareSonarAndroidLintReport =
+    tasks.register("prepareSonarAndroidLintReport") {
+        group = "verification"
+        description =
+            "Writes an empty Android Lint XML import for SonarCloud; tools/lc.ps1 owns real Android Lint findings."
 
-    val reportFile = layout.projectDirectory.file("app/build/reports/lint-results-debug.xml")
+        val reportFile = layout.projectDirectory.file("app/build/reports/lint-results-debug.xml")
 
-    outputs.file(reportFile)
-    outputs.upToDateWhen { false }
-    mustRunAfter(":app:lintDebug")
+        outputs.file(reportFile)
+        outputs.upToDateWhen { false }
+        mustRunAfter(":app:lintDebug")
 
-    doLast {
-        val file = reportFile.asFile
-        file.parentFile.mkdirs()
-        file.writeText(
-            """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <issues format="6" by="lint">
-            </issues>
-            """.trimIndent() + "\n",
-            Charsets.UTF_8,
-        )
+        doLast {
+            val file = reportFile.asFile
+            file.parentFile.mkdirs()
+            file.writeText(
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <issues format="6" by="lint">
+                </issues>
+                """.trimIndent() + "\n",
+                Charsets.UTF_8,
+            )
+        }
     }
-}
 
 tasks.named("sonar") {
     dependsOn(":app:assembleDebug", ":app:jacocoDebugUnitTestReport", prepareSonarAndroidLintReport)

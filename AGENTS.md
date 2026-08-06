@@ -156,7 +156,7 @@ Project-specific check configuration lives in:
 - `.deepsec\`
 - `.github\dependabot.yml`
 
-Detekt uses the `dev.detekt` 2.x plugin (`2.0.0-alpha.3`) and both ktlint and Detekt use compose-rules `0.5.9`; ktlint's rule engine is pinned to `1.8.0`. These versions are a documented compatibility exception while Compose Stability Analyzer `0.7.0` blocks the Kotlin `2.4.10` toolchain: both analyzer `0.8.0` and `0.7.0` crash during debug and release compilation with that Kotlin version. Remove the exception only after an analyzer release supports the upgraded Kotlin compiler and both stability variants pass.
+Detekt uses the `dev.detekt` 2.x plugin (`2.0.0-alpha.5`) and both ktlint and Detekt use compose-rules `0.6.3`; ktlint's rule engine is pinned to `1.8.0`. The earlier Compose Stability Analyzer compatibility exception is resolved: analyzer `0.12.0` supports the Kotlin `2.4.10` toolchain, and both the debug and release stability variants regenerate without crashing, so the toolchain now tracks the verified current line.
 
 ---
 

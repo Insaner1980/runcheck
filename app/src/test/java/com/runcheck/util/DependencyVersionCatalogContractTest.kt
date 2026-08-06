@@ -48,12 +48,12 @@ class DependencyVersionCatalogContractTest {
         val expectedVersions =
             mapOf(
                 "agp" to "9.2.1",
-                "kotlin" to "2.3.0",
+                "kotlin" to "2.4.10",
                 "kotlinRuntime" to "2.3.20",
                 "ksp" to "2.3.9",
-                "hilt" to "2.59.2",
-                "detekt" to "2.0.0-alpha.3",
-                "stabilityAnalyzer" to "0.7.0",
+                "hilt" to "2.60.1",
+                "detekt" to "2.0.0-alpha.5",
+                "stabilityAnalyzer" to "0.12.0",
             )
 
         expectedVersions.forEach { (alias, expected) ->
@@ -117,8 +117,8 @@ class DependencyVersionCatalogContractTest {
         val detektPluginId = versionsCatalog.pluginIdFor("detekt")
 
         assertTrue(
-            "Detekt version $detektVersion must match the documented 2.0.0-alpha.3 exception",
-            detektVersion == "2.0.0-alpha.3",
+            "Detekt version $detektVersion is not the verified 2.0.0-alpha.5 release",
+            detektVersion == "2.0.0-alpha.5",
         )
         assertTrue(
             "compose-rules Detekt version $composeRulesDetektVersion is not on the Detekt 2 compatible 0.5.9 line",
@@ -142,7 +142,7 @@ class DependencyVersionCatalogContractTest {
         val unexpectedPrereleases =
             versionEntries.filter { (alias, version) ->
                 prereleaseMarker.containsMatchIn(version) &&
-                    !(alias == "detekt" && version == "2.0.0-alpha.3")
+                    !(alias == "detekt" && version == "2.0.0-alpha.5")
             }
 
         assertTrue("Unapproved prerelease versions: $unexpectedPrereleases", unexpectedPrereleases.isEmpty())
