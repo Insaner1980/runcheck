@@ -1,12 +1,10 @@
 package com.runcheck.ui.home
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,12 +12,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.DataUsage
-import androidx.compose.material.icons.outlined.SignalCellularAlt
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material.icons.outlined.Thermostat
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -28,16 +23,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
-import com.runcheck.ui.common.connectionDisplayLabel
-import com.runcheck.ui.common.formatStorageSize
-import com.runcheck.ui.common.formatTemperature
-import com.runcheck.ui.common.signalQualityLabel
-import com.runcheck.ui.common.temperatureBandLabel
-import com.runcheck.ui.components.GridCard
 import com.runcheck.ui.components.IconCircle
 import com.runcheck.ui.components.ListRow
 import com.runcheck.ui.components.ProBadgePill
@@ -45,211 +33,7 @@ import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
-import com.runcheck.ui.theme.statusColorForSignalQuality
-import com.runcheck.ui.theme.statusColorForStoragePercent
-import com.runcheck.ui.theme.statusColorForTemperature
 import com.runcheck.ui.theme.statusColors
-
-@Composable
-internal fun HomeGridSection(
-    state: HomeUiState.Success,
-    isWideScreen: Boolean,
-    onNavigateToNetwork: () -> Unit,
-    onNavigateToThermal: () -> Unit,
-    onNavigateToCharger: () -> Unit,
-    onNavigateToStorage: () -> Unit,
-    onNavigateToProUpgrade: () -> Unit,
-) {
-    val context = LocalContext.current
-    if (isWideScreen) {
-        WideHomeGridSection(
-            state = state,
-            context = context,
-            onNavigateToNetwork = onNavigateToNetwork,
-            onNavigateToThermal = onNavigateToThermal,
-            onNavigateToCharger = onNavigateToCharger,
-            onNavigateToStorage = onNavigateToStorage,
-            onNavigateToProUpgrade = onNavigateToProUpgrade,
-        )
-    } else {
-        CompactHomeGridSection(
-            state = state,
-            context = context,
-            onNavigateToNetwork = onNavigateToNetwork,
-            onNavigateToThermal = onNavigateToThermal,
-            onNavigateToCharger = onNavigateToCharger,
-            onNavigateToStorage = onNavigateToStorage,
-            onNavigateToProUpgrade = onNavigateToProUpgrade,
-        )
-    }
-}
-
-@Composable
-private fun WideHomeGridSection(
-    state: HomeUiState.Success,
-    context: Context,
-    onNavigateToNetwork: () -> Unit,
-    onNavigateToThermal: () -> Unit,
-    onNavigateToCharger: () -> Unit,
-    onNavigateToStorage: () -> Unit,
-    onNavigateToProUpgrade: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-    ) {
-        HomeGridCards(
-            state = state,
-            context = context,
-            onNavigateToNetwork = onNavigateToNetwork,
-            onNavigateToThermal = onNavigateToThermal,
-            onNavigateToCharger = onNavigateToCharger,
-            onNavigateToStorage = onNavigateToStorage,
-            onNavigateToProUpgrade = onNavigateToProUpgrade,
-        )
-    }
-}
-
-@Composable
-private fun CompactHomeGridSection(
-    state: HomeUiState.Success,
-    context: Context,
-    onNavigateToNetwork: () -> Unit,
-    onNavigateToThermal: () -> Unit,
-    onNavigateToCharger: () -> Unit,
-    onNavigateToStorage: () -> Unit,
-    onNavigateToProUpgrade: () -> Unit,
-) {
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-        ) {
-            NetworkGridCard(state = state, onClick = onNavigateToNetwork)
-            ThermalGridCard(state = state, onClick = onNavigateToThermal)
-        }
-
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-        ) {
-            ChargerGridCard(
-                isPro = state.isPro,
-                onNavigateToCharger = onNavigateToCharger,
-                onNavigateToProUpgrade = onNavigateToProUpgrade,
-            )
-            StorageGridCard(
-                state = state,
-                context = context,
-                onClick = onNavigateToStorage,
-            )
-        }
-    }
-}
-
-@Composable
-private fun RowScope.NetworkGridCard(
-    state: HomeUiState.Success,
-    onClick: () -> Unit,
-) {
-    val isConnected = state.networkState.isConnected
-    GridCard(
-        icon = Icons.Outlined.SignalCellularAlt,
-        title = stringResource(R.string.home_network_card),
-        subtitle =
-            connectionDisplayLabel(
-                connectionType = state.networkState.connectionType,
-                wifiSsid = state.networkState.wifiSsid,
-                networkSubtype = state.networkState.networkSubtype,
-            ),
-        subtitleColor = MaterialTheme.colorScheme.onSurface,
-        statusLabel =
-            if (isConnected) {
-                signalQualityLabel(state.networkState.signalQuality)
-            } else {
-                stringResource(R.string.score_unrated)
-            },
-        iconTint =
-            if (isConnected) {
-                statusColorForSignalQuality(state.networkState.signalQuality)
-            } else {
-                MaterialTheme.statusColors.unavailable
-            },
-        iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-        onClick = onClick,
-        modifier = Modifier.weight(1f),
-    )
-}
-
-@Composable
-private fun RowScope.ThermalGridCard(
-    state: HomeUiState.Success,
-    onClick: () -> Unit,
-) {
-    GridCard(
-        icon = Icons.Outlined.Thermostat,
-        title = stringResource(R.string.home_thermal_card),
-        subtitle =
-            formatTemperature(
-                state.thermalState.batteryTempC,
-                state.temperatureUnit,
-            ),
-        subtitleColor = MaterialTheme.colorScheme.onSurface,
-        statusLabel = temperatureBandLabel(state.thermalState.batteryTempC),
-        iconTint = statusColorForTemperature(state.thermalState.batteryTempC),
-        iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-        onClick = onClick,
-        modifier = Modifier.weight(1f),
-    )
-}
-
-@Composable
-private fun RowScope.ChargerGridCard(
-    isPro: Boolean,
-    onNavigateToCharger: () -> Unit,
-    onNavigateToProUpgrade: () -> Unit,
-) {
-    GridCard(
-        icon = Icons.Outlined.BatteryChargingFull,
-        title = stringResource(R.string.home_chargers_card),
-        subtitle = stringResource(R.string.home_test_compare),
-        subtitleColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-        locked = !isPro,
-        onClick = if (isPro) onNavigateToCharger else onNavigateToProUpgrade,
-        modifier = Modifier.weight(1f),
-    )
-}
-
-@Composable
-private fun RowScope.StorageGridCard(
-    state: HomeUiState.Success,
-    context: Context,
-    onClick: () -> Unit,
-) {
-    GridCard(
-        icon = Icons.Outlined.DataUsage,
-        title = stringResource(R.string.home_storage_card),
-        subtitle =
-            stringResource(
-                R.string.home_storage_free,
-                formatStorageSize(context, state.storageState.availableBytes),
-                stringResource(R.string.home_free_suffix),
-            ),
-        subtitleColor = MaterialTheme.colorScheme.onSurface,
-        iconTint =
-            statusColorForStoragePercent(
-                state.storageState.usagePercent
-                    .toInt()
-                    .coerceIn(0, 100),
-            ),
-        iconBackgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-        onClick = onClick,
-        modifier = Modifier.weight(1f),
-    )
-}
 
 @Composable
 internal fun HomeQuickToolsSection(
@@ -358,28 +142,4 @@ internal fun HomeProStatusSection(visible: Boolean) {
             }
         }
     }
-}
-
-@Composable
-private fun RowScope.HomeGridCards(
-    state: HomeUiState.Success,
-    context: Context,
-    onNavigateToNetwork: () -> Unit,
-    onNavigateToThermal: () -> Unit,
-    onNavigateToCharger: () -> Unit,
-    onNavigateToStorage: () -> Unit,
-    onNavigateToProUpgrade: () -> Unit,
-) {
-    NetworkGridCard(state = state, onClick = onNavigateToNetwork)
-    ThermalGridCard(state = state, onClick = onNavigateToThermal)
-    ChargerGridCard(
-        isPro = state.isPro,
-        onNavigateToCharger = onNavigateToCharger,
-        onNavigateToProUpgrade = onNavigateToProUpgrade,
-    )
-    StorageGridCard(
-        state = state,
-        context = context,
-        onClick = onNavigateToStorage,
-    )
 }

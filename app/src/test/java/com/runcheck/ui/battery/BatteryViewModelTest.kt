@@ -143,6 +143,23 @@ class BatteryViewModelTest {
         mainDispatcherRule.testDispatcher.scheduler.runCurrent()
     }
 
+    private fun startBatteryFlow(): MutableSharedFlow<BatteryState> =
+        MutableSharedFlow<BatteryState>().also { batteryFlow ->
+            every { getBatteryState() } returns batteryFlow
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceBatterySample()
+        }
+
+    private suspend fun MutableSharedFlow<BatteryState>.emitSample(state: BatteryState) {
+        emit(state)
+        advanceBatterySample()
+    }
+
+    private suspend fun MutableSharedFlow<BatteryState>.emitSamples(vararg states: BatteryState) {
+        states.forEach { emitSample(it) }
+    }
+
     @Test
     fun `initial state is Loading`() {
         every { getBatteryState() } returns flowOf(makeBatteryState())
@@ -221,23 +238,16 @@ class BatteryViewModelTest {
     @Test
     fun `current stats accumulate correctly over multiple emissions`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            val batteryFlow = MutableSharedFlow<BatteryState>()
-            every { getBatteryState() } returns batteryFlow
-
-            viewModel = createViewModel()
-            viewModel.startObserving()
-            advanceBatterySample()
+            val batteryFlow = startBatteryFlow()
 
             // First emission: no stats yet (sampleCount < 2)
-            batteryFlow.emit(makeBatteryState(currentMa = -300))
-            advanceBatterySample()
+            batteryFlow.emitSample(makeBatteryState(currentMa = -300))
 
             val state1 = viewModel.uiState.value as BatteryUiState.Success
             assertNull("Stats should be null with only 1 sample", state1.currentStats)
 
             // Second emission: stats should appear
-            batteryFlow.emit(makeBatteryState(currentMa = -500))
-            advanceBatterySample()
+            batteryFlow.emitSample(makeBatteryState(currentMa = -500))
 
             val state2 = viewModel.uiState.value as BatteryUiState.Success
             assertNotNull("Stats should exist after 2 samples", state2.currentStats)
@@ -250,8 +260,7 @@ class BatteryViewModelTest {
             assertEquals(listOf(-300f, -500f), state2.liveCurrentMa)
 
             // Third emission: verify accumulation continues
-            batteryFlow.emit(makeBatteryState(currentMa = -200))
-            advanceBatterySample()
+            batteryFlow.emitSample(makeBatteryState(currentMa = -200))
 
             val state3 = viewModel.uiState.value as BatteryUiState.Success
             val stats3 = state3.currentStats
@@ -267,25 +276,17 @@ class BatteryViewModelTest {
     @Test
     fun `stats reset on charging status change`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            val batteryFlow = MutableSharedFlow<BatteryState>()
-            every { getBatteryState() } returns batteryFlow
-
-            viewModel = createViewModel()
-            viewModel.startObserving()
-            advanceBatterySample()
+            val batteryFlow = startBatteryFlow()
 
             // Emit several discharging readings
-            batteryFlow.emit(makeBatteryState(currentMa = -300, chargingStatus = ChargingStatus.DISCHARGING))
-            advanceBatterySample()
-            batteryFlow.emit(makeBatteryState(currentMa = -500, chargingStatus = ChargingStatus.DISCHARGING))
-            advanceBatterySample()
+            batteryFlow.emitSample(makeBatteryState(currentMa = -300, chargingStatus = ChargingStatus.DISCHARGING))
+            batteryFlow.emitSample(makeBatteryState(currentMa = -500, chargingStatus = ChargingStatus.DISCHARGING))
 
             val stateBefore = viewModel.uiState.value as BatteryUiState.Success
             assertNotNull("Stats should exist before reset", stateBefore.currentStats)
 
             // Switch to charging: stats should reset
-            batteryFlow.emit(makeBatteryState(currentMa = 1500, chargingStatus = ChargingStatus.CHARGING))
-            advanceBatterySample()
+            batteryFlow.emitSample(makeBatteryState(currentMa = 1500, chargingStatus = ChargingStatus.CHARGING))
 
             val stateAfterSwitch = viewModel.uiState.value as BatteryUiState.Success
             assertNull(
@@ -294,8 +295,7 @@ class BatteryViewModelTest {
             )
 
             // Second charging sample: stats should reappear with only charging data
-            batteryFlow.emit(makeBatteryState(currentMa = 1800, chargingStatus = ChargingStatus.CHARGING))
-            advanceBatterySample()
+            batteryFlow.emitSample(makeBatteryState(currentMa = 1800, chargingStatus = ChargingStatus.CHARGING))
 
             val stateCharging = viewModel.uiState.value as BatteryUiState.Success
             assertNotNull("Stats should exist after 2 charging samples", stateCharging.currentStats)
@@ -310,38 +310,26 @@ class BatteryViewModelTest {
     @Test
     fun `stats stay intact through plugged status flaps`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            val batteryFlow = MutableSharedFlow<BatteryState>()
-            every { getBatteryState() } returns batteryFlow
+            val batteryFlow = startBatteryFlow()
 
-            viewModel = createViewModel()
             try {
-                viewModel.startObserving()
-                advanceBatterySample()
-
-                batteryFlow.emit(
+                batteryFlow.emitSamples(
                     makeBatteryState(
                         currentMa = 1500,
                         chargingStatus = ChargingStatus.CHARGING,
                         plugType = PlugType.USB,
                     ),
-                )
-                advanceBatterySample()
-                batteryFlow.emit(
                     makeBatteryState(
                         currentMa = 1200,
                         chargingStatus = ChargingStatus.FULL,
                         plugType = PlugType.USB,
                     ),
-                )
-                advanceBatterySample()
-                batteryFlow.emit(
                     makeBatteryState(
                         currentMa = 1000,
                         chargingStatus = ChargingStatus.NOT_CHARGING,
                         plugType = PlugType.USB,
                     ),
                 )
-                advanceBatterySample()
 
                 val stats = (viewModel.uiState.value as BatteryUiState.Success).currentStats
                 requireNotNull(stats)
@@ -367,10 +355,8 @@ class BatteryViewModelTest {
                 viewModel.startObserving()
                 advanceBatterySample()
 
-                batteryFlow.emit(makeBatteryState(currentMa = 1500, chargingStatus = ChargingStatus.CHARGING))
-                advanceBatterySample()
-                batteryFlow.emit(makeBatteryState(currentMa = 1800, chargingStatus = ChargingStatus.CHARGING))
-                advanceBatterySample()
+                batteryFlow.emitSample(makeBatteryState(currentMa = 1500, chargingStatus = ChargingStatus.CHARGING))
+                batteryFlow.emitSample(makeBatteryState(currentMa = 1800, chargingStatus = ChargingStatus.CHARGING))
 
                 selectedChargerFlow.value = 2L
                 advanceBatterySample()
@@ -378,10 +364,8 @@ class BatteryViewModelTest {
                 val statsAfterSwap = (viewModel.uiState.value as BatteryUiState.Success).currentStats
                 assertNull("Stats should reset when charger identity changes", statsAfterSwap)
 
-                batteryFlow.emit(makeBatteryState(currentMa = 2200, chargingStatus = ChargingStatus.CHARGING))
-                advanceBatterySample()
-                batteryFlow.emit(makeBatteryState(currentMa = 2000, chargingStatus = ChargingStatus.CHARGING))
-                advanceBatterySample()
+                batteryFlow.emitSample(makeBatteryState(currentMa = 2200, chargingStatus = ChargingStatus.CHARGING))
+                batteryFlow.emitSample(makeBatteryState(currentMa = 2000, chargingStatus = ChargingStatus.CHARGING))
 
                 val stats = (viewModel.uiState.value as BatteryUiState.Success).currentStats
                 requireNotNull(stats)
@@ -396,39 +380,29 @@ class BatteryViewModelTest {
     @Test
     fun `stats reset when the connected power source changes`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            val batteryFlow = MutableSharedFlow<BatteryState>()
-            every { getBatteryState() } returns batteryFlow
+            val batteryFlow = startBatteryFlow()
 
-            viewModel = createViewModel()
             try {
-                viewModel.startObserving()
-                advanceBatterySample()
-
-                batteryFlow.emit(
+                batteryFlow.emitSamples(
                     makeBatteryState(
                         currentMa = 1500,
                         chargingStatus = ChargingStatus.CHARGING,
                         plugType = PlugType.USB,
                     ),
-                )
-                advanceBatterySample()
-                batteryFlow.emit(
                     makeBatteryState(
                         currentMa = 1800,
                         chargingStatus = ChargingStatus.CHARGING,
                         plugType = PlugType.USB,
                     ),
                 )
-                advanceBatterySample()
 
-                batteryFlow.emit(
+                batteryFlow.emitSample(
                     makeBatteryState(
                         currentMa = 2500,
                         chargingStatus = ChargingStatus.CHARGING,
                         plugType = PlugType.AC,
                     ),
                 )
-                advanceBatterySample()
 
                 val statsAfterSwap = (viewModel.uiState.value as BatteryUiState.Success).currentStats
                 assertNull("Stats should reset when the power source changes", statsAfterSwap)

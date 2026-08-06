@@ -1,10 +1,11 @@
 package com.runcheck.util
 
+import com.runcheck.testutil.findRootDir
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 import kotlin.io.path.readText
 
 class DependencyVersionCatalogContractTest {
@@ -19,6 +20,49 @@ class DependencyVersionCatalogContractTest {
             "KSP version $kspVersion is older than the verified current 2.3.9 release line",
             kspVersion.isAtLeast("2.3.9"),
         )
+    }
+
+    @Test
+    fun `runtime and test dependencies stay on the August 2026 verified targets`() {
+        val versionsCatalog = rootDir.resolve("gradle/libs.versions.toml").readText()
+        val expectedVersions =
+            mapOf(
+                "paging" to "3.5.0",
+                "activityCompose" to "1.13.0",
+                "billing" to "9.1.0",
+                "okhttp" to "5.4.0",
+                "gson" to "2.14.0",
+                "mockk" to "1.14.11",
+                "dependencyAnalysis" to "3.17.0",
+                "sentry" to "8.51.0",
+            )
+
+        expectedVersions.forEach { (alias, expected) ->
+            assertEquals("Unexpected $alias version", expected, versionsCatalog.versionFor(alias))
+        }
+    }
+
+    @Test
+    fun `core toolchain stays on the documented stability analyzer compatibility exception`() {
+        val versionsCatalog = rootDir.resolve("gradle/libs.versions.toml").readText()
+        val expectedVersions =
+            mapOf(
+                "agp" to "9.2.1",
+                "kotlin" to "2.4.10",
+                "kotlinRuntime" to "2.3.20",
+                "ksp" to "2.3.9",
+                "hilt" to "2.60.1",
+                "detekt" to "2.0.0-alpha.5",
+                "stabilityAnalyzer" to "0.12.0",
+            )
+
+        expectedVersions.forEach { (alias, expected) ->
+            assertEquals(
+                "Unexpected compatibility-exception version for $alias",
+                expected,
+                versionsCatalog.versionFor(alias),
+            )
+        }
     }
 
     @Test
@@ -54,8 +98,14 @@ class DependencyVersionCatalogContractTest {
             dependencyAnalysisVersion.isAtLeast("3.16.0"),
         )
         assertTrue(
-            "Gradle wrapper must stay on the AGP 9.2 compatible 9.4.1 distribution",
-            wrapperProperties.contains("gradle-9.4.1-bin.zip"),
+            "Gradle wrapper must stay on the verified 9.6.1 binary distribution",
+            wrapperProperties.contains("gradle-9.6.1-bin.zip"),
+        )
+        assertTrue(
+            "Gradle wrapper must verify the official 9.6.1 binary distribution checksum",
+            wrapperProperties.contains(
+                "distributionSha256Sum=9c0f7faeeb306cb14e4279a3e084ca6b596894089a0638e68a07c945a32c9e14",
+            ),
         )
     }
 
@@ -80,6 +130,28 @@ class DependencyVersionCatalogContractTest {
         )
     }
 
+    @Test
+    fun `version catalog rejects unapproved prerelease versions`() {
+        val versionsCatalog = rootDir.resolve("gradle/libs.versions.toml").readText()
+        val versionEntries = versionsCatalog.versionEntries()
+        val prereleaseMarker =
+            Regex(
+                "(?:^|[._-])(alpha|beta|rc|preview|eap|milestone|dev|snapshot)(?:[._-]|\\d|$)",
+                RegexOption.IGNORE_CASE,
+            )
+        val unexpectedPrereleases =
+            versionEntries.filter { (alias, version) ->
+                prereleaseMarker.containsMatchIn(version) &&
+                    !(alias == "detekt" && version == "2.0.0-alpha.5")
+            }
+
+        assertTrue("Unapproved prerelease versions: $unexpectedPrereleases", unexpectedPrereleases.isEmpty())
+        assertFalse(
+            "The NDT7 commit hash is not a semantic prerelease version",
+            prereleaseMarker.containsMatchIn(versionEntries.getValue("ndt7")),
+        )
+    }
+
     private fun String.versionFor(alias: String): String {
         val pattern = Regex("""(?m)^$alias\s*=\s*"([^"]+)"""")
         return requireNotNull(pattern.find(this)?.groupValues?.get(1)) {
@@ -94,6 +166,13 @@ class DependencyVersionCatalogContractTest {
         }
     }
 
+    private fun String.versionEntries(): Map<String, String> {
+        val versionsSection = substringAfter("[versions]").substringBefore("[libraries]")
+        return Regex("(?m)^([A-Za-z][A-Za-z0-9]*)\\s*=\\s*\"([^\"]+)\"")
+            .findAll(versionsSection)
+            .associate { match -> match.groupValues[1] to match.groupValues[2] }
+    }
+
     private fun String.isAtLeast(minimum: String): Boolean {
         val actualParts = split(".").map(String::toInt)
         val minimumParts = minimum.split(".").map(String::toInt)
@@ -103,11 +182,5 @@ class DependencyVersionCatalogContractTest {
             .firstOrNull { (actual, expected) -> actual != expected }
             ?.let { (actual, expected) -> actual > expected }
             ?: (actualParts.size >= minimumParts.size)
-    }
-
-    private fun findRootDir(): Path {
-        val start = Paths.get("").toAbsolutePath()
-        return generateSequence(start) { it.parent }
-            .first { Files.exists(it.resolve("gradle/libs.versions.toml")) }
     }
 }

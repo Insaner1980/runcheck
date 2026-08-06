@@ -28,6 +28,7 @@ import com.runcheck.pro.ProStateProvider
 import com.runcheck.pro.ProStatus
 import com.runcheck.pro.TrialManager
 import com.runcheck.pro.TrialPresentationState
+import com.runcheck.ui.common.changedUnseenIds
 import com.runcheck.ui.common.messageOrRes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
@@ -67,11 +68,12 @@ class HomeViewModel
     ) : ViewModel() {
         private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
         val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+        private val _isRefreshing = MutableStateFlow(false)
+        val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
         private var loadJob: Job? = null
+        private var refreshIndicatorJob: Job? = null
+        private var refreshStartedAtUptimeMillis = 0L
         private var lastSeenInsightIds: Set<Long> = emptySet()
-
-        private var lastTrackedSessionStatus: com.runcheck.domain.model.ChargingStatus? = null
-        private var lastTrackedSessionAt: Long = 0L
 
         fun startObserving() {
             if (loadJob?.isActive == true) return
@@ -81,10 +83,48 @@ class HomeViewModel
         fun stopObserving() {
             loadJob?.cancel()
             loadJob = null
+            resetRefreshIndicator()
+        }
+
+        private fun resetRefreshIndicator() {
+            refreshIndicatorJob?.cancel()
+            refreshIndicatorJob = null
+            _isRefreshing.value = false
         }
 
         fun refresh() {
+            if (_isRefreshing.value) return
+
+            refreshStartedAtUptimeMillis = SystemClock.uptimeMillis()
+            _isRefreshing.value = true
+            refreshIndicatorJob?.cancel()
+            refreshIndicatorJob =
+                viewModelScope.launch {
+                    delay(FULL_CHECK_TIMEOUT_MILLIS)
+                    _isRefreshing.value = false
+                    refreshIndicatorJob = null
+                }
             loadHome()
+        }
+
+        private fun completeRefresh() {
+            if (!_isRefreshing.value) return
+
+            val elapsedMillis = SystemClock.uptimeMillis() - refreshStartedAtUptimeMillis
+            val remainingMillis = (MIN_FULL_CHECK_INDICATOR_MILLIS - elapsedMillis).coerceAtLeast(0L)
+            refreshIndicatorJob?.cancel()
+            if (remainingMillis == 0L) {
+                _isRefreshing.value = false
+                refreshIndicatorJob = null
+                return
+            }
+
+            refreshIndicatorJob =
+                viewModelScope.launch {
+                    delay(remainingMillis)
+                    _isRefreshing.value = false
+                    refreshIndicatorJob = null
+                }
         }
 
         private inline fun updateSuccessState(transform: HomeUiState.Success.() -> HomeUiState.Success) {
@@ -156,28 +196,42 @@ class HomeViewModel
                             freshnessTicker,
                         ) { speedTest, tick -> SpeedTestScoreContext(speedTest, tick.epochMillis) }
 
-                    val dataFlow =
+                    val liveDataFlow =
                         combine(
                             getBatteryState(),
                             getNetworkState(),
                             getThermalState(),
                             getStorageState(),
-                            speedTestScoreContextFlow,
-                        ) { battery, network, thermal, storage, speedTestContext ->
-                            DataSnapshot(
+                        ) { battery, network, thermal, storage ->
+                            LiveDataSnapshot(
                                 battery = battery,
                                 network = network,
                                 thermal = thermal,
                                 storage = storage,
+                                updatedAtEpochMillis = System.currentTimeMillis(),
+                            )
+                        }
+
+                    val dataFlow =
+                        combine(
+                            liveDataFlow,
+                            speedTestScoreContextFlow,
+                        ) { liveData, speedTestContext ->
+                            DataSnapshot(
+                                battery = liveData.battery,
+                                network = liveData.network,
+                                thermal = liveData.thermal,
+                                storage = liveData.storage,
                                 health =
                                     healthScoreCalculator.calculate(
-                                        battery = battery,
-                                        network = network,
-                                        thermal = thermal,
-                                        storage = storage,
+                                        battery = liveData.battery,
+                                        network = liveData.network,
+                                        thermal = liveData.thermal,
+                                        storage = liveData.storage,
                                         recentSpeedTest = speedTestContext.speedTest,
                                         nowMillis = speedTestContext.nowMillis,
                                     ),
+                                updatedAtEpochMillis = liveData.updatedAtEpochMillis,
                             )
                         }
 
@@ -262,6 +316,7 @@ class HomeViewModel
                             networkState = data.network,
                             thermalState = data.thermal,
                             storageState = data.storage,
+                            lastUpdatedAtEpochMillis = data.updatedAtEpochMillis,
                             insights = visibleInsights,
                             totalInsightCount = visibleActiveInsights.size,
                             unseenInsightCount = visibleActiveInsights.count { !it.seen },
@@ -274,30 +329,23 @@ class HomeViewModel
                             showUpgradeCard = showUpgradeCard,
                         )
                     }.onEach { state ->
-                        maybeTrackChargerSession(state.batteryState)
+                        chargerSessionTracker.onObservedBatteryState(state.batteryState)
                     }.sample(DISPLAY_UPDATE_INTERVAL_MS)
                         .catch { e ->
                             _uiState.value = HomeUiState.Error(e.messageOrRes(R.string.common_error_generic))
+                            resetRefreshIndicator()
                         }.collect { state ->
                             _uiState.value = state
                             maybeMarkInsightsSeen(state)
+                            completeRefresh()
                         }
                 }
         }
 
         private fun maybeMarkInsightsSeen(state: HomeUiState.Success) {
-            val unseenIds =
-                state.insights
-                    .filterNot { it.seen }
-                    .map { it.id }
-                    .toSet()
-            if (unseenIds.isEmpty()) {
-                lastSeenInsightIds = emptySet()
-                return
-            }
-            if (unseenIds == lastSeenInsightIds) return
-
+            val unseenIds = state.insights.changedUnseenIds(lastSeenInsightIds) ?: return
             lastSeenInsightIds = unseenIds
+            if (unseenIds.isEmpty()) return
             viewModelScope.launch {
                 insightRepository.markSeen(unseenIds)
             }
@@ -318,23 +366,21 @@ class HomeViewModel
                 uptimeMillis = SystemClock.uptimeMillis(),
             )
 
-        private suspend fun maybeTrackChargerSession(state: BatteryState) {
-            val now = System.currentTimeMillis()
-            if (lastTrackedSessionStatus != state.chargingStatus ||
-                now - lastTrackedSessionAt >= CHARGER_SESSION_TRACK_INTERVAL_MS
-            ) {
-                chargerSessionTracker.onBatteryState(state, now)
-                lastTrackedSessionStatus = state.chargingStatus
-                lastTrackedSessionAt = now
-            }
-        }
-
         private data class DataSnapshot(
             val battery: BatteryState,
             val network: NetworkState,
             val thermal: ThermalState,
             val storage: StorageState,
             val health: HealthScore,
+            val updatedAtEpochMillis: Long,
+        )
+
+        private data class LiveDataSnapshot(
+            val battery: BatteryState,
+            val network: NetworkState,
+            val thermal: ThermalState,
+            val storage: StorageState,
+            val updatedAtEpochMillis: Long,
         )
 
         private data class SpeedTestScoreContext(
@@ -356,7 +402,8 @@ class HomeViewModel
             private const val MAX_HOME_INSIGHTS = 3
             private const val DAY_5 = 5
             private const val DISPLAY_UPDATE_INTERVAL_MS = 333L
-            private const val CHARGER_SESSION_TRACK_INTERVAL_MS = 15_000L
+            private const val MIN_FULL_CHECK_INDICATOR_MILLIS = 900L
+            private const val FULL_CHECK_TIMEOUT_MILLIS = 12_000L
             private const val MONITORING_STALE_CHECK_INTERVAL_MS = 15_000L
         }
     }

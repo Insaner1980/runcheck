@@ -1,6 +1,8 @@
 buildscript {
     // Keep vulnerable Gradle plugin transitives on patched build-time versions.
-    val jacksonBuildToolsVersion = "2.22.1"
+    val buildToolVersion = { name: String -> providers.gradleProperty("runcheck.buildTools.$name").get() }
+    val jacksonBuildToolsVersion = buildToolVersion("jackson")
+    val bouncyCastleBuildToolsVersion = buildToolVersion("bouncyCastle")
     val securityPinnedBuildscriptModules =
         arrayOf(
             "com.fasterxml.jackson.core:jackson-annotations:2.22",
@@ -9,11 +11,11 @@ buildscript {
             "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonBuildToolsVersion",
             "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonBuildToolsVersion",
             "com.fasterxml.jackson.module:jackson-module-blackbird:$jacksonBuildToolsVersion",
-            "org.bitbucket.b_c:jose4j:0.9.6",
-            "org.bouncycastle:bcpkix-jdk18on:1.84",
-            "org.bouncycastle:bcprov-jdk18on:1.84",
-            "org.bouncycastle:bcutil-jdk18on:1.84",
-            "org.jdom:jdom2:2.0.6.1",
+            "org.bitbucket.b_c:jose4j:${buildToolVersion("jose4j")}",
+            "org.bouncycastle:bcpkix-jdk18on:$bouncyCastleBuildToolsVersion",
+            "org.bouncycastle:bcprov-jdk18on:$bouncyCastleBuildToolsVersion",
+            "org.bouncycastle:bcutil-jdk18on:$bouncyCastleBuildToolsVersion",
+            "org.jdom:jdom2:${buildToolVersion("jdom")}",
         )
 
     configurations.classpath {
@@ -33,6 +35,57 @@ plugins {
     alias(libs.plugins.owasp.dependency.check) apply false
     alias(libs.plugins.stability.analyzer) apply false
     alias(libs.plugins.sonarqube)
+}
+
+val buildToolVersion = { name: String -> providers.gradleProperty("runcheck.buildTools.$name").get() }
+val ktlintSecurityOverrides =
+    mapOf(
+        "ch.qos.logback:logback-classic" to buildToolVersion("logback"),
+        "ch.qos.logback:logback-core" to buildToolVersion("logback"),
+    )
+val lintToolSecurityOverrides =
+    mapOf(
+        "org.apache.commons:commons-lang3" to buildToolVersion("commonsLang"),
+        "org.apache.httpcomponents:httpclient" to buildToolVersion("httpClient"),
+        "org.apache.httpcomponents:httpmime" to buildToolVersion("httpClient"),
+        "org.bouncycastle:bcpkix-jdk18on" to buildToolVersion("bouncyCastle"),
+        "org.bouncycastle:bcprov-jdk18on" to buildToolVersion("bouncyCastle"),
+        "org.bouncycastle:bcutil-jdk18on" to buildToolVersion("bouncyCastle"),
+    )
+val nettyBuildToolVersion = buildToolVersion("netty")
+
+allprojects {
+    configurations.configureEach {
+        val configurationName = name
+        resolutionStrategy.eachDependency {
+            val coordinate = "${requested.group}:${requested.name}"
+            val fixedVersion =
+                when {
+                    configurationName == "ktlint" -> {
+                        ktlintSecurityOverrides[coordinate]
+                    }
+
+                    configurationName == "androidLintTool" ||
+                        configurationName.startsWith("unified-test-platform-android-test-plugin-result-listener") -> {
+                        lintToolSecurityOverrides[coordinate]
+                            ?: nettyBuildToolVersion.takeIf { requested.group == "io.netty" }
+                    }
+
+                    configurationName.startsWith("unified-test-platform-") && requested.group == "io.netty" -> {
+                        nettyBuildToolVersion
+                    }
+
+                    else -> {
+                        null
+                    }
+                }
+
+            if (fixedVersion != null) {
+                useVersion(fixedVersion)
+                because("Keep build and verification tooling on patched transitive dependency versions.")
+            }
+        }
+    }
 }
 
 ktlint {
@@ -90,29 +143,31 @@ project(":app") {
     }
 }
 
-val prepareSonarAndroidLintReport by tasks.registering {
-    group = "verification"
-    description = "Writes an empty Android Lint XML import for SonarCloud; tools/lc.ps1 owns real Android Lint findings."
+val prepareSonarAndroidLintReport =
+    tasks.register("prepareSonarAndroidLintReport") {
+        group = "verification"
+        description =
+            "Writes an empty Android Lint XML import for SonarCloud; tools/lc.ps1 owns real Android Lint findings."
 
-    val reportFile = layout.projectDirectory.file("app/build/reports/lint-results-debug.xml")
+        val reportFile = layout.projectDirectory.file("app/build/reports/lint-results-debug.xml")
 
-    outputs.file(reportFile)
-    outputs.upToDateWhen { false }
-    mustRunAfter(":app:lintDebug")
+        outputs.file(reportFile)
+        outputs.upToDateWhen { false }
+        mustRunAfter(":app:lintDebug")
 
-    doLast {
-        val file = reportFile.asFile
-        file.parentFile.mkdirs()
-        file.writeText(
-            """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <issues format="6" by="lint">
-            </issues>
-            """.trimIndent() + "\n",
-            Charsets.UTF_8,
-        )
+        doLast {
+            val file = reportFile.asFile
+            file.parentFile.mkdirs()
+            file.writeText(
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <issues format="6" by="lint">
+                </issues>
+                """.trimIndent() + "\n",
+                Charsets.UTF_8,
+            )
+        }
     }
-}
 
 tasks.named("sonar") {
     dependsOn(":app:assembleDebug", ":app:jacocoDebugUnitTestReport", prepareSonarAndroidLintReport)

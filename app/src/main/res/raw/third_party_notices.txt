@@ -3,7 +3,7 @@ runcheck third-party notices
 This app includes production open-source software, SDK components, fonts, and icon libraries from the projects listed below. This notice supplements license metadata packaged in dependency artifacts.
 
 AndroidX and Jetpack Compose
-Artifacts: Activity, Core, Lifecycle, Navigation, Room, WorkManager, DataStore, Paging, Glance, ProfileInstaller, Window, SQLite, Compose UI, Compose Foundation, Compose Animation, Compose Runtime, Compose Material 3, Compose Material Icons Core, and Compose Material Icons Extended.
+Artifacts include Activity 1.13.0, Paging 3.5.0, Core, Lifecycle, Navigation, Room, WorkManager, DataStore, Glance, ProfileInstaller, Window, SQLite, Compose UI, Compose Foundation, Compose Animation, Compose Runtime, Compose Material 3, Compose Material Icons Core, and Compose Material Icons Extended.
 Copyright: The Android Open Source Project and contributors.
 License: Apache-2.0, except the repackaged protobuf artifacts listed separately below.
 Source and license: https://cs.android.com/androidx/platform/frameworks/support and https://www.apache.org/licenses/LICENSE-2.0
@@ -21,13 +21,13 @@ License: Apache-2.0.
 License text: https://www.apache.org/licenses/LICENSE-2.0
 
 Dagger and Hilt
-Artifacts: com.google.dagger:hilt-android and related runtime artifacts.
+Artifacts: com.google.dagger:hilt-android 2.59.2 and related runtime artifacts.
 Copyright: Google LLC and contributors.
 License: Apache-2.0.
 License text: https://www.apache.org/licenses/LICENSE-2.0
 
 Google Play Billing and Google Play services
-Artifacts: com.android.billingclient:billing, com.android.billingclient:billing-ktx, and Google Play services runtime artifacts used transitively by Billing.
+Artifacts: com.android.billingclient:billing 9.1.0, com.android.billingclient:billing-ktx 9.1.0, and Google Play services runtime artifacts used transitively by Billing.
 Copyright: Google LLC.
 License: Android Software Development Kit License.
 Terms: https://developer.android.com/studio/terms
@@ -40,17 +40,23 @@ Source and license: https://github.com/m-lab/ndt7-client-android-java and https:
 Note: This SHA-pinned Maven artifact does not carry license metadata in its POM, so runcheck keeps this manual notice entry.
 
 OkHttp and Okio
-Artifacts: com.squareup.okhttp3:okhttp and com.squareup.okio:okio-jvm.
+Artifacts: com.squareup.okhttp3:okhttp 5.4.0 and its compatible com.squareup.okio:okio-jvm runtime.
 Copyright: Square, Inc. and contributors.
 License: Apache-2.0.
 License text: https://www.apache.org/licenses/LICENSE-2.0
 Additional packaged notice: OkHttp includes public suffix data attribution in its artifact.
 
 Gson
-Artifact: com.google.code.gson:gson.
+Artifact: com.google.code.gson:gson:2.14.0.
 Copyright: Google LLC and contributors.
 License: Apache-2.0.
 License text: https://www.apache.org/licenses/LICENSE-2.0
+
+Compose Stability Analyzer runtime
+Artifact: com.github.skydoves:compose-stability-runtime:0.7.0.
+Copyright: Jaewoong Eum and contributors.
+License: Apache-2.0.
+Source and license: https://github.com/skydoves/compose-stability-analyzer and https://www.apache.org/licenses/LICENSE-2.0
 
 Guava ListenableFuture
 Artifact: com.google.guava:listenablefuture.

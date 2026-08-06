@@ -1,5 +1,6 @@
 package com.runcheck.worker
 
+import com.runcheck.testutil.findRootDir
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -42,11 +43,5 @@ class TrialNotificationWorkerDependencyContractTest {
             "SystemBindingsModule should bind ProPurchaseStatusRefresher to BillingManager",
             systemBindingsSource.contains("bindProPurchaseStatusRefresher"),
         )
-    }
-
-    private fun findRootDir(): Path {
-        val start = Paths.get("").toAbsolutePath()
-        return generateSequence(start) { it.parent }
-            .first { Files.exists(it.resolve("gradle/libs.versions.toml")) }
     }
 }

@@ -4,9 +4,7 @@ import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.runcheck.data.device.DeviceProfile
-import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.util.AppDispatchers
-import kotlinx.coroutines.flow.Flow
 
 /**
  * Samsung on API 34+: inherits cycle count / health % from [Android14BatterySource]
@@ -18,14 +16,5 @@ class SamsungAndroid14BatterySource(
     profile: DeviceProfile,
     dispatchers: AppDispatchers,
 ) : Android14BatterySource(context, profile, dispatchers) {
-    override fun getCurrentNow(): Flow<MeasuredValue<Int>> =
-        samsungCurrentNowFlow(
-            stableReadingThreshold = STABLE_READING_THRESHOLD,
-            suspiciousConstantCurrentMa = SUSPICIOUS_CONSTANT_CURRENT_MA,
-        )
-
-    companion object {
-        private const val STABLE_READING_THRESHOLD = 3
-        private const val SUSPICIOUS_CONSTANT_CURRENT_MA = 3000
-    }
+    override fun getCurrentNow() = samsungCurrentNowFlow()
 }

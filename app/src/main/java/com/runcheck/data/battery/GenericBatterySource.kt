@@ -238,6 +238,12 @@ open class GenericBatterySource(
             }
         }.flowOn(dispatchers.io)
 
+    protected fun samsungCurrentNowFlow(): Flow<MeasuredValue<Int>> =
+        samsungCurrentNowFlow(
+            stableReadingThreshold = SAMSUNG_STABLE_READING_THRESHOLD,
+            suspiciousConstantCurrentMa = SAMSUNG_SUSPICIOUS_CONSTANT_CURRENT_MA,
+        )
+
     protected fun mapHealth(health: Int): BatteryHealth =
         when (health) {
             BatteryManager.BATTERY_HEALTH_GOOD -> BatteryHealth.GOOD
@@ -268,5 +274,7 @@ open class GenericBatterySource(
     companion object {
         private const val TAG = "GenericBatterySource"
         protected const val POLLING_INTERVAL_MS = 2000L
+        private const val SAMSUNG_STABLE_READING_THRESHOLD = 3
+        private const val SAMSUNG_SUSPICIOUS_CONSTANT_CURRENT_MA = 3000
     }
 }

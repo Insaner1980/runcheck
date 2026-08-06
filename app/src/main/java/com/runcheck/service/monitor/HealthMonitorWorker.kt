@@ -182,16 +182,7 @@ class HealthMonitorWorker
         private suspend fun collectStep(
             stepName: String,
             block: suspend () -> Unit,
-        ): Boolean =
-            try {
-                block()
-                false
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                ReleaseSafeLog.error(TAG, "Health monitor step failed: $stepName", e)
-                true
-            }
+        ): Boolean = collectWorkerStep(TAG, "Health monitor", stepName, block)
 
         private fun buildSnapshot(
             batteryState: BatteryState,

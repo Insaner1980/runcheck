@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -51,11 +49,12 @@ import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.common.resolve
+import com.runcheck.ui.components.CenteredLoadingState
+import com.runcheck.ui.components.CenteredRetryState
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.ProFeatureLockedState
-import com.runcheck.ui.theme.runcheckCardColors
-import com.runcheck.ui.theme.runcheckCardElevation
+import com.runcheck.ui.components.RuncheckCard
 import com.runcheck.ui.theme.spacing
 import kotlin.math.max
 
@@ -84,9 +83,7 @@ fun ChargerComparisonScreen(
                         title = stringResource(R.string.charger_title),
                         onBack = onBack,
                     )
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
+                    CenteredLoadingState(description = stringResource(R.string.a11y_loading))
                 }
 
                 is ChargerUiState.Error -> {
@@ -94,14 +91,7 @@ fun ChargerComparisonScreen(
                         title = stringResource(R.string.charger_title),
                         onBack = onBack,
                     )
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(state.message.resolve())
-                            TextButton(onClick = { viewModel.refresh() }) {
-                                Text(stringResource(R.string.common_retry))
-                            }
-                        }
-                    }
+                    CenteredRetryState(message = state.message.resolve(), onRetry = viewModel::refresh)
                 }
 
                 is ChargerUiState.Success -> {
@@ -267,7 +257,7 @@ private fun SelectedChargerCard(
     hasActiveSession: Boolean,
     onClearSelectedCharger: () -> Unit,
 ) {
-    InfoCardContainer {
+    RuncheckCard {
         Text(
             text = stringResource(R.string.charger_selection_title),
             style = MaterialTheme.typography.titleSmall,
@@ -304,7 +294,7 @@ private fun SelectedChargerCard(
 
 @Composable
 private fun EmptyStateCard() {
-    InfoCardContainer {
+    RuncheckCard {
         Text(
             text = stringResource(R.string.charger_no_chargers),
             style = MaterialTheme.typography.titleMedium,
@@ -325,7 +315,7 @@ private fun HistoricalComparisonCard(chargers: List<ChargerSummary>) {
     val maxValue = remember(values) { max(1, values.maxOrNull() ?: 1) }
     val sortedChargers = remember(chargers) { chargers.sortedByDescending(::chargerComparisonValue) }
 
-    InfoCardContainer {
+    RuncheckCard {
         Text(
             text = stringResource(R.string.charger_historical_title),
             style = MaterialTheme.typography.titleMedium,
@@ -417,86 +407,74 @@ private fun ChargerCard(
             stringResource(R.string.charger_last_test, formatted)
         }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.base),
+    RuncheckCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
+                Text(
+                    text = charger.chargerName,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                selectedLabel?.let {
                     Text(
-                        text = charger.chargerName,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    selectedLabel?.let {
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        imageVector = Icons.Outlined.Delete,
-                        contentDescription = stringResource(R.string.charger_delete),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-
-            Text(
-                text =
-                    pluralStringResource(
-                        R.plurals.charger_sessions,
-                        charger.sessionCount,
-                        charger.sessionCount,
-                    ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-
-            Text(
-                text = latestResultLabel(charger),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-
-            lastUsedText?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            IconButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Outlined.Delete,
+                    contentDescription = stringResource(R.string.charger_delete),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
 
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
 
-            OutlinedButton(
-                onClick = buttonAction,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(text = buttonText)
-            }
+        Text(
+            text =
+                pluralStringResource(
+                    R.plurals.charger_sessions,
+                    charger.sessionCount,
+                    charger.sessionCount,
+                ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+
+        Text(
+            text = latestResultLabel(charger),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+
+        lastUsedText?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+
+        OutlinedButton(
+            onClick = buttonAction,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(text = buttonText)
         }
     }
 }
@@ -559,24 +537,6 @@ private fun DeleteChargerDialog(
             }
         },
     )
-}
-
-@Composable
-private fun InfoCardContainer(content: @Composable ColumnScope.() -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.base),
-            content = content,
-        )
-    }
 }
 
 private fun chargerComparisonValue(charger: ChargerSummary): Int = charger.avgPowerMw ?: charger.avgChargingSpeedMa ?: 0

@@ -102,6 +102,15 @@ class NetworkViewModelTest {
         mainDispatcherRule.testDispatcher.scheduler.runCurrent()
     }
 
+    private fun prepareSpeedTest(): MutableSharedFlow<SpeedTestProgress> =
+        MutableSharedFlow<SpeedTestProgress>().also { speedTestFlow ->
+            every { getMeasuredNetworkState() } returns MutableStateFlow(testNetworkState)
+            every { runSpeedTest(any()) } returns speedTestFlow
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceNetworkSample()
+        }
+
     @Test
     fun `initial state is Loading`() {
         every { getMeasuredNetworkState() } returns emptyFlow()
@@ -161,14 +170,7 @@ class NetworkViewModelTest {
     @Test
     fun `speed test transitions through phases correctly`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            every { getMeasuredNetworkState() } returns MutableStateFlow(testNetworkState)
-
-            val speedTestFlow = MutableSharedFlow<SpeedTestProgress>()
-            every { runSpeedTest(any()) } returns speedTestFlow
-
-            viewModel = createViewModel()
-            viewModel.startObserving()
-            advanceNetworkSample()
+            val speedTestFlow = prepareSpeedTest()
 
             // Start speed test
             viewModel.startSpeedTest()
@@ -240,14 +242,7 @@ class NetworkViewModelTest {
     @Test
     fun `second speed test call is ignored while running`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            every { getMeasuredNetworkState() } returns MutableStateFlow(testNetworkState)
-
-            val speedTestFlow = MutableSharedFlow<SpeedTestProgress>()
-            every { runSpeedTest(any()) } returns speedTestFlow
-
-            viewModel = createViewModel()
-            viewModel.startObserving()
-            advanceNetworkSample()
+            prepareSpeedTest()
 
             // Start first speed test
             viewModel.startSpeedTest()

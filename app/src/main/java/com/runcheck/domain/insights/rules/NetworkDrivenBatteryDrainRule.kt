@@ -7,7 +7,6 @@ import com.runcheck.domain.insights.analysis.TimeWindowAligner
 import com.runcheck.domain.insights.analysis.dischargingPairs
 import com.runcheck.domain.insights.analysis.toDrainSample
 import com.runcheck.domain.insights.analysis.toTimeIntervals
-import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.model.InsightCandidate
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
@@ -27,23 +26,14 @@ class NetworkDrivenBatteryDrainRule
         private val networkRepository: NetworkRepository,
         private val batteryDrainAnalyzer: BatteryDrainAnalyzer,
         private val timeWindowAligner: TimeWindowAligner,
-    ) : InsightRule {
-        override val ruleId: String = RULE_ID
+    ) : ContextualBatteryDrainRule<NetworkDrainSamples>(RULE_ID) {
+        override fun createCandidate(
+            now: Long,
+            comparison: DrainRateComparison,
+            samples: NetworkDrainSamples,
+        ): InsightCandidate = createInsightCandidate(now, comparison, samples.averageWeakSignal, samples.confidence)
 
-        override suspend fun evaluate(now: Long): List<InsightCandidate> = buildCandidate(now)?.let(::listOf).orEmpty()
-
-        private suspend fun buildCandidate(now: Long): InsightCandidate? {
-            val input = loadInput(now) ?: return null
-            val samples = classifyDrainSamples(input)
-            val comparison = samples.compareDrainRates() ?: return null
-
-            return buildCandidate(
-                now = now,
-                comparison = comparison,
-                averageWeakSignal = samples.averageWeakSignal,
-                confidence = samples.confidence,
-            )
-        }
+        override suspend fun loadSamples(now: Long): NetworkDrainSamples? = loadInput(now)?.let(::classifyDrainSamples)
 
         private suspend fun loadInput(now: Long): NetworkDrainInput? {
             val batteryReadings = batteryRepository.getReadingsSinceSync(now - LOOKBACK_MS)
@@ -98,16 +88,17 @@ class NetworkDrivenBatteryDrainRule
             )
         }
 
-        private fun NetworkDrainSamples.compareDrainRates(): DrainRateComparison? =
-            takeIf { it.hasEnoughSamples }
+        override fun compareSamples(samples: NetworkDrainSamples): DrainRateComparison? =
+            samples
+                .takeIf { it.hasEnoughSamples }
                 ?.let {
                     batteryDrainAnalyzer.compareAverageDrainRates(
-                        currentSamples = weakDrainSamples,
-                        previousSamples = strongDrainSamples,
+                        currentSamples = samples.weakDrainSamples,
+                        previousSamples = samples.strongDrainSamples,
                     )
                 }?.takeIf { it.changeRatio >= MINIMUM_DRAIN_RATIO }
 
-        private fun buildCandidate(
+        private fun createInsightCandidate(
             now: Long,
             comparison: DrainRateComparison,
             averageWeakSignal: Int,
@@ -189,7 +180,7 @@ private data class NetworkDrainInput(
     val networkReadings: List<NetworkReading>,
 )
 
-private data class NetworkDrainSamples(
+data class NetworkDrainSamples(
     val weakDrainSamples: List<DrainSample>,
     val strongDrainSamples: List<DrainSample>,
     val weakSignals: List<Int>,

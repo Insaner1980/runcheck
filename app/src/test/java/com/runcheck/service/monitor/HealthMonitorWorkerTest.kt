@@ -93,18 +93,10 @@ class HealthMonitorWorkerTest {
         runTest {
             val worker =
                 createWorker(
-                    batteryStateFlow =
-                        flow {
-                            error("battery failed")
-                        },
+                    batteryStateFlow = failingFlow("battery failed"),
                 )
 
-            val result = worker.doWork()
-
-            assertEquals(ListenableWorker.Result.retry(), result)
-            coVerify(exactly = 0) { monitoringStatusRepository.setLastWorkerHeartbeat(any()) }
-            coVerify(exactly = 0) { batteryRepository.saveReading(any()) }
-            coVerify(exactly = 0) { monitoringAlertStateStore.update(any(), any()) }
+            assertRetryWithoutCoreCollection(worker)
         }
 
     @Test
@@ -112,17 +104,10 @@ class HealthMonitorWorkerTest {
         runTest {
             val worker =
                 createWorker(
-                    preferencesFlow =
-                        flow {
-                            error("preferences failed")
-                        },
+                    preferencesFlow = failingFlow("preferences failed"),
                 )
 
-            val result = worker.doWork()
-
-            assertEquals(ListenableWorker.Result.retry(), result)
-            coVerify(exactly = 0) { monitoringStatusRepository.setLastWorkerHeartbeat(any()) }
-            coVerify(exactly = 0) { batteryRepository.saveReading(any()) }
+            assertRetryWithoutCoreCollection(worker)
             coVerify(exactly = 0) { networkRepository.saveReading(any()) }
             coVerify(exactly = 0) { thermalRepository.saveReading(any()) }
             coVerify(exactly = 0) { storageRepository.saveReading(any()) }
@@ -133,7 +118,7 @@ class HealthMonitorWorkerTest {
         runTest {
             val worker =
                 createWorker(
-                    thermalStateFlow = flow { error("thermal failed") },
+                    thermalStateFlow = failingFlow("thermal failed"),
                 )
 
             val result = worker.doWork()
@@ -152,7 +137,7 @@ class HealthMonitorWorkerTest {
             val worker =
                 createWorker(
                     runAttemptCount = 3,
-                    thermalStateFlow = flow { error("thermal failed") },
+                    thermalStateFlow = failingFlow("thermal failed"),
                 )
 
             val result = worker.doWork()
@@ -195,6 +180,15 @@ class HealthMonitorWorkerTest {
             monitoringAlertStateStore = monitoringAlertStateStore,
             notificationHelper = notificationHelper,
         )
+    }
+
+    private fun <T> failingFlow(message: String): Flow<T> = flow { error(message) }
+
+    private suspend fun assertRetryWithoutCoreCollection(worker: HealthMonitorWorker) {
+        assertEquals(ListenableWorker.Result.retry(), worker.doWork())
+        coVerify(exactly = 0) { monitoringStatusRepository.setLastWorkerHeartbeat(any()) }
+        coVerify(exactly = 0) { batteryRepository.saveReading(any()) }
+        coVerify(exactly = 0) { monitoringAlertStateStore.update(any(), any()) }
     }
 
     private companion object {

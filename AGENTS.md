@@ -37,6 +37,7 @@ Dependency injection: Hilt. Database: Room. UI: Jetpack Compose + Material 3.
 - Database: Room
 - Preferences: DataStore
 - UI: Jetpack Compose + Material 3
+- Shared orchestration: insight rules extend `SingleCandidateInsightRule` or its specialized bases, while reusable screen, card, and chart structure lives in `ui/components/` and `ui/chart/`; extend these primitives instead of copying their pipelines
 - Background work: WorkManager
 - Widgets: Glance
 - Speed test: M-Lab NDT7 (`ndt7-client-android`)
@@ -113,6 +114,11 @@ State restoration conventions:
 
 ## Local Check Tooling
 
+- `config/android-check.json` is the source of truth for module and Gradle-task coverage; `config/check-exceptions.json` owns exact, time-bounded scanner exceptions.
+- MobSF-poikkeukset ovat täsmällisiä rule+`findingPath`-pareja. `.mobsf` ei saa piilottaa targetSdk-sääntöä globaalisti, koska silloin saman säännön todellinen löydös toisessa tiedostossa jäisi näkymättä.
+- Shared wrappers publish atomic run reports and use exit 0 for clean, 1 for findings, and 2 for technical/configuration errors.
+- Plain `ql` checks both the GitHub default-branch CodeQL baseline and current local Java/Kotlin/Gradle inputs, running the locked local CLI automatically when the verified remote SHA does not cover them. `-CurrentCommit` remains a legacy remote-scope override.
+- `tools/sonar.ps1` requires explicit `-AllowExternalUpload`; use `-PlanOnly` to inspect the intended external operation without uploading.
 PowerShell wrappers live in `tools/` and forward through `tools\Invoke-RuncheckProjectCheck.ps1`. The helper resolves the shared Android-check repository from `ANDROID_CHECK_ROOT` first, then from a sibling `Android-check` checkout next to `runcheck`.
 
 - `lc` / `tools\lc.ps1` — ktlint, detekt, Android lint; writes `reports\ktlint.txt`, `reports\detekt.txt`, and `reports\lint.txt`
@@ -122,7 +128,7 @@ PowerShell wrappers live in `tools/` and forward through `tools\Invoke-RuncheckP
 - `ds` / `tools\ds.ps1` — DeepSec custom scan/report/revalidate paths
 - `ms` / `tools\ms.ps1` — mobsfscan
 - `os` / `tools\os.ps1` — OSV Scanner
-- `ql` / `tools\ql.ps1` — CodeQL workflow/status check through GitHub tooling
+- `ql` / `tools\ql.ps1` — GitHub CodeQL baseline plus automatic current local-input analysis
 - `db` / `tools\db.ps1` — Dependabot config and alert check
 - `pc` / `tools\pc.ps1` — PMD CPD duplicate scan; runcheckin oletuskynnys on 100 tokenia, ja sen voi ohittaa `PMD_CPD_MINIMUM_TOKENS`-ympäristömuuttujalla
 - `cs` / `tools\cs.ps1` — Compose Stability Analyzer (`:app:stabilityCheck`)
@@ -138,6 +144,8 @@ Report-reading phrase conventions live in `PROJECT.md` under "Report-reading con
 
 When `osv-scanner`, gitleaks, TruffleHog, or PMD are missing from `PATH`, the shared Android-check wrappers may download and cache verified tool binaries under `.gradle\android-check-tools\`; offline first runs can therefore skip or fail before a cached tool exists. The OSV source scan excludes `.deepsec` so Android-check's own DeepSec tooling dependencies do not fail app dependency scans.
 
+Build-tool transitive security versions are centralized as `runcheck.buildTools.*` properties in `gradle.properties`. Root `build.gradle.kts` applies them only to the affected build, lint, ktlint, and Unified Test Platform configurations; do not replace this with app-runtime-wide forcing or package-level OSV suppression.
+
 Do not run the heavy `lc`, `sc`, Sonar, Dependency-Check, MobSF, DeepSec, or full Gradle verification paths unless the user explicitly asks or they are required to unblock the task. Prefer `-PlanOnly`, task listing, targeted config checks, and narrow tests first.
 
 Project-specific check configuration lives in:
@@ -148,7 +156,7 @@ Project-specific check configuration lives in:
 - `.deepsec\`
 - `.github\dependabot.yml`
 
-Compose-rules versions are intentionally split while the project stays on Detekt 1.23.8: ktlint uses the current 0.5.x line with ktlint explicitly pinned to the compatible 1.8.x rule engine, and Detekt uses the latest 0.4.x line compatible with Detekt 1.x. Do not move Detekt compose-rules to 0.5.x without a Detekt 2.x migration.
+Detekt uses the `dev.detekt` 2.x plugin (`2.0.0-alpha.5`) and both ktlint and Detekt use compose-rules `0.6.3`; ktlint's rule engine is pinned to `1.8.0`. The earlier Compose Stability Analyzer compatibility exception is resolved: analyzer `0.12.0` supports the Kotlin `2.4.10` toolchain, and both the debug and release stability variants regenerate without crashing, so the toolchain now tracks the verified current line.
 
 ---
 

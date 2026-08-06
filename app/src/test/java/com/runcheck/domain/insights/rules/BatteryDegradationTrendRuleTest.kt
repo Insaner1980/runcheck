@@ -14,19 +14,9 @@ class BatteryDegradationTrendRuleTest {
     @Test
     fun `emits high priority battery insight when current week drains faster than previous week`() =
         runTest {
-            val now = WINDOW_MS * 3
-            val previousWindowStart = now - (WINDOW_MS * 2)
-            val currentWindowStart = now - WINDOW_MS
-            val readings =
-                windowReadings(previousWindowStart, startLevel = 100, dropPerSample = 1) +
-                    windowReadings(currentWindowStart, startLevel = 100, dropPerSample = 3)
-            val rule =
-                BatteryDegradationTrendRule(
-                    batteryRepository = TestBatteryRepository(readings),
-                    batteryDrainAnalyzer = BatteryDrainAnalyzer(),
-                )
+            val rule = degradationRule(comparisonReadings(previousDrop = 1, currentDrop = 3))
 
-            val result = rule.evaluate(now)
+            val result = rule.evaluate(NOW)
 
             assertEquals(1, result.size)
             val insight = result.single()
@@ -42,20 +32,10 @@ class BatteryDegradationTrendRuleTest {
     @Test
     fun `keeps dedupe key stable when evaluation time moves within the same finding`() =
         runTest {
-            val now = WINDOW_MS * 3
-            val previousWindowStart = now - (WINDOW_MS * 2)
-            val currentWindowStart = now - WINDOW_MS
-            val readings =
-                windowReadings(previousWindowStart, startLevel = 100, dropPerSample = 1) +
-                    windowReadings(currentWindowStart, startLevel = 100, dropPerSample = 3)
-            val rule =
-                BatteryDegradationTrendRule(
-                    batteryRepository = TestBatteryRepository(readings),
-                    batteryDrainAnalyzer = BatteryDrainAnalyzer(),
-                )
+            val rule = degradationRule(comparisonReadings(previousDrop = 1, currentDrop = 3))
 
-            val firstKey = rule.evaluate(now).single().dedupeKey
-            val nextRunKey = rule.evaluate(now + 1).single().dedupeKey
+            val firstKey = rule.evaluate(NOW).single().dedupeKey
+            val nextRunKey = rule.evaluate(NOW + 1).single().dedupeKey
 
             assertEquals(firstKey, nextRunKey)
         }
@@ -63,91 +43,55 @@ class BatteryDegradationTrendRuleTest {
     @Test
     fun `changes dedupe key when degradation moves to another severity bucket`() =
         runTest {
-            val now = WINDOW_MS * 3
-            val previousWindowStart = now - (WINDOW_MS * 2)
-            val currentWindowStart = now - WINDOW_MS
-            val previousReadings = windowReadings(previousWindowStart, startLevel = 100, dropPerSample = 1)
-            val moderateRule =
-                BatteryDegradationTrendRule(
-                    batteryRepository =
-                        TestBatteryRepository(
-                            previousReadings +
-                                windowReadings(currentWindowStart, startLevel = 100, dropPerSample = 2),
-                        ),
-                    batteryDrainAnalyzer = BatteryDrainAnalyzer(),
-                )
-            val severeRule =
-                BatteryDegradationTrendRule(
-                    batteryRepository =
-                        TestBatteryRepository(
-                            previousReadings +
-                                windowReadings(currentWindowStart, startLevel = 100, dropPerSample = 3),
-                        ),
-                    batteryDrainAnalyzer = BatteryDrainAnalyzer(),
-                )
+            val moderateRule = degradationRule(comparisonReadings(previousDrop = 1, currentDrop = 2))
+            val severeRule = degradationRule(comparisonReadings(previousDrop = 1, currentDrop = 3))
 
-            assertEquals("battery_degradation:100plus", moderateRule.evaluate(now).single().dedupeKey)
-            assertEquals("battery_degradation:200plus", severeRule.evaluate(now).single().dedupeKey)
+            assertEquals("battery_degradation:100plus", moderateRule.evaluate(NOW).single().dedupeKey)
+            assertEquals("battery_degradation:200plus", severeRule.evaluate(NOW).single().dedupeKey)
         }
 
     @Test
     fun `returns empty when either comparison window has too few discharging readings`() =
         runTest {
-            val now = WINDOW_MS * 3
-            val previousWindowStart = now - (WINDOW_MS * 2)
-            val currentWindowStart = now - WINDOW_MS
-            val readings =
-                windowReadings(previousWindowStart, startLevel = 100, dropPerSample = 1, count = 20) +
-                    windowReadings(currentWindowStart, startLevel = 100, dropPerSample = 3, count = 10)
-            val rule =
-                BatteryDegradationTrendRule(
-                    batteryRepository = TestBatteryRepository(readings),
-                    batteryDrainAnalyzer = BatteryDrainAnalyzer(),
-                )
+            val readings = comparisonReadings(previousDrop = 1, currentDrop = 3, currentCount = 10)
+            val rule = degradationRule(readings)
 
-            assertTrue(rule.evaluate(now).isEmpty())
+            assertTrue(rule.evaluate(NOW).isEmpty())
         }
 
     @Test
     fun `returns empty when drain increase is below threshold`() =
         runTest {
-            val now = WINDOW_MS * 3
-            val previousWindowStart = now - (WINDOW_MS * 2)
-            val currentWindowStart = now - WINDOW_MS
-            val readings =
-                windowReadings(previousWindowStart, startLevel = 100, dropPerSample = 2) +
-                    windowReadings(currentWindowStart, startLevel = 100, dropPerSample = 2)
-            val rule =
-                BatteryDegradationTrendRule(
-                    batteryRepository = TestBatteryRepository(readings),
-                    batteryDrainAnalyzer = BatteryDrainAnalyzer(),
-                )
+            val rule = degradationRule(comparisonReadings(previousDrop = 2, currentDrop = 2))
 
-            assertTrue(rule.evaluate(now).isEmpty())
+            assertTrue(rule.evaluate(NOW).isEmpty())
         }
 
     @Test
     fun `does not treat charging transition as battery drain`() =
         runTest {
-            val now = WINDOW_MS * 3
-            val previousWindowStart = now - (WINDOW_MS * 2)
-            val currentWindowStart = now - WINDOW_MS
-            val currentReadings = windowReadings(currentWindowStart, startLevel = 50, dropPerSample = 0)
+            val currentReadings = windowReadings(CURRENT_WINDOW_START, startLevel = 50, dropPerSample = 0)
             val readings =
-                windowReadings(previousWindowStart, startLevel = 100, dropPerSample = 1) +
+                windowReadings(PREVIOUS_WINDOW_START, startLevel = 100, dropPerSample = 1) +
                     batteryReading(
-                        timestamp = currentWindowStart + 1,
+                        timestamp = CURRENT_WINDOW_START + 1,
                         level = 100,
                     ).copy(status = "CHARGING") +
                     currentReadings
-            val rule =
-                BatteryDegradationTrendRule(
-                    batteryRepository = TestBatteryRepository(readings),
-                    batteryDrainAnalyzer = BatteryDrainAnalyzer(),
-                )
+            val rule = degradationRule(readings)
 
-            assertTrue(rule.evaluate(now).isEmpty())
+            assertTrue(rule.evaluate(NOW).isEmpty())
         }
+
+    private fun comparisonReadings(
+        previousDrop: Int,
+        currentDrop: Int,
+        currentCount: Int = 20,
+    ) = windowReadings(PREVIOUS_WINDOW_START, 100, previousDrop) +
+        windowReadings(CURRENT_WINDOW_START, 100, currentDrop, currentCount)
+
+    private fun degradationRule(readings: List<BatteryReading>) =
+        BatteryDegradationTrendRule(TestBatteryRepository(readings), BatteryDrainAnalyzer())
 
     private fun windowReadings(
         start: Long,
@@ -166,5 +110,8 @@ class BatteryDegradationTrendRuleTest {
 
     private companion object {
         private const val WINDOW_MS = 7L * 24L * 60L * 60L * 1000L
+        private const val NOW = WINDOW_MS * 3
+        private const val PREVIOUS_WINDOW_START = NOW - (WINDOW_MS * 2)
+        private const val CURRENT_WINDOW_START = NOW - WINDOW_MS
     }
 }

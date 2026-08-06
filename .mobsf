@@ -10,14 +10,6 @@ ignore-paths:
   - .deepsec/findings
   - .deepsec/node_modules
   - app/schemas
-  - app/src/test
-  - app/src/androidTest
-
-ignore-rules:
-  # targetSdk comes from Gradle preview SDK settings, not only from the source manifest.
-  - android_task_hijacking2
-  # This heuristic treats ordinary resource, state, cache, and Compose keys as credentials.
-  - android_kotlin_hardcoded
 
 severity-filter:
   - WARNING

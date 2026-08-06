@@ -27,7 +27,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Android
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -63,12 +62,13 @@ import com.runcheck.R
 import com.runcheck.domain.model.AppBatteryUsage
 import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.resolve
+import com.runcheck.ui.components.CenteredLoadingState
+import com.runcheck.ui.components.CenteredRetryState
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.IconCircle
 import com.runcheck.ui.components.ProFeatureLockedState
-import com.runcheck.ui.theme.runcheckCardColors
-import com.runcheck.ui.theme.runcheckCardElevation
+import com.runcheck.ui.components.RuncheckCard
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 import kotlinx.coroutines.CoroutineDispatcher
@@ -98,20 +98,11 @@ fun AppUsageScreen(
         ContentContainer {
             when (val state = uiState) {
                 is AppUsageUiState.Loading -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
+                    CenteredLoadingState(description = stringResource(R.string.a11y_loading))
                 }
 
                 is AppUsageUiState.Error -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(state.message.resolve())
-                            TextButton(onClick = { viewModel.refresh() }) {
-                                Text(stringResource(R.string.common_retry))
-                            }
-                        }
-                    }
+                    CenteredRetryState(message = state.message.resolve(), onRetry = viewModel::refresh)
                 }
 
                 is AppUsageUiState.Success -> {
@@ -180,48 +171,37 @@ private fun AppUsageContent(
         when {
             !hasUsageAccess -> {
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.large,
-                        colors = runcheckCardColors(),
-                        elevation = runcheckCardElevation(),
+                    RuncheckCard(
+                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
                     ) {
-                        Column(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(MaterialTheme.spacing.base),
-                            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+                        Text(
+                            text = stringResource(R.string.app_usage_permission_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = stringResource(R.string.app_usage_permission_message),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        TextButton(
+                            onClick = {
+                                try {
+                                    context.startActivity(
+                                        Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(
+                                            Intent.FLAG_ACTIVITY_NEW_TASK,
+                                        ),
+                                    )
+                                } catch (_: ActivityNotFoundException) {
+                                    context.startActivity(
+                                        Intent(Settings.ACTION_SETTINGS).addFlags(
+                                            Intent.FLAG_ACTIVITY_NEW_TASK,
+                                        ),
+                                    )
+                                }
+                            },
                         ) {
-                            Text(
-                                text = stringResource(R.string.app_usage_permission_title),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = stringResource(R.string.app_usage_permission_message),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            TextButton(
-                                onClick = {
-                                    try {
-                                        context.startActivity(
-                                            Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(
-                                                Intent.FLAG_ACTIVITY_NEW_TASK,
-                                            ),
-                                        )
-                                    } catch (_: ActivityNotFoundException) {
-                                        context.startActivity(
-                                            Intent(Settings.ACTION_SETTINGS).addFlags(
-                                                Intent.FLAG_ACTIVITY_NEW_TASK,
-                                            ),
-                                        )
-                                    }
-                                },
-                            ) {
-                                Text(stringResource(R.string.app_usage_permission_open_settings))
-                            }
+                            Text(stringResource(R.string.app_usage_permission_open_settings))
                         }
                     }
                 }
@@ -243,27 +223,16 @@ private fun AppUsageContent(
 
             appItems.loadState.refresh is LoadState.Error && appItems.itemCount == 0 -> {
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.large,
-                        colors = runcheckCardColors(),
-                        elevation = runcheckCardElevation(),
+                    RuncheckCard(
+                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
                     ) {
-                        Column(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(MaterialTheme.spacing.base),
-                            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-                        ) {
-                            Text(
-                                text = stringResource(R.string.common_error_generic),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            TextButton(onClick = { appItems.retry() }) {
-                                Text(stringResource(R.string.common_retry))
-                            }
+                        Text(
+                            text = stringResource(R.string.common_error_generic),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        TextButton(onClick = { appItems.retry() }) {
+                            Text(stringResource(R.string.common_retry))
                         }
                     }
                 }
@@ -271,32 +240,21 @@ private fun AppUsageContent(
 
             appItems.itemCount == 0 -> {
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.large,
-                        colors = runcheckCardColors(),
-                        elevation = runcheckCardElevation(),
+                    RuncheckCard(
+                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
                     ) {
-                        Column(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(MaterialTheme.spacing.base),
-                            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-                        ) {
-                            Text(
-                                text = stringResource(R.string.app_usage_no_data),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = stringResource(R.string.app_usage_no_data_message),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            TextButton(onClick = onRefresh) {
-                                Text(stringResource(R.string.common_retry))
-                            }
+                        Text(
+                            text = stringResource(R.string.app_usage_no_data),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = stringResource(R.string.app_usage_no_data_message),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        TextButton(onClick = onRefresh) {
+                            Text(stringResource(R.string.common_retry))
                         }
                     }
                 }
@@ -345,84 +303,73 @@ private fun AppUsageItem(
             (progress * 100).roundToInt(),
         )
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
+    RuncheckCard(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Column(
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AppIcon(packageName = app.packageName)
+                Spacer(modifier = Modifier.width(MaterialTheme.spacing.sm))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = app.appLabel,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text =
+                            if (hours > 0) {
+                                stringResource(R.string.app_usage_time_hours_minutes, hours, minutes)
+                            } else {
+                                stringResource(R.string.app_usage_time_minutes, minutes)
+                            },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Text(
+                text =
+                    stringResource(
+                        R.string.app_usage_percent,
+                        percentOfTotal.roundToInt(),
+                    ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        LinearProgressIndicator(
+            progress = { progress },
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    AppIcon(packageName = app.packageName)
-                    Spacer(modifier = Modifier.width(MaterialTheme.spacing.sm))
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
-                        Text(
-                            text = app.appLabel,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text =
-                                if (hours > 0) {
-                                    stringResource(R.string.app_usage_time_hours_minutes, hours, minutes)
-                                } else {
-                                    stringResource(R.string.app_usage_time_minutes, minutes)
-                                },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-                Text(
-                    text =
-                        stringResource(
-                            R.string.app_usage_percent,
-                            percentOfTotal.roundToInt(),
-                        ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+                    .height(4.dp)
+                    .semantics {
+                        contentDescription = progressDescription
+                        progressBarRangeInfo =
+                            androidx.compose.ui.semantics
+                                .ProgressBarRangeInfo(progress, 0f..1f)
+                    },
+            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+        )
 
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(4.dp)
-                        .semantics {
-                            contentDescription = progressDescription
-                            progressBarRangeInfo =
-                                androidx.compose.ui.semantics
-                                    .ProgressBarRangeInfo(progress, 0f..1f)
-                        },
-                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+        app.estimatedDrainMah?.let { drain ->
+            Text(
+                text = stringResource(R.string.app_usage_drain, drain.toDouble()),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-
-            app.estimatedDrainMah?.let { drain ->
-                Text(
-                    text = stringResource(R.string.app_usage_drain, drain.toDouble()),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
     }
 }

@@ -2,7 +2,6 @@ package com.runcheck.domain.insights.rules
 
 import com.runcheck.domain.insights.analysis.StorageFillProjection
 import com.runcheck.domain.insights.analysis.StorageGrowthAnalyzer
-import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.model.InsightCandidate
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
@@ -16,25 +15,24 @@ import javax.inject.Inject
 class StoragePressureImpactRule
     @Inject
     constructor(
-        private val storageRepository: StorageRepository,
-        private val storageGrowthAnalyzer: StorageGrowthAnalyzer,
+        storageRepository: StorageRepository,
+        storageGrowthAnalyzer: StorageGrowthAnalyzer,
         private val healthScoreCalculator: HealthScoreCalculator,
-    ) : InsightRule {
-        override val ruleId: String = RULE_ID
-
-        override suspend fun evaluate(now: Long): List<InsightCandidate> = buildCandidate(now)?.let(::listOf).orEmpty()
-
-        private suspend fun buildCandidate(now: Long): InsightCandidate? {
-            val readings = storageRepository.getReadingsSinceSync(now - LOOKBACK_MS)
-            if (readings.size < MINIMUM_READING_COUNT) return null
-
-            val projection = storageGrowthAnalyzer.calculateProjection(readings) ?: return null
-            if (projection.daysUntilFull > MAX_DAYS_UNTIL_FULL) return null
-
+    ) : StoragePressureInsightRule(
+            ruleId = RULE_ID,
+            repository = storageRepository,
+            analyzer = storageGrowthAnalyzer,
+            maxDaysUntilFull = MAX_DAYS_UNTIL_FULL,
+        ) {
+        override fun buildStorageCandidate(
+            now: Long,
+            readingCount: Int,
+            projection: StorageFillProjection,
+        ): InsightCandidate? {
             val storageScore = healthScoreCalculator.calculateStorageScore(projection.toStorageState())
             if (storageScore > MAX_STORAGE_SCORE_FOR_INSIGHT) return null
 
-            return projection.toCandidate(now, storageScore, readings.size)
+            return projection.toCandidate(now, storageScore, readingCount)
         }
 
         private fun StorageFillProjection.toStorageState(): StorageState =
@@ -64,7 +62,7 @@ class StoragePressureImpactRule
                 bodyArgs = listOf(storageScore.toString(), estimate),
                 generatedAt = now,
                 expiresAt = now + TTL_MS,
-                dataWindowStart = now - LOOKBACK_MS,
+                dataWindowStart = now - STORAGE_PRESSURE_LOOKBACK_MS,
                 dataWindowEnd = latest.timestamp,
                 target = InsightTarget.STORAGE,
             )
@@ -85,9 +83,7 @@ class StoragePressureImpactRule
 
             private const val TITLE_KEY = "insight_storage_impact_title"
             private const val BODY_KEY = "insight_storage_impact_body"
-            private const val LOOKBACK_MS = 14L * 24L * 60L * 60L * 1000L
             private const val TTL_MS = 24L * 60L * 60L * 1000L
-            private const val MINIMUM_READING_COUNT = 4
             private const val MAX_DAYS_UNTIL_FULL = 45L
             private const val HIGH_PRIORITY_DAYS = 14L
             private const val MAX_STORAGE_SCORE_FOR_INSIGHT = 65

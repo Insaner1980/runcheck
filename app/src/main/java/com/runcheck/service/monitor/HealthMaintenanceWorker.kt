@@ -47,16 +47,7 @@ class HealthMaintenanceWorker
         private suspend fun collectStep(
             stepName: String,
             block: suspend () -> Unit,
-        ): Boolean =
-            try {
-                block()
-                false
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                ReleaseSafeLog.error(TAG, "Health maintenance step failed: $stepName", e)
-                true
-            }
+        ): Boolean = collectWorkerStep(TAG, "Health maintenance", stepName, block)
 
         companion object {
             const val WORK_NAME = "health_maintenance"

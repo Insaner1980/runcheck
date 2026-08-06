@@ -10,6 +10,14 @@ import kotlin.math.pow
 class ThemeContrastTest {
     @Test
     fun `documented text and status combinations meet WCAG AA`() {
+        listOf(
+            TileBattery,
+            TileNetwork,
+            TileThermal,
+            TileStorage,
+        ).forEach { categoryColor ->
+            assertContrastAtLeast(BgPage, categoryColor, 4.5)
+        }
         assertContrastAtLeast(TextOnLime, AccentLime, 4.5)
         assertContrastAtLeast(BgPage, AccentAmber, 4.5)
         listOf(

@@ -30,8 +30,7 @@ import com.runcheck.R
 import com.runcheck.pro.ProState
 import com.runcheck.pro.ProStatus
 import com.runcheck.pro.TrialManager
-import com.runcheck.ui.theme.runcheckCardColors
-import com.runcheck.ui.theme.runcheckCardElevation
+import com.runcheck.ui.components.RuncheckClickableCard
 import com.runcheck.ui.theme.statusColors
 
 @Composable
@@ -57,78 +56,68 @@ fun TrialHomeCard(
             (progress * 100).toInt(),
         )
 
-    Card(
+    RuncheckClickableCard(
         onClick = onNavigateToProUpgrade,
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
+        modifier = modifier,
     ) {
-        Column(
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text =
+                    if (isUrgent) {
+                        stringResource(R.string.trial_ends_tomorrow)
+                    } else {
+                        pluralStringResource(
+                            R.plurals.trial_days_remaining,
+                            proState.trialDaysRemaining,
+                            proState.trialDaysRemaining,
+                        )
+                    },
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = accentColor,
+            )
+
+            if (isUrgent) {
+                TextButton(onClick = onNavigateToProUpgrade) {
+                    Text(
+                        text = stringResource(R.string.trial_keep_pro),
+                        color = accentColor,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        LinearProgressIndicator(
+            progress = { progress },
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text =
-                        if (isUrgent) {
-                            stringResource(R.string.trial_ends_tomorrow)
-                        } else {
-                            pluralStringResource(
-                                R.plurals.trial_days_remaining,
-                                proState.trialDaysRemaining,
-                                proState.trialDaysRemaining,
-                            )
-                        },
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = accentColor,
-                )
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .semantics {
+                        contentDescription = progressDescription
+                        progressBarRangeInfo =
+                            androidx.compose.ui.semantics
+                                .ProgressBarRangeInfo(progress, 0f..1f)
+                    },
+            color = accentColor,
+            trackColor = accentColor.copy(alpha = 0.2f),
+        )
 
-                if (isUrgent) {
-                    TextButton(onClick = onNavigateToProUpgrade) {
-                        Text(
-                            text = stringResource(R.string.trial_keep_pro),
-                            color = accentColor,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                }
-            }
+        Spacer(modifier = Modifier.height(4.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .semantics {
-                            contentDescription = progressDescription
-                            progressBarRangeInfo =
-                                androidx.compose.ui.semantics
-                                    .ProgressBarRangeInfo(progress, 0f..1f)
-                        },
-                color = accentColor,
-                trackColor = accentColor.copy(alpha = 0.2f),
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = stringResource(R.string.trial_pro_trial_label),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Text(
+            text = stringResource(R.string.trial_pro_trial_label),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -139,42 +128,32 @@ fun PostExpirationUpgradeCard(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    RuncheckClickableCard(
         onClick = onNavigateToProUpgrade,
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
+        modifier = modifier,
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+        Text(
+            text =
+                if (formattedPrice != null) {
+                    stringResource(R.string.trial_expired_upgrade_with_price, formattedPrice)
+                } else {
+                    stringResource(R.string.trial_expired_upgrade)
+                },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
         ) {
-            Text(
-                text =
-                    if (formattedPrice != null) {
-                        stringResource(R.string.trial_expired_upgrade_with_price, formattedPrice)
-                    } else {
-                        stringResource(R.string.trial_expired_upgrade)
-                    },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                TextButton(onClick = onDismiss) {
-                    Text(
-                        text = stringResource(R.string.trial_dismiss),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = stringResource(R.string.trial_dismiss),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

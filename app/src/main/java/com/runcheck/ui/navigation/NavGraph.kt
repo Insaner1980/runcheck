@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -59,6 +60,33 @@ fun RuncheckNavHost(
     val reducedMotion = LocalReducedMotion.current
     val proState by proStateProvider.proState.collectAsStateWithLifecycle()
     val proAccessReady by proStateProvider.proAccessReady.collectAsStateWithLifecycle()
+    val insightNavigationHandlers =
+        remember(navController) {
+            InsightNavigationHandlers(
+                onNavigateToBattery = { navController.navigateSingleTop(Screen.Battery.route) },
+                onNavigateToNetwork = { navController.navigateSingleTop(Screen.Network.route) },
+                onNavigateToThermal = { navController.navigateSingleTop(Screen.Thermal.route) },
+                onNavigateToStorage = { navController.navigateSingleTop(Screen.Storage.route) },
+                onNavigateToCharger = {
+                    navController.navigateNested(
+                        parentRoute = Screen.Battery.route,
+                        childRoute = Screen.Charger.route,
+                    )
+                },
+                onNavigateToAppUsage = { navController.navigateSingleTop(Screen.AppUsage.route) },
+                onNavigateToProUpgrade = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
+            )
+        }
+    val navigateToFullscreen: (String, String, String) -> Unit =
+        remember(navController) {
+            { source, metric, period ->
+                navController.navigateSingleTop(Screen.FullscreenChart(source, metric, period).route)
+            }
+        }
+    val navigateToLearnArticle: (String) -> Unit =
+        remember(navController) {
+            { articleId -> navController.navigateSingleTop(Screen.LearnArticle(articleId).route) }
+        }
 
     // Navigate to the deep-link screen and consume so it doesn't re-fire
     val currentOnConsumeDeepLink by rememberUpdatedState(onConsumeDeepLink)
@@ -118,110 +146,57 @@ fun RuncheckNavHost(
     ) {
         composable(Screen.Home.route) {
             HomeScreen(
-                onNavigateToBattery = { navController.navigateSingleTop(Screen.Battery.route) },
-                onNavigateToNetwork = { navController.navigateSingleTop(Screen.Network.route) },
-                onNavigateToThermal = { navController.navigateSingleTop(Screen.Thermal.route) },
-                onNavigateToStorage = { navController.navigateSingleTop(Screen.Storage.route) },
-                onNavigateToCharger = {
-                    navController.navigateNested(
-                        parentRoute = Screen.Battery.route,
-                        childRoute = Screen.Charger.route,
-                    )
-                },
+                onNavigateToBattery = insightNavigationHandlers.onNavigateToBattery,
+                onNavigateToNetwork = insightNavigationHandlers.onNavigateToNetwork,
+                onNavigateToThermal = insightNavigationHandlers.onNavigateToThermal,
+                onNavigateToStorage = insightNavigationHandlers.onNavigateToStorage,
+                onNavigateToCharger = insightNavigationHandlers.onNavigateToCharger,
                 onNavigateToSpeedTest = {
                     navController.navigateNested(
                         parentRoute = Screen.Network.route,
                         childRoute = Screen.SpeedTest.route,
                     )
                 },
-                onNavigateToAppUsage = { navController.navigateSingleTop(Screen.AppUsage.route) },
+                onNavigateToAppUsage = insightNavigationHandlers.onNavigateToAppUsage,
                 onNavigateToInsights = { navController.navigateSingleTop(Screen.Insights.route) },
                 onNavigateToSettings = { navController.navigateSingleTop(Screen.Settings.route) },
-                onNavigateToProUpgrade = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
+                onNavigateToProUpgrade = insightNavigationHandlers.onNavigateToProUpgrade,
                 onNavigateToLearn = { navController.navigateSingleTop(Screen.Learn.route) },
-                onNavigateToLearnArticle = { articleId ->
-                    navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
-                },
+                onNavigateToLearnArticle = navigateToLearnArticle,
             )
         }
         composable(Screen.Insights.route) {
-            val insightNavigationHandlers =
-                remember(navController) {
-                    InsightNavigationHandlers(
-                        onNavigateToBattery = { navController.navigateSingleTop(Screen.Battery.route) },
-                        onNavigateToNetwork = { navController.navigateSingleTop(Screen.Network.route) },
-                        onNavigateToThermal = { navController.navigateSingleTop(Screen.Thermal.route) },
-                        onNavigateToStorage = { navController.navigateSingleTop(Screen.Storage.route) },
-                        onNavigateToCharger = {
-                            navController.navigateNested(
-                                parentRoute = Screen.Battery.route,
-                                childRoute = Screen.Charger.route,
-                            )
-                        },
-                        onNavigateToAppUsage = { navController.navigateSingleTop(Screen.AppUsage.route) },
-                        onNavigateToProUpgrade = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
-                    )
-                }
             InsightsScreen(
                 onBack = { navController.popBackStack() },
                 navigationHandlers = insightNavigationHandlers,
             )
         }
         composable(Screen.Battery.route) { entry ->
-            val resultSource by entry.savedStateHandle
-                .getStateFlow<String?>(FullscreenChartResult.KEY_SOURCE, null)
-                .collectAsStateWithLifecycle()
-            val resultMetric by entry.savedStateHandle
-                .getStateFlow<String?>(FullscreenChartResult.KEY_METRIC, null)
-                .collectAsStateWithLifecycle()
-            val resultPeriod by entry.savedStateHandle
-                .getStateFlow<String?>(FullscreenChartResult.KEY_PERIOD, null)
-                .collectAsStateWithLifecycle()
+            val fullscreenResult = entry.rememberFullscreenChartResult()
             BatteryDetailScreen(
                 onBack = { navController.popBackStack() },
                 onNavigateToCharger = { navController.navigateSingleTop(Screen.Charger.route) },
                 onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
-                onNavigateToFullscreen = { source, metric, period ->
-                    navController.navigateSingleTop(Screen.FullscreenChart(source, metric, period).route)
-                },
-                onNavigateToLearnArticle = { articleId ->
-                    navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
-                },
-                fullscreenResultSource = resultSource,
-                fullscreenResultMetric = resultMetric,
-                fullscreenResultPeriod = resultPeriod,
-                onConsumeFullscreenResult = {
-                    entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_SOURCE)
-                    entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_METRIC)
-                    entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_PERIOD)
-                },
+                onNavigateToFullscreen = navigateToFullscreen,
+                onNavigateToLearnArticle = navigateToLearnArticle,
+                fullscreenResultSource = fullscreenResult.source,
+                fullscreenResultMetric = fullscreenResult.metric,
+                fullscreenResultPeriod = fullscreenResult.period,
+                onConsumeFullscreenResult = entry::consumeFullscreenChartResult,
             )
         }
         composable(Screen.Network.route) { entry ->
             val networkViewModel: NetworkViewModel = hiltViewModel(entry)
-            val resultMetric by entry.savedStateHandle
-                .getStateFlow<String?>(FullscreenChartResult.KEY_METRIC, null)
-                .collectAsStateWithLifecycle()
-            val resultPeriod by entry.savedStateHandle
-                .getStateFlow<String?>(FullscreenChartResult.KEY_PERIOD, null)
-                .collectAsStateWithLifecycle()
+            val fullscreenResult = entry.rememberFullscreenChartResult()
             NetworkDetailScreen(
                 onBack = { navController.popBackStack() },
                 onNavigateToSpeedTest = { navController.navigateSingleTop(Screen.SpeedTest.route) },
                 onUpgradeToPro = { navController.navigateSingleTop(Screen.ProUpgrade.route) },
-                onNavigateToFullscreen = { source, metric, period ->
-                    navController.navigateSingleTop(Screen.FullscreenChart(source, metric, period).route)
-                },
-                onNavigateToLearnArticle = { articleId ->
-                    navController.navigateSingleTop(Screen.LearnArticle(articleId).route)
-                },
-                fullscreenResultMetric = resultMetric,
-                fullscreenResultPeriod = resultPeriod,
-                onConsumeFullscreenResult = {
-                    entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_SOURCE)
-                    entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_METRIC)
-                    entry.savedStateHandle.remove<String>(FullscreenChartResult.KEY_PERIOD)
-                },
+                onNavigateToFullscreen = navigateToFullscreen,
+                onNavigateToLearnArticle = navigateToLearnArticle,
+                fullscreenResultMetric = fullscreenResult.metric,
+                fullscreenResultPeriod = fullscreenResult.period,
+                onConsumeFullscreenResult = entry::consumeFullscreenChartResult,
                 viewModel = networkViewModel,
             )
         }
@@ -387,6 +362,32 @@ fun RuncheckNavHost(
             )
         }
     }
+}
+
+private data class FullscreenChartResultState(
+    val source: String?,
+    val metric: String?,
+    val period: String?,
+)
+
+@Composable
+private fun NavBackStackEntry.rememberFullscreenChartResult(): FullscreenChartResultState {
+    val source by savedStateHandle
+        .getStateFlow<String?>(FullscreenChartResult.KEY_SOURCE, null)
+        .collectAsStateWithLifecycle()
+    val metric by savedStateHandle
+        .getStateFlow<String?>(FullscreenChartResult.KEY_METRIC, null)
+        .collectAsStateWithLifecycle()
+    val period by savedStateHandle
+        .getStateFlow<String?>(FullscreenChartResult.KEY_PERIOD, null)
+        .collectAsStateWithLifecycle()
+    return FullscreenChartResultState(source, metric, period)
+}
+
+private fun NavBackStackEntry.consumeFullscreenChartResult() {
+    savedStateHandle.remove<String>(FullscreenChartResult.KEY_SOURCE)
+    savedStateHandle.remove<String>(FullscreenChartResult.KEY_METRIC)
+    savedStateHandle.remove<String>(FullscreenChartResult.KEY_PERIOD)
 }
 
 @Composable

@@ -65,6 +65,14 @@ fun ProgressRing(
                     cap = StrokeCap.Round,
                 )
             val padding = strokeWidth.toPx() / 2f
+            val arcTopLeft =
+                androidx.compose.ui.geometry
+                    .Offset(padding, padding)
+            val arcSize =
+                androidx.compose.ui.geometry.Size(
+                    size.width - strokeWidth.toPx(),
+                    size.height - strokeWidth.toPx(),
+                )
 
             // Track (full circle)
             drawArc(
@@ -73,14 +81,8 @@ fun ProgressRing(
                 sweepAngle = 360f,
                 useCenter = false,
                 style = stroke,
-                topLeft =
-                    androidx.compose.ui.geometry
-                        .Offset(padding, padding),
-                size =
-                    androidx.compose.ui.geometry.Size(
-                        size.width - strokeWidth.toPx(),
-                        size.height - strokeWidth.toPx(),
-                    ),
+                topLeft = arcTopLeft,
+                size = arcSize,
             )
 
             // Progress arc (from top, clockwise)
@@ -90,14 +92,8 @@ fun ProgressRing(
                 sweepAngle = animatedProgress * 360f,
                 useCenter = false,
                 style = stroke,
-                topLeft =
-                    androidx.compose.ui.geometry
-                        .Offset(padding, padding),
-                size =
-                    androidx.compose.ui.geometry.Size(
-                        size.width - strokeWidth.toPx(),
-                        size.height - strokeWidth.toPx(),
-                    ),
+                topLeft = arcTopLeft,
+                size = arcSize,
             )
         }
         content()

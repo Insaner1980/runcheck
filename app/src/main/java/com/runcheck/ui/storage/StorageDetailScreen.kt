@@ -12,7 +12,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,7 +31,6 @@ import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -71,6 +69,7 @@ import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.TrashInfo
 import com.runcheck.ui.chart.ChartStatsRow
+import com.runcheck.ui.chart.HistoryChartContent
 import com.runcheck.ui.chart.HistoryPeriodFilterChipRow
 import com.runcheck.ui.chart.MAX_STORAGE_HISTORY_POINTS
 import com.runcheck.ui.chart.StorageHistoryMetric
@@ -91,6 +90,8 @@ import com.runcheck.ui.common.rememberSaveableEnumState
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ActionCard
 import com.runcheck.ui.components.CardSectionTitle
+import com.runcheck.ui.components.CenteredLoadingState
+import com.runcheck.ui.components.CenteredRetryState
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.ListRow
@@ -98,8 +99,10 @@ import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.components.ProFeatureCalloutCard
+import com.runcheck.ui.components.ProgressHeroMetric
 import com.runcheck.ui.components.ProgressRing
-import com.runcheck.ui.components.PullToRefreshWrapper
+import com.runcheck.ui.components.RefreshableDetailColumn
+import com.runcheck.ui.components.RuncheckCard
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SegmentData
 import com.runcheck.ui.components.SegmentedBar
@@ -118,8 +121,6 @@ import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
 import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
 import com.runcheck.ui.theme.numericRingValueTextStyle
-import com.runcheck.ui.theme.runcheckCardColors
-import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.runcheckHeroCardColors
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColorForStoragePercent
@@ -235,29 +236,11 @@ fun StorageDetailScreen(
         ContentContainer {
             when (val state = uiState) {
                 is StorageUiState.Loading -> {
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .semantics {
-                                contentDescription = loadingDescription
-                                liveRegion =
-                                    LiveRegionMode.Polite
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                    CenteredLoadingState(description = loadingDescription)
                 }
 
                 is StorageUiState.Error -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(state.message.resolve())
-                            TextButton(onClick = { viewModel.refresh() }) {
-                                Text(stringResource(R.string.common_retry))
-                            }
-                        }
-                    }
+                    CenteredRetryState(message = state.message.resolve(), onRetry = viewModel::refresh)
                 }
 
                 is StorageUiState.Success -> {
@@ -345,49 +328,38 @@ private fun StorageContent(
     var activeInfoSheet by rememberInfoSheetState()
     val storage = state.storageState
 
-    PullToRefreshWrapper(
+    RefreshableDetailColumn(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
-        ) {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-            StorageOverviewSection(
-                state = state,
-                storage = storage,
-                mediaAccessState = mediaAccessState,
-                hasAllMediaPermissions = hasAllMediaPermissions,
-                shouldOpenMediaSettings = shouldOpenMediaSettings,
-                onRequestMediaPermissions = onRequestMediaPermissions,
-                onDismissInfoCard = onDismissInfoCard,
-                onNavigateToLearnArticle = onNavigateToLearnArticle,
-                onInfoClick = { activeInfoSheet = it },
-            )
+        StorageOverviewSection(
+            state = state,
+            storage = storage,
+            mediaAccessState = mediaAccessState,
+            hasAllMediaPermissions = hasAllMediaPermissions,
+            shouldOpenMediaSettings = shouldOpenMediaSettings,
+            onRequestMediaPermissions = onRequestMediaPermissions,
+            onDismissInfoCard = onDismissInfoCard,
+            onNavigateToLearnArticle = onNavigateToLearnArticle,
+            onInfoClick = { activeInfoSheet = it },
+        )
 
-            StorageToolsSection(
-                state = state,
-                storage = storage,
-                onPeriodChange = onPeriodChange,
-                onNavigateToCleanup = onNavigateToCleanup,
-                onEmptyTrash = onEmptyTrash,
-                onUpgradeToPro = onUpgradeToPro,
-            )
+        StorageToolsSection(
+            state = state,
+            storage = storage,
+            onPeriodChange = onPeriodChange,
+            onNavigateToCleanup = onNavigateToCleanup,
+            onEmptyTrash = onEmptyTrash,
+            onUpgradeToPro = onUpgradeToPro,
+        )
 
-            StorageFooterSection(
-                storage = storage,
-                onNavigateToLearnArticle = onNavigateToLearnArticle,
-                onInfoClick = { activeInfoSheet = it },
-            )
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
-        }
+        StorageFooterSection(
+            storage = storage,
+            onNavigateToLearnArticle = onNavigateToLearnArticle,
+            onInfoClick = { activeInfoSheet = it },
+        )
     }
 
     InfoSheetHost(
@@ -530,57 +502,46 @@ private fun StorageMediaPermissionCard(
     shouldOpenSettings: Boolean,
     onAction: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
+    RuncheckCard(
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-        ) {
+        Text(
+            text =
+                stringResource(
+                    if (partialAccess) {
+                        R.string.storage_media_permission_partial_title
+                    } else {
+                        R.string.storage_media_permission_title
+                    },
+                ),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text =
+                stringResource(
+                    if (partialAccess) {
+                        R.string.storage_media_permission_partial_message
+                    } else {
+                        R.string.storage_media_permission_message
+                    },
+                ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(onClick = onAction) {
             Text(
                 text =
                     stringResource(
-                        if (partialAccess) {
-                            R.string.storage_media_permission_partial_title
+                        if (shouldOpenSettings) {
+                            R.string.storage_media_permission_open_settings
+                        } else if (partialAccess) {
+                            R.string.storage_media_permission_manage_selection
                         } else {
-                            R.string.storage_media_permission_title
+                            R.string.storage_media_permission_grant
                         },
                     ),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
             )
-            Text(
-                text =
-                    stringResource(
-                        if (partialAccess) {
-                            R.string.storage_media_permission_partial_message
-                        } else {
-                            R.string.storage_media_permission_message
-                        },
-                    ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            TextButton(onClick = onAction) {
-                Text(
-                    text =
-                        stringResource(
-                            if (shouldOpenSettings) {
-                                R.string.storage_media_permission_open_settings
-                            } else if (partialAccess) {
-                                R.string.storage_media_permission_manage_selection
-                            } else {
-                                R.string.storage_media_permission_grant
-                            },
-                        ),
-                )
-            }
         }
     }
 }
@@ -615,124 +576,90 @@ private fun StorageHeroCard(
             freeSummary
         }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
+    RuncheckCard(
         colors = runcheckHeroCardColors(),
-        elevation = runcheckCardElevation(),
-        shape = MaterialTheme.shapes.large,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
         Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
+            SectionHeader(text = stringResource(R.string.storage_title))
+
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
+
+            ProgressHeroMetric(
+                progress = storage.usagePercent / 100f,
+                value = usagePercent.toString(),
+                unit = stringResource(R.string.unit_percent),
+                progressColor = statusColorForStoragePercent(usagePercent),
+                contentDescription =
+                    stringResource(
+                        R.string.a11y_progress_percent,
+                        stringResource(R.string.storage_title),
+                        usagePercent,
+                    ),
             ) {
-                SectionHeader(text = stringResource(R.string.storage_title))
+                Text(
+                    text = usageSummary,
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = MaterialTheme.numericFontFamily,
+                        ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = statusText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
 
+            if (liveUsagePercent.size >= 2) {
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
-
-                Row(
+                LiveChart(
+                    data = liveUsagePercent,
+                    currentValueLabel = stringResource(R.string.value_percent, usagePercent),
+                    label = stringResource(R.string.storage_used),
+                    lineColor = statusColorForStoragePercent(usagePercent),
+                    yMin = 0f,
+                    yMax = 100f,
+                    accessibilityDescription =
+                        stringResource(
+                            R.string.a11y_chart_trend,
+                            stringResource(R.string.storage_used),
+                        ),
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg),
-                ) {
-                    // Smaller decorative ring
-                    ProgressRing(
-                        progress = (storage.usagePercent / 100f).coerceIn(0f, 1f),
-                        modifier = Modifier.size(100.dp),
-                        strokeWidth = 6.dp,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        progressColor = statusColorForStoragePercent(usagePercent),
-                        contentDescription =
-                            stringResource(
-                                R.string.a11y_progress_percent,
-                                stringResource(R.string.storage_title),
-                                usagePercent,
-                            ),
-                    ) {}
+                )
+            }
 
-                    // Large typographic value
-                    Column {
-                        Row(verticalAlignment = Alignment.Bottom) {
-                            Text(
-                                text = usagePercent.toString(),
-                                style = MaterialTheme.numericHeroDisplayTextStyle,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = stringResource(R.string.unit_percent),
-                                style = MaterialTheme.numericHeroDisplayUnitTextStyle,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 2.dp, bottom = 12.dp),
-                            )
-                        }
-                        Text(
-                            text = usageSummary,
-                            style =
-                                MaterialTheme.typography.bodyMedium.copy(
-                                    fontFamily = MaterialTheme.numericFontFamily,
-                                ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = statusText,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
 
-                if (liveUsagePercent.size >= 2) {
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
-                    LiveChart(
-                        data = liveUsagePercent,
-                        currentValueLabel = stringResource(R.string.value_percent, usagePercent),
-                        label = stringResource(R.string.storage_used),
-                        lineColor = statusColorForStoragePercent(usagePercent),
-                        yMin = 0f,
-                        yMax = 100f,
-                        accessibilityDescription =
-                            stringResource(
-                                R.string.a11y_chart_trend,
-                                stringResource(R.string.storage_used),
-                            ),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-                    verticalAlignment = Alignment.Top,
-                ) {
-                    storage.totalCacheBytes?.let { cache ->
-                        MetricPill(
-                            label = stringResource(R.string.storage_cache_total),
-                            value = formatStorageSize(context, cache),
-                            modifier = Modifier.weight(1f),
-                            onInfoClick = { onInfoClick("cache") },
-                        )
-                    }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
+                verticalAlignment = Alignment.Top,
+            ) {
+                storage.totalCacheBytes?.let { cache ->
                     MetricPill(
-                        label = stringResource(R.string.storage_fill_rate),
-                        value =
-                            storage.fillRateEstimate?.let { stringResource(R.string.unit_approx_prefix, it) }
-                                ?: stringResource(R.string.battery_estimating),
+                        label = stringResource(R.string.storage_cache_total),
+                        value = formatStorageSize(context, cache),
                         modifier = Modifier.weight(1f),
-                        onInfoClick = { onInfoClick("fillRate") },
-                    )
-                    MetricPill(
-                        label = stringResource(R.string.storage_available),
-                        value = freeFormatted,
-                        modifier = Modifier.weight(1f),
+                        onInfoClick = { onInfoClick("cache") },
                     )
                 }
+                MetricPill(
+                    label = stringResource(R.string.storage_fill_rate),
+                    value =
+                        storage.fillRateEstimate?.let { stringResource(R.string.unit_approx_prefix, it) }
+                            ?: stringResource(R.string.battery_estimating),
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("fillRate") },
+                )
+                MetricPill(
+                    label = stringResource(R.string.storage_available),
+                    value = freeFormatted,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }
@@ -828,78 +755,36 @@ private fun StorageHistoryCard(
             )
         }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
-        shape = MaterialTheme.shapes.large,
+    RuncheckCard(
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-        ) {
-            CardSectionTitle(text = stringResource(R.string.storage_history))
+        CardSectionTitle(text = stringResource(R.string.storage_history))
 
-            EnumFilterChipRow(
-                values = StorageHistoryMetric.entries,
-                selected = metric,
-                onSelect = { selectedMetricState.value = it },
-                labelFor = { storageHistoryMetricLabel(it) },
-            )
+        EnumFilterChipRow(
+            values = StorageHistoryMetric.entries,
+            selected = metric,
+            onSelect = { selectedMetricState.value = it },
+            labelFor = { storageHistoryMetricLabel(it) },
+        )
 
-            HistoryPeriodFilterChipRow(
-                selected = selectedPeriod,
-                onSelect = onPeriodChange,
-            )
+        HistoryPeriodFilterChipRow(
+            selected = selectedPeriod,
+            onSelect = onPeriodChange,
+        )
 
-            HistoryLoadErrorMessage(error = historyLoadError)
+        HistoryLoadErrorMessage(error = historyLoadError)
 
-            if (chartModel.chartData.size >= 2) {
-                val chartAccessibilitySummary =
-                    rememberChartAccessibilitySummary(
-                        title =
-                            stringResource(
-                                R.string.fullscreen_chart_title_storage,
-                                storageHistoryMetricLabel(metric),
-                            ),
-                        chartData = chartModel.chartData,
-                        unit = chartModel.unit,
-                        decimals = chartModel.tooltipDecimals,
-                        timeContext =
-                            stringResource(
-                                R.string.a11y_chart_context_history,
-                                historyPeriodLabel(selectedPeriod),
-                            ),
-                    )
-
-                Text(
-                    text = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${storageHistoryMetricLabel(metric)}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                TrendChart(
-                    data = chartModel.chartData,
-                    modifier = Modifier.fillMaxWidth(),
-                    contentDescription = chartAccessibilitySummary,
-                    yLabels = chartModel.yLabels.ifEmpty { null },
-                    xLabels = chartModel.xLabels.ifEmpty { null },
-                    showGrid = true,
-                    qualityZones = storageQualityZones(metric),
-                    tooltipFormatter = { index -> formatChartTooltip(chartModel, index) },
-                )
-
-                ChartStatsRow(chartModel = chartModel)
-            } else {
-                Text(
-                    text = stringResource(R.string.network_history_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+        HistoryChartContent(
+            accessibilityTitle =
+                stringResource(
+                    R.string.fullscreen_chart_title_storage,
+                    storageHistoryMetricLabel(metric),
+                ),
+            label = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${storageHistoryMetricLabel(metric)}",
+            periodLabel = historyPeriodLabel(selectedPeriod),
+            chartModel = chartModel,
+            qualityZones = storageQualityZones(metric),
+        )
     }
 }
 

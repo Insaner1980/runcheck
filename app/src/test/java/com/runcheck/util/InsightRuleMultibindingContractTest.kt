@@ -1,5 +1,6 @@
 package com.runcheck.util
 
+import com.runcheck.testutil.findAppDir
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -109,13 +110,6 @@ class InsightRuleMultibindingContractTest {
             .filterValues { it > 1 }
             .map { (name, count) -> "$name x$count" }
 
-    private fun findAppDir(): Path {
-        val start = Paths.get("").toAbsolutePath()
-        return generateSequence(start) { it.parent }
-            .flatMap { path -> sequenceOf(path, path.resolve("app")) }
-            .first { Files.exists(it.resolve("src/main/res")) && Files.exists(it.resolve("build.gradle.kts")) }
-    }
-
     private data class InsightRuleSource(
         val className: String,
         val ruleId: String?,
@@ -123,7 +117,7 @@ class InsightRuleMultibindingContractTest {
 
     private companion object {
         val insightRuleClassPattern =
-            Regex("""\b(?:class|object)\s+(\w+)\b(?:[^({]*:\s*InsightRule\b|[^{]*\)\s*:\s*InsightRule\b)""")
+            Regex("""\b(?:(?<!abstract )class|object)\s+(\w+Rule)\b""")
         val insightRuleBindingPattern = Regex("""fun\s+bind\w+\(rule:\s*(\w+)\):\s*InsightRule""")
         val ruleIdPattern = Regex("const\\s+val\\s+RULE_ID\\s*=\\s*\"([^\"]+)\"")
     }

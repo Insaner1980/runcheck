@@ -308,7 +308,7 @@ class BillingManager
                         PurchaseEvent.Error(
                             billingMessageFor(
                                 responseCode = result.responseCode,
-                                debugMessage = result.debugMessage,
+                                subResponseCode = result.onPurchasesUpdatedSubResponseCode,
                             ),
                         ),
                     )
@@ -350,7 +350,7 @@ class BillingManager
                         PurchaseEvent.Error(
                             billingMessageFor(
                                 responseCode = billingResult.responseCode,
-                                debugMessage = billingResult.debugMessage,
+                                subResponseCode = billingResult.onPurchasesUpdatedSubResponseCode,
                             ),
                         ),
                     )
@@ -362,7 +362,7 @@ class BillingManager
                         PurchaseEvent.Error(
                             billingMessageFor(
                                 responseCode = billingResult.responseCode,
-                                debugMessage = billingResult.debugMessage,
+                                subResponseCode = billingResult.onPurchasesUpdatedSubResponseCode,
                             ),
                         ),
                     )
@@ -388,12 +388,23 @@ class BillingManager
 
             return when {
                 purchased.isNotEmpty() -> {
-                    updateProState(true)
-                    if (emitEvents) _purchaseEvents.tryEmit(PurchaseEvent.Success)
-                    purchased
-                        .filter { !it.isAcknowledged }
-                        .forEach { acknowledgePurchaseWithRetry(it) }
-                    ProPurchaseRefreshResult.ACTIVE
+                    val acknowledgementResults =
+                        purchased.map { purchase ->
+                            purchase.isAcknowledged || acknowledgePurchaseWithRetry(purchase)
+                        }
+                    if (acknowledgementResults.any { it }) {
+                        updateProState(true)
+                        if (emitEvents) _purchaseEvents.tryEmit(PurchaseEvent.Success)
+                        ProPurchaseRefreshResult.ACTIVE
+                    } else {
+                        updateProState(false)
+                        if (emitEvents) {
+                            _purchaseEvents.tryEmit(
+                                PurchaseEvent.Error(context.getString(R.string.billing_purchase_error)),
+                            )
+                        }
+                        ProPurchaseRefreshResult.UNAVAILABLE
+                    }
                 }
 
                 pending.isNotEmpty() -> {
@@ -409,35 +420,28 @@ class BillingManager
             }
         }
 
-        private suspend fun acknowledgePurchaseWithRetry(purchase: Purchase) {
+        private suspend fun acknowledgePurchaseWithRetry(purchase: Purchase): Boolean {
             val params =
                 AcknowledgePurchaseParams
                     .newBuilder()
                     .setPurchaseToken(purchase.purchaseToken)
                     .build()
-
-            repeat(MAX_ACK_RETRIES) { attempt ->
-                val client = billingClient ?: return
-                try {
-                    val result =
-                        suspendCancellableCoroutine { cont ->
-                            client.acknowledgePurchase(params) { billingResult ->
-                                cont.resume(billingResult)
-                            }
+            val client = billingClient ?: return false
+            val acknowledged =
+                retryBillingAcknowledgement(
+                    maxRetries = MAX_ACK_RETRIES,
+                    retryBaseDelayMs = ACK_RETRY_BASE_DELAY_MS,
+                ) {
+                    suspendCancellableCoroutine { cont ->
+                        client.acknowledgePurchase(params) { billingResult ->
+                            cont.resume(billingResult)
                         }
-                    if (result.responseCode == BillingClient.BillingResponseCode.OK) {
-                        return
                     }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    // Fall through to retry
                 }
-                if (attempt < MAX_ACK_RETRIES - 1) {
-                    delay(ACK_RETRY_BASE_DELAY_MS * (1L shl attempt))
-                }
+            if (!acknowledged) {
+                ReleaseSafeLog.error(TAG, "Failed to acknowledge purchase after $MAX_ACK_RETRIES attempts")
             }
-            ReleaseSafeLog.error(TAG, "Failed to acknowledge purchase after $MAX_ACK_RETRIES attempts")
+            return acknowledged
         }
 
         private fun updateProState(isPro: Boolean) {
@@ -474,11 +478,10 @@ class BillingManager
 
         private fun billingMessageFor(
             responseCode: Int,
-            debugMessage: String,
+            subResponseCode: Int,
         ): String {
-            val fallback = debugMessage.ifBlank { context.getString(R.string.billing_purchase_error) }
-            val messageRes = billingMessageResFor(responseCode)
-            return if (messageRes != null) context.getString(messageRes) else fallback
+            val messageRes = billingMessageResFor(responseCode, subResponseCode)
+            return context.getString(messageRes ?: R.string.billing_purchase_error)
         }
 
         @Synchronized
@@ -511,6 +514,31 @@ internal fun reconnectableBillingResponseCodes(): Set<Int> =
         BillingClient.BillingResponseCode.ERROR,
     )
 
+internal suspend fun retryBillingAcknowledgement(
+    maxRetries: Int,
+    retryBaseDelayMs: Long,
+    acknowledge: suspend () -> BillingResult,
+): Boolean {
+    require(maxRetries > 0) { "maxRetries must be positive" }
+    require(retryBaseDelayMs >= 0L) { "retryBaseDelayMs must not be negative" }
+
+    repeat(maxRetries) { attempt ->
+        try {
+            if (acknowledge().responseCode == BillingClient.BillingResponseCode.OK) {
+                return true
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Retry transient acknowledgement failures below.
+        }
+        if (attempt < maxRetries - 1) {
+            delay(retryBaseDelayMs * (1L shl attempt))
+        }
+    }
+    return false
+}
+
 internal fun nonReadyBillingResponseCodes(): Set<Int> =
     setOf(
         BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
@@ -522,7 +550,29 @@ internal fun nonReadyBillingResponseCodes(): Set<Int> =
         BillingClient.BillingResponseCode.USER_CANCELED,
     )
 
-internal fun billingMessageResFor(responseCode: Int): Int? =
+internal fun billingMessageResFor(
+    responseCode: Int,
+    subResponseCode: Int = BillingClient.OnPurchasesUpdatedSubResponseCode.NO_APPLICABLE_SUB_RESPONSE_CODE,
+): Int? =
+    billingSubResponseMessageResFor(subResponseCode)
+        ?: billingResponseMessageResFor(responseCode)
+
+private fun billingSubResponseMessageResFor(subResponseCode: Int): Int? =
+    when (subResponseCode) {
+        BillingClient.OnPurchasesUpdatedSubResponseCode.PAYMENT_DECLINED_DUE_TO_INSUFFICIENT_FUNDS -> {
+            R.string.billing_insufficient_funds
+        }
+
+        BillingClient.OnPurchasesUpdatedSubResponseCode.USER_INELIGIBLE -> {
+            R.string.billing_user_ineligible
+        }
+
+        else -> {
+            null
+        }
+    }
+
+private fun billingResponseMessageResFor(responseCode: Int): Int? =
     when (responseCode) {
         BillingClient.BillingResponseCode.NETWORK_ERROR -> R.string.billing_network_error
 

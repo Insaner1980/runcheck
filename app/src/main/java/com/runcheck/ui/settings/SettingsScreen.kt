@@ -32,7 +32,6 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -83,13 +82,14 @@ import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.MetricPillRow
+import com.runcheck.ui.components.RuncheckCard
+import com.runcheck.ui.components.ScrollableDetailColumn
 import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.theme.numericFontFamily
-import com.runcheck.ui.theme.runcheckCardColors
-import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.uiTokens
@@ -262,14 +262,7 @@ fun SettingsScreen(
         DetailTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
 
         ContentContainer {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = MaterialTheme.spacing.base),
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
-            ) {
+            ScrollableDetailColumn {
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                 MonitoringSection(
                     context = context,
@@ -438,11 +431,7 @@ private fun SettingsMeasurementSection( // NOSONAR
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
-                verticalAlignment = Alignment.Top,
-            ) {
+            MetricPillRow(spacing = MaterialTheme.spacing.md) {
                 MetricPill(
                     label = stringResource(R.string.settings_api_level_label),
                     value = androidVersionName(profile.apiLevel),
@@ -469,11 +458,7 @@ private fun SettingsMeasurementSection( // NOSONAR
                 )
             }
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
-                verticalAlignment = Alignment.Top,
-            ) {
+            MetricPillRow(spacing = MaterialTheme.spacing.md) {
                 MetricPill(
                     label = stringResource(R.string.settings_cycle_count_label),
                     value =
@@ -495,11 +480,7 @@ private fun SettingsMeasurementSection( // NOSONAR
                 )
             }
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
-                verticalAlignment = Alignment.Top,
-            ) {
+            MetricPillRow(spacing = MaterialTheme.spacing.md) {
                 val memoryInfo =
                     remember {
                         val activityManager =
@@ -634,16 +615,7 @@ private fun OpenSourceLicensesDialog(onDismiss: () -> Unit) {
 
 @Composable
 internal fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
-    Card(
-        shape = MaterialTheme.shapes.large,
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.base),
-            content = content,
-        )
-    }
+    RuncheckCard(content = content)
 }
 
 @Composable

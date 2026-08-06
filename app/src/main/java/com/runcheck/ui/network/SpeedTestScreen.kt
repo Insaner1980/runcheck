@@ -14,6 +14,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -71,7 +72,6 @@ import com.runcheck.R
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SpeedTestResult
-import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.connectionDisplayLabel
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.rememberFormattedDateTime
@@ -80,6 +80,10 @@ import com.runcheck.ui.components.AnimatedFloatText
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.MetricPillRow
+import com.runcheck.ui.components.ObservedScreenScaffold
+import com.runcheck.ui.components.RuncheckCard
+import com.runcheck.ui.components.RuncheckCardSurface
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
@@ -103,17 +107,12 @@ fun SpeedTestScreen(
     val speedTestState by viewModel.speedTestState.collectAsStateWithLifecycle()
     val loadingDescription = stringResource(R.string.a11y_loading)
 
-    LifecycleStartStopEffect(
+    ObservedScreenScaffold(
         onStart = viewModel::startObserving,
         onStop = viewModel::stopObserving,
-    )
-
-    Column(modifier = modifier.fillMaxSize()) {
-        DetailTopBar(
-            title = stringResource(R.string.speed_test_title),
-            onBack = onBack,
-        )
-
+        modifier = modifier,
+        topBar = { DetailTopBar(title = stringResource(R.string.speed_test_title), onBack = onBack) },
+    ) {
         ContentContainer {
             when (val netState = networkUiState) {
                 is NetworkUiState.Loading -> {
@@ -274,12 +273,7 @@ private fun NetworkContextPanel(networkState: NetworkState) {
             }
         }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
-    ) {
+    RuncheckCardSurface {
         Row(
             modifier =
                 Modifier
@@ -579,27 +573,13 @@ private fun SpeedTestHero(
             }
 
             state.phase == SpeedTestPhase.Completed -> {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    AnimatedFloatText(
-                        value = centerValue,
-                        style = MaterialTheme.numericSpeedHeroValueTextStyle,
-                        decimalPlaces = 1,
-                    )
-                    Text(
-                        text = stringResource(R.string.unit_mbps),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                    Text(
-                        text = stringResource(R.string.speed_test_run_again),
-                        style =
-                            MaterialTheme.typography.labelMedium.copy(
-                                fontWeight = FontWeight.SemiBold,
-                            ),
-                        color = accent,
-                    )
-                }
+                SpeedHeroValue(
+                    value = centerValue,
+                    footer = stringResource(R.string.speed_test_run_again),
+                    footerColor = accent,
+                    footerSpacing = MaterialTheme.spacing.sm,
+                    footerWeight = FontWeight.SemiBold,
+                )
             }
 
             state.phase !is SpeedTestPhase.Failed -> {
@@ -609,31 +589,47 @@ private fun SpeedTestHero(
                         SpeedTestPhase.Upload -> (state.uploadProgress * 100).roundToInt()
                         else -> null
                     }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    AnimatedFloatText(
-                        value = centerValue,
-                        style = MaterialTheme.numericSpeedHeroValueTextStyle,
-                        decimalPlaces = 1,
-                    )
-                    Text(
-                        text = stringResource(R.string.unit_mbps),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                    Text(
-                        text =
-                            if (progressPercent != null) {
-                                stringResource(R.string.speed_test_progress, centerLabel, progressPercent)
-                            } else {
-                                centerLabel
-                            },
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                SpeedHeroValue(
+                    value = centerValue,
+                    footer =
+                        if (progressPercent != null) {
+                            stringResource(R.string.speed_test_progress, centerLabel, progressPercent)
+                        } else {
+                            centerLabel
+                        },
+                    footerColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    footerSpacing = MaterialTheme.spacing.xs,
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun SpeedHeroValue(
+    value: Float,
+    footer: String,
+    footerColor: Color,
+    footerSpacing: androidx.compose.ui.unit.Dp,
+    footerWeight: FontWeight? = null,
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        AnimatedFloatText(
+            value = value,
+            style = MaterialTheme.numericSpeedHeroValueTextStyle,
+            decimalPlaces = 1,
+        )
+        Text(
+            text = stringResource(R.string.unit_mbps),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(footerSpacing))
+        Text(
+            text = footer,
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = footerWeight),
+            color = footerColor,
+        )
     }
 }
 
@@ -646,91 +642,73 @@ private fun SpeedMetricsCard(
 ) {
     val accent = MaterialTheme.colorScheme.primary
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
+    RuncheckCard(
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+        contentModifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-                    .semantics { liveRegion = LiveRegionMode.Polite },
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            // Row 1: Download + Upload
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Top,
-            ) {
-                MetricPill(
-                    label = stringResource(R.string.speed_test_download),
-                    value =
-                        stringResource(
-                            R.string.value_with_unit_text,
-                            formatDecimal(state.downloadMbps, 1),
-                            stringResource(R.string.unit_mbps),
-                        ),
-                    valueColor = accent,
-                    modifier = Modifier.weight(1f),
-                    onInfoClick = { onInfoClick("download") },
-                )
-                MetricPill(
-                    label = stringResource(R.string.speed_test_upload),
-                    value =
-                        stringResource(
-                            R.string.value_with_unit_text,
-                            formatDecimal(state.uploadMbps, 1),
-                            stringResource(R.string.unit_mbps),
-                        ),
-                    valueColor = accent,
-                    modifier = Modifier.weight(1f),
-                    onInfoClick = { onInfoClick("upload") },
-                )
-            }
+        // Row 1: Download + Upload
+        MetricPillRow(spacing = 12.dp) {
+            MetricPill(
+                label = stringResource(R.string.speed_test_download),
+                value =
+                    stringResource(
+                        R.string.value_with_unit_text,
+                        formatDecimal(state.downloadMbps, 1),
+                        stringResource(R.string.unit_mbps),
+                    ),
+                valueColor = accent,
+                modifier = Modifier.weight(1f),
+                onInfoClick = { onInfoClick("download") },
+            )
+            MetricPill(
+                label = stringResource(R.string.speed_test_upload),
+                value =
+                    stringResource(
+                        R.string.value_with_unit_text,
+                        formatDecimal(state.uploadMbps, 1),
+                        stringResource(R.string.unit_mbps),
+                    ),
+                valueColor = accent,
+                modifier = Modifier.weight(1f),
+                onInfoClick = { onInfoClick("upload") },
+            )
+        }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
 
-            // Row 2: Ping + Jitter
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Top,
-            ) {
-                MetricPill(
-                    label = stringResource(R.string.speed_test_ping),
-                    value =
-                        if (state.pingMs > 0) {
-                            stringResource(
-                                R.string.value_with_unit_int,
-                                state.pingMs,
-                                stringResource(R.string.unit_ms),
-                            )
-                        } else {
-                            stringResource(R.string.placeholder_dash)
-                        },
-                    modifier = Modifier.weight(1f),
-                    onInfoClick = { onInfoClick("ping") },
-                )
-                MetricPill(
-                    label = stringResource(R.string.speed_test_jitter),
-                    value =
-                        if (state.jitterMs != null) {
-                            stringResource(
-                                R.string.value_with_unit_int,
-                                state.jitterMs,
-                                stringResource(R.string.unit_ms),
-                            )
-                        } else {
-                            stringResource(R.string.placeholder_dash)
-                        },
-                    modifier = Modifier.weight(1f),
-                    onInfoClick = { onInfoClick("jitter") },
-                )
-            }
+        // Row 2: Ping + Jitter
+        MetricPillRow(spacing = 12.dp) {
+            MetricPill(
+                label = stringResource(R.string.speed_test_ping),
+                value =
+                    if (state.pingMs > 0) {
+                        stringResource(
+                            R.string.value_with_unit_int,
+                            state.pingMs,
+                            stringResource(R.string.unit_ms),
+                        )
+                    } else {
+                        stringResource(R.string.placeholder_dash)
+                    },
+                modifier = Modifier.weight(1f),
+                onInfoClick = { onInfoClick("ping") },
+            )
+            MetricPill(
+                label = stringResource(R.string.speed_test_jitter),
+                value =
+                    if (state.jitterMs != null) {
+                        stringResource(
+                            R.string.value_with_unit_int,
+                            state.jitterMs,
+                            stringResource(R.string.unit_ms),
+                        )
+                    } else {
+                        stringResource(R.string.placeholder_dash)
+                    },
+                modifier = Modifier.weight(1f),
+                onInfoClick = { onInfoClick("jitter") },
+            )
         }
     }
 }
@@ -806,75 +784,61 @@ private fun LatestResultCard(result: SpeedTestResult) {
     val dateLabel = rememberTimestampLabel(result.timestamp)
     val accent = MaterialTheme.colorScheme.primary
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
+    RuncheckCard(
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                SectionHeader(stringResource(R.string.speed_test_last_result))
-                Text(
-                    text = dateLabel,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            SectionHeader(stringResource(R.string.speed_test_last_result))
+            Text(
+                text = dateLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
-            ConnectionTypeBadge(result = result)
+        ConnectionTypeBadge(result = result)
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Top,
-            ) {
-                MetricPill(
-                    label = stringResource(R.string.speed_test_download),
-                    value =
-                        stringResource(
-                            R.string.value_with_unit_text,
-                            formatDecimal(result.downloadMbps, 1),
-                            stringResource(R.string.unit_mbps),
-                        ),
-                    valueColor = accent,
-                    modifier = Modifier.weight(1f),
-                )
-                MetricPill(
-                    label = stringResource(R.string.speed_test_upload),
-                    value =
-                        stringResource(
-                            R.string.value_with_unit_text,
-                            formatDecimal(result.uploadMbps, 1),
-                            stringResource(R.string.unit_mbps),
-                        ),
-                    valueColor = accent,
-                    modifier = Modifier.weight(1f),
-                )
-                MetricPill(
-                    label = stringResource(R.string.speed_test_ping),
-                    value = formatPingValue(result.pingMs),
-                    modifier = Modifier.weight(1f),
-                )
-            }
+        MetricPillRow(spacing = 12.dp) {
+            MetricPill(
+                label = stringResource(R.string.speed_test_download),
+                value =
+                    stringResource(
+                        R.string.value_with_unit_text,
+                        formatDecimal(result.downloadMbps, 1),
+                        stringResource(R.string.unit_mbps),
+                    ),
+                valueColor = accent,
+                modifier = Modifier.weight(1f),
+            )
+            MetricPill(
+                label = stringResource(R.string.speed_test_upload),
+                value =
+                    stringResource(
+                        R.string.value_with_unit_text,
+                        formatDecimal(result.uploadMbps, 1),
+                        stringResource(R.string.unit_mbps),
+                    ),
+                valueColor = accent,
+                modifier = Modifier.weight(1f),
+            )
+            MetricPill(
+                label = stringResource(R.string.speed_test_ping),
+                value = formatPingValue(result.pingMs),
+                modifier = Modifier.weight(1f),
+            )
+        }
 
-            result.serverName?.let { server ->
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-                MetricPill(
-                    label = stringResource(R.string.speed_test_server),
-                    value = server,
-                )
-            }
+        result.serverName?.let { server ->
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+            MetricPill(
+                label = stringResource(R.string.speed_test_server),
+                value = server,
+            )
         }
     }
 }
@@ -897,12 +861,7 @@ private fun HistorySection(results: List<SpeedTestResult>) {
 
 @Composable
 private fun HistoryResultItem(result: SpeedTestResult) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
-    ) {
+    RuncheckCardSurface {
         Row(
             modifier =
                 Modifier
@@ -1050,13 +1009,7 @@ private fun ConnectionTypeIcon(
 
 @Composable
 private fun connectionTypeShortLabel(result: SpeedTestResult): String {
-    val base =
-        when (result.connectionType) {
-            ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
-            ConnectionType.CELLULAR -> stringResource(R.string.connection_cellular)
-            ConnectionType.VPN -> stringResource(R.string.connection_vpn)
-            ConnectionType.NONE -> stringResource(R.string.connection_none)
-        }
+    val base = result.connectionType.shortLabel()
     val subtype = result.networkSubtype
     return if (!subtype.isNullOrBlank()) stringResource(R.string.speed_test_connection_detail, base, subtype) else base
 }
@@ -1099,6 +1052,19 @@ private fun formatPingValue(pingMs: Int): String =
 @Preview(showBackground = true, widthDp = 412, heightDp = 915)
 @Composable
 private fun SpeedTestContentPreview() {
+    val latestResult =
+        SpeedTestResult(
+            timestamp = 1_710_000_000_000,
+            downloadMbps = 542.7,
+            uploadMbps = 83.4,
+            pingMs = 17,
+            jitterMs = 3,
+            serverName = "M-Lab Helsinki",
+            serverLocation = "Helsinki",
+            connectionType = ConnectionType.WIFI,
+            networkSubtype = null,
+            signalDbm = -54,
+        )
     RuncheckTheme {
         SpeedTestContent(
             networkState =
@@ -1116,33 +1082,10 @@ private fun SpeedTestContentPreview() {
                     uploadMbps = 83.4,
                     pingMs = 17,
                     jitterMs = 3,
-                    lastResult =
-                        SpeedTestResult(
-                            timestamp = 1_710_000_000_000,
-                            downloadMbps = 542.7,
-                            uploadMbps = 83.4,
-                            pingMs = 17,
-                            jitterMs = 3,
-                            serverName = "M-Lab Helsinki",
-                            serverLocation = "Helsinki",
-                            connectionType = ConnectionType.WIFI,
-                            networkSubtype = null,
-                            signalDbm = -54,
-                        ),
+                    lastResult = latestResult,
                     recentResults =
                         listOf(
-                            SpeedTestResult(
-                                timestamp = 1_710_000_000_000,
-                                downloadMbps = 542.7,
-                                uploadMbps = 83.4,
-                                pingMs = 17,
-                                jitterMs = 3,
-                                serverName = "M-Lab Helsinki",
-                                serverLocation = "Helsinki",
-                                connectionType = ConnectionType.WIFI,
-                                networkSubtype = null,
-                                signalDbm = -54,
-                            ),
+                            latestResult,
                             SpeedTestResult(
                                 timestamp = 1_709_999_000_000,
                                 downloadMbps = 518.2,

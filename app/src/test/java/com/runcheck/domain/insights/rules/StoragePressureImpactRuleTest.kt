@@ -32,7 +32,7 @@ class StoragePressureImpactRuleTest {
 
             val rule =
                 StoragePressureImpactRule(
-                    storageRepository = FakeStorageImpactRepository(readings),
+                    storageRepository = TestStorageRepository(readings),
                     storageGrowthAnalyzer = StorageGrowthAnalyzer(),
                     healthScoreCalculator = HealthScoreCalculator(),
                 )
@@ -65,7 +65,7 @@ class StoragePressureImpactRuleTest {
 
             val rule =
                 StoragePressureImpactRule(
-                    storageRepository = FakeStorageImpactRepository(readings),
+                    storageRepository = TestStorageRepository(readings),
                     storageGrowthAnalyzer = StorageGrowthAnalyzer(),
                     healthScoreCalculator = HealthScoreCalculator(),
                 )
@@ -93,7 +93,7 @@ class StoragePressureImpactRuleTest {
 
             val rule =
                 StoragePressureImpactRule(
-                    storageRepository = FakeStorageImpactRepository(readings),
+                    storageRepository = TestStorageRepository(readings),
                     storageGrowthAnalyzer = StorageGrowthAnalyzer(),
                     healthScoreCalculator = HealthScoreCalculator(),
                 )
@@ -120,26 +120,4 @@ class StoragePressureImpactRuleTest {
     private companion object {
         const val GIB = 1024L * 1024L * 1024L
     }
-}
-
-private class FakeStorageImpactRepository(
-    private val readings: List<StorageReading>,
-) : StorageRepository {
-    override fun getStorageState(): Flow<StorageState> = emptyFlow()
-
-    override fun getReadingsSince(
-        since: Long,
-        limit: Int?,
-    ): Flow<List<StorageReading>> = emptyFlow()
-
-    override suspend fun getReadingsSinceSync(since: Long): List<StorageReading> =
-        readings.filter { it.timestamp >= since }
-
-    override suspend fun saveReading(state: StorageState) = Unit
-
-    override suspend fun getAllReadings(): List<StorageReading> = readings
-
-    override suspend fun deleteOlderThan(cutoff: Long) = Unit
-
-    override suspend fun deleteAll() = Unit
 }

@@ -4,6 +4,40 @@ Android device health diagnostics app built with Kotlin and Jetpack Compose. Sin
 
 ---
 
+## Document Purpose, Scope, and Evidence Rules
+
+This document is the detailed current-state map for architecture reviews, code-review question generation, implementation planning, security review, test planning, and maintenance work.
+
+Snapshot rules:
+
+- Last source-backed refresh: **2026-08-03**.
+- At refresh time the checkout was on `codex/julkaise-paikalliset-muutokset-20260726`, based on commit `cf1cea8c025ab3a978e1877c6a8af45bfee6e2ea` plus the documented dependency-upgrade working-tree changes.
+- The snapshot describes the complete current working tree, including uncommitted and untracked files, not only that base commit.
+- This is a checkout snapshot, not an API compatibility promise, release note, or proof that every runtime path has been exercised on a physical device.
+- If this document conflicts with executable code or configuration, the executable source wins and this document must be corrected.
+- Intended behavior that exists only in a plan, issue, design mock, or roadmap is not current product behavior.
+- Historical reports prove only the exact run, source scope, commit/worktree, device, and timestamp recorded in that report. They do not prove the current dirty checkout.
+
+Evidence precedence for review work:
+
+1. Production source and source-set-specific implementations.
+2. Tests, exported Room schemas, and generated/configuration contracts.
+3. Gradle files, version catalog, manifest/resources, CI workflows, and local wrapper scripts.
+4. `AGENTS.md`, `CODEX.md`, `UI-SPEC.md`, and this file.
+5. Historical plans, reports, screenshots, and roadmap text.
+
+Reviewers should distinguish:
+
+- **Code-confirmed**: directly supported by current source/configuration.
+- **Test-confirmed**: covered by a named current test, but not necessarily by a built APK or device run.
+- **Tool-confirmed**: supported by a fresh, scoped analyzer/build report.
+- **Device-confirmed**: observed on a named device and APK provenance.
+- **Unverified**: plausible or intended, but not proven in the current task.
+
+The highest-risk review surfaces are layer boundaries, Android API guards, measurement confidence, Pro gating, lifecycle cancellation, WorkManager retry/idempotency, Room migrations, outbound networking, release telemetry exclusion, permission/version branching, accessibility semantics, reduced motion, and state restoration.
+
+---
+
 ## Technical Snapshot
 
 - Package root: `com.runcheck`
@@ -18,7 +52,7 @@ Android device health diagnostics app built with Kotlin and Jetpack Compose. Sin
 - Widgets: Glance app widgets
 - Speed test backend: M-Lab NDT7
 - Build: Gradle Kotlin DSL
-- Build tooling: Gradle wrapper 9.4.0, AGP 9.1.1, Kotlin Gradle/Compose plugin 2.3.0, Kotlin runtime constraints 2.3.20, KSP 2.3.9, Compose BOM 2026.03.00
+- Build tooling: Gradle wrapper 9.6.1, AGP 9.2.1, Kotlin Gradle/Compose plugin 2.4.10, Kotlin runtime constraints 2.3.20, KSP 2.3.9, Compose BOM 2026.06.01
 - Compile SDK: Android 17 (API 37)
 - Target SDK: Android 17 (API 37)
 - Min SDK: 26
@@ -54,7 +88,8 @@ Debug/release-specific insight tooling also lives outside the shared main source
 ### Build and dependency source of truth
 
 - `gradle/libs.versions.toml` is the source of truth for dependency and plugin versions.
-- `gradle/wrapper/gradle-wrapper.properties` pins Gradle to `9.4.0`.
+- `gradle.properties` owns the `runcheck.buildTools.*` security versions for vulnerable transitive build-tool dependencies. Root `build.gradle.kts` applies these pins only to the matching buildscript, ktlint, Android Lint, and Unified Test Platform configurations; application runtime configurations remain unaffected.
+- `gradle/wrapper/gradle-wrapper.properties` pins Gradle to `9.6.1` and verifies the binary distribution with Gradle's published SHA-256.
 - `settings.gradle.kts` enforces centralized repositories with `RepositoriesMode.FAIL_ON_PROJECT_REPOS`.
 - Approved repositories are `google()`, `mavenCentral()`, and JitPack only for `com.github.m-lab`.
 - The app intentionally uses `org.jetbrains.kotlin.plugin.compose`; do not reintroduce `kotlin-android` unless the AGP/Kotlin integration model changes and is verified.
@@ -66,59 +101,63 @@ Current version catalog highlights:
 
 | Area | Current value |
 |------|---------------|
-| Gradle wrapper | `9.4.0` |
-| Android Gradle Plugin | `9.1.1` |
-| Kotlin Gradle / Compose plugin | `2.3.0` |
+| Gradle wrapper | `9.6.1` |
+| Android Gradle Plugin | `9.2.1` |
+| Kotlin Gradle / Compose plugin | `2.4.10` |
 | Kotlin runtime constraints | `2.3.20` |
 | KSP | `2.3.9` |
-| Hilt | `2.59.2` |
-| Hilt AndroidX / Hilt Work | `1.3.0` |
+| Hilt | `2.60.1` |
+| Hilt AndroidX / Hilt Work | `1.4.0` |
 | Room | `2.8.4` |
-| Compose BOM | `2026.03.00` |
-| Navigation Compose | `2.9.7` |
-| Lifecycle | `2.10.0` |
-| Activity Compose | `1.12.3` |
-| Core KTX | `1.18.0` |
+| Compose BOM | `2026.06.01` |
+| Navigation Compose | `2.9.8` |
+| Lifecycle | `2.11.0` |
+| Kotlin coroutines | `1.11.0` |
+| Activity Compose | `1.13.0` |
+| Core KTX | `1.19.0` |
 | WorkManager | `2.11.2` |
 | DataStore | `1.2.1` |
-| Paging | `3.3.6` |
-| Play Billing | `8.3.0` |
+| Paging | `3.5.0` |
+| Play Billing | `9.1.0` |
 | Glance | `1.1.1` |
 | M-Lab NDT7 client | `e0cb663613eb252a7793216ad28cf54a35677b8f` |
-| OkHttp | `4.12.0` |
-| Gson | `2.11.0` |
-| kotlinx.serialization JSON | `1.8.1` |
-| Sentry debug-only core | `8.43.1` |
-| Dependency Analysis Gradle plugin | `3.15.0` |
+| OkHttp | `5.4.0` |
+| Gson | `2.14.0` |
+| kotlinx.serialization JSON | `1.11.0` |
+| MockK | `1.14.11` |
+| Sentry debug-only core | `8.51.0` |
+| Dependency Analysis Gradle plugin | `3.17.0` |
 | ktlint rule engine | `1.8.0` |
 | ktlint Gradle plugin | `14.2.0` |
-| Detekt | `2.0.0-alpha.3` |
+| Detekt | `2.0.0-alpha.5` |
 | compose-rules for ktlint | `0.5.9` |
 | compose-rules for Detekt | `0.5.9` |
 | OWASP Dependency-Check Gradle plugin | `12.2.2` |
 | SonarQube Gradle plugin | `7.3.1.8318` |
-| Compose Stability Analyzer | `0.7.4` |
+| Compose Stability Analyzer | `0.12.0` |
 | Google Android Security Lints | `1.0.4` |
 | JaCoCo | `0.8.14` |
 
 ### External version review snapshot
 
-Checked on 2026-07-02 against official Android, Kotlin, Compose, and Gradle documentation:
+Checked on 2026-08-03 against official Android, Kotlin, Compose Stability Analyzer, and Gradle documentation:
 
-- The repo is not on the newest available Android/Gradle ecosystem versions in every area; that is expected and should be reviewed deliberately.
-- AGP 9.1.x official notes list API 37 support and Gradle 9.3.1 minimum compatibility; this repo's Gradle 9.4.0 wrapper satisfies that baseline.
-- AGP 9.2.0 lists API 37.0 support and Gradle 9.4.1 as its minimum/default Gradle line; AGP 9.3.0 lists API 37 support and Gradle 9.5.0 as its minimum/default Gradle line. This repo currently uses AGP 9.1.1 with Gradle 9.4.0, so AGP upgrades should be evaluated with Android 17 stable SDK behavior, Qodana, CodeQL, Gradle wrapper, dependency verification, and Kotlin plugin behavior together.
+- The repo is intentionally not on the newest available version in every area. Upgrade candidates must be evaluated as a compatible set, not as isolated numbers.
+- AGP 9.2 officially supports API 37 and requires at least Gradle 9.4.1 and JDK 17. This checkout keeps AGP 9.2.1 and Java target 17 while using a verified Gradle 9.6.1 wrapper.
+- History (2026-08-03): AGP 9.3.1, Kotlin 2.4.10, KSP 2.3.10, Hilt 2.60.1, Detekt 2.0.0-alpha.5, and Compose Stability Analyzer 0.8.0 were tested as one coordinated upgrade. Both analyzer 0.8.0 and fallback 0.7.0 failed debug and release compilation with `ClassCastException: FirExtensionRegistrarAdapter$Companion cannot be cast to ProjectExtensionDescriptor`, so the core batch was rolled back to Kotlin plugin 2.3.0 and analyzer 0.7.0.
+- Resolved (2026-08-06): analyzer 0.12.0 supports the Kotlin 2.4 compiler line. The toolchain is now AGP 9.2.1, Kotlin plugin 2.4.10, Kotlin runtime 2.3.20, KSP 2.3.9, Hilt 2.60.1, Detekt 2.0.0-alpha.5, and analyzer 0.12.0; both debug and release stability variants regenerate without baseline or task bypasses.
+- That exit criterion (an upstream analyzer release supporting the Kotlin 2.4 compiler line, with both debug and release stability checks passing without baseline or task bypasses) has been met, so the exception no longer applies.
 - Kotlin 2.3.20 is available upstream and the repo already constrains Kotlin stdlib adapter/runtime artifacts to 2.3.20, but the Gradle/Compose plugin remains 2.3.0. Do not treat this as a typo without checking AGP/Qodana/CodeQL runner behavior.
 - Kotlin 2.4.0 is newer than this repo's Kotlin plugin line, and Kotlin's official Gradle compatibility table lists support through Gradle 9.5.0 for current 2.4.0-era features. Treat it as a deliberate migration, not a routine patch bump.
 - Compose BOM controls Compose library versions, but the Compose compiler is managed through the Kotlin plugin in Kotlin 2.0+ projects. Any BOM bump should include Compose UI regression review, compose-rules compatibility, and dependency verification metadata.
-- Gradle 9.6.1 is available upstream; this repo currently uses 9.4.0. Wrapper bumps should be checked against AGP and all local wrappers.
+- Gradle 9.6.1 is in use with its official distribution checksum; wrapper configuration, configuration-cache reuse, and the retained AGP 9.2.1 toolchain have been verified locally.
+- Gradle build caching remains disabled. The planned cache evaluation depended on retaining Kotlin 2.4.10, so it was not enabled under the compatibility fallback.
 - Android 17 uses stable API level 37 in this checkout. Android 17 SDK setup expects the Android 17 platform and Android SDK Build-Tools 37.x line to be installed locally.
 
 External references used for this snapshot:
 
 - Android 17 overview: <https://developer.android.com/about/versions/17>
 - Android 17 SDK setup: <https://developer.android.com/about/versions/17/setup-sdk>
-- AGP 9.1 release notes: <https://developer.android.com/build/releases/agp-9-1-0-release-notes>
 - AGP 9.2 release notes: <https://developer.android.com/build/releases/agp-9-2-0-release-notes>
 - AGP 9.3 release notes: <https://developer.android.com/build/releases/agp-9-3-0-release-notes>
 - Kotlin 2.3.0 release notes: <https://kotlinlang.org/docs/whatsnew23.html>
@@ -139,6 +178,44 @@ When auditing this project, treat these as stronger than older prose docs:
 - Visual system: `ui/theme/Color.kt`, `Theme.kt`, `Type.kt`, `Shapes.kt`, `Spacing.kt`, `MotionTokens.kt`, `UiTokens.kt`, `StatusColors.kt`
 - Shared UI/runtime helpers: `LifecycleStartStopEffect`, `HistoryLoadErrorMessage`, `HistoryPeriodFilterChipRow`, `ChartStatsRow`, `RuncheckPermissionPolicy`
 - Security surface: `AndroidManifest.xml`, `network_security_config.xml`, `data_extraction_rules.xml`, `backup_rules.xml`, `file_export_paths.xml`, `ReleaseSafeLog`, Semgrep config, Sentry source sets
+
+### Code-review source map
+
+Use this map to turn a broad review topic into questions that point at the real implementation and its contract surface.
+
+| Review area | Primary implementation sources | Required review questions |
+|-------------|--------------------------------|---------------------------|
+| Build/release reproducibility | `settings.gradle.kts`, `app/build.gradle.kts`, `gradle/libs.versions.toml`, `gradle/wrapper/gradle-wrapper.properties`, `gradle/verification-metadata.xml` | Are repository restrictions, version constraints, dependency verification, optional signing, release version-code floor, and configuration-cache exclusions still internally consistent? |
+| Application startup | `RuncheckApp.kt`, `MainActivity.kt`, `SentryInit.kt` in main/debug/release, `RuncheckTheme` | Are billing, Pro state, WorkManager, screen tracking, widgets, notification channels, debug StrictMode, and debug-only Sentry initialized exactly once and in the correct source set? |
+| Dependency injection | `di/RepositoryModule.kt`, `DatabaseModule.kt`, `SystemBindingsModule.kt`, `InsightsModule.kt`, `DataModule.kt`, debug/release `InsightDebugModule.kt` | Does every interface resolve to the intended singleton/scoped implementation, and do debug bindings remain release-inaccessible? |
+| Layering | `domain/`, `data/`, `ui/` imports and constructor dependencies | Does domain remain free of `android.*` and data implementations? Does UI reach repositories only through domain contracts/use cases and ViewModels? Is the documented Paging exception the only AndroidX boundary? |
+| Navigation and restoration | `ui/navigation/Screen.kt`, `NavGraph.kt`, screen ViewModels using `SavedStateHandle`, composables using `rememberSaveable` | Are route arguments encoded/decoded safely, direct routes argument-free, Pro gates applied before protected content, fullscreen results returned to the correct parent, and process-death-sensitive selections restored? |
+| Home aggregation and refresh | `ui/home/HomeViewModel.kt`, `HomeScreen.kt`, `HomeStatusTiles.kt`, `HomeUiState.kt` | Does the 333ms sampled aggregate remain lifecycle-cancelable? Does refresh reuse the same observation graph, reject duplicates, finish after the 900ms minimum, time out at 12s, and reset on failure/stop? Are tiles ordered deterministically and accessible without color-only meaning? |
+| Measurement confidence | `domain/model/MeasuredValue.kt`, battery/network/thermal/storage data sources, `ConfidenceBadge.kt` | Can every unavailable or estimated sensor value remain distinguishable from an accurate value? Are normalization, plausibility ranges, sign conventions, API guards, null handling, and user-visible labels aligned? |
+| Battery | `data/battery/`, `domain/usecase/ChargerSessionTracker.kt`, `ui/battery/` | Are `CURRENT_NOW` reads normalized from µA to mA, validated, charge-sign aligned, and confidence-tagged? Are public charge-counter estimates clearly estimates? Can foreground/background session updates duplicate or corrupt a charger session? |
+| Network and outbound traffic | `data/network/`, `domain/usecase/GetMeasuredNetworkStateUseCase.kt`, `ui/network/`, `ui/speedtest/` | Do connection details remain on-device? Is periodic latency limited to the configured TCP host/port? Does NDT7 auto-select its server, require validated connectivity, enforce cellular confirmation, lock network identity, and cancel cleanly? |
+| Thermal | `data/thermal/`, `domain/usecase/TrackThrottlingEventsUseCase.kt`, `ui/thermal/` | Are PowerManager APIs guarded at API 29/30, listener registration symmetric, missing CPU temperature neutral, and sysfs reads absent? Are throttling event durations and screen lifecycle handled safely? |
+| Storage and cleanup | `data/storage/`, `domain/usecase/StorageCleanupUseCase.kt`, cleanup-related use cases, `ui/storage/`, `util/RuncheckPermissionPolicy.kt` | Are media permission branches correct for APIs 26–37? Are launcher-visible app counts described honestly? Are MediaStore deletion batches bounded, consent results revalidated, API 29 recoverable-security flow correct, and free-user scans blocked before work begins? |
+| Persistence and migrations | `data/db/RuncheckDatabase.kt`, entities, DAOs, `di/DatabaseModule.kt`, `app/schemas/com.runcheck.data.db.RuncheckDatabase/`, migration tests | Does schema 10 match exported JSON? Are migrations 1→10 complete, indexed for real queries, and free of unintended destructive fallback? Are multi-row insight replacements transactionally atomic? |
+| WorkManager and monitoring | `service/monitor/MonitorScheduler.kt`, `service/monitor/HealthMonitorWorker.kt`, `service/monitor/HealthMaintenanceWorker.kt`, `worker/InsightGenerationWorker.kt`, `worker/TrialNotificationWorker.kt` | Are unique-work names/policies stable, intervals and constraints correct, cancellation rethrown, retry limited to recoverable failure, notifications debounced, and best-effort widget failure prevented from retrying otherwise successful work? |
+| Insights | `domain/insights/`, `data/insights/`, `di/InsightsModule.kt`, `ui/insights/`, `ui/home/insights/` | Are all production rules multibound, confidence-filtered, deduped, expiry-aware, and visibility-filtered for Pro targets? Can dismissed rows resurrect? Is `AppBatteryImpactRule` still excluded from production? |
+| Pro and billing | `data/billing/BillingManager.kt`, `pro/ProManager.kt`, `pro/ProState.kt`, `pro/TrialManager.kt`, `ui/pro/` | Can pending/unacknowledged purchases incorrectly unlock Pro? Is cached release state reconciled with Billing? Do trial and permanent purchase use the same gate without exposing protected routes, widgets, export, cleanup, or history? |
+| Security/privacy | manifest and XML security resources, source-set Sentry, `ReleaseSafeLog.kt`, project Semgrep rules | Are exported components minimal, backup/cleartext/FileProvider rules restrictive, package visibility narrow, sensitive logging debug-only, release telemetry absent, and every new socket/HTTP/client call inside an approved network surface? |
+| Compose UI/accessibility | `ui/theme/`, shared `ui/components/`, screen composables, `UI-SPEC.md` | Are colors/spacing/type/motion centralized, icons outlined, touch targets at least 48dp, visual charts described semantically, state not color-only, reduced motion honored, and high-frequency flows sampled before recomposition? |
+| Tests and analyzers | `app/src/test/`, `app/src/androidTest/`, `app/schemas/`, `config/android-check.json`, `config/check-exceptions.json`, wrapper reports | Does the test actually exercise the claimed production branch? Is a report fresh and scoped to this worktree? Are scanner exceptions exact, owned, time-bounded, and still justified? |
+
+Explicit non-capabilities that must not be “filled in” during review or implementation:
+
+- No light theme, AMOLED theme, or dynamic color.
+- No subscription, ads, or recurring billing.
+- No release telemetry, analytics, crash reporting, replay, tracing, or NDK capture.
+- No private `PowerProfile` battery design-capacity lookup.
+- No production CPU-temperature source and no sysfs thermal reads.
+- No defensible per-app mAh attribution; App Usage is foreground-time based.
+- No `QUERY_ALL_PACKAGES` or complete installed-package inventory.
+- No fixed NDT7 server and no alternate speed-test backend.
+- No automatic network probe when merely displaying current Wi-Fi/cellular details; TCP latency is its own approved measurement flow.
+- No claim that unit/static checks alone prove a signed release, physical-device behavior, background survival, Play Billing, external CI, SonarCloud, Qodana Cloud, or GitHub security services.
 
 ---
 
@@ -177,7 +254,8 @@ Dependency injection:
 
 Important runtime data flows:
 
-- Home combines live battery, network, thermal, storage, insight, Pro, preference, and monitoring-freshness flows, throttled to 333ms display updates.
+- Home combines live battery, network, thermal, storage, latest speed-test, insight, Pro, preference, and monitoring-freshness flows, throttled to 333ms display updates.
+- Home's explicit full-check action cancels and restarts the same `loadHome()` observation graph; it does not introduce a second sensor or repository path.
 - Battery/network/thermal/storage detail ViewModels sample live updates at 333ms to avoid high-frequency UI churn.
 - Periodic monitoring persists snapshots to Room, updates charger sessions, evaluates alerts, records heartbeat, and retries only when core collection/maintenance fails.
 - Insight generation is rule-driven and persisted; Home shows ranked persisted rows, not ad hoc generated UI-only messages.
@@ -398,13 +476,27 @@ Home is the single entry point and aggregates the latest device state from batte
 
 Main sections:
 
-- Health score hero with animated `ProgressRing` (1200ms arc fill)
-- Battery hero card
-- 2×2 quick status grid
-  - Network
-  - Thermal
-  - Charger comparison
-  - Storage
+- Cardless health-score hero:
+  - overall score is rendered with the centralized JetBrains Mono `homeHealthScoreTextStyle` at 120sp
+  - `/100`, textual health status, and “updated N minutes ago” context are separate semantic/visual elements
+  - the score/status color comes from the existing health-status token mapping
+  - the update-age calculation clamps future timestamps to zero and advances on minute boundaries
+- Primary “Run a full check” action:
+  - reuses `HomeViewModel.refresh()` → `loadHome()` and therefore re-subscribes to battery, network, thermal, storage, speed-test, insight, preferences, Pro/trial, and freshness sources
+  - disables duplicate taps and exposes a running state through semantics
+  - keeps the progress state visible for at least 900ms after a completed snapshot
+  - clears the state after a 12-second safety timeout, on collection failure, or when Home stops observing
+  - does not persist a separate refresh timestamp; `lastUpdatedAtEpochMillis` comes from the combined live snapshot
+- Fixed four-tile status mosaic
+  - Battery always occupies slot B, the tall left tile
+  - Network, Thermal, and Storage fill slot A (wide), slot C (compact), and slot D (small) in worst-status-first order
+  - Severity ties use Network, Thermal, Storage order
+  - Healthy tiles use category fills; non-healthy tiles use the shared card surface plus a status-colored status label, so status is not conveyed by color alone
+  - Battery shows estimated full capacity when available, level, health status, and current charge-state sentence
+  - Network shows signal dBm, connection descriptor, and signal-quality label
+  - Thermal shows the user-selected temperature unit and health label
+  - Storage shows available capacity and storage-status label
+  - tile layout, radii, padding, gaps, minimum heights, and type scales are centralized in `UiTokens` and `Type.kt`
 - Rule-driven Insights summary backed by persisted Room insight rows, with Home showing a curated subset of up to three items and a dedicated full Insights screen
 - Home Insights are selected by `InsightHomeRankingPolicy`, which avoids showing multiple items from the same target bucket before filling remaining slots
 - Quick tools card
@@ -424,6 +516,7 @@ Trial and Pro UI handled on Home:
 - Insight targets for Pro-only destinations such as Charger Comparison and App Usage are hidden for free users and visible for trial/Pro users
 - Monitoring stale state is derived from the last worker heartbeat and becomes stale after more than 3x the longer of the heartbeat's interval and the current interval, measured in awake uptime so deep-sleep gaps do not trigger the banner.
 - Home marks only its currently displayed unseen insight rows as seen through `InsightRepository.markSeen(ids)`.
+- Home observation is lifecycle-owned through `LifecycleStartStopEffect`; leaving Home cancels the active load job and clears a running full-check indicator.
 
 ---
 
@@ -843,6 +936,8 @@ Current product behavior:
 - Debug builds can override the product id with `RUNCHECK_PRO_PRODUCT_ID`; release builds keep the checked-in product id so release artifacts are reproducible.
 - Pending purchases are tracked separately and do not unlock Pro until purchased
 - Purchased but unacknowledged purchases are acknowledged with up to 3 retries
+- A purchased item unlocks Pro only after it was already acknowledged or acknowledgement succeeds; exhausted acknowledgement retries keep the entitlement inactive and emit a safe generic purchase error
+- Billing 9 purchase sub-response codes distinguish insufficient funds and user ineligibility; unknown codes fall back to a known response-code message or a generic localized error without exposing SDK debug text
 - Cached Pro state is restored synchronously in release builds to avoid a free-tier flash while Billing queries run
 
 Pro-gated areas currently include:
@@ -955,6 +1050,17 @@ Single dark theme — no light mode, no AMOLED toggle, no dynamic colors.
 | AccentLime | `#C8E636` | — | Storage video category |
 | AccentYellow | `#F5D03A` | — | Storage audio category |
 
+**Home category fills:**
+
+| Token | Hex | Usage |
+|-------|-----|-------|
+| CategoryBattery | `#2FA98F` | Healthy Battery status tile |
+| CategoryNetwork | `#4A9EDE` | Healthy Network status tile |
+| CategoryThermal | `#F5963A` | Healthy Thermal status tile |
+| CategoryStorage | `#C8E636` | Healthy Storage status tile |
+
+Category fills are Home-tile presentation tokens, not replacements for the semantic Healthy/Fair/Poor/Critical status system. Non-healthy Home tiles fall back to the card surface and retain an explicit textual status label.
+
 **Text:**
 
 | Token | Hex | Material3 Role | Usage |
@@ -1025,6 +1131,17 @@ Used via `MaterialTheme.statusColors` extension. Always paired with icons or tex
 | chartAxisTextStyle | labelSmall | 12sp | Chart axis labels |
 | chartTooltipTextStyle | bodySmall | 13sp | Chart tooltip values |
 
+**Home-specific centralized text styles:**
+
+| Style | Font / size | Purpose |
+|-------|-------------|---------|
+| `homeHealthScoreTextStyle` | JetBrains Mono, 120sp Bold | Cardless overall health score |
+| `homeHealthScoreUnitTextStyle` | Manrope, 32sp SemiBold | `/100` unit |
+| `homeHealthStatusTextStyle` | Manrope, 26sp SemiBold | Overall textual status |
+| `homeHealthContextTextStyle` | Manrope, 14sp | Update-age context |
+| `homeStatusTileTypeScale(size)` | Manrope, size-specific | Wide/tall/compact/small tile category, value, suffix, status, and optional context |
+| `homeStatusTileSecondary*TextStyle` | Manrope, 13–26sp | Battery estimated-capacity secondary block |
+
 ### Shapes & Spacing
 
 **Corner radii:**
@@ -1035,6 +1152,8 @@ Used via `MaterialTheme.statusColors` extension. Always paired with icons or tex
 | medium | 8dp | Badges, chips, small elements |
 | small | 8dp | Compact elements |
 | extraLarge | 50% | Circles (icons, avatars) |
+
+Home status tiles are an explicit visual-system exception to the normal 16dp card radius: `homeStatusTileCornerRadius = 22dp`. Their 12dp gap, padding, and minimum heights are centralized in `UiTokens`; do not duplicate those values in screen code.
 
 **Spacing grid (4dp base):**
 
@@ -1065,10 +1184,11 @@ Icon source files in `icons/` directory (SVG masters + 512px PNG exports).
 
 Current test surface:
 
-- Unit tests: 83 Kotlin files under `app/src/test/java/com/runcheck/`
-- Instrumented tests: 1 Kotlin file under `app/src/androidTest/java/com/runcheck/`
+- Unit tests: 118 Kotlin files under `app/src/test/java/com/runcheck/` in this working-tree snapshot
+- Instrumented tests: 2 Kotlin files under `app/src/androidTest/java/com/runcheck/`
 - Android test assets include exported Room schemas for migration tests; current exported assets cover versions 6-10.
 - Shared coroutine main dispatcher rule lives in `ui/MainDispatcherRule.kt`.
+- Home-specific unit coverage includes minute-age clamping, status-tile ordering/tie breaks, refresh source reuse, the 900ms minimum indicator, the 12-second timeout, failure reset, and lifecycle-stop reset.
 
 High-value unit coverage areas:
 
@@ -1118,11 +1238,11 @@ GitHub Actions workflows in `.github/workflows/`:
 
 | Workflow | Purpose | Status |
 |----------|---------|--------|
-| `codeql.yml` | CodeQL security analysis (`java-kotlin`, manual `assembleDebug`) | Active |
-| `security.yml` | Semgrep SAST on PRs/main plus OWASP Dependency-Check on weekly/manual runs | Active; Semgrep is the push/PR code-scanning path. OWASP is kept out of push/PR code scanning because cold NVD updates can stall or return 503s; scheduled/manual runs use cache, bounded retries, a job timeout, a shorter non-blocking OWASP step timeout, and upload the report as an Actions artifact when produced |
+| `codeql.yml` | CodeQL security analysis (`java-kotlin`, manual `assembleDebug`) | Active on main pushes, main PRs, manual dispatch, and weekly schedule; CodeQL Action `v4.37.5`, checkout `v7.0.1`, setup-java `v5.6.0`, setup-android `v4.0.1` |
+| `security.yml` | Semgrep SAST on PRs/main plus OWASP Dependency-Check on weekly/manual runs | Active; Semgrep `1.171.0` is the push/PR code-scanning path. OWASP is kept out of push/PR code scanning because cold NVD updates can stall or return 503s; scheduled/manual runs use cache, bounded retries, a 45-minute job timeout, a 35-minute analysis timeout, and upload the report as an Actions artifact when produced |
 | `sonar.yml` | SonarCloud scan through Gradle (`assembleDebug`, `:app:jacocoDebugUnitTestReport`, `sonar`) | Active |
-| `qodana.yml` | JetBrains Qodana main-branch scan through `JetBrains/qodana-action` pinned at `v2026.1.3` | Uses the `jetbrains/qodana-jvm-community:2026.1` linter from `qodana.yaml` because the 2026.1 Android linter rejects AGP 9.1.x during IDE import |
-| `qodana_code_quality.yml` | JetBrains Qodana action pinned at `v2026.1.3` for `main`, `releases/*`, PRs, and manual dispatch | Uses the `jetbrains/qodana-jvm-community:2026.1` linter from `qodana.yaml` because the 2026.1 Android linter rejects AGP 9.1.x during IDE import |
+| `qodana.yml` | JetBrains Qodana main-branch scan through `JetBrains/qodana-action` pinned at `v2026.2.0` | Uses `jetbrains/qodana-jvm-community:2026.1`; retained after the documented AGP 9.1.x Android-linter import failure, while current AGP 9.2.1 Android-linter compatibility remains unverified |
+| `qodana_code_quality.yml` | JetBrains Qodana action pinned at `v2026.2.0` for `main`, `releases/*`, PRs, and manual dispatch | Uses the same JVM Community linter; current AGP 9.2.1 Android-linter compatibility remains unverified |
 
 External services:
 - **SonarCloud** — continuous code quality (`Insaner1980_runcheck`, org `insaner1980`). CI path is `.github/workflows/sonar.yml`; local path is `tools/sonar.ps1`.
@@ -1131,8 +1251,10 @@ External services:
 Local PowerShell wrappers:
 
 - `tools/lc.ps1` (`lc`) — ktlint, detekt, Android lint; writes `reports/ktlint.txt`, `reports/detekt.txt`, and `reports/lint.txt`; the shared wrapper appends the Android lint text report and fails high-risk lint policy findings
+- `tools/bc.ps1` (`bc`) — shared `build-check` wrapper for the configured `:app:assembleDebug` build surface
+- `tools/tc.ps1` (`tc`) — shared `test-check` wrapper for the configured `:app:testDebugUnitTest` test surface
 - `tools/ac.ps1` (`ac`) — Android security surface: project Semgrep, mobsfscan, and DeepSec custom report
-- `tools/dc.ps1` (`dc`) — Gradle dependency verification, OSV Scanner, and OWASP Dependency-Check
+- `tools/dc.ps1` (`dc`) — Gradle dependency verification, OSV Scanner, and OWASP Dependency-Check; the single `app` module uses `:app:dependencyCheckAnalyze` because the aggregate task can succeed with an empty dependency report and is rejected fail-closed
 - `tools/ss.ps1` (`ss`) — gitleaks, TruffleHog, and Semgrep secrets
 - `tools/ds.ps1` (`ds`) — DeepSec custom scan/report/revalidate paths
 - `tools/ms.ps1` (`ms`) — mobsfscan
@@ -1146,6 +1268,7 @@ Local PowerShell wrappers:
 - `tools/sc.ps1` (`sc`) — combined security check; `-Full` also runs Android security checks
 - `tools/sentry.ps1` (`sentry`) — verifies debug-only Sentry wiring and release classpath exclusion; writes `reports/sentry.txt`
 - `tools/sonar.ps1` — SonarCloud local path; requires `SONAR_TOKEN`, runs `assembleDebug`, `:app:jacocoDebugUnitTestReport`, prepares an empty Android Lint import placeholder because `lc` owns real lint findings, and runs `sonar`, then writes `reports/sonar.txt`
+- `tools/sonar-timeout-test.ps1` — isolated PowerShell fixture that verifies a timed-out Sonar Gradle process is terminated and that stdout/stderr plus the timeout marker are persisted
 
 When `osv-scanner`, gitleaks, TruffleHog, or PMD are missing from `PATH`, the shared Android-check wrappers may download and cache verified tool binaries under `.gradle/android-check-tools/`; offline first runs can therefore skip or fail before a cached tool exists. The OSV source scan excludes `.deepsec` so Android-check's own DeepSec tooling dependencies do not fail app dependency scans.
 
@@ -1166,6 +1289,8 @@ Compatibility wrappers and config:
   - v1.0 — Play Store Release (all features, tested, security audited)
   - Insights Engine (cross-category correlation — the differentiator)
 - **GitHub:** https://github.com/Insaner1980/runcheck
+
+The product-management service state above is documentation metadata and was not live-queried during the 2026-07-30 source refresh. Treat code/configuration as current; verify external Linear/Qodana/Sonar/GitHub status live when a task depends on it.
 
 ---
 
@@ -1198,8 +1323,8 @@ Rules are Hilt multibindings into `Set<InsightRule>`. `InsightEngine` filters ge
 
 ### Known Tool Limitations
 
-- **Qodana:** `qodana.yaml` documents that the Qodana Android linter 2026.1 rejects this repo's AGP 9.1.x during IDE import (`Latest supported version is AGP 9.0.0`). The workflows therefore run `jetbrains/qodana-jvm-community:2026.1` until JetBrains publishes or the project verifies an Android linter compatible with this AGP line. Re-test Qodana on every AGP/Gradle bump.
-- **CodeQL:** `.github/workflows/codeql.yml` pins `github/codeql-action/init` and `analyze` to `v4.36.2` and builds with `assembleDebug --no-configuration-cache`. Check the actual CodeQL Action runner and Kotlin extractor support before Kotlin plugin upgrades.
+- **Qodana:** `qodana.yaml` still records the original AGP 9.1.x Android-linter import failure and selects `jetbrains/qodana-jvm-community:2026.1`. The app has since moved to AGP 9.2.1, so the recorded Android-linter incompatibility is historical evidence, not fresh proof for the current AGP line. Keep the JVM linter until the Android linter is explicitly re-tested, and update the comment/result together.
+- **CodeQL:** `.github/workflows/codeql.yml` pins `github/codeql-action/init` and `analyze` to `v4.37.5` and builds with `assembleDebug --no-configuration-cache`. Check the actual CodeQL Action runner and Kotlin extractor support before Kotlin plugin upgrades.
 - **Sonar:** AGP 9 support has had scanner-side compatibility churn. Keep `tools/sonar.ps1` and `.github/workflows/sonar.yml` verified when changing AGP, Gradle, or Kotlin.
 - **OWASP Dependency-Check:** NVD updates can take a very long time or return transient 503 responses, so PRs and ordinary main pushes run Semgrep/CodeQL/Qodana while Dependency-Check is reserved for weekly scheduled or manual runs with cache, bounded retries, a job timeout, and a shorter non-blocking OWASP step timeout. Dependency-Check reports are uploaded as Actions artifacts instead of GitHub Code scanning SARIF so stale dependency analyses do not keep fixed Dependabot issues open.
 

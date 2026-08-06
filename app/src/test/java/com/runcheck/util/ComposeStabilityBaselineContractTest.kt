@@ -1,5 +1,6 @@
 package com.runcheck.util
 
+import com.runcheck.testutil.findAppDir
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Files
@@ -29,12 +30,5 @@ class ComposeStabilityBaselineContractTest {
             assertTrue(baselineText.contains("@Composable"))
             assertTrue(baselineText.contains("com.runcheck."))
         }
-    }
-
-    private fun findAppDir(): Path {
-        val start = Paths.get("").toAbsolutePath()
-        return generateSequence(start) { it.parent }
-            .flatMap { path -> sequenceOf(path, path.resolve("app")) }
-            .first { Files.exists(it.resolve("src/main/res")) && Files.exists(it.resolve("build.gradle.kts")) }
     }
 }

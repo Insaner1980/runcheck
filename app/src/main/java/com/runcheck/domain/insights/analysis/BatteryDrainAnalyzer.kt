@@ -45,14 +45,9 @@ class BatteryDrainAnalyzer
         ): DrainRateComparison? {
             val currentRate = calculateAverageDrainRate(currentSamples) ?: return null
             val previousRate = calculateAverageDrainRate(previousSamples) ?: return null
-            if (currentRate <= 0f || previousRate <= 0f) return null
-
-            val changeRatio = currentRate / previousRate
-            return DrainRateComparison(
-                currentRatePctPerHour = currentRate,
-                previousRatePctPerHour = previousRate,
-                changeRatio = changeRatio,
-                percentIncrease = ((changeRatio - 1f) * 100f).roundToInt(),
+            return buildComparison(
+                currentRate = currentRate,
+                previousRate = previousRate,
                 currentSampleCount = currentSamples.size,
                 previousSampleCount = previousSamples.size,
             )
@@ -65,6 +60,20 @@ class BatteryDrainAnalyzer
         ): DrainRateComparison? {
             val currentRate = calculateAverageDrainRate(currentWindow, dischargingStatuses) ?: return null
             val previousRate = calculateAverageDrainRate(previousWindow, dischargingStatuses) ?: return null
+            return buildComparison(
+                currentRate = currentRate,
+                previousRate = previousRate,
+                currentSampleCount = currentWindow.size,
+                previousSampleCount = previousWindow.size,
+            )
+        }
+
+        private fun buildComparison(
+            currentRate: Float,
+            previousRate: Float,
+            currentSampleCount: Int,
+            previousSampleCount: Int,
+        ): DrainRateComparison? {
             if (currentRate <= 0f || previousRate <= 0f) return null
 
             val changeRatio = currentRate / previousRate
@@ -73,8 +82,8 @@ class BatteryDrainAnalyzer
                 previousRatePctPerHour = previousRate,
                 changeRatio = changeRatio,
                 percentIncrease = ((changeRatio - 1f) * 100f).roundToInt(),
-                currentSampleCount = currentWindow.size,
-                previousSampleCount = previousWindow.size,
+                currentSampleCount = currentSampleCount,
+                previousSampleCount = previousSampleCount,
             )
         }
 

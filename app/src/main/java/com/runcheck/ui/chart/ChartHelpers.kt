@@ -339,62 +339,44 @@ fun buildNetworkYLabels(
 fun buildBatteryXLabels(
     timestamps: List<Long>,
     period: HistoryPeriod,
-): List<ChartXLabel> {
-    if (timestamps.size < 2) return emptyList()
-    val first = timestamps.first()
-    val last = timestamps.last()
-    val span = last - first
-    if (span <= 0) return emptyList()
-    val (skeleton, count) =
-        when (period) {
-            HistoryPeriod.HOUR, HistoryPeriod.SIX_HOURS, HistoryPeriod.TWELVE_HOURS -> "Hm" to 4
-            HistoryPeriod.SINCE_UNPLUG, HistoryPeriod.DAY -> "Hm" to 4
-            HistoryPeriod.WEEK -> "EEEHm" to 4
-            HistoryPeriod.MONTH -> "MMMd" to 4
-            HistoryPeriod.ALL -> "MMMd" to 4
-        }
-    return buildList {
-        for (i in 0..count) {
-            val position = i.toFloat() / count
-            val time = first + (span * position).toLong()
-            add(ChartXLabel(position, formatLocalizedDateTime(time, skeleton)))
-        }
-    }
-}
+): List<ChartXLabel> = buildHistoryXLabels(timestamps, period)
 
-fun buildSessionXLabels(timestamps: List<Long>): List<ChartXLabel> {
-    if (timestamps.size < 2) return emptyList()
-    val first = timestamps.first()
-    val last = timestamps.last()
-    val span = last - first
-    if (span <= 0) return emptyList()
-    val count = 4
-    return buildList {
-        for (i in 0..count) {
-            val position = i.toFloat() / count
-            val time = first + (span * position).toLong()
-            add(ChartXLabel(position, formatLocalizedDateTime(time, "Hm")))
-        }
-    }
-}
+fun buildSessionXLabels(timestamps: List<Long>): List<ChartXLabel> = buildXLabels(timestamps, skeleton = "Hm")
 
 fun buildNetworkXLabels(
     timestamps: List<Long>,
     period: HistoryPeriod,
+): List<ChartXLabel> = buildHistoryXLabels(timestamps, period)
+
+private fun buildHistoryXLabels(
+    timestamps: List<Long>,
+    period: HistoryPeriod,
+): List<ChartXLabel> = buildXLabels(timestamps, skeleton = historyLabelSkeleton(period))
+
+private fun historyLabelSkeleton(period: HistoryPeriod): String =
+    when (period) {
+        HistoryPeriod.HOUR,
+        HistoryPeriod.SIX_HOURS,
+        HistoryPeriod.TWELVE_HOURS,
+        HistoryPeriod.SINCE_UNPLUG,
+        HistoryPeriod.DAY,
+        -> "Hm"
+
+        HistoryPeriod.WEEK -> "EEEHm"
+
+        HistoryPeriod.MONTH, HistoryPeriod.ALL -> "MMMd"
+    }
+
+private fun buildXLabels(
+    timestamps: List<Long>,
+    skeleton: String,
+    count: Int = 4,
 ): List<ChartXLabel> {
     if (timestamps.size < 2) return emptyList()
     val first = timestamps.first()
     val last = timestamps.last()
     val span = last - first
     if (span <= 0) return emptyList()
-    val (skeleton, count) =
-        when (period) {
-            HistoryPeriod.HOUR, HistoryPeriod.SIX_HOURS, HistoryPeriod.TWELVE_HOURS -> "Hm" to 4
-            HistoryPeriod.DAY, HistoryPeriod.SINCE_UNPLUG -> "Hm" to 4
-            HistoryPeriod.WEEK -> "EEEHm" to 4
-            HistoryPeriod.MONTH -> "MMMd" to 4
-            HistoryPeriod.ALL -> "MMMd" to 4
-        }
     return buildList {
         for (i in 0..count) {
             val position = i.toFloat() / count
@@ -466,29 +448,6 @@ fun signalQualityZones(metric: NetworkHistoryMetric): List<ChartQualityZone>? {
 }
 
 // ── Unit helpers ────────────────────────────────────────────────────────────────
-
-fun batteryMetricUnit(
-    metric: BatteryHistoryMetric,
-    temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS,
-): String =
-    when (metric) {
-        BatteryHistoryMetric.LEVEL -> "%"
-        BatteryHistoryMetric.TEMPERATURE -> if (temperatureUnit == TemperatureUnit.CELSIUS) "°C" else "°F"
-        BatteryHistoryMetric.CURRENT -> " mA"
-        BatteryHistoryMetric.VOLTAGE -> " V"
-    }
-
-fun networkMetricUnit(metric: NetworkHistoryMetric): String =
-    when (metric) {
-        NetworkHistoryMetric.SIGNAL -> " dBm"
-        NetworkHistoryMetric.LATENCY -> " ms"
-    }
-
-fun sessionMetricUnit(metric: SessionGraphMetric): String =
-    when (metric) {
-        SessionGraphMetric.CURRENT -> " mA"
-        SessionGraphMetric.POWER -> " W"
-    }
 
 // ── Composable label resolvers ──────────────────────────────────────────────────
 

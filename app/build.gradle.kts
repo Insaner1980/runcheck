@@ -389,10 +389,6 @@ android {
 
         // Don't lint generated code
         checkGeneratedSources = false
-
-        // Write HTML + XML reports for CI/local review
-        htmlReport = true
-        xmlReport = true
     }
 }
 

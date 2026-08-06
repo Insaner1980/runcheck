@@ -6,17 +6,17 @@ runcheck is a native Android app (Kotlin + Jetpack Compose) that monitors device
 
 ## Tech Stack
 
-- **Language:** Kotlin 2.3.0 (via AGP 9.1.1 built-in Kotlin)
-- **UI:** Jetpack Compose with Material 3 (BOM 2026.03.00), single dark theme
+- **Language:** Kotlin Gradle/Compose plugin 2.4.10 with Kotlin runtime constraints 2.3.20
+- **UI:** Jetpack Compose with Material 3 (BOM 2026.06.01), single dark theme
 - **Min SDK:** 26 (Android 8.0)
 - **Target SDK:** Android 17 (API 37)
 - **Compile SDK:** Android 17 (API 37)
 - **Architecture:** MVVM with Clean Architecture layers (data → domain → ui)
 - **Database:** Room 2.8.4 for local historical data
-- **Async:** Kotlin Coroutines 1.10.2 + Flow
-- **DI:** Hilt 2.59.2
+- **Async:** Kotlin Coroutines 1.11.0 + Flow
+- **DI:** Hilt 2.60.1
 - **Charts:** Custom Compose components (TrendChart with axes/grid/tooltip/quality zones, AreaChart, HeatStrip, SegmentedBar)
-- **Build:** Gradle 9.4.0 with Kotlin DSL, AGP 9.1.1, KSP 2.3.1
+- **Build:** Gradle 9.6.1 with Kotlin DSL, AGP 9.2.1, KSP 2.3.9
 - **Localization:** English only (Finnish translations preserved in git history for future use)
 
 ## Project Structure
@@ -326,7 +326,7 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 ## Build & Release
 
 - Use a single `app` module (no multi-module until necessary)
-- **Static analysis:** ktlint (formatting, rule engine 1.8.0, compose-rules ktlint 0.5.9) + detekt 1.23.8 with compose-rules detekt 0.4.28 + Android Lint (correctness/security/a11y checks)
+- **Static analysis:** ktlint (rule engine 1.8.0, compose-rules 0.6.3) + Detekt 2.0.0-alpha.5 (`dev.detekt`, compose-rules 0.6.3) + Android Lint + Compose Stability Analyzer 0.12.0
 - ProGuard/R8 minification enabled for release builds
 - Generate signed APK/AAB for Play Store
 - Version code: manually increment `versionCode` in `app/build.gradle.kts` before each Play upload
@@ -334,7 +334,7 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 
 ## Build Notes
 
-- AGP 9.1.1 built-in Kotlin handles Kotlin compilation; `kotlin.compose` plugin applied separately for Compose compiler support
+- AGP 9.2.1 built-in Kotlin handles Kotlin compilation; `kotlin.compose` plugin is applied separately for Compose compiler support. The Kotlin 2.4.10 blocker is resolved: Compose Stability Analyzer 0.12.0 supports that compiler line and both stability variants regenerate cleanly. AGP itself remains on 9.2.1.
 - `android.disallowKotlinSourceSets=false` is needed for KSP generated sources with AGP 9
 - `BatteryManager.BATTERY_PROPERTY_CHARGING_CYCLE_COUNT` and `STATE_OF_HEALTH` are not in the public SDK — use raw integer constants (8 and 12)
 - Pull-to-refresh uses `PullToRefreshBox` (not the deprecated `PullToRefreshContainer`)
@@ -342,7 +342,7 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 ## Local Development Setup
 
 - **`local.properties`** is gitignored and must be created locally so Gradle can find the Android SDK. Single line: `sdk.dir=<path>` (e.g. `C\:\\Users\\<user>\\AppData\\Local\\Android\\Sdk` on Windows, `/home/<user>/Android/Sdk` on Linux).
-- **JDK 21** required (Android Studio's bundled JBR is fine: `C:\Program Files\Android\Android Studio\jbr` on Windows).
+- **JDK 17 or newer** is required by the Android toolchain; the Java source and bytecode target remains 17 (Android Studio's bundled JBR is fine on Windows).
 - **Build commands:**
   - Windows (PowerShell): `.\gradlew.bat assembleDebug`
   - Linux/macOS: `./gradlew assembleDebug`

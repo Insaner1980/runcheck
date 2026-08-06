@@ -4,14 +4,9 @@ import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.repository.StorageRepository
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class GetStorageHistoryUseCase
     @Inject
     constructor(
@@ -19,19 +14,5 @@ class GetStorageHistoryUseCase
         private val proStatusProvider: ProStatusProvider,
     ) {
         operator fun invoke(period: HistoryPeriod = HistoryPeriod.WEEK): Flow<List<StorageReading>> =
-            proStatusProvider.isProUser
-                .distinctUntilChanged()
-                .flatMapLatest { isPro ->
-                    if (!isPro) {
-                        flowOf(emptyList())
-                    } else {
-                        val since =
-                            when (period) {
-                                HistoryPeriod.ALL, HistoryPeriod.SINCE_UNPLUG -> 0L
-                                else -> System.currentTimeMillis() - period.durationMs
-                            }
-                        val limit = if (period == HistoryPeriod.ALL) 5_000 else null
-                        storageRepository.getReadingsSince(since, limit)
-                    }
-                }
+            proStatusProvider.proHistoryFlow(period, storageRepository::getReadingsSince)
     }

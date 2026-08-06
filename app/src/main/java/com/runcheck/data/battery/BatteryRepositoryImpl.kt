@@ -176,7 +176,7 @@ class BatteryRepositoryImpl
         )
     }
 
-private fun BatteryReadingEntity.toDomain() =
+internal fun BatteryReadingEntity.toDomain() =
     BatteryReading(
         id = id,
         timestamp = timestamp,

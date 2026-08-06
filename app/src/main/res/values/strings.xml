@@ -23,12 +23,35 @@
     <string name="home_network_card">Network</string>
     <string name="home_thermal_card">Thermal</string>
     <string name="home_storage_card">Storage</string>
+    <string name="home_network_offline">Offline</string>
+    <string name="home_network_mobile_descriptor">%1$s on %2$s</string>
+    <string name="home_network_mobile_carrier">Cellular on %1$s</string>
+    <string name="home_network_signal_excellent">Excellent signal</string>
+    <string name="home_network_signal_good">Good signal</string>
+    <string name="home_network_signal_fair">Fair signal</string>
+    <string name="home_network_signal_poor">Poor signal</string>
+    <string name="home_network_signal_none">No signal</string>
+    <string name="home_battery_estimated_full_capacity">Estimated full capacity</string>
+    <string name="home_battery_charging_now">Charging now.</string>
+    <string name="home_battery_charging_via">Charging via %1$s.</string>
+    <string name="home_battery_discharging_now">Discharging now.</string>
+    <string name="home_battery_fully_charged">Fully charged.</string>
+    <string name="home_battery_not_charging">Not charging.</string>
+    <string name="home_storage_status_healthy">Plenty free</string>
+    <string name="home_storage_status_fair">Space getting low</string>
+    <string name="home_storage_status_poor">Low space</string>
+    <string name="home_storage_status_critical">Almost full</string>
     <string name="home_chargers_card">Chargers</string>
     <string name="home_app_usage_card">App Usage</string>
     <string name="home_chargers_desc">Test &amp; compare your chargers</string>
-    <string name="home_health_score">HEALTH SCORE</string>
-    <string name="home_device_good_shape">Your device is in %1$s shape.</string>
-    <string name="home_temp_elevated">Temperature is slightly elevated.</string>
+    <plurals name="home_health_context">
+        <item quantity="one">One thing is worth a look. Updated %1$d minute ago.</item>
+        <item quantity="other">One thing is worth a look. Updated %1$d minutes ago.</item>
+    </plurals>
+    <string name="home_full_check">Run a full check</string>
+    <string name="home_full_check_running">Checking</string>
+    <string name="home_full_check_content_description">Run a full device health check</string>
+    <string name="home_full_check_state_running">Checking, unavailable</string>
     <string name="home_quick_tools">QUICK TOOLS</string>
     <string name="home_speed_test">Speed Test</string>
     <string name="home_test_compare">Test &amp; compare</string>
@@ -71,7 +94,6 @@
     <string name="insight_heat_battery_wear_title">Higher battery drain coincides with heat</string>
     <string name="insight_heat_battery_wear_body">During hotter periods, battery drain ran about %1$s%% higher, with battery temperature peaking around %2$s°C.</string>
     <string name="home_free_suffix">free</string>
-    <string name="home_status_summary">%1$s · %2$s · %3$s</string>
     <string name="home_thermal_summary">%1$s · %2$s</string>
     <string name="home_storage_free">%1$s %2$s</string>
 
@@ -211,6 +233,7 @@
 
     <!-- Units -->
     <string name="unit_percent">%</string>
+    <string name="unit_milliamp_hours">mAh</string>
     <string name="unit_milliamps">mA</string>
     <string name="unit_celsius">°C</string>
     <string name="unit_dbm">dBm</string>
@@ -516,6 +539,8 @@
     <string name="billing_service_unavailable">Google Play Billing is temporarily unavailable. Try again shortly.</string>
     <string name="billing_network_error">Could not reach Google Play. Check your connection and try again.</string>
     <string name="billing_item_unavailable">This purchase is not available right now.</string>
+    <string name="billing_insufficient_funds">Payment was declined because there are insufficient funds. Choose another payment method and try again.</string>
+    <string name="billing_user_ineligible">This account is not eligible for this purchase.</string>
     <string name="billing_already_owned">You already own runcheck Pro. Restoring now.</string>
     <string name="settings_version">Version %1$s</string>
 

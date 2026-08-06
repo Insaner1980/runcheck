@@ -21,7 +21,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -68,6 +67,7 @@ import com.runcheck.ui.chart.BatteryHistoryMetric
 import com.runcheck.ui.chart.ChargingSessionSummary
 import com.runcheck.ui.chart.ChartStatsRow
 import com.runcheck.ui.chart.FullscreenChartSource
+import com.runcheck.ui.chart.HistoryChartContent
 import com.runcheck.ui.chart.MAX_HISTORY_CHART_POINTS
 import com.runcheck.ui.chart.MAX_SESSION_CHART_POINTS
 import com.runcheck.ui.chart.SessionGraphMetric
@@ -85,7 +85,6 @@ import com.runcheck.ui.chart.sessionGraphMetricLabel
 import com.runcheck.ui.chart.sessionGraphWindowLabel
 import com.runcheck.ui.common.ApplyFullscreenChartSelectionResult
 import com.runcheck.ui.common.EnumFilterChipRow
-import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.batteryHealthLabel
 import com.runcheck.ui.common.chargingStatusLabel
 import com.runcheck.ui.common.formatDecimal
@@ -96,18 +95,26 @@ import com.runcheck.ui.common.resolve
 import com.runcheck.ui.common.temperatureBandLabel
 import com.runcheck.ui.components.AreaChart
 import com.runcheck.ui.components.CardSectionTitle
+import com.runcheck.ui.components.CenteredLoadingState
+import com.runcheck.ui.components.CenteredRetryState
 import com.runcheck.ui.components.ConfidenceBadge
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.MetricPillRow
 import com.runcheck.ui.components.MetricRow
+import com.runcheck.ui.components.ObservedScreenScaffold
 import com.runcheck.ui.components.ProBadgePill
 import com.runcheck.ui.components.ProFeatureLockedState
+import com.runcheck.ui.components.ProgressHeroMetric
 import com.runcheck.ui.components.ProgressRing
-import com.runcheck.ui.components.PullToRefreshWrapper
+import com.runcheck.ui.components.RefreshableDetailColumn
+import com.runcheck.ui.components.RuncheckCard
+import com.runcheck.ui.components.SectionDivider
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.TrendChart
+import com.runcheck.ui.components.collectObservedScreenState
 import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.info.InfoSheetContent
@@ -125,8 +132,6 @@ import com.runcheck.ui.theme.numericHeroDisplayTextStyle
 import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
 import com.runcheck.ui.theme.numericHeroLevelTextStyle
 import com.runcheck.ui.theme.numericHeroUnitTextStyle
-import com.runcheck.ui.theme.runcheckCardColors
-import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.runcheckHeroCardColors
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColorForPercent
@@ -148,55 +153,32 @@ fun BatteryDetailScreen(
     onConsumeFullscreenResult: () -> Unit = {},
     viewModel: BatteryViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
-    val loadingDescription = stringResource(R.string.a11y_loading)
+    val screenState = collectObservedScreenState(viewModel.uiState, viewModel.isRefreshing)
 
-    LifecycleStartStopEffect(
+    ObservedScreenScaffold(
         onStart = viewModel::startObserving,
         onStop = viewModel::stopObserving,
-    )
-
-    Column(modifier = modifier.fillMaxSize()) {
-        DetailTopBar(
-            title = "",
-            onBack = onBack,
-        )
+        modifier = modifier,
+        topBar = { DetailTopBar(title = "", onBack = onBack) },
+    ) {
         ContentContainer {
-            when (val state = uiState) {
+            when (val state = screenState.uiState) {
                 is BatteryUiState.Loading -> {
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .semantics {
-                                contentDescription = loadingDescription
-                                liveRegion =
-                                    LiveRegionMode.Polite
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                    CenteredLoadingState(description = screenState.loadingDescription)
                 }
 
                 is BatteryUiState.Error -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                        ) {
-                            Text(state.message.resolve())
-                            TextButton(onClick = { viewModel.refresh() }) {
-                                Text(stringResource(R.string.common_retry))
-                            }
-                        }
-                    }
+                    CenteredRetryState(
+                        message = state.message.resolve(),
+                        onRetry = viewModel::refresh,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
                 }
 
                 is BatteryUiState.Success -> {
                     BatteryContent(
                         state = state,
-                        isRefreshing = isRefreshing,
+                        isRefreshing = screenState.isRefreshing,
                         onRefresh = { viewModel.refresh() },
                         onPeriodChange = { viewModel.setHistoryPeriod(it) },
                         onNavigateToCharger = onNavigateToCharger,
@@ -301,57 +283,46 @@ private fun BatteryContent(
             )
         }
 
-    PullToRefreshWrapper(
+    RefreshableDetailColumn(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
-        ) {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
 
-            BatteryOverviewSection(
-                state = state,
-                battery = battery,
-                onDismissInfoCard = onDismissInfoCard,
-                onNavigateToLearnArticle = onNavigateToLearnArticle,
-                onInfoClick = { activeInfoSheetState.value = it },
-            )
+        BatteryOverviewSection(
+            state = state,
+            battery = battery,
+            onDismissInfoCard = onDismissInfoCard,
+            onNavigateToLearnArticle = onNavigateToLearnArticle,
+            onInfoClick = { activeInfoSheetState.value = it },
+        )
 
-            BatteryChargingSection(
-                state = state,
-                battery = battery,
-                chargingSessionSummary = chargingSessionSummary,
-                selectedSessionMetric = sessionMetric,
-                onSessionMetricChange = { selectedSessionMetricState.value = it },
-                selectedSessionWindow = sessionWindow,
-                onSessionWindowChange = { selectedSessionWindowState.value = it },
-                onUpgradeToPro = onUpgradeToPro,
-                onNavigateToFullscreen = onNavigateToFullscreen,
-                onDismissInfoCard = onDismissInfoCard,
-                onNavigateToLearnArticle = onNavigateToLearnArticle,
-                onInfoClick = { activeInfoSheetState.value = it },
-            )
+        BatteryChargingSection(
+            state = state,
+            battery = battery,
+            chargingSessionSummary = chargingSessionSummary,
+            selectedSessionMetric = sessionMetric,
+            onSessionMetricChange = { selectedSessionMetricState.value = it },
+            selectedSessionWindow = sessionWindow,
+            onSessionWindowChange = { selectedSessionWindowState.value = it },
+            onUpgradeToPro = onUpgradeToPro,
+            onNavigateToFullscreen = onNavigateToFullscreen,
+            onDismissInfoCard = onDismissInfoCard,
+            onNavigateToLearnArticle = onNavigateToLearnArticle,
+            onInfoClick = { activeInfoSheetState.value = it },
+        )
 
-            BatteryFooterSection(
-                state = state,
-                selectedHistoryMetric = historyMetric,
-                onHistoryMetricChange = { selectedHistoryMetricState.value = it },
-                onPeriodChange = onPeriodChange,
-                onUpgradeToPro = onUpgradeToPro,
-                onNavigateToFullscreen = onNavigateToFullscreen,
-                onNavigateToCharger = onNavigateToCharger,
-                onNavigateToLearnArticle = onNavigateToLearnArticle,
-                onInfoClick = { activeInfoSheetState.value = it },
-            )
-
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
-        }
+        BatteryFooterSection(
+            state = state,
+            selectedHistoryMetric = historyMetric,
+            onHistoryMetricChange = { selectedHistoryMetricState.value = it },
+            onPeriodChange = onPeriodChange,
+            onUpgradeToPro = onUpgradeToPro,
+            onNavigateToFullscreen = onNavigateToFullscreen,
+            onNavigateToCharger = onNavigateToCharger,
+            onNavigateToLearnArticle = onNavigateToLearnArticle,
+            onInfoClick = { activeInfoSheetState.value = it },
+        )
     }
 
     InfoSheetHost(
@@ -500,11 +471,7 @@ private fun BatteryOverviewSection( // NOSONAR
                     state.liveTempC.size >= 2 ||
                     state.liveVoltage.size >= 2
             if (hasBatteryLiveCharts) {
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                )
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+                SectionDivider()
             }
             if (state.liveLevel.size >= 2) {
                 LiveChart(
@@ -687,17 +654,9 @@ private fun BatteryChargingSection( // NOSONAR
             )
         }
 
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-        HorizontalDivider(
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-        )
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+        SectionDivider()
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-            verticalAlignment = Alignment.Top,
-        ) {
+        MetricPillRow {
             MetricPill(
                 label = stringResource(R.string.battery_status),
                 value = chargingStatusLabel(battery.chargingStatus),
@@ -713,10 +672,7 @@ private fun BatteryChargingSection( // NOSONAR
 
         state.currentStats?.let { stats ->
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-            ) {
+            MetricPillRow {
                 MetricPill(
                     label = stringResource(R.string.battery_current_average),
                     value = stringResource(R.string.value_milliamps_int, stats.avg),
@@ -971,117 +927,70 @@ private fun BatteryHeroSection(
             }
         } ?: estimatingText
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
+    RuncheckCard(
         colors = runcheckHeroCardColors(),
-        elevation = runcheckCardElevation(),
-        shape = MaterialTheme.shapes.large,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
         Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
+            SectionHeader(text = stringResource(R.string.battery_title))
+
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
+
+            ProgressHeroMetric(
+                progress = battery.level / 100f,
+                value = battery.level.toString(),
+                unit = stringResource(R.string.unit_percent),
+                progressColor = statusColorForPercent(battery.level),
+                contentDescription =
+                    stringResource(
+                        R.string.a11y_progress_percent,
+                        stringResource(R.string.battery_level),
+                        battery.level,
+                    ),
             ) {
-                SectionHeader(text = stringResource(R.string.battery_title))
+                Text(
+                    text = heroStatusText,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
 
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg),
-                ) {
-                    // Smaller decorative ring
-                    ProgressRing(
-                        progress = battery.level / 100f,
-                        modifier = Modifier.size(100.dp),
-                        strokeWidth = 6.dp,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        progressColor = statusColorForPercent(battery.level),
-                        contentDescription =
-                            stringResource(
-                                R.string.a11y_progress_percent,
-                                stringResource(R.string.battery_level),
-                                battery.level,
-                            ),
-                    ) {}
-
-                    // Large typographic value
-                    Column {
-                        Row(verticalAlignment = Alignment.Bottom) {
-                            Text(
-                                text = battery.level.toString(),
-                                style = MaterialTheme.numericHeroDisplayTextStyle,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = stringResource(R.string.unit_percent),
-                                style = MaterialTheme.numericHeroDisplayUnitTextStyle,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 2.dp, bottom = 12.dp),
-                            )
-                        }
-                        Text(
-                            text = heroStatusText,
-                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-                    verticalAlignment = Alignment.Top,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
+                verticalAlignment = Alignment.Top,
+            ) {
+                MetricPill(
+                    label = stringResource(R.string.battery_drain_rate),
+                    value = drainRateText,
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("drainRate") },
+                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
                 ) {
                     MetricPill(
-                        label = stringResource(R.string.battery_drain_rate),
-                        value = drainRateText,
-                        modifier = Modifier.weight(1f),
-                        onInfoClick = { onInfoClick("drainRate") },
+                        label = stringResource(R.string.battery_power),
+                        value = powerText,
+                        onInfoClick = { onInfoClick("powerW") },
                     )
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
-                    ) {
-                        MetricPill(
-                            label = stringResource(R.string.battery_power),
-                            value = powerText,
-                            onInfoClick = { onInfoClick("powerW") },
-                        )
-                        ConfidenceBadge(confidence = battery.currentMa.confidence)
-                    }
-                    MetricPill(
-                        label = stringResource(R.string.battery_remaining),
-                        value = remainingText,
-                        modifier = Modifier.weight(1f),
-                        onInfoClick = { onInfoClick("remaining") },
-                    )
+                    ConfidenceBadge(confidence = battery.currentMa.confidence)
                 }
+                MetricPill(
+                    label = stringResource(R.string.battery_remaining),
+                    value = remainingText,
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = { onInfoClick("remaining") },
+                )
             }
         }
     }
-}
-
-private fun calculateDrainRate(history: List<BatteryReading>): Float? {
-    if (history.size < 2) return null
-    val recent = history.sortedByDescending { it.timestamp }
-    val newest = recent.first()
-    val oldest = recent.last()
-    val timeDiffMs = newest.timestamp - oldest.timestamp
-    if (timeDiffMs < 10 * 60 * 1000) return null // need at least 10 min
-    val levelDiff = oldest.level - newest.level
-    if (levelDiff <= 0) return null // only for discharge
-    val hours = timeDiffMs / (1000f * 60f * 60f)
-    return levelDiff / hours
 }
 
 @Composable
@@ -1132,72 +1041,46 @@ private fun BatteryHistoryPanel(
                 }
             val qualityZones = batteryQualityZones(selectedMetric, state.temperatureUnit)
 
-            if (chartModel.chartData.size >= 2) {
-                val chartAccessibilitySummary =
-                    rememberChartAccessibilitySummary(
-                        title =
-                            stringResource(
-                                R.string.fullscreen_chart_title_battery,
-                                historyMetricLabel(selectedMetric),
-                            ),
+            val fullscreenSeed =
+                remember(chartModel, selectedMetric, state.selectedPeriod, state.temperatureUnit) {
+                    FullscreenChartUiState.Success(
                         chartData = chartModel.chartData,
+                        chartTimestamps = chartModel.chartTimestamps,
                         unit = chartModel.unit,
-                        decimals = chartModel.tooltipDecimals,
-                        timeContext =
-                            stringResource(
-                                R.string.a11y_chart_context_history,
-                                historyPeriodLabel(state.selectedPeriod),
-                            ),
+                        selectedMetric = selectedMetric.name,
+                        selectedPeriod = state.selectedPeriod.name,
+                        metricOptions = BatteryHistoryMetric.entries.map { it.name },
+                        periodOptions = HistoryPeriod.entries.map { it.name },
+                        yLabels = chartModel.yLabels,
+                        xLabels = chartModel.xLabels,
+                        tooltipDecimals = chartModel.tooltipDecimals,
+                        tooltipTimeSkeleton = chartModel.tooltipTimeSkeleton,
+                        temperatureUnit = state.temperatureUnit,
                     )
-                val fullscreenSeed =
-                    remember(chartModel, selectedMetric, state.selectedPeriod, state.temperatureUnit) {
-                        FullscreenChartUiState.Success(
-                            chartData = chartModel.chartData,
-                            chartTimestamps = chartModel.chartTimestamps,
-                            unit = chartModel.unit,
-                            selectedMetric = selectedMetric.name,
-                            selectedPeriod = state.selectedPeriod.name,
-                            metricOptions = BatteryHistoryMetric.entries.map { it.name },
-                            periodOptions = HistoryPeriod.entries.map { it.name },
-                            yLabels = chartModel.yLabels,
-                            xLabels = chartModel.xLabels,
-                            tooltipDecimals = chartModel.tooltipDecimals,
-                            tooltipTimeSkeleton = chartModel.tooltipTimeSkeleton,
-                            temperatureUnit = state.temperatureUnit,
-                        )
-                    }
-                Text(
-                    text = "${historyPeriodLabel(state.selectedPeriod)} · ${historyMetricLabel(selectedMetric)}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                TrendChart(
-                    data = chartModel.chartData,
-                    modifier = Modifier.fillMaxWidth(),
-                    contentDescription = chartAccessibilitySummary,
-                    yLabels = chartModel.yLabels.ifEmpty { null },
-                    xLabels = chartModel.xLabels.ifEmpty { null },
-                    showGrid = true,
-                    qualityZones = qualityZones,
-                    tooltipFormatter = { index ->
-                        formatChartTooltip(chartModel, index)
-                    },
-                    onExpandClick = {
-                        FullscreenChartSeedStore.prime(
-                            source = FullscreenChartSource.BATTERY_HISTORY,
-                            state = fullscreenSeed,
-                        )
-                        onNavigateToFullscreen(
-                            FullscreenChartSource.BATTERY_HISTORY.name,
-                            selectedMetric.name,
-                            state.selectedPeriod.name,
-                        )
-                    },
-                )
-                ChartStatsRow(chartModel = chartModel)
-            } else {
-                BatteryHistoryEmptyState()
-            }
+                }
+            HistoryChartContent(
+                accessibilityTitle =
+                    stringResource(
+                        R.string.fullscreen_chart_title_battery,
+                        historyMetricLabel(selectedMetric),
+                    ),
+                label = "${historyPeriodLabel(state.selectedPeriod)} · ${historyMetricLabel(selectedMetric)}",
+                periodLabel = historyPeriodLabel(state.selectedPeriod),
+                chartModel = chartModel,
+                qualityZones = qualityZones,
+                onExpandClick = {
+                    FullscreenChartSeedStore.prime(
+                        source = FullscreenChartSource.BATTERY_HISTORY,
+                        state = fullscreenSeed,
+                    )
+                    onNavigateToFullscreen(
+                        FullscreenChartSource.BATTERY_HISTORY.name,
+                        selectedMetric.name,
+                        state.selectedPeriod.name,
+                    )
+                },
+                emptyContent = { BatteryHistoryEmptyState() },
+            )
         } else {
             ProFeatureLockedState(
                 title = stringResource(R.string.battery_history_title),
@@ -1343,10 +1226,7 @@ private fun BatterySessionSummary(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-        ) {
+        MetricPillRow {
             BatterySummaryStat(
                 label = stringResource(R.string.battery_session_started),
                 value = stringResource(R.string.value_percent, summary.startLevel),
@@ -1363,10 +1243,7 @@ private fun BatterySessionSummary(
                 modifier = Modifier.weight(1f),
             )
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-        ) {
+        MetricPillRow {
             BatterySummaryStat(
                 label = stringResource(R.string.battery_session_duration),
                 value = formatDuration(summary.durationMs),
@@ -1410,10 +1287,7 @@ private fun BatteryRemainingTimePanel(
     BatteryPanel {
         CardSectionTitle(text = stringResource(R.string.battery_remaining_time_title))
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-        ) {
+        MetricPillRow {
             BatterySummaryStat(
                 label = stringResource(R.string.battery_remaining_time_to_80),
                 value =
@@ -1582,21 +1456,11 @@ private fun BatteryPanel(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = runcheckCardColors(),
-        elevation = runcheckCardElevation(),
-        shape = MaterialTheme.shapes.large,
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.base),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-            content = content,
-        )
-    }
+    RuncheckCard(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+        content = content,
+    )
 }
 
 @Composable
@@ -1697,43 +1561,48 @@ private fun BatteryScreenUsagePanel(
     BatteryPanel {
         CardSectionTitle(text = stringResource(R.string.battery_usage_section))
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                MetricPill(
-                    label = stringResource(R.string.battery_screen_on),
-                    value =
-                        usage.screenOnDrainRate?.let {
-                            stringResource(R.string.value_percent_per_hour, it.toDouble())
-                        } ?: stringResource(R.string.battery_estimating),
-                    onInfoClick = { onInfoClick("screenOnOff") },
-                )
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                Text(
-                    text = formatDurationCompact(usage.screenOnDurationMs),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                MetricPill(
-                    label = stringResource(R.string.battery_screen_off),
-                    value =
-                        usage.screenOffDrainRate?.let {
-                            stringResource(R.string.value_percent_per_hour, it.toDouble())
-                        } ?: stringResource(R.string.battery_estimating),
-                    onInfoClick = { onInfoClick("screenOnOff") },
-                )
-                Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-                Text(
-                    text = formatDurationCompact(usage.screenOffDurationMs),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+        MetricPillRow {
+            ScreenUsageMetric(
+                label = stringResource(R.string.battery_screen_on),
+                drainRate = usage.screenOnDrainRate,
+                durationMs = usage.screenOnDurationMs,
+                onInfoClick = onInfoClick,
+                modifier = Modifier.weight(1f),
+            )
+            ScreenUsageMetric(
+                label = stringResource(R.string.battery_screen_off),
+                drainRate = usage.screenOffDrainRate,
+                durationMs = usage.screenOffDurationMs,
+                onInfoClick = onInfoClick,
+                modifier = Modifier.weight(1f),
+            )
         }
+    }
+}
+
+@Composable
+private fun ScreenUsageMetric(
+    label: String,
+    drainRate: Float?,
+    durationMs: Long,
+    onInfoClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        MetricPill(
+            label = label,
+            value =
+                drainRate?.let {
+                    stringResource(R.string.value_percent_per_hour, it.toDouble())
+                } ?: stringResource(R.string.battery_estimating),
+            onInfoClick = { onInfoClick("screenOnOff") },
+        )
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
+        Text(
+            text = formatDurationCompact(durationMs),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -1747,10 +1616,7 @@ private fun BatterySleepAnalysisPanel(
     BatteryPanel {
         CardSectionTitle(text = stringResource(R.string.battery_sleep_analysis))
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-        ) {
+        MetricPillRow {
             MetricPill(
                 label = stringResource(R.string.battery_deep_sleep),
                 value = formatDurationCompact(sleep.deepSleepDurationMs),
@@ -1796,10 +1662,7 @@ private fun BatteryStatisticsPanel(
         )
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-        ) {
+        MetricPillRow {
             MetricPill(
                 label = stringResource(R.string.battery_stats_charged),
                 value = stringResource(R.string.battery_stats_pct_total, statistics.totalChargedPct),
@@ -1821,16 +1684,9 @@ private fun BatteryStatisticsPanel(
         }
 
         statistics.avgDrainRatePctPerHour?.let { rate ->
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-            )
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            SectionDivider()
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-            ) {
+            MetricPillRow {
                 MetricPill(
                     label = stringResource(R.string.battery_stats_avg_usage),
                     value = stringResource(R.string.value_percent_per_hour, rate.toDouble()),

@@ -6,6 +6,7 @@ import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SignalQuality
+import com.runcheck.testutil.assertRepositoryReads
 import com.runcheck.util.TestAppDispatchers
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -60,10 +61,12 @@ class NetworkRepositoryImplTest {
             coEvery { networkReadingDao.getReadingsSinceSync(10L) } returns listOf(entity)
             coEvery { networkReadingDao.getAll() } returns listOf(entity)
 
-            assertEquals(listOf(expected), repository.getReadingsSince(10L, limit = null).first())
-            assertEquals(listOf(expected), repository.getReadingsSince(10L, limit = 1).first())
-            assertEquals(listOf(expected), repository.getReadingsSinceSync(10L))
-            assertEquals(listOf(expected), repository.getAllReadings())
+            assertRepositoryReads(
+                listOf(expected),
+                { repository.getReadingsSince(10L, it) },
+                { repository.getReadingsSinceSync(10L) },
+                repository::getAllReadings,
+            )
         }
 
     @Test

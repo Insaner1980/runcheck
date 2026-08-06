@@ -10,6 +10,7 @@ import com.runcheck.domain.model.ThermalReading
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
 import com.runcheck.domain.usecase.TrackThrottlingEventsUseCase
+import com.runcheck.testutil.assertRepositoryReads
 import com.runcheck.util.TestAppDispatchers
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -44,10 +45,12 @@ class ThermalRepositoryImplTest {
             every { thermalReadingDao.getReadingsSinceLimited(10L, 1) } returns flowOf(listOf(entity))
             coEveryReadings()
 
-            assertEquals(listOf(expected), repository.getReadingsSince(10L, limit = null).first())
-            assertEquals(listOf(expected), repository.getReadingsSince(10L, limit = 1).first())
-            assertEquals(listOf(expected), repository.getReadingsSinceSync(10L))
-            assertEquals(listOf(expected), repository.getAllReadings())
+            assertRepositoryReads(
+                listOf(expected),
+                { repository.getReadingsSince(10L, it) },
+                { repository.getReadingsSinceSync(10L) },
+                repository::getAllReadings,
+            )
         }
 
     @Test

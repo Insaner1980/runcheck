@@ -37,6 +37,7 @@ Legacy billing or ad-related code may still exist in the repo. Do not expand tha
 - Database: Room
 - Preferences: DataStore
 - UI: Jetpack Compose + Material 3
+- Shared orchestration: insight rules extend `SingleCandidateInsightRule` or its specialized bases, while reusable screen, card, and chart structure lives in `ui/components/` and `ui/chart/`; extend these primitives instead of copying their pipelines
 - Background work: WorkManager
 - Widgets: Glance
 - Speed test: M-Lab NDT7 (`ndt7-client-android`)
@@ -136,6 +137,8 @@ Report-reading phrase conventions live in `PROJECT.md` under "Report-reading con
 
 When `osv-scanner`, gitleaks, TruffleHog, or PMD are missing from `PATH`, the shared Android-check wrappers may download and cache verified tool binaries under `.gradle\android-check-tools\`; offline first runs can therefore skip or fail before a cached tool exists. The OSV source scan excludes `.deepsec` so Android-check's own DeepSec tooling dependencies do not fail app dependency scans.
 
+Build-tool transitive security versions are centralized as `runcheck.buildTools.*` properties in `gradle.properties`. Root `build.gradle.kts` applies them only to the affected build, lint, ktlint, and Unified Test Platform configurations; do not replace this with app-runtime-wide forcing or package-level OSV suppression.
+
 Do not run the heavy `lc`, `sc`, Sonar, Dependency-Check, MobSF, DeepSec, or full Gradle verification paths unless the user explicitly asks or they are required to unblock the task. Prefer `-PlanOnly`, task listing, targeted config checks, and narrow tests first.
 
 Project-specific check configuration lives in:
@@ -146,7 +149,7 @@ Project-specific check configuration lives in:
 - `.deepsec\`
 - `.github\dependabot.yml`
 
-Compose-rules versions are intentionally split while the project stays on Detekt 1.23.8: ktlint uses the current 0.5.x line with ktlint explicitly pinned to the compatible 1.8.x rule engine, and Detekt uses the latest 0.4.x line compatible with Detekt 1.x. Do not move Detekt compose-rules to 0.5.x without a Detekt 2.x migration.
+Detekt uses the `dev.detekt` 2.x plugin (`2.0.0-alpha.5`) and both ktlint and Detekt use compose-rules `0.6.3`; ktlint's rule engine is pinned to `1.8.0`. The earlier Compose Stability Analyzer compatibility exception is resolved: analyzer `0.12.0` supports the Kotlin `2.4.10` toolchain, and both the debug and release stability variants regenerate without crashing, so the toolchain now tracks the verified current line.
 
 ## Architecture Rules
 

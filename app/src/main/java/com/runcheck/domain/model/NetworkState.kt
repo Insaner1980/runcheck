@@ -24,4 +24,13 @@ data class NetworkState(
 ) {
     val isConnected: Boolean
         get() = connectionType != ConnectionType.NONE
+
+    companion object {
+        fun disconnected() =
+            NetworkState(
+                connectionType = ConnectionType.NONE,
+                signalDbm = null,
+                signalQuality = SignalQuality.NO_SIGNAL,
+            )
+    }
 }
