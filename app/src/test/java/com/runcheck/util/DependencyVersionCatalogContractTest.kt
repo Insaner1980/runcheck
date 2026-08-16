@@ -50,7 +50,7 @@ class DependencyVersionCatalogContractTest {
                 "agp" to "9.2.1",
                 "kotlin" to "2.4.10",
                 "kotlinRuntime" to "2.3.20",
-                "ksp" to "2.3.9",
+                "ksp" to "2.3.11",
                 "hilt" to "2.60.1",
                 "detekt" to "2.0.0-alpha.5",
                 "stabilityAnalyzer" to "0.12.0",
@@ -98,13 +98,13 @@ class DependencyVersionCatalogContractTest {
             dependencyAnalysisVersion.isAtLeast("3.16.0"),
         )
         assertTrue(
-            "Gradle wrapper must stay on the verified 9.6.1 binary distribution",
-            wrapperProperties.contains("gradle-9.6.1-bin.zip"),
+            "Gradle wrapper must stay on the verified 9.7.0 binary distribution",
+            wrapperProperties.contains("gradle-9.7.0-bin.zip"),
         )
         assertTrue(
-            "Gradle wrapper must verify the official 9.6.1 binary distribution checksum",
+            "Gradle wrapper must verify the official 9.7.0 binary distribution checksum",
             wrapperProperties.contains(
-                "distributionSha256Sum=9c0f7faeeb306cb14e4279a3e084ca6b596894089a0638e68a07c945a32c9e14",
+                "distributionSha256Sum=84fbba45c7f4c64abc77460e1c00f541e9f960e3c7ed2538f1ede19eacd873ae",
             ),
         )
     }
@@ -121,8 +121,8 @@ class DependencyVersionCatalogContractTest {
             detektVersion == "2.0.0-alpha.5",
         )
         assertTrue(
-            "compose-rules Detekt version $composeRulesDetektVersion is not on the Detekt 2 compatible 0.5.9 line",
-            composeRulesDetektVersion == "0.5.9",
+            "compose-rules Detekt version $composeRulesDetektVersion is not on the Detekt 2 compatible 0.6.4 line",
+            composeRulesDetektVersion == "0.6.4",
         )
         assertTrue(
             "Detekt Gradle plugin id $detektPluginId must use the Detekt 2 dev.detekt id",
