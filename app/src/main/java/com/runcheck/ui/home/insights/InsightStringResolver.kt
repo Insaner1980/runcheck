@@ -1,8 +1,9 @@
 package com.runcheck.ui.home.insights
 
+import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import com.runcheck.R
 import com.runcheck.domain.insights.model.Insight
 
@@ -40,22 +41,23 @@ private val insightBodyResources =
 
 @Composable
 internal fun resolveInsightTitle(insight: Insight): String =
-    resolveInsightString(insight.titleKey, insightTitleResources)
+    resolveInsightString(LocalContext.current, insight.titleKey, insightTitleResources)
 
 @Composable
 internal fun resolveInsightBody(insight: Insight): String =
     resolveInsightString(
+        context = LocalContext.current,
         key = insight.bodyKey,
         resources = insightBodyResources,
         args = insight.bodyArgs.toTypedArray(),
     )
 
-@Composable
 private fun resolveInsightString(
+    context: Context,
     key: String,
     resources: Map<String, Int>,
     vararg args: Any,
 ): String {
     val resourceId = resources[key] ?: return key
-    return stringResource(resourceId, *args)
+    return context.getString(resourceId, *args)
 }

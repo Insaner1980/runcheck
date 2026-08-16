@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.sample
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -107,7 +106,7 @@ class ThermalViewModel
             liveTempC.clear()
             liveHeadroom.clear()
             lastObservedThermalState = null
-            screenState.mutableUiState.update { current ->
+            screenState.updateUiState { current ->
                 (current as? ThermalUiState.Success)?.copy(
                     sessionMinTemp = null,
                     sessionMaxTemp = null,
@@ -123,13 +122,13 @@ class ThermalViewModel
                 viewModelScope.launch {
                     getThermalHistory(selectedHistoryPeriod)
                         .catch { e ->
-                            screenState.mutableUiState.update { current ->
+                            screenState.updateUiState { current ->
                                 (current as? ThermalUiState.Success)?.copy(
                                     historyLoadError = e.messageOrRes(R.string.common_error_generic),
                                 ) ?: current
                             }
                         }.collect { readings ->
-                            screenState.mutableUiState.update { current ->
+                            screenState.updateUiState { current ->
                                 (current as? ThermalUiState.Success)?.copy(
                                     thermalHistory = readings,
                                     selectedHistoryPeriod = selectedHistoryPeriod,
@@ -167,7 +166,7 @@ class ThermalViewModel
                             lastObservedThermalState = thermalState
                         }
 
-                        val currentSuccess = screenState.mutableUiState.value as? ThermalUiState.Success
+                        val currentSuccess = screenState.uiState.value as? ThermalUiState.Success
                         ThermalUiState.Success(
                             thermalState = thermalState,
                             throttlingEvents = events,
@@ -186,10 +185,11 @@ class ThermalViewModel
                     }.sample(333L)
                         .catch { e ->
                             screenState.refreshTracker.finish()
-                            screenState.mutableUiState.value =
+                            screenState.updateUiState {
                                 ThermalUiState.Error(e.messageOrRes(R.string.common_error_generic))
+                            }
                         }.collect { state ->
-                            screenState.mutableUiState.value = state
+                            screenState.updateUiState { state }
                             screenState.refreshTracker.finish()
                         }
                 }

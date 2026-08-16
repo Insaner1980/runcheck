@@ -1116,14 +1116,9 @@ Insight row:
 - Dismiss button: 48dp, icon 18dp.
 - Optional arrow icon: 20dp.
 
-Trial/pro status cards on Home:
+Pro status on Home:
 
-- `TrialHomeCard` appears only for active trial.
-- Trial card padding: 16dp.
-- Trial progress bar height: 4dp, corner 2dp.
-- Urgent trial accent: poor status color when days remaining <= 1.
-- Normal trial accent: primary.
-- Post-expiration card padding: 16dp; dismiss action aligned end.
+- `HomeProStatusSection` appears only for verified purchased Pro access.
 
 ### 9.2 Battery Detail
 
@@ -1969,7 +1964,7 @@ Settings dialogs:
 - Confirm action usually `Button`.
 - Dismiss action usually `TextButton`.
 
-### 9.13 Pro Upgrade and Trial
+### 9.13 Pro Upgrade
 
 Pro upgrade screen:
 
@@ -2027,54 +2022,6 @@ Purchase thank-you content:
   - Shape: large.
   - Primary container.
   - Text: `titleMedium`, Bold.
-
-Trial welcome sheet:
-
-- Modal bottom sheet.
-- `skipPartiallyExpanded = true`.
-- Container: `surfaceContainer`.
-- Shape: `BottomSheetShape`.
-- Content padding:
-  - Horizontal 24dp.
-  - Bottom 32dp.
-- Center aligned.
-- Title: `headlineSmall`, Bold.
-- Subtitle: `bodyMedium`, `onSurfaceVariant`.
-- Title/subtitle gap: 8dp.
-- Subtitle/features gap: 24dp.
-- Feature row gap: 12dp.
-- Feature icon: outlined check circle, 20dp, primary.
-- Feature text: `bodyMedium`.
-- Gap after each feature: 12dp.
-- Start button:
-  - Full width.
-  - Height: 52dp.
-  - Shape: large.
-  - Primary container.
-  - Text: `titleMedium`, Bold.
-
-Trial expiration modal:
-
-- Full-screen `Dialog` with `usePlatformDefaultWidth = false`.
-- Surface fills screen.
-- Background: `background`.
-- Pane title semantics.
-- Content padding: 24dp.
-- Center aligned.
-- Lock icon: 64dp, `onSurfaceVariant`.
-- Icon/title gap: 24dp.
-- Title: `headlineMedium`, Bold, centered.
-- Title/body gap: 16dp.
-- Body: `bodyLarge`, `onSurfaceVariant`, centered.
-- Body/button gap: 32dp.
-- Purchase button:
-  - Full width.
-  - Height: 56dp.
-  - Shape: large.
-  - Primary container.
-  - Text: `titleMedium`, Bold.
-- Secondary action gap: 12dp.
-- Continue-free action: `TextButton`, `onSurfaceVariant`.
 
 ### 9.14 Fullscreen Chart
 
@@ -2148,7 +2095,6 @@ Current accessibility behaviors in code:
   - ProgressRing.
   - MiniBar when content description is provided.
   - App usage progress bars.
-  - Trial progress.
   - Cleanup projection.
 - Cleanup scanning/deleting states use polite live regions.
 - Cleanup success overlay uses assertive live region.
@@ -2156,7 +2102,6 @@ Current accessibility behaviors in code:
 - Settings sliders expose a label/value content description.
 - Cleanup group headers expose heading and expand/collapse semantics.
 - Cleanup rows expose checkbox role and toggle state.
-- Trial expiration modal exposes pane title semantics.
 - Decorative icons often clear semantics or set `contentDescription = null`.
 
 ---

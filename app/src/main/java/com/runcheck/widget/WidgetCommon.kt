@@ -1,11 +1,11 @@
 package com.runcheck.widget
 
-import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalContext
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.cornerRadius
@@ -30,10 +30,8 @@ internal fun widgetContainerModifier(): GlanceModifier =
         .clickable(actionStartActivity<MainActivity>())
 
 @Composable
-internal fun WidgetLockedContent(
-    context: Context,
-    widgetNameResId: Int,
-) {
+internal fun WidgetLockedContent(widgetNameResId: Int) {
+    val context = LocalContext.current
     GlanceTheme {
         Column(
             modifier = widgetContainerModifier(),
@@ -62,7 +60,8 @@ internal fun WidgetLockedContent(
 }
 
 @Composable
-internal fun WidgetEmptyContent(context: Context) {
+internal fun WidgetEmptyContent() {
+    val context = LocalContext.current
     GlanceTheme {
         Column(
             modifier = widgetContainerModifier(),
@@ -91,7 +90,8 @@ internal fun WidgetEmptyContent(context: Context) {
 }
 
 @Composable
-internal fun WidgetStaleContent(context: Context) {
+internal fun WidgetStaleContent() {
+    val context = LocalContext.current
     GlanceTheme {
         Column(
             modifier = widgetContainerModifier(),

@@ -24,7 +24,7 @@ class ProRouteAccessPolicyTest {
     }
 
     @Test
-    fun `protected routes remain available to trial and pro access`() {
+    fun `protected routes remain available to purchased pro access`() {
         protectedRoutes.forEach { route ->
             assertEquals(
                 route,

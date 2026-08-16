@@ -167,8 +167,9 @@ fun NetworkDetailScreen(
     fullscreenResultMetric: String? = null,
     fullscreenResultPeriod: String? = null,
     onConsumeFullscreenResult: () -> Unit = {},
-    viewModel: NetworkViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> NetworkViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     val networkUiState by viewModel.networkUiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val loadingDescription = stringResource(R.string.a11y_loading)
@@ -676,8 +677,14 @@ private fun NetworkContent(
             networkState = networkState,
             hasLocationPermission = hasLocationPermission,
             locationEnabled = locationEnabled,
-            locationRequestAttempted = locationRequestAttempted,
-            activity = activity,
+            showLocationSettings =
+                !hasLocationPermission &&
+                    locationRequestAttempted &&
+                    activity?.let {
+                        RuncheckPermissionPolicy.wifiDetailLocationPermissions.none { permission ->
+                            ActivityCompat.shouldShowRequestPermissionRationale(it, permission)
+                        }
+                    } == true,
             onDismissInfoCard = onDismissInfoCard,
             onNavigateToLearnArticle = onNavigateToLearnArticle,
             onRequestLocationPermission = {
@@ -727,8 +734,7 @@ private fun NetworkOverviewSection( // NOSONAR
     networkState: NetworkState,
     hasLocationPermission: Boolean,
     locationEnabled: Boolean,
-    locationRequestAttempted: Boolean,
-    activity: android.app.Activity?,
+    showLocationSettings: Boolean,
     onDismissInfoCard: (String) -> Unit,
     onNavigateToLearnArticle: (String) -> Unit,
     onRequestLocationPermission: () -> Unit,
@@ -788,14 +794,7 @@ private fun NetworkOverviewSection( // NOSONAR
             WifiNameHelpCard(
                 hasLocationPermission = hasLocationPermission,
                 locationEnabled = locationEnabled,
-                showOpenSettings =
-                    !hasLocationPermission &&
-                        locationRequestAttempted &&
-                        activity?.let {
-                            RuncheckPermissionPolicy.wifiDetailLocationPermissions.none { permission ->
-                                ActivityCompat.shouldShowRequestPermissionRationale(it, permission)
-                            }
-                        } == true,
+                showOpenSettings = showLocationSettings,
                 onRequestPermission = onRequestLocationPermission,
                 onOpenSettings = onOpenLocationHelp,
             )

@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalContext
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
@@ -49,19 +50,17 @@ class BatteryWidget : GlanceAppWidget() {
                     .collectAsState(initial = WidgetRenderState.Locked)
 
             when (val state = widgetState) {
-                WidgetRenderState.Empty -> WidgetEmptyContent(context)
-                WidgetRenderState.Locked -> WidgetLockedContent(context, R.string.widget_battery_name)
-                WidgetRenderState.Stale -> WidgetStaleContent(context)
-                is WidgetRenderState.Content -> BatteryWidgetContent(context, state.snapshot)
+                WidgetRenderState.Empty -> WidgetEmptyContent()
+                WidgetRenderState.Locked -> WidgetLockedContent(R.string.widget_battery_name)
+                WidgetRenderState.Stale -> WidgetStaleContent()
+                is WidgetRenderState.Content -> BatteryWidgetContent(state.snapshot)
             }
         }
     }
 
     @Composable
-    private fun BatteryWidgetContent(
-        context: Context,
-        snapshot: BatteryWidgetSnapshot,
-    ) {
+    private fun BatteryWidgetContent(snapshot: BatteryWidgetSnapshot) {
+        val context = LocalContext.current
         val levelText = context.getString(R.string.widget_percent_value, snapshot.level)
         val tempText = context.getString(R.string.widget_temperature_value, snapshot.temperatureC)
         val currentDisplay =

@@ -23,25 +23,19 @@
     <string name="home_network_card">Network</string>
     <string name="home_thermal_card">Thermal</string>
     <string name="home_storage_card">Storage</string>
-    <string name="home_network_offline">Offline</string>
-    <string name="home_network_mobile_descriptor">%1$s on %2$s</string>
-    <string name="home_network_mobile_carrier">Cellular on %1$s</string>
     <string name="home_network_signal_excellent">Excellent signal</string>
     <string name="home_network_signal_good">Good signal</string>
     <string name="home_network_signal_fair">Fair signal</string>
     <string name="home_network_signal_poor">Poor signal</string>
     <string name="home_network_signal_none">No signal</string>
-    <string name="home_battery_estimated_full_capacity">Estimated full capacity</string>
-    <string name="home_battery_charging_now">Charging now.</string>
-    <string name="home_battery_charging_via">Charging via %1$s.</string>
-    <string name="home_battery_discharging_now">Discharging now.</string>
-    <string name="home_battery_fully_charged">Fully charged.</string>
-    <string name="home_battery_not_charging">Not charging.</string>
+    <string name="home_battery_status_healthy">Good health</string>
+    <string name="home_battery_status_fair">Fair health</string>
+    <string name="home_battery_status_poor">Poor health</string>
+    <string name="home_battery_status_critical">Failing</string>
     <string name="home_storage_status_healthy">Plenty free</string>
     <string name="home_storage_status_fair">Space getting low</string>
     <string name="home_storage_status_poor">Low space</string>
     <string name="home_storage_status_critical">Almost full</string>
-    <string name="home_chargers_card">Chargers</string>
     <string name="home_app_usage_card">App Usage</string>
     <string name="home_chargers_desc">Test &amp; compare your chargers</string>
     <plurals name="home_health_context">
@@ -93,9 +87,7 @@
     <string name="insight_network_drain_body">During weak cellular coverage, battery drain ran about %1$s%% higher than during stronger signal windows (around %2$s dBm).</string>
     <string name="insight_heat_battery_wear_title">Higher battery drain coincides with heat</string>
     <string name="insight_heat_battery_wear_body">During hotter periods, battery drain ran about %1$s%% higher, with battery temperature peaking around %2$s°C.</string>
-    <string name="home_free_suffix">free</string>
     <string name="home_thermal_summary">%1$s · %2$s</string>
-    <string name="home_storage_free">%1$s %2$s</string>
 
     <!-- Stale monitoring warning -->
     <string name="home_monitoring_stale_title">Background monitoring may have stopped</string>
@@ -233,7 +225,6 @@
 
     <!-- Units -->
     <string name="unit_percent">%</string>
-    <string name="unit_milliamp_hours">mAh</string>
     <string name="unit_milliamps">mA</string>
     <string name="unit_celsius">°C</string>
     <string name="unit_dbm">dBm</string>
@@ -773,34 +764,8 @@
     <string name="pro_thank_you_message">All Pro features are now unlocked. Enjoy the full runcheck experience.</string>
     <string name="pro_thank_you_continue">Let\'s go</string>
 
-    <!-- Trial -->
-    <string name="trial_welcome_title">Welcome to runcheck Pro Trial</string>
-    <string name="trial_welcome_subtitle">All Pro features are unlocked for 7 days. Explore everything.</string>
-    <string name="trial_welcome_start">Start Exploring</string>
-    <plurals name="trial_days_remaining">
-        <item quantity="one">Pro Trial — %1$d day remaining</item>
-        <item quantity="other">Pro Trial — %1$d days remaining</item>
-    </plurals>
-    <string name="trial_ends_tomorrow">Pro Trial ends tomorrow</string>
-    <string name="trial_keep_pro">Keep Pro</string>
-    <string name="trial_pro_trial_label">Pro Trial</string>
-    <string name="trial_day5_banner">Your battery history now has 5 days of data. Keep tracking with Pro.</string>
-    <string name="trial_expired_title">Your Pro Trial Has Ended</string>
-    <string name="trial_expired_body">Extended history, charger comparison, and exports are now locked.</string>
-    <string name="trial_continue_free">Continue with Free</string>
-    <string name="trial_expired_upgrade">Your Pro trial ended. Unlock Pro to keep all features.</string>
-    <string name="trial_expired_upgrade_with_price">Your Pro trial ended. Unlock Pro for %1$s.</string>
-    <string name="trial_dismiss">Dismiss</string>
     <string name="a11y_dismiss_card">Dismiss card</string>
     <string name="a11y_open_insight_destination">Open related details</string>
-
-    <!-- Trial Notifications -->
-    <string name="notification_channel_trial">Trial Reminders</string>
-    <string name="notification_channel_trial_description">Reminders about your Pro trial status</string>
-    <string name="notification_trial_day5_title">5 days of battery history</string>
-    <string name="notification_trial_day5_text">Your Pro trial has 2 days left. Keep tracking with Pro.</string>
-    <string name="notification_trial_day7_title">Pro trial ended</string>
-    <string name="notification_trial_day7_text">Your 7-day Pro trial is over. Unlock Pro to keep all features.</string>
 
     <!-- General -->
     <string name="common_error_generic">Something went wrong</string>
@@ -842,12 +807,9 @@
         <item quantity="other">%1$d years ago</item>
     </plurals>
     <string name="a11y_exporting_data">Exporting data</string>
-    <string name="a11y_trial_dialog">Trial expired dialog</string>
     <string name="a11y_health_score" tools:ignore="PluralsCandidate">Health score %1$d out of 100</string>
     <string name="a11y_warning">Warning</string>
     <string name="a11y_stale_data_warning">Stale data warning</string>
-    <string name="a11y_trial_expired">Trial expired</string>
-
     <!-- Fullscreen Chart -->
     <string name="a11y_expand_chart_fullscreen">View chart fullscreen</string>
     <string name="chart_expand_action">Fullscreen</string>

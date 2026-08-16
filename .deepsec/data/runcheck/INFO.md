@@ -5,7 +5,7 @@ runcheck is an Android/Kotlin device health diagnostics app. It reads battery, t
 High-value user data:
 - Device health history persisted in Room.
 - Network identifiers and connection details such as SSID, signal, IP, and DNS data.
-- App usage, storage breakdown, charging sessions, widget summaries, Pro and trial state.
+- App usage, storage breakdown, charging sessions, widget summaries, and Pro purchase entitlement state.
 - Exported CSV files and user-controlled cleanup selections.
 
 Important trust boundaries:

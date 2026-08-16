@@ -1,6 +1,5 @@
 package com.runcheck.ui.settings
 
-import android.content.Context
 import android.widget.Toast
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -11,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.runcheck.R
 import com.runcheck.ui.common.resolve
@@ -43,9 +43,9 @@ internal data class SettingsTransientEffectActions(
 @Composable
 internal fun SettingsTransientEffects(
     uiState: SettingsUiState,
-    context: Context,
     actions: SettingsTransientEffectActions,
 ) {
+    val context = LocalContext.current
     val currentActions = rememberUpdatedState(actions)
 
     uiState.billingStatus?.let { status ->

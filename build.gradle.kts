@@ -15,7 +15,11 @@ buildscript {
             "org.bouncycastle:bcpkix-jdk18on:$bouncyCastleBuildToolsVersion",
             "org.bouncycastle:bcprov-jdk18on:$bouncyCastleBuildToolsVersion",
             "org.bouncycastle:bcutil-jdk18on:$bouncyCastleBuildToolsVersion",
+            "org.apache.httpcomponents.client5:httpclient5:${buildToolVersion("httpClient5")}",
+            "org.apache.httpcomponents.core5:httpcore5:${buildToolVersion("httpCore5")}",
+            "org.apache.httpcomponents.core5:httpcore5-h2:${buildToolVersion("httpCore5")}",
             "org.jdom:jdom2:${buildToolVersion("jdom")}",
+            "org.jsoup:jsoup:${buildToolVersion("jsoup")}",
         )
 
     configurations.classpath {

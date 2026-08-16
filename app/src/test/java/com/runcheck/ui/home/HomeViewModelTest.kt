@@ -31,8 +31,6 @@ import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.pro.ProState
 import com.runcheck.pro.ProStateProvider
 import com.runcheck.pro.ProStatus
-import com.runcheck.pro.TrialManager
-import com.runcheck.pro.TrialPresentationState
 import com.runcheck.testutil.insightFixture
 import com.runcheck.ui.MainDispatcherRule
 import io.mockk.coEvery
@@ -58,7 +56,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
@@ -73,14 +70,12 @@ class HomeViewModelTest {
     private val insightRepository: InsightRepository = mockk(relaxed = true)
     private val monitoringStatusRepository: MonitoringStatusRepository = mockk(relaxed = true)
     private val proStateProvider: ProStateProvider = mockk()
-    private val trialManager: TrialManager = mockk(relaxed = true)
     private val chargerSessionTracker: ChargerSessionTracker = mockk(relaxed = true)
     private val healthScoreCalculator = HealthScoreCalculator()
     private val manageUserPreferences: ManageUserPreferencesUseCase = mockk(relaxed = true)
 
     private val proStateFlow = MutableStateFlow(ProState())
     private val proAccessReadyFlow = MutableStateFlow(true)
-    private val trialPresentationFlow = MutableStateFlow(TrialPresentationState())
 
     private lateinit var viewModel: HomeViewModel
 
@@ -134,7 +129,6 @@ class HomeViewModelTest {
         every { insightRepository.getUnseenCount() } returns flowOf(0)
         every { proStateProvider.proState } returns proStateFlow
         every { proStateProvider.proAccessReady } returns proAccessReadyFlow
-        every { trialManager.observePresentationState() } returns trialPresentationFlow
         every { manageUserPreferences.observePreferences() } returns flowOf(UserPreferences())
         every { monitoringStatusRepository.observeLastWorkerHeartbeat() } returns
             flowOf(
@@ -166,7 +160,6 @@ class HomeViewModelTest {
             insightHomeRankingPolicy = InsightHomeRankingPolicy(),
             monitoringStatusRepository = monitoringStatusRepository,
             proStateProvider = proStateProvider,
-            trialManager = trialManager,
             chargerSessionTracker = chargerSessionTracker,
             healthScoreCalculator = healthScoreCalculator,
             manageUserPreferences = manageUserPreferences,
@@ -271,37 +264,10 @@ class HomeViewModelTest {
         mainDispatcherRule.testDispatcher.scheduler.runCurrent()
     }
 
-    private fun expiredProState(): ProState =
-        ProState(
-            status = ProStatus.TRIAL_EXPIRED,
-            trialDaysRemaining = 0,
-            trialStartTimestamp = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(10),
-        )
-
-    private fun activeDay5ProState(): ProState =
-        ProState(
-            status = ProStatus.TRIAL_ACTIVE,
-            trialDaysRemaining = 2,
-            trialStartTimestamp = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(5),
-        )
-
-    private fun startViewModel(): HomeUiState.Success {
-        viewModel = createViewModel()
-        viewModel.startObserving()
-        advanceAll()
-        return viewModel.uiState.value as HomeUiState.Success
-    }
-
     @Test
     fun `healthy data produces Success state with correct health score`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            // Trial expired, no banners
-            proStateFlow.value =
-                ProState(
-                    status = ProStatus.TRIAL_EXPIRED,
-                    trialDaysRemaining = 0,
-                    trialStartTimestamp = 0L,
-                )
+            proStateFlow.value = ProState()
 
             viewModel = createViewModel()
             viewModel.startObserving()
@@ -331,85 +297,6 @@ class HomeViewModelTest {
         }
 
     @Test
-    fun `trial day calculation shows correct days remaining`() =
-        runTest(mainDispatcherRule.testDispatcher) {
-            // Trial active with 2 days remaining
-            proStateFlow.value = activeDay5ProState()
-            trialPresentationFlow.value =
-                TrialPresentationState(
-                    welcomeShown = true,
-                    day5PromptShown = true,
-                )
-
-            val state = startViewModel()
-            assertEquals(ProStatus.TRIAL_ACTIVE, state.proState.status)
-            assertEquals(2, state.proState.trialDaysRemaining)
-
-            viewModel.stopObserving()
-        }
-
-    @Test
-    fun `day 5 banner is visible when trial day 5 reached and not dismissed`() =
-        runTest(mainDispatcherRule.testDispatcher) {
-            // Trial active, 2 days remaining = 5 days elapsed
-            proStateFlow.value = activeDay5ProState()
-            trialPresentationFlow.value = TrialPresentationState(welcomeShown = true)
-
-            val state = startViewModel()
-            assertTrue("Day 5 banner should be visible", state.showDay5Banner)
-
-            viewModel.stopObserving()
-        }
-
-    @Test
-    fun `day 5 banner is hidden after dismissal`() =
-        runTest(mainDispatcherRule.testDispatcher) {
-            proStateFlow.value = activeDay5ProState()
-            trialPresentationFlow.value = TrialPresentationState(welcomeShown = true)
-
-            startViewModel()
-
-            // Verify banner is showing first
-            assertTrue((viewModel.uiState.value as HomeUiState.Success).showDay5Banner)
-
-            // Dismiss the banner
-            viewModel.dismissDay5Banner()
-            advanceAll()
-
-            val state = viewModel.uiState.value as HomeUiState.Success
-            assertFalse("Day 5 banner should be hidden after dismiss", state.showDay5Banner)
-            coVerify { trialManager.setDay5PromptShown() }
-
-            viewModel.stopObserving()
-        }
-
-    @Test
-    fun `expiration modal shows when trial expired and not previously shown`() =
-        runTest(mainDispatcherRule.testDispatcher) {
-            proStateFlow.value = expiredProState()
-            val state = startViewModel()
-            assertTrue("Expiration modal should show", state.showExpirationModal)
-
-            viewModel.stopObserving()
-        }
-
-    @Test
-    fun `expiration modal hidden after dismiss`() =
-        runTest(mainDispatcherRule.testDispatcher) {
-            proStateFlow.value = expiredProState()
-            startViewModel()
-
-            viewModel.dismissExpirationModal()
-            advanceAll()
-
-            val state = viewModel.uiState.value as HomeUiState.Success
-            assertFalse("Expiration modal should be hidden after dismiss", state.showExpirationModal)
-            coVerify { trialManager.setExpirationModalShown() }
-
-            viewModel.stopObserving()
-        }
-
-    @Test
     fun `home stays Loading until pro access is initialized`() =
         runTest(mainDispatcherRule.testDispatcher) {
             proAccessReadyFlow.value = false
@@ -426,61 +313,6 @@ class HomeViewModelTest {
 
             val state = viewModel.uiState.value as HomeUiState.Success
             assertEquals(ProStatus.PRO_PURCHASED, state.proState.status)
-            viewModel.stopObserving()
-        }
-
-    @Test
-    fun `home pro card state is mutually exclusive across transitions`() {
-        assertEquals(
-            HomeProCardState.TRIAL,
-            resolveHomeProCardState(ProStatus.TRIAL_ACTIVE, showUpgradeCard = false),
-        )
-        assertEquals(
-            HomeProCardState.EXPIRED_TRIAL,
-            resolveHomeProCardState(ProStatus.TRIAL_EXPIRED, showUpgradeCard = true),
-        )
-        assertEquals(
-            null,
-            resolveHomeProCardState(ProStatus.TRIAL_EXPIRED, showUpgradeCard = false),
-        )
-        assertEquals(
-            HomeProCardState.PRO,
-            resolveHomeProCardState(ProStatus.PRO_PURCHASED, showUpgradeCard = true),
-        )
-    }
-
-    @Test
-    fun `welcome sheet stays dismissed after observation restarts`() =
-        runTest(mainDispatcherRule.testDispatcher) {
-            var welcomeShown = false
-            proStateFlow.value =
-                ProState(
-                    status = ProStatus.TRIAL_ACTIVE,
-                    trialDaysRemaining = TrialManager.TRIAL_DURATION_DAYS,
-                    trialStartTimestamp = System.currentTimeMillis(),
-                )
-            coEvery { trialManager.setWelcomeShown() } answers {
-                welcomeShown = true
-                trialPresentationFlow.value =
-                    trialPresentationFlow.value.copy(welcomeShown = welcomeShown)
-            }
-
-            viewModel = createViewModel()
-            viewModel.startObserving()
-            advanceAll()
-
-            assertTrue((viewModel.uiState.value as HomeUiState.Success).showWelcomeSheet)
-
-            viewModel.dismissWelcomeSheet()
-            advanceAll()
-            assertFalse((viewModel.uiState.value as HomeUiState.Success).showWelcomeSheet)
-
-            viewModel.stopObserving()
-            viewModel.startObserving()
-            advanceAll()
-
-            assertFalse((viewModel.uiState.value as HomeUiState.Success).showWelcomeSheet)
-            coVerify(exactly = 1) { trialManager.setWelcomeShown() }
             viewModel.stopObserving()
         }
 
@@ -533,124 +365,6 @@ class HomeViewModelTest {
             runCurrent()
 
             assertTrue(viewModel.uiState.value is HomeUiState.Error)
-            viewModel.stopObserving()
-        }
-
-    @Test
-    fun `day 5 gate uses the exact persisted trial start boundary`() {
-        val trialStart = TimeUnit.DAYS.toMillis(10)
-        val day5Boundary = trialStart + TimeUnit.DAYS.toMillis(5)
-
-        assertFalse(hasReachedTrialDay(trialStart, day = 5, now = day5Boundary - 1L))
-        assertTrue(hasReachedTrialDay(trialStart, day = 5, now = day5Boundary))
-    }
-
-    @Test
-    fun `expiration modal stays hidden on a later launch after persisted acknowledgement`() =
-        runTest(mainDispatcherRule.testDispatcher) {
-            proStateFlow.value = expiredProState()
-            trialPresentationFlow.value =
-                TrialPresentationState(
-                    expirationModalShown = true,
-                )
-            val state = startViewModel()
-            assertFalse("Acknowledged expiration modal should stay hidden", state.showExpirationModal)
-
-            viewModel.stopObserving()
-        }
-
-    @Test
-    fun `upgrade card visible for expired trial with no prior dismissals`() =
-        runTest(mainDispatcherRule.testDispatcher) {
-            proStateFlow.value = expiredProState()
-            val state = startViewModel()
-            assertTrue("Upgrade card should be visible", state.showUpgradeCard)
-
-            viewModel.stopObserving()
-        }
-
-    @Test
-    fun `upgrade card hidden after 3 dismissals`() =
-        runTest(mainDispatcherRule.testDispatcher) {
-            proStateFlow.value = expiredProState()
-            trialPresentationFlow.value =
-                TrialPresentationState(
-                    upgradeCardDismissCount = 3,
-                    upgradeCardLastDismissTimestamp = System.currentTimeMillis(),
-                )
-
-            val state = startViewModel()
-            assertFalse("Upgrade card should be hidden after 3 dismissals", state.showUpgradeCard)
-
-            viewModel.stopObserving()
-        }
-
-    @Test
-    fun `upgrade card hidden when dismissed recently (less than 7 days)`() =
-        runTest(mainDispatcherRule.testDispatcher) {
-            proStateFlow.value = expiredProState()
-            // 1 dismiss, 2 days ago = should still be hidden (cooldown = 7 days)
-            trialPresentationFlow.value =
-                TrialPresentationState(
-                    upgradeCardDismissCount = 1,
-                    upgradeCardLastDismissTimestamp =
-                        System.currentTimeMillis() - 2L * 24 * 60 * 60 * 1000,
-                )
-
-            val state = startViewModel()
-            assertFalse("Upgrade card should be hidden during 7-day cooldown", state.showUpgradeCard)
-
-            viewModel.stopObserving()
-        }
-
-    @Test
-    fun `upgrade card returns after persisted 7 day dismissal cooldown`() =
-        runTest(mainDispatcherRule.testDispatcher) {
-            proStateFlow.value =
-                ProState(
-                    status = ProStatus.TRIAL_EXPIRED,
-                    trialDaysRemaining = 0,
-                    trialStartTimestamp = System.currentTimeMillis() - 15L * 24 * 60 * 60 * 1000,
-                )
-            trialPresentationFlow.value =
-                TrialPresentationState(
-                    upgradeCardDismissCount = 1,
-                    upgradeCardLastDismissTimestamp =
-                        System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000 - 1_000L,
-                )
-
-            viewModel = createViewModel()
-            viewModel.startObserving()
-            advanceAll()
-
-            val state = viewModel.uiState.value as HomeUiState.Success
-            assertTrue("Upgrade card should return after the 7-day cooldown", state.showUpgradeCard)
-
-            viewModel.stopObserving()
-        }
-
-    @Test
-    fun `pro user sees no trial banners and no upgrade card`() =
-        runTest(mainDispatcherRule.testDispatcher) {
-            proStateFlow.value =
-                ProState(
-                    status = ProStatus.PRO_PURCHASED,
-                    trialDaysRemaining = 0,
-                    trialStartTimestamp = 0L,
-                    purchaseTimestamp = System.currentTimeMillis(),
-                )
-
-            viewModel = createViewModel()
-            viewModel.startObserving()
-            advanceAll()
-
-            val state = viewModel.uiState.value as HomeUiState.Success
-            assertFalse("Pro user should not see welcome sheet", state.showWelcomeSheet)
-            assertFalse("Pro user should not see day 5 banner", state.showDay5Banner)
-            assertFalse("Pro user should not see expiration modal", state.showExpirationModal)
-            assertFalse("Pro user should not see upgrade card", state.showUpgradeCard)
-            assertTrue("Pro user isPro should be true", state.isPro)
-
             viewModel.stopObserving()
         }
 
@@ -721,7 +435,7 @@ class HomeViewModelTest {
             every { insightRepository.getActiveInsights() } returns
                 flowOf(listOf(appUsageInsight, chargerInsight, batteryInsight, thermalInsight, networkInsight))
             every { insightRepository.getUnseenCount() } returns flowOf(5)
-            proStateFlow.value = ProState(status = ProStatus.TRIAL_EXPIRED)
+            proStateFlow.value = ProState(status = ProStatus.FREE)
 
             viewModel = createViewModel()
             viewModel.startObserving()

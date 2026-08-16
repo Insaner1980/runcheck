@@ -34,12 +34,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -76,14 +73,11 @@ import com.runcheck.ui.components.ObservedScreenScaffold
 import com.runcheck.ui.components.PrimaryTopBar
 import com.runcheck.ui.components.ProBadgePill
 import com.runcheck.ui.components.SectionHeader
-import com.runcheck.ui.components.collectObservedScreenState
+import com.runcheck.ui.components.observedScreenState
 import com.runcheck.ui.home.insights.InsightNavigationHandlers
 import com.runcheck.ui.home.insights.InsightsCard
 import com.runcheck.ui.home.insights.InsightsCardState
 import com.runcheck.ui.learn.LearnArticleIds
-import com.runcheck.ui.pro.PostExpirationUpgradeCard
-import com.runcheck.ui.pro.TrialHomeCard
-import com.runcheck.ui.pro.TrialWelcomeSheet
 import com.runcheck.ui.theme.homeHealthContextTextStyle
 import com.runcheck.ui.theme.homeHealthScoreTextStyle
 import com.runcheck.ui.theme.homeHealthScoreUnitTextStyle
@@ -117,7 +111,10 @@ fun HomeScreen(
     onNavigateToLearnArticle: (String) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
-    val screenState = collectObservedScreenState(viewModel.uiState, viewModel.isRefreshing)
+    // CPD-OFF: Keep StateFlow collection at the screen boundary for Compose stability.
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val screenState = observedScreenState(uiState, isRefreshing)
 
     ObservedScreenScaffold(
         onStart = viewModel::startObserving,
@@ -139,6 +136,7 @@ fun HomeScreen(
             )
         },
     ) {
+        // CPD-ON
         when (val state = screenState.uiState) {
             is HomeUiState.Loading -> {
                 CenteredLoadingState(description = screenState.loadingDescription)
@@ -153,57 +151,26 @@ fun HomeScreen(
             }
 
             is HomeUiState.Success -> {
-                if (state.showWelcomeSheet) {
-                    TrialWelcomeSheet(
-                        onDismiss = { viewModel.dismissWelcomeSheet() },
-                    )
-                }
-
-                val snackbarHostState = remember { SnackbarHostState() }
-                val day5Message = stringResource(R.string.trial_day5_banner)
-                LaunchedEffect(state.showDay5Banner) {
-                    if (state.showDay5Banner) {
-                        snackbarHostState.showSnackbar(day5Message)
-                        viewModel.dismissDay5Banner()
-                    }
-                }
-
-                Box(modifier = Modifier.fillMaxSize()) {
-                    HomeContent(
-                        state = state,
-                        navigation =
-                            HomeNavigationActions(
-                                onNavigateToBattery = onNavigateToBattery,
-                                onNavigateToNetwork = onNavigateToNetwork,
-                                onNavigateToThermal = onNavigateToThermal,
-                                onNavigateToStorage = onNavigateToStorage,
-                                onNavigateToCharger = onNavigateToCharger,
-                                onNavigateToSpeedTest = onNavigateToSpeedTest,
-                                onNavigateToAppUsage = onNavigateToAppUsage,
-                                onNavigateToInsights = onNavigateToInsights,
-                                onNavigateToProUpgrade = onNavigateToProUpgrade,
-                                onNavigateToLearn = onNavigateToLearn,
-                                onNavigateToLearnArticle = onNavigateToLearnArticle,
-                            ),
-                        onDismissInsight = { viewModel.dismissInsight(it) },
-                        onDismissUpgradeCard = { viewModel.dismissUpgradeCard() },
-                        isRefreshing = screenState.isRefreshing,
-                        onRefresh = viewModel::refresh,
-                    )
-
-                    SnackbarHost(
-                        hostState = snackbarHostState,
-                        modifier = Modifier.align(Alignment.BottomCenter),
-                    )
-                }
-
-                if (state.showExpirationModal) {
-                    com.runcheck.ui.pro.TrialExpirationModal(
-                        formattedPrice = null,
-                        onPurchase = { viewModel.dismissExpirationModal(onNavigateToProUpgrade) },
-                        onDismiss = { viewModel.dismissExpirationModal() },
-                    )
-                }
+                HomeContent(
+                    state = state,
+                    navigation =
+                        HomeNavigationActions(
+                            onNavigateToBattery = onNavigateToBattery,
+                            onNavigateToNetwork = onNavigateToNetwork,
+                            onNavigateToThermal = onNavigateToThermal,
+                            onNavigateToStorage = onNavigateToStorage,
+                            onNavigateToCharger = onNavigateToCharger,
+                            onNavigateToSpeedTest = onNavigateToSpeedTest,
+                            onNavigateToAppUsage = onNavigateToAppUsage,
+                            onNavigateToInsights = onNavigateToInsights,
+                            onNavigateToProUpgrade = onNavigateToProUpgrade,
+                            onNavigateToLearn = onNavigateToLearn,
+                            onNavigateToLearnArticle = onNavigateToLearnArticle,
+                        ),
+                    onDismissInsight = { viewModel.dismissInsight(it) },
+                    isRefreshing = screenState.isRefreshing,
+                    onRefresh = viewModel::refresh,
+                )
             }
         }
     }
@@ -229,7 +196,6 @@ private fun HomeContent(
     navigation: HomeNavigationActions,
     onDismissInsight: (Long) -> Unit,
     isRefreshing: Boolean,
-    onDismissUpgradeCard: () -> Unit = {},
     onRefresh: () -> Unit,
 ) {
     val insightNavigationHandlers =
@@ -303,19 +269,6 @@ private fun HomeContent(
                 Spacer(modifier = Modifier.height(spacing.md))
             }
 
-            HomeTrialSection(
-                state = state,
-                onNavigateToProUpgrade = navigation.onNavigateToProUpgrade,
-                onDismissUpgradeCard = onDismissUpgradeCard,
-            )
-
-            if (state.monitoringStale ||
-                state.proCardState == HomeProCardState.TRIAL ||
-                state.proCardState == HomeProCardState.EXPIRED_TRIAL
-            ) {
-                Spacer(modifier = Modifier.height(spacing.md))
-            }
-
             HomeStatusTiles(
                 state = state,
                 onNavigateToBattery = navigation.onNavigateToBattery,
@@ -352,7 +305,7 @@ private fun HomeContent(
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
 
             HomeProStatusSection(
-                visible = state.proCardState == HomeProCardState.PRO,
+                visible = state.isPro,
             )
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xl))
@@ -429,36 +382,6 @@ private fun HomeFullCheckButton(
                 ),
             style = labelStyle,
         )
-    }
-}
-
-@Composable
-private fun HomeTrialSection(
-    state: HomeUiState.Success,
-    onNavigateToProUpgrade: () -> Unit,
-    onDismissUpgradeCard: () -> Unit,
-) {
-    when (state.proCardState) {
-        HomeProCardState.TRIAL -> {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-            TrialHomeCard(
-                proState = state.proState,
-                onNavigateToProUpgrade = onNavigateToProUpgrade,
-            )
-        }
-
-        HomeProCardState.EXPIRED_TRIAL -> {
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.md))
-            PostExpirationUpgradeCard(
-                formattedPrice = null,
-                onNavigateToProUpgrade = onNavigateToProUpgrade,
-                onDismiss = onDismissUpgradeCard,
-            )
-        }
-
-        HomeProCardState.PRO, null -> {
-            Unit
-        }
     }
 }
 

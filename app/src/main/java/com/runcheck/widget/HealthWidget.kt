@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -55,19 +56,17 @@ class HealthWidget : GlanceAppWidget() {
                     .collectAsState(initial = WidgetRenderState.Locked)
 
             when (val state = widgetState) {
-                WidgetRenderState.Empty -> WidgetEmptyContent(context)
-                WidgetRenderState.Locked -> WidgetLockedContent(context, R.string.widget_health_name)
-                WidgetRenderState.Stale -> WidgetStaleContent(context)
-                is WidgetRenderState.Content -> HealthWidgetContent(context, state.snapshot)
+                WidgetRenderState.Empty -> WidgetEmptyContent()
+                WidgetRenderState.Locked -> WidgetLockedContent(R.string.widget_health_name)
+                WidgetRenderState.Stale -> WidgetStaleContent()
+                is WidgetRenderState.Content -> HealthWidgetContent(state.snapshot)
             }
         }
     }
 
     @Composable
-    private fun HealthWidgetContent(
-        context: Context,
-        snapshot: HealthWidgetSnapshot,
-    ) {
+    private fun HealthWidgetContent(snapshot: HealthWidgetSnapshot) {
+        val context = LocalContext.current
         val healthScoreLabel = context.getString(R.string.widget_health_score_label)
         val status = HealthScore.statusFromScore(snapshot.overallScore)
         val statusLabel = context.getString(healthStatusLabelRes(status))

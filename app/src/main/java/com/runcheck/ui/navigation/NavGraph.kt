@@ -197,7 +197,7 @@ fun RuncheckNavHost(
                 fullscreenResultMetric = fullscreenResult.metric,
                 fullscreenResultPeriod = fullscreenResult.period,
                 onConsumeFullscreenResult = entry::consumeFullscreenChartResult,
-                viewModel = networkViewModel,
+                viewModelProvider = { networkViewModel },
             )
         }
         composable(Screen.Thermal.route) {
@@ -278,7 +278,7 @@ fun RuncheckNavHost(
                 }
             SpeedTestScreen(
                 onBack = { navController.popBackStack() },
-                viewModel = networkViewModel,
+                viewModelProvider = { networkViewModel },
             )
         }
         composable(Screen.ProUpgrade.route) {

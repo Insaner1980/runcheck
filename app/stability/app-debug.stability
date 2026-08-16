@@ -5,20 +5,19 @@
 //   ./gradlew :app:stabilityDump
 
 @Composable
-private fun com.runcheck.ui.appusage.AppIcon(packageName: kotlin.String, ioDispatcher: kotlinx.coroutines.CoroutineDispatcher): kotlin.Unit
-  skippable: false
+private fun com.runcheck.ui.appusage.AppIcon(packageName: kotlin.String): kotlin.Unit
+  skippable: true
   restartable: true
   params:
     - packageName: STABLE (String is immutable)
-    - ioDispatcher: UNKNOWN (interface or non-final class; concrete implementation unknown)
 
 @Composable
-private fun com.runcheck.ui.appusage.AppUsageContent(state: com.runcheck.ui.appusage.AppUsageUiState.Success, appItems: androidx.paging.compose.LazyPagingItems<com.runcheck.domain.model.AppBatteryUsage>, onRefresh: kotlin.Function0<kotlin.Unit>): kotlin.Unit
-  skippable: false
+private fun com.runcheck.ui.appusage.AppUsageContent(state: com.runcheck.ui.appusage.AppUsageUiState.Success, appItemsProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<androidx.paging.compose.LazyPagingItems<com.runcheck.domain.model.AppBatteryUsage>>, onRefresh: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
   restartable: true
   params:
     - state: STABLE (class with no mutable properties)
-    - appItems: UNSTABLE (has mutable properties or unstable members)
+    - appItemsProvider: STABLE (composable function type)
     - onRefresh: STABLE (function type)
 
 @Composable
@@ -526,11 +525,11 @@ public fun com.runcheck.ui.common.ApplyFullscreenChartSelectionResult(rawMetric:
     - defaultSource: STABLE (class with no mutable properties)
 
 @Composable
-public fun com.runcheck.ui.common.EnumFilterChipRow(values: kotlin.collections.Iterable<T of com.runcheck.ui.common.EnumFilterChipRow>, selected: T of com.runcheck.ui.common.EnumFilterChipRow, onSelect: kotlin.Function1<T of com.runcheck.ui.common.EnumFilterChipRow, kotlin.Unit>, labelFor: @[Composable] androidx.compose.runtime.internal.ComposableFunction1<T of com.runcheck.ui.common.EnumFilterChipRow, kotlin.String>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+public fun com.runcheck.ui.common.EnumFilterChipRow(values: kotlin.collections.List<T of com.runcheck.ui.common.EnumFilterChipRow>, selected: T of com.runcheck.ui.common.EnumFilterChipRow, onSelect: kotlin.Function1<T of com.runcheck.ui.common.EnumFilterChipRow, kotlin.Unit>, labelFor: @[Composable] androidx.compose.runtime.internal.ComposableFunction1<T of com.runcheck.ui.common.EnumFilterChipRow, kotlin.String>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
   skippable: false
   restartable: true
   params:
-    - values: UNKNOWN (interface or non-final class; concrete implementation unknown)
+    - values: RUNTIME (requires runtime check)
     - selected: RUNTIME (requires runtime check)
     - onSelect: STABLE (function type)
     - labelFor: STABLE (composable function type)
@@ -1101,14 +1100,6 @@ public fun com.runcheck.ui.components.TrendChart(data: kotlin.collections.List<k
     - onExpandClick: STABLE (function type)
 
 @Composable
-public fun com.runcheck.ui.components.collectObservedScreenState(uiState: kotlinx.coroutines.flow.StateFlow<S of com.runcheck.ui.components.collectObservedScreenState>, isRefreshing: kotlinx.coroutines.flow.StateFlow<kotlin.Boolean>): com.runcheck.ui.components.ObservedScreenState<S of com.runcheck.ui.components.collectObservedScreenState>
-  skippable: false
-  restartable: false
-  params:
-    - uiState: UNKNOWN (interface or non-final class; concrete implementation unknown)
-    - isRefreshing: UNKNOWN (interface or non-final class; concrete implementation unknown)
-
-@Composable
 public fun com.runcheck.ui.components.info.CrossLinkButton(label: kotlin.String, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
   skippable: true
   restartable: true
@@ -1161,6 +1152,14 @@ public fun com.runcheck.ui.components.info.rememberInfoSheetState(): androidx.co
   skippable: false
   restartable: false
   params:
+
+@Composable
+public fun com.runcheck.ui.components.observedScreenState(uiState: S of com.runcheck.ui.components.observedScreenState, isRefreshing: kotlin.Boolean): com.runcheck.ui.components.ObservedScreenState<S of com.runcheck.ui.components.observedScreenState>
+  skippable: false
+  restartable: false
+  params:
+    - uiState: RUNTIME (requires runtime check)
+    - isRefreshing: STABLE (primitive type)
 
 @Composable
 private fun com.runcheck.ui.fullscreen.FullscreenChartContent(state: com.runcheck.ui.fullscreen.FullscreenChartUiState.Success, source: com.runcheck.ui.chart.FullscreenChartSource, modifier: androidx.compose.ui.Modifier): kotlin.Unit
@@ -1272,15 +1271,6 @@ private fun com.runcheck.ui.fullscreen.resolveSourceTitle(source: com.runcheck.u
     - source: STABLE (class with no mutable properties)
 
 @Composable
-private fun com.runcheck.ui.home.BatteryTileContent(state: com.runcheck.ui.home.HomeUiState.Success, status: com.runcheck.domain.model.HealthStatus, colors: com.runcheck.ui.home.HomeStatusTileColors): kotlin.Unit
-  skippable: false
-  restartable: true
-  params:
-    - state: RUNTIME (requires runtime check)
-    - status: STABLE (class with no mutable properties)
-    - colors: STABLE (marked @Stable or @Immutable)
-
-@Composable
 private fun com.runcheck.ui.home.HealthScoreHero(healthScore: com.runcheck.domain.model.HealthScore, lastUpdatedAtEpochMillis: kotlin.Long, modifier: androidx.compose.ui.Modifier): kotlin.Unit
   skippable: true
   restartable: true
@@ -1299,7 +1289,7 @@ private fun com.runcheck.ui.home.HomeAppUsageQuickToolRow(isPro: kotlin.Boolean,
     - onNavigateToProUpgrade: STABLE (function type)
 
 @Composable
-private fun com.runcheck.ui.home.HomeContent(state: com.runcheck.ui.home.HomeUiState.Success, navigation: com.runcheck.ui.home.HomeNavigationActions, onDismissInsight: kotlin.Function1<kotlin.Long, kotlin.Unit>, isRefreshing: kotlin.Boolean, onDismissUpgradeCard: kotlin.Function0<kotlin.Unit>, onRefresh: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.home.HomeContent(state: com.runcheck.ui.home.HomeUiState.Success, navigation: com.runcheck.ui.home.HomeNavigationActions, onDismissInsight: kotlin.Function1<kotlin.Long, kotlin.Unit>, isRefreshing: kotlin.Boolean, onRefresh: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -1307,7 +1297,6 @@ private fun com.runcheck.ui.home.HomeContent(state: com.runcheck.ui.home.HomeUiS
     - navigation: STABLE (class with no mutable properties)
     - onDismissInsight: STABLE (function type)
     - isRefreshing: STABLE (primitive type)
-    - onDismissUpgradeCard: STABLE (function type)
     - onRefresh: STABLE (function type)
 
 @Composable
@@ -1358,12 +1347,11 @@ public fun com.runcheck.ui.home.HomeScreen(onNavigateToBattery: kotlin.Function0
     - viewModel: UNSTABLE (has mutable properties or unstable members)
 
 @Composable
-private fun com.runcheck.ui.home.HomeStatusTile(category: com.runcheck.ui.home.HomeStatusTileCategory, size: com.runcheck.ui.theme.HomeStatusTileSize, state: com.runcheck.ui.home.HomeUiState.Success, status: com.runcheck.domain.model.HealthStatus, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+private fun com.runcheck.ui.home.HomeStatusTile(category: com.runcheck.ui.home.HomeStatusTileCategory, state: com.runcheck.ui.home.HomeUiState.Success, status: com.runcheck.domain.model.HealthStatus, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
   skippable: false
   restartable: true
   params:
     - category: STABLE (class with no mutable properties)
-    - size: STABLE (class with no mutable properties)
     - state: RUNTIME (requires runtime check)
     - status: STABLE (class with no mutable properties)
     - onClick: STABLE (function type)
@@ -1382,15 +1370,6 @@ internal fun com.runcheck.ui.home.HomeStatusTiles(state: com.runcheck.ui.home.Ho
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
-private fun com.runcheck.ui.home.HomeTrialSection(state: com.runcheck.ui.home.HomeUiState.Success, onNavigateToProUpgrade: kotlin.Function0<kotlin.Unit>, onDismissUpgradeCard: kotlin.Function0<kotlin.Unit>): kotlin.Unit
-  skippable: false
-  restartable: true
-  params:
-    - state: RUNTIME (requires runtime check)
-    - onNavigateToProUpgrade: STABLE (function type)
-    - onDismissUpgradeCard: STABLE (function type)
-
-@Composable
 private fun com.runcheck.ui.home.MonitoringStaleWarning(onLearnWhy: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
@@ -1398,13 +1377,13 @@ private fun com.runcheck.ui.home.MonitoringStaleWarning(onLearnWhy: kotlin.Funct
     - onLearnWhy: STABLE (function type)
 
 @Composable
-private fun com.runcheck.ui.home.StandardTileContent(content: com.runcheck.ui.home.StatusTileContent, size: com.runcheck.ui.theme.HomeStatusTileSize, colors: com.runcheck.ui.home.HomeStatusTileColors): kotlin.Unit
+private fun com.runcheck.ui.home.StandardTileContent(content: com.runcheck.ui.home.StatusTileContent, colors: com.runcheck.ui.home.HomeStatusTileColors, modifier: androidx.compose.ui.Modifier): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - content: STABLE (marked @Stable or @Immutable)
-    - size: STABLE (class with no mutable properties)
     - colors: STABLE (marked @Stable or @Immutable)
+    - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
 private fun com.runcheck.ui.home.TileValueLine(value: kotlin.String, suffix: kotlin.String?, valueStyle: androidx.compose.ui.text.TextStyle, suffixStyle: androidx.compose.ui.text.TextStyle, textColor: androidx.compose.ui.graphics.Color): kotlin.Unit
@@ -1418,11 +1397,11 @@ private fun com.runcheck.ui.home.TileValueLine(value: kotlin.String, suffix: kot
     - textColor: STABLE (marked @Stable or @Immutable)
 
 @Composable
-private fun com.runcheck.ui.home.batteryChargeStateSentence(state: com.runcheck.ui.home.HomeUiState.Success): kotlin.String
+private fun com.runcheck.ui.home.batteryHealthStatusLabel(status: com.runcheck.domain.model.HealthStatus): kotlin.String
   skippable: false
   restartable: false
   params:
-    - state: RUNTIME (requires runtime check)
+    - status: STABLE (class with no mutable properties)
 
 @Composable
 private fun com.runcheck.ui.home.content(state: com.runcheck.ui.home.HomeUiState.Success, status: com.runcheck.domain.model.HealthStatus): com.runcheck.ui.home.StatusTileContent
@@ -1483,15 +1462,6 @@ internal fun com.runcheck.ui.home.insights.resolveInsightBody(insight: com.runch
     - insight: RUNTIME (requires runtime check)
 
 @Composable
-private fun com.runcheck.ui.home.insights.resolveInsightString(key: kotlin.String, resources: kotlin.collections.Map<kotlin.String, kotlin.Int>, args: kotlin.Array<out kotlin.Any>): kotlin.String
-  skippable: false
-  restartable: false
-  params:
-    - key: STABLE (String is immutable)
-    - resources: RUNTIME (requires runtime check)
-    - args: UNSTABLE (has mutable properties or unstable members)
-
-@Composable
 internal fun com.runcheck.ui.home.insights.resolveInsightTitle(insight: com.runcheck.domain.insights.model.Insight): kotlin.String
   skippable: false
   restartable: false
@@ -1503,13 +1473,6 @@ private fun com.runcheck.ui.home.label(): kotlin.String
   skippable: false
   restartable: false
   params:
-
-@Composable
-private fun com.runcheck.ui.home.networkConnectionDescriptor(network: com.runcheck.domain.model.NetworkState): kotlin.String
-  skippable: false
-  restartable: false
-  params:
-    - network: RUNTIME (requires runtime check)
 
 @Composable
 private fun com.runcheck.ui.home.networkSignalStatusLabel(signalQuality: com.runcheck.domain.model.SignalQuality): kotlin.String
@@ -1744,8 +1707,8 @@ private fun com.runcheck.ui.network.NetworkContextPanel(networkState: com.runche
     - networkState: RUNTIME (requires runtime check)
 
 @Composable
-public fun com.runcheck.ui.network.NetworkDetailScreen(onNavigateToSpeedTest: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onBack: kotlin.Function0<kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, fullscreenResultMetric: kotlin.String?, fullscreenResultPeriod: kotlin.String?, onConsumeFullscreenResult: kotlin.Function0<kotlin.Unit>, viewModel: com.runcheck.ui.network.NetworkViewModel): kotlin.Unit
-  skippable: false
+public fun com.runcheck.ui.network.NetworkDetailScreen(onNavigateToSpeedTest: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onBack: kotlin.Function0<kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onNavigateToFullscreen: kotlin.Function3<@[ParameterName(name = \, onNavigateToLearnArticle: kotlin.Function1<@[ParameterName(name = \, fullscreenResultMetric: kotlin.String?, fullscreenResultPeriod: kotlin.String?, onConsumeFullscreenResult: kotlin.Function0<kotlin.Unit>, viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.runcheck.ui.network.NetworkViewModel>): kotlin.Unit
+  skippable: true
   restartable: true
   params:
     - onNavigateToSpeedTest: STABLE (function type)
@@ -1757,7 +1720,7 @@ public fun com.runcheck.ui.network.NetworkDetailScreen(onNavigateToSpeedTest: ko
     - fullscreenResultMetric: STABLE (class with no mutable properties)
     - fullscreenResultPeriod: STABLE (class with no mutable properties)
     - onConsumeFullscreenResult: STABLE (function type)
-    - viewModel: UNSTABLE (has mutable properties or unstable members)
+    - viewModelProvider: STABLE (composable function type)
 
 @Composable
 private fun com.runcheck.ui.network.NetworkHeroSection(networkState: com.runcheck.domain.model.NetworkState, liveSignalDbm: kotlin.collections.List<kotlin.Float>, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
@@ -1769,7 +1732,7 @@ private fun com.runcheck.ui.network.NetworkHeroSection(networkState: com.runchec
     - onInfoClick: STABLE (function type)
 
 @Composable
-private fun com.runcheck.ui.network.NetworkOverviewSection(state: com.runcheck.ui.network.NetworkUiState.Success, networkState: com.runcheck.domain.model.NetworkState, hasLocationPermission: kotlin.Boolean, locationEnabled: kotlin.Boolean, locationRequestAttempted: kotlin.Boolean, activity: android.app.Activity?, onDismissInfoCard: kotlin.Function1<kotlin.String, kotlin.Unit>, onNavigateToLearnArticle: kotlin.Function1<kotlin.String, kotlin.Unit>, onRequestLocationPermission: kotlin.Function0<kotlin.Unit>, onOpenLocationHelp: kotlin.Function0<kotlin.Unit>, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.network.NetworkOverviewSection(state: com.runcheck.ui.network.NetworkUiState.Success, networkState: com.runcheck.domain.model.NetworkState, hasLocationPermission: kotlin.Boolean, locationEnabled: kotlin.Boolean, showLocationSettings: kotlin.Boolean, onDismissInfoCard: kotlin.Function1<kotlin.String, kotlin.Unit>, onNavigateToLearnArticle: kotlin.Function1<kotlin.String, kotlin.Unit>, onRequestLocationPermission: kotlin.Function0<kotlin.Unit>, onOpenLocationHelp: kotlin.Function0<kotlin.Unit>, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -1777,8 +1740,7 @@ private fun com.runcheck.ui.network.NetworkOverviewSection(state: com.runcheck.u
     - networkState: RUNTIME (requires runtime check)
     - hasLocationPermission: STABLE (primitive type)
     - locationEnabled: STABLE (primitive type)
-    - locationRequestAttempted: STABLE (primitive type)
-    - activity: UNKNOWN (interface or non-final class; concrete implementation unknown)
+    - showLocationSettings: STABLE (primitive type)
     - onDismissInfoCard: STABLE (function type)
     - onNavigateToLearnArticle: STABLE (function type)
     - onRequestLocationPermission: STABLE (function type)
@@ -1869,13 +1831,13 @@ private fun com.runcheck.ui.network.SpeedTestHero(state: com.runcheck.ui.network
     - onStart: STABLE (function type)
 
 @Composable
-public fun com.runcheck.ui.network.SpeedTestScreen(onBack: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, viewModel: com.runcheck.ui.network.NetworkViewModel): kotlin.Unit
-  skippable: false
+public fun com.runcheck.ui.network.SpeedTestScreen(onBack: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.runcheck.ui.network.NetworkViewModel>): kotlin.Unit
+  skippable: true
   restartable: true
   params:
     - onBack: STABLE (function type)
     - modifier: STABLE (marked @Stable or @Immutable)
-    - viewModel: UNSTABLE (has mutable properties or unstable members)
+    - viewModelProvider: STABLE (composable function type)
 
 @Composable
 private fun com.runcheck.ui.network.SpeedTestSummaryCard(lastResult: com.runcheck.domain.model.SpeedTestResult?, onNavigateToSpeedTest: kotlin.Function0<kotlin.Unit>, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
@@ -1984,16 +1946,6 @@ private fun com.runcheck.ui.pro.FeatureRow(icon: androidx.compose.ui.graphics.ve
     - label: STABLE (String is immutable)
 
 @Composable
-public fun com.runcheck.ui.pro.PostExpirationUpgradeCard(formattedPrice: kotlin.String?, onNavigateToProUpgrade: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - formattedPrice: STABLE (class with no mutable properties)
-    - onNavigateToProUpgrade: STABLE (function type)
-    - onDismiss: STABLE (function type)
-    - modifier: STABLE (marked @Stable or @Immutable)
-
-@Composable
 private fun com.runcheck.ui.pro.ProActiveContent(): kotlin.Unit
   skippable: true
   restartable: true
@@ -2025,40 +1977,6 @@ public fun com.runcheck.ui.pro.PurchaseThankYouContent(onDismiss: kotlin.Functio
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
-public fun com.runcheck.ui.pro.TrialExpirationModal(formattedPrice: kotlin.String?, onPurchase: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - formattedPrice: STABLE (class with no mutable properties)
-    - onPurchase: STABLE (function type)
-    - onDismiss: STABLE (function type)
-    - modifier: STABLE (marked @Stable or @Immutable)
-
-@Composable
-public fun com.runcheck.ui.pro.TrialHomeCard(proState: com.runcheck.pro.ProState, onNavigateToProUpgrade: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - proState: STABLE (marked @Stable or @Immutable)
-    - onNavigateToProUpgrade: STABLE (function type)
-    - modifier: STABLE (marked @Stable or @Immutable)
-
-@Composable
-public fun com.runcheck.ui.pro.TrialWelcomeSheet(onDismiss: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - onDismiss: STABLE (function type)
-    - modifier: STABLE (marked @Stable or @Immutable)
-
-@Composable
-private fun com.runcheck.ui.pro.WelcomeFeatureRow(label: kotlin.String): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - label: STABLE (String is immutable)
-
-@Composable
 private fun com.runcheck.ui.pro.featureIcon(feature: com.runcheck.pro.ProFeature): androidx.compose.ui.graphics.vector.ImageVector
   skippable: false
   restartable: false
@@ -2066,11 +1984,10 @@ private fun com.runcheck.ui.pro.featureIcon(feature: com.runcheck.pro.ProFeature
     - feature: STABLE (class with no mutable properties)
 
 @Composable
-internal fun com.runcheck.ui.settings.AlertThresholdsSection(context: android.content.Context, preferences: com.runcheck.domain.model.UserPreferences, onSetAlertBatteryThreshold: kotlin.Function1<kotlin.Int, kotlin.Unit>, onSetAlertTempThreshold: kotlin.Function1<kotlin.Int, kotlin.Unit>, onSetAlertStorageThreshold: kotlin.Function1<kotlin.Int, kotlin.Unit>, onResetThresholdsClick: kotlin.Function0<kotlin.Unit>): kotlin.Unit
-  skippable: false
+internal fun com.runcheck.ui.settings.AlertThresholdsSection(preferences: com.runcheck.domain.model.UserPreferences, onSetAlertBatteryThreshold: kotlin.Function1<kotlin.Int, kotlin.Unit>, onSetAlertTempThreshold: kotlin.Function1<kotlin.Int, kotlin.Unit>, onSetAlertStorageThreshold: kotlin.Function1<kotlin.Int, kotlin.Unit>, onResetThresholdsClick: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
   restartable: true
   params:
-    - context: UNKNOWN (interface or non-final class; concrete implementation unknown)
     - preferences: STABLE (class with no mutable properties)
     - onSetAlertBatteryThreshold: STABLE (function type)
     - onSetAlertTempThreshold: STABLE (function type)
@@ -2078,11 +1995,10 @@ internal fun com.runcheck.ui.settings.AlertThresholdsSection(context: android.co
     - onResetThresholdsClick: STABLE (function type)
 
 @Composable
-private fun com.runcheck.ui.settings.BatteryOptimizationRow(context: android.content.Context): kotlin.Unit
-  skippable: false
+private fun com.runcheck.ui.settings.BatteryOptimizationRow(): kotlin.Unit
+  skippable: true
   restartable: true
   params:
-    - context: UNKNOWN (interface or non-final class; concrete implementation unknown)
 
 @Composable
 internal fun com.runcheck.ui.settings.DataSection(uiState: com.runcheck.ui.settings.SettingsUiState, onSetDataRetention: kotlin.Function1<com.runcheck.domain.model.DataRetention, kotlin.Unit>, onExportData: kotlin.Function0<kotlin.Unit>, onResetTipsClick: kotlin.Function0<kotlin.Unit>, onClearSpeedTestsClick: kotlin.Function0<kotlin.Unit>, onClearAllDataClick: kotlin.Function0<kotlin.Unit>): kotlin.Unit
@@ -2129,22 +2045,20 @@ internal fun com.runcheck.ui.settings.LiveNotificationSection(preferences: com.r
     - onSetLiveNotifRemainingTime: STABLE (function type)
 
 @Composable
-internal fun com.runcheck.ui.settings.MonitoringSection(context: android.content.Context, monitoringInterval: com.runcheck.domain.model.MonitoringInterval, isBatteryOptimizationExempt: kotlin.Boolean, onSetMonitoringInterval: kotlin.Function1<com.runcheck.domain.model.MonitoringInterval, kotlin.Unit>, onNavigateToMonitoringHelp: kotlin.Function0<kotlin.Unit>): kotlin.Unit
-  skippable: false
+internal fun com.runcheck.ui.settings.MonitoringSection(monitoringInterval: com.runcheck.domain.model.MonitoringInterval, isBatteryOptimizationExempt: kotlin.Boolean, onSetMonitoringInterval: kotlin.Function1<com.runcheck.domain.model.MonitoringInterval, kotlin.Unit>, onNavigateToMonitoringHelp: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
   restartable: true
   params:
-    - context: UNKNOWN (interface or non-final class; concrete implementation unknown)
     - monitoringInterval: STABLE (class with no mutable properties)
     - isBatteryOptimizationExempt: STABLE (primitive type)
     - onSetMonitoringInterval: STABLE (function type)
     - onNavigateToMonitoringHelp: STABLE (function type)
 
 @Composable
-internal fun com.runcheck.ui.settings.NotificationsSection(context: android.content.Context, preferences: com.runcheck.domain.model.UserPreferences, alertsEffectivelyEnabled: kotlin.Boolean, isXiaomiFamilyDevice: kotlin.Boolean, onNotificationsEnabledChange: kotlin.Function1<kotlin.Boolean, kotlin.Unit>, onSetNotifLowBattery: kotlin.Function1<kotlin.Boolean, kotlin.Unit>, onSetNotifHighTemp: kotlin.Function1<kotlin.Boolean, kotlin.Unit>, onSetNotifLowStorage: kotlin.Function1<kotlin.Boolean, kotlin.Unit>, onSetNotifChargeComplete: kotlin.Function1<kotlin.Boolean, kotlin.Unit>): kotlin.Unit
-  skippable: false
+internal fun com.runcheck.ui.settings.NotificationsSection(preferences: com.runcheck.domain.model.UserPreferences, alertsEffectivelyEnabled: kotlin.Boolean, isXiaomiFamilyDevice: kotlin.Boolean, onNotificationsEnabledChange: kotlin.Function1<kotlin.Boolean, kotlin.Unit>, onSetNotifLowBattery: kotlin.Function1<kotlin.Boolean, kotlin.Unit>, onSetNotifHighTemp: kotlin.Function1<kotlin.Boolean, kotlin.Unit>, onSetNotifLowStorage: kotlin.Function1<kotlin.Boolean, kotlin.Unit>, onSetNotifChargeComplete: kotlin.Function1<kotlin.Boolean, kotlin.Unit>): kotlin.Unit
+  skippable: true
   restartable: true
   params:
-    - context: UNKNOWN (interface or non-final class; concrete implementation unknown)
     - preferences: STABLE (class with no mutable properties)
     - alertsEffectivelyEnabled: STABLE (primitive type)
     - isXiaomiFamilyDevice: STABLE (primitive type)
@@ -2171,11 +2085,10 @@ internal fun com.runcheck.ui.settings.ProSection(uiState: com.runcheck.ui.settin
     - onRefreshPurchaseStatus: STABLE (function type)
 
 @Composable
-private fun com.runcheck.ui.settings.SettingsAboutSection(context: android.content.Context): kotlin.Unit
-  skippable: false
+private fun com.runcheck.ui.settings.SettingsAboutSection(): kotlin.Unit
+  skippable: true
   restartable: true
   params:
-    - context: UNKNOWN (interface or non-final class; concrete implementation unknown)
 
 @Composable
 internal fun com.runcheck.ui.settings.SettingsCard(content: @[Composable] @[ExtensionFunctionType] androidx.compose.runtime.internal.ComposableFunction1<androidx.compose.foundation.layout.ColumnScope, kotlin.Unit>): kotlin.Unit
@@ -2199,12 +2112,11 @@ internal fun com.runcheck.ui.settings.SettingsDivider(): kotlin.Unit
   params:
 
 @Composable
-private fun com.runcheck.ui.settings.SettingsMeasurementSection(uiState: com.runcheck.ui.settings.SettingsUiState, context: android.content.Context, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.settings.SettingsMeasurementSection(uiState: com.runcheck.ui.settings.SettingsUiState, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
     - uiState: RUNTIME (requires runtime check)
-    - context: UNKNOWN (interface or non-final class; concrete implementation unknown)
     - onInfoClick: STABLE (function type)
 
 @Composable
@@ -2259,12 +2171,11 @@ internal fun com.runcheck.ui.settings.SettingsToggle(title: kotlin.String, check
     - enabled: STABLE (primitive type)
 
 @Composable
-internal fun com.runcheck.ui.settings.SettingsTransientEffects(uiState: com.runcheck.ui.settings.SettingsUiState, context: android.content.Context, actions: com.runcheck.ui.settings.SettingsTransientEffectActions): kotlin.Unit
+internal fun com.runcheck.ui.settings.SettingsTransientEffects(uiState: com.runcheck.ui.settings.SettingsUiState, actions: com.runcheck.ui.settings.SettingsTransientEffectActions): kotlin.Unit
   skippable: false
   restartable: true
   params:
     - uiState: RUNTIME (requires runtime check)
-    - context: UNKNOWN (interface or non-final class; concrete implementation unknown)
     - actions: STABLE (class with no mutable properties)
 
 @Composable
@@ -2580,29 +2491,10 @@ public fun com.runcheck.ui.theme.homeHealthStatusTextStyle(): androidx.compose.u
   params:
 
 @Composable
-public fun com.runcheck.ui.theme.homeStatusTileSecondaryLabelTextStyle(): androidx.compose.ui.text.TextStyle
+public fun com.runcheck.ui.theme.homeStatusTileTypeScale(): com.runcheck.ui.theme.HomeStatusTileTypeScale
   skippable: false
   restartable: false
   params:
-
-@Composable
-public fun com.runcheck.ui.theme.homeStatusTileSecondarySuffixTextStyle(): androidx.compose.ui.text.TextStyle
-  skippable: false
-  restartable: false
-  params:
-
-@Composable
-public fun com.runcheck.ui.theme.homeStatusTileSecondaryValueTextStyle(): androidx.compose.ui.text.TextStyle
-  skippable: false
-  restartable: false
-  params:
-
-@Composable
-public fun com.runcheck.ui.theme.homeStatusTileTypeScale(size: com.runcheck.ui.theme.HomeStatusTileSize): com.runcheck.ui.theme.HomeStatusTileTypeScale
-  skippable: false
-  restartable: false
-  params:
-    - size: STABLE (class with no mutable properties)
 
 @Composable
 public fun com.runcheck.ui.theme.iconCircleColor(): androidx.compose.ui.graphics.Color
@@ -2856,19 +2748,17 @@ private fun com.runcheck.ui.thermal.thermalStatusLabel(status: com.runcheck.doma
     - status: STABLE (class with no mutable properties)
 
 @Composable
-private fun com.runcheck.widget.BatteryWidget.BatteryWidgetContent(context: android.content.Context, snapshot: com.runcheck.widget.BatteryWidgetSnapshot): kotlin.Unit
-  skippable: false
+private fun com.runcheck.widget.BatteryWidget.BatteryWidgetContent(snapshot: com.runcheck.widget.BatteryWidgetSnapshot): kotlin.Unit
+  skippable: true
   restartable: true
   params:
-    - context: UNKNOWN (interface or non-final class; concrete implementation unknown)
     - snapshot: STABLE (class with no mutable properties)
 
 @Composable
-private fun com.runcheck.widget.HealthWidget.HealthWidgetContent(context: android.content.Context, snapshot: com.runcheck.widget.HealthWidgetSnapshot): kotlin.Unit
-  skippable: false
+private fun com.runcheck.widget.HealthWidget.HealthWidgetContent(snapshot: com.runcheck.widget.HealthWidgetSnapshot): kotlin.Unit
+  skippable: true
   restartable: true
   params:
-    - context: UNKNOWN (interface or non-final class; concrete implementation unknown)
     - snapshot: STABLE (class with no mutable properties)
 
 @Composable
@@ -2880,26 +2770,23 @@ private fun com.runcheck.widget.MiniIndicator(label: kotlin.String, value: kotli
     - value: STABLE (String is immutable)
 
 @Composable
-internal fun com.runcheck.widget.WidgetEmptyContent(context: android.content.Context): kotlin.Unit
-  skippable: false
+internal fun com.runcheck.widget.WidgetEmptyContent(): kotlin.Unit
+  skippable: true
   restartable: true
   params:
-    - context: UNKNOWN (interface or non-final class; concrete implementation unknown)
 
 @Composable
-internal fun com.runcheck.widget.WidgetLockedContent(context: android.content.Context, widgetNameResId: kotlin.Int): kotlin.Unit
-  skippable: false
+internal fun com.runcheck.widget.WidgetLockedContent(widgetNameResId: kotlin.Int): kotlin.Unit
+  skippable: true
   restartable: true
   params:
-    - context: UNKNOWN (interface or non-final class; concrete implementation unknown)
     - widgetNameResId: STABLE (primitive type)
 
 @Composable
-internal fun com.runcheck.widget.WidgetStaleContent(context: android.content.Context): kotlin.Unit
-  skippable: false
+internal fun com.runcheck.widget.WidgetStaleContent(): kotlin.Unit
+  skippable: true
   restartable: true
   params:
-    - context: UNKNOWN (interface or non-final class; concrete implementation unknown)
 
 @Composable
 internal fun com.runcheck.widget.widgetContainerModifier(): androidx.glance.GlanceModifier

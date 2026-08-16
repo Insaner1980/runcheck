@@ -11,8 +11,7 @@ class NotificationChannelNamingTest {
     }
 
     @Test
-    fun `alert and trial notification channel ids stay stable`() {
+    fun `alert notification channel id stays stable`() {
         assertEquals("runcheck_alerts", NotificationHelper.CHANNEL_ALERTS)
-        assertEquals("runcheck_trial", NotificationHelper.CHANNEL_TRIAL)
     }
 }

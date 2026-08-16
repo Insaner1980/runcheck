@@ -4,13 +4,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.ui.common.LifecycleStartStopEffect
-import kotlinx.coroutines.flow.StateFlow
 
 data class ObservedScreenState<S>(
     val uiState: S,
@@ -19,18 +16,15 @@ data class ObservedScreenState<S>(
 )
 
 @Composable
-fun <S> collectObservedScreenState(
-    uiState: StateFlow<S>,
-    isRefreshing: StateFlow<Boolean>,
-): ObservedScreenState<S> {
-    val currentUiState by uiState.collectAsStateWithLifecycle()
-    val currentIsRefreshing by isRefreshing.collectAsStateWithLifecycle()
-    return ObservedScreenState(
-        uiState = currentUiState,
-        isRefreshing = currentIsRefreshing,
+fun <S> observedScreenState(
+    uiState: S,
+    isRefreshing: Boolean,
+): ObservedScreenState<S> =
+    ObservedScreenState(
+        uiState = uiState,
+        isRefreshing = isRefreshing,
         loadingDescription = stringResource(R.string.a11y_loading),
     )
-}
 
 @Composable
 fun ObservedScreenScaffold(
