@@ -38,22 +38,19 @@ class NotificationHelper
                     "device_pulse_status",
                     "device_pulse_trial",
                     "runcheck_status",
+                    "runcheck_trial",
                 )
-            const val CHANNEL_TRIAL = "runcheck_trial"
             const val CHANNEL_REAL_TIME = "real_time_monitor"
             const val NOTIFICATION_LOW_BATTERY = 1001
             const val NOTIFICATION_HIGH_TEMP = 1002
             const val NOTIFICATION_LOW_STORAGE = 1003
             const val NOTIFICATION_CHARGE_COMPLETE = 1004
-            const val NOTIFICATION_TRIAL_DAY5 = 1005
-            const val NOTIFICATION_TRIAL_DAY7 = 1006
 
             /** Intent extra key for deep-linking to a specific screen from notifications. */
             const val EXTRA_NAVIGATE_TO = "navigate_to"
             const val NAVIGATE_BATTERY = "battery"
             const val NAVIGATE_THERMAL = "thermal"
             const val NAVIGATE_STORAGE = "storage"
-            const val NAVIGATE_PRO_UPGRADE = "pro_upgrade"
 
             fun createContentIntent(
                 context: Context,
@@ -96,7 +93,7 @@ class NotificationHelper
             get() = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         /**
-         * Creates the app's alert/reminder channels.
+         * Creates the app's alert channel.
          * Safe to call multiple times; the system ignores duplicates.
          */
         fun createChannels() {
@@ -110,18 +107,7 @@ class NotificationHelper
                     enableVibration(true)
                 }
 
-            val trialChannel =
-                NotificationChannel(
-                    CHANNEL_TRIAL,
-                    context.getString(R.string.notification_channel_trial),
-                    NotificationManager.IMPORTANCE_DEFAULT,
-                ).apply {
-                    description = context.getString(R.string.notification_channel_trial_description)
-                }
-
-            notificationManager.createNotificationChannels(
-                listOf(alertChannel, trialChannel),
-            )
+            notificationManager.createNotificationChannel(alertChannel)
 
             // Remove leftover channels from the old "DevicePulse" app name
             for (legacyId in LEGACY_CHANNEL_IDS) {
@@ -206,38 +192,6 @@ class NotificationHelper
                     .build()
 
             notificationManager.notify(NOTIFICATION_CHARGE_COMPLETE, notification)
-        }
-
-        fun showTrialDay5Notification() {
-            if (!canPostNotifications()) return
-            createChannels()
-            val notification =
-                NotificationCompat
-                    .Builder(context, CHANNEL_TRIAL)
-                    .setSmallIcon(R.drawable.ic_notification)
-                    .setContentTitle(context.getString(R.string.notification_trial_day5_title))
-                    .setContentText(context.getString(R.string.notification_trial_day5_text))
-                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                    .setContentIntent(createContentIntent(context, NAVIGATE_PRO_UPGRADE, NOTIFICATION_TRIAL_DAY5))
-                    .setAutoCancel(true)
-                    .build()
-            notificationManager.notify(NOTIFICATION_TRIAL_DAY5, notification)
-        }
-
-        fun showTrialDay7Notification() {
-            if (!canPostNotifications()) return
-            createChannels()
-            val notification =
-                NotificationCompat
-                    .Builder(context, CHANNEL_TRIAL)
-                    .setSmallIcon(R.drawable.ic_notification)
-                    .setContentTitle(context.getString(R.string.notification_trial_day7_title))
-                    .setContentText(context.getString(R.string.notification_trial_day7_text))
-                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                    .setContentIntent(createContentIntent(context, NAVIGATE_PRO_UPGRADE, NOTIFICATION_TRIAL_DAY7))
-                    .setAutoCancel(true)
-                    .build()
-            notificationManager.notify(NOTIFICATION_TRIAL_DAY7, notification)
         }
 
         /** Cancels a notification by its ID. */

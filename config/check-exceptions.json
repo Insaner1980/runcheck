@@ -404,6 +404,34 @@
       "tracking": "local-review:runcheck-owasp-false-cpe-groups",
       "sourcePath": "config/dependency-check/suppressions.xml",
       "selector": "androidx\\.sqlite/sqlite(-framework)?-android@2\\.6\\.2"
+    },
+    {
+      "id": "runcheck-codeql-notification-content-intents",
+      "tool": "codeql",
+      "rule": "java/android/implicit-pendingintents",
+      "scope": "immutable explicit MainActivity notification content intents in NotificationHelper.kt",
+      "reason": "CodeQL 2.26.2 does not recognize the explicit component and FLAG_IMMUTABLE through the Kotlin apply and helper flow.",
+      "owner": "project-maintainers",
+      "added": "2026-08-14",
+      "expires": "2026-10-31",
+      "tracking": "local-review:runcheck-codeql-notification-content-intents",
+      "sourcePath": "app/src/main/java/com/runcheck/service/monitor/NotificationHelper.kt",
+      "selector": "PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE",
+      "findingPath": "app/src/main/java/com/runcheck/service/monitor/NotificationHelper.kt"
+    },
+    {
+      "id": "runcheck-codeql-real-time-notification-content-intent",
+      "tool": "codeql",
+      "rule": "java/android/implicit-pendingintents",
+      "scope": "immutable explicit MainActivity notification content intent used by RealTimeMonitorService.kt",
+      "reason": "CodeQL 2.26.2 does not recognize the explicit component and FLAG_IMMUTABLE through the Kotlin helper flow.",
+      "owner": "project-maintainers",
+      "added": "2026-08-14",
+      "expires": "2026-10-31",
+      "tracking": "local-review:runcheck-codeql-real-time-notification-content-intent",
+      "sourcePath": "app/src/main/java/com/runcheck/service/monitor/NotificationHelper.kt",
+      "selector": "PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE",
+      "findingPath": "app/src/main/java/com/runcheck/service/monitor/RealTimeMonitorService.kt"
     }
   ]
 }

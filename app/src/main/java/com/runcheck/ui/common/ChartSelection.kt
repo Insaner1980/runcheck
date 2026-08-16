@@ -18,7 +18,7 @@ import com.runcheck.ui.theme.spacing
 
 @Composable
 fun <T> EnumFilterChipRow(
-    values: Iterable<T>,
+    values: List<T>,
     selected: T,
     onSelect: (T) -> Unit,
     labelFor: @Composable (T) -> String,

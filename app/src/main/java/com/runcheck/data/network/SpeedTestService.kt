@@ -20,8 +20,6 @@ import net.measurementlab.ndt7.android.models.ClientResponse
 import net.measurementlab.ndt7.android.models.Measurement
 import net.measurementlab.ndt7.android.utils.DataConverter
 import net.measurementlab.ndt7.android.utils.HttpClientFactory
-import okhttp3.Dns
-import java.net.InetAddress
 import java.net.SocketTimeoutException
 import java.net.URI
 import java.net.UnknownHostException
@@ -173,12 +171,8 @@ class SpeedTestService
                     .createHttpClient()
                     .newBuilder()
                     .socketFactory(startingDefaultNetwork.socketFactory)
-                    .dns(
-                        object : Dns {
-                            override fun lookup(hostname: String): List<InetAddress> =
-                                startingDefaultNetwork.getAllByName(hostname).toList()
-                        },
-                    ).build()
+                    .dns { hostname -> startingDefaultNetwork.getAllByName(hostname).toList() }
+                    .build()
             var downloadMbps = 0.0
             var uploadMbps = 0.0
             var latestRttMs = 0

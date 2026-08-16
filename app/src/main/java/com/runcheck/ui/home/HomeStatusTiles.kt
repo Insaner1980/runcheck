@@ -1,11 +1,10 @@
 package com.runcheck.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,7 +16,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -26,28 +24,18 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
-import com.runcheck.domain.model.ChargingStatus
-import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.HealthScore
 import com.runcheck.domain.model.HealthStatus
-import com.runcheck.domain.model.NetworkState
-import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.SignalQuality
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.formatTemperatureValue
 import com.runcheck.ui.common.healthStatusLabel
-import com.runcheck.ui.common.isUnknownValue
-import com.runcheck.ui.common.plugTypeLabel
 import com.runcheck.ui.common.temperatureUnitRes
-import com.runcheck.ui.theme.HomeStatusTileSize
 import com.runcheck.ui.theme.StatusColors
 import com.runcheck.ui.theme.TileBattery
 import com.runcheck.ui.theme.TileNetwork
 import com.runcheck.ui.theme.TileStorage
 import com.runcheck.ui.theme.TileThermal
-import com.runcheck.ui.theme.homeStatusTileSecondaryLabelTextStyle
-import com.runcheck.ui.theme.homeStatusTileSecondarySuffixTextStyle
-import com.runcheck.ui.theme.homeStatusTileSecondaryValueTextStyle
 import com.runcheck.ui.theme.homeStatusTileTypeScale
 import com.runcheck.ui.theme.statusColor
 import com.runcheck.ui.theme.statusColorForSignalQuality
@@ -59,10 +47,10 @@ import com.runcheck.ui.theme.uiTokens
 internal enum class HomeStatusTileCategory(
     val tieBreakOrder: Int,
 ) {
-    NETWORK(0),
-    THERMAL(1),
-    STORAGE(2),
-    BATTERY(3),
+    BATTERY(0),
+    NETWORK(1),
+    THERMAL(2),
+    STORAGE(3),
 }
 
 @Immutable
@@ -74,12 +62,14 @@ internal data class HomeStatusTileSlots(
 )
 
 internal fun assignHomeStatusTileSlots(
+    batteryStatus: HealthStatus,
     networkStatus: HealthStatus,
     thermalStatus: HealthStatus,
     storageStatus: HealthStatus,
 ): HomeStatusTileSlots {
     val sortedCategories =
         listOf(
+            HomeStatusTileCategory.BATTERY to batteryStatus,
             HomeStatusTileCategory.NETWORK to networkStatus,
             HomeStatusTileCategory.THERMAL to thermalStatus,
             HomeStatusTileCategory.STORAGE to storageStatus,
@@ -92,9 +82,9 @@ internal fun assignHomeStatusTileSlots(
 
     return HomeStatusTileSlots(
         slotA = sortedCategories[0].first,
-        slotB = HomeStatusTileCategory.BATTERY,
-        slotC = sortedCategories[1].first,
-        slotD = sortedCategories[2].first,
+        slotB = sortedCategories[1].first,
+        slotC = sortedCategories[2].first,
+        slotD = sortedCategories[3].first,
     )
 }
 
@@ -165,6 +155,7 @@ internal fun HomeStatusTiles(
     val statuses = homeStatusTileStatuses(state)
     val slots =
         assignHomeStatusTileSlots(
+            batteryStatus = statuses.battery,
             networkStatus = statuses.network,
             thermalStatus = statuses.thermal,
             storageStatus = statuses.storage,
@@ -176,7 +167,6 @@ internal fun HomeStatusTiles(
     ) {
         HomeStatusTile(
             category = slots.slotA,
-            size = HomeStatusTileSize.WIDE,
             state = state,
             status = statuses.forCategory(slots.slotA),
             onClick =
@@ -189,74 +179,67 @@ internal fun HomeStatusTiles(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .defaultMinSize(minHeight = tokens.homeStatusTileWideMinHeight),
+                    .height(tokens.homeStatusTileHeight),
         )
 
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(IntrinsicSize.Min),
+                    .height(tokens.homeStatusTileHeight),
             horizontalArrangement = Arrangement.spacedBy(tokens.homeStatusTileGap),
         ) {
             HomeStatusTile(
                 category = slots.slotB,
-                size = HomeStatusTileSize.TALL,
                 state = state,
-                status = statuses.battery,
-                onClick = onNavigateToBattery,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .defaultMinSize(minHeight = tokens.homeStatusTileTallMinHeight),
-            )
-
-            Column(
+                status = statuses.forCategory(slots.slotB),
+                onClick =
+                    slots.slotB.navigationCallback(
+                        onNavigateToBattery = onNavigateToBattery,
+                        onNavigateToNetwork = onNavigateToNetwork,
+                        onNavigateToThermal = onNavigateToThermal,
+                        onNavigateToStorage = onNavigateToStorage,
+                    ),
                 modifier =
                     Modifier
                         .weight(1f)
                         .fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(tokens.homeStatusTileGap),
-            ) {
-                HomeStatusTile(
-                    category = slots.slotC,
-                    size = HomeStatusTileSize.COMPACT,
-                    state = state,
-                    status = statuses.forCategory(slots.slotC),
-                    onClick =
-                        slots.slotC.navigationCallback(
-                            onNavigateToBattery = onNavigateToBattery,
-                            onNavigateToNetwork = onNavigateToNetwork,
-                            onNavigateToThermal = onNavigateToThermal,
-                            onNavigateToStorage = onNavigateToStorage,
-                        ),
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .defaultMinSize(minHeight = tokens.homeStatusTileCompactMinHeight),
-                )
-                HomeStatusTile(
-                    category = slots.slotD,
-                    size = HomeStatusTileSize.SMALL,
-                    state = state,
-                    status = statuses.forCategory(slots.slotD),
-                    onClick =
-                        slots.slotD.navigationCallback(
-                            onNavigateToBattery = onNavigateToBattery,
-                            onNavigateToNetwork = onNavigateToNetwork,
-                            onNavigateToThermal = onNavigateToThermal,
-                            onNavigateToStorage = onNavigateToStorage,
-                        ),
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .defaultMinSize(minHeight = tokens.homeStatusTileCompactMinHeight),
-                )
-            }
+            )
+
+            HomeStatusTile(
+                category = slots.slotC,
+                state = state,
+                status = statuses.forCategory(slots.slotC),
+                onClick =
+                    slots.slotC.navigationCallback(
+                        onNavigateToBattery = onNavigateToBattery,
+                        onNavigateToNetwork = onNavigateToNetwork,
+                        onNavigateToThermal = onNavigateToThermal,
+                        onNavigateToStorage = onNavigateToStorage,
+                    ),
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+            )
         }
+
+        HomeStatusTile(
+            category = slots.slotD,
+            state = state,
+            status = statuses.forCategory(slots.slotD),
+            onClick =
+                slots.slotD.navigationCallback(
+                    onNavigateToBattery = onNavigateToBattery,
+                    onNavigateToNetwork = onNavigateToNetwork,
+                    onNavigateToThermal = onNavigateToThermal,
+                    onNavigateToStorage = onNavigateToStorage,
+                ),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(tokens.homeStatusTileHeight),
+        )
     }
 }
 
@@ -276,7 +259,6 @@ private fun HomeStatusTileCategory.navigationCallback(
 @Composable
 private fun HomeStatusTile(
     category: HomeStatusTileCategory,
-    size: HomeStatusTileSize,
     state: HomeUiState.Success,
     status: HealthStatus,
     onClick: () -> Unit,
@@ -294,38 +276,27 @@ private fun HomeStatusTile(
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
     ) {
-        Column(
+        Box(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(
                         start = tokens.homeStatusTilePaddingHorizontal,
-                        top = tokens.homeStatusTilePaddingTop,
                         end = tokens.homeStatusTilePaddingHorizontal,
-                        bottom = tokens.homeStatusTilePaddingBottom,
                     ),
         ) {
             Text(
                 text = category.label(),
-                style = MaterialTheme.homeStatusTileTypeScale(size).category,
+                style = MaterialTheme.homeStatusTileTypeScale.category,
                 color = colors.category,
+                modifier = Modifier.padding(top = tokens.homeStatusTileCategoryTop),
             )
 
-            Spacer(modifier = Modifier.weight(1f))
-
-            if (category == HomeStatusTileCategory.BATTERY) {
-                BatteryTileContent(
-                    state = state,
-                    status = status,
-                    colors = colors,
-                )
-            } else {
-                StandardTileContent(
-                    content = category.content(state = state, status = status),
-                    size = size,
-                    colors = colors,
-                )
-            }
+            StandardTileContent(
+                content = category.content(state = state, status = status),
+                colors = colors,
+                modifier = Modifier.padding(top = tokens.homeStatusTileValueTop),
+            )
         }
     }
 }
@@ -336,7 +307,6 @@ private data class HomeStatusTileColors(
     val category: Color,
     val value: Color,
     val status: Color,
-    val context: Color,
 )
 
 @Composable
@@ -351,7 +321,6 @@ private fun homeStatusTileColors(
             category = colorScheme.background,
             value = colorScheme.background,
             status = colorScheme.background,
-            context = colorScheme.background,
         )
     } else {
         HomeStatusTileColors(
@@ -359,7 +328,6 @@ private fun homeStatusTileColors(
             category = colorScheme.onSurfaceVariant,
             value = colorScheme.onSurface,
             status = statusColor(status),
-            context = colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -387,9 +355,7 @@ private fun HomeStatusTileCategory.label(): String =
 private data class StatusTileContent(
     val value: String,
     val suffix: String?,
-    val secondaryLine: String? = null,
     val status: String,
-    val context: String? = null,
 )
 
 @Composable
@@ -404,7 +370,6 @@ private fun HomeStatusTileCategory.content(
                     state.networkState.signalDbm?.toString()
                         ?: stringResource(R.string.placeholder_dash),
                 suffix = stringResource(R.string.unit_dbm),
-                secondaryLine = networkConnectionDescriptor(state.networkState),
                 status = networkSignalStatusLabel(state.networkState.signalQuality),
             )
         }
@@ -435,19 +400,24 @@ private fun HomeStatusTileCategory.content(
         }
 
         HomeStatusTileCategory.BATTERY -> {
-            error("Battery uses its dedicated tile content")
+            StatusTileContent(
+                value = state.batteryState.level.toString(),
+                suffix = stringResource(R.string.unit_percent),
+                status = batteryHealthStatusLabel(status),
+            )
         }
     }
 
 @Composable
 private fun StandardTileContent(
     content: StatusTileContent,
-    size: HomeStatusTileSize,
     colors: HomeStatusTileColors,
+    modifier: Modifier = Modifier,
 ) {
-    val typeScale = MaterialTheme.homeStatusTileTypeScale(size)
+    val tokens = MaterialTheme.uiTokens
+    val typeScale = MaterialTheme.homeStatusTileTypeScale
 
-    Column {
+    Column(modifier = modifier) {
         TileValueLine(
             value = content.value,
             suffix = content.suffix,
@@ -456,27 +426,8 @@ private fun StandardTileContent(
             textColor = colors.value,
         )
 
-        if (content.secondaryLine != null) {
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = content.secondaryLine,
-                style = typeScale.suffix,
-                color = colors.context,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-
         Spacer(
-            modifier =
-                Modifier.height(
-                    when (size) {
-                        HomeStatusTileSize.WIDE -> 11.dp
-                        HomeStatusTileSize.COMPACT -> 7.dp
-                        HomeStatusTileSize.SMALL -> 6.dp
-                        HomeStatusTileSize.TALL -> 9.dp
-                    },
-                ),
+            modifier = Modifier.height(tokens.homeStatusTileStatusGap),
         )
 
         Text(
@@ -486,92 +437,19 @@ private fun StandardTileContent(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-
-        if (content.context != null && typeScale.context != null) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = content.context,
-                style = typeScale.context,
-                color = colors.context,
-            )
-        }
     }
 }
 
 @Composable
-private fun BatteryTileContent(
-    state: HomeUiState.Success,
-    status: HealthStatus,
-    colors: HomeStatusTileColors,
-) {
-    val typeScale = MaterialTheme.homeStatusTileTypeScale(HomeStatusTileSize.TALL)
-    val capacity = state.batteryState.estimatedCapacityMah
-
-    Column {
-        TileValueLine(
-            value = capacity?.toString() ?: stringResource(R.string.placeholder_dash),
-            suffix = capacity?.let { stringResource(R.string.unit_milliamp_hours) },
-            valueStyle = MaterialTheme.homeStatusTileSecondaryValueTextStyle,
-            suffixStyle = MaterialTheme.homeStatusTileSecondarySuffixTextStyle,
-            textColor = colors.value,
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = stringResource(R.string.home_battery_estimated_full_capacity),
-            style = MaterialTheme.homeStatusTileSecondaryLabelTextStyle,
-            color = colors.context,
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        TileValueLine(
-            value = state.batteryState.level.toString(),
-            suffix = stringResource(R.string.unit_percent),
-            valueStyle = typeScale.value,
-            suffixStyle = typeScale.suffix,
-            textColor = colors.value,
-        )
-        Spacer(modifier = Modifier.height(9.dp))
-        Text(
-            text = healthStatusLabel(status),
-            style = typeScale.status,
-            color = colors.status,
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = batteryChargeStateSentence(state),
-            style = requireNotNull(typeScale.context),
-            color = colors.context,
-        )
-    }
-}
-
-@Composable
-private fun batteryChargeStateSentence(state: HomeUiState.Success): String =
-    when (state.batteryState.chargingStatus) {
-        ChargingStatus.CHARGING -> {
-            if (state.batteryState.plugType == PlugType.NONE) {
-                stringResource(R.string.home_battery_charging_now)
-            } else {
-                stringResource(
-                    R.string.home_battery_charging_via,
-                    plugTypeLabel(state.batteryState.plugType),
-                )
-            }
-        }
-
-        ChargingStatus.DISCHARGING -> {
-            stringResource(R.string.home_battery_discharging_now)
-        }
-
-        ChargingStatus.FULL -> {
-            stringResource(R.string.home_battery_fully_charged)
-        }
-
-        ChargingStatus.NOT_CHARGING -> {
-            stringResource(R.string.home_battery_not_charging)
-        }
-    }
+private fun batteryHealthStatusLabel(status: HealthStatus): String =
+    stringResource(
+        when (status) {
+            HealthStatus.HEALTHY -> R.string.home_battery_status_healthy
+            HealthStatus.FAIR -> R.string.home_battery_status_fair
+            HealthStatus.POOR -> R.string.home_battery_status_poor
+            HealthStatus.CRITICAL -> R.string.home_battery_status_critical
+        },
+    )
 
 @Composable
 private fun TileValueLine(
@@ -581,9 +459,10 @@ private fun TileValueLine(
     suffixStyle: TextStyle,
     textColor: Color,
 ) {
+    val tokens = MaterialTheme.uiTokens
+
     Row(
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.homeStatusTileValueSuffixGap),
     ) {
         Text(
             text = value,
@@ -591,7 +470,7 @@ private fun TileValueLine(
             color = textColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false),
+            modifier = Modifier.alignByBaseline(),
         )
         if (suffix != null) {
             Text(
@@ -599,54 +478,11 @@ private fun TileValueLine(
                 style = suffixStyle,
                 color = textColor,
                 maxLines = 1,
+                modifier = Modifier.alignByBaseline(),
             )
         }
     }
 }
-
-@Composable
-private fun networkConnectionDescriptor(network: NetworkState): String =
-    when (network.connectionType) {
-        ConnectionType.WIFI -> {
-            network.wifiStandard
-                ?.substringBefore(" (")
-                ?.takeUnless(::isUnknownValue)
-                ?: stringResource(R.string.connection_wifi)
-        }
-
-        ConnectionType.CELLULAR -> {
-            val generation =
-                network.networkSubtype
-                    ?.substringBefore(' ')
-                    ?.takeUnless(::isUnknownValue)
-            val carrier = network.carrier?.takeUnless(::isUnknownValue)
-            when {
-                generation != null && carrier != null -> {
-                    stringResource(R.string.home_network_mobile_descriptor, generation, carrier)
-                }
-
-                generation != null -> {
-                    generation
-                }
-
-                carrier != null -> {
-                    stringResource(R.string.home_network_mobile_carrier, carrier)
-                }
-
-                else -> {
-                    stringResource(R.string.connection_cellular)
-                }
-            }
-        }
-
-        ConnectionType.VPN -> {
-            stringResource(R.string.connection_vpn)
-        }
-
-        ConnectionType.NONE -> {
-            stringResource(R.string.home_network_offline)
-        }
-    }
 
 @Composable
 private fun networkSignalStatusLabel(signalQuality: SignalQuality): String =

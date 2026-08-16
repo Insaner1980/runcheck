@@ -100,7 +100,7 @@ Current runtime systems:
 - WorkManager runs `InsightGenerationWorker` on the monitoring scheduler lifecycle to generate persisted Home insights from Room history; rule evaluation completes before all generated rule results are replaced in one Room transaction
 - `RealTimeMonitorService` is an opt-in live notification foreground service and must stay user-controlled from Settings
 - Widgets are backed by Room snapshots and treated as a Pro feature
-- Trial state currently counts as Pro access through `ProState.isPro`
+- Only a verified one-time purchase counts as Pro access through `ProState.isPro`; free installs never receive time-limited Pro access
 - Home now includes a rule-driven Insights surface backed by Room-persisted insight rows; Home shows a curated subset of up to three items and the full list lives in the dedicated Insights screen
 - `AppBatteryImpactRule` is intentionally excluded from production because foreground duration alone cannot support defensible per-app mAh attribution
 - Debug-only insight seeding and manual regeneration live behind debug source-set wiring and must stay release-inaccessible

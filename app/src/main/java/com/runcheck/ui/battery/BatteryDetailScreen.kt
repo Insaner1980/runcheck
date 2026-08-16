@@ -114,12 +114,12 @@ import com.runcheck.ui.components.RuncheckCard
 import com.runcheck.ui.components.SectionDivider
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.TrendChart
-import com.runcheck.ui.components.collectObservedScreenState
 import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
+import com.runcheck.ui.components.observedScreenState
 import com.runcheck.ui.fullscreen.FullscreenChartSeedStore
 import com.runcheck.ui.fullscreen.FullscreenChartUiState
 import com.runcheck.ui.fullscreen.sanitizeFullscreenMetric
@@ -153,7 +153,10 @@ fun BatteryDetailScreen(
     onConsumeFullscreenResult: () -> Unit = {},
     viewModel: BatteryViewModel = hiltViewModel(),
 ) {
-    val screenState = collectObservedScreenState(viewModel.uiState, viewModel.isRefreshing)
+    // CPD-OFF: Keep StateFlow collection at the screen boundary for Compose stability.
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val screenState = observedScreenState(uiState, isRefreshing)
 
     ObservedScreenScaffold(
         onStart = viewModel::startObserving,
@@ -161,6 +164,7 @@ fun BatteryDetailScreen(
         modifier = modifier,
         topBar = { DetailTopBar(title = "", onBack = onBack) },
     ) {
+        // CPD-ON
         ContentContainer {
             when (val state = screenState.uiState) {
                 is BatteryUiState.Loading -> {

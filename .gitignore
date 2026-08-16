@@ -12,6 +12,7 @@
 /local.properties
 /debug.credentials.properties
 .idea/
+.worktrees/
 /build/
 /app/build/
 /captures/

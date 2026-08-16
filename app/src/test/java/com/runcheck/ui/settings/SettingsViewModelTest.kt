@@ -136,7 +136,7 @@ class SettingsViewModelTest {
         }
 
     @Test
-    fun `settings pro state uses trial-aware pro access when purchase is inactive`() =
+    fun `settings pro state uses centralized pro access`() =
         runTest(mainDispatcherRule.testDispatcher) {
             every { proPurchaseManager.isProUser } returns flowOf(false)
             every { observeProAccess() } returns flowOf(true)

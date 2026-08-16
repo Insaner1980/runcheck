@@ -93,12 +93,12 @@ import com.runcheck.ui.components.SegmentedStatusBar
 import com.runcheck.ui.components.StatusDot
 import com.runcheck.ui.components.StatusSegment
 import com.runcheck.ui.components.TrendChart
-import com.runcheck.ui.components.collectObservedScreenState
 import com.runcheck.ui.components.info.InfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
+import com.runcheck.ui.components.observedScreenState
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.numericFontFamily
@@ -121,7 +121,10 @@ fun ThermalDetailScreen(
     onNavigateToLearnArticle: (articleId: String) -> Unit = {},
     viewModel: ThermalViewModel = hiltViewModel(),
 ) {
-    val screenState = collectObservedScreenState(viewModel.uiState, viewModel.isRefreshing)
+    // CPD-OFF: Keep StateFlow collection at the screen boundary for Compose stability.
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val screenState = observedScreenState(uiState, isRefreshing)
 
     ObservedScreenScaffold(
         onStart = viewModel::startObserving,
@@ -129,6 +132,7 @@ fun ThermalDetailScreen(
         modifier = modifier,
         topBar = { DetailTopBar(title = stringResource(R.string.thermal_title), onBack = onBack) },
     ) {
+        // CPD-ON
         ContentContainer {
             when (val state = screenState.uiState) {
                 is ThermalUiState.Loading -> {

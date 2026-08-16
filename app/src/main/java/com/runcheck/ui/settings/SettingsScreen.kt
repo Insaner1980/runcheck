@@ -169,25 +169,17 @@ fun SettingsScreen(
         if (uiState.preferencesLoaded && !canPostNotifications && uiState.preferences.liveNotificationEnabled) {
             viewModel.setLiveNotificationEnabled(false)
         }
-        when (
+        val serviceAction =
             resolveLiveNotificationServiceAction(
                 preferencesLoaded = uiState.preferencesLoaded,
                 enabled = uiState.preferences.liveNotificationEnabled,
                 canPostNotifications = canPostNotifications,
                 isRunning = RealTimeMonitorService.isRunning,
             )
-        ) {
-            LiveNotificationServiceAction.START -> {
-                context.startForegroundService(Intent(context, RealTimeMonitorService::class.java))
-            }
-
-            LiveNotificationServiceAction.STOP -> {
-                stopLiveNotificationService()
-            }
-
-            LiveNotificationServiceAction.NONE -> {
-                Unit
-            }
+        if (serviceAction == LiveNotificationServiceAction.START) {
+            context.startForegroundService(Intent(context, RealTimeMonitorService::class.java))
+        } else if (serviceAction == LiveNotificationServiceAction.STOP) {
+            stopLiveNotificationService()
         }
         val nm = context.getSystemService(android.app.NotificationManager::class.java)
         alertsEffectivelyEnabled = canPostNotifications &&
@@ -265,7 +257,6 @@ fun SettingsScreen(
             ScrollableDetailColumn {
                 Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
                 MonitoringSection(
-                    context = context,
                     monitoringInterval = uiState.preferences.monitoringInterval,
                     isBatteryOptimizationExempt = isBatteryOptimizationExempt,
                     onSetMonitoringInterval = viewModel::setMonitoringInterval,
@@ -285,7 +276,6 @@ fun SettingsScreen(
                 )
 
                 NotificationsSection(
-                    context = context,
                     preferences = uiState.preferences,
                     alertsEffectivelyEnabled = alertsEffectivelyEnabled,
                     isXiaomiFamilyDevice = isXiaomiFamilyDevice,
@@ -297,7 +287,6 @@ fun SettingsScreen(
                 )
 
                 AlertThresholdsSection(
-                    context = context,
                     preferences = uiState.preferences,
                     onSetAlertBatteryThreshold = viewModel::setAlertBatteryThreshold,
                     onSetAlertTempThreshold = viewModel::setAlertTempThreshold,
@@ -335,15 +324,13 @@ fun SettingsScreen(
 
                 SettingsMeasurementSection(
                     uiState = uiState,
-                    context = context,
                     onInfoClick = { activeInfoSheetState.value = it },
                 )
 
-                SettingsAboutSection(context = context)
+                SettingsAboutSection()
 
                 SettingsTransientEffects(
                     uiState = uiState,
-                    context = context,
                     actions =
                         SettingsTransientEffectActions(
                             onClearBillingStatus = viewModel::clearBillingStatus,
@@ -405,9 +392,9 @@ fun SettingsScreen(
 @Composable
 private fun SettingsMeasurementSection( // NOSONAR
     uiState: SettingsUiState,
-    context: android.content.Context,
     onInfoClick: (String) -> Unit,
 ) {
+    val context = LocalContext.current
     uiState.deviceProfile?.let { profile ->
         SettingsCard {
             CardSectionTitle(text = stringResource(R.string.settings_measurement_info))
@@ -502,7 +489,11 @@ private fun SettingsMeasurementSection( // NOSONAR
 }
 
 @Composable
-private fun SettingsAboutSection(context: android.content.Context) {
+private fun SettingsAboutSection() {
+    val context = LocalContext.current
+    val playStoreWebUrl = stringResource(R.string.settings_play_store_web_url)
+    val privacyPolicyUrl = stringResource(R.string.settings_privacy_policy_url)
+    val feedbackEmailSubject = stringResource(R.string.feedback_email_subject)
     var showOpenSourceLicenses by rememberSaveable { mutableStateOf(false) }
 
     if (showOpenSourceLicenses) {
@@ -535,7 +526,7 @@ private fun SettingsAboutSection(context: android.content.Context) {
                 } catch (_: Exception) {
                     openExternalUri(
                         context = context,
-                        uri = context.getString(R.string.settings_play_store_web_url),
+                        uri = playStoreWebUrl,
                     )
                 }
             },
@@ -546,7 +537,7 @@ private fun SettingsAboutSection(context: android.content.Context) {
             onClick = {
                 openExternalUri(
                     context = context,
-                    uri = context.getString(R.string.settings_privacy_policy_url),
+                    uri = privacyPolicyUrl,
                 )
             },
         )
@@ -565,7 +556,7 @@ private fun SettingsAboutSection(context: android.content.Context) {
                             data = "mailto:".toUri()
                             putExtra(
                                 Intent.EXTRA_SUBJECT,
-                                context.getString(R.string.feedback_email_subject),
+                                feedbackEmailSubject,
                             )
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         },
