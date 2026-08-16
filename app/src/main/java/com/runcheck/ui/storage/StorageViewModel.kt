@@ -33,7 +33,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.sample
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -105,7 +104,7 @@ class StorageViewModel
         }
 
         fun onTrashDeleteRequestFailed(message: UiText) {
-            screenState.mutableUiState.value = StorageUiState.Error(message)
+            screenState.updateUiState { StorageUiState.Error(message) }
         }
 
         @OptIn(ExperimentalCoroutinesApi::class)
@@ -119,19 +118,21 @@ class StorageViewModel
             }
         }
 
+        @OptIn(FlowPreview::class)
         private fun loadHistory() {
             screenState.historyJob?.cancel()
             screenState.historyJob =
                 viewModelScope.launch {
                     getStorageHistory(selectedHistoryPeriod)
+                        .sample(333L)
                         .catch { e ->
-                            screenState.mutableUiState.update { current ->
+                            screenState.updateUiState { current ->
                                 (current as? StorageUiState.Success)?.copy(
                                     historyLoadError = e.messageOrRes(R.string.common_error_generic),
                                 ) ?: current
                             }
                         }.collect { readings ->
-                            screenState.mutableUiState.update { current ->
+                            screenState.updateUiState { current ->
                                 (current as? StorageUiState.Success)?.copy(
                                     storageHistory = readings,
                                     selectedHistoryPeriod = selectedHistoryPeriod,
@@ -157,7 +158,7 @@ class StorageViewModel
                             liveUsagePercent.appendLiveValue(state.usagePercent)
                             lastObservedStorageState = state
                         }
-                        val currentSuccess = screenState.mutableUiState.value as? StorageUiState.Success
+                        val currentSuccess = screenState.uiState.value as? StorageUiState.Success
                         StorageUiState.Success(
                             storageState = state,
                             isPro = isPro,
@@ -171,10 +172,11 @@ class StorageViewModel
                     }.sample(333L)
                         .catch { e ->
                             screenState.refreshTracker.finish()
-                            screenState.mutableUiState.value =
+                            screenState.updateUiState {
                                 StorageUiState.Error(e.messageOrRes(R.string.common_error_generic))
+                            }
                         }.collect { state ->
-                            screenState.mutableUiState.value = state
+                            screenState.updateUiState { state }
                             screenState.refreshTracker.finish()
                         }
                 }

@@ -71,8 +71,9 @@ import com.runcheck.ui.components.ProFeatureLockedState
 import com.runcheck.ui.components.RuncheckCard
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
+import com.runcheck.util.AppDispatchers
+import com.runcheck.util.ReleaseSafeLog
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
@@ -106,10 +107,9 @@ fun AppUsageScreen(
                 }
 
                 is AppUsageUiState.Success -> {
-                    val appItems = viewModel.pagedApps.collectAsLazyPagingItems()
                     AppUsageContent(
                         state = state,
-                        appItems = appItems,
+                        appItemsProvider = { viewModel.pagedApps.collectAsLazyPagingItems() },
                         onRefresh = { viewModel.refresh() },
                     )
                 }
@@ -138,9 +138,10 @@ fun AppUsageScreen(
 @Composable
 private fun AppUsageContent(
     state: AppUsageUiState.Success,
-    appItems: LazyPagingItems<com.runcheck.domain.model.AppBatteryUsage>,
+    appItemsProvider: @Composable () -> LazyPagingItems<com.runcheck.domain.model.AppBatteryUsage>,
     onRefresh: () -> Unit,
 ) {
+    val appItems = appItemsProvider()
     val context = LocalContext.current
     val currentOnRefresh by rememberUpdatedState(onRefresh)
     var hasUsageAccess by remember(context) { mutableStateOf(context.hasUsageStatsAccess()) }
@@ -383,12 +384,10 @@ private val appIconCache =
     }
 
 private const val MAX_APP_ICON_CACHE_KB = 8 * 1024
+private const val APP_ICON_TAG = "AppUsageScreen"
 
 @Composable
-private fun AppIcon(
-    packageName: String,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-) {
+private fun AppIcon(packageName: String) {
     val context = LocalContext.current
     val bitmapState =
         produceState<Bitmap?>(
@@ -397,10 +396,8 @@ private fun AppIcon(
         ) {
             if (value != null) return@produceState
             value =
-                withContext(ioDispatcher) {
-                    loadAppIconBitmap(context, packageName)?.also { bitmap ->
-                        appIconCache.put(packageName, bitmap)
-                    }
+                loadAppIconBitmap(context, packageName)?.also { bitmap ->
+                    appIconCache.put(packageName, bitmap)
                 }
         }
 
@@ -421,31 +418,36 @@ private fun AppIcon(
     }
 }
 
-private fun loadAppIconBitmap(
+private suspend fun loadAppIconBitmap(
     context: Context,
     packageName: String,
+    ioDispatcher: CoroutineDispatcher = AppDispatchers().io,
 ): Bitmap? =
-    try {
-        val appInfo =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                context.packageManager.getApplicationInfo(
-                    packageName,
-                    PackageManager.ApplicationInfoFlags.of(
-                        PackageManager.MATCH_UNINSTALLED_PACKAGES.toLong(),
-                    ),
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                context.packageManager.getApplicationInfo(
-                    packageName,
-                    PackageManager.MATCH_UNINSTALLED_PACKAGES,
-                )
-            }
-        context.packageManager.getApplicationIcon(appInfo).toBitmap(96, 96)
-    } catch (_: PackageManager.NameNotFoundException) {
-        null
-    } catch (_: RuntimeException) {
-        null
+    withContext(ioDispatcher) {
+        try {
+            val appInfo =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    context.packageManager.getApplicationInfo(
+                        packageName,
+                        PackageManager.ApplicationInfoFlags.of(
+                            PackageManager.MATCH_UNINSTALLED_PACKAGES.toLong(),
+                        ),
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    context.packageManager.getApplicationInfo(
+                        packageName,
+                        PackageManager.MATCH_UNINSTALLED_PACKAGES,
+                    )
+                }
+            context.packageManager.getApplicationIcon(appInfo).toBitmap(96, 96)
+        } catch (_: PackageManager.NameNotFoundException) {
+            ReleaseSafeLog.warn(APP_ICON_TAG, "App icon unavailable because the package is no longer installed")
+            null
+        } catch (_: RuntimeException) {
+            ReleaseSafeLog.warn(APP_ICON_TAG, "App icon loading failed")
+            null
+        }
     }
 
 private fun Context.hasUsageStatsAccess(): Boolean {

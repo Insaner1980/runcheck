@@ -12,6 +12,7 @@ import com.runcheck.ui.components.ChartQualityZone
 import com.runcheck.ui.components.TrendChart
 
 @Composable
+@Suppress("kotlin:S107")
 fun HistoryChartContent(
     accessibilityTitle: String,
     label: String,

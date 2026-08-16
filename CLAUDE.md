@@ -66,7 +66,7 @@ app/src/main/java/com/runcheck/
 │   ├── appusage/      # App battery usage screen + ViewModel
 │   ├── learn/         # Learn section — article catalog, list screen, detail screen
 │   ├── settings/      # Settings screen + ViewModel
-│   ├── pro/           # Pro upgrade screen, trial UI, purchase flow
+│   ├── pro/           # Pro upgrade screen and purchase flow
 │   ├── theme/         # Dark theme, color tokens, typography, spacing, motion tokens
 │   ├── common/        # UiText, UiFormatters (formatPercent, formatTemp, etc.)
 │   ├── chart/         # ChartHelpers (quality zones, axis labels, qualityZoneColorForValue),
@@ -75,7 +75,7 @@ app/src/main/java/com/runcheck/
 │   ├── components/    # 34 shared composables (see Components below)
 │   │   └── info/      # InfoSheetContent, InfoIcon, InfoBottomSheet, InfoCard, InfoCardCatalog, CrossLinkButton
 │   └── navigation/    # NavGraph + Screen sealed class (push-based from Home)
-├── pro/               # Pro/trial state management
+├── pro/               # Free/Pro state management
 ├── billing/           # Billing state helpers
 ├── widget/            # Glance widgets (BatteryWidget, HealthWidget, WidgetDataProvider)
 ├── worker/            # WorkManager workers (Insights generation and related jobs)
@@ -318,15 +318,14 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 
 - Free version: core monitoring with locked Pro feature entry points where applicable
 - Pro version: one-time in-app purchase (€3.49), unlocks extended history, widgets, charger comparison, export, advanced insights, and storage cleanup tools
-- Trial system with expiration modal and notification worker
 - Use Google Play Billing Library
 - Gate pro features with `BillingManager` (implements `ProStatusProvider` + `ProPurchaseManager`)
-- No ad banners; monetization is Pro purchase/trial only.
+- No ad banners; monetization is a one-time Pro purchase only.
 
 ## Build & Release
 
 - Use a single `app` module (no multi-module until necessary)
-- **Static analysis:** ktlint (rule engine 1.8.0, compose-rules 0.6.3) + Detekt 2.0.0-alpha.5 (`dev.detekt`, compose-rules 0.6.3) + Android Lint + Compose Stability Analyzer 0.12.0
+- **Static analysis:** ktlint (rule engine 1.8.0, compose-rules 0.6.4) + Detekt 2.0.0-alpha.5 (`dev.detekt`, compose-rules 0.6.4) + Android Lint + Compose Stability Analyzer 0.12.0
 - ProGuard/R8 minification enabled for release builds
 - Generate signed APK/AAB for Play Store
 - Version code: manually increment `versionCode` in `app/build.gradle.kts` before each Play upload

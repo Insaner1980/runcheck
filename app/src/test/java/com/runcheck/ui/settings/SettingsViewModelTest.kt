@@ -60,7 +60,7 @@ class SettingsViewModelTest {
     @Before
     fun setUp() {
         every { observeSettings() } returns flowOf(SettingsData(preferences = UserPreferences(), deviceProfile = null))
-        every { proPurchaseManager.isProUser } returns flowOf(false)
+        every { proPurchaseManager.isProUser } returns MutableStateFlow(false)
         every { proPurchaseManager.billingAvailable } returns flowOf(false)
         every { proPurchaseManager.purchaseEvents } returns MutableSharedFlow<PurchaseEvent>()
         every { proPurchaseManager.hasPendingPurchase } returns flowOf(false)
@@ -136,9 +136,9 @@ class SettingsViewModelTest {
         }
 
     @Test
-    fun `settings pro state uses trial-aware pro access when purchase is inactive`() =
+    fun `settings pro state uses centralized pro access`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            every { proPurchaseManager.isProUser } returns flowOf(false)
+            every { proPurchaseManager.isProUser } returns MutableStateFlow(false)
             every { observeProAccess() } returns flowOf(true)
             every { isProUser() } returns true
 

@@ -23,11 +23,7 @@ import com.runcheck.domain.usecase.GetSpeedTestHistoryUseCase
 import com.runcheck.domain.usecase.GetStorageStateUseCase
 import com.runcheck.domain.usecase.GetThermalStateUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
-import com.runcheck.pro.ProState
 import com.runcheck.pro.ProStateProvider
-import com.runcheck.pro.ProStatus
-import com.runcheck.pro.TrialManager
-import com.runcheck.pro.TrialPresentationState
 import com.runcheck.ui.common.changedUnseenIds
 import com.runcheck.ui.common.messageOrRes
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -45,7 +41,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @HiltViewModel
@@ -61,7 +56,6 @@ class HomeViewModel
         private val insightHomeRankingPolicy: InsightHomeRankingPolicy,
         private val monitoringStatusRepository: MonitoringStatusRepository,
         private val proStateProvider: ProStateProvider,
-        private val trialManager: TrialManager,
         private val chargerSessionTracker: ChargerSessionTracker,
         private val healthScoreCalculator: HealthScoreCalculator,
         private val manageUserPreferences: ManageUserPreferencesUseCase,
@@ -125,42 +119,6 @@ class HomeViewModel
                     _isRefreshing.value = false
                     refreshIndicatorJob = null
                 }
-        }
-
-        private inline fun updateSuccessState(transform: HomeUiState.Success.() -> HomeUiState.Success) {
-            val current = _uiState.value
-            if (current is HomeUiState.Success) {
-                _uiState.value = current.transform()
-            }
-        }
-
-        fun dismissWelcomeSheet() {
-            viewModelScope.launch {
-                trialManager.setWelcomeShown()
-                updateSuccessState { copy(showWelcomeSheet = false) }
-            }
-        }
-
-        fun dismissDay5Banner() {
-            viewModelScope.launch {
-                trialManager.setDay5PromptShown()
-                updateSuccessState { copy(showDay5Banner = false) }
-            }
-        }
-
-        fun dismissExpirationModal(onDismissed: () -> Unit = {}) {
-            viewModelScope.launch {
-                trialManager.setExpirationModalShown()
-                updateSuccessState { copy(showExpirationModal = false) }
-                onDismissed()
-            }
-        }
-
-        fun dismissUpgradeCard() {
-            viewModelScope.launch {
-                trialManager.incrementUpgradeCardDismiss()
-                updateSuccessState { copy(showUpgradeCard = false) }
-            }
         }
 
         fun dismissInsight(id: Long) {
@@ -248,60 +206,13 @@ class HomeViewModel
                         ) { proState, ready -> proState.takeIf { ready } }
                             .filterNotNull()
 
-                    val readyProPresentationFlow =
-                        combine(
-                            readyProStateFlow,
-                            trialManager.observePresentationState(),
-                        ) { proState, presentationState ->
-                            ProPresentationContext(
-                                proState = proState,
-                                presentationState = presentationState,
-                            )
-                        }
-
                     combine(
                         dataFlow,
                         insightFlow,
-                        readyProPresentationFlow,
+                        readyProStateFlow,
                         preferencesFlow,
                         monitoringStaleFlow,
-                    ) { data, activeInsights, proPresentation, preferences, monitoringStale ->
-                        val proState = proPresentation.proState
-                        val presentationState = proPresentation.presentationState
-                        val showWelcomeSheet =
-                            proState.status == ProStatus.TRIAL_ACTIVE &&
-                                !presentationState.welcomeShown
-
-                        val showDay5Banner =
-                            proState.status == ProStatus.TRIAL_ACTIVE &&
-                                hasReachedTrialDay(proState.trialStartTimestamp, DAY_5) &&
-                                !presentationState.day5PromptShown
-
-                        val showExpirationModal =
-                            proState.status == ProStatus.TRIAL_EXPIRED &&
-                                proState.trialStartTimestamp > 0L &&
-                                !presentationState.expirationModalShown
-
-                        val showUpgradeCard =
-                            if (proState.status == ProStatus.TRIAL_EXPIRED &&
-                                proState.trialStartTimestamp > 0L
-                            ) {
-                                val dismissCount = presentationState.upgradeCardDismissCount
-                                val lastDismiss = presentationState.upgradeCardLastDismissTimestamp
-                                val daysSinceDismiss =
-                                    if (lastDismiss > 0L) {
-                                        TimeUnit.MILLISECONDS
-                                            .toDays(
-                                                System.currentTimeMillis() - lastDismiss,
-                                            ).toInt()
-                                    } else {
-                                        Int.MAX_VALUE
-                                    }
-                                dismissCount < 3 && (dismissCount == 0 || daysSinceDismiss >= 7)
-                            } else {
-                                false
-                            }
-
+                    ) { data, activeInsights, proState, preferences, monitoringStale ->
                         val isPro = proState.isPro
                         val visibleActiveInsights = activeInsights.visibleForProAccess(isPro)
                         val visibleInsights =
@@ -323,10 +234,6 @@ class HomeViewModel
                             temperatureUnit = preferences.temperatureUnit,
                             monitoringStale = monitoringStale,
                             proState = proState,
-                            showWelcomeSheet = showWelcomeSheet,
-                            showDay5Banner = showDay5Banner,
-                            showExpirationModal = showExpirationModal,
-                            showUpgradeCard = showUpgradeCard,
                         )
                     }.onEach { state ->
                         chargerSessionTracker.onObservedBatteryState(state.batteryState)
@@ -388,11 +295,6 @@ class HomeViewModel
             val nowMillis: Long,
         )
 
-        private data class ProPresentationContext(
-            val proState: ProState,
-            val presentationState: TrialPresentationState,
-        )
-
         private data class FreshnessTick(
             val epochMillis: Long,
             val uptimeMillis: Long,
@@ -400,18 +302,9 @@ class HomeViewModel
 
         companion object {
             private const val MAX_HOME_INSIGHTS = 3
-            private const val DAY_5 = 5
             private const val DISPLAY_UPDATE_INTERVAL_MS = 333L
             private const val MIN_FULL_CHECK_INDICATOR_MILLIS = 900L
             private const val FULL_CHECK_TIMEOUT_MILLIS = 12_000L
             private const val MONITORING_STALE_CHECK_INTERVAL_MS = 15_000L
         }
     }
-
-internal fun hasReachedTrialDay(
-    trialStartTimestamp: Long,
-    day: Int,
-    now: Long = System.currentTimeMillis(),
-): Boolean =
-    trialStartTimestamp > 0L &&
-        now >= trialStartTimestamp + TimeUnit.DAYS.toMillis(day.toLong())

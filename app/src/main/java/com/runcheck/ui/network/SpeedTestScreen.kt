@@ -101,8 +101,9 @@ import kotlin.math.roundToInt
 fun SpeedTestScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: NetworkViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> NetworkViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     val networkUiState by viewModel.networkUiState.collectAsStateWithLifecycle()
     val speedTestState by viewModel.speedTestState.collectAsStateWithLifecycle()
     val loadingDescription = stringResource(R.string.a11y_loading)

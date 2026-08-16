@@ -4,6 +4,7 @@ import android.app.Application
 import android.os.StrictMode
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import androidx.work.WorkManager
 import com.runcheck.data.billing.BillingManager
 import com.runcheck.domain.repository.MonitoringScheduler
 import com.runcheck.domain.repository.ScreenStateRepository
@@ -61,6 +62,9 @@ class RuncheckApp :
         }
         launchSafely(dispatchers.default, "notification channel creation") {
             notificationHelper.get().createChannels()
+            for (workName in LEGACY_TRIAL_WORK_NAMES) {
+                WorkManager.getInstance(this@RuncheckApp).cancelUniqueWork(workName)
+            }
         }
         launchSafely(dispatchers.default, "screen state + scheduling") {
             screenStateRepository.get().initialize()
@@ -138,5 +142,10 @@ class RuncheckApp :
 
     private companion object {
         private const val TAG = "RuncheckApp"
+        private val LEGACY_TRIAL_WORK_NAMES =
+            listOf(
+                "trial_notification_day5",
+                "trial_notification_day7",
+            )
     }
 }

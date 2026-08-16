@@ -100,7 +100,7 @@ Current runtime systems:
 - WorkManager runs `InsightGenerationWorker` on the monitoring scheduler lifecycle to generate persisted Home insights from Room history; rule evaluation completes before all generated rule results are replaced in one Room transaction
 - `RealTimeMonitorService` is an opt-in live notification foreground service and must stay user-controlled from Settings
 - Widgets are backed by Room snapshots and treated as a Pro feature
-- Trial state currently counts as Pro access through `ProState.isPro`
+- Only a verified one-time purchase counts as Pro access through `ProState.isPro`; free installs never receive time-limited Pro access
 - Home now includes a rule-driven Insights surface backed by Room-persisted insight rows; Home shows a curated subset of up to three items and the full list lives in the dedicated Insights screen
 - `AppBatteryImpactRule` is intentionally excluded from production because foreground duration alone cannot support defensible per-app mAh attribution
 - Debug-only insight seeding and manual regeneration live behind debug source-set wiring and must stay release-inaccessible
@@ -156,7 +156,7 @@ Project-specific check configuration lives in:
 - `.deepsec\`
 - `.github\dependabot.yml`
 
-Detekt uses the `dev.detekt` 2.x plugin (`2.0.0-alpha.5`) and both ktlint and Detekt use compose-rules `0.6.3`; ktlint's rule engine is pinned to `1.8.0`. The earlier Compose Stability Analyzer compatibility exception is resolved: analyzer `0.12.0` supports the Kotlin `2.4.10` toolchain, and both the debug and release stability variants regenerate without crashing, so the toolchain now tracks the verified current line.
+Detekt uses the `dev.detekt` 2.x plugin (`2.0.0-alpha.5`) and both ktlint and Detekt use compose-rules `0.6.4`; ktlint's rule engine is pinned to `1.8.0`. The earlier Compose Stability Analyzer compatibility exception is resolved: analyzer `0.12.0` supports the Kotlin `2.4.10` toolchain, and both the debug and release stability variants regenerate without crashing, so the toolchain now tracks the verified current line.
 
 ---
 
@@ -211,7 +211,7 @@ When reviewing a PR or file, check for these in order:
 - No dynamic colors. If a task changes visual design, follow `UI-SPEC.md` instead of inventing alternate tokens or component variants.
 - English-only strings are intentional right now. Do not reintroduce partial localization without updating docs and string coverage together.
 - Icons: use `Icons.Outlined` exclusively — no `Icons.Default`, `Icons.Filled`, or `Icons.Rounded`
-- All padding/spacing values must be on the 4dp grid (2/4/8/12/16/24/32dp)
+- Padding and spacing use the 4dp grid (2/4/8/12/16/24/32dp); the exact Home status mosaic dimensions centralized in `UiTokens` and documented in `UI-SPEC.md` are an explicit visual-system exception.
 - All animation durations must use `MotionTokens` constants, never bare `tween()` without explicit spec
 - All ViewModels with live state flows must use `.sample(333L)` to throttle UI updates
 

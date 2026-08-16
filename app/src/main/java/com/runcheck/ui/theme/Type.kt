@@ -100,167 +100,63 @@ val MaterialTheme.homeHealthContextTextStyle: TextStyle
             fontWeight = FontWeight.Normal,
         )
 
-// Home status tile styles inherit Manrope from RuncheckTypography.
-enum class HomeStatusTileSize {
-    WIDE,
-    TALL,
-    COMPACT,
-    SMALL,
-}
-
 @Immutable
 data class HomeStatusTileTypeScale(
     val category: TextStyle,
     val value: TextStyle,
     val suffix: TextStyle,
     val status: TextStyle,
-    val context: TextStyle?,
 )
 
-@Composable
-@ReadOnlyComposable
-fun MaterialTheme.homeStatusTileTypeScale(size: HomeStatusTileSize): HomeStatusTileTypeScale =
-    when (size) {
-        HomeStatusTileSize.WIDE -> {
-            HomeStatusTileTypeScale(
-                category =
-                    typography.titleSmall.copy(
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium,
-                    ),
-                value =
-                    typography.displayLarge.copy(
-                        fontSize = 56.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = (-0.04).em,
-                    ),
-                suffix =
-                    typography.headlineLarge.copy(
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
-                status =
-                    typography.titleMedium.copy(
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                context =
-                    typography.bodyMedium.copy(
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                    ),
-            )
-        }
-
-        HomeStatusTileSize.TALL -> {
-            HomeStatusTileTypeScale(
-                category =
-                    typography.titleSmall.copy(
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                    ),
-                value =
-                    typography.displayLarge.copy(
-                        fontSize = 46.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = (-0.04).em,
-                    ),
-                suffix =
-                    typography.headlineLarge.copy(
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
-                status =
-                    typography.titleSmall.copy(
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                context =
-                    typography.bodySmall.copy(
-                        fontSize = 13.5.sp,
-                        fontWeight = FontWeight.Medium,
-                    ),
-            )
-        }
-
-        HomeStatusTileSize.COMPACT -> {
-            HomeStatusTileTypeScale(
-                category =
-                    typography.titleSmall.copy(
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                    ),
-                value =
-                    typography.displayMedium.copy(
-                        fontSize = 34.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                suffix =
-                    typography.headlineMedium.copy(
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
-                status =
-                    typography.titleSmall.copy(
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                context = null,
-            )
-        }
-
-        HomeStatusTileSize.SMALL -> {
-            HomeStatusTileTypeScale(
-                category =
-                    typography.titleSmall.copy(
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                    ),
-                value =
-                    typography.displaySmall.copy(
-                        fontSize = 29.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                suffix =
-                    typography.headlineSmall.copy(
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
-                status =
-                    typography.titleSmall.copy(
-                        fontSize = 13.5.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                context = null,
-            )
-        }
-    }
-
-val MaterialTheme.homeStatusTileSecondaryValueTextStyle: TextStyle
+val MaterialTheme.homeStatusTileTypeScale: HomeStatusTileTypeScale
     @Composable
     @ReadOnlyComposable
     get() =
-        typography.displaySmall.copy(
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Bold,
-        )
-
-val MaterialTheme.homeStatusTileSecondarySuffixTextStyle: TextStyle
-    @Composable
-    @ReadOnlyComposable
-    get() =
-        typography.titleSmall.copy(
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-        )
-
-val MaterialTheme.homeStatusTileSecondaryLabelTextStyle: TextStyle
-    @Composable
-    @ReadOnlyComposable
-    get() =
-        typography.bodySmall.copy(
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
+        HomeStatusTileTypeScale(
+            category =
+                typography.titleSmall.copy(
+                    fontFamily = ManropeFontFamily,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    platformStyle = PlatformTextStyle(includeFontPadding = false),
+                ),
+            value =
+                typography.displayMedium.copy(
+                    fontFamily = ManropeFontFamily,
+                    fontSize = 40.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 40.sp,
+                    lineHeightStyle =
+                        LineHeightStyle(
+                            alignment = LineHeightStyle.Alignment.Center,
+                            trim = LineHeightStyle.Trim.Both,
+                            mode = LineHeightStyle.Mode.Tight,
+                        ),
+                    letterSpacing = (-0.03).em,
+                    fontFeatureSettings = "tnum",
+                    platformStyle = PlatformTextStyle(includeFontPadding = false),
+                ),
+            suffix =
+                typography.headlineLarge.copy(
+                    fontFamily = ManropeFontFamily,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    platformStyle = PlatformTextStyle(includeFontPadding = false),
+                ),
+            status =
+                typography.titleMedium.copy(
+                    fontFamily = ManropeFontFamily,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 15.sp,
+                    lineHeightStyle =
+                        LineHeightStyle(
+                            alignment = LineHeightStyle.Alignment.Center,
+                            trim = LineHeightStyle.Trim.Both,
+                            mode = LineHeightStyle.Mode.Tight,
+                        ),
+                    platformStyle = PlatformTextStyle(includeFontPadding = false),
+                ),
         )
 
 val MaterialTheme.numericHeroValueTextStyle: TextStyle

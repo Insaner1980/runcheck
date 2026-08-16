@@ -278,7 +278,7 @@ class CleanupViewModelTest {
         }
 
     @Test
-    fun `trial expiry revokes cleanup results without recreating view model`() =
+    fun `pro access loss revokes cleanup results without recreating view model`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val viewModel = createViewModel()
             advanceUntilIdle()

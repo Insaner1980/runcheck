@@ -24,6 +24,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -43,7 +45,6 @@ import com.runcheck.util.ReleaseSafeLog
 
 @Composable
 internal fun MonitoringSection(
-    context: android.content.Context,
     monitoringInterval: MonitoringInterval,
     isBatteryOptimizationExempt: Boolean,
     onSetMonitoringInterval: (MonitoringInterval) -> Unit,
@@ -82,7 +83,7 @@ internal fun MonitoringSection(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
-            BatteryOptimizationRow(context = context)
+            BatteryOptimizationRow()
         }
 
         SettingsDivider()
@@ -167,7 +168,6 @@ internal fun LiveNotificationSection(
 @Suppress("kotlin:S107")
 @Composable
 internal fun NotificationsSection( // NOSONAR
-    context: android.content.Context,
     preferences: UserPreferences,
     alertsEffectivelyEnabled: Boolean,
     isXiaomiFamilyDevice: Boolean,
@@ -177,6 +177,7 @@ internal fun NotificationsSection( // NOSONAR
     onSetNotifLowStorage: (Boolean) -> Unit,
     onSetNotifChargeComplete: (Boolean) -> Unit,
 ) {
+    val context = LocalContext.current
     val masterEnabled = preferences.notificationsEnabled
     val notificationToggles =
         listOf(
@@ -252,13 +253,14 @@ internal fun NotificationsSection( // NOSONAR
 
 @Composable
 internal fun AlertThresholdsSection(
-    context: android.content.Context,
     preferences: UserPreferences,
     onSetAlertBatteryThreshold: (Int) -> Unit,
     onSetAlertTempThreshold: (Int) -> Unit,
     onSetAlertStorageThreshold: (Int) -> Unit,
     onResetThresholdsClick: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val resources = LocalResources.current
     val isDefault =
         preferences.alertBatteryThreshold == AlertThresholds.DEFAULT_BATTERY_PERCENT &&
             preferences.alertTempThreshold == AlertThresholds.DEFAULT_TEMPERATURE_C &&
@@ -272,7 +274,7 @@ internal fun AlertThresholdsSection(
             label = stringResource(R.string.settings_threshold_battery),
             value = preferences.alertBatteryThreshold,
             allowedValues = LOW_BATTERY_THRESHOLD_VALUES,
-            valueLabelFor = { current -> context.getString(R.string.settings_threshold_percent, current) },
+            valueLabelFor = { current -> resources.getString(R.string.settings_threshold_percent, current) },
             onValueChange = onSetAlertBatteryThreshold,
         )
         SettingsDivider()
@@ -295,7 +297,7 @@ internal fun AlertThresholdsSection(
             label = stringResource(R.string.settings_threshold_storage),
             value = preferences.alertStorageThreshold,
             allowedValues = LOW_STORAGE_THRESHOLD_VALUES,
-            valueLabelFor = { current -> context.getString(R.string.settings_threshold_percent, current) },
+            valueLabelFor = { current -> resources.getString(R.string.settings_threshold_percent, current) },
             onValueChange = onSetAlertStorageThreshold,
         )
 
@@ -562,7 +564,8 @@ private fun mutedNotificationMessage(isXiaomiFamilyDevice: Boolean): String =
     )
 
 @Composable
-private fun BatteryOptimizationRow(context: android.content.Context) {
+private fun BatteryOptimizationRow() {
+    val context = LocalContext.current
     val tokens = MaterialTheme.uiTokens
     Row(
         modifier =
