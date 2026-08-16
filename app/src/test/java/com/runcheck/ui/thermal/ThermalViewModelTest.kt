@@ -131,8 +131,9 @@ class ThermalViewModelTest {
         runTest(mainDispatcherRule.testDispatcher) {
             val thermalFlow = MutableStateFlow(thermalState(tempC = 35f))
             val weekReadings = listOf(thermalReading(timestamp = 1L, tempC = 36f))
+            val weekHistory = MutableStateFlow(weekReadings)
             every { getThermalState() } returns thermalFlow
-            every { getThermalHistory(HistoryPeriod.WEEK) } returns flowOf(weekReadings)
+            every { getThermalHistory(HistoryPeriod.WEEK) } returns weekHistory
             val savedStateHandle = SavedStateHandle()
             viewModel = createViewModel(savedStateHandle)
 
@@ -140,7 +141,7 @@ class ThermalViewModelTest {
                 viewModel.startObserving()
                 advanceThermalSample()
                 viewModel.setHistoryPeriod(HistoryPeriod.WEEK)
-                runCurrent()
+                advanceThermalSample()
 
                 val success = viewModel.uiState.value as ThermalUiState.Success
                 assertEquals(HistoryPeriod.WEEK, success.selectedHistoryPeriod)

@@ -118,11 +118,13 @@ class StorageViewModel
             }
         }
 
+        @OptIn(FlowPreview::class)
         private fun loadHistory() {
             screenState.historyJob?.cancel()
             screenState.historyJob =
                 viewModelScope.launch {
                     getStorageHistory(selectedHistoryPeriod)
+                        .sample(333L)
                         .catch { e ->
                             screenState.updateUiState { current ->
                                 (current as? StorageUiState.Success)?.copy(

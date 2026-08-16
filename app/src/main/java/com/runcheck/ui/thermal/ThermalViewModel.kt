@@ -116,11 +116,13 @@ class ThermalViewModel
             }
         }
 
+        @OptIn(FlowPreview::class)
         private fun loadHistory() {
             screenState.historyJob?.cancel()
             screenState.historyJob =
                 viewModelScope.launch {
                     getThermalHistory(selectedHistoryPeriod)
+                        .sample(333L)
                         .catch { e ->
                             screenState.updateUiState { current ->
                                 (current as? ThermalUiState.Success)?.copy(

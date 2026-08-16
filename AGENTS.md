@@ -211,7 +211,7 @@ When reviewing a PR or file, check for these in order:
 - No dynamic colors. If a task changes visual design, follow `UI-SPEC.md` instead of inventing alternate tokens or component variants.
 - English-only strings are intentional right now. Do not reintroduce partial localization without updating docs and string coverage together.
 - Icons: use `Icons.Outlined` exclusively — no `Icons.Default`, `Icons.Filled`, or `Icons.Rounded`
-- All padding/spacing values must be on the 4dp grid (2/4/8/12/16/24/32dp)
+- Padding and spacing use the 4dp grid (2/4/8/12/16/24/32dp); the exact Home status mosaic dimensions centralized in `UiTokens` and documented in `UI-SPEC.md` are an explicit visual-system exception.
 - All animation durations must use `MotionTokens` constants, never bare `tween()` without explicit spec
 - All ViewModels with live state flows must use `.sample(333L)` to throttle UI updates
 

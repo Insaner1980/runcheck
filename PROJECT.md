@@ -1073,7 +1073,7 @@ Visual decision constraints implemented by the current system:
 - Status meaning is always paired with text, an icon, or chart semantics; color alone is insufficient.
 - Shared screens should use `ContentContainer`, theme spacing, `UiTokens`, shared cards, and shared chart components instead of introducing per-screen layout constants.
 - User-facing copy belongs in resources. The current product deliberately filters resources to English only.
-- The 4dp spacing grid is the default, with the centralized 2dp micro-spacing token as the explicit small exception.
+- The 4dp spacing grid is the default. The centralized 2dp micro-spacing token and the exact Home status mosaic dimensions documented in `UI-SPEC.md` and centralized in `UiTokens` are explicit visual-system exceptions.
 
 ### Color Palette
 
@@ -1205,7 +1205,7 @@ Battery Home status is derived from the battery subsystem score, not directly fr
 | small | 8dp | Compact elements |
 | extraLarge | 50% | Circles (icons, avatars) |
 
-Home status tiles are an explicit visual-system exception to the normal 16dp card radius: `homeStatusTileCornerRadius = 22dp`. Their 12dp gap, padding, and minimum heights are centralized in `UiTokens`; do not duplicate those values in screen code.
+Home status tiles are an explicit visual-system exception to the normal 16dp card radius and default spacing grid: `homeStatusTileCornerRadius = 22dp`, with exact mosaic geometry centralized in `UiTokens` and documented in `UI-SPEC.md`. Do not duplicate those values in screen code.
 
 **Spacing grid (4dp base):**
 
