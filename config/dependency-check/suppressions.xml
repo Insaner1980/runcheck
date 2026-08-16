@@ -24,12 +24,12 @@
     </suppress>
     <suppress until="2026-08-31Z">
         <notes><![CDATA[
-        Kotlin CVE-2026-53914 affects Kotlin before 2.4.20 via unsafe build-cache metadata
-        deserialization. As of 2026-08-14, Kotlin 2.4.10 is the latest stable release and
-        2.4.20 is still an RC. Gradle build cache is disabled in gradle.properties as the
-        project mitigation; revisit this suppression when stable Kotlin 2.4.20 or newer is available.
+        Kotlin CVE-2026-53914 affects kotlin-gradle-plugin before 2.4.20-Beta1 via unsafe
+        build-cache metadata deserialization. As of 2026-08-16, Kotlin 2.4.10 is the latest
+        stable release and the fixed 2.4.20 line is still pre-release. Gradle and Kotlin build
+        caches are disabled in gradle.properties; revisit when stable Kotlin 2.4.20 or newer is available.
         ]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib(-jdk7|-jdk8)?@2\.4\.10$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-gradle-plugin@2\.4\.10$</packageUrl>
         <cve>CVE-2026-53914</cve>
     </suppress>
 </suppressions>

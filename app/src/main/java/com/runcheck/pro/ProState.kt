@@ -21,7 +21,6 @@ enum class ProFeature {
 @Immutable
 data class ProState(
     val status: ProStatus = ProStatus.FREE,
-    val purchaseTimestamp: Long = 0L,
 ) {
     val isPro: Boolean
         get() = status == ProStatus.PRO_PURCHASED

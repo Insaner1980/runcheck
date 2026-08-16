@@ -92,9 +92,20 @@ class ProManagerTest {
 
             val state = proManager.proState.value
             assertEquals(ProStatus.PRO_PURCHASED, state.status)
-            assertTrue(state.purchaseTimestamp > 0L)
             assertTrue(state.isPro)
             assertTrue(proManager.isProUser.first())
+        }
+
+    @Test
+    fun `purchase status failure falls back to ready free access`() =
+        runTest(testDispatcher) {
+            coEvery { proPurchaseManager.awaitPurchaseStatusReady() } throws IllegalStateException("unavailable")
+
+            proManager.initialize()
+            advanceUntilIdle()
+
+            assertTrue(proManager.isProStatusReady)
+            assertEquals(ProStatus.FREE, proManager.proState.value.status)
         }
 
     @Test

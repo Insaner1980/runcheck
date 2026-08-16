@@ -71,8 +71,9 @@ import com.runcheck.ui.components.ProFeatureLockedState
 import com.runcheck.ui.components.RuncheckCard
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
+import com.runcheck.util.AppDispatchers
+import com.runcheck.util.ReleaseSafeLog
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
@@ -383,6 +384,7 @@ private val appIconCache =
     }
 
 private const val MAX_APP_ICON_CACHE_KB = 8 * 1024
+private const val APP_ICON_TAG = "AppUsageScreen"
 
 @Composable
 private fun AppIcon(packageName: String) {
@@ -419,7 +421,7 @@ private fun AppIcon(packageName: String) {
 private suspend fun loadAppIconBitmap(
     context: Context,
     packageName: String,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    ioDispatcher: CoroutineDispatcher = AppDispatchers().io,
 ): Bitmap? =
     withContext(ioDispatcher) {
         try {
@@ -440,8 +442,10 @@ private suspend fun loadAppIconBitmap(
                 }
             context.packageManager.getApplicationIcon(appInfo).toBitmap(96, 96)
         } catch (_: PackageManager.NameNotFoundException) {
+            ReleaseSafeLog.warn(APP_ICON_TAG, "App icon unavailable because the package is no longer installed")
             null
         } catch (_: RuntimeException) {
+            ReleaseSafeLog.warn(APP_ICON_TAG, "App icon loading failed")
             null
         }
     }

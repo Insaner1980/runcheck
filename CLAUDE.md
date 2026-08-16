@@ -325,7 +325,7 @@ Use `BatteryDataSourceFactory` to select the best data source based on device:
 ## Build & Release
 
 - Use a single `app` module (no multi-module until necessary)
-- **Static analysis:** ktlint (rule engine 1.8.0, compose-rules 0.6.3) + Detekt 2.0.0-alpha.5 (`dev.detekt`, compose-rules 0.6.3) + Android Lint + Compose Stability Analyzer 0.12.0
+- **Static analysis:** ktlint (rule engine 1.8.0, compose-rules 0.6.4) + Detekt 2.0.0-alpha.5 (`dev.detekt`, compose-rules 0.6.4) + Android Lint + Compose Stability Analyzer 0.12.0
 - ProGuard/R8 minification enabled for release builds
 - Generate signed APK/AAB for Play Store
 - Version code: manually increment `versionCode` in `app/build.gradle.kts` before each Play upload

@@ -3,6 +3,7 @@ package com.runcheck.billing
 import android.app.Activity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 
 sealed interface PurchaseEvent {
     data object Success : PurchaseEvent
@@ -25,7 +26,7 @@ enum class ProPurchaseRefreshResult {
 }
 
 interface ProPurchaseManager {
-    val isProUser: Flow<Boolean>
+    val isProUser: StateFlow<Boolean>
     val billingAvailable: Flow<Boolean>
     val purchaseEvents: SharedFlow<PurchaseEvent>
     val hasPendingPurchase: Flow<Boolean>

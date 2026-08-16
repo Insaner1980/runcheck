@@ -144,8 +144,8 @@ Current version catalog highlights:
 | ktlint rule engine | `1.8.0` |
 | ktlint Gradle plugin | `14.2.0` |
 | Detekt | `2.0.0-alpha.5` |
-| compose-rules for ktlint | `0.6.3` |
-| compose-rules for Detekt | `0.5.9` |
+| compose-rules for ktlint | `0.6.4` |
+| compose-rules for Detekt | `0.6.4` |
 | OWASP Dependency-Check Gradle plugin | `12.2.2` |
 | SonarQube Gradle plugin | `7.3.1.8318` |
 | Compose Stability Analyzer | `0.12.0` |
@@ -158,7 +158,7 @@ Current version catalog highlights:
 - The earlier Kotlin 2.4 / stability-analyzer incompatibility is resolved. Both debug and release stability variants have current baselines and `failOnStabilityChange = true`; missing baselines are not allowed.
 - Compose library versions come from the Compose BOM, while the Compose compiler is managed through the Kotlin Compose plugin. Treat Kotlin, Compose, KSP, Detekt, analyzer, AGP, dependency verification, and CI extractor changes as a compatibility set.
 - Gradle configuration cache is enabled. Build cache and parallel execution are disabled, `org.gradle.workers.max = 2`, and the Kotlin compiler execution strategy is in-process.
-- `gradle.properties` still contains a stale comment that attributes the disabled build cache to the resolved Kotlin/analyzer blocker. The setting itself is current (`org.gradle.caching=false`), but the comment should not be used as evidence that Kotlin 2.4.10 is blocked.
+- Gradle and Kotlin task build caches are disabled through `org.gradle.caching=false` and `kotlin.caching.enabled=false` while the time-bounded CVE-2026-53914 advisory exception remains active.
 - Release builds are minified and resource-shrunk. `copyReleaseArtifacts` names outputs `runcheck-1.0.0-code1-release.apk` and `.aab`.
 - Release artifact tasks validate signing inputs, require `--no-configuration-cache`, and require the version-code floor described in the Technical Snapshot. Ordinary debug checks do not require release signing.
 - Debug BuildConfig values may read validated local/environment overrides for Sentry DSN, latency host/port, and Pro product id. Release keeps the checked-in product id and no-op Sentry path.
@@ -177,9 +177,9 @@ When auditing this project, treat these as stronger than older prose docs:
 
 Current documentation/configuration alignment notes:
 
-- The version catalog intentionally has different compose-rules artifacts today: ktlint `0.6.3`, Detekt `0.5.9`. Any prose claiming both are `0.6.3` is not current code truth.
+- The version catalog pins both compose-rules artifacts to `0.6.4`.
 - The active code has no destructive Room fallback. A registered Room callback can record a destructive open event, but `DatabaseModule` does not call `fallbackToDestructiveMigration`; an absent migration must fail instead of silently wiping data.
-- Production code centralizes coroutine dispatchers through `AppDispatchers`, with two current UI-side default-parameter exceptions worth reviewing rather than copying: app-icon loading in `AppUsageScreen` and cleanup thumbnail loading use `Dispatchers.IO`.
+- Production code centralizes coroutine dispatchers through `AppDispatchers`; cleanup thumbnail loading remains a UI-side default-parameter exception that uses `Dispatchers.IO` and should not be copied.
 
 ### Code-review source map
 

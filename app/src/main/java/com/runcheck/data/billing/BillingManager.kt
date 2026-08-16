@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -68,7 +69,7 @@ class BillingManager
         private val scope = CoroutineScope(scopeJob + dispatchers.main + scopeExceptionHandler)
 
         private val _isProUser = MutableStateFlow(false)
-        override val isProUser: Flow<Boolean> = _isProUser.asStateFlow()
+        override val isProUser: StateFlow<Boolean> = _isProUser.asStateFlow()
         override val isProStatusReady: Boolean
             get() = initComplete.isCompleted
         private val _billingAvailable = MutableStateFlow(false)

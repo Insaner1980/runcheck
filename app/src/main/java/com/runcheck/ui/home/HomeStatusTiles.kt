@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +20,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
@@ -152,6 +154,18 @@ internal fun HomeStatusTiles(
     modifier: Modifier = Modifier,
 ) {
     val tokens = MaterialTheme.uiTokens
+    val typeScale = MaterialTheme.homeStatusTileTypeScale
+    val density = LocalDensity.current
+    val tileMinHeight =
+        with(density) {
+            maxOf(
+                tokens.homeStatusTileHeight,
+                tokens.homeStatusTileValueTop +
+                    typeScale.value.lineHeight.toDp() +
+                    tokens.homeStatusTileStatusGap +
+                    typeScale.status.lineHeight.toDp(),
+            )
+        }
     val statuses = homeStatusTileStatuses(state)
     val slots =
         assignHomeStatusTileSlots(
@@ -179,14 +193,14 @@ internal fun HomeStatusTiles(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(tokens.homeStatusTileHeight),
+                    .heightIn(min = tileMinHeight),
         )
 
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(tokens.homeStatusTileHeight),
+                    .heightIn(min = tileMinHeight),
             horizontalArrangement = Arrangement.spacedBy(tokens.homeStatusTileGap),
         ) {
             HomeStatusTile(
@@ -238,7 +252,7 @@ internal fun HomeStatusTiles(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(tokens.homeStatusTileHeight),
+                    .heightIn(min = tileMinHeight),
         )
     }
 }
@@ -470,7 +484,10 @@ private fun TileValueLine(
             color = textColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.alignByBaseline(),
+            modifier =
+                Modifier
+                    .weight(1f, fill = false)
+                    .alignByBaseline(),
         )
         if (suffix != null) {
             Text(

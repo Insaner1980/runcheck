@@ -47,24 +47,28 @@ class ProManager
             scope.launch {
                 try {
                     proPurchaseManager.awaitPurchaseStatusReady()
-                    proPurchaseManager.isProUser.collect { isPurchased ->
-                        _proState.value =
-                            if (isPurchased) {
-                                ProState(
-                                    status = ProStatus.PRO_PURCHASED,
-                                    purchaseTimestamp = System.currentTimeMillis(),
-                                )
-                            } else {
-                                ProState()
-                            }
-                        _isProStatusReady.value = true
+                    val purchaseState = proPurchaseManager.isProUser
+                    updateProState(purchaseState.value)
+                    _isProStatusReady.value = true
+                    purchaseState.collect { isPurchased ->
+                        updateProState(isPurchased)
                     }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
                     ReleaseSafeLog.error(TAG, "Failed to observe pro state", e)
+                    _isProStatusReady.value = true
                 }
             }
+        }
+
+        private fun updateProState(isPurchased: Boolean) {
+            _proState.value =
+                if (isPurchased) {
+                    ProState(status = ProStatus.PRO_PURCHASED)
+                } else {
+                    ProState()
+                }
         }
 
         fun hasFeature(feature: ProFeature): Boolean = _proState.value.hasFeature(feature)
