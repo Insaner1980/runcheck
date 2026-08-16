@@ -1,0 +1,61 @@
+{
+  "batchIndex": 0,
+  "label": "initial",
+  "timestamp": "2026-08-14T20:03:45.023Z",
+  "files": [
+    "app/src/main/java/com/runcheck/pro/TrialManager.kt"
+  ],
+  "requested": [
+    {
+      "findingId": "finding_ff8fa56ba1ea9d0a",
+      "filePath": "app/src/main/java/com/runcheck/pro/TrialManager.kt",
+      "title": "Clearing app data or reinstalling resets the Pro trial",
+      "alias": "F1"
+    },
+    {
+      "findingId": "finding_721700e92413b60f",
+      "filePath": "app/src/main/java/com/runcheck/pro/TrialManager.kt",
+      "title": "One-hour clock tolerance permits indefinite trial extension",
+      "alias": "F2"
+    }
+  ],
+  "rawResponses": [
+    {
+      "kind": "initial",
+      "rawText": "```json\n[\n  {\n    \"findingId\": \"F1\",\n    \"verdict\": \"fixed\",\n    \"reasoning\": \"The reported TrialManager.kt file is absent from the current checkout, and no trial_state, KEY_TRIAL_START, or seven-day trial implementation remains in the app source. ProManager now derives access solely from ProPurchaseManager.isProUser. ProState.isPro is true only for PRO_PURCHASED; purchaseTimestamp is metadata and does not grant entitlement. In release builds, BillingManager enables Pro only for an acknowledged Google Play purchase. Clearing app data removes the local ProStatusCache value and therefore produces false access until a legitimate purchase is restored. RuncheckApp cancels legacy day-5/day-7 trial work, while NotificationHelper removes obsolete trial notification channels. Debug builds force Pro intentionally under BuildConfig.DEBUG, but that path is not a release entitlement mechanism. The historical local-trial reset vulnerability is therefore fixed by removing trial-based access.\"\n  },\n  {\n    \"findingId\": \"F2\",\n    \"verdict\": \"fixed\",\n    \"reasoning\": \"The current checkout contains no TrialManager.kt, lastKnownTimestamp, KEY_TRIAL_START, one-hour rollback tolerance, or wall-clock trial-expiry calculation. ProState.isPro depends only on the purchased status enum, not on elapsed or wall-clock time. BillingManager synchronizes entitlement from Google Play purchase states and clears Pro access for pending or absent purchases. The System.currentTimeMillis() call in ProManager records purchaseTimestamp metadata and is not used to calculate access or expiry. Consequently, moving the device clock cannot extend any trial because no local trial exists. The local cache only restores previously observed purchase state and cannot mint access after clearing or reinstalling app data. Legacy trial scheduling and notification channels are explicitly removed during startup. The reported clock-bypass vulnerability is therefore fixed by eliminating the time-based trial mechanism.\"\n  }\n]\n```",
+      "parsedCount": 2
+    }
+  ],
+  "repairAttempts": 0,
+  "parsedVerdicts": [
+    {
+      "findingId": "F1",
+      "verdict": "fixed",
+      "reasoning": "The reported TrialManager.kt file is absent from the current checkout, and no trial_state, KEY_TRIAL_START, or seven-day trial implementation remains in the app source. ProManager now derives access solely from ProPurchaseManager.isProUser. ProState.isPro is true only for PRO_PURCHASED; purchaseTimestamp is metadata and does not grant entitlement. In release builds, BillingManager enables Pro only for an acknowledged Google Play purchase. Clearing app data removes the local ProStatusCache value and therefore produces false access until a legitimate purchase is restored. RuncheckApp cancels legacy day-5/day-7 trial work, while NotificationHelper removes obsolete trial notification channels. Debug builds force Pro intentionally under BuildConfig.DEBUG, but that path is not a release entitlement mechanism. The historical local-trial reset vulnerability is therefore fixed by removing trial-based access."
+    },
+    {
+      "findingId": "F2",
+      "verdict": "fixed",
+      "reasoning": "The current checkout contains no TrialManager.kt, lastKnownTimestamp, KEY_TRIAL_START, one-hour rollback tolerance, or wall-clock trial-expiry calculation. ProState.isPro depends only on the purchased status enum, not on elapsed or wall-clock time. BillingManager synchronizes entitlement from Google Play purchase states and clears Pro access for pending or absent purchases. The System.currentTimeMillis() call in ProManager records purchaseTimestamp metadata and is not used to calculate access or expiry. Consequently, moving the device clock cannot extend any trial because no local trial exists. The local cache only restores previously observed purchase state and cannot mint access after clearing or reinstalling app data. Legacy trial scheduling and notification channels are explicitly removed during startup. The reported clock-bypass vulnerability is therefore fixed by eliminating the time-based trial mechanism."
+    }
+  ],
+  "reconciliation": {
+    "matches": [
+      {
+        "matchedBy": "finding-id",
+        "returnedFindingId": "F1",
+        "resolvedFindingId": "finding_ff8fa56ba1ea9d0a"
+      },
+      {
+        "matchedBy": "finding-id",
+        "returnedFindingId": "F2",
+        "resolvedFindingId": "finding_721700e92413b60f"
+      }
+    ],
+    "missingFindingIds": [],
+    "unknownVerdicts": [],
+    "ambiguousVerdicts": []
+  },
+  "persistedCount": 2,
+  "unresolvedFindingIds": []
+}
