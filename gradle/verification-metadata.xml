@@ -12030,5 +12030,16 @@
             <sha256 value="48bf1d6c8b5dc94f74652bd17900f654deb714350248cf5e8fca27b9090c8e0d" origin="Verified by independent HTTPS fetch from https://repo.maven.apache.org/maven2/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.module"/>
          </artifact>
       </component>
+      <component group="com.android.tools.build" name="aapt2" version="9.4.0-15978811">
+         <artifact name="aapt2-9.4.0-15978811.pom">
+            <sha256 value="5d3820b1ddbbc1dae97aab61cce5cbcb81221dec3e0b71f692e86056502baf14" origin="Verified by two independent HTTPS downloads from https://dl.google.com/dl/android/maven2/com/android/tools/build/aapt2/9.4.0-15978811/aapt2-9.4.0-15978811.pom"/>
+         </artifact>
+         <artifact name="aapt2-9.4.0-15978811-linux.jar">
+            <sha256 value="f5bebd466ecf14d341fd465f2756a16d86052f29eb4532003d5ff7bcffd08de5" origin="Verified by two independent HTTPS downloads from https://dl.google.com/dl/android/maven2/com/android/tools/build/aapt2/9.4.0-15978811/aapt2-9.4.0-15978811-linux.jar"/>
+         </artifact>
+         <artifact name="aapt2-9.4.0-15978811-windows.jar">
+            <sha256 value="5fe3c8ee5c6b3f47efd1fced1d6418084037f54f13290816c5db717e6b5c92aa" origin="Verified by two independent HTTPS downloads from https://dl.google.com/dl/android/maven2/com/android/tools/build/aapt2/9.4.0-15978811/aapt2-9.4.0-15978811-windows.jar"/>
+         </artifact>
+      </component>
    </components>
 </verification-metadata>
