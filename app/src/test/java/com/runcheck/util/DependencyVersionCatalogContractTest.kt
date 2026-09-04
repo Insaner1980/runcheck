@@ -23,18 +23,18 @@ class DependencyVersionCatalogContractTest {
     }
 
     @Test
-    fun `runtime and test dependencies stay on the August 2026 verified targets`() {
+    fun `runtime and test dependencies stay on the September 2026 verified targets`() {
         val versionsCatalog = rootDir.resolve("gradle/libs.versions.toml").readText()
         val expectedVersions =
             mapOf(
-                "paging" to "3.5.0",
+                "paging" to "3.5.1",
                 "activityCompose" to "1.13.0",
                 "billing" to "9.1.0",
-                "okhttp" to "5.4.0",
+                "okhttp" to "5.5.0",
                 "gson" to "2.14.0",
                 "mockk" to "1.14.11",
                 "dependencyAnalysis" to "3.17.0",
-                "sentry" to "8.51.0",
+                "sentry" to "8.54.0",
             )
 
         expectedVersions.forEach { (alias, expected) ->
@@ -47,7 +47,7 @@ class DependencyVersionCatalogContractTest {
         val versionsCatalog = rootDir.resolve("gradle/libs.versions.toml").readText()
         val expectedVersions =
             mapOf(
-                "agp" to "9.2.1",
+                "agp" to "9.4.0",
                 "kotlin" to "2.4.10",
                 "kotlinRuntime" to "2.3.20",
                 "ksp" to "2.3.11",
