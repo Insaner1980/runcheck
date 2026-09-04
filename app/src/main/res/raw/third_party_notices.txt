@@ -3,7 +3,7 @@ runcheck third-party notices
 This app includes production open-source software, SDK components, fonts, and icon libraries from the projects listed below. This notice supplements license metadata packaged in dependency artifacts.
 
 AndroidX and Jetpack Compose
-Artifacts include Activity 1.13.0, Paging 3.5.0, Core, Lifecycle, Navigation, Room, WorkManager, DataStore, Glance, ProfileInstaller, Window, SQLite, Compose UI, Compose Foundation, Compose Animation, Compose Runtime, Compose Material 3, Compose Material Icons Core, and Compose Material Icons Extended.
+Artifacts include Activity 1.13.0, Paging 3.5.1, Core, Lifecycle, Navigation, Room, WorkManager, DataStore, Glance, ProfileInstaller, Window, SQLite, Compose UI, Compose Foundation, Compose Animation, Compose Runtime, Compose Material 3, Compose Material Icons Core, and Compose Material Icons Extended.
 Copyright: The Android Open Source Project and contributors.
 License: Apache-2.0, except the repackaged protobuf artifacts listed separately below.
 Source and license: https://cs.android.com/androidx/platform/frameworks/support and https://www.apache.org/licenses/LICENSE-2.0
@@ -40,7 +40,7 @@ Source and license: https://github.com/m-lab/ndt7-client-android-java and https:
 Note: This SHA-pinned Maven artifact does not carry license metadata in its POM, so runcheck keeps this manual notice entry.
 
 OkHttp and Okio
-Artifacts: com.squareup.okhttp3:okhttp 5.4.0 and its compatible com.squareup.okio:okio-jvm runtime.
+Artifacts: com.squareup.okhttp3:okhttp 5.5.0 and its compatible com.squareup.okio:okio-jvm runtime.
 Copyright: Square, Inc. and contributors.
 License: Apache-2.0.
 License text: https://www.apache.org/licenses/LICENSE-2.0
