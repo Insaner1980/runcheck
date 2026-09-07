@@ -199,7 +199,7 @@ internal fun aggregateForegroundUsage(
             UsageActivityEventType.DEVICE_SHUTDOWN,
             UsageActivityEventType.DEVICE_STARTUP,
             -> {
-                Unit
+                // These events only delimit the foreground interval.
             }
         }
     }

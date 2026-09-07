@@ -3,7 +3,6 @@ package com.runcheck.service.monitor
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
@@ -58,9 +57,7 @@ class NotificationHelper
                 requestCode: Int,
             ): PendingIntent {
                 val intent =
-                    Intent().apply {
-                        component = ComponentName(context, MainActivity::class.java)
-                        setPackage(context.packageName)
+                    Intent(context, MainActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
                         if (!route.isNullOrBlank()) {
                             putExtra(EXTRA_NAVIGATE_TO, route)
