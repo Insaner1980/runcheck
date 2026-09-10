@@ -18,6 +18,7 @@ import com.runcheck.data.db.entity.ThermalReadingEntity
 import com.runcheck.data.db.entity.ThrottlingEventEntity
 import com.runcheck.domain.model.ThermalStatus
 import com.runcheck.domain.repository.DatabaseTransactionRunner
+import com.runcheck.domain.usecase.MonitoringDataCoordinator
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
@@ -36,26 +37,29 @@ class InsightTestDataSeeder
         private val appBatteryUsageDao: AppBatteryUsageDao,
         private val insightDao: InsightDao,
         private val transactionRunner: DatabaseTransactionRunner,
+        private val monitoringDataCoordinator: MonitoringDataCoordinator,
     ) {
         suspend fun seed(now: Long) {
-            transactionRunner.runInTransaction {
-                batteryReadingDao.deleteAll()
-                chargerDao.deleteAllSessions()
-                chargerDao.deleteAllChargers()
-                networkReadingDao.deleteAll()
-                storageReadingDao.deleteAll()
-                thermalReadingDao.deleteAll()
-                throttlingEventDao.deleteAll()
-                appBatteryUsageDao.deleteAll()
-                insightDao.deleteAll()
+            monitoringDataCoordinator.resetHistory {
+                transactionRunner.runInTransaction {
+                    batteryReadingDao.deleteAll()
+                    chargerDao.deleteAllSessions()
+                    chargerDao.deleteAllChargers()
+                    networkReadingDao.deleteAll()
+                    storageReadingDao.deleteAll()
+                    thermalReadingDao.deleteAll()
+                    throttlingEventDao.deleteAll()
+                    appBatteryUsageDao.deleteAll()
+                    insightDao.deleteAll()
 
-                seedBatteryReadings(now)
-                seedChargerSessions(now)
-                seedNetworkReadings(now)
-                seedStorageReadings(now)
-                seedThermalReadings(now)
-                seedThermalEvents(now)
-                seedAppUsage(now)
+                    seedBatteryReadings(now)
+                    seedChargerSessions(now)
+                    seedNetworkReadings(now)
+                    seedStorageReadings(now)
+                    seedThermalReadings(now)
+                    seedThermalEvents(now)
+                    seedAppUsage(now)
+                }
             }
         }
 

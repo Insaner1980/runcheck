@@ -10,6 +10,7 @@ import com.runcheck.domain.model.ThermalStatus
 import com.runcheck.domain.usecase.TrackThrottlingEventsUseCase
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
@@ -31,7 +32,8 @@ class ThermalRepositoryImpl
         private val trackThrottlingEvents: TrackThrottlingEventsUseCase,
         private val dispatchers: AppDispatchers,
     ) : ThermalRepositoryContract {
-        private val thermalStateFlow: Flow<ThermalState> by lazy {
+        @Suppress("TooGenericExceptionCaught")
+        private fun observeThermalState(bestEffortTracking: Boolean): Flow<ThermalState> =
             flow {
                 val profile = deviceProfileProvider.getDeviceProfile()
                 emitAll(
@@ -49,17 +51,25 @@ class ThermalRepositoryImpl
                             isThrottling = thermalStatus >= ThermalStatus.SEVERE,
                         )
                     }.onEach { state ->
-                        trackThrottlingEvents(
-                            state = state,
-                            wallClockMillis = System.currentTimeMillis(),
-                            elapsedRealtimeMillis = SystemClock.elapsedRealtime(),
-                        )
+                        try {
+                            trackThrottlingEvents(
+                                state = state,
+                                wallClockMillis = System.currentTimeMillis(),
+                                elapsedRealtimeMillis = SystemClock.elapsedRealtime(),
+                            )
+                        } catch (error: CancellationException) {
+                            throw error
+                        } catch (error: Exception) {
+                            if (!bestEffortTracking) throw error
+                            ReleaseSafeLog.error("ThermalRepository", "Throttling event tracking failed", error)
+                        }
                     },
                 )
             }.flowOn(dispatchers.io)
-        }
 
-        override fun getThermalState(): Flow<ThermalState> = thermalStateFlow
+        override fun getThermalState(): Flow<ThermalState> = observeThermalState(bestEffortTracking = false)
+
+        override fun getLiveThermalState(): Flow<ThermalState> = observeThermalState(bestEffortTracking = true)
 
         override fun getReadingsSince(
             since: Long,

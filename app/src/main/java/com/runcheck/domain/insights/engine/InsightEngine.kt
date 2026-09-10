@@ -4,6 +4,7 @@ import com.runcheck.domain.insights.model.InsightCandidate
 import com.runcheck.domain.insights.rules.RecurringThermalThrottlingRule
 import com.runcheck.domain.insights.rules.ThermalPatternDetectionRule
 import com.runcheck.domain.repository.InsightRepository
+import com.runcheck.domain.usecase.MonitoringDataCoordinator
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -13,17 +14,20 @@ class InsightEngine
     constructor(
         private val rules: Set<@JvmSuppressWildcards InsightRule>,
         private val insightRepository: InsightRepository,
+        private val monitoringDataCoordinator: MonitoringDataCoordinator,
     ) {
         suspend fun generateInsights(now: Long = System.currentTimeMillis()) {
-            val candidatesByRule =
-                rules.associate { rule ->
-                    val candidates =
-                        rule
-                            .evaluate(now)
-                            .filter { it.confidence >= MINIMUM_CONFIDENCE }
-                    rule.ruleId to candidates
-                }
-            insightRepository.replaceGenerationResults(candidatesByRule.withoutOverlappingThermalPattern(), now)
+            monitoringDataCoordinator.withInsightGeneration {
+                val candidatesByRule =
+                    rules.associate { rule ->
+                        val candidates =
+                            rule
+                                .evaluate(now)
+                                .filter { it.confidence >= MINIMUM_CONFIDENCE }
+                        rule.ruleId to candidates
+                    }
+                insightRepository.replaceGenerationResults(candidatesByRule.withoutOverlappingThermalPattern(), now)
+            }
         }
 
         private fun Map<String, List<InsightCandidate>>.withoutOverlappingThermalPattern():

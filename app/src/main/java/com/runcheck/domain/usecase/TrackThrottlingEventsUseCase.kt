@@ -28,6 +28,18 @@ class TrackThrottlingEventsUseCase
         private val mutex = Mutex()
         private var activeEvent: ActiveThrottlingEvent? = null
 
+        suspend fun withHistoryReset(block: suspend () -> Unit) {
+            mutex.withLock {
+                try {
+                    block()
+                } finally {
+                    // A cancelled transaction return may follow a commit. Reload Room on the next
+                    // observation even on failure; a rolled-back event can safely be restored.
+                    activeEvent = null
+                }
+            }
+        }
+
         suspend operator fun invoke(
             state: ThermalState,
             wallClockMillis: Long = System.currentTimeMillis(),

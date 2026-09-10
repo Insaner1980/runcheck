@@ -4,6 +4,9 @@ import android.content.Context
 import android.os.SystemClock
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
+import com.runcheck.data.device.DeviceProfileProvider
+import com.runcheck.data.thermal.ThermalDataSource
+import com.runcheck.data.thermal.ThermalRepositoryImpl
 import com.runcheck.domain.model.BatteryHealth
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.ChargingStatus
@@ -18,13 +21,17 @@ import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.repository.BatteryRepository
+import com.runcheck.domain.repository.ChargerRepository
 import com.runcheck.domain.repository.MonitoringStatusRepository
 import com.runcheck.domain.repository.NetworkRepository
 import com.runcheck.domain.repository.StorageRepository
 import com.runcheck.domain.repository.ThermalRepository
+import com.runcheck.domain.repository.ThrottlingRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
 import com.runcheck.domain.usecase.ChargerSessionTracker
 import com.runcheck.domain.usecase.EvaluateMonitoringAlertsUseCase
+import com.runcheck.domain.usecase.TrackThrottlingEventsUseCase
+import com.runcheck.util.TestAppDispatchers
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -155,6 +162,7 @@ class HealthMonitorWorkerTest {
         networkStateFlow: Flow<NetworkState> = flowOf(sampleNetworkState),
         thermalStateFlow: Flow<ThermalState> = flowOf(sampleThermalState),
         storageStateFlow: Flow<StorageState> = flowOf(sampleStorageState),
+        chargerSessionTracker: ChargerSessionTracker = this.chargerSessionTracker,
     ): HealthMonitorWorker {
         every { workerParameters.runAttemptCount } returns runAttemptCount
         every { userPreferencesRepository.getPreferences() } returns preferencesFlow
@@ -183,6 +191,61 @@ class HealthMonitorWorkerTest {
     }
 
     private fun <T> failingFlow(message: String): Flow<T> = flow { error(message) }
+
+    @Test
+    fun `session persistence failure remains retryable`() =
+        runTest {
+            val sessions = mockk<ChargerRepository>()
+            val preferences = mockk<UserPreferencesRepository>()
+            coEvery { preferences.getSelectedChargerId() } returns 7L
+            coEvery { sessions.getActiveSession() } returns null
+            coEvery { sessions.insertSession(any()) } throws IllegalStateException("session database full")
+            val tracker = ChargerSessionTracker(sessions, batteryRepository, preferences, mockk())
+            val worker = createWorker(
+                batteryStateFlow = flowOf(sampleBatteryState.copy(chargingStatus = ChargingStatus.CHARGING)),
+                chargerSessionTracker = tracker,
+            )
+
+            assertEquals(ListenableWorker.Result.retry(), worker.doWork())
+            coVerify(exactly = 0) { monitoringStatusRepository.setLastWorkerHeartbeat(any()) }
+        }
+
+    @Test
+    fun `real thermal event failure remains retryable`() =
+        runTest {
+            every { SystemClock.elapsedRealtime() } returns 1_000L
+            val events = mockk<ThrottlingRepository>()
+            coEvery { events.getOpenEvent() } throws IllegalStateException("event database full")
+            val source = mockk<ThermalDataSource>()
+            every { source.getBatteryTemperature() } returns flowOf(42f)
+            every { source.getCpuTemperature(emptyList()) } returns flowOf(null)
+            every { source.getThermalStatus() } returns flowOf(ThermalStatus.SEVERE)
+            every { source.getThermalHeadroom() } returns flowOf(null)
+            val profile = mockk<DeviceProfileProvider>()
+            coEvery { profile.getDeviceProfile() } returns mockk {
+                every { thermalZonesAvailable } returns emptyList()
+            }
+            val repository = ThermalRepositoryImpl(
+                source, profile, mockk(),
+                TrackThrottlingEventsUseCase(events, mockk()),
+                TestAppDispatchers(),
+            )
+            val worker = createWorker(thermalStateFlow = repository.getThermalState())
+
+            assertEquals(ListenableWorker.Result.retry(), worker.doWork())
+            coVerify(exactly = 1) { events.getOpenEvent() }
+            coVerify(exactly = 0) { monitoringStatusRepository.setLastWorkerHeartbeat(any()) }
+        }
+
+    @Test
+    fun `heartbeat persistence remains best effort`() =
+        runTest {
+            val worker = createWorker()
+            coEvery { monitoringStatusRepository.setLastWorkerHeartbeat(any()) } throws
+                IllegalStateException("heartbeat database full")
+
+            assertEquals(ListenableWorker.Result.success(), worker.doWork())
+        }
 
     private suspend fun assertRetryWithoutCoreCollection(worker: HealthMonitorWorker) {
         assertEquals(ListenableWorker.Result.retry(), worker.doWork())

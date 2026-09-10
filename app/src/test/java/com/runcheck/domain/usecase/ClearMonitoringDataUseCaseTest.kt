@@ -70,6 +70,8 @@ class ClearMonitoringDataUseCaseTest {
                 userPreferencesRepository = userPreferencesRepository,
                 monitoringStatusRepository = monitoringStatusRepository,
                 fileExportRepository = fileExportRepository,
+                monitoringDataCoordinator =
+                    MonitoringDataCoordinator(TrackThrottlingEventsUseCase(throttlingRepository, mockk())),
             )
     }
 

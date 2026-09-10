@@ -18,8 +18,10 @@ import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
 import com.runcheck.domain.model.UserPreferences
+import com.runcheck.domain.repository.ChargerRepository
 import com.runcheck.domain.repository.InsightRepository
 import com.runcheck.domain.repository.MonitoringStatusRepository
+import com.runcheck.domain.repository.UserPreferencesRepository
 import com.runcheck.domain.scoring.HealthScoreCalculator
 import com.runcheck.domain.usecase.ChargerSessionTracker
 import com.runcheck.domain.usecase.GetBatteryStateUseCase
@@ -40,6 +42,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
@@ -149,7 +152,7 @@ class HomeViewModelTest {
         unmockkStatic(SystemClock::class)
     }
 
-    private fun createViewModel(): HomeViewModel =
+    private fun createViewModel(chargerSessionTracker: ChargerSessionTracker = this.chargerSessionTracker): HomeViewModel =
         HomeViewModel(
             getBatteryState = getBatteryState,
             getNetworkState = getNetworkState,
@@ -170,6 +173,64 @@ class HomeViewModelTest {
         viewModel = createViewModel()
         assertEquals(HomeUiState.Loading, viewModel.uiState.value)
     }
+
+    @Test
+    fun `live battery survives session persistence failure`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val sessions = mockk<ChargerRepository>(relaxed = true)
+            val preferences = mockk<UserPreferencesRepository>()
+            coEvery { preferences.getSelectedChargerId() } returns 7L
+            coEvery { sessions.getActiveSession() } returns null
+            coEvery { sessions.insertSession(any()) } throws IllegalStateException("session database full")
+            val tracker = ChargerSessionTracker(sessions, mockk(), preferences, mockk())
+            val battery = testBattery.copy(chargingStatus = ChargingStatus.CHARGING, plugType = PlugType.USB)
+            val states = MutableStateFlow(battery)
+            every { getBatteryState() } returns states
+            viewModel = createViewModel(tracker)
+            viewModel.startObserving()
+            advanceAll()
+
+            assertTrue("Expected Success but got ${viewModel.uiState.value}", viewModel.uiState.value is HomeUiState.Success)
+            assertEquals(battery, (viewModel.uiState.value as HomeUiState.Success).batteryState)
+            states.value = battery.copy(level = 86)
+            advanceAll()
+            assertEquals(states.value, (viewModel.uiState.value as HomeUiState.Success).batteryState)
+            viewModel.stopObserving()
+        }
+
+    @Test
+    fun `session cancellation does not become a UI error`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            coEvery { chargerSessionTracker.onObservedBatteryState(any(), any()) } throws
+                CancellationException("tracking cancelled")
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceAll()
+
+            assertEquals(HomeUiState.Loading, viewModel.uiState.value)
+            viewModel.stopObserving()
+        }
+
+    @Test
+    fun `stopping observation cancels suspended session tracking`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            var finished = false
+            coEvery { chargerSessionTracker.onObservedBatteryState(any(), any()) } coAnswers {
+                try {
+                    awaitCancellation()
+                } finally {
+                    finished = true
+                }
+            }
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            runCurrent()
+            viewModel.stopObserving()
+            runCurrent()
+
+            assertTrue(finished)
+            assertEquals(HomeUiState.Loading, viewModel.uiState.value)
+        }
 
     @Test
     fun `refresh reuses all four Home data flows and keeps the indicator for 900 milliseconds`() =

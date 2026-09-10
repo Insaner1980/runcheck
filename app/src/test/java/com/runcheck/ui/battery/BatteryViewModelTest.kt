@@ -10,6 +10,8 @@ import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.UserPreferences
+import com.runcheck.domain.repository.ChargerRepository
+import com.runcheck.domain.repository.UserPreferencesRepository
 import com.runcheck.domain.usecase.BatteryScreenInsightsUseCase
 import com.runcheck.domain.usecase.BatteryStatistics
 import com.runcheck.domain.usecase.ChargerSessionTracker
@@ -25,7 +27,9 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -124,7 +128,10 @@ class BatteryViewModelTest {
         }
     }
 
-    private fun createViewModel(savedStateHandle: SavedStateHandle = SavedStateHandle()): BatteryViewModel =
+    private fun createViewModel(
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
+        chargerSessionTracker: ChargerSessionTracker = this.chargerSessionTracker,
+    ): BatteryViewModel =
         BatteryViewModel(
             savedStateHandle = savedStateHandle,
             getBatteryState = getBatteryState,
@@ -166,6 +173,66 @@ class BatteryViewModelTest {
         viewModel = createViewModel()
         assertEquals(BatteryUiState.Loading, viewModel.uiState.value)
     }
+
+    @Test
+    fun `live battery survives session persistence failure`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val sessions = mockk<ChargerRepository>(relaxed = true)
+            val preferences = mockk<UserPreferencesRepository>()
+            coEvery { preferences.getSelectedChargerId() } returns 7L
+            coEvery { sessions.getActiveSession() } returns null
+            coEvery { sessions.insertSession(any()) } throws IllegalStateException("session database full")
+            val tracker = ChargerSessionTracker(sessions, mockk(), preferences, mockk())
+            val battery = makeBatteryState(chargingStatus = ChargingStatus.CHARGING)
+            val states = MutableStateFlow(battery)
+            every { getBatteryState() } returns states
+            viewModel = createViewModel(chargerSessionTracker = tracker)
+            viewModel.startObserving()
+            advanceBatterySample()
+
+            assertTrue("Expected Success but got ${viewModel.uiState.value}", viewModel.uiState.value is BatteryUiState.Success)
+            assertEquals(battery, (viewModel.uiState.value as BatteryUiState.Success).batteryState)
+            states.value = battery.copy(level = 76)
+            advanceBatterySample()
+            assertEquals(states.value, (viewModel.uiState.value as BatteryUiState.Success).batteryState)
+            viewModel.stopObserving()
+        }
+
+    @Test
+    fun `session cancellation does not become a UI error`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            every { getBatteryState() } returns MutableStateFlow(makeBatteryState())
+            coEvery { chargerSessionTracker.onObservedBatteryState(any(), any()) } throws
+                CancellationException("tracking cancelled")
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceBatterySample()
+
+            assertEquals(BatteryUiState.Loading, viewModel.uiState.value)
+            viewModel.stopObserving()
+        }
+
+    @Test
+    fun `stopping observation cancels suspended session tracking`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            var finished = false
+            every { getBatteryState() } returns MutableStateFlow(makeBatteryState())
+            coEvery { chargerSessionTracker.onObservedBatteryState(any(), any()) } coAnswers {
+                try {
+                    awaitCancellation()
+                } finally {
+                    finished = true
+                }
+            }
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            runCurrent()
+            viewModel.stopObserving()
+            runCurrent()
+
+            assertTrue(finished)
+            assertEquals(BatteryUiState.Loading, viewModel.uiState.value)
+        }
 
     @Test
     fun `refresh finishes when live source emits the same state`() =

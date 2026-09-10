@@ -50,6 +50,8 @@ import com.runcheck.domain.repository.StorageRepository
 import com.runcheck.domain.repository.ThermalRepository
 import com.runcheck.domain.repository.ThrottlingRepository
 import com.runcheck.domain.scoring.HealthScoreCalculator
+import com.runcheck.domain.usecase.MonitoringDataCoordinator
+import com.runcheck.domain.usecase.TrackThrottlingEventsUseCase
 import io.mockk.coEvery
 import io.mockk.just
 import io.mockk.mockk
@@ -119,6 +121,7 @@ class InsightTestDataSeederTest {
             appBatteryUsageDao = appUsageDao,
             insightDao = insightDao,
             transactionRunner = DatabaseTransactionRunner { block -> block() },
+            monitoringDataCoordinator = MonitoringDataCoordinator(TrackThrottlingEventsUseCase(mockk(), mockk())),
         ).seed(NOW)
 
         return SeededData(

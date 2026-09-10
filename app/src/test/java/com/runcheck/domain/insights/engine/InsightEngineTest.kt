@@ -7,6 +7,7 @@ import com.runcheck.domain.insights.model.InsightType
 import com.runcheck.domain.insights.rules.RecurringThermalThrottlingRule
 import com.runcheck.domain.insights.rules.ThermalPatternDetectionRule
 import com.runcheck.domain.repository.InsightRepository
+import com.runcheck.domain.usecase.MonitoringDataCoordinator
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -18,6 +19,7 @@ import org.junit.Test
 
 class InsightEngineTest {
     private val insightRepository: InsightRepository = mockk(relaxed = true)
+    private val coordinator = MonitoringDataCoordinator(mockk())
 
     @Test
     fun `cancellation during rule evaluation does not replace generation results`() =
@@ -26,7 +28,7 @@ class InsightEngineTest {
             val cancelledRule = mockRule("cancelled")
             coEvery { completedRule.evaluate(NOW) } returns emptyList()
             coEvery { cancelledRule.evaluate(NOW) } throws CancellationException("stopped")
-            val engine = InsightEngine(linkedSetOf(completedRule, cancelledRule), insightRepository)
+            val engine = InsightEngine(linkedSetOf(completedRule, cancelledRule), insightRepository, coordinator)
 
             val thrown = runCatching { engine.generateInsights(NOW) }.exceptionOrNull()
 
@@ -43,7 +45,7 @@ class InsightEngineTest {
                 listOf(candidate(ThermalPatternDetectionRule.RULE_ID))
             coEvery { recurringThrottlingRule.evaluate(NOW) } returns
                 listOf(candidate(RecurringThermalThrottlingRule.RULE_ID))
-            val engine = InsightEngine(linkedSetOf(thermalPatternRule, recurringThrottlingRule), insightRepository)
+            val engine = InsightEngine(linkedSetOf(thermalPatternRule, recurringThrottlingRule), insightRepository, coordinator)
 
             engine.generateInsights(NOW)
 
