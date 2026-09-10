@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
 import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
 import com.runcheck.ui.theme.spacing
@@ -28,7 +29,7 @@ fun ProgressHeroMetric(
     modifier: Modifier = Modifier,
     supportingContent: @Composable ColumnScope.() -> Unit,
 ) {
-    val useStackedLayout = LocalDensity.current.fontScale >= PROGRESS_HERO_STACKED_FONT_SCALE
+    val useStackedLayout = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
 
     val progressRing: @Composable () -> Unit = {
         ProgressRing(
@@ -41,8 +42,8 @@ fun ProgressHeroMetric(
         ) {}
     }
 
-    val metricText: @Composable () -> Unit = {
-        Column {
+    val metricText: @Composable (Modifier) -> Unit = { textModifier ->
+        Column(modifier = textModifier) {
             Row(verticalAlignment = Alignment.Bottom) {
                 androidx.compose.material3.Text(
                     text = value,
@@ -67,7 +68,7 @@ fun ProgressHeroMetric(
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
         ) {
             progressRing()
-            metricText()
+            metricText(Modifier)
         }
     } else {
         Row(
@@ -76,9 +77,7 @@ fun ProgressHeroMetric(
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg),
         ) {
             progressRing()
-            metricText()
+            metricText(Modifier.weight(1f))
         }
     }
 }
-
-private const val PROGRESS_HERO_STACKED_FONT_SCALE = 1.5f

@@ -11,6 +11,8 @@ import androidx.compose.ui.unit.dp
 
 internal enum class HomeTileEdge { BATTERY, THERMAL, LEARN, SPEED }
 
+internal val HOME_TILE_EDGE_BEND = 20.dp
+
 /** Complementary curved edges keep a real gap between independently clickable tiles. */
 @Immutable
 internal data class HomeTileShape(
@@ -23,8 +25,9 @@ internal data class HomeTileShape(
     ): Outline {
         val w = size.width
         val h = size.height
-        val r = with(density) { 20.dp.toPx() }.coerceAtMost(minOf(w, h) / 3f)
-        val bend = with(density) { 20.dp.toPx() }
+        val r = with(density) { HOME_TILE_EDGE_BEND.toPx() }.coerceAtMost(minOf(w, h) / 3f)
+        val maxBend = (w / 3f).coerceAtLeast(0f)
+        val bend = with(density) { HOME_TILE_EDGE_BEND.toPx() }.coerceIn(0f, maxBend)
         val leftTop = if (edge == HomeTileEdge.THERMAL) bend else 0f
         val leftBottom = if (edge == HomeTileEdge.SPEED) bend else 0f
         val rightTop = if (edge == HomeTileEdge.LEARN) w - bend else w

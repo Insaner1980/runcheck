@@ -6,7 +6,7 @@ This file describes the UI that exists in the current Compose codebase and the
 constraints that new UI work must preserve. Any deliberate legacy exception is
 identified as an exception instead of being presented as a reusable pattern.
 
-Last source-backed refresh: **2026-08-31**.
+Last source-backed refresh: **2026-09-08**.
 
 The refresh describes branch `codex/julkaise-paikalliset-muutokset-20260726`
 at base product-code commit `0eec4dd74cd11646a39e4d847d5ad6b3fb177085`, plus the current Home

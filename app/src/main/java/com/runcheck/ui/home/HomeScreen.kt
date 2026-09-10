@@ -80,6 +80,7 @@ import com.runcheck.ui.home.insights.InsightsCardState
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.theme.HomePeach
 import com.runcheck.ui.theme.HomeTheme
+import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
 import com.runcheck.ui.theme.homeHealthContextTextStyle
 import com.runcheck.ui.theme.homeHealthScoreTextStyle
 import com.runcheck.ui.theme.homeHealthScoreUnitTextStyle
@@ -104,11 +105,9 @@ private const val HEALTH_GAUGE_SEGMENT_PITCH_DEGREES =
 private const val HEALTH_GAUGE_SEGMENT_DEGREES =
     HEALTH_GAUGE_SEGMENT_PITCH_DEGREES * (1f - HEALTH_GAUGE_GAP_RATIO)
 private const val HEALTH_GAUGE_CORNER_RATIO = 0.016f
-private const val HEALTH_GAUGE_EXPANDED_FONT_SCALE = 1.5f
-private const val HOME_COMPACT_MAX_FONT_SCALE = 1.5f
 private val HEALTH_GAUGE_EDGE_INSET = 2.dp
 private val HEALTH_GAUGE_BAND_THICKNESS = 36.dp
-private val HEALTH_GAUGE_ENDPOINT_LABEL_SIZE = 8.sp
+private val HEALTH_GAUGE_ENDPOINT_LABEL_SIZE = 11.sp
 private val HOME_COMPACT_HEIGHT_THRESHOLD = 840.dp
 
 @Composable
@@ -487,7 +486,6 @@ private fun HealthScoreHero(
     val spacing = MaterialTheme.spacing
     val scoreColor = HomePeach
     val statusLabel = healthStatusLabel(healthScore.status)
-    val useExpandedTextLayout = LocalDensity.current.fontScale >= HEALTH_GAUGE_EXPANDED_FONT_SCALE
     val minutesSinceUpdate by
         produceState(
             initialValue =
@@ -504,99 +502,104 @@ private fun HealthScoreHero(
                 delay(MINUTE_MILLIS - (elapsedMillis % MINUTE_MILLIS))
             }
         }
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        BoxWithConstraints(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(HEALTH_GAUGE_ASPECT_RATIO)
-                    .semantics(mergeDescendants = true) {
-                        contentDescription = healthScoreDescription
-                        stateDescription = statusLabel
-                        liveRegion = LiveRegionMode.Polite
-                    },
+    BoxWithConstraints(modifier = modifier) {
+        val useExpandedTextLayout = homeUsesSingleColumn(maxWidth, LocalDensity.current.fontScale)
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            val outerRadius = maxWidth / 2 - HEALTH_GAUGE_EDGE_INSET
-            val innerRadius = outerRadius - HEALTH_GAUGE_BAND_THICKNESS
-            val endpointLabelStyle =
-                MaterialTheme.homeHealthScoreUnitTextStyle.copy(
-                    fontSize = HEALTH_GAUGE_ENDPOINT_LABEL_SIZE,
-                    lineHeight = HEALTH_GAUGE_ENDPOINT_LABEL_SIZE,
+            BoxWithConstraints(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(HEALTH_GAUGE_ASPECT_RATIO)
+                        .semantics(mergeDescendants = true) {
+                            contentDescription = healthScoreDescription
+                            stateDescription = statusLabel
+                            liveRegion = LiveRegionMode.Polite
+                        },
+            ) {
+                val outerRadius =
+                    (maxWidth / 2 - HEALTH_GAUGE_EDGE_INSET).coerceAtLeast(0.dp)
+                val innerRadius =
+                    (outerRadius - HEALTH_GAUGE_BAND_THICKNESS).coerceAtLeast(0.dp)
+                val endpointLabelStyle =
+                    MaterialTheme.homeHealthScoreUnitTextStyle.copy(
+                        fontSize = HEALTH_GAUGE_ENDPOINT_LABEL_SIZE,
+                        lineHeight = HEALTH_GAUGE_ENDPOINT_LABEL_SIZE,
+                    )
+
+                HealthScoreGauge(
+                    score = score,
+                    activeColor = scoreColor,
+                    inactiveColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    modifier = Modifier.fillMaxSize(),
                 )
 
-            HealthScoreGauge(
-                score = score,
-                activeColor = scoreColor,
-                inactiveColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                modifier = Modifier.fillMaxSize(),
-            )
+                if (!useExpandedTextLayout) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(innerRadius)
+                                .align(Alignment.TopCenter)
+                                .offset(y = HEALTH_GAUGE_EDGE_INSET + HEALTH_GAUGE_BAND_THICKNESS),
+                    ) {
+                        HealthScoreValueAndStatus(
+                            score = score,
+                            scoreColor = scoreColor,
+                            statusLabel = statusLabel,
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    }
+                }
 
-            if (!useExpandedTextLayout) {
-                Box(
+                Text(
+                    text = stringResource(R.string.home_health_scale_min),
+                    style = endpointLabelStyle,
+                    color = MaterialTheme.colorScheme.outline,
                     modifier =
                         Modifier
-                            .fillMaxWidth()
-                            .height(innerRadius)
-                            .align(Alignment.TopCenter)
-                            .offset(y = HEALTH_GAUGE_EDGE_INSET + HEALTH_GAUGE_BAND_THICKNESS),
-                ) {
-                    HealthScoreValueAndStatus(
-                        score = score,
-                        scoreColor = scoreColor,
-                        statusLabel = statusLabel,
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-                }
+                            .align(Alignment.BottomStart)
+                            .padding(start = HEALTH_GAUGE_EDGE_INSET)
+                            .clearAndSetSemantics {},
+                )
+                Text(
+                    text = stringResource(R.string.home_health_scale_max),
+                    style = endpointLabelStyle,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = HEALTH_GAUGE_EDGE_INSET)
+                            .clearAndSetSemantics {},
+                )
             }
 
+            if (useExpandedTextLayout) {
+                Spacer(modifier = Modifier.height(spacing.xs))
+                HealthScoreValueAndStatus(
+                    score = score,
+                    scoreColor = scoreColor,
+                    statusLabel = statusLabel,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(spacing.md))
+
             Text(
-                text = stringResource(R.string.home_health_scale_min),
-                style = endpointLabelStyle,
+                text =
+                    if (minutesSinceUpdate == 0) {
+                        stringResource(R.string.home_updated_just_now)
+                    } else {
+                        pluralStringResource(R.plurals.home_health_context, minutesSinceUpdate, minutesSinceUpdate)
+                    },
+                style = MaterialTheme.homeHealthContextTextStyle,
+                textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.outline,
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(start = HEALTH_GAUGE_EDGE_INSET)
-                        .clearAndSetSemantics {},
-            )
-            Text(
-                text = stringResource(R.string.home_health_scale_max),
-                style = endpointLabelStyle,
-                color = MaterialTheme.colorScheme.outline,
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = HEALTH_GAUGE_EDGE_INSET)
-                        .clearAndSetSemantics {},
+                modifier = Modifier.fillMaxWidth(),
             )
         }
-
-        if (useExpandedTextLayout) {
-            Spacer(modifier = Modifier.height(spacing.xs))
-            HealthScoreValueAndStatus(
-                score = score,
-                scoreColor = scoreColor,
-                statusLabel = statusLabel,
-            )
-        }
-
-        Spacer(modifier = Modifier.height(spacing.md))
-
-        Text(
-            text =
-                if (minutesSinceUpdate == 0) {
-                    stringResource(R.string.home_updated_just_now)
-                } else {
-                    pluralStringResource(R.plurals.home_health_context, minutesSinceUpdate, minutesSinceUpdate)
-                },
-            style = MaterialTheme.homeHealthContextTextStyle,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.outline,
-            modifier = Modifier.fillMaxWidth(),
-        )
     }
 }
 
@@ -651,9 +654,9 @@ private fun HealthScoreGauge(
 
     Canvas(modifier = modifier.clearAndSetSemantics {}) {
         val edgeInset = HEALTH_GAUGE_EDGE_INSET.toPx()
-        val outerRadius = size.width / 2f - edgeInset
+        val outerRadius = (size.width / 2f - edgeInset).coerceAtLeast(0f)
         val center = Offset(size.width / 2f, outerRadius + edgeInset)
-        val innerRadius = outerRadius - HEALTH_GAUGE_BAND_THICKNESS.toPx()
+        val innerRadius = (outerRadius - HEALTH_GAUGE_BAND_THICKNESS.toPx()).coerceAtLeast(0f)
         val segmentHalfAngleRadians =
             Math.toRadians((HEALTH_GAUGE_SEGMENT_DEGREES / 2f).toDouble())
         val outerHalfWidth = outerRadius * tan(segmentHalfAngleRadians).toFloat()
@@ -730,8 +733,13 @@ private fun healthGaugeSegmentPath(
     }
 }
 
-internal fun filledHealthGaugeSegments(score: Int): Int =
-    (score.coerceIn(0, 100) * HEALTH_GAUGE_SEGMENT_COUNT / 100f).roundToInt()
+internal fun filledHealthGaugeSegments(score: Int): Int {
+    val clampedScore = score.coerceIn(0, 100)
+    if (clampedScore == 0) return 0
+    return (clampedScore * HEALTH_GAUGE_SEGMENT_COUNT / 100f)
+        .roundToInt()
+        .coerceIn(1, HEALTH_GAUGE_SEGMENT_COUNT)
+}
 
 internal fun elapsedWholeMinutes(
     lastUpdatedAtEpochMillis: Long,
@@ -750,7 +758,7 @@ internal fun homeLayoutMode(
     availableHeight: Dp,
     fontScale: Float,
 ): HomeLayoutMode =
-    if (availableHeight < HOME_COMPACT_HEIGHT_THRESHOLD && fontScale < HOME_COMPACT_MAX_FONT_SCALE) {
+    if (availableHeight < HOME_COMPACT_HEIGHT_THRESHOLD && fontScale < LARGE_CONTENT_FONT_SCALE) {
         HomeLayoutMode.COMPACT
     } else {
         HomeLayoutMode.REGULAR

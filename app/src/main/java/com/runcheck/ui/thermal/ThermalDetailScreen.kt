@@ -102,6 +102,7 @@ import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.components.observedScreenState
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
+import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
 import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
@@ -379,7 +380,7 @@ private fun ThermalHeroCard(
     sessionMinTemp: Float? = null,
     sessionMaxTemp: Float? = null,
 ) {
-    val useStackedTemperature = LocalDensity.current.fontScale >= THERMAL_STACKED_FONT_SCALE
+    val useStackedTemperature = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
     val tempColor = statusColorForTemperature(thermal.batteryTempC)
     val bandLabel = temperatureBandLabel(thermal.batteryTempC)
     val statusColors = MaterialTheme.statusColors
@@ -464,7 +465,7 @@ private fun ThermalHeroCard(
                                 ),
                             )
                         }
-                        append(" — ")
+                        append(stringResource(R.string.value_separator))
                         withStyle(SpanStyle(color = statusColorForTemperature(sessionMaxTemp))) {
                             append(
                                 stringResource(
@@ -501,7 +502,7 @@ private fun ThermalMetricsCard(
     liveHeadroom: List<Float> = emptyList(),
     onInfoClick: (String) -> Unit = {},
 ) {
-    val useStackedMetrics = LocalDensity.current.fontScale >= THERMAL_STACKED_FONT_SCALE
+    val useStackedMetrics = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
     val useNeutralThermalStatus = shouldUseNeutralThermalStatus(thermal)
     val defaultOnSurface = MaterialTheme.colorScheme.onSurface
     val unavailableText = stringResource(R.string.thermal_cpu_unavailable)
@@ -641,8 +642,6 @@ private fun ThermalMetricsCard(
     }
 }
 
-private const val THERMAL_STACKED_FONT_SCALE = 1.5f
-
 @Composable
 private fun ThermalLiveCharts(
     thermal: ThermalState,
@@ -742,7 +741,12 @@ private fun ThermalHistoryCard(
                     R.string.fullscreen_chart_title_thermal,
                     thermalHistoryMetricLabel(metric),
                 ),
-            label = "${historyPeriodLabel(selectedPeriod)} — ${thermalHistoryMetricLabel(metric)}",
+            label =
+                stringResource(
+                    R.string.value_two_parts_separator,
+                    historyPeriodLabel(selectedPeriod),
+                    thermalHistoryMetricLabel(metric),
+                ),
             periodLabel = historyPeriodLabel(selectedPeriod),
             chartModel = chartModel,
             qualityZones = qualityZones,

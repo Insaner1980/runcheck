@@ -102,7 +102,9 @@ class ProUpgradeViewModel
                         }
 
                         is PurchaseEvent.Canceled -> {
-                            // No action needed
+                            _uiState.update {
+                                it.copy(purchasePending = false, purchaseError = null)
+                            }
                         }
                     }
                 }

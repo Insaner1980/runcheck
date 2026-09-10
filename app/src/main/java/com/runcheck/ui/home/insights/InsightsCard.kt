@@ -3,6 +3,7 @@ package com.runcheck.ui.home.insights
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.domain.insights.model.Insight
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun InsightsCard(
@@ -56,7 +58,10 @@ fun InsightsCard(
             }
         }
         if (state.totalInsightCount > insights.size) {
-            TextButton(onClick = onNavigateToInsights) {
+            TextButton(
+                onClick = onNavigateToInsights,
+                modifier = Modifier.heightIn(min = MaterialTheme.uiTokens.touchTarget),
+            ) {
                 Text(text = stringResource(R.string.home_insights_view_all))
             }
         }

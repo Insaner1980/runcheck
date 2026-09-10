@@ -65,7 +65,13 @@ class InsightsViewModel
         private fun maybeMarkSeen(state: InsightsUiState.Success) {
             val unseenIds = unseenInsightTracker.idsToMarkSeen(state.insights) ?: return
             viewModelScope.launchUiMutation(TAG, "mark insights seen") {
-                insightRepository.markSeen(unseenIds)
+                var succeeded = false
+                try {
+                    insightRepository.markSeen(unseenIds)
+                    succeeded = true
+                } finally {
+                    unseenInsightTracker.complete(unseenIds, succeeded)
+                }
             }
         }
 

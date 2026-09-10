@@ -168,6 +168,9 @@ class RealTimeMonitorService : Service() {
                     throw e
                 } catch (e: Exception) {
                     ReleaseSafeLog.error(TAG, "Failed to load preferences in live mode check", e)
+                    isLiveNotificationMode = false
+                    updateJob?.cancel()
+                    updateJob = null
                     if (activeBindings.get() == 0) {
                         scheduleIdleStop()
                     }
@@ -256,7 +259,7 @@ class RealTimeMonitorService : Service() {
                 requestCode = NOTIFICATION_ID,
             )
 
-        val title = titleParts.joinToString(" — ")
+        val title = titleParts.joinToString(getString(R.string.value_separator))
         val body = bodyLines.joinToString("\n").ifEmpty { getString(R.string.monitor_realtime_notification_text) }
 
         return NotificationCompat
@@ -357,4 +360,8 @@ internal fun BatteryState.currentForLiveNotification(): MeasuredValue<Int>? =
     currentMa.takeIf { it.confidence != Confidence.UNAVAILABLE }
 
 internal fun liveNotificationCurrentLabelRes(confidence: Confidence): Int? =
-    R.string.live_notif_estimated_current.takeIf { confidence == Confidence.LOW }
+    when (confidence) {
+        Confidence.HIGH -> R.string.live_notif_accurate_current
+        Confidence.LOW -> R.string.live_notif_estimated_current
+        Confidence.UNAVAILABLE -> null
+    }

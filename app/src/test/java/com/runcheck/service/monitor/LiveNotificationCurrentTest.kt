@@ -23,6 +23,10 @@ class LiveNotificationCurrentTest {
             MeasuredValue(-420, Confidence.HIGH),
             batteryState(currentMa = -420, confidence = Confidence.HIGH).currentForLiveNotification(),
         )
+        assertEquals(
+            R.string.live_notif_accurate_current,
+            liveNotificationCurrentLabelRes(Confidence.HIGH),
+        )
     }
 
     @Test

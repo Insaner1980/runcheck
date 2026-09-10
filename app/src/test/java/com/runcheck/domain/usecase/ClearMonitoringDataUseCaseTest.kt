@@ -136,6 +136,7 @@ class ClearMonitoringDataUseCaseTest {
             val thrown = runCatching { useCase() }.exceptionOrNull()
 
             assertSame(cancellation, thrown)
+            coVerify(exactly = 0) { monitoringAlertStateRepository.clearAlertState() }
             coVerify(exactly = 0) { monitoringStatusRepository.clearLastWorkerHeartbeat() }
             coVerify(exactly = 0) { fileExportRepository.clearPreparedExports() }
         }

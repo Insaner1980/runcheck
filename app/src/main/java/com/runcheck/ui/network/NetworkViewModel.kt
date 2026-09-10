@@ -144,7 +144,8 @@ class NetworkViewModel
                     try {
                         withTimeout(SPEED_TEST_TIMEOUT_MS) {
                             runSpeedTest(allowCellular = allowCellular)
-                                .catch { _ ->
+                                .catch { error ->
+                                    ReleaseSafeLog.error(TAG, "Speed test failed", error)
                                     updateSpeedTestState {
                                         copy(
                                             phase =
@@ -216,7 +217,7 @@ class NetworkViewModel
                                                 throw e
                                             } catch (error: Exception) {
                                                 ReleaseSafeLog.error(
-                                                    "NetworkVM",
+                                                    TAG,
                                                     "Failed to finalize speed test",
                                                     error,
                                                 )
@@ -408,6 +409,7 @@ class NetworkViewModel
         }
 
         private companion object {
+            private const val TAG = "NetworkViewModel"
             private const val SELECTED_HISTORY_PERIOD_KEY = "network_selected_history_period"
             private const val SPEED_TEST_TIMEOUT_MS = 90_000L // 90 seconds total (ping + download + upload)
         }

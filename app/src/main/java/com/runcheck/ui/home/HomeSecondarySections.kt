@@ -10,9 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
@@ -23,7 +21,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -32,6 +29,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.runcheck.R
 import com.runcheck.ui.components.ProBadgePill
 import com.runcheck.ui.theme.HomeCream
@@ -51,7 +49,8 @@ internal fun HomeQuickToolsSection(
 ) {
     val tokens = MaterialTheme.uiTokens
     BoxWithConstraints {
-        val singleColumn = LocalDensity.current.fontScale >= 1.5f || maxWidth / LocalDensity.current.fontScale < 320.dp
+        val fontScale = LocalDensity.current.fontScale
+        val singleColumn = homeUsesSingleColumn(maxWidth, fontScale)
         val appUsage: @Composable () -> Unit = {
             HomeToolTile(
                 title = stringResource(R.string.home_app_usage_card),
@@ -78,8 +77,8 @@ internal fun HomeQuickToolsSection(
                         Modifier
                     } else {
                         Modifier
-                            .wrapContentWidth(Alignment.Start, unbounded = true)
-                            .requiredWidth((maxWidth - tokens.homeStatusTileGap) / 2 + 20.dp)
+                            .fillMaxWidth()
+                            .zIndex(1f)
                     },
                 shape =
                     if (singleColumn) {

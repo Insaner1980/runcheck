@@ -55,6 +55,7 @@ fun sessionMetricUnit(metric: SessionGraphMetric): String =
 fun formatChartTooltip(
     model: ChartRenderModel,
     index: Int,
+    separator: String,
 ): String =
     formatChartTooltip(
         chartData = model.chartData,
@@ -63,6 +64,7 @@ fun formatChartTooltip(
         unit = model.unit,
         decimals = model.tooltipDecimals,
         timeSkeleton = model.tooltipTimeSkeleton,
+        separator = separator,
     )
 
 fun formatChartTooltip(
@@ -72,10 +74,11 @@ fun formatChartTooltip(
     unit: String,
     decimals: Int,
     timeSkeleton: String,
+    separator: String,
 ): String {
     val value = formatDecimal(chartData[index], decimals)
     val time = formatLocalizedDateTime(chartTimestamps[index], timeSkeleton)
-    return "$value$unit — $time"
+    return "$value$unit$separator$time"
 }
 
 fun buildBatteryHistoryChartModel(

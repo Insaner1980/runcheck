@@ -76,7 +76,7 @@ class ProUpgradeViewModelTest {
     @Test
     fun `restored pro state does not show purchase thank you`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            val proState = MutableStateFlow(ProState())
+            val proState = MutableStateFlow(ProState(status = ProStatus.PRO_PURCHASED))
             val purchaseManager = mockk<ProPurchaseManager>()
             every { purchaseManager.billingAvailable } returns MutableStateFlow(false)
             every { purchaseManager.hasPendingPurchase } returns MutableStateFlow(false)
@@ -84,9 +84,6 @@ class ProUpgradeViewModelTest {
             val proStateProvider = mockk<ProStateProvider>()
             every { proStateProvider.proState } returns proState
             val viewModel = ProUpgradeViewModel(proStateProvider, purchaseManager)
-            runCurrent()
-
-            proState.value = ProState(status = ProStatus.PRO_PURCHASED)
             runCurrent()
 
             assertTrue(viewModel.uiState.value.proState.isPro)
@@ -114,5 +111,30 @@ class ProUpgradeViewModelTest {
             viewModel.dismissThankYou()
 
             assertFalse(viewModel.uiState.value.purchaseCompleted)
+        }
+
+    @Test
+    fun `canceled purchase clears pending state and error`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val purchaseEvents = MutableSharedFlow<PurchaseEvent>()
+            val purchaseManager = mockk<ProPurchaseManager>()
+            every { purchaseManager.billingAvailable } returns MutableStateFlow(false)
+            every { purchaseManager.hasPendingPurchase } returns MutableStateFlow(false)
+            every { purchaseManager.purchaseEvents } returns purchaseEvents
+            val proStateProvider = mockk<ProStateProvider>()
+            every { proStateProvider.proState } returns MutableStateFlow(ProState())
+            val viewModel = ProUpgradeViewModel(proStateProvider, purchaseManager)
+            runCurrent()
+
+            purchaseEvents.emit(PurchaseEvent.Pending)
+            purchaseEvents.emit(PurchaseEvent.Error("Canceled purchase"))
+            runCurrent()
+            assertTrue(viewModel.uiState.value.purchasePending)
+
+            purchaseEvents.emit(PurchaseEvent.Canceled)
+            runCurrent()
+
+            assertFalse(viewModel.uiState.value.purchasePending)
+            assertNull(viewModel.uiState.value.purchaseError)
         }
 }

@@ -69,7 +69,7 @@ class BatteryWidget : GlanceAppWidget() {
                 val value = context.getString(R.string.widget_current_value, currentMa)
                 batteryWidgetCurrentLabelRes(snapshot.currentConfidence)?.let { labelRes ->
                     context.getString(labelRes, value)
-                } ?: value
+                }
             }
 
         GlanceTheme {
@@ -130,7 +130,15 @@ class BatteryWidget : GlanceAppWidget() {
 }
 
 internal fun batteryWidgetCurrentLabelRes(confidence: Confidence?): Int? =
-    R.string.value_with_estimated_badge.takeIf { confidence == Confidence.LOW }
+    when (confidence) {
+        Confidence.HIGH -> R.string.value_with_accurate_badge
+
+        Confidence.LOW -> R.string.value_with_estimated_badge
+
+        Confidence.UNAVAILABLE,
+        null,
+        -> null
+    }
 
 class BatteryWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = BatteryWidget()

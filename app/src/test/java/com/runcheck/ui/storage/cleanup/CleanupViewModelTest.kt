@@ -363,13 +363,23 @@ class CleanupViewModelTest {
     fun `unsupported cleanup route is rejected without scanning`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val viewModel = createViewModel(type = "NOT_A_CLEANUP_TYPE")
-            advanceUntilIdle()
 
             assertEquals(
                 CleanupUiState.Error(UiText.Resource(R.string.common_error_generic)),
                 viewModel.uiState.value,
             )
+            advanceUntilIdle()
             coVerify(exactly = 0) { storageCleanup.getCleanupSummary(any()) }
+        }
+
+    @Test
+    fun `missing cleanup route uses large files default`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val viewModel = createViewModel(savedStateValues = emptyMap())
+            advanceUntilIdle()
+
+            assertEquals(CleanupType.LARGE_FILES, viewModel.cleanupType)
+            assertTrue(viewModel.uiState.value is CleanupUiState.Results)
         }
 
     @Test
@@ -539,6 +549,10 @@ class CleanupViewModelTest {
             viewModel.toggleGroupSelection(MediaCategory.VIDEO)
             coEvery { storageCleanup.getCleanupGroupFileSizes(any(), MediaCategory.VIDEO) } throws
                 IllegalStateException("query failed")
+            val pendingRequest =
+                async(start = CoroutineStart.UNDISPATCHED) {
+                    viewModel.deleteRequestUris.first()
+                }
 
             viewModel.requestDelete(apiLevel = Build.VERSION_CODES.R)
             advanceUntilIdle()
@@ -547,6 +561,8 @@ class CleanupViewModelTest {
                 CleanupUiState.Error(UiText.Resource(R.string.common_error_generic)),
                 viewModel.uiState.value,
             )
+            assertFalse(pendingRequest.isCompleted)
+            pendingRequest.cancel()
         }
 
     @Test

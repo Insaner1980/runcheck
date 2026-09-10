@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -35,6 +36,7 @@ import androidx.compose.ui.state.ToggleableState
 import com.runcheck.R
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.components.StatusDot
+import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
 import com.runcheck.ui.theme.categoryColor
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
@@ -56,12 +58,18 @@ fun CategoryGroup(
             group.selectedCount == group.itemCount -> ToggleableState.On
             else -> ToggleableState.Indeterminate
         }
-    val useStackedHeader = LocalDensity.current.fontScale >= CATEGORY_GROUP_STACKED_FONT_SCALE
+    val useStackedHeader = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
     val expandedLabel =
         if (group.expanded) {
             stringResource(R.string.a11y_collapse)
         } else {
             stringResource(R.string.a11y_expand)
+        }
+    val expansionStateLabel =
+        if (group.expanded) {
+            stringResource(R.string.a11y_expanded)
+        } else {
+            stringResource(R.string.a11y_collapsed)
         }
     val checkboxLabel = stringResource(R.string.a11y_select_all, label)
 
@@ -69,11 +77,11 @@ fun CategoryGroup(
         // Group header
         val headerModifier =
             Modifier
-                .fillMaxWidth()
+                .defaultMinSize(minHeight = MaterialTheme.uiTokens.touchTarget)
                 .clickable(onClick = onToggleExpansion, role = Role.Button)
                 .semantics(mergeDescendants = true) {
                     heading()
-                    stateDescription = expandedLabel
+                    stateDescription = expansionStateLabel
                     if (group.expanded) {
                         collapse {
                             onToggleExpansion()
@@ -88,42 +96,44 @@ fun CategoryGroup(
                 }.padding(vertical = MaterialTheme.spacing.sm)
 
         if (useStackedHeader) {
-            Column(modifier = headerModifier) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = headerModifier.weight(1f)) {
                     CategoryGroupTitle(
                         label = label,
                         itemCount = group.itemCount,
                         expanded = group.expanded,
                         color = color,
                         stackText = true,
-                        modifier = Modifier.weight(1f),
                     )
+                    CategoryGroupSize(group.totalBytes)
                 }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    CategoryGroupSize(group.totalBytes, modifier = Modifier.weight(1f))
-                    CategoryGroupSelection(
-                        state = selectionState,
-                        label = checkboxLabel,
-                        onClick = onToggleGroupSelection,
-                    )
-                }
+                CategoryGroupSelection(
+                    state = selectionState,
+                    label = checkboxLabel,
+                    onClick = onToggleGroupSelection,
+                )
             }
         } else {
             Row(
-                modifier = headerModifier,
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                CategoryGroupTitle(
-                    label = label,
-                    itemCount = group.itemCount,
-                    expanded = group.expanded,
-                    color = color,
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                CategoryGroupSize(group.totalBytes)
+                Row(
+                    modifier = headerModifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CategoryGroupTitle(
+                        label = label,
+                        itemCount = group.itemCount,
+                        expanded = group.expanded,
+                        color = color,
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    CategoryGroupSize(group.totalBytes)
+                }
                 Spacer(modifier = Modifier.width(MaterialTheme.spacing.xs))
                 CategoryGroupSelection(
                     state = selectionState,
@@ -227,5 +237,3 @@ private fun CategoryGroupSelection(
             ),
     )
 }
-
-private const val CATEGORY_GROUP_STACKED_FONT_SCALE = 1.5f

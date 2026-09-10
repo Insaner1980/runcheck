@@ -7,7 +7,7 @@ import com.runcheck.data.device.DeviceProfile
 import com.runcheck.util.AppDispatchers
 
 /**
- * Samsung on API 34+: inherits cycle count / health % from [Android14BatterySource]
+ * Samsung on API 34+: inherits the public-API cycle count from [Android14BatterySource]
  * while keeping Samsung's max-theoretical-current detection in [getCurrentNow].
  */
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)

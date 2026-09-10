@@ -365,6 +365,7 @@ private fun FullscreenChartContent(
             timeContext = resolveChartTimeContext(source, state.selectedPeriod),
         )
 
+    val tooltipSeparator = stringResource(R.string.value_separator)
     BoxWithConstraints(modifier = modifier) {
         val availableHeight =
             when (constraints.maxHeight) {
@@ -390,6 +391,7 @@ private fun FullscreenChartContent(
                     unit = state.unit,
                     decimals = state.tooltipDecimals,
                     timeSkeleton = state.tooltipTimeSkeleton,
+                    separator = tooltipSeparator,
                 )
             },
             presentation = TrendChartPresentation.Fullscreen,

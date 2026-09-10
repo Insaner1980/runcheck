@@ -56,6 +56,20 @@ class BatteryWidgetSnapshotTest {
         )
     }
 
+    @Test
+    fun `accurate persisted current keeps its confidence for the battery widget`() {
+        val snapshot =
+            batteryReading(currentMa = 100, currentConfidence = Confidence.HIGH.name)
+                .toBatteryWidgetSnapshot()
+
+        assertEquals(100, snapshot.currentMa)
+        assertEquals(Confidence.HIGH, snapshot.currentConfidence)
+        assertEquals(
+            R.string.value_with_accurate_badge,
+            batteryWidgetCurrentLabelRes(snapshot.currentConfidence),
+        )
+    }
+
     private fun batteryReading(
         timestamp: Long = 1L,
         currentMa: Int?,

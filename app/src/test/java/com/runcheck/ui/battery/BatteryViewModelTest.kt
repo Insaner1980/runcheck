@@ -190,7 +190,10 @@ class BatteryViewModelTest {
             viewModel.startObserving()
             advanceBatterySample()
 
-            assertTrue("Expected Success but got ${viewModel.uiState.value}", viewModel.uiState.value is BatteryUiState.Success)
+            assertTrue(
+                "Expected Success but got ${viewModel.uiState.value}",
+                viewModel.uiState.value is BatteryUiState.Success,
+            )
             assertEquals(battery, (viewModel.uiState.value as BatteryUiState.Success).batteryState)
             states.value = battery.copy(level = 76)
             advanceBatterySample()
@@ -391,6 +394,11 @@ class BatteryViewModelTest {
                         chargingStatus = ChargingStatus.CHARGING,
                         plugType = PlugType.USB,
                     ),
+                )
+
+                assertNotNull(
+                    "Stats should exist before charging status changes",
+                    (viewModel.uiState.value as BatteryUiState.Success).currentStats,
                 )
 
                 batteryFlow.emitSample(

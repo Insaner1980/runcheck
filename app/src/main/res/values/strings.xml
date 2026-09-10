@@ -45,6 +45,7 @@
     <string name="home_updated_just_now">Updated just now</string>
     <string name="home_storage_free">%1$s free</string>
     <string name="home_storage_capacity">%1$s of %2$s used</string>
+    <string name="a11y_storage_usage_progress">Storage usage</string>
     <string name="home_app_usage_description">Resource use by app</string>
     <string name="home_speed_test_description">Download, upload, ping and jitter</string>
     <string name="home_learn_description">Device health guides</string>
@@ -120,6 +121,7 @@
     <string name="confidence_accurate">Accurate</string>
     <string name="confidence_estimated">Estimated</string>
     <string name="confidence_unavailable">N/A</string>
+    <string name="value_with_accurate_badge">%1$s — Accurate</string>
     <string name="value_with_estimated_badge">%1$s — Estimated</string>
 
     <!-- Battery Detail -->
@@ -261,6 +263,7 @@
     <string name="value_direction_down">↓ %1$s</string>
     <string name="value_direction_up">↑ %1$s</string>
     <string name="value_two_parts_separator">%1$s — %2$s</string>
+    <string name="value_separator"> — </string>
     <string name="value_approx_prefix">~%1$s</string>
     <string name="storage_usage_ratio">%1$s / %2$s</string>
     <string name="network_type_cellular">Cellular</string>
@@ -659,6 +662,7 @@
     <string name="settings_live_notif_remaining_time">Remaining time</string>
     <string name="live_notif_current_with_power">%1$d mA (%2$s W)</string>
     <string name="live_notif_current">%1$d mA</string>
+    <string name="live_notif_accurate_current">Accurate: %1$s</string>
     <string name="live_notif_estimated_current">Estimated: %1$s</string>
     <string name="live_notif_charging">Charging</string>
     <string name="live_notif_discharging">Discharging</string>
@@ -791,6 +795,11 @@
     <string name="a11y_loading">Loading</string>
     <string name="a11y_expand">Expand</string>
     <string name="a11y_collapse">Collapse</string>
+    <string name="a11y_expanded">Expanded</string>
+    <string name="a11y_collapsed">Collapsed</string>
+    <string name="a11y_high_priority">High priority</string>
+    <string name="a11y_medium_priority">Medium priority</string>
+    <string name="a11y_low_priority">Low priority</string>
     <string name="a11y_toggle_selection">Toggle selection for %1$s</string>
     <string name="a11y_select_all">Select all %1$s</string>
     <string name="a11y_cleanup_success">Cleanup complete, %1$s freed</string>

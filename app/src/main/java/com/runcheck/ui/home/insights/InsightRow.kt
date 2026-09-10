@@ -47,6 +47,12 @@ fun InsightRow(
             InsightPriority.MEDIUM -> MaterialTheme.statusColors.poor
             InsightPriority.LOW -> MaterialTheme.statusColors.fair
         }
+    val priorityDescription =
+        when (insight.priority) {
+            InsightPriority.HIGH -> stringResource(R.string.a11y_high_priority)
+            InsightPriority.MEDIUM -> stringResource(R.string.a11y_medium_priority)
+            InsightPriority.LOW -> stringResource(R.string.a11y_low_priority)
+        }
 
     val content: @Composable () -> Unit = {
         Row(
@@ -57,7 +63,14 @@ fun InsightRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(spacing.md),
         ) {
-            if (!compact) {
+            if (compact) {
+                Icon(
+                    imageVector = Icons.Outlined.WarningAmber,
+                    contentDescription = priorityDescription,
+                    modifier = Modifier.size(tokens.iconMedium),
+                    tint = priorityTint,
+                )
+            } else {
                 IconCircle(
                     icon = Icons.Outlined.WarningAmber,
                     tint = priorityTint,

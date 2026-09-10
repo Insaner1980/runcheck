@@ -8,6 +8,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+internal const val LARGE_CONTENT_FONT_SCALE = 1.5f
+
 @Immutable
 data class UiTokens(
     val touchTarget: Dp = 48.dp,
@@ -30,6 +32,7 @@ data class UiTokens(
     val homeStatusTileHeight: Dp = 128.dp,
     val homeStatusTileCategoryTop: Dp = 12.dp,
     val homeStatusTileStatusGap: Dp = 4.dp,
+    val homeStatusTileNetworkValueTopGap: Dp = 12.dp,
     val homeStatusTileValueSuffixGap: Dp = 4.dp,
     val homeStatusTilePaddingHorizontal: Dp = 16.dp,
     val homeCompactHeroHorizontalPadding: Dp = 40.dp,

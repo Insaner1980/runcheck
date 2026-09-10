@@ -71,14 +71,18 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
+import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SpeedTestResult
 import com.runcheck.ui.common.connectionDisplayLabel
 import com.runcheck.ui.common.formatDecimal
+import com.runcheck.ui.common.formatPing
 import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.AnimatedFloatText
+import com.runcheck.ui.components.ConfidenceBadge
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPill
@@ -91,6 +95,7 @@ import com.runcheck.ui.components.RuncheckCardSurface
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
+import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
 import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.RuncheckTheme
 import com.runcheck.ui.theme.numericFontFamily
@@ -283,15 +288,17 @@ private fun NetworkContextPanel(networkState: NetworkState) {
         buildList {
             add(MetricPillItem(stringResource(R.string.speed_test_connection), connectionLabel))
             networkState.latencyMs?.let { latency ->
+                val measuredLatency = MeasuredValue(latency, Confidence.HIGH)
                 add(
                     MetricPillItem(
                         label = stringResource(R.string.speed_test_ping),
                         value =
                             stringResource(
                                 R.string.value_with_unit_int,
-                                latency,
+                                measuredLatency.value,
                                 stringResource(R.string.unit_ms),
                             ),
+                        confidence = measuredLatency.confidence,
                     ),
                 )
             }
@@ -301,6 +308,7 @@ private fun NetworkContextPanel(networkState: NetworkState) {
         SpeedMetricRow(
             metrics = metrics,
             modifier = Modifier.padding(MaterialTheme.spacing.base),
+            onInfoClick = {},
         )
     }
 }
@@ -308,10 +316,10 @@ private fun NetworkContextPanel(networkState: NetworkState) {
 @Composable
 private fun SpeedMetricRow(
     metrics: List<MetricPillItem>,
+    onInfoClick: (String) -> Unit,
     modifier: Modifier = Modifier,
-    onInfoClick: (String) -> Unit = {},
 ) {
-    if (LocalDensity.current.fontScale >= SPEED_METRIC_STACKED_FONT_SCALE) {
+    if (LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE) {
         Column(
             modifier = modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
@@ -332,8 +340,6 @@ private fun SpeedMetricRow(
         }
     }
 }
-
-private const val SPEED_METRIC_STACKED_FONT_SCALE = 1.5f
 
 // ── Speed test hero ring ─────────────────────────────────────────────────────────
 
@@ -675,6 +681,10 @@ private fun SpeedMetricsCard(
     onInfoClick: (String) -> Unit = {},
 ) {
     val accent = MaterialTheme.colorScheme.primary
+    val measuredDownload = state.measuredDownloadMbps
+    val measuredUpload = state.measuredUploadMbps
+    val measuredPing = state.measuredPingMs
+    val measuredJitter = state.measuredJitterMs
 
     RuncheckCard(
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
@@ -689,22 +699,24 @@ private fun SpeedMetricsCard(
                         value =
                             stringResource(
                                 R.string.value_with_unit_text,
-                                formatDecimal(state.downloadMbps, 1),
+                                formatDecimal(measuredDownload.value, 1),
                                 stringResource(R.string.unit_mbps),
                             ),
                         valueColor = accent,
                         infoKey = "download",
+                        confidence = measuredDownload.confidence,
                     ),
                     MetricPillItem(
                         label = stringResource(R.string.speed_test_upload),
                         value =
                             stringResource(
                                 R.string.value_with_unit_text,
-                                formatDecimal(state.uploadMbps, 1),
+                                formatDecimal(measuredUpload.value, 1),
                                 stringResource(R.string.unit_mbps),
                             ),
                         valueColor = accent,
                         infoKey = "upload",
+                        confidence = measuredUpload.confidence,
                     ),
                 ),
             onInfoClick = onInfoClick,
@@ -718,30 +730,32 @@ private fun SpeedMetricsCard(
                     MetricPillItem(
                         label = stringResource(R.string.speed_test_ping),
                         value =
-                            if (state.pingMs > 0) {
+                            if (measuredPing.confidence != Confidence.UNAVAILABLE) {
                                 stringResource(
                                     R.string.value_with_unit_int,
-                                    state.pingMs,
+                                    measuredPing.value,
                                     stringResource(R.string.unit_ms),
                                 )
                             } else {
                                 stringResource(R.string.placeholder_dash)
                             },
                         infoKey = "ping",
+                        confidence = measuredPing.confidence,
                     ),
                     MetricPillItem(
                         label = stringResource(R.string.speed_test_jitter),
                         value =
-                            if (state.jitterMs != null) {
+                            if (measuredJitter != null) {
                                 stringResource(
                                     R.string.value_with_unit_int,
-                                    state.jitterMs,
+                                    measuredJitter.value,
                                     stringResource(R.string.unit_ms),
                                 )
                             } else {
                                 stringResource(R.string.placeholder_dash)
                             },
                         infoKey = "jitter",
+                        confidence = measuredJitter?.confidence,
                     ),
                 ),
             onInfoClick = onInfoClick,
@@ -819,6 +833,9 @@ private fun EmptyHistoryCard() {
 private fun LatestResultCard(result: SpeedTestResult) {
     val dateLabel = rememberTimestampLabel(result.timestamp)
     val accent = MaterialTheme.colorScheme.primary
+    val measuredDownload = result.measuredDownloadMbps
+    val measuredUpload = result.measuredUploadMbps
+    val measuredPing = result.measuredPingMs
 
     RuncheckCard(
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
@@ -847,26 +864,30 @@ private fun LatestResultCard(result: SpeedTestResult) {
                         value =
                             stringResource(
                                 R.string.value_with_unit_text,
-                                formatDecimal(result.downloadMbps, 1),
+                                formatDecimal(measuredDownload.value, 1),
                                 stringResource(R.string.unit_mbps),
                             ),
                         valueColor = accent,
+                        confidence = measuredDownload.confidence,
                     ),
                     MetricPillItem(
                         label = stringResource(R.string.speed_test_upload),
                         value =
                             stringResource(
                                 R.string.value_with_unit_text,
-                                formatDecimal(result.uploadMbps, 1),
+                                formatDecimal(measuredUpload.value, 1),
                                 stringResource(R.string.unit_mbps),
                             ),
                         valueColor = accent,
+                        confidence = measuredUpload.confidence,
                     ),
                     MetricPillItem(
                         label = stringResource(R.string.speed_test_ping),
-                        value = formatPingValue(result.pingMs),
+                        value = formatPing(measuredPing.value),
+                        confidence = measuredPing.confidence,
                     ),
                 ),
+            onInfoClick = {},
         )
 
         result.serverName?.let { server ->
@@ -897,6 +918,9 @@ private fun HistorySection(results: List<SpeedTestResult>) {
 
 @Composable
 private fun HistoryResultItem(result: SpeedTestResult) {
+    val measuredDownload = result.measuredDownloadMbps
+    val measuredUpload = result.measuredUploadMbps
+    val measuredPing = result.measuredPingMs
     val metrics =
         listOf(
             MetricPillItem(
@@ -904,27 +928,30 @@ private fun HistoryResultItem(result: SpeedTestResult) {
                 value =
                     stringResource(
                         R.string.value_with_unit_text,
-                        formatDecimal(result.downloadMbps, 0),
+                        formatDecimal(measuredDownload.value, 0),
                         stringResource(R.string.unit_mbps),
                     ),
                 valueColor = MaterialTheme.colorScheme.primary,
+                confidence = measuredDownload.confidence,
             ),
             MetricPillItem(
                 label = stringResource(R.string.speed_test_upload),
                 value =
                     stringResource(
                         R.string.value_with_unit_text,
-                        formatDecimal(result.uploadMbps, 0),
+                        formatDecimal(measuredUpload.value, 0),
                         stringResource(R.string.unit_mbps),
                     ),
                 valueColor = MaterialTheme.colorScheme.primary,
+                confidence = measuredUpload.confidence,
             ),
             MetricPillItem(
                 label = stringResource(R.string.speed_test_ping),
-                value = formatPingValue(result.pingMs),
+                value = formatPing(measuredPing.value),
+                confidence = measuredPing.confidence,
             ),
         )
-    val useStackedLayout = LocalDensity.current.fontScale >= SPEED_METRIC_STACKED_FONT_SCALE
+    val useStackedLayout = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
 
     RuncheckCardSurface {
         if (useStackedLayout) {
@@ -936,7 +963,7 @@ private fun HistoryResultItem(result: SpeedTestResult) {
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
             ) {
                 HistoryResultMetadata(result = result)
-                SpeedMetricRow(metrics = metrics)
+                SpeedMetricRow(metrics = metrics, onInfoClick = {})
             }
         } else {
             Row(
@@ -989,14 +1016,22 @@ private fun HistoryResultMetadata(
 @Composable
 private fun HistoryResultMetric(metric: MetricPillItem) {
     Column(horizontalAlignment = Alignment.End) {
-        Text(
-            text = metric.value,
-            style =
-                MaterialTheme.typography.titleSmall.copy(
-                    fontFamily = MaterialTheme.numericFontFamily,
-                ),
-            color = metric.valueColor ?: MaterialTheme.colorScheme.onSurface,
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = metric.value,
+                style =
+                    MaterialTheme.typography.titleSmall.copy(
+                        fontFamily = MaterialTheme.numericFontFamily,
+                    ),
+                color = metric.valueColor ?: MaterialTheme.colorScheme.onSurface,
+            )
+            metric.confidence?.let { confidence ->
+                ConfidenceBadge(confidence = confidence)
+            }
+        }
         Text(
             text = metric.label,
             style = MaterialTheme.typography.labelSmall,
@@ -1084,18 +1119,6 @@ private fun heroInstructionText(
         phase == SpeedTestPhase.Completed -> stringResource(R.string.speed_test_tap_ring_restart)
         phase is SpeedTestPhase.Failed -> stringResource(R.string.speed_test_tap_ring_retry)
         else -> ""
-    }
-
-@Composable
-private fun formatPingValue(pingMs: Int): String =
-    if (pingMs > 0) {
-        stringResource(
-            R.string.value_with_unit_int,
-            pingMs,
-            stringResource(R.string.unit_ms),
-        )
-    } else {
-        stringResource(R.string.placeholder_dash)
     }
 
 // ── Preview ──────────────────────────────────────────────────────────────────────

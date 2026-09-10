@@ -127,6 +127,7 @@ private fun rememberReducedMotionSetting(): Boolean {
                 observer,
             )
             observerRegistered = true
+            reducedMotion = readReducedMotionSetting(context)
         } catch (_: Exception) {
             // Keep the currently read value when this device does not expose the setting URI.
         }

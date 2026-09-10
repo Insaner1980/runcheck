@@ -180,10 +180,10 @@ class ChargerPerformanceRuleTest {
         runTest {
             val sessions =
                 listOf(
+                    session(1L, NOW - 2L * DAY_MS, 30_000),
                     session(1L, NOW - DAY_MS, 30_000),
-                    session(1L, NOW + DAY_MS, 30_000),
-                    session(2L, NOW - DAY_MS, 15_000),
                     session(2L, NOW + DAY_MS, 15_000),
+                    session(2L, NOW + 2L * DAY_MS, 15_000),
                 )
 
             assertTrue(evaluate(sessions).isEmpty())

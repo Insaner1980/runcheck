@@ -40,7 +40,7 @@ class NetworkRepositoryImplTest {
         runTest {
             every { networkDataSource.getValidatedActiveNetwork(null) } returns null
 
-            assertNull(repository.measureLatency())
+            assertNull(repository.measureLatency(expectedNetworkHandle = null))
             coVerify(exactly = 0) { latencyMeasurer.measureLatency(any()) }
         }
 

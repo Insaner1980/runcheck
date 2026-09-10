@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,9 +26,13 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.runcheck.R
 import com.runcheck.domain.model.HealthScore
 import com.runcheck.domain.model.HealthStatus
@@ -43,6 +46,7 @@ import com.runcheck.ui.theme.HomeGraphite
 import com.runcheck.ui.theme.HomeInk
 import com.runcheck.ui.theme.HomePeach
 import com.runcheck.ui.theme.HomeStone
+import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
 import com.runcheck.ui.theme.StatusColors
 import com.runcheck.ui.theme.homeStatusTileTypeScale
 import com.runcheck.ui.theme.statusColor
@@ -52,7 +56,17 @@ import com.runcheck.ui.theme.statusColorForTemperature
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.uiTokens
 
-private const val HOME_STATUS_TILE_SINGLE_COLUMN_FONT_SCALE = 1.5f
+private const val HOME_BATTERY_TILE_WEIGHT = 0.55f
+private const val HOME_THERMAL_TILE_WEIGHT = 0.45f
+private const val HOME_STORAGE_TILE_WEIGHT = 0.63f
+private const val HOME_NETWORK_TILE_WEIGHT = 0.37f
+private val HOME_STATUS_TILE_OVERLAP = 12.dp
+private val HOME_SINGLE_COLUMN_MIN_WIDTH = 320.dp
+
+internal fun homeUsesSingleColumn(
+    maxWidth: Dp,
+    fontScale: Float,
+): Boolean = fontScale >= LARGE_CONTENT_FONT_SCALE || maxWidth / fontScale < HOME_SINGLE_COLUMN_MIN_WIDTH
 
 internal enum class HomeStatusTileCategory { BATTERY, THERMAL, STORAGE, NETWORK }
 
@@ -114,9 +128,8 @@ internal fun HomeStatusTiles(
     val tokens = MaterialTheme.uiTokens
     val statuses = homeStatusTileStatuses(state)
     BoxWithConstraints(modifier = modifier) {
-        val singleColumn =
-            LocalDensity.current.fontScale >= HOME_STATUS_TILE_SINGLE_COLUMN_FONT_SCALE ||
-                maxWidth / LocalDensity.current.fontScale < 320.dp
+        val fontScale = LocalDensity.current.fontScale
+        val singleColumn = homeUsesSingleColumn(maxWidth, fontScale)
         val tile: @Composable (HomeStatusTileCategory, Modifier, Shape?) -> Unit = { category, tileModifier, shape ->
             HomeStatusTile(
                 category = category,
@@ -142,16 +155,16 @@ internal fun HomeStatusTiles(
             } else {
                 Row(
                     modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
-                    horizontalArrangement = Arrangement.spacedBy(-12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(-HOME_STATUS_TILE_OVERLAP),
                 ) {
                     tile(
                         HomeStatusTileCategory.BATTERY,
-                        Modifier.weight(0.55f).fillMaxHeight(),
+                        Modifier.weight(HOME_BATTERY_TILE_WEIGHT).fillMaxHeight().zIndex(1f),
                         HomeTileShape(HomeTileEdge.BATTERY),
                     )
                     tile(
                         HomeStatusTileCategory.THERMAL,
-                        Modifier.weight(0.45f).fillMaxHeight(),
+                        Modifier.weight(HOME_THERMAL_TILE_WEIGHT).fillMaxHeight(),
                         HomeTileShape(HomeTileEdge.THERMAL),
                     )
                 }
@@ -159,8 +172,16 @@ internal fun HomeStatusTiles(
                     modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
                     horizontalArrangement = Arrangement.spacedBy(tokens.homeStatusTileGap),
                 ) {
-                    tile(HomeStatusTileCategory.STORAGE, Modifier.weight(0.63f).fillMaxHeight(), null)
-                    tile(HomeStatusTileCategory.NETWORK, Modifier.weight(0.37f).fillMaxHeight(), null)
+                    tile(
+                        HomeStatusTileCategory.STORAGE,
+                        Modifier.weight(HOME_STORAGE_TILE_WEIGHT).fillMaxHeight(),
+                        null,
+                    )
+                    tile(
+                        HomeStatusTileCategory.NETWORK,
+                        Modifier.weight(HOME_NETWORK_TILE_WEIGHT).fillMaxHeight(),
+                        null,
+                    )
                 }
             }
         }
@@ -191,6 +212,7 @@ private fun HomeStatusTile(
     modifier: Modifier = Modifier,
 ) {
     val tokens = MaterialTheme.uiTokens
+    val typeScale = MaterialTheme.homeStatusTileTypeScale
     val background =
         when (category) {
             HomeStatusTileCategory.BATTERY -> HomeCream
@@ -229,10 +251,18 @@ private fun HomeStatusTile(
                 Modifier.padding(
                     start =
                         tokens.homeStatusTilePaddingHorizontal +
-                            if (curved && category == HomeStatusTileCategory.THERMAL) 20.dp else 0.dp,
+                            if (curved && category == HomeStatusTileCategory.THERMAL) {
+                                HOME_TILE_EDGE_BEND
+                            } else {
+                                0.dp
+                            },
                     end =
                         tokens.homeStatusTilePaddingHorizontal +
-                            if (curved && category == HomeStatusTileCategory.BATTERY) 20.dp else 0.dp,
+                            if (curved && category == HomeStatusTileCategory.BATTERY) {
+                                HOME_TILE_EDGE_BEND
+                            } else {
+                                0.dp
+                            },
                     top =
                         if (compact) {
                             tokens.homeCompactStatusTileVerticalPadding
@@ -248,26 +278,25 @@ private fun HomeStatusTile(
                 ),
             verticalArrangement = Arrangement.spacedBy(tokens.homeStatusTileStatusGap),
         ) {
-            Text(text = category.label(), style = MaterialTheme.homeStatusTileTypeScale.category)
-            if (category == HomeStatusTileCategory.NETWORK) Spacer(Modifier.weight(1f))
+            Text(text = category.label(), style = typeScale.category)
+            if (category == HomeStatusTileCategory.NETWORK) {
+                Spacer(Modifier.height(tokens.homeStatusTileNetworkValueTopGap))
+            }
             TileValueLine(
                 value = content.value,
                 suffix = content.suffix,
                 valueStyle =
-                    MaterialTheme.homeStatusTileTypeScale.value.copy(
-                        fontSize =
-                            when (category) {
-                                HomeStatusTileCategory.BATTERY -> 40.sp
-                                HomeStatusTileCategory.NETWORK -> 28.sp
-                                else -> 30.sp
-                            },
-                        lineHeight = if (category == HomeStatusTileCategory.BATTERY) 44.sp else 34.sp,
-                    ),
-                suffixStyle = MaterialTheme.homeStatusTileTypeScale.suffix,
+                    when (category) {
+                        HomeStatusTileCategory.BATTERY -> typeScale.batteryValue
+                        HomeStatusTileCategory.NETWORK -> typeScale.networkValue
+                        else -> typeScale.standardValue
+                    },
+                suffixStyle = typeScale.suffix,
                 textColor = foreground,
             )
             if (category == HomeStatusTileCategory.STORAGE) {
                 val context = LocalContext.current
+                val storageUsageLabel = stringResource(R.string.a11y_storage_usage_progress)
                 Text(
                     text =
                         stringResource(
@@ -279,7 +308,12 @@ private fun HomeStatusTile(
                 )
                 LinearProgressIndicator(
                     progress = { (state.storageState.usagePercent / 100f).coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .semantics { contentDescription = storageUsageLabel },
                     color = HomeCream,
                     trackColor = HomeCream.copy(alpha = 0.25f),
                     gapSize = 0.dp,
@@ -288,7 +322,7 @@ private fun HomeStatusTile(
             }
             Text(
                 text = content.status,
-                style = MaterialTheme.homeStatusTileTypeScale.status,
+                style = typeScale.status,
                 color = HomeInk,
                 modifier =
                     Modifier
@@ -398,7 +432,7 @@ private fun TileValueLine(
 ) {
     val tokens = MaterialTheme.uiTokens
 
-    FlowRow(
+    Row(
         horizontalArrangement = Arrangement.spacedBy(tokens.homeStatusTileValueSuffixGap),
     ) {
         Text(
@@ -406,7 +440,8 @@ private fun TileValueLine(
             style = valueStyle,
             color = textColor,
             maxLines = 1,
-            modifier = Modifier.alignByBaseline(),
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false).alignByBaseline(),
         )
         if (suffix != null) {
             Text(

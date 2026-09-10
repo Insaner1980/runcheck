@@ -91,6 +91,7 @@ import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.learn.LearnArticleIds
+import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
@@ -382,7 +383,7 @@ private fun SettingsMeasurementSection( // NOSONAR
     onInfoClick: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    val useStackedMetrics = LocalDensity.current.fontScale >= SETTINGS_METRICS_STACKED_FONT_SCALE
+    val useStackedMetrics = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
     uiState.deviceProfile?.let { profile ->
         SettingsCard {
             CardSectionTitle(text = stringResource(R.string.settings_measurement_info))
@@ -506,8 +507,6 @@ private fun SettingsMeasurementMetricRow(
         }
     }
 }
-
-private const val SETTINGS_METRICS_STACKED_FONT_SCALE = 1.5f
 
 @Composable
 private fun SettingsAboutSection() {
@@ -838,12 +837,11 @@ private fun List<Int>.indexForValue(value: Int): Int =
 internal fun openExternalUri(
     context: android.content.Context,
     uri: String,
-) {
+): Boolean =
     startActivitySafely(
         context,
         Intent(Intent.ACTION_VIEW, uri.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
     )
-}
 
 @Composable
 private fun androidVersionName(apiLevel: Int): String {

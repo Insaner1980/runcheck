@@ -113,6 +113,18 @@ fun isUnknownValue(value: String?): Boolean =
 fun formatPercent(value: Int): String = stringResource(R.string.value_percent, value)
 
 @Composable
+fun formatPing(pingMs: Int): String =
+    if (pingMs > 0) {
+        stringResource(
+            R.string.value_with_unit_int,
+            pingMs,
+            stringResource(R.string.unit_ms),
+        )
+    } else {
+        stringResource(R.string.placeholder_dash)
+    }
+
+@Composable
 fun formatPercent(
     value: Float,
     fractionDigits: Int = 1,

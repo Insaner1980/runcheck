@@ -84,6 +84,7 @@ import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.findActivity
 import com.runcheck.ui.common.formatDecimal
+import com.runcheck.ui.common.formatPing
 import com.runcheck.ui.common.isUnknownValue
 import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.common.rememberSaveableEnumState
@@ -114,6 +115,7 @@ import com.runcheck.ui.fullscreen.sanitizeFullscreenMetric
 import com.runcheck.ui.fullscreen.sanitizeFullscreenPeriod
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
+import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
 import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
@@ -231,7 +233,7 @@ private fun NetworkHeroSection(
     liveSignalDbm: List<Float> = emptyList(),
     onInfoClick: (String) -> Unit = {},
 ) {
-    val useStackedReadouts = LocalDensity.current.fontScale >= NETWORK_HERO_STACKED_FONT_SCALE
+    val useStackedReadouts = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
     val qualityLabel =
         if (networkState.isConnected) {
             signalQualityLabel(networkState.signalQuality)
@@ -293,7 +295,7 @@ private fun NetworkHeroSection(
                 currentValueLabel =
                     networkState.signalDbm?.let {
                         stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_dbm))
-                    } ?: "—",
+                    } ?: stringResource(R.string.placeholder_dash),
                 label = stringResource(R.string.network_signal_strength),
                 lineColor = qualityColor,
                 accessibilityDescription =
@@ -325,22 +327,24 @@ private fun NetworkHeroSection(
                 modifier = Modifier.weight(1f),
                 onInfoClick = { onInfoClick("bandwidth") },
             )
-            MetricPill(
-                label = bandPillLabel(networkState),
-                value = bandPillValue(networkState),
-                modifier = Modifier.weight(1f),
-                onInfoClick = {
-                    onInfoClick(
-                        if (networkState.connectionType ==
-                            ConnectionType.WIFI
-                        ) {
-                            "frequency"
-                        } else {
-                            "bandwidth"
-                        },
-                    )
-                },
-            )
+            if (networkState.connectionType != ConnectionType.ETHERNET) {
+                MetricPill(
+                    label = bandPillLabel(networkState),
+                    value = bandPillValue(networkState),
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = {
+                        onInfoClick(
+                            if (networkState.connectionType ==
+                                ConnectionType.WIFI
+                            ) {
+                                "frequency"
+                            } else {
+                                "bandwidth"
+                            },
+                        )
+                    },
+                )
+            }
         }
     }
 }
@@ -374,8 +378,6 @@ private fun NetworkHeroReadout(
         )
     }
 }
-
-private const val NETWORK_HERO_STACKED_FONT_SCALE = 1.5f
 
 // ── Hero helper functions ───────────────────────────────────────────────────────
 
@@ -517,7 +519,12 @@ private fun SignalHistoryCard(
                     R.string.fullscreen_chart_title_network,
                     networkHistoryMetricLabel(metric),
                 ),
-            label = "${historyPeriodLabel(selectedPeriod)} — ${networkHistoryMetricLabel(metric)}",
+            label =
+                stringResource(
+                    R.string.value_two_parts_separator,
+                    historyPeriodLabel(selectedPeriod),
+                    networkHistoryMetricLabel(metric),
+                ),
             periodLabel = historyPeriodLabel(selectedPeriod),
             chartModel = chartModel,
             qualityZones = qualityZones,
@@ -575,7 +582,7 @@ private fun SpeedTestSummaryCard(
                 )
                 MetricPill(
                     label = stringResource(R.string.speed_test_ping),
-                    value = formatPingMetric(lastResult.pingMs),
+                    value = formatPing(lastResult.pingMs),
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -595,7 +602,7 @@ private fun SpeedTestSummaryCard(
 
             val serverText =
                 listOfNotNull(lastResult.serverName, lastResult.serverLocation)
-                    .joinToString(" — ")
+                    .joinToString(stringResource(R.string.value_separator))
             if (serverText.isNotEmpty()) {
                 Text(
                     text = stringResource(R.string.network_speed_test_server, serverText),
@@ -1006,15 +1013,3 @@ private fun Context.isLocationEnabled(): Boolean {
             ?: return false
     return LocationManagerCompat.isLocationEnabled(locationManager)
 }
-
-@Composable
-private fun formatPingMetric(pingMs: Int): String =
-    if (pingMs > 0) {
-        stringResource(
-            R.string.value_with_unit_int,
-            pingMs,
-            stringResource(R.string.unit_ms),
-        )
-    } else {
-        stringResource(R.string.placeholder_dash)
-    }

@@ -41,7 +41,19 @@ class HomeScreenTest {
     @Test
     fun `health gauge clamps scores to its twenty two segments`() {
         assertEquals(0, filledHealthGaugeSegments(-1))
+        assertEquals(0, filledHealthGaugeSegments(0))
+        assertEquals(1, filledHealthGaugeSegments(1))
+        assertEquals(1, filledHealthGaugeSegments(2))
+        assertEquals(22, filledHealthGaugeSegments(98))
         assertEquals(22, filledHealthGaugeSegments(101))
+    }
+
+    @Test
+    fun `home mosaics stack when effective width is narrow`() {
+        assertEquals(false, homeUsesSingleColumn(320.dp, fontScale = 1f))
+        assertEquals(true, homeUsesSingleColumn(319.dp, fontScale = 1f))
+        assertEquals(true, homeUsesSingleColumn(320.dp, fontScale = 1.4f))
+        assertEquals(true, homeUsesSingleColumn(400.dp, fontScale = 1.5f))
     }
 
     @Test

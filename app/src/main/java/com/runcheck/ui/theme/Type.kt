@@ -108,7 +108,9 @@ val MaterialTheme.homeHealthContextTextStyle: TextStyle
 @Immutable
 data class HomeStatusTileTypeScale(
     val category: TextStyle,
-    val value: TextStyle,
+    val batteryValue: TextStyle,
+    val standardValue: TextStyle,
+    val networkValue: TextStyle,
     val suffix: TextStyle,
     val status: TextStyle,
 )
@@ -125,7 +127,7 @@ val MaterialTheme.homeStatusTileTypeScale: HomeStatusTileTypeScale
                     fontWeight = FontWeight.SemiBold,
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                 ),
-            value =
+            batteryValue =
                 typography.displayMedium.copy(
                     fontFamily = HomeManropeFontFamily,
                     fontSize = 40.sp,
@@ -137,6 +139,26 @@ val MaterialTheme.homeStatusTileTypeScale: HomeStatusTileTypeScale
                             trim = LineHeightStyle.Trim.Both,
                             mode = LineHeightStyle.Mode.Tight,
                         ),
+                    letterSpacing = (-0.03).em,
+                    fontFeatureSettings = "tnum",
+                    platformStyle = PlatformTextStyle(includeFontPadding = false),
+                ),
+            standardValue =
+                typography.displayMedium.copy(
+                    fontFamily = HomeManropeFontFamily,
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 34.sp,
+                    letterSpacing = (-0.03).em,
+                    fontFeatureSettings = "tnum",
+                    platformStyle = PlatformTextStyle(includeFontPadding = false),
+                ),
+            networkValue =
+                typography.displayMedium.copy(
+                    fontFamily = HomeManropeFontFamily,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 34.sp,
                     letterSpacing = (-0.03).em,
                     fontFeatureSettings = "tnum",
                     platformStyle = PlatformTextStyle(includeFontPadding = false),

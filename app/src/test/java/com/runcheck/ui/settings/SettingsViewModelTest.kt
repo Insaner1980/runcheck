@@ -25,6 +25,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -266,6 +267,10 @@ class SettingsViewModelTest {
     @Test
     fun `reset tips reports success only after persistence succeeds`() =
         runTest(mainDispatcherRule.testDispatcher) {
+            val persistenceGate = CompletableDeferred<Unit>()
+            coEvery { manageInfoCardDismissals.resetDismissedCards() } coAnswers {
+                persistenceGate.await()
+            }
             val viewModel = createViewModel()
             runCurrent()
 
@@ -273,6 +278,11 @@ class SettingsViewModelTest {
             runCurrent()
 
             coVerify(exactly = 1) { manageInfoCardDismissals.resetDismissedCards() }
+            assertEquals(null, viewModel.uiState.value.clearDataStatus)
+
+            persistenceGate.complete(Unit)
+            runCurrent()
+
             assertEquals(
                 UiText.Resource(R.string.settings_reset_tips_done),
                 viewModel.uiState.value.clearDataStatus,

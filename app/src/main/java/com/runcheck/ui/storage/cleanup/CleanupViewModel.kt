@@ -46,13 +46,22 @@ class CleanupViewModel
         private val observeProAccess: ObserveProAccessUseCase,
         private val isProUser: IsProUserUseCase,
     ) : ViewModel() {
+        private val suppliedCleanupType = savedStateHandle.get<String>("type")
         private val parsedCleanupType =
-            savedStateHandle.get<String>("type")?.let { value ->
+            suppliedCleanupType?.let { value ->
                 CleanupType.entries.firstOrNull { it.name == value }
             }
+        private val hasInvalidCleanupType = suppliedCleanupType != null && parsedCleanupType == null
         val cleanupType: CleanupType = parsedCleanupType ?: CleanupType.LARGE_FILES
 
-        private val _uiState = MutableStateFlow<CleanupUiState>(CleanupUiState.Idle)
+        private val _uiState =
+            MutableStateFlow<CleanupUiState>(
+                if (hasInvalidCleanupType) {
+                    CleanupUiState.Error(UiText.Resource(R.string.common_error_generic))
+                } else {
+                    CleanupUiState.Idle
+                },
+            )
         val uiState: StateFlow<CleanupUiState> = _uiState.asStateFlow()
 
         private val _deleteRequestUris = MutableSharedFlow<List<String>>()
@@ -151,16 +160,18 @@ class CleanupViewModel
         private var scanJob: Job? = null
 
         init {
-            viewModelScope.launch {
-                observeProAccess()
-                    .distinctUntilChanged()
-                    .collect { isPro ->
-                        if (isPro) {
-                            scan()
-                        } else {
-                            revokeProAccess()
+            if (!hasInvalidCleanupType) {
+                viewModelScope.launch {
+                    observeProAccess()
+                        .distinctUntilChanged()
+                        .collect { isPro ->
+                            if (isPro) {
+                                scan()
+                            } else {
+                                revokeProAccess()
+                            }
                         }
-                    }
+                }
             }
         }
 
@@ -175,15 +186,15 @@ class CleanupViewModel
             scanJob?.cancel()
             scanJob =
                 viewModelScope.launch {
+                    if (hasInvalidCleanupType) {
+                        _uiState.value = CleanupUiState.Error(UiText.Resource(R.string.common_error_generic))
+                        return@launch
+                    }
                     if (!isProUser()) {
                         _uiState.value =
                             CleanupUiState.Error(
                                 UiText.Resource(R.string.pro_feature_locked_generic),
                             )
-                        return@launch
-                    }
-                    if (parsedCleanupType == null) {
-                        _uiState.value = CleanupUiState.Error(UiText.Resource(R.string.common_error_generic))
                         return@launch
                     }
                     if (isVersionRestrictedCleanup() && Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
@@ -387,15 +398,20 @@ class CleanupViewModel
         private suspend fun performLegacyDelete(uris: List<String>) {
             try {
                 storageCleanup.deleteLegacy(uris)
-                completeLegacyDelete(UiText.Resource(R.string.cleanup_delete_failed))
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: StorageDeleteFailure) {
                 handleLegacyDeleteFailure(error)
+                return
             } catch (error: SecurityException) {
                 handleLegacyDeleteSecurityException(error)
+                return
             } catch (error: Exception) {
                 ReleaseSafeLog.error("CleanupVM", "Delete failed", error)
                 restorePendingSelection(UiText.Resource(R.string.cleanup_delete_failed))
+                return
             }
+            completeLegacyDeleteSafely(UiText.Resource(R.string.cleanup_delete_failed))
         }
 
         private suspend fun completeLegacyDelete(emptyResultMessage: UiText) {
@@ -410,8 +426,6 @@ class CleanupViewModel
             )
         }
 
-        // Content providers may fail with implementation-specific exceptions during result verification.
-        @Suppress("TooGenericExceptionCaught")
         private suspend fun handleLegacyDeleteFailure(error: StorageDeleteFailure) {
             val message =
                 UiText.Resource(
@@ -421,8 +435,14 @@ class CleanupViewModel
                         R.string.cleanup_delete_failed
                     },
                 )
+            completeLegacyDeleteSafely(message)
+        }
+
+        // Content providers may fail with implementation-specific exceptions during result verification.
+        @Suppress("TooGenericExceptionCaught")
+        private suspend fun completeLegacyDeleteSafely(failureMessage: UiText) {
             try {
-                completeLegacyDelete(message)
+                completeLegacyDelete(failureMessage)
             } catch (verificationError: CancellationException) {
                 throw verificationError
             } catch (verificationError: SecurityException) {
@@ -430,7 +450,7 @@ class CleanupViewModel
                 restorePendingSelection(UiText.Resource(R.string.cleanup_delete_permission_error))
             } catch (verificationError: Exception) {
                 ReleaseSafeLog.error("CleanupVM", "Legacy delete result verification failed", verificationError)
-                restorePendingSelection(UiText.Resource(R.string.cleanup_delete_failed))
+                restorePendingSelection(failureMessage)
             }
         }
 

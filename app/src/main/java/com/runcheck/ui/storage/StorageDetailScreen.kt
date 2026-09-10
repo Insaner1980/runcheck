@@ -63,7 +63,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
+import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.model.MediaBreakdown
 import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.StorageReading
@@ -119,6 +121,7 @@ import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.storage.MediaDeleteRequestResult
+import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
 import com.runcheck.ui.theme.categoryColor
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
@@ -460,14 +463,14 @@ private fun StorageToolsSection(
         )
     }
 
-    if (!hasAllMediaPermissions) return
-
     if (state.isPro) {
-        StorageCleanupToolsSection(
-            storage = storage,
-            onNavigateToCleanup = onNavigateToCleanup,
-            onEmptyTrash = onEmptyTrash,
-        )
+        if (hasAllMediaPermissions) {
+            StorageCleanupToolsSection(
+                storage = storage,
+                onNavigateToCleanup = onNavigateToCleanup,
+                onEmptyTrash = onEmptyTrash,
+            )
+        }
     } else {
         SectionHeader(text = stringResource(R.string.storage_cleanup_tools))
         ProFeatureCalloutCard(
@@ -562,7 +565,7 @@ private fun StorageHeroCard(
     liveUsagePercent: List<Float>,
     onInfoClick: (String) -> Unit = {},
 ) {
-    val useStackedMetrics = LocalDensity.current.fontScale >= STORAGE_HERO_STACKED_FONT_SCALE
+    val useStackedMetrics = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
     val context = LocalContext.current
     val usedFormatted = formatStorageSize(context, storage.usedBytes)
     val totalFormatted = formatStorageSize(context, storage.totalBytes)
@@ -645,7 +648,6 @@ private fun StorageHeroCard(
 
             StorageHeroMetrics(
                 storage = storage,
-                freeFormatted = freeFormatted,
                 useStackedLayout = useStackedMetrics,
                 onInfoClick = onInfoClick,
             )
@@ -656,20 +658,24 @@ private fun StorageHeroCard(
 @Composable
 private fun StorageHeroMetrics(
     storage: StorageState,
-    freeFormatted: String,
     useStackedLayout: Boolean,
     onInfoClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val measuredFillRateEstimate =
+        storage.fillRateEstimate?.let { estimate ->
+            MeasuredValue(estimate, Confidence.LOW)
+        }
     val metrics =
         buildList {
-            storage.totalCacheBytes?.let { cache ->
+            storage.measuredTotalCacheBytes?.let { cache ->
                 add(
                     MetricPillItem(
                         label = stringResource(R.string.storage_cache_total),
-                        value = formatStorageSize(context, cache),
+                        value = formatStorageSize(context, cache.value),
                         infoKey = "cache",
+                        confidence = cache.confidence,
                     ),
                 )
             }
@@ -677,15 +683,19 @@ private fun StorageHeroMetrics(
                 MetricPillItem(
                     label = stringResource(R.string.storage_fill_rate),
                     value =
-                        storage.fillRateEstimate?.let { stringResource(R.string.unit_approx_prefix, it) }
+                        measuredFillRateEstimate?.let {
+                            stringResource(R.string.unit_approx_prefix, it.value)
+                        }
                             ?: stringResource(R.string.battery_estimating),
                     infoKey = "fillRate",
+                    confidence = measuredFillRateEstimate?.confidence,
                 ),
             )
             add(
                 MetricPillItem(
                     label = stringResource(R.string.storage_available),
-                    value = freeFormatted,
+                    value = formatStorageSize(context, storage.measuredAvailableBytes.value),
+                    confidence = storage.measuredAvailableBytes.confidence,
                 ),
             )
         }
@@ -708,8 +718,6 @@ private fun StorageHeroMetrics(
         }
     }
 }
-
-private const val STORAGE_HERO_STACKED_FONT_SCALE = 1.5f
 
 // ── Media Breakdown card ───────────────────────────────────────────────────────
 
@@ -826,7 +834,12 @@ private fun StorageHistoryCard(
                     R.string.fullscreen_chart_title_storage,
                     storageHistoryMetricLabel(metric),
                 ),
-            label = "${historyPeriodLabel(selectedPeriod)} — ${storageHistoryMetricLabel(metric)}",
+            label =
+                stringResource(
+                    R.string.value_two_parts_separator,
+                    historyPeriodLabel(selectedPeriod),
+                    storageHistoryMetricLabel(metric),
+                ),
             periodLabel = historyPeriodLabel(selectedPeriod),
             chartModel = chartModel,
             qualityZones = storageQualityZones(metric),
