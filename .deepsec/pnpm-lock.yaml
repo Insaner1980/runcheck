@@ -10,7 +10,7 @@ overrides:
   brace-expansion: 5.0.9
   fast-uri: 3.1.7
   qs: 6.16.0
-  hono: 4.13.1
+  hono: 4.13.5
   undici: 7.29.0
 
 importers:
@@ -937,8 +937,8 @@ packages:
   highlight.js@10.7.3:
     resolution: {integrity: sha512-tzcUFauisWKNHaRkN4Wjl/ZA07gENAjFl3J/c480dprkGTg5EQstgaNFqBfUqCq54kZRIEcreTsAgF/m2quD7A==}
 
-  hono@4.13.1:
-    resolution: {integrity: sha512-kdJoFVv2xmayw6cY09H7AbMJMt8Jn5jdlEdXsP7AGBdF2DIptVlKlOLKXP41yPip4/a3yQPv9gVcJYI8YY04dw==}
+  hono@4.13.5:
+    resolution: {integrity: sha512-O6+/eCYRkzzzy0rPWwKLiGBR1nFuUPZynnwjxN1MBA62NNqbT0wQEzQyK2gSO5yDIDB336sXQleAhOHrzlYyKw==}
     engines: {node: '>=16.9.0'}
 
   hosted-git-info@9.0.3:
@@ -1815,7 +1815,7 @@ snapshots:
 
   '@hono/node-server@2.0.12(hono@4.13.1)':
     dependencies:
-      hono: 4.13.1
+      hono: 4.13.5
 
   '@isaacs/fs-minipass@4.0.1':
     dependencies:
@@ -1889,7 +1889,7 @@ snapshots:
       eventsource-parser: 3.1.1
       express: 5.2.1
       express-rate-limit: 8.6.2(express@5.2.1)
-      hono: 4.13.1
+      hono: 4.13.5
       jose: 6.2.9
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
@@ -2470,7 +2470,7 @@ snapshots:
 
   highlight.js@10.7.3: {}
 
-  hono@4.13.1: {}
+  hono@4.13.5: {}
 
   hosted-git-info@9.0.3:
     dependencies:
