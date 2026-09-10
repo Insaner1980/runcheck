@@ -352,6 +352,16 @@ Application startup jobs use `launchSafely` to retain sibling work after failure
 
 ---
 
+### Architecture coordination and live persistence boundaries
+
+- `MonitoringDataCoordinator` serializes the `ClearMonitoringDataUseCase` Room deletion transaction and debug history seeding with the complete insight read/evaluate/publish operation. Reset waits for admitted generation before deleting its results; later generation reads the remaining or newly collected history. Lock order is coordinator, thermal tracker, then Room. The tracker invalidates its cached active event in `finally` before releasing its lock, including failed or cancelled resets, and restores any surviving Room event on the next observation. Lock waits remain cancellable; monitoring schedules are unchanged.
+- Samsung constant-current evidence belongs to the source instance. A mutex serializes sensor reads and evidence updates across collectors; equal readings count at most once per two seconds. A changed signed value or a gap greater than six seconds since the last counted observation restarts the count. Six seconds covers three normal polling intervals and the live notification's five-second one-shot cadence. Missing readings do not refresh evidence. Measurements are read afresh on demand, with no current replay cache or polling after collectors detach.
+
+| Path | Failure and cancellation ownership |
+|------|------------------------------------|
+| Interactive thermal event tracking | `GetThermalStateUseCase` uses `getLiveThermalState`. Event-tracking exceptions are reported through `ReleaseSafeLog` (debug only) per measurement; sensor failures and cancellation still propagate. The worker retains `getThermalState`, where event failures propagate into its existing retry policy. Both paths use the same singleton tracker and reset lock. |
+| Home/Battery charger-session tracking | Observation awaits the shared singleton tracker before display sampling. Session failures are debug-logged per update without replacing valid live state; cancellation propagates. No detached work is launched. Worker `onBatteryState` failures still reach its existing retry policy. |
+
 ## Navigation
 
 Push-based navigation from a single Home screen. No bottom nav, no tabs.
