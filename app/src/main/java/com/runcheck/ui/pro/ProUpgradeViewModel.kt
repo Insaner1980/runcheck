@@ -39,35 +39,28 @@ class ProUpgradeViewModel
         private val _uiState = MutableStateFlow(ProUpgradeUiState())
         val uiState: StateFlow<ProUpgradeUiState> = _uiState.asStateFlow()
 
-        private var initialLoadDone = false
-
         init {
             viewModelScope.launch {
                 proStateProvider.proState.collect { proState ->
-                    val wasNotPro = !_uiState.value.proState.isPro
                     _uiState.update {
-                        it.copy(
-                            proState = proState,
-                            purchaseCompleted = initialLoadDone && wasNotPro && proState.isPro,
-                        )
+                        it.copy(proState = proState)
                     }
-                    initialLoadDone = true
                 }
             }
             viewModelScope.launch {
                 proPurchaseManager.billingAvailable.collect { available ->
                     _uiState.update { it.copy(billingAvailable = available) }
-                }
-            }
-            viewModelScope.launch {
-                try {
-                    proPurchaseManager.getFormattedPrice()?.let { price ->
-                        _uiState.update { it.copy(formattedPrice = price) }
+                    if (available && _uiState.value.formattedPrice == null) {
+                        try {
+                            proPurchaseManager.getFormattedPrice()?.let { price ->
+                                _uiState.update { it.copy(formattedPrice = price) }
+                            }
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (_: Exception) {
+                            // Price unavailable — button will show without price
+                        }
                     }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    // Price unavailable — button will show without price
                 }
             }
             viewModelScope.launch {
@@ -98,9 +91,17 @@ class ProUpgradeViewModel
                             }
                         }
 
-                        is PurchaseEvent.Canceled,
-                        is PurchaseEvent.Success,
-                        -> {
+                        is PurchaseEvent.Success -> {
+                            _uiState.update {
+                                it.copy(
+                                    purchaseCompleted = true,
+                                    purchasePending = false,
+                                    purchaseError = null,
+                                )
+                            }
+                        }
+
+                        is PurchaseEvent.Canceled -> {
                             // No action needed
                         }
                     }

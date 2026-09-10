@@ -14,6 +14,13 @@ import androidx.compose.ui.semantics.semantics
 import com.runcheck.ui.components.info.InfoIcon
 import com.runcheck.ui.theme.spacing
 
+internal data class MetricPillItem(
+    val label: String,
+    val value: String,
+    val valueColor: Color? = null,
+    val infoKey: String? = null,
+)
+
 @Composable
 fun MetricPill(
     label: String,
@@ -38,6 +45,23 @@ fun MetricPill(
             text = value,
             style = MaterialTheme.typography.titleMedium,
             color = valueColor,
+        )
+    }
+}
+
+@Composable
+internal fun MetricPillItems(
+    items: List<MetricPillItem>,
+    modifier: Modifier = Modifier,
+    onInfoClick: (String) -> Unit = {},
+) {
+    items.forEach { item ->
+        MetricPill(
+            label = item.label,
+            value = item.value,
+            valueColor = item.valueColor ?: MaterialTheme.colorScheme.onSurface,
+            modifier = modifier,
+            onInfoClick = item.infoKey?.let { key -> { onInfoClick(key) } },
         )
     }
 }

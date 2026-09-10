@@ -39,8 +39,14 @@ class HeatAcceleratedBatteryWearRule
         override suspend fun loadSamples(now: Long): HeatDrainSamples? = loadInput(now)?.let(::classifyDrainSamples)
 
         private suspend fun loadInput(now: Long): HeatDrainInput? {
-            val batteryReadings = batteryRepository.getReadingsSinceSync(now - LOOKBACK_MS)
-            val thermalReadings = thermalRepository.getReadingsSinceSync(now - LOOKBACK_MS)
+            val batteryReadings =
+                batteryRepository
+                    .getReadingsSinceSync(now - LOOKBACK_MS)
+                    .filter { reading -> reading.timestamp <= now }
+            val thermalReadings =
+                thermalRepository
+                    .getReadingsSinceSync(now - LOOKBACK_MS)
+                    .filter { reading -> reading.timestamp <= now }
             if (batteryReadings.size < MINIMUM_BATTERY_READING_COUNT ||
                 thermalReadings.size < MINIMUM_THERMAL_READING_COUNT
             ) {

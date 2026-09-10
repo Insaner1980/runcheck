@@ -118,6 +118,20 @@ class GenericBatterySourceTest {
     }
 
     @Test
+    fun `current confidence rejects readings outside the plausible milliamp range`() {
+        val source =
+            createTestSource(
+                unit = CurrentUnit.MICROAMPS,
+                convention = SignConvention.POSITIVE_CHARGING,
+            )
+
+        assertEquals(Confidence.HIGH, source.testCalculateCurrentConfidence(10_000_000))
+        assertEquals(Confidence.HIGH, source.testCalculateCurrentConfidence(-10_000_000))
+        assertEquals(Confidence.UNAVAILABLE, source.testCalculateCurrentConfidence(10_001_000))
+        assertEquals(Confidence.UNAVAILABLE, source.testCalculateCurrentConfidence(-10_001_000))
+    }
+
+    @Test
     fun `alignCurrentSignWithChargeState corrects signs that disagree with charge state`() {
         val chargingSource =
             createTestSource(

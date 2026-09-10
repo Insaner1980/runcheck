@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.BatteryManager
 import android.os.Build
 import androidx.annotation.VisibleForTesting
+import com.runcheck.data.battery.normalizeCycleCount
 import com.runcheck.domain.model.CurrentUnit
 import com.runcheck.domain.model.SignConvention
 import com.runcheck.util.BatteryIntentReader
@@ -93,7 +94,7 @@ class DeviceCapabilityManager
             if (apiLevel < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return false
             val batteryIntent = BatteryIntentReader.readBatteryChangedStickyIntent(context)
             val cycleCount = batteryIntent?.getIntExtra(BatteryManager.EXTRA_CYCLE_COUNT, -1) ?: -1
-            return cycleCount > 0
+            return normalizeCycleCount(cycleCount) != null
         }
 
         private data class CurrentValidation(

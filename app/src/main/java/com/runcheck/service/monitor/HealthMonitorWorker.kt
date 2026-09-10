@@ -70,7 +70,9 @@ class HealthMonitorWorker
                 val networkState = networkRepository.getNetworkState().first()
                 val latency =
                     try {
-                        networkRepository.measureLatency()
+                        networkRepository.measureLatency(networkState.defaultNetworkHandle)
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (_: Exception) {
                         null
                     }

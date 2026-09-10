@@ -14,6 +14,7 @@ class NetworkStateTest {
     fun `available connection types are connected`() {
         assertTrue(networkState(ConnectionType.WIFI).isConnected)
         assertTrue(networkState(ConnectionType.CELLULAR).isConnected)
+        assertTrue(networkState(ConnectionType.ETHERNET).isConnected)
         assertTrue(networkState(ConnectionType.VPN).isConnected)
     }
 

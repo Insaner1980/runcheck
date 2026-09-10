@@ -3,6 +3,7 @@ package com.runcheck.data.preferences
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.IOException
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -28,7 +29,11 @@ import kotlinx.coroutines.flow.transform
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+private val Context.dataStore: DataStore<Preferences>
+    by preferencesDataStore(
+        name = "settings",
+        corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+    )
 
 @Singleton
 class UserPreferencesRepositoryImpl

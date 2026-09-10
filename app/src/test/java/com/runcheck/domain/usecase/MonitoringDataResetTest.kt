@@ -272,6 +272,7 @@ class MonitoringDataResetTest {
                 insightRepository = insights,
                 chargerRepository = mockk(relaxed = true),
                 userPreferencesRepository = preferences,
+                monitoringAlertStateRepository = mockk(relaxed = true),
                 monitoringStatusRepository = mockk(relaxed = true),
                 fileExportRepository = mockk(relaxed = true),
                 monitoringDataCoordinator = coordinator,

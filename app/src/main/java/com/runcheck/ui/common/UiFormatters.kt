@@ -27,9 +27,7 @@ private val appEnglishLocale: Locale = Locale.ENGLISH
 
 fun Throwable.messageOrRes(
     @androidx.annotation.StringRes defaultRes: Int,
-): UiText =
-    message?.takeUnless(String::isBlank)?.let { UiText.Dynamic(it) }
-        ?: UiText.Resource(defaultRes)
+): UiText = UiText.Resource(defaultRes)
 
 fun formatStorageSize(
     context: Context,
@@ -167,6 +165,10 @@ fun connectionDisplayLabel(
             networkSubtype
                 ?.takeUnless(::isUnknownValue)
                 ?: stringResource(R.string.connection_cellular)
+        }
+
+        ConnectionType.ETHERNET -> {
+            stringResource(R.string.connection_ethernet)
         }
 
         ConnectionType.VPN -> {

@@ -122,7 +122,7 @@ State restoration conventions:
 PowerShell wrappers live in `tools/` and forward through `tools\Invoke-RuncheckProjectCheck.ps1`. The helper resolves the shared Android-check repository from `ANDROID_CHECK_ROOT` first, then from a sibling `Android-check` checkout next to `runcheck`.
 
 - `lc` / `tools\lc.ps1` — ktlint, detekt, Android lint; writes `reports\ktlint.txt`, `reports\detekt.txt`, and `reports\lint.txt`
-- `ac` / `tools\ac.ps1` — Android security surface; project Semgrep, mobsfscan, and DeepSec custom report
+- `ac` / `tools\ac.ps1` — Android security surface; project Semgrep and mobsfscan. DeepSec is a separate `ds` run with explicit external-AI consent.
 - `dc` / `tools\dc.ps1` — dependency verification, OSV, OWASP Dependency-Check; use `dc -InitVerification` only when intentionally creating or updating `gradle\verification-metadata.xml`
 - `ss` / `tools\ss.ps1` — gitleaks, TruffleHog, Semgrep secrets
 - `ds` / `tools\ds.ps1` — DeepSec custom scan/report/revalidate paths
@@ -209,6 +209,7 @@ When reviewing a PR or file, check for these in order:
 - Card corner radius: 16dp. Small elements: 8dp. No shadows, no elevation, no borders (except ActionCards: 1dp outlineVariant at 35% alpha).
 - Shared touch targets, icon sizes, and common CTA heights should come from `UiTokens` instead of repeating raw values in shared components.
 - No dynamic colors. If a task changes visual design, follow `UI-SPEC.md` instead of inventing alternate tokens or component variants.
+- Home is the explicit September 6 reference-design exception: `HomeTheme` scopes its near-black page, cream/peach/stone/graphite category fills, peach segmented gauge, and curved mosaic edges. Other routes retain the palette above; see `UI-SPEC.md` section 9.1.
 - English-only strings are intentional right now. Do not reintroduce partial localization without updating docs and string coverage together.
 - Icons: use `Icons.Outlined` exclusively — no `Icons.Default`, `Icons.Filled`, or `Icons.Rounded`
 - Padding and spacing use the 4dp grid (2/4/8/12/16/24/32dp); the exact Home status mosaic dimensions centralized in `UiTokens` and documented in `UI-SPEC.md` are an explicit visual-system exception.

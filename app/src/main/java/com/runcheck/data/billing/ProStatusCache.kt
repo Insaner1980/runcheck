@@ -20,7 +20,13 @@ class ProStatusCache
     ) {
         private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-        fun getCachedProStatus(): Boolean = prefs.getBoolean(KEY_IS_PRO, false)
+        fun getCachedProStatus(): Boolean =
+            try {
+                prefs.getBoolean(KEY_IS_PRO, false)
+            } catch (_: ClassCastException) {
+                prefs.edit { remove(KEY_IS_PRO) }
+                false
+            }
 
         fun setCachedProStatus(isPro: Boolean) {
             prefs.edit { putBoolean(KEY_IS_PRO, isPro) }

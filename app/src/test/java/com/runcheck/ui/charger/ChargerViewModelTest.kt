@@ -1,5 +1,6 @@
 package com.runcheck.ui.charger
 
+import com.runcheck.R
 import com.runcheck.domain.model.ChargerSummary
 import com.runcheck.domain.usecase.AddChargerUseCase
 import com.runcheck.domain.usecase.DeleteChargerUseCase
@@ -98,7 +99,10 @@ class ChargerViewModelTest {
             viewModel.startObserving()
             runCurrent()
 
-            assertEquals(ChargerUiState.Error(UiText.Dynamic("charger failed")), viewModel.uiState.value)
+            assertEquals(
+                ChargerUiState.Error(UiText.Resource(R.string.common_error_generic)),
+                viewModel.uiState.value,
+            )
         }
 
     private fun createViewModel(): ChargerViewModel =

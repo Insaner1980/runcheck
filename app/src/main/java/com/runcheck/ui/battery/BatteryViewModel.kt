@@ -65,11 +65,12 @@ class BatteryViewModel
             }
         private var loadJob: Job? = null
 
-        // Current stats tracking (in-memory, resets on power-source or selected-charger changes)
+        // Current stats tracking (in-memory, resets on status, power-source, or selected-charger changes)
         private var currentSum: Long = 0L
         private var currentCount: Int = 0
         private var currentMin: Int = Int.MAX_VALUE
         private var currentMax: Int = Int.MIN_VALUE
+        private var lastChargingStatus: ChargingStatus? = null
         private var lastPlugType: PlugType? = null
         private var lastSelectedChargerId: Long? = null
 
@@ -240,17 +241,21 @@ class BatteryViewModel
             state: BatteryState,
             selectedChargerId: Long?,
         ): Boolean {
+            val previousChargingStatus = lastChargingStatus
             val previousPlugType = lastPlugType
+            val chargingStatusChanged =
+                previousChargingStatus != null && previousChargingStatus != state.chargingStatus
             val powerSourceChanged = previousPlugType != null && previousPlugType != state.plugType
             val selectedChargerChanged =
                 previousPlugType != null &&
                     lastSelectedChargerId != selectedChargerId &&
                     (previousPlugType != PlugType.NONE || state.plugType != PlugType.NONE)
 
+            lastChargingStatus = state.chargingStatus
             lastPlugType = state.plugType
             lastSelectedChargerId = selectedChargerId
 
-            return powerSourceChanged || selectedChargerChanged
+            return chargingStatusChanged || powerSourceChanged || selectedChargerChanged
         }
 
         private data class BatteryUpdate(

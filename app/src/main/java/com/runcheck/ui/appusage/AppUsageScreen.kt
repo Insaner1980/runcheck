@@ -82,8 +82,9 @@ fun AppUsageScreen(
     onBack: () -> Unit,
     onUpgradeToPro: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: AppUsageViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> AppUsageViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LifecycleStartStopEffect(

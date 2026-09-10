@@ -74,7 +74,9 @@ internal fun SettingsTransientEffects(
     }
     uiState.exportUris?.let { exportUriStrings ->
         LaunchedEffect(exportUriStrings) {
-            shareExportUris(context, exportUriStrings)
+            if (!shareExportUris(context, exportUriStrings)) {
+                Toast.makeText(context, R.string.settings_export_error, Toast.LENGTH_SHORT).show()
+            }
             currentActions.value.onClearExportUris()
         }
     }

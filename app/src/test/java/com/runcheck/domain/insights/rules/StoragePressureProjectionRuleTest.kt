@@ -65,6 +65,25 @@ class StoragePressureProjectionRuleTest {
             assertEquals(InsightPriority.MEDIUM, insight.priority)
         }
 
+    @Test
+    fun `ignores future storage readings`() =
+        runTest {
+            val readings =
+                listOf(
+                    storage(NOW - 6L * DAY_MS, 40_000L),
+                    storage(NOW - 4L * DAY_MS, 30_000L),
+                    storage(NOW - 2L * DAY_MS, 20_000L),
+                    storage(NOW + 2L * DAY_MS, 10_000L),
+                )
+            val rule =
+                StoragePressureProjectionRule(
+                    storageRepository = TestStorageRepository(readings),
+                    storageGrowthAnalyzer = StorageGrowthAnalyzer(),
+                )
+
+            assertTrue(rule.evaluate(NOW).isEmpty())
+        }
+
     private fun storage(
         timestamp: Long,
         availableBytes: Long,

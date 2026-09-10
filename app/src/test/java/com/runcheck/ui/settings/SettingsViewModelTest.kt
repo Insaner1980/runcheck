@@ -264,6 +264,41 @@ class SettingsViewModelTest {
         }
 
     @Test
+    fun `reset tips reports success only after persistence succeeds`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val viewModel = createViewModel()
+            runCurrent()
+
+            viewModel.resetTips()
+            runCurrent()
+
+            coVerify(exactly = 1) { manageInfoCardDismissals.resetDismissedCards() }
+            assertEquals(
+                UiText.Resource(R.string.settings_reset_tips_done),
+                viewModel.uiState.value.clearDataStatus,
+            )
+        }
+
+    @Test
+    fun `reset tips failure is not presented as success`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            coEvery {
+                manageInfoCardDismissals.resetDismissedCards()
+            } throws IllegalStateException("failed")
+            val viewModel = createViewModel()
+            runCurrent()
+
+            viewModel.resetTips()
+            runCurrent()
+
+            assertEquals(null, viewModel.uiState.value.clearDataStatus)
+            assertEquals(
+                UiText.Resource(R.string.common_error_generic),
+                viewModel.uiState.value.errorMessage,
+            )
+        }
+
+    @Test
     fun `formatted pro price is exposed when billing manager returns price`() =
         runTest(mainDispatcherRule.testDispatcher) {
             coEvery { proPurchaseManager.getFormattedPrice() } returns "$4.99"

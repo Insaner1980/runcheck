@@ -19,6 +19,7 @@ import com.runcheck.domain.usecase.RunSpeedTestUseCase
 import com.runcheck.ui.common.RefreshTracker
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.messageOrRes
+import com.runcheck.util.ReleaseSafeLog
 import com.runcheck.util.appendLiveValue
 import com.runcheck.util.getEnumOrDefault
 import com.runcheck.util.putEnum
@@ -143,12 +144,12 @@ class NetworkViewModel
                     try {
                         withTimeout(SPEED_TEST_TIMEOUT_MS) {
                             runSpeedTest(allowCellular = allowCellular)
-                                .catch { e ->
+                                .catch { _ ->
                                     updateSpeedTestState {
                                         copy(
                                             phase =
                                                 SpeedTestPhase.Failed(
-                                                    e.messageOrRes(R.string.speed_test_failed),
+                                                    UiText.Resource(R.string.speed_test_failed),
                                                 ),
                                             isRunning = false,
                                         )
@@ -214,11 +215,16 @@ class NetworkViewModel
                                             } catch (e: CancellationException) {
                                                 throw e
                                             } catch (error: Exception) {
+                                                ReleaseSafeLog.error(
+                                                    "NetworkVM",
+                                                    "Failed to finalize speed test",
+                                                    error,
+                                                )
                                                 updateSpeedTestState {
                                                     copy(
                                                         phase =
                                                             SpeedTestPhase.Failed(
-                                                                error.messageOrRes(R.string.speed_test_error_generic),
+                                                                UiText.Resource(R.string.speed_test_error_generic),
                                                             ),
                                                         isRunning = false,
                                                     )

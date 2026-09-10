@@ -63,8 +63,9 @@ fun ChargerComparisonScreen(
     onBack: () -> Unit,
     onUpgradeToPro: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: ChargerViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> ChargerViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var pendingDeleteChargerId by rememberSaveable { mutableStateOf<Long?>(null) }

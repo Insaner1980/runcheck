@@ -16,6 +16,7 @@ import com.runcheck.domain.model.TrashInfo
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.File
@@ -45,12 +46,16 @@ class StorageDataSource
             val mediaBreakdown =
                 try {
                     mediaStoreScanner.getMediaBreakdown()
+                } catch (error: CancellationException) {
+                    throw error
                 } catch (_: Exception) {
                     null
                 }
             val trashInfo =
                 try {
                     mediaStoreScanner.getTrashInfo()
+                } catch (error: CancellationException) {
+                    throw error
                 } catch (_: Exception) {
                     null
                 }
@@ -74,9 +79,7 @@ class StorageDataSource
                             StorageSpace(totalBytes = stat.totalBytes, availableBytes = stat.availableBytes)
                         },
                     )
-                val totalBytes = primarySpace.totalBytes
-                val freeBytes = primarySpace.availableBytes
-                val usedBytes = totalBytes - freeBytes
+                val usedBytes = primarySpace.totalBytes - primarySpace.availableBytes
 
                 val hasUsageStats = hasUsageStatsPermission()
                 val appStats = if (hasUsageStats) calculateAppStats() else null
@@ -85,8 +88,8 @@ class StorageDataSource
                 val deviceInfo = getDeviceStorageInfo()
 
                 StorageInfo(
-                    totalBytes = totalBytes,
-                    availableBytes = freeBytes,
+                    totalBytes = primarySpace.totalBytes,
+                    availableBytes = primarySpace.availableBytes,
                     usedBytes = usedBytes,
                     appsBytes = appStats?.totalBytes,
                     totalCacheBytes = appStats?.cacheBytes,

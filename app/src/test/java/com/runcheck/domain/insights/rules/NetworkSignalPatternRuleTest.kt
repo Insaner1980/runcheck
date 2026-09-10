@@ -31,6 +31,29 @@ class NetworkSignalPatternRuleTest {
             assertTrue(insights.isEmpty())
         }
 
+    @Test
+    fun `ignores future signal readings`() =
+        runTest {
+            val past =
+                listOf(
+                    cellularReading(offsetHours = 3, signalDbm = -115, latencyMs = 100),
+                    cellularReading(offsetHours = 2, signalDbm = -115, latencyMs = 100),
+                    cellularReading(offsetHours = 1, signalDbm = -115, latencyMs = 100),
+                )
+            val future =
+                List(3) { index ->
+                    networkReading(
+                        timestamp = NOW + (index + 1L) * HOUR_MS,
+                        type = "CELLULAR",
+                        signalDbm = -115,
+                        latencyMs = 100,
+                    )
+                }
+            val rule = NetworkSignalPatternRule(TestNetworkRepository(past + future))
+
+            assertTrue(rule.evaluate(NOW).isEmpty())
+        }
+
     private fun sustainedWeakSignalReadings() =
         listOf(
             cellularReading(offsetHours = 50, signalDbm = -112, latencyMs = 85),

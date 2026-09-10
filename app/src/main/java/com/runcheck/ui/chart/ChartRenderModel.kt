@@ -75,7 +75,7 @@ fun formatChartTooltip(
 ): String {
     val value = formatDecimal(chartData[index], decimals)
     val time = formatLocalizedDateTime(chartTimestamps[index], timeSkeleton)
-    return "$value$unit · $time"
+    return "$value$unit — $time"
 }
 
 fun buildBatteryHistoryChartModel(

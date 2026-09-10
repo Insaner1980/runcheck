@@ -57,6 +57,17 @@ class NetworkSignalQualityTest {
         )
     }
 
+    @Test
+    fun `keeps ethernet with no radio signal usable`() {
+        assertEquals(
+            SignalQuality.GOOD,
+            classifyNetworkSignalQuality(
+                dbm = null,
+                type = ConnectionType.ETHERNET,
+            ),
+        )
+    }
+
     private fun assertCellularQuality(
         networkSubtype: String,
         dbm: Int,

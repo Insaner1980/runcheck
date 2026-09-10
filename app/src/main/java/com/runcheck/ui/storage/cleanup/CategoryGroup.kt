@@ -11,15 +11,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -30,6 +31,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.state.ToggleableState
 import com.runcheck.R
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.components.StatusDot
@@ -48,8 +50,13 @@ fun CategoryGroup(
     val context = LocalContext.current
     val color = categoryColor(group.category)
     val label = categoryLabel(context, group.category)
-    val tokens = MaterialTheme.uiTokens
-    val allSelected = group.itemCount > 0 && group.selectedCount == group.itemCount
+    val selectionState =
+        when {
+            group.selectedCount == 0 -> ToggleableState.Off
+            group.selectedCount == group.itemCount -> ToggleableState.On
+            else -> ToggleableState.Indeterminate
+        }
+    val useStackedHeader = LocalDensity.current.fontScale >= CATEGORY_GROUP_STACKED_FONT_SCALE
     val expandedLabel =
         if (group.expanded) {
             stringResource(R.string.a11y_collapse)
@@ -60,42 +67,115 @@ fun CategoryGroup(
 
     Column(modifier = modifier.fillMaxWidth()) {
         // Group header
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onToggleExpansion, role = Role.Button)
-                    .semantics(mergeDescendants = true) {
-                        heading()
-                        stateDescription = expandedLabel
-                        if (group.expanded) {
-                            collapse {
-                                onToggleExpansion()
-                                true
-                            }
-                        } else {
-                            expand {
-                                onToggleExpansion()
-                                true
-                            }
-                        }
-                    }.padding(vertical = MaterialTheme.spacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            StatusDot(color = color)
-            Spacer(modifier = Modifier.width(MaterialTheme.spacing.sm))
-            Icon(
-                imageVector =
+        val headerModifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onToggleExpansion, role = Role.Button)
+                .semantics(mergeDescendants = true) {
+                    heading()
+                    stateDescription = expandedLabel
                     if (group.expanded) {
-                        Icons.Outlined.ExpandMore
+                        collapse {
+                            onToggleExpansion()
+                            true
+                        }
                     } else {
-                        Icons.AutoMirrored.Outlined.KeyboardArrowRight
-                    },
-                contentDescription = null,
-                modifier = Modifier.size(tokens.iconLarge),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.width(MaterialTheme.spacing.xs))
+                        expand {
+                            onToggleExpansion()
+                            true
+                        }
+                    }
+                }.padding(vertical = MaterialTheme.spacing.sm)
+
+        if (useStackedHeader) {
+            Column(modifier = headerModifier) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CategoryGroupTitle(
+                        label = label,
+                        itemCount = group.itemCount,
+                        expanded = group.expanded,
+                        color = color,
+                        stackText = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CategoryGroupSize(group.totalBytes, modifier = Modifier.weight(1f))
+                    CategoryGroupSelection(
+                        state = selectionState,
+                        label = checkboxLabel,
+                        onClick = onToggleGroupSelection,
+                    )
+                }
+            }
+        } else {
+            Row(
+                modifier = headerModifier,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CategoryGroupTitle(
+                    label = label,
+                    itemCount = group.itemCount,
+                    expanded = group.expanded,
+                    color = color,
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                CategoryGroupSize(group.totalBytes)
+                Spacer(modifier = Modifier.width(MaterialTheme.spacing.xs))
+                CategoryGroupSelection(
+                    state = selectionState,
+                    label = checkboxLabel,
+                    onClick = onToggleGroupSelection,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryGroupTitle(
+    label: String,
+    itemCount: Int,
+    expanded: Boolean,
+    color: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier,
+    stackText: Boolean = false,
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        StatusDot(color = color)
+        Spacer(modifier = Modifier.width(MaterialTheme.spacing.sm))
+        Icon(
+            imageVector =
+                if (expanded) {
+                    Icons.Outlined.ExpandMore
+                } else {
+                    Icons.AutoMirrored.Outlined.KeyboardArrowRight
+                },
+            contentDescription = null,
+            modifier = Modifier.size(MaterialTheme.uiTokens.iconLarge),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.width(MaterialTheme.spacing.xs))
+        if (stackText) {
+            Column {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(R.string.value_count_parenthetical, itemCount),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
             Text(
                 text = label,
                 style = MaterialTheme.typography.titleSmall,
@@ -103,32 +183,49 @@ fun CategoryGroup(
             )
             Spacer(modifier = Modifier.width(MaterialTheme.spacing.xxs))
             Text(
-                text = stringResource(R.string.value_count_parenthetical, group.itemCount),
+                text = stringResource(R.string.value_count_parenthetical, itemCount),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = formatStorageSize(context, group.totalBytes),
-                style =
-                    MaterialTheme.typography.bodySmall.copy(
-                        fontFamily = MaterialTheme.numericFontFamily,
-                    ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(modifier = Modifier.width(MaterialTheme.spacing.xs))
-            Checkbox(
-                checked = allSelected,
-                onCheckedChange = { onToggleGroupSelection() },
-                modifier =
-                    Modifier.semantics {
-                        contentDescription = checkboxLabel
-                    },
-                colors =
-                    CheckboxDefaults.colors(
-                        checkedColor = MaterialTheme.colorScheme.primary,
-                    ),
             )
         }
     }
 }
+
+@Composable
+private fun CategoryGroupSize(
+    totalBytes: Long,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    Text(
+        text = formatStorageSize(context, totalBytes),
+        style =
+            MaterialTheme.typography.bodySmall.copy(
+                fontFamily = MaterialTheme.numericFontFamily,
+            ),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun CategoryGroupSelection(
+    state: ToggleableState,
+    label: String,
+    onClick: () -> Unit,
+) {
+    TriStateCheckbox(
+        state = state,
+        onClick = onClick,
+        modifier =
+            Modifier.semantics {
+                contentDescription = label
+            },
+        colors =
+            CheckboxDefaults.colors(
+                checkedColor = MaterialTheme.colorScheme.primary,
+            ),
+    )
+}
+
+private const val CATEGORY_GROUP_STACKED_FONT_SCALE = 1.5f

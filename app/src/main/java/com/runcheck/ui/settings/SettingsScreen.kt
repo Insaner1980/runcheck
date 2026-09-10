@@ -6,7 +6,6 @@ import android.content.Intent
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -22,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
@@ -57,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -81,7 +82,8 @@ import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
-import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.MetricPillItem
+import com.runcheck.ui.components.MetricPillItems
 import com.runcheck.ui.components.MetricPillRow
 import com.runcheck.ui.components.RuncheckCard
 import com.runcheck.ui.components.ScrollableDetailColumn
@@ -126,8 +128,9 @@ fun SettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onNavigateToLearnArticle: (String) -> Unit = {},
-    viewModel: SettingsViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> SettingsViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val activity = context.findActivity()
@@ -352,8 +355,6 @@ fun SettingsScreen(
         onDismiss = { activeInfoSheetState.value = null },
         resolveContent = ::resolveSettingsInfoContent,
     )
-    val resetTipsDoneMessage = stringResource(R.string.settings_reset_tips_done)
-
     SettingsDialogs(
         handles =
             SettingsDialogHandles(
@@ -366,23 +367,9 @@ fun SettingsScreen(
         actions =
             SettingsDialogActions(
                 onConfirmResetThresholds = { viewModel.resetAlertThresholds() },
-                onConfirmResetTips = {
-                    viewModel.resetTips()
-                    Toast
-                        .makeText(
-                            context,
-                            resetTipsDoneMessage,
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                },
+                onConfirmResetTips = { viewModel.resetTips() },
                 onConfirmClearSpeedTests = { viewModel.clearSpeedTests() },
-                onOpenNotificationSettings = {
-                    context.startActivity(
-                        Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
-                        },
-                    )
-                },
+                onOpenNotificationSettings = { openSystemNotificationSettings(context) },
                 onConfirmClearDialog = { viewModel.clearAllData() },
             ),
     )
@@ -395,6 +382,7 @@ private fun SettingsMeasurementSection( // NOSONAR
     onInfoClick: (String) -> Unit,
 ) {
     val context = LocalContext.current
+    val useStackedMetrics = LocalDensity.current.fontScale >= SETTINGS_METRICS_STACKED_FONT_SCALE
     uiState.deviceProfile?.let { profile ->
         SettingsCard {
             CardSectionTitle(text = stringResource(R.string.settings_measurement_info))
@@ -418,75 +406,108 @@ private fun SettingsMeasurementSection( // NOSONAR
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            MetricPillRow(spacing = MaterialTheme.spacing.md) {
-                MetricPill(
-                    label = stringResource(R.string.settings_api_level_label),
-                    value = androidVersionName(profile.apiLevel),
-                    modifier = Modifier.weight(1f),
-                )
-                MetricPill(
-                    label = stringResource(R.string.settings_current_reading_label),
-                    value =
-                        stringResource(
-                            if (profile.currentNowReliable) {
-                                R.string.settings_measurement_reliable
-                            } else {
-                                R.string.settings_measurement_unreliable
-                            },
+            SettingsMeasurementMetricRow(
+                metrics =
+                    listOf(
+                        MetricPillItem(
+                            label = stringResource(R.string.settings_api_level_label),
+                            value = androidVersionName(profile.apiLevel),
                         ),
-                    valueColor =
-                        if (profile.currentNowReliable) {
-                            MaterialTheme.statusColors.healthy
-                        } else {
-                            MaterialTheme.colorScheme.error
-                        },
-                    modifier = Modifier.weight(1f),
-                    onInfoClick = { onInfoClick("currentReading") },
-                )
-            }
-            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            MetricPillRow(spacing = MaterialTheme.spacing.md) {
-                MetricPill(
-                    label = stringResource(R.string.settings_cycle_count_label),
-                    value =
-                        stringResource(
-                            if (profile.cycleCountAvailable) {
-                                R.string.settings_measurement_available
-                            } else {
-                                R.string.settings_measurement_not_available
-                            },
+                        MetricPillItem(
+                            label = stringResource(R.string.settings_current_reading_label),
+                            value =
+                                stringResource(
+                                    if (profile.currentNowReliable) {
+                                        R.string.settings_measurement_reliable
+                                    } else {
+                                        R.string.settings_measurement_unreliable
+                                    },
+                                ),
+                            valueColor =
+                                if (profile.currentNowReliable) {
+                                    MaterialTheme.statusColors.healthy
+                                } else {
+                                    MaterialTheme.colorScheme.error
+                                },
+                            infoKey = "currentReading",
                         ),
-                    modifier = Modifier.weight(1f),
-                    onInfoClick = { onInfoClick("cycleCount") },
-                )
-                MetricPill(
-                    label = stringResource(R.string.settings_thermal_zones_label),
-                    value = profile.thermalZonesAvailable.size.toString(),
-                    modifier = Modifier.weight(1f),
-                    onInfoClick = { onInfoClick("thermalZones") },
-                )
-            }
+                    ),
+                useStackedLayout = useStackedMetrics,
+                onInfoClick = onInfoClick,
+            )
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            MetricPillRow(spacing = MaterialTheme.spacing.md) {
-                val memoryInfo =
-                    remember {
-                        val activityManager =
-                            context.getSystemService(
-                                android.app.ActivityManager::class.java,
-                            )
-                        android.app.ActivityManager
-                            .MemoryInfo()
-                            .also { activityManager?.getMemoryInfo(it) }
-                    }
-                MetricPill(
-                    label = stringResource(R.string.settings_ram_label),
-                    value = formatStorageSize(context, memoryInfo.totalMem),
-                    modifier = Modifier.weight(1f),
-                )
-            }
+            SettingsMeasurementMetricRow(
+                metrics =
+                    listOf(
+                        MetricPillItem(
+                            label = stringResource(R.string.settings_cycle_count_label),
+                            value =
+                                stringResource(
+                                    if (profile.cycleCountAvailable) {
+                                        R.string.settings_measurement_available
+                                    } else {
+                                        R.string.settings_measurement_not_available
+                                    },
+                                ),
+                            infoKey = "cycleCount",
+                        ),
+                        MetricPillItem(
+                            label = stringResource(R.string.settings_thermal_zones_label),
+                            value = profile.thermalZonesAvailable.size.toString(),
+                            infoKey = "thermalZones",
+                        ),
+                    ),
+                useStackedLayout = useStackedMetrics,
+                onInfoClick = onInfoClick,
+            )
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
+            val memoryInfo =
+                remember {
+                    val activityManager =
+                        context.getSystemService(
+                            android.app.ActivityManager::class.java,
+                        )
+                    android.app.ActivityManager
+                        .MemoryInfo()
+                        .also { activityManager?.getMemoryInfo(it) }
+                }
+            SettingsMeasurementMetricRow(
+                metrics =
+                    listOf(
+                        MetricPillItem(
+                            label = stringResource(R.string.settings_ram_label),
+                            value = formatStorageSize(context, memoryInfo.totalMem),
+                        ),
+                    ),
+                useStackedLayout = useStackedMetrics,
+                onInfoClick = onInfoClick,
+            )
         }
     }
 }
+
+@Composable
+private fun SettingsMeasurementMetricRow(
+    metrics: List<MetricPillItem>,
+    useStackedLayout: Boolean,
+    onInfoClick: (String) -> Unit,
+) {
+    if (useStackedLayout) {
+        Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
+            MetricPillItems(items = metrics, onInfoClick = onInfoClick)
+        }
+    } else {
+        MetricPillRow(spacing = MaterialTheme.spacing.md) {
+            MetricPillItems(
+                items = metrics,
+                modifier = Modifier.weight(1f),
+                onInfoClick = onInfoClick,
+            )
+        }
+    }
+}
+
+private const val SETTINGS_METRICS_STACKED_FONT_SCALE = 1.5f
 
 @Composable
 private fun SettingsAboutSection() {
@@ -704,7 +725,13 @@ internal fun SettingsSlider(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(text = label, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(modifier = Modifier.width(MaterialTheme.spacing.xs))
             Text(
                 text = valueLabel,
                 style = MaterialTheme.typography.bodyMedium.copy(fontFamily = MaterialTheme.numericFontFamily),
@@ -751,7 +778,13 @@ internal fun SettingsValueRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(modifier = Modifier.width(MaterialTheme.spacing.xs))
         Text(text = value, style = MaterialTheme.typography.bodyMedium, color = valueColor)
     }
 }
@@ -774,7 +807,13 @@ internal fun SettingsNavigationRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = labelColor)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = labelColor,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(modifier = Modifier.width(MaterialTheme.spacing.xs))
         Icon(
             imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
             contentDescription = null,
@@ -796,31 +835,38 @@ internal fun DataRetention.label(): String =
 private fun List<Int>.indexForValue(value: Int): Int =
     indexOf(value).takeIf { it >= 0 } ?: indices.minBy { index -> abs(this[index] - value) }
 
-private fun openExternalUri(
+internal fun openExternalUri(
     context: android.content.Context,
     uri: String,
 ) {
-    context.startActivity(
+    startActivitySafely(
+        context,
         Intent(Intent.ACTION_VIEW, uri.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
     )
 }
 
-private fun androidVersionName(apiLevel: Int): String =
-    when (apiLevel) {
-        26 -> "Android 8.0"
-        27 -> "Android 8.1"
-        28 -> "Android 9"
-        29 -> "Android 10"
-        30 -> "Android 11"
-        31 -> "Android 12"
-        32 -> "Android 12L"
-        33 -> "Android 13"
-        34 -> "Android 14"
-        35 -> "Android 15"
-        36 -> "Android 16"
-        37 -> "Android 17"
-        else -> "API $apiLevel"
-    }
+@Composable
+private fun androidVersionName(apiLevel: Int): String {
+    val versionName =
+        when (apiLevel) {
+            26 -> "8.0"
+            27 -> "8.1"
+            28 -> "9"
+            29 -> "10"
+            30 -> "11"
+            31 -> "12"
+            32 -> "12L"
+            33 -> "13"
+            34 -> "14"
+            35 -> "15"
+            36 -> "16"
+            37 -> "17"
+            else -> null
+        }
+
+    return versionName?.let { stringResource(R.string.settings_android_version, it) }
+        ?: stringResource(R.string.settings_api_level_value, apiLevel)
+}
 
 private fun resolveSettingsInfoContent(key: String): InfoSheetContent? =
     when (key) {
@@ -833,7 +879,7 @@ private fun resolveSettingsInfoContent(key: String): InfoSheetContent? =
 internal fun shareExportUris(
     context: android.content.Context,
     exportUriStrings: List<String>,
-) {
+): Boolean {
     val parsedUris = exportUriStrings.map { it.toUri() }
     val shareIntent =
         if (parsedUris.size == 1) {
@@ -855,8 +901,23 @@ internal fun shareExportUris(
             }
         }
     val chooserTitle = context.getString(R.string.settings_export_share_title)
-    context.startActivity(Intent.createChooser(shareIntent, chooserTitle))
+    return startActivitySafely(context, Intent.createChooser(shareIntent, chooserTitle))
 }
+
+internal fun startActivitySafely(
+    context: android.content.Context,
+    intent: Intent,
+): Boolean =
+    try {
+        context.startActivity(intent)
+        true
+    } catch (exception: android.content.ActivityNotFoundException) {
+        ReleaseSafeLog.warn(TAG, "Failed to open external activity", exception)
+        false
+    } catch (exception: SecurityException) {
+        ReleaseSafeLog.warn(TAG, "External activity launch was denied", exception)
+        false
+    }
 
 internal val LOW_BATTERY_THRESHOLD_VALUES =
     (AlertThresholds.MIN_BATTERY_PERCENT..AlertThresholds.MAX_BATTERY_PERCENT step 5).toList()

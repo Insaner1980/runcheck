@@ -28,7 +28,7 @@ jobs:
         with:
           python-version: '3.13'
       - name: Install Semgrep
-        run: python -m pip install --disable-pip-version-check semgrep==1.171.0
+        run: python -m pip install --disable-pip-version-check semgrep==1.175.0
       - run: >
           semgrep scan
           --error
@@ -44,7 +44,11 @@ jobs:
           --output semgrep.sarif
           .
       - uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
-        if: always() && hashFiles('semgrep.sarif') != ''
+        if: >-
+          always() &&
+          hashFiles('semgrep.sarif') != '' &&
+          (github.event_name != 'pull_request' ||
+          (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository))
         with:
           sarif_file: semgrep.sarif
           category: semgrep

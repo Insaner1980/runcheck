@@ -26,6 +26,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.runcheck.R
+import com.runcheck.domain.model.Confidence
 
 class BatteryWidget : GlanceAppWidget() {
     companion object {
@@ -64,8 +65,11 @@ class BatteryWidget : GlanceAppWidget() {
         val levelText = context.getString(R.string.widget_percent_value, snapshot.level)
         val tempText = context.getString(R.string.widget_temperature_value, snapshot.temperatureC)
         val currentDisplay =
-            snapshot.currentMa?.let {
-                context.getString(R.string.widget_current_value, it)
+            snapshot.currentMa?.let { currentMa ->
+                val value = context.getString(R.string.widget_current_value, currentMa)
+                batteryWidgetCurrentLabelRes(snapshot.currentConfidence)?.let { labelRes ->
+                    context.getString(labelRes, value)
+                } ?: value
             }
 
         GlanceTheme {
@@ -124,6 +128,9 @@ class BatteryWidget : GlanceAppWidget() {
         }
     }
 }
+
+internal fun batteryWidgetCurrentLabelRes(confidence: Confidence?): Int? =
+    R.string.value_with_estimated_badge.takeIf { confidence == Confidence.LOW }
 
 class BatteryWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = BatteryWidget()

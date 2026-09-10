@@ -56,8 +56,9 @@ import com.runcheck.ui.theme.uiTokens
 fun ProUpgradeScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: ProUpgradeViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> ProUpgradeViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
@@ -224,6 +225,7 @@ private fun ProActiveContent() {
         modifier =
             Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(MaterialTheme.spacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,

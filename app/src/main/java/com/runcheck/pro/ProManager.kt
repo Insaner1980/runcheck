@@ -44,10 +44,11 @@ class ProManager
         fun initialize() {
             if (initialized) return
             initialized = true
+            val purchaseState = proPurchaseManager.isProUser
+            updateProState(purchaseState.value)
             scope.launch {
                 try {
                     proPurchaseManager.awaitPurchaseStatusReady()
-                    val purchaseState = proPurchaseManager.isProUser
                     updateProState(purchaseState.value)
                     _isProStatusReady.value = true
                     purchaseState.collect { isPurchased ->

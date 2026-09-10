@@ -36,8 +36,14 @@ class NetworkDrivenBatteryDrainRule
         override suspend fun loadSamples(now: Long): NetworkDrainSamples? = loadInput(now)?.let(::classifyDrainSamples)
 
         private suspend fun loadInput(now: Long): NetworkDrainInput? {
-            val batteryReadings = batteryRepository.getReadingsSinceSync(now - LOOKBACK_MS)
-            val networkReadings = networkRepository.getReadingsSinceSync(now - LOOKBACK_MS)
+            val batteryReadings =
+                batteryRepository
+                    .getReadingsSinceSync(now - LOOKBACK_MS)
+                    .filter { reading -> reading.timestamp <= now }
+            val networkReadings =
+                networkRepository
+                    .getReadingsSinceSync(now - LOOKBACK_MS)
+                    .filter { reading -> reading.timestamp <= now }
             if (batteryReadings.size < MINIMUM_BATTERY_READING_COUNT ||
                 networkReadings.size < MINIMUM_NETWORK_READING_COUNT
             ) {

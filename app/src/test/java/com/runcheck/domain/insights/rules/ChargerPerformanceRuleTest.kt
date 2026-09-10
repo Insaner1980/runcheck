@@ -149,6 +149,46 @@ class ChargerPerformanceRuleTest {
             )
         }
 
+    @Test
+    fun `selects the slowest comparable charger when more than two are saved`() =
+        runTest {
+            val chargers =
+                listOf(
+                    ChargerProfile(1L, "Fast Charger", NOW - 30L * DAY_MS),
+                    ChargerProfile(2L, "Recent Charger", NOW - 25L * DAY_MS),
+                    ChargerProfile(3L, "Slow Charger", NOW - 20L * DAY_MS),
+                )
+            val sessions =
+                listOf(
+                    session(1L, NOW - 12L * DAY_MS, 30_000),
+                    session(1L, NOW - 10L * DAY_MS, 30_000),
+                    session(3L, NOW - 8L * DAY_MS, 15_000),
+                    session(3L, NOW - 6L * DAY_MS, 15_000),
+                    session(2L, NOW - 2L * DAY_MS, 26_000),
+                    session(2L, NOW - 1L * DAY_MS, 26_000),
+                )
+            val rule = ChargerPerformanceRule(FakeChargerRepository(chargers, sessions))
+
+            val insight = rule.evaluate(NOW).single()
+
+            assertEquals("charger:3:50plus", insight.dedupeKey)
+            assertEquals("Slow Charger", insight.bodyArgs[0])
+        }
+
+    @Test
+    fun `ignores future completed sessions`() =
+        runTest {
+            val sessions =
+                listOf(
+                    session(1L, NOW - DAY_MS, 30_000),
+                    session(1L, NOW + DAY_MS, 30_000),
+                    session(2L, NOW - DAY_MS, 15_000),
+                    session(2L, NOW + DAY_MS, 15_000),
+                )
+
+            assertTrue(evaluate(sessions).isEmpty())
+        }
+
     private suspend fun evaluate(
         sessions: List<ChargingSession>,
         firstChargerName: String = "Fast Brick",

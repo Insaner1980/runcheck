@@ -29,9 +29,10 @@ class AppUsageDataSource
             endTimeMs: Long,
         ): List<AppUsageSnapshot>? =
             withContext(dispatchers.io) {
-                if (endTimeMs <= startTimeMs || !hasUsageStatsPermission()) {
+                if (endTimeMs <= startTimeMs) {
                     return@withContext emptyList()
                 }
+                if (!hasUsageStatsPermission()) return@withContext null
 
                 val manager = usageStatsManager ?: return@withContext null
                 val eventQueryStart = (startTimeMs - EVENT_STATE_LOOKBACK_MS).coerceAtLeast(0L)
@@ -199,7 +200,7 @@ internal fun aggregateForegroundUsage(
             UsageActivityEventType.DEVICE_SHUTDOWN,
             UsageActivityEventType.DEVICE_STARTUP,
             -> {
-                Unit
+                // Handled before package state lookup.
             }
         }
     }

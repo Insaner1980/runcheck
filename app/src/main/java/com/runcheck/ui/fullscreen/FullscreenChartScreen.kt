@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.Button
@@ -38,6 +39,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -78,8 +82,9 @@ fun FullscreenChartScreen(
     modifier: Modifier = Modifier,
     onUpgradeToPro: () -> Unit = {},
     onSelectionChange: (source: String, metric: String, period: String) -> Unit = { _, _, _ -> },
-    viewModel: FullscreenChartViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> FullscreenChartViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     val activity = LocalContext.current.findActivity()
     DisposableEffect(activity) {
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
@@ -143,7 +148,13 @@ fun FullscreenChartScreen(
         when (val state = uiState) {
             is FullscreenChartUiState.Loading -> {
                 Box(contentModifier, contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    val loadingDescription = stringResource(R.string.a11y_loading)
+                    CircularProgressIndicator(
+                        modifier =
+                            Modifier.semantics {
+                                contentDescription = loadingDescription
+                            },
+                    )
                 }
             }
 
@@ -238,7 +249,10 @@ private fun FullscreenChartScaffold(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f),
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .semantics { heading() },
                     )
                 }
 
@@ -391,7 +405,10 @@ private fun FullscreenChartEmptyContent(
 ) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Column(
-            modifier = Modifier.widthIn(max = 420.dp),
+            modifier =
+                Modifier
+                    .widthIn(max = 420.dp)
+                    .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(

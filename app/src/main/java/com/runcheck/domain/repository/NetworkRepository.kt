@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 interface NetworkRepository {
     fun getNetworkState(): Flow<NetworkState>
 
-    suspend fun measureLatency(): Int?
+    suspend fun measureLatency(expectedNetworkHandle: Long? = null): Int?
 
     suspend fun saveReading(state: NetworkState)
 

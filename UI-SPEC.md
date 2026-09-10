@@ -1,10 +1,18 @@
 # UI-SPEC.md - runcheck UI Reference
 
-Code-derived visual specification for the runcheck Android app.
+Code-derived visual specification and implementation contract for the runcheck Android app.
 
-This file describes only the UI that exists in the current Compose codebase.
+This file describes the UI that exists in the current Compose codebase and the
+constraints that new UI work must preserve. Any deliberate legacy exception is
+identified as an exception instead of being presented as a reusable pattern.
 
-Audit date: 2026-07-06
+Last source-backed refresh: **2026-08-31**.
+
+The refresh describes branch `codex/julkaise-paikalliset-muutokset-20260726`
+at base product-code commit `0eec4dd74cd11646a39e4d847d5ad6b3fb177085`, plus the current Home
+health-gauge implementation and the coordinated updates to `PROJECT.md` and
+this file. When a visual claim conflicts with executable Compose/theme code,
+the code is current truth and both companion documents must be corrected together.
 
 Primary source files:
 
@@ -48,6 +56,13 @@ Current global constraints:
 - Cards are flat by default: zero tonal elevation and zero shadow elevation.
 - General cards have no border.
 - `ActionCard` and explicit outline buttons use 1dp outlines.
+- New cards, rows, sections, and surfaces must not add colored borders,
+  decorative side stripes, or framing. The existing production `InfoCard`
+  accent line and preview-only `GridCard` status strip are documented legacy
+  exceptions, not patterns to extend.
+- New user-facing copy must not use U+00B7 `MIDDLE DOT` as a separator. Existing
+  legacy resource/helper usages are recorded in section 14 and must not be
+  copied into new UI.
 - Primary UI icons use `Icons.Outlined` or `Icons.AutoMirrored.Outlined`.
 - Body text uses Manrope.
 - Large numeric values and chart labels use JetBrains Mono.
@@ -162,6 +177,31 @@ Storage media category colors from `categoryColor()`:
 | APK | `onSurfaceVariant` |
 | Other | `outline` |
 
+### 2.4 Home Dashboard Palette
+
+`HomeTheme.kt` scopes the September 6 reference palette to Home. Other routes
+retain `RuncheckColorScheme`. Home remains a single dark surface, with no theme toggle.
+
+| Role | Token | Color |
+|---|---|---|
+| Page | `HomeBackground` | `#10110F` |
+| Insight card | `HomeSurface` | `#20211D` |
+| Battery / App usage | `HomeCream` | `#E9E6DC` |
+| Thermal / primary action / gauge | `HomePeach` | `#EDA079` |
+| Network / Speed test | `HomeStone` | `#A3A198` |
+| Storage / Learn | `HomeGraphite` | `#5C5D57` |
+| Dark text | `HomeInk` | `#10110F` |
+| Secondary text | `HomeMuted` | `#B5B5AE` |
+| Healthy badge | `HomeGreen` | `#8AD5AE` |
+| Poor badge | `HomeOrange` | `#E98548` |
+| Critical badge | `HomeRed` | `#F16C54` |
+
+Category fills are fixed, independent of severity. The textual badge carries
+status. The peach gauge is a fixed design accent; its fill count and textual
+verdict carry the result. These are explicit Home exceptions to the general
+neutral-gauge and small-status-color rules. Legacy `Category*` and `Tile*`
+declarations in `Color.kt` are not the Home palette.
+
 ---
 
 ## 3. Typography
@@ -213,13 +253,32 @@ All styles below use JetBrains Mono.
 
 Common usage:
 
-- Hero values on Home/Battery/Thermal/Storage use `numericHeroDisplayTextStyle`
-  or `numericHeroLargeValueTextStyle`.
+- Battery, Thermal, and Storage detail heroes use
+  `numericHeroDisplayTextStyle` or `numericHeroLargeValueTextStyle`.
+- Home's overall score uses the separate `homeHealthScoreTextStyle`; Home
+  status-tile values deliberately use Manrope rather than the numeric font.
 - Detail metric hero values use `numericMetricDisplayTextStyle`.
 - Trend chart axes and tooltips use chart numeric styles.
 - `MetricRow`, `MetricPill`, app usage size values, cleanup file sizes, and
   settings numeric values use JetBrains Mono where code applies
   `MaterialTheme.numericFontFamily`.
+
+### 3.3 Home-Specific Typography
+
+The Home overall-score styles and status-tile scale are defined separately in
+`Type.kt` so their optical layout is not inferred from the general Material
+scale.
+
+| Extension | Font and exact contract |
+|---|---|
+| `homeHealthScoreTextStyle` | JetBrains Mono, 52sp Bold, `0.9.em` line height, `-0.07.em` letter spacing, font padding disabled |
+| `homeHealthScoreUnitTextStyle` | JetBrains Mono, 20sp SemiBold, 20sp line height, font padding disabled |
+| `homeHealthStatusTextStyle` | Manrope, 18sp SemiBold, 22sp line height, `-0.025.em` letter spacing, font padding disabled |
+| `homeHealthContextTextStyle` | Manrope, 14sp Normal |
+| `homeStatusTileTypeScale.category` | Manrope, 15sp SemiBold, font padding disabled |
+| `homeStatusTileTypeScale.value` | Manrope, 40sp Bold, 40sp tight line height, `-0.03.em` letter spacing, tabular numbers |
+| `homeStatusTileTypeScale.suffix` | Manrope, 13sp SemiBold, font padding disabled |
+| `homeStatusTileTypeScale.status` | Manrope, 12sp SemiBold, 15sp tight line height, font padding disabled |
 
 ---
 
@@ -277,6 +336,7 @@ Defined in `UiTokens.kt`.
 | `iconMedium` | 18dp |
 | `iconLarge` | 20dp |
 | `iconXLarge` | 24dp |
+| `iconXXLarge` | 32dp |
 | `iconCircle` | 44dp |
 | `iconCircleInner` | 22dp |
 | `compactIconCircle` | 36dp |
@@ -284,6 +344,14 @@ Defined in `UiTokens.kt`.
 | `celebrationIcon` | 80dp |
 | `primaryButtonHeight` | 56dp |
 | `compactButtonHeight` | 52dp |
+| `homePrimaryActionHeight` | 48dp |
+| `homeStatusTileGap` | 8dp |
+| `homeStatusTileCornerRadius` | 20dp |
+| `homeStatusTileHeight` | 128dp minimum baseline |
+| `homeStatusTileCategoryTop` | 12dp |
+| `homeStatusTileStatusGap` | 4dp |
+| `homeStatusTileValueSuffixGap` | 4dp |
+| `homeStatusTilePaddingHorizontal` | 16dp |
 | `badgeHorizontalPadding` | 12dp |
 | `badgeVerticalPadding` | 4dp |
 | `proBadgeHorizontalPadding` | 8dp |
@@ -448,7 +516,10 @@ Screen-specific scroll containers:
 
 ### 7.1 GridCard
 
-Used on Home grid metrics.
+`GridCard` currently has no production-screen call site; it is rendered only by
+`ComponentPreviews`. Home uses `HomeStatusTiles` instead. Keep this component's
+current behavior documented for source review, but do not use it as a template
+for new Home work or extend its decorative status strip.
 
 - Card shape: large 16dp.
 - Colors: `runcheckCardColors()`.
@@ -774,6 +845,59 @@ Fullscreen chart controls:
 - 4dp spacer.
 - Metric chips second.
 
+### 7.23 Runcheck Card Primitives
+
+`RuncheckCard`, `RuncheckCardSurface`, and `RuncheckClickableCard` are the
+standard reusable card containers introduced for repeated screen structure.
+
+- All fill the available width, use `shapes.large`, `runcheckCardColors()`, and
+  `runcheckCardElevation()`.
+- `RuncheckCard` supplies a full-width `Column`, 16dp default content padding,
+  start alignment, and caller-configurable vertical arrangement.
+- `RuncheckCardSurface` owns only the flat card surface for non-column content.
+- `RuncheckClickableCard` supplies the clickable flat card and a padded
+  full-width `Column`.
+- None of these primitives adds a border, side stripe, or shadow.
+
+### 7.24 Observed Screen and State Primitives
+
+`ObservedScreenScaffold` owns the repeated screen shell used by Home, Battery,
+Thermal, and Speed Test:
+
+- Calls `LifecycleStartStopEffect(onStart, onStop)`.
+- Fills the available size with a `Column`.
+- Renders the supplied top bar before screen content.
+
+`observedScreenState` packages the current UI state, refresh state, and the
+localized loading accessibility description. `CenteredLoadingState` fills the
+available space, centers a `CircularProgressIndicator`, and exposes a polite
+live-region loading description. `CenteredRetryState` centers an error message
+and localized text retry action.
+
+### 7.25 Detail Column Primitives
+
+`ScrollableDetailColumn` standardizes the non-lazy detail layout:
+
+- Fills the available size and owns its vertical scroll state.
+- Uses 16dp horizontal padding.
+- Uses 12dp vertical spacing between children.
+
+`RefreshableDetailColumn` wraps that column in `PullToRefreshWrapper` and adds
+the standard 32dp footer spacer. Battery, Network, and Storage use this shared
+path; Thermal intentionally keeps its lazy-list variant.
+
+### 7.26 Repeated Metric and Section Primitives
+
+- `ProgressHeroMetric` renders a 100dp `ProgressRing` with 6dp stroke, a 24dp
+  ring/content gap, the 64sp numeric hero value, 28sp unit, and caller-supplied
+  supporting content. Battery and Storage heroes reuse it.
+- `MetricPillRow` is a full-width row with a default 16dp gap and top vertical
+  alignment; callers may override both.
+- `SectionDivider` places an `outlineVariant` divider at 35 percent alpha
+  between two 8dp spacers.
+- `CardSectionTitle` delegates directly to `SectionHeader`, preserving uppercase
+  label styling and heading semantics.
+
 ---
 
 ## 8. Chart System
@@ -1002,123 +1126,96 @@ Trend threshold:
 
 ### 9.1 Home
 
-Structure:
+- `HomeTheme` wraps the existing `ObservedScreenScaffold`, including loading,
+  error, and success states. Observation, refresh, and navigation ownership stay unchanged.
+- `PrimaryTopBar` shows runcheck and the 32dp outlined Settings icon. Home uses
+  20sp SemiBold header text and the new page background behind system-bar insets.
+- Successful content uses `ContentContainer`, one vertical scroll fallback, 16dp
+  page padding, and navigation-bar padding. The content remains capped at 600dp.
+- Home selects a compact portrait layout when the safe content viewport below the
+  top bar is shorter than 840dp and font scale is below 1.5. The compact layout
+  keeps the complete base dashboard visible on a 360x800dp phone with three-button
+  navigation. Enlarged text, extra insight content, stale-monitoring content, and
+  unusually short viewports retain scrolling instead of clipping content.
+- Order: health gauge, Full Check, persisted insights, conditional stale-monitoring
+  warning, status mosaic, and tool mosaic. Normal section gaps are 12dp.
+- The previous Quick Tools heading, list dividers, and Pro unlocked card are removed.
+  App usage retains its Pro badge and purchase routing; Settings retains Pro status.
 
-- `PrimaryTopBar` with app name and settings action.
-- `ContentContainer`.
-- Vertical scroll column.
-- Horizontal padding: 16dp.
-- `navigationBarsPadding()`.
-- Top spacer: 4dp.
-- Major section spacers: commonly 12dp and 24dp.
-- Bottom spacer: 32dp.
-- Wide layout threshold: `screenWidthDp >= 600`.
+Health hero and refresh:
 
-Health score card:
+- No enclosing card, border, or elevation. Gauge adds 24dp horizontal inset,
+  increased to 40dp in compact-height layouts so its width-derived height shrinks
+  without scaling or clipping its text.
+- 22 rounded trapezoids span 168 degrees in a box with aspect ratio 1.9.
+  The band is 36dp thick with a 2dp outer inset.
+- Filled segments advance left to right, rounded from the clamped score:
+  100 -> 22, 74 -> 16, 48 -> 11, 22 -> 5. Gauge and score use HomePeach;
+  inactive segments use `surfaceContainerHighest` (`#2C2D28`).
+- Score: 52sp JetBrains Mono Bold. Unit: 20sp JetBrains Mono. Verdict: 18sp Manrope.
+- Font scale >= 1.5 moves score and verdict below the arc. The gauge retains
+  the health-score description and verdict semantics with a polite live region.
+- Centered update age uses 14sp Manrope: Updated just now for the first minute,
+  then pluralized minutes. It advances at minute boundaries and clamps future timestamps.
+- Run full check: full width, minimum 48dp, 20dp corners, peach fill, dark 17sp
+  SemiBold text, zero elevation. Running state disables duplicate taps and shows
+  the existing spinner and semantics. The 900ms minimum and 12s timeout are unchanged.
 
-- Hero card uses `BgCardDeep`.
-- Column padding: 24dp horizontal and 24dp vertical.
-- Center aligned.
-- Header: `SectionHeader`.
-- Header/value gap: 24dp.
-- Score: `numericHeroDisplayTextStyle` 64sp.
-- Unit/percent: `numericHeroDisplayUnitTextStyle` 28sp.
-- Unit padding: start 4dp, bottom 12dp.
-- Status summary: `bodyLarge`.
-- Optional high-temperature warning: `bodySmall`, poor status color.
-- Category bar follows after 24dp.
+Status mosaic:
 
-Health category bar:
+- Fixed category positions: Battery / Thermal, then Storage / Network.
+- First row weights 0.55 / 0.45 and a -12dp bounding-box gap accommodate
+  complementary 20dp curved edges with a visible 8dp separation.
+- Second row weights 0.63 / 0.37 with an 8dp gap. Each row matches its tallest
+  tile using intrinsic height, and each tile has a 128dp minimum height.
+- Tiles use 20dp corners, 16dp horizontal and 12dp vertical padding. The curved
+  Battery and Thermal edges reserve an additional 20dp on their shared side.
+- Compact-height layouts use a 112dp minimum tile height and 8dp vertical padding;
+  regular layouts retain the 128dp minimum and 12dp vertical padding.
+- Content flows vertically rather than using absolute text anchors. Enlarged
+  text (font scale >= 1.5 or available width / font scale < 320dp) switches to
+  a single column with ordinary rounded corners.
+- Category: 15sp SemiBold Manrope. Battery value: 40sp, Thermal/Storage: 30sp, Network: 28sp.
+  Units: 13sp; a unit can wrap below a long value instead of truncating the number. Text badges: 12sp SemiBold, with 10dp/4dp horizontal/vertical padding.
+- Battery: actual charge level and existing battery-health verdict.
+- Thermal: actual battery temperature in the user's chosen unit and threshold label.
+- Storage: actual free capacity, used/total capacity, neutral usage progress bar,
+  and existing storage-pressure verdict.
+- Network: signal dBm and signal-quality verdict; disconnected states remain unrated.
+- Every tile retains its matching detail destination. Status thresholds and
+  measurement sources are unchanged.
 
-- Four equal segments.
-- Row gap: 3dp.
-- Segment height: 6dp.
-- Segment corner radius: 4dp.
-- Labels appear after 4dp.
-- Labels: `labelSmall`.
-- A disconnected network segment and label use the unavailable color instead of a critical status color.
+Insights:
 
-Health breakdown row:
+- The existing ranked subset of up to three persisted insights appears immediately
+  below Full Check. No sample diagnosis or sample reading is hardcoded.
+- `InsightsCard` uses compact `InsightRow` presentation without the leading
+  warning icon circle or section heading. Dismiss, destination arrows, unseen
+  count, and View all when additional insights exist remain available.
+- Full Insights retains the existing full row presentation.
+- The stale-monitoring warning retains its battery-optimization settings and
+  Learn Why actions and appears only for stale monitoring.
 
-- Minimum height: 48dp.
-- Optional clickable behavior.
-- Vertical padding: 12dp.
-- Status dot before text.
-- Status dot trailing gap: 8dp.
-- A disconnected network row shows `Unrated` with the unavailable status color instead of `0%` with critical styling.
-- Numeric value: `titleMedium` with JetBrains Mono.
+Tool mosaic:
 
-Home status mosaic:
+- Left column: cream App usage above graphite Learn. Right column: stone Speed
+  test spanning both rows. The lower shared edge uses `HomeTileShape` curves.
+- 8dp gaps, 16dp inner padding, 24dp outlined icons, 16sp SemiBold titles,
+  and 13sp descriptive text. Each regular tool has at least 84dp height and grows with text.
+- Compact-height tools keep the same mosaic, icon, title, destination, shape, and
+  touch behavior, use 12dp vertical padding and a 76dp minimum height, and omit the
+  secondary descriptions. Regular-height layouts continue to show the descriptions.
+- Narrow or enlarged-text layouts stack tools vertically. App usage still routes
+  free users to Pro upgrade. Speed test is navigation only; it does not start a test.
 
-- Fixed two-column layout with 12dp gaps and an effective 20dp page inset.
-- Slot A spans both columns and has a 168dp minimum height.
-- Slot B is the left column below A and has a 268dp minimum height.
-- Slots C and D stack in the right column and each have a 128dp minimum
-  height.
-- Battery always occupies B. Network, Thermal, and Storage are sorted by their
-  measurement assessment, worst first, into A, C, and D. Equal severities use
-  Network, Thermal, Storage order.
-- Healthy tiles use the fixed category color at full saturation: Battery
-  `#3EA391`, Network `#5A96C9`, Thermal `#CE8A45`, Storage `#8A9A38`.
-- Healthy tile text uses the page background color at full opacity.
-- Fair, Poor, and Critical tiles use `surfaceContainer`. Their category and
-  context use `onSurfaceVariant`, values use `onSurface`, and the status word
-  uses the matching status color.
-- All tile typography, including numeric values and suffixes, uses Manrope.
-- Network shows signal dBm as the main value, followed after 6dp by the Wi-Fi
-  standard or the mobile generation/carrier descriptor in the slot suffix
-  style.
-- Battery tier comes from `batteryScore`; Network from `signalQuality`; Thermal
-  from the existing temperature thresholds; Storage from the existing usage
-  thresholds.
-- Tile corners are 22dp.
-- Tile padding is 18dp top, 17dp horizontal, and 20dp bottom.
-- Category labels stay at the top and value blocks stay pinned to the bottom.
-- Tiles have no icons, badges, borders, dividers, overlays, or decorative
-  status marks.
-- Each tile opens its matching detail screen.
-- Slot-specific type scales live in `Type.kt`; mosaic dimensions live in
-  `UiTokens`.
+Typography and source map:
 
-Quick tools:
-
-- Section header.
-- Header/card gap: 8dp.
-- Container card: large shape, `surfaceContainer`.
-- Card padding: horizontal 16dp, vertical 4dp.
-- Rows are `ListRow`.
-- Dividers use outlineVariant alpha 0.35.
-- App usage row can show a locked overlay with scrim alpha 0.14 and a
-  trailing `ProBadgePill`.
-
-Home insights card:
-
-- Column gap: 8dp.
-- Header row gap: 8dp.
-- Unseen badge:
-  - Background: `secondaryContainer.copy(alpha = 0.7f)`.
-  - Shape: `RoundedCornerShape(999.dp)`.
-  - Padding: horizontal 8dp, vertical 4dp.
-  - Text: `labelMedium` on secondary container.
-
-Insight row:
-
-- Card shape: large.
-- Background: `surfaceContainer`.
-- Row padding: 16dp.
-- Row gap: 12dp.
-- Leading icon circle uses priority tint:
-  - High: critical.
-  - Medium: poor.
-  - Low: fair.
-- Title: `titleMedium`.
-- Body: `bodyMedium`.
-- Dismiss button: 48dp, icon 18dp.
-- Optional arrow icon: 20dp.
-
-Pro status on Home:
-
-- `HomeProStatusSection` appears only for verified purchased Pro access.
+- Home binds the bundled variable Manrope font to explicit 400/500/600/700
+  weights using `FontVariation.Settings`; the bundled font's default is 200.
+  This font binding is scoped to Home and its tile type scale.
+- Geometry: `UiTokens.kt`, `HomeTileShape.kt`, `HomeStatusTiles.kt`.
+- Palette and font binding: `HomeTheme.kt`; type scale: `Type.kt`.
+- Gauge and state regressions: `HomeScreenTest`, `HomeViewModelTest`.
 
 ### 9.2 Battery Detail
 
@@ -2151,6 +2248,7 @@ Current top-level Home destinations:
 - Network.
 - Thermal.
 - Storage.
+- Speed Test.
 - App Usage.
 - Insights.
 - Learn.
@@ -2204,7 +2302,8 @@ UI behavior:
   16dp.
 - Pro upgrade content uses 24dp horizontal padding.
 - Thermal hero uses 24dp horizontal/vertical padding.
-- Home health hero uses 24dp horizontal/vertical padding.
+- Home's overall health hero is intentionally not a card. It uses the 16dp
+  screen inset plus 24dp local inset and no internal padding or background.
 - Battery, Network, and Storage detail heroes use 16dp padding.
 - Fullscreen chart top bar uses 8dp horizontal padding and 4dp vertical
   padding.
@@ -2213,17 +2312,30 @@ UI behavior:
 - Cleanup bottom spacer is 80dp to clear the bottom action bar.
 - Open-source licenses dialog text is capped at 420dp height.
 - Fullscreen empty content is capped at 420dp width.
-- Home status mosaic keeps the same slot geometry at every screen width.
+- Home status tiles use the two-row mosaic from section 9.1; narrow widths and
+  enlarged font metrics switch to a single column. Content may grow above 128dp.
 - `ContentContainer` caps content at 600dp even on wider screens.
-- `BgCardDeep` exists and is used for hero cards, even though the older
-  background table may not mention it.
+- `BgCardDeep` is used by Battery, Network, Thermal, and Storage detail heroes,
+  but not by the current Home health hero.
 - Storage document/APK category colors currently use `onSurfaceVariant`, not a
   bright accent.
 - Download category color is `AccentBlue.copy(alpha = 0.6f)`.
+- `GridCard` still contains an optional 4dp colored status strip but has no
+  production-screen call site; it is preview-only. `InfoCard` still renders a
+  3dp primary accent line on Battery, Network, Thermal, and Storage detail
+  screens. These are existing code exceptions to the no-decorative-stripe rule
+  and must not be propagated to new components.
+- Existing code still contains U+00B7 separator copy in selected string
+  resources and formatting helpers, including `strings.xml`,
+  `ThermalDetailScreen.kt`, `ChartRenderModel.kt`, and
+  `BatteryDetailScreen.kt`. It is legacy behavior, not the separator contract
+  for new UI text.
 
 ---
 
 ## 15. Source of Truth
 
-If this document conflicts with code, the code is the current truth. The
-document should be updated from the source files listed at the top of this file.
+If this document conflicts with code, the code is the current truth. Update
+this file and `PROJECT.md` together when a visual-system or current Home UI fact
+changes. Do not treat preview-only components as evidence of production-screen
+usage, and do not turn a documented legacy exception into a new design pattern.

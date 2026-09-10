@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -244,8 +245,9 @@ internal fun NotificationsSection( // NOSONAR
                 color = MaterialTheme.colorScheme.error,
                 modifier =
                     Modifier
+                        .defaultMinSize(minHeight = MaterialTheme.uiTokens.touchTarget)
                         .padding(horizontal = MaterialTheme.spacing.xs)
-                        .clickable { openSystemNotificationSettings(context) },
+                        .clickable(role = Role.Button) { openSystemNotificationSettings(context) },
             )
         }
     }
@@ -614,8 +616,9 @@ private fun openBatteryOptimizationSettings(context: android.content.Context) {
     }
 }
 
-private fun openSystemNotificationSettings(context: android.content.Context) {
-    context.startActivity(
+internal fun openSystemNotificationSettings(context: android.content.Context) {
+    startActivitySafely(
+        context,
         Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
             putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
         },

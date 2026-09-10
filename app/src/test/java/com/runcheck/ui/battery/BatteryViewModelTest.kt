@@ -375,7 +375,7 @@ class BatteryViewModelTest {
         }
 
     @Test
-    fun `stats stay intact through plugged status flaps`() =
+    fun `stats reset through plugged status changes`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val batteryFlow = startBatteryFlow()
 
@@ -388,22 +388,25 @@ class BatteryViewModelTest {
                     ),
                     makeBatteryState(
                         currentMa = 1200,
-                        chargingStatus = ChargingStatus.FULL,
+                        chargingStatus = ChargingStatus.CHARGING,
                         plugType = PlugType.USB,
                     ),
+                )
+
+                batteryFlow.emitSample(
                     makeBatteryState(
-                        currentMa = 1000,
+                        currentMa = -1000,
                         chargingStatus = ChargingStatus.NOT_CHARGING,
                         plugType = PlugType.USB,
                     ),
                 )
 
-                val stats = (viewModel.uiState.value as BatteryUiState.Success).currentStats
-                requireNotNull(stats)
-                assertEquals(3, stats.sampleCount)
-                assertEquals(1233, stats.avg)
-                assertEquals(1000, stats.min)
-                assertEquals(1500, stats.max)
+                val statsAfterStatusChange =
+                    (viewModel.uiState.value as BatteryUiState.Success).currentStats
+                assertNull(
+                    "Stats should reset when charging status changes without unplugging",
+                    statsAfterStatusChange,
+                )
             } finally {
                 viewModel.stopObserving()
             }

@@ -31,9 +31,9 @@ class UiFormattersTest {
     }
 
     @Test
-    fun `throwable message resource helper prefers non blank messages and falls back otherwise`() {
+    fun `throwable message resource helper never exposes raw exception text`() {
         assertEquals(
-            UiText.Dynamic("Network failed"),
+            UiText.Resource(R.string.common_error_generic),
             IllegalStateException("Network failed").messageOrRes(R.string.common_error_generic),
         )
         assertEquals(

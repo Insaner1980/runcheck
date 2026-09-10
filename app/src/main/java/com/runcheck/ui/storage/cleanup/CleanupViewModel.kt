@@ -19,7 +19,6 @@ import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.common.UiText
 import com.runcheck.util.ReleaseSafeLog
 import com.runcheck.util.api29RecoverableDeleteAction
-import com.runcheck.util.getEnumOrDefault
 import com.runcheck.util.getIntOrDefault
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -47,8 +46,11 @@ class CleanupViewModel
         private val observeProAccess: ObserveProAccessUseCase,
         private val isProUser: IsProUserUseCase,
     ) : ViewModel() {
-        val cleanupType: CleanupType =
-            savedStateHandle.getEnumOrDefault("type", CleanupType.LARGE_FILES)
+        private val parsedCleanupType =
+            savedStateHandle.get<String>("type")?.let { value ->
+                CleanupType.entries.firstOrNull { it.name == value }
+            }
+        val cleanupType: CleanupType = parsedCleanupType ?: CleanupType.LARGE_FILES
 
         private val _uiState = MutableStateFlow<CleanupUiState>(CleanupUiState.Idle)
         val uiState: StateFlow<CleanupUiState> = _uiState.asStateFlow()
@@ -178,6 +180,10 @@ class CleanupViewModel
                             CleanupUiState.Error(
                                 UiText.Resource(R.string.pro_feature_locked_generic),
                             )
+                        return@launch
+                    }
+                    if (parsedCleanupType == null) {
+                        _uiState.value = CleanupUiState.Error(UiText.Resource(R.string.common_error_generic))
                         return@launch
                     }
                     if (isVersionRestrictedCleanup() && Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
@@ -330,7 +336,16 @@ class CleanupViewModel
             if (state.selectedCount == 0) return
 
             viewModelScope.launch {
-                val uris = resolveSelectedUris()
+                val uris =
+                    try {
+                        resolveSelectedUris()
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: Exception) {
+                        ReleaseSafeLog.error("CleanupVM", "Selection resolution failed", error)
+                        _uiState.value = CleanupUiState.Error(UiText.Resource(R.string.common_error_generic))
+                        return@launch
+                    }
                 if (uris.isEmpty()) return@launch
                 pendingDeleteUris = uris.toSet()
                 activeDeleteRequestUris = emptySet()
@@ -371,8 +386,8 @@ class CleanupViewModel
 
         private suspend fun performLegacyDelete(uris: List<String>) {
             try {
-                val deletedUris = storageCleanup.deleteLegacy(uris)
-                completeLegacyDelete(deletedUris, UiText.Resource(R.string.cleanup_delete_failed))
+                storageCleanup.deleteLegacy(uris)
+                completeLegacyDelete(UiText.Resource(R.string.cleanup_delete_failed))
             } catch (error: StorageDeleteFailure) {
                 handleLegacyDeleteFailure(error)
             } catch (error: SecurityException) {
@@ -383,21 +398,21 @@ class CleanupViewModel
             }
         }
 
-        private fun completeLegacyDelete(
-            deletedUris: Set<String>,
-            emptyResultMessage: UiText,
-        ) {
-            if (deletedUris.isEmpty()) {
+        private suspend fun completeLegacyDelete(emptyResultMessage: UiText) {
+            val result = verifyDeleteResult()
+            if (result.remainingUris.size == pendingDeleteUris.size) {
                 restorePendingSelection(emptyResultMessage)
                 return
             }
             onDeleteSuccess(
-                freedBytes = freedBytesFor(deletedUris),
-                remainingSelectedUris = pendingDeleteUris - deletedUris,
+                freedBytes = result.freedBytes,
+                remainingSelectedUris = result.remainingUris,
             )
         }
 
-        private fun handleLegacyDeleteFailure(error: StorageDeleteFailure) {
+        // Content providers may fail with implementation-specific exceptions during result verification.
+        @Suppress("TooGenericExceptionCaught")
+        private suspend fun handleLegacyDeleteFailure(error: StorageDeleteFailure) {
             val message =
                 UiText.Resource(
                     if (error.recoverable) {
@@ -406,7 +421,17 @@ class CleanupViewModel
                         R.string.cleanup_delete_failed
                     },
                 )
-            completeLegacyDelete(error.deletedUris, message)
+            try {
+                completeLegacyDelete(message)
+            } catch (verificationError: CancellationException) {
+                throw verificationError
+            } catch (verificationError: SecurityException) {
+                ReleaseSafeLog.error("CleanupVM", "Legacy delete result access denied", verificationError)
+                restorePendingSelection(UiText.Resource(R.string.cleanup_delete_permission_error))
+            } catch (verificationError: Exception) {
+                ReleaseSafeLog.error("CleanupVM", "Legacy delete result verification failed", verificationError)
+                restorePendingSelection(UiText.Resource(R.string.cleanup_delete_failed))
+            }
         }
 
         private suspend fun handleLegacyDeleteSecurityException(error: SecurityException) {
@@ -591,11 +616,6 @@ class CleanupViewModel
                 )
         }
 
-        private fun freedBytesFor(uris: Set<String>): Long {
-            if (uris.isEmpty()) return 0L
-            return uris.sumOf { uri -> fileSizeByUri[uri] ?: 0L }
-        }
-
         private suspend fun verifyDeleteResult(): VerifiedDeleteResult {
             val uris = pendingDeleteUris
             if (uris.isEmpty()) return VerifiedDeleteResult(0L, emptySet())
@@ -627,7 +647,11 @@ class CleanupViewModel
             try {
                 delay(200)
                 val result = verifyDeleteResult()
-                onDeleteSuccess(result.freedBytes, result.remainingUris)
+                if (result.remainingUris.size == pendingDeleteUris.size) {
+                    restorePendingSelection(UiText.Resource(R.string.cleanup_delete_failed))
+                } else {
+                    onDeleteSuccess(result.freedBytes, result.remainingUris)
+                }
             } catch (error: SecurityException) {
                 ReleaseSafeLog.error("CleanupVM", "Delete result access denied", error)
                 restorePendingSelection(UiText.Resource(R.string.cleanup_delete_permission_error))

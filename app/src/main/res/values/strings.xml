@@ -23,10 +23,10 @@
     <string name="home_network_card">Network</string>
     <string name="home_thermal_card">Thermal</string>
     <string name="home_storage_card">Storage</string>
-    <string name="home_network_signal_excellent">Excellent signal</string>
-    <string name="home_network_signal_good">Good signal</string>
-    <string name="home_network_signal_fair">Fair signal</string>
-    <string name="home_network_signal_poor">Poor signal</string>
+    <string name="home_network_signal_excellent">Excellent</string>
+    <string name="home_network_signal_good">Good</string>
+    <string name="home_network_signal_fair">Fair</string>
+    <string name="home_network_signal_poor">Poor</string>
     <string name="home_network_signal_none">No signal</string>
     <string name="home_battery_status_healthy">Good health</string>
     <string name="home_battery_status_fair">Fair health</string>
@@ -36,23 +36,30 @@
     <string name="home_storage_status_fair">Space getting low</string>
     <string name="home_storage_status_poor">Low space</string>
     <string name="home_storage_status_critical">Almost full</string>
-    <string name="home_app_usage_card">App Usage</string>
+    <string name="home_app_usage_card">App usage</string>
     <string name="home_chargers_desc">Test &amp; compare your chargers</string>
     <plurals name="home_health_context">
-        <item quantity="one">One thing is worth a look. Updated %1$d minute ago.</item>
-        <item quantity="other">One thing is worth a look. Updated %1$d minutes ago.</item>
+        <item quantity="one">Updated %1$d minute ago.</item>
+        <item quantity="other">Updated %1$d minutes ago.</item>
     </plurals>
-    <string name="home_full_check">Run a full check</string>
+    <string name="home_updated_just_now">Updated just now</string>
+    <string name="home_storage_free">%1$s free</string>
+    <string name="home_storage_capacity">%1$s of %2$s used</string>
+    <string name="home_app_usage_description">Resource use by app</string>
+    <string name="home_speed_test_description">Download, upload, ping and jitter</string>
+    <string name="home_learn_description">Device health guides</string>
+    <string name="home_thermal_warm">Warm</string>
+    <string name="home_thermal_hot">Running hot</string>
+    <string name="home_thermal_critical">Very hot</string>
+    <string name="home_health_scale_min">0</string>
+    <string name="home_health_scale_max">100</string>
+    <string name="home_full_check">Run full check</string>
     <string name="home_full_check_running">Checking</string>
     <string name="home_full_check_content_description">Run a full device health check</string>
     <string name="home_full_check_state_running">Checking, unavailable</string>
-    <string name="home_quick_tools">QUICK TOOLS</string>
-    <string name="home_speed_test">Speed Test</string>
+    <string name="home_speed_test">Speed test</string>
     <string name="home_test_compare">Test &amp; compare</string>
-    <string name="home_insights_section_title">Insights</string>
     <string name="home_insights_view_all">View all</string>
-    <string name="home_insights_title">Pro unlocked</string>
-    <string name="home_insights_desc">Extended history, widgets, exports, and throttling tools are active.</string>
     <plurals name="home_insights_unseen_count">
         <item quantity="one">%1$d new</item>
         <item quantity="other">%1$d new</item>
@@ -87,7 +94,7 @@
     <string name="insight_network_drain_body">During weak cellular coverage, battery drain ran about %1$s%% higher than during stronger signal windows (around %2$s dBm).</string>
     <string name="insight_heat_battery_wear_title">Higher battery drain coincides with heat</string>
     <string name="insight_heat_battery_wear_body">During hotter periods, battery drain ran about %1$s%% higher, with battery temperature peaking around %2$s°C.</string>
-    <string name="home_thermal_summary">%1$s · %2$s</string>
+    <string name="home_thermal_summary">%1$s — %2$s</string>
 
     <!-- Stale monitoring warning -->
     <string name="home_monitoring_stale_title">Background monitoring may have stopped</string>
@@ -113,7 +120,7 @@
     <string name="confidence_accurate">Accurate</string>
     <string name="confidence_estimated">Estimated</string>
     <string name="confidence_unavailable">N/A</string>
-    <string name="value_with_estimated_badge">%1$s · Estimated</string>
+    <string name="value_with_estimated_badge">%1$s — Estimated</string>
 
     <!-- Battery Detail -->
     <string name="battery_title">Battery</string>
@@ -164,18 +171,18 @@
     <string name="battery_history_metric_current">Current</string>
     <string name="battery_history_metric_voltage">Voltage</string>
     <string name="battery_history_metric_unavailable">Not enough data for this metric yet</string>
-    <string name="battery_hero_status">%1$s · %2$s</string>
+    <string name="battery_hero_status">%1$s — %2$s</string>
     <string name="battery_drain_rate">Drain</string>
     <string name="battery_power">Power</string>
     <string name="battery_remaining">Remaining</string>
     <string name="battery_estimating">…</string>
     <string name="battery_section_details">Details</string>
-    <string name="battery_power_voltage">%1$s W · %2$d mV</string>
+    <string name="battery_power_voltage">%1$s W — %2$d mV</string>
     <string name="battery_current_average">Average</string>
     <string name="battery_current_minimum">Minimum</string>
     <string name="battery_current_maximum">Maximum</string>
     <string name="value_milliamps_int">%1$d mA</string>
-    <string name="battery_remaining_mah">%1$s · Estimated %2$d mAh remaining</string>
+    <string name="battery_remaining_mah">%1$s — Estimated %2$d mAh remaining</string>
     <string name="battery_estimated_full_capacity">Estimated Full Capacity</string>
     <string name="battery_estimated_capacity_mah">%1$d mAh estimated</string>
 
@@ -200,7 +207,7 @@
         <item quantity="one">Last %1$d day</item>
         <item quantity="other">Last %1$d days</item>
     </plurals>
-    <string name="battery_stats_section_with_period">%1$s · %2$s</string>
+    <string name="battery_stats_section_with_period">%1$s — %2$s</string>
     <string name="battery_stats_pct_total">%1$.0f%%</string>
 
     <!-- Charging Status -->
@@ -253,7 +260,7 @@
     <string name="value_with_suffix_text">%1$s%2$s</string>
     <string name="value_direction_down">↓ %1$s</string>
     <string name="value_direction_up">↑ %1$s</string>
-    <string name="value_two_parts_separator">%1$s · %2$s</string>
+    <string name="value_two_parts_separator">%1$s — %2$s</string>
     <string name="value_approx_prefix">~%1$s</string>
     <string name="storage_usage_ratio">%1$s / %2$s</string>
     <string name="network_type_cellular">Cellular</string>
@@ -321,6 +328,7 @@
     <!-- Connection Type -->
     <string name="connection_wifi">WiFi</string>
     <string name="connection_cellular">Cellular</string>
+    <string name="connection_ethernet">Ethernet</string>
     <string name="connection_vpn">VPN</string>
     <string name="connection_none">None</string>
     <string name="location_services_open_settings">Open settings</string>
@@ -398,9 +406,9 @@
     <!-- Storage Actions -->
     <string name="storage_cleanup_tools">Cleanup Tools</string>
     <string name="storage_media_permission_title">Allow media access for storage tools</string>
-    <string name="storage_media_permission_message">Grant media access only if you want accurate photos, videos, audio, downloads, and cleanup suggestions. runcheck uses this data only on your device.</string>
+    <string name="storage_media_permission_message">Grant media access to include permitted photos, videos, and audio in the media breakdown and cleanup suggestions. runcheck uses this data only on your device.</string>
     <string name="storage_media_permission_partial_title">Limited media access</string>
-    <string name="storage_media_permission_partial_message">Only selected photos and videos are visible to runcheck. Manage your selection or allow full access for accurate storage breakdown and cleanup suggestions.</string>
+    <string name="storage_media_permission_partial_message">Only selected photos and videos are visible to runcheck. Manage your selection or grant broader access to include more media in the breakdown and cleanup suggestions.</string>
     <string name="storage_media_permission_grant">Grant permission</string>
     <string name="storage_media_permission_manage_selection">Manage selection</string>
     <string name="storage_media_permission_open_settings">Open app settings</string>
@@ -431,8 +439,8 @@
     <string name="cleanup_old_downloads_title">Old Downloads</string>
     <string name="cleanup_apk_files_title">APK Files</string>
     <plurals name="cleanup_found_files">
-        <item quantity="one">Found %1$d file \u00B7 %2$s</item>
-        <item quantity="other">Found %1$d files \u00B7 %2$s</item>
+        <item quantity="one">Found %1$d file — %2$s</item>
+        <item quantity="other">Found %1$d files — %2$s</item>
     </plurals>
     <string name="cleanup_no_files">No files found</string>
     <string name="cleanup_no_files_desc">Your storage is looking clean!</string>
@@ -446,11 +454,11 @@
     </plurals>
     <string name="cleanup_delete_permission_error">Android blocked deletion for one or more files.</string>
     <plurals name="cleanup_free_action">
-        <item quantity="one">Free %1$s \u00B7 %2$d item</item>
-        <item quantity="other">Free %1$s \u00B7 %2$d items</item>
+        <item quantity="one">Free %1$s — %2$d item</item>
+        <item quantity="other">Free %1$s — %2$d items</item>
     </plurals>
     <string name="cleanup_freed">%1$s freed</string>
-    <string name="cleanup_file_subtitle">%1$s · %2$s</string>
+    <string name="cleanup_file_subtitle">%1$s — %2$s</string>
     <string name="cleanup_filter_10mb">&gt; 10 MB</string>
     <string name="cleanup_filter_50mb">&gt; 50 MB</string>
     <string name="cleanup_filter_100mb">&gt; 100 MB</string>
@@ -477,6 +485,8 @@
     <string name="settings_measurement_info">Device Capabilities</string>
     <string name="settings_device_model">%1$s %2$s</string>
     <string name="settings_api_level_label">API Level</string>
+    <string name="settings_android_version">Android %1$s</string>
+    <string name="settings_api_level_value">API %1$d</string>
     <string name="settings_current_reading_label">Battery Current</string>
     <string name="settings_cycle_count_label">Cycle Count</string>
     <string name="settings_thermal_zones_label">Thermal Zones</string>
@@ -493,7 +503,7 @@
     <string name="info_settings_current_reading_explanation">Whether this device reports usable battery current data. Some phones return a fixed maximum value, always return zero, or never change in real use. runcheck samples the sensor at startup and checks whether the values change and stay plausible.</string>
     <string name="info_settings_current_reading_range">Most Google Pixel, Samsung Galaxy, and recent OnePlus devices report reliable current. Older or budget devices are more likely to report unreliable data.</string>
     <string name="info_settings_current_reading_matters">When current reading is unreliable, the current (mA), power (W), and drain rate displays on the Battery screen are shown with lower confidence. Battery level and temperature are not affected — those use separate, more reliable sensors.</string>
-    <string name="info_settings_current_reading_detail">Android exposes battery current through BATTERY_PROPERTY_CURRENT_NOW. Depending on the device, the raw number can be positive or negative. runcheck checks repeated samples, rejects readings that are stuck, and compares the absolute value against a plausible range before marking the sensor reliable.</string>
+    <string name="info_settings_current_reading_detail">Android exposes battery current through BATTERY_PROPERTY_CURRENT_NOW. Depending on the device, the raw number can be positive or negative. runcheck checks several samples, normalizes the sign, and compares values against a plausible range before marking the sensor reliable. Suspicious fixed high readings are shown with lower confidence.</string>
     <string name="info_settings_cycle_count_title">Battery Cycle Count Availability</string>
     <string name="info_settings_cycle_count_explanation">Whether your device reports how many full charge-discharge cycles the battery has completed. This requires Android 14 (API 34) or newer — older Android versions do not expose this data through the standard API.</string>
     <string name="info_settings_cycle_count_range">Available on devices running Android 14 or newer. Not available on Android 13 and below.</string>
@@ -603,9 +613,9 @@
     <string name="widget_battery_name">Battery Status</string>
     <string name="widget_battery_description">Shows battery level, temperature, and current. Requires runcheck Pro.</string>
     <string name="widget_health_name">Device Health</string>
-    <string name="widget_health_description">Shows overall health score with category indicators. Requires runcheck Pro.</string>
+    <string name="widget_health_description">Shows the overall health score and battery level. Requires runcheck Pro.</string>
     <string name="widget_health_score_label">Health Score</string>
-    <string name="widget_health_score_with_status">%1$s · %2$s</string>
+    <string name="widget_health_score_with_status">%1$s — %2$s</string>
     <string name="widget_battery_short_label">Bat</string>
     <string name="widget_percent_value">%1$d%%</string>
     <string name="widget_temperature_value">%1$.1f°C</string>
@@ -649,6 +659,7 @@
     <string name="settings_live_notif_remaining_time">Remaining time</string>
     <string name="live_notif_current_with_power">%1$d mA (%2$s W)</string>
     <string name="live_notif_current">%1$d mA</string>
+    <string name="live_notif_estimated_current">Estimated: %1$s</string>
     <string name="live_notif_charging">Charging</string>
     <string name="live_notif_discharging">Discharging</string>
     <string name="live_notif_screen_on">Screen tracking active</string>
@@ -695,8 +706,8 @@
         <item quantity="other">%d sessions</item>
     </plurals>
 
-    <!-- App Battery Usage -->
-    <string name="app_usage_title">App Battery Usage</string>
+    <!-- App Usage -->
+    <string name="app_usage_title">App Usage</string>
     <string name="app_usage_no_data">No usage data available for the last 24 hours</string>
     <string name="app_usage_no_data_message">This can happen on a fresh install or right after granting usage access. Give Android a moment, then retry.</string>
     <string name="app_usage_permission_title">Allow usage access</string>
@@ -735,7 +746,7 @@
     <string name="speed_test_cellular_warning">This test will use approximately 20–50 MB of mobile data</string>
     <string name="speed_test_cellular_proceed">Proceed</string>
     <string name="speed_test_progress">%1$s  %2$d%%</string>
-    <string name="speed_test_connection_detail">%1$s · %2$s</string>
+    <string name="speed_test_connection_detail">%1$s — %2$s</string>
     <string name="speed_test_cellular_cancel">Cancel</string>
     <string name="speed_test_mlab_notice">Speed test powered by M-Lab. Test data contributes to open internet research.</string>
     <string name="speed_test_last_result">Latest Result</string>
@@ -765,6 +776,7 @@
     <string name="pro_thank_you_continue">Let\'s go</string>
 
     <string name="a11y_dismiss_card">Dismiss card</string>
+    <string name="a11y_dismiss_insight">Dismiss insight: %1$s</string>
     <string name="a11y_open_insight_destination">Open related details</string>
 
     <!-- General -->

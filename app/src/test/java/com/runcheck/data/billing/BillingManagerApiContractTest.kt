@@ -65,6 +65,32 @@ class BillingManagerApiContractTest {
     }
 
     @Test
+    fun `billing availability requires ready one-time product details`() {
+        val setupCallback =
+            billingManagerSource
+                .substringAfter("override fun onBillingSetupFinished")
+                .substringBefore("override fun onBillingServiceDisconnected")
+        val queryFunction =
+            billingManagerSource
+                .substringAfter("private suspend fun queryProductDetails()")
+                .substringBefore("override suspend fun getFormattedPrice()")
+        val reconnectableBranch =
+            queryFunction
+                .substringAfter("in reconnectableBillingResponseCodes() -> {")
+                .substringBefore("in nonReadyBillingResponseCodes()")
+
+        assertFalse(
+            "A connected client is not purchasable until product details have loaded",
+            setupCallback.contains("_billingAvailable.value = true"),
+        )
+        assertTrue(queryFunction.contains("_billingAvailable.value = cachedProductDetails != null"))
+        assertTrue(
+            "A failed product query must not leave the purchase button enabled from cached details",
+            reconnectableBranch.contains("_billingAvailable.value = false"),
+        )
+    }
+
+    @Test
     fun `only one fallback reconnect can be scheduled at a time`() {
         assertTrue(
             "Concurrent Billing failures should not queue competing BillingClient replacements",

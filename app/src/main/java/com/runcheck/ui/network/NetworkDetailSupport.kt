@@ -223,6 +223,7 @@ internal fun ConnectionType.shortLabel(): String =
     when (this) {
         ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
         ConnectionType.CELLULAR -> stringResource(R.string.connection_cellular)
+        ConnectionType.ETHERNET -> stringResource(R.string.connection_ethernet)
         ConnectionType.VPN -> stringResource(R.string.connection_vpn)
         ConnectionType.NONE -> stringResource(R.string.connection_none)
     }

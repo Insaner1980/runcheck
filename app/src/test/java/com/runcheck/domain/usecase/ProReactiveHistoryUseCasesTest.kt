@@ -168,7 +168,7 @@ private class FakeNetworkRepository : NetworkRepository {
 
     override fun getNetworkState() = emptyFlow<com.runcheck.domain.model.NetworkState>()
 
-    override suspend fun measureLatency(): Int? = null
+    override suspend fun measureLatency(expectedNetworkHandle: Long?): Int? = null
 
     override fun getReadingsSince(
         since: Long,

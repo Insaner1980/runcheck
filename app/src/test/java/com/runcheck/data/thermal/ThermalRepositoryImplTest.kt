@@ -1,5 +1,6 @@
 package com.runcheck.data.thermal
 
+import android.database.sqlite.SQLiteException
 import android.os.SystemClock
 import com.runcheck.data.db.dao.ThermalReadingDao
 import com.runcheck.data.db.entity.ThermalReadingEntity
@@ -35,6 +36,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
@@ -211,6 +213,27 @@ class ThermalRepositoryImplTest {
             assertEquals(true, inserted.captured.throttling)
             coVerify(exactly = 1) { thermalReadingDao.deleteOlderThan(1_000L) }
             coVerify(exactly = 1) { thermalReadingDao.deleteAll() }
+        }
+
+    @Test
+    fun `saveReading propagates database failures`() =
+        runTest {
+            val failure = SQLiteException("database full")
+            coEvery { thermalReadingDao.insert(any()) } throws failure
+
+            val thrown =
+                runCatching {
+                    repository.saveReading(
+                        ThermalState(
+                            batteryTempC = 42.5f,
+                            cpuTempC = 55.5f,
+                            thermalStatus = ThermalStatus.SEVERE,
+                            isThrottling = true,
+                        ),
+                    )
+                }.exceptionOrNull()
+
+            assertSame(failure, thrown)
         }
 
     @Test

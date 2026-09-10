@@ -161,13 +161,19 @@ class MediaStoreScanner
                 buildSet {
                     uriStrings.forEach { uriString ->
                         coroutineContext.ensureActive()
-                        resolver
-                            .query(uriString.toUri(), arrayOf(MediaStore.MediaColumns._ID), null, null, null)
-                            ?.use { cursor ->
-                                if (cursor.moveToFirst()) {
-                                    add(uriString)
-                                }
+                        val cursor =
+                            resolver.query(
+                                uriString.toUri(),
+                                arrayOf(MediaStore.MediaColumns._ID),
+                                null,
+                                null,
+                                null,
+                            ) ?: error("MediaStore returned no cursor while verifying deletion")
+                        cursor.use {
+                            if (cursor.moveToFirst()) {
+                                add(uriString)
                             }
+                        }
                     }
                 }
             }
@@ -285,23 +291,28 @@ class MediaStoreScanner
         ): Long =
             try {
                 var total = 0L
-                resolver
-                    .query(
+                val cursor =
+                    resolver.query(
                         contentUri,
                         arrayOf(MediaStore.MediaColumns.SIZE),
                         selection,
                         selectionArgs,
                         null,
-                    )?.use { cursor ->
-                        val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
-                        while (cursor.moveToNext()) {
-                            total += cursor.getLong(sizeCol)
-                        }
+                    ) ?: error("MediaStore returned no cursor for $contentUri")
+                cursor.use {
+                    val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+                    while (cursor.moveToNext()) {
+                        total += cursor.getLong(sizeCol)
                     }
+                }
                 total
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: SecurityException) {
+                throw error
             } catch (error: Exception) {
                 ReleaseSafeLog.error(TAG, "Failed to query total size for $contentUri", error)
-                0L
+                throw error
             }
 
         private fun queryDocumentsSize(coroutineContext: CoroutineContext): Long {
@@ -323,24 +334,26 @@ class MediaStoreScanner
                 coroutineContext.ensureActive()
                 val selection = mediaBreakdownSelection(mimePattern)
                 try {
-                    resolver
-                        .query(
+                    val cursor =
+                        resolver.query(
                             uri,
                             arrayOf(MediaStore.MediaColumns.SIZE),
                             selection.sql,
                             selection.args,
                             null,
-                        )?.use { cursor ->
-                            val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
-                            while (cursor.moveToNext()) {
-                                coroutineContext.ensureActive()
-                                total += cursor.getLong(sizeCol)
-                            }
+                        ) ?: error("MediaStore returned no cursor for document size query")
+                    cursor.use {
+                        val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+                        while (cursor.moveToNext()) {
+                            coroutineContext.ensureActive()
+                            total += cursor.getLong(sizeCol)
                         }
-                } catch (error: CancellationException) {
-                    throw error
+                    }
                 } catch (error: Exception) {
-                    ReleaseSafeLog.error(TAG, "Failed to query documents size for $mimePattern", error)
+                    if (error !is CancellationException && error !is SecurityException) {
+                        ReleaseSafeLog.error(TAG, "Failed to query documents size for $mimePattern", error)
+                    }
+                    throw error
                 }
             }
 
@@ -412,7 +425,19 @@ class MediaStoreScanner
                         coroutineContext = coroutineContext,
                     )
                 }
-            return groups.toCleanupSummary()
+            if (groups.isEmpty()) return groups.toCleanupSummary()
+
+            val mergedGroup =
+                CleanupAggregateSummary(
+                    group =
+                        CleanupGroupSummary(
+                            category = MediaCategory.APK,
+                            itemCount = groups.sumOf { it.group.itemCount },
+                            totalBytes = groups.sumOf { it.group.totalBytes },
+                        ),
+                    maxFileSizeBytes = groups.maxOf { it.maxFileSizeBytes },
+                )
+            return listOf(mergedGroup).toCleanupSummary()
         }
 
         private fun apkCollections(): List<Uri> =
@@ -432,38 +457,37 @@ class MediaStoreScanner
         ): CleanupAggregateSummary? {
             val projection = arrayOf(MediaStore.MediaColumns.SIZE)
             return try {
-                resolver
-                    .query(collection, projection, selection, selectionArgs, null)
-                    ?.use { cursor ->
-                        val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
-                        var count = 0
-                        var totalBytes = 0L
-                        var maxSize = 0L
-                        while (cursor.moveToNext()) {
-                            coroutineContext.ensureActive()
-                            count++
-                            val size = cursor.getLong(sizeCol)
-                            totalBytes += size
-                            if (size > maxSize) maxSize = size
-                        }
-                        if (count == 0) return@use null
-                        CleanupAggregateSummary(
-                            group =
-                                CleanupGroupSummary(
-                                    category = category,
-                                    itemCount = count,
-                                    totalBytes = totalBytes,
-                                ),
-                            maxFileSizeBytes = maxSize,
-                        )
+                val cursor =
+                    resolver.query(collection, projection, selection, selectionArgs, null)
+                        ?: error("MediaStore returned no cursor for cleanup summary")
+                cursor.use {
+                    val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+                    var count = 0
+                    var totalBytes = 0L
+                    var maxSize = 0L
+                    while (cursor.moveToNext()) {
+                        coroutineContext.ensureActive()
+                        count++
+                        val size = cursor.getLong(sizeCol)
+                        totalBytes += size
+                        if (size > maxSize) maxSize = size
                     }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: SecurityException) {
-                throw error
+                    if (count == 0) return@use null
+                    CleanupAggregateSummary(
+                        group =
+                            CleanupGroupSummary(
+                                category = category,
+                                itemCount = count,
+                                totalBytes = totalBytes,
+                            ),
+                        maxFileSizeBytes = maxSize,
+                    )
+                }
             } catch (error: Exception) {
-                ReleaseSafeLog.error(TAG, "Failed to aggregate cleanup summary for $category", error)
-                null
+                if (error !is CancellationException && error !is SecurityException) {
+                    ReleaseSafeLog.error(TAG, "Failed to aggregate cleanup summary for $category", error)
+                }
+                throw error
             }
         }
 
@@ -626,7 +650,8 @@ class MediaStoreScanner
                             "${query.sortOrder} LIMIT $limit OFFSET $offset",
                         )
                     }
-                cursor?.use { c ->
+                val resultCursor = cursor ?: error("MediaStore returned no cursor for cleanup page")
+                resultCursor.use { c ->
                     val idCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
                     val nameCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
                     val sizeCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
@@ -655,14 +680,14 @@ class MediaStoreScanner
                             )
                         }
                     }
-                } ?: emptyList()
+                }
             } catch (error: CancellationException) {
                 throw error
             } catch (error: SecurityException) {
                 throw error
             } catch (error: Exception) {
                 ReleaseSafeLog.error(TAG, "Failed to query paged cleanup items for ${query.category}", error)
-                emptyList()
+                throw error
             }
 
         private fun queryFileSizes(
@@ -672,35 +697,36 @@ class MediaStoreScanner
             coroutineContext: CoroutineContext,
         ): Map<String, Long> =
             try {
-                resolver
-                    .query(
+                val cursor =
+                    resolver.query(
                         collection,
                         arrayOf(MediaStore.MediaColumns._ID, MediaStore.MediaColumns.SIZE),
                         selection,
                         selectionArgs,
                         null,
-                    )?.use { cursor ->
-                        val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
-                        val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
-                        buildMap {
-                            while (cursor.moveToNext()) {
-                                coroutineContext.ensureActive()
-                                put(
-                                    android.content.ContentUris
-                                        .withAppendedId(collection, cursor.getLong(idCol))
-                                        .toString(),
-                                    cursor.getLong(sizeCol),
-                                )
-                            }
+                    ) ?: error("MediaStore returned no cursor for cleanup file sizes")
+                cursor.use {
+                    val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
+                    val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+                    buildMap {
+                        while (cursor.moveToNext()) {
+                            coroutineContext.ensureActive()
+                            put(
+                                android.content.ContentUris
+                                    .withAppendedId(collection, cursor.getLong(idCol))
+                                    .toString(),
+                                cursor.getLong(sizeCol),
+                            )
                         }
-                    } ?: emptyMap()
+                    }
+                }
             } catch (error: CancellationException) {
                 throw error
             } catch (error: SecurityException) {
                 throw error
             } catch (error: Exception) {
                 ReleaseSafeLog.error(TAG, "Failed to query cleanup file sizes for $collection", error)
-                emptyMap()
+                throw error
             }
 
         private fun largeFileCollections(): List<CollectionDescriptor> =

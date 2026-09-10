@@ -29,7 +29,7 @@ class GetMeasuredNetworkStateUseCaseTest {
             val cellularLatency = CompletableDeferred<Int?>()
             var measurementCount = 0
             every { networkRepository.getNetworkState() } returns networkState
-            coEvery { networkRepository.measureLatency() } coAnswers {
+            coEvery { networkRepository.measureLatency(any()) } coAnswers {
                 if (measurementCount++ == 0) wifiLatency.await() else cellularLatency.await()
             }
             val useCase = GetMeasuredNetworkStateUseCase(GetNetworkStateUseCase(networkRepository), networkRepository)
@@ -56,13 +56,45 @@ class GetMeasuredNetworkStateUseCaseTest {
             collection.cancel()
         }
 
+    @Test
+    fun `same type default network change clears and remeasures latency`() =
+        runTest {
+            val networkState = MutableStateFlow(networkState(ConnectionType.WIFI, defaultNetworkHandle = 1L))
+            val firstNetworkLatency = CompletableDeferred<Int?>()
+            val replacementNetworkLatency = CompletableDeferred<Int?>()
+            every { networkRepository.getNetworkState() } returns networkState
+            coEvery { networkRepository.measureLatency(1L) } coAnswers { firstNetworkLatency.await() }
+            coEvery { networkRepository.measureLatency(2L) } coAnswers { replacementNetworkLatency.await() }
+            val useCase = GetMeasuredNetworkStateUseCase(GetNetworkStateUseCase(networkRepository), networkRepository)
+            val emissions = mutableListOf<NetworkState>()
+            val collection = useCase().onEach(emissions::add).launchIn(backgroundScope)
+
+            runCurrent()
+            networkState.value = networkState(ConnectionType.WIFI, defaultNetworkHandle = 2L)
+            runCurrent()
+            firstNetworkLatency.complete(24)
+            runCurrent()
+
+            assertEquals(networkState(ConnectionType.WIFI, defaultNetworkHandle = 2L), emissions.last())
+
+            replacementNetworkLatency.complete(41)
+            runCurrent()
+            assertEquals(
+                networkState(ConnectionType.WIFI, latencyMs = 41, defaultNetworkHandle = 2L),
+                emissions.last(),
+            )
+            collection.cancel()
+        }
+
     private fun networkState(
         connectionType: ConnectionType,
         latencyMs: Int? = null,
+        defaultNetworkHandle: Long? = null,
     ) = NetworkState(
         connectionType = connectionType,
         signalDbm = null,
         signalQuality = SignalQuality.NO_SIGNAL,
         latencyMs = latencyMs,
+        defaultNetworkHandle = defaultNetworkHandle,
     )
 }

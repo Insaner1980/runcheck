@@ -17,7 +17,10 @@ class HeavyAppUsageRule
         override val ruleId: String = RULE_ID
 
         override suspend fun evaluate(now: Long): List<InsightCandidate> {
-            val readings = appBatteryUsageRepository.getUsageSinceSync(now - LOOKBACK_MS)
+            val readings =
+                appBatteryUsageRepository
+                    .getUsageSinceSync(now - LOOKBACK_MS)
+                    .filter { reading -> reading.timestamp <= now }
             if (readings.isEmpty()) return emptyList()
 
             val byPackage = readings.groupBy { it.packageName }

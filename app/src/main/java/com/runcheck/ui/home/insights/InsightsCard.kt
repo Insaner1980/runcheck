@@ -3,7 +3,6 @@ package com.runcheck.ui.home.insights
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -11,7 +10,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -20,7 +18,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
 import com.runcheck.domain.insights.model.Insight
-import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.theme.spacing
 
 @Composable
@@ -38,21 +35,9 @@ fun InsightsCard(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-        ) {
-            SectionHeader(text = stringResource(R.string.home_insights_section_title))
-            if (state.unseenInsightCount > 0) {
-                UnseenInsightsBadge(unseenInsightCount = state.unseenInsightCount)
-            }
-            if (state.totalInsightCount > insights.size) {
-                TextButton(onClick = onNavigateToInsights) {
-                    Text(text = stringResource(R.string.home_insights_view_all))
-                }
-            }
+        if (state.unseenInsightCount > 0) {
+            UnseenInsightsBadge(unseenInsightCount = state.unseenInsightCount)
         }
-
         insights.forEach { insight ->
             key(insight.id) {
                 val navigationAction =
@@ -66,7 +51,13 @@ fun InsightsCard(
                     insight = insight,
                     onClick = navigationAction.onClick,
                     onDismiss = { onDismissInsight(insight.id) },
+                    compact = true,
                 )
+            }
+        }
+        if (state.totalInsightCount > insights.size) {
+            TextButton(onClick = onNavigateToInsights) {
+                Text(text = stringResource(R.string.home_insights_view_all))
             }
         }
     }

@@ -193,7 +193,7 @@ class SamsungCurrentConfidenceOwnershipTest {
             for (reliable in listOf(true, false)) {
                 withSource(reliable = reliable) { source, manager ->
                     assertEquals(if (reliable) Confidence.HIGH else Confidence.LOW, source.getCurrentNow().first().confidence)
-                    for (raw in listOf(0, Int.MIN_VALUE)) {
+                    for (raw in listOf(0, 10_001_000, -10_001_000, Int.MIN_VALUE)) {
                         every { manager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) } returns raw
                         assertEquals(List(3) { Confidence.UNAVAILABLE }, source.getCurrentNow().take(3).toList().map { it.confidence })
                     }

@@ -1,39 +1,44 @@
 package com.runcheck.ui.home
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.outlined.DataUsage
+import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Speed
-import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material3.Card
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.runcheck.R
-import com.runcheck.ui.components.IconCircle
-import com.runcheck.ui.components.ListRow
 import com.runcheck.ui.components.ProBadgePill
-import com.runcheck.ui.components.SectionHeader
-import com.runcheck.ui.theme.runcheckCardColors
-import com.runcheck.ui.theme.runcheckCardElevation
-import com.runcheck.ui.theme.spacing
-import com.runcheck.ui.theme.statusColors
+import com.runcheck.ui.theme.HomeCream
+import com.runcheck.ui.theme.HomeGraphite
+import com.runcheck.ui.theme.HomeInk
+import com.runcheck.ui.theme.HomeStone
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 internal fun HomeQuickToolsSection(
@@ -42,103 +47,145 @@ internal fun HomeQuickToolsSection(
     onNavigateToAppUsage: () -> Unit,
     onNavigateToProUpgrade: () -> Unit,
     onNavigateToLearn: () -> Unit,
+    compact: Boolean,
 ) {
-    Column {
-        SectionHeader(stringResource(R.string.home_quick_tools))
-
-        Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-
-        Card(
-            shape = MaterialTheme.shapes.large,
-            colors = runcheckCardColors(),
-            elevation = runcheckCardElevation(),
-        ) {
-            Column(
+    val tokens = MaterialTheme.uiTokens
+    BoxWithConstraints {
+        val singleColumn = LocalDensity.current.fontScale >= 1.5f || maxWidth / LocalDensity.current.fontScale < 320.dp
+        val appUsage: @Composable () -> Unit = {
+            HomeToolTile(
+                title = stringResource(R.string.home_app_usage_card),
+                description = stringResource(R.string.home_app_usage_description),
+                icon = Icons.Outlined.GridView,
+                background = HomeCream,
+                foreground = HomeInk,
+                onClick = if (isPro) onNavigateToAppUsage else onNavigateToProUpgrade,
+                locked = !isPro,
+                compact = compact,
+            )
+        }
+        val learn: @Composable () -> Unit = {
+            HomeToolTile(
+                title = stringResource(R.string.home_learn),
+                description = stringResource(R.string.home_learn_description),
+                icon = Icons.AutoMirrored.Outlined.MenuBook,
+                background = HomeGraphite,
+                foreground = HomeCream,
+                onClick = onNavigateToLearn,
+                compact = compact,
                 modifier =
-                    Modifier.padding(
-                        horizontal = MaterialTheme.spacing.base,
-                        vertical = MaterialTheme.spacing.xs,
-                    ),
+                    if (singleColumn) {
+                        Modifier
+                    } else {
+                        Modifier
+                            .wrapContentWidth(Alignment.Start, unbounded = true)
+                            .requiredWidth((maxWidth - tokens.homeStatusTileGap) / 2 + 20.dp)
+                    },
+                shape =
+                    if (singleColumn) {
+                        RoundedCornerShape(
+                            tokens.homeStatusTileCornerRadius,
+                        )
+                    } else {
+                        HomeTileShape(HomeTileEdge.LEARN)
+                    },
+            )
+        }
+        val speed: @Composable (Modifier) -> Unit = { modifier ->
+            HomeToolTile(
+                title = stringResource(R.string.home_speed_test),
+                description = stringResource(R.string.home_speed_test_description),
+                icon = Icons.Outlined.Speed,
+                background = HomeStone,
+                foreground = HomeInk,
+                onClick = onNavigateToSpeedTest,
+                compact = compact,
+                shape =
+                    if (singleColumn) {
+                        RoundedCornerShape(
+                            tokens.homeStatusTileCornerRadius,
+                        )
+                    } else {
+                        HomeTileShape(HomeTileEdge.SPEED)
+                    },
+                modifier = modifier,
+            )
+        }
+        if (singleColumn) {
+            Column(verticalArrangement = Arrangement.spacedBy(tokens.homeStatusTileGap)) {
+                appUsage()
+                learn()
+                speed(Modifier.fillMaxWidth())
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(tokens.homeStatusTileGap),
             ) {
-                ListRow(
-                    label = stringResource(R.string.home_speed_test),
-                    icon = Icons.Outlined.Speed,
-                    onClick = onNavigateToSpeedTest,
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-                HomeAppUsageQuickToolRow(
-                    isPro = isPro,
-                    onNavigateToAppUsage = onNavigateToAppUsage,
-                    onNavigateToProUpgrade = onNavigateToProUpgrade,
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-                ListRow(
-                    label = stringResource(R.string.home_learn),
-                    icon = Icons.AutoMirrored.Outlined.MenuBook,
-                    onClick = onNavigateToLearn,
-                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(tokens.homeStatusTileGap),
+                ) {
+                    appUsage()
+                    learn()
+                }
+                speed(Modifier.weight(1f).fillMaxHeight())
             }
         }
     }
 }
 
 @Composable
-private fun HomeAppUsageQuickToolRow(
-    isPro: Boolean,
-    onNavigateToAppUsage: () -> Unit,
-    onNavigateToProUpgrade: () -> Unit,
+private fun HomeToolTile(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    background: Color,
+    foreground: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(MaterialTheme.uiTokens.homeStatusTileCornerRadius),
+    locked: Boolean = false,
+    compact: Boolean = false,
 ) {
-    Box(modifier = Modifier.fillMaxWidth()) {
-        ListRow(
-            label = stringResource(R.string.home_app_usage_card),
-            icon = Icons.Outlined.DataUsage,
-            onClick = if (isPro) onNavigateToAppUsage else onNavigateToProUpgrade,
-            trailing = if (!isPro) ({ ProBadgePill() }) else null,
-        )
-
-        if (!isPro) {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.14f)),
-            )
-        }
-    }
-}
-
-@Composable
-internal fun HomeProStatusSection(visible: Boolean) {
-    if (visible) {
-        Card(
-            shape = MaterialTheme.shapes.large,
-            colors = runcheckCardColors(),
-            elevation = runcheckCardElevation(),
+    val tokens = MaterialTheme.uiTokens
+    Surface(
+        onClick = onClick,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .heightIn(
+                    min =
+                        if (compact) {
+                            tokens.homeCompactToolTileHeight
+                        } else {
+                            tokens.homeToolTileHeight
+                        },
+                ),
+        shape = shape,
+        color = background,
+        contentColor = foreground,
+    ) {
+        Column(
+            modifier =
+                Modifier.padding(
+                    horizontal = 16.dp,
+                    vertical =
+                        if (compact) {
+                            tokens.homeCompactToolTileVerticalPadding
+                        } else {
+                            16.dp
+                        },
+                ),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                IconCircle(
-                    icon = Icons.Outlined.Star,
-                    tint = MaterialTheme.statusColors.healthy,
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.home_insights_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = stringResource(R.string.home_insights_desc),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(MaterialTheme.uiTokens.iconXLarge))
+                if (locked) ProBadgePill()
+            }
+            Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            if (!compact) {
+                Text(text = description, style = MaterialTheme.typography.bodySmall)
             }
         }
     }

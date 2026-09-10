@@ -6,6 +6,7 @@ import com.runcheck.domain.repository.ChargerRepository
 import com.runcheck.domain.repository.DatabaseTransactionRunner
 import com.runcheck.domain.repository.FileExportRepository
 import com.runcheck.domain.repository.InsightRepository
+import com.runcheck.domain.repository.MonitoringAlertStateRepository
 import com.runcheck.domain.repository.MonitoringStatusRepository
 import com.runcheck.domain.repository.NetworkRepository
 import com.runcheck.domain.repository.SpeedTestRepository
@@ -34,6 +35,7 @@ class ClearMonitoringDataUseCaseTest {
     private lateinit var insightRepository: InsightRepository
     private lateinit var chargerRepository: ChargerRepository
     private lateinit var userPreferencesRepository: UserPreferencesRepository
+    private lateinit var monitoringAlertStateRepository: MonitoringAlertStateRepository
     private lateinit var monitoringStatusRepository: MonitoringStatusRepository
     private lateinit var fileExportRepository: FileExportRepository
 
@@ -52,6 +54,7 @@ class ClearMonitoringDataUseCaseTest {
         insightRepository = mockk(relaxed = true)
         chargerRepository = mockk(relaxed = true)
         userPreferencesRepository = mockk(relaxed = true)
+        monitoringAlertStateRepository = mockk(relaxed = true)
         monitoringStatusRepository = mockk(relaxed = true)
         fileExportRepository = mockk(relaxed = true)
 
@@ -68,6 +71,7 @@ class ClearMonitoringDataUseCaseTest {
                 insightRepository = insightRepository,
                 chargerRepository = chargerRepository,
                 userPreferencesRepository = userPreferencesRepository,
+                monitoringAlertStateRepository = monitoringAlertStateRepository,
                 monitoringStatusRepository = monitoringStatusRepository,
                 fileExportRepository = fileExportRepository,
                 monitoringDataCoordinator =
@@ -88,6 +92,7 @@ class ClearMonitoringDataUseCaseTest {
             coEvery { insightRepository.clearAll() } returns Unit
             coEvery { chargerRepository.deleteAll() } returns Unit
             coEvery { userPreferencesRepository.clearMonitoringDataState() } returns Unit
+            coEvery { monitoringAlertStateRepository.clearAlertState() } returns Unit
             coEvery { monitoringStatusRepository.clearLastWorkerHeartbeat() } returns Unit
             coEvery { fileExportRepository.clearPreparedExports() } returns Unit
 
@@ -103,6 +108,7 @@ class ClearMonitoringDataUseCaseTest {
             coVerify(exactly = 1) { insightRepository.clearAll() }
             coVerify(exactly = 1) { chargerRepository.deleteAll() }
             coVerify(exactly = 1) { userPreferencesRepository.clearMonitoringDataState() }
+            coVerify(exactly = 1) { monitoringAlertStateRepository.clearAlertState() }
             coVerify(exactly = 1) { monitoringStatusRepository.clearLastWorkerHeartbeat() }
             coVerify(exactly = 1) { fileExportRepository.clearPreparedExports() }
         }
@@ -116,6 +122,7 @@ class ClearMonitoringDataUseCaseTest {
             val thrown = runCatching { useCase() }.exceptionOrNull()
 
             assertSame(preferenceFailure, thrown)
+            coVerify(exactly = 1) { monitoringAlertStateRepository.clearAlertState() }
             coVerify(exactly = 1) { monitoringStatusRepository.clearLastWorkerHeartbeat() }
             coVerify(exactly = 1) { fileExportRepository.clearPreparedExports() }
         }

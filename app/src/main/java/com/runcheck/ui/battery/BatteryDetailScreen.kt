@@ -151,8 +151,9 @@ fun BatteryDetailScreen(
     fullscreenResultMetric: String? = null,
     fullscreenResultPeriod: String? = null,
     onConsumeFullscreenResult: () -> Unit = {},
-    viewModel: BatteryViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> BatteryViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     // CPD-OFF: Keep StateFlow collection at the screen boundary for Compose stability.
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
@@ -273,7 +274,6 @@ private fun BatteryContent(
                 }
 
                 else -> {
-                    Unit
                 }
             }
         },
@@ -1068,7 +1068,7 @@ private fun BatteryHistoryPanel(
                         R.string.fullscreen_chart_title_battery,
                         historyMetricLabel(selectedMetric),
                     ),
-                label = "${historyPeriodLabel(state.selectedPeriod)} · ${historyMetricLabel(selectedMetric)}",
+                label = "${historyPeriodLabel(state.selectedPeriod)} — ${historyMetricLabel(selectedMetric)}",
                 periodLabel = historyPeriodLabel(state.selectedPeriod),
                 chartModel = chartModel,
                 qualityZones = qualityZones,

@@ -342,8 +342,17 @@ class SettingsViewModel
         }
 
         fun resetTips() {
-            executePreferenceUpdate {
-                manageInfoCardDismissals.resetDismissedCards()
+            viewModelScope.launch {
+                try {
+                    manageInfoCardDismissals.resetDismissedCards()
+                    _uiState.update {
+                        it.copy(clearDataStatus = UiText.Resource(R.string.settings_reset_tips_done))
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    _uiState.update { it.copy(errorMessage = UiText.Resource(R.string.common_error_generic)) }
+                }
             }
         }
 

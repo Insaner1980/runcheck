@@ -26,7 +26,10 @@
       "tracking": "local-review:runcheck-mobsf-target-sdk",
       "sourcePath": "app/build.gradle.kts",
       "selector": "targetSdk = 37",
-      "findingPath": "app/src/main/AndroidManifest.xml"
+      "findingPath": "app/src/main/AndroidManifest.xml",
+      "findingSelectors": [
+        "Activity exported, targetSdk<29 and launchMode != singleInstance or taskAffinity is not empty"
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-battery-data-source-factory",
@@ -40,7 +43,10 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-battery-data-source-factory",
       "sourcePath": "app/src/main/java/com/runcheck/data/battery/BatteryDataSourceFactory.kt",
       "selector": "val key = \"${profile.manufacturer}_${profile.apiLevel}\"",
-      "findingPath": "app/src/main/java/com/runcheck/data/battery/BatteryDataSourceFactory.kt"
+      "findingPath": "app/src/main/java/com/runcheck/data/battery/BatteryDataSourceFactory.kt",
+      "findingSelectors": [
+        "key = \"${profile.manufacturer}_${profile.apilevel}\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-baseline-anomaly-rule",
@@ -54,7 +60,12 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-baseline-anomaly-rule",
       "sourcePath": "app/src/main/java/com/runcheck/domain/insights/rules/BaselineAnomalyRule.kt",
       "selector": "insight_battery_baseline_anomaly_title",
-      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/BaselineAnomalyRule.kt"
+      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/BaselineAnomalyRule.kt",
+      "findingSelectors": [
+        "key = \"battery_drain:${anomalyscore.rateratio.toratiobucket()}\"",
+        "key = \"insight_battery_baseline_anomaly_body\"",
+        "key = \"insight_battery_baseline_anomaly_title\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-battery-degradation-trend-rule",
@@ -68,7 +79,12 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-battery-degradation-trend-rule",
       "sourcePath": "app/src/main/java/com/runcheck/domain/insights/rules/BatteryDegradationTrendRule.kt",
       "selector": "insight_battery_degradation_title",
-      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/BatteryDegradationTrendRule.kt"
+      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/BatteryDegradationTrendRule.kt",
+      "findingSelectors": [
+        "key = \"battery_degradation:${comparison.percentincrease.toincreasebucket()}\"",
+        "key = \"insight_battery_degradation_body\"",
+        "key = \"insight_battery_degradation_title\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-charger-performance-rule",
@@ -82,7 +98,12 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-charger-performance-rule",
       "sourcePath": "app/src/main/java/com/runcheck/domain/insights/rules/ChargerPerformanceRule.kt",
       "selector": "insight_charger_performance_title",
-      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/ChargerPerformanceRule.kt"
+      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/ChargerPerformanceRule.kt",
+      "findingSelectors": [
+        "key = \"charger:${weakestcharger.chargerid}:${percentslower.tospeedbucket()}\"",
+        "key = \"insight_charger_performance_body\"",
+        "key = \"insight_charger_performance_title\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-heat-accelerated-battery-wear-rule",
@@ -96,7 +117,12 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-heat-accelerated-battery-wear-rule",
       "sourcePath": "app/src/main/java/com/runcheck/domain/insights/rules/HeatAcceleratedBatteryWearRule.kt",
       "selector": "insight_heat_battery_wear_title",
-      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/HeatAcceleratedBatteryWearRule.kt"
+      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/HeatAcceleratedBatteryWearRule.kt",
+      "findingSelectors": [
+        "key = \"heat_drain:${comparison.percentincrease.toincreasebucket()}\"",
+        "key = \"insight_heat_battery_wear_body\"",
+        "key = \"insight_heat_battery_wear_title\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-heavy-app-usage-rule",
@@ -110,7 +136,12 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-heavy-app-usage-rule",
       "sourcePath": "app/src/main/java/com/runcheck/domain/insights/rules/HeavyAppUsageRule.kt",
       "selector": "insight_app_usage_title",
-      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/HeavyAppUsageRule.kt"
+      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/HeavyAppUsageRule.kt",
+      "findingSelectors": [
+        "key = \"${topapp.packagename}:$sharebucket\"",
+        "key = \"insight_app_usage_body\"",
+        "key = \"insight_app_usage_title\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-network-driven-battery-drain-rule",
@@ -124,7 +155,12 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-network-driven-battery-drain-rule",
       "sourcePath": "app/src/main/java/com/runcheck/domain/insights/rules/NetworkDrivenBatteryDrainRule.kt",
       "selector": "insight_network_drain_title",
-      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/NetworkDrivenBatteryDrainRule.kt"
+      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/NetworkDrivenBatteryDrainRule.kt",
+      "findingSelectors": [
+        "key = \"cellular_drain:${comparison.percentincrease.toincreasebucket()}\"",
+        "key = \"insight_network_drain_body\"",
+        "key = \"insight_network_drain_title\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-network-signal-pattern-rule",
@@ -138,7 +174,12 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-network-signal-pattern-rule",
       "sourcePath": "app/src/main/java/com/runcheck/domain/insights/rules/NetworkSignalPatternRule.kt",
       "selector": "insight_network_signal_pattern_title",
-      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/NetworkSignalPatternRule.kt"
+      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/NetworkSignalPatternRule.kt",
+      "findingSelectors": [
+        "key = \"cellular:$bucket\"",
+        "key = \"insight_network_signal_pattern_body\"",
+        "key = \"insight_network_signal_pattern_title\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-recurring-thermal-throttling-rule",
@@ -152,7 +193,11 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-recurring-thermal-throttling-rule",
       "sourcePath": "app/src/main/java/com/runcheck/domain/insights/rules/RecurringThermalThrottlingRule.kt",
       "selector": "insight_thermal_throttling_title",
-      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/RecurringThermalThrottlingRule.kt"
+      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/RecurringThermalThrottlingRule.kt",
+      "findingSelectors": [
+        "key = \"insight_thermal_throttling_body\"",
+        "key = \"insight_thermal_throttling_title\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-storage-pressure-impact-rule",
@@ -166,7 +211,12 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-storage-pressure-impact-rule",
       "sourcePath": "app/src/main/java/com/runcheck/domain/insights/rules/StoragePressureImpactRule.kt",
       "selector": "insight_storage_impact_title",
-      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/StoragePressureImpactRule.kt"
+      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/StoragePressureImpactRule.kt",
+      "findingSelectors": [
+        "key = \"insight_storage_impact_body\"",
+        "key = \"insight_storage_impact_title\"",
+        "key = \"storage_score:${healthscore.statusfromscore(storagescore).name.lowercase()}\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-storage-pressure-projection-rule",
@@ -180,7 +230,11 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-storage-pressure-projection-rule",
       "sourcePath": "app/src/main/java/com/runcheck/domain/insights/rules/StoragePressureProjectionRule.kt",
       "selector": "insight_storage_pressure_title",
-      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/StoragePressureProjectionRule.kt"
+      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/StoragePressureProjectionRule.kt",
+      "findingSelectors": [
+        "key = \"insight_storage_pressure_body\"",
+        "key = \"insight_storage_pressure_title\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-thermal-pattern-detection-rule",
@@ -194,7 +248,12 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-thermal-pattern-detection-rule",
       "sourcePath": "app/src/main/java/com/runcheck/domain/insights/rules/ThermalPatternDetectionRule.kt",
       "selector": "insight_thermal_pattern_title",
-      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/ThermalPatternDetectionRule.kt"
+      "findingPath": "app/src/main/java/com/runcheck/domain/insights/rules/ThermalPatternDetectionRule.kt",
+      "findingSelectors": [
+        "key = \"hot_pattern:${ratiopercent.toratiobucket()}\"",
+        "key = \"insight_thermal_pattern_body\"",
+        "key = \"insight_thermal_pattern_title\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-battery-view-model",
@@ -208,7 +267,10 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-battery-view-model",
       "sourcePath": "app/src/main/java/com/runcheck/ui/battery/BatteryViewModel.kt",
       "selector": "SELECTED_PERIOD_KEY = \"battery_selected_period\"",
-      "findingPath": "app/src/main/java/com/runcheck/ui/battery/BatteryViewModel.kt"
+      "findingPath": "app/src/main/java/com/runcheck/ui/battery/BatteryViewModel.kt",
+      "findingSelectors": [
+        "key = \"battery_selected_period\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-info-card-catalog",
@@ -222,7 +284,20 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-info-card-catalog",
       "sourcePath": "app/src/main/java/com/runcheck/ui/components/info/InfoCardCatalog.kt",
       "selector": "key = \"battery_health_80\"",
-      "findingPath": "app/src/main/java/com/runcheck/ui/components/info/InfoCardCatalog.kt"
+      "findingPath": "app/src/main/java/com/runcheck/ui/components/info/InfoCardCatalog.kt",
+      "findingSelectors": [
+        "key = \"battery_charging_habits\"",
+        "key = \"battery_dies_before_zero\"",
+        "key = \"battery_health_80\"",
+        "key = \"battery_live_notification\"",
+        "key = \"battery_screen_off_drain\"",
+        "key = \"network_speed_test_info\"",
+        "key = \"network_weak_signal_drain\"",
+        "key = \"storage_full_slow\"",
+        "key = \"storage_overview\"",
+        "key = \"thermal_heat_battery_loop\"",
+        "key = \"thermal_throttling_explainer\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-learn-article-detail-screen",
@@ -236,7 +311,10 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-learn-article-detail-screen",
       "sourcePath": "app/src/main/java/com/runcheck/ui/learn/LearnArticleDetailScreen.kt",
       "selector": "key = \"cross_link\"",
-      "findingPath": "app/src/main/java/com/runcheck/ui/learn/LearnArticleDetailScreen.kt"
+      "findingPath": "app/src/main/java/com/runcheck/ui/learn/LearnArticleDetailScreen.kt",
+      "findingSelectors": [
+        "key = \"cross_link\", contenttype = \"learn_cross_link\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-learn-screen",
@@ -250,7 +328,13 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-learn-screen",
       "sourcePath": "app/src/main/java/com/runcheck/ui/learn/LearnScreen.kt",
       "selector": "key = \"top_spacing\"",
-      "findingPath": "app/src/main/java/com/runcheck/ui/learn/LearnScreen.kt"
+      "findingPath": "app/src/main/java/com/runcheck/ui/learn/LearnScreen.kt",
+      "findingSelectors": [
+        "key = \"bottom_spacing\"",
+        "key = \"header_${section.topic.name}\"",
+        "key = \"spacer_${section.topic.name}\"",
+        "key = \"top_spacing\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-network-view-model",
@@ -264,7 +348,67 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-network-view-model",
       "sourcePath": "app/src/main/java/com/runcheck/ui/network/NetworkViewModel.kt",
       "selector": "SELECTED_HISTORY_PERIOD_KEY = \"network_selected_history_period\"",
-      "findingPath": "app/src/main/java/com/runcheck/ui/network/NetworkViewModel.kt"
+      "findingPath": "app/src/main/java/com/runcheck/ui/network/NetworkViewModel.kt",
+      "findingSelectors": [
+        "key = \"network_selected_history_period\""
+      ]
+    },
+    {
+      "id": "runcheck-mobsf-hardcoded-speed-test-screen",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Info sheet routing keys in SpeedTestScreen.kt",
+      "reason": "The exact MobSF matches are local info sheet routing identifiers, not credentials or secrets.",
+      "owner": "project-maintainers",
+      "added": "2026-09-05",
+      "expires": "2026-10-31",
+      "tracking": "local-review:runcheck-mobsf-hardcoded-speed-test-screen",
+      "sourcePath": "app/src/main/java/com/runcheck/ui/network/SpeedTestScreen.kt",
+      "selector": "infoKey = \"download\"",
+      "findingPath": "app/src/main/java/com/runcheck/ui/network/SpeedTestScreen.kt",
+      "findingSelectors": [
+        "key = \"download\"",
+        "key = \"jitter\"",
+        "key = \"ping\"",
+        "key = \"upload\""
+      ]
+    },
+    {
+      "id": "runcheck-mobsf-hardcoded-settings-screen",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Info sheet routing keys in SettingsScreen.kt",
+      "reason": "The exact MobSF matches are local info sheet routing identifiers, not credentials or secrets.",
+      "owner": "project-maintainers",
+      "added": "2026-09-05",
+      "expires": "2026-10-31",
+      "tracking": "local-review:runcheck-mobsf-hardcoded-settings-screen",
+      "sourcePath": "app/src/main/java/com/runcheck/ui/settings/SettingsScreen.kt",
+      "selector": "infoKey = \"currentReading\"",
+      "findingPath": "app/src/main/java/com/runcheck/ui/settings/SettingsScreen.kt",
+      "findingSelectors": [
+        "key = \"currentreading\"",
+        "key = \"cyclecount\"",
+        "key = \"thermalzones\""
+      ]
+    },
+    {
+      "id": "runcheck-mobsf-hardcoded-storage-detail-screen",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Info sheet routing keys in StorageDetailScreen.kt",
+      "reason": "The exact MobSF matches are local info sheet routing identifiers, not credentials or secrets.",
+      "owner": "project-maintainers",
+      "added": "2026-09-05",
+      "expires": "2026-10-31",
+      "tracking": "local-review:runcheck-mobsf-hardcoded-storage-detail-screen",
+      "sourcePath": "app/src/main/java/com/runcheck/ui/storage/StorageDetailScreen.kt",
+      "selector": "infoKey = \"cache\"",
+      "findingPath": "app/src/main/java/com/runcheck/ui/storage/StorageDetailScreen.kt",
+      "findingSelectors": [
+        "key = \"cache\"",
+        "key = \"fillrate\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-cleanup-screen",
@@ -278,7 +422,15 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-cleanup-screen",
       "sourcePath": "app/src/main/java/com/runcheck/ui/storage/cleanup/CleanupScreen.kt",
       "selector": "key = \"header\"",
-      "findingPath": "app/src/main/java/com/runcheck/ui/storage/cleanup/CleanupScreen.kt"
+      "findingPath": "app/src/main/java/com/runcheck/ui/storage/cleanup/CleanupScreen.kt",
+      "findingSelectors": [
+        "key = \"append_error_${group.category}_$pagergeneration\"",
+        "key = \"error_${group.category}_$pagergeneration\"",
+        "key = \"group_${group.category}\"",
+        "key = \"header\"",
+        "key = \"loading_${group.category}_$pagergeneration\"",
+        "key = \"spacer\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-cleanup-thumbnail-loader",
@@ -292,7 +444,10 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-cleanup-thumbnail-loader",
       "sourcePath": "app/src/main/java/com/runcheck/ui/storage/cleanup/CleanupThumbnailLoader.kt",
       "selector": "val cacheKey = \"$uriString@$sizePx\"",
-      "findingPath": "app/src/main/java/com/runcheck/ui/storage/cleanup/CleanupThumbnailLoader.kt"
+      "findingPath": "app/src/main/java/com/runcheck/ui/storage/cleanup/CleanupThumbnailLoader.kt",
+      "findingSelectors": [
+        "key = \"$uristring@$sizepx\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-cleanup-view-model",
@@ -306,7 +461,20 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-cleanup-view-model",
       "sourcePath": "app/src/main/java/com/runcheck/ui/storage/cleanup/CleanupViewModel.kt",
       "selector": "SELECTED_FILTER_KEY = \"cleanup_selected_filter\"",
-      "findingPath": "app/src/main/java/com/runcheck/ui/storage/cleanup/CleanupViewModel.kt"
+      "findingPath": "app/src/main/java/com/runcheck/ui/storage/cleanup/CleanupViewModel.kt",
+      "findingSelectors": [
+        "key = \"cleanup_active_delete_uris\"",
+        "key = \"cleanup_confirmed_delete_uris\"",
+        "key = \"cleanup_pending_delete_uris\"",
+        "key = \"cleanup_pending_deselected_uris\"",
+        "key = \"cleanup_pending_legacy_confirmation\"",
+        "key = \"cleanup_pending_metadata_uris\"",
+        "key = \"cleanup_pending_selected_groups\"",
+        "key = \"cleanup_pending_selected_uris\"",
+        "key = \"cleanup_pending_uri_categories\"",
+        "key = \"cleanup_pending_uri_sizes\"",
+        "key = \"cleanup_selected_filter\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-storage-view-model",
@@ -320,7 +488,10 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-storage-view-model",
       "sourcePath": "app/src/main/java/com/runcheck/ui/storage/StorageViewModel.kt",
       "selector": "SELECTED_HISTORY_PERIOD_KEY = \"storage_selected_history_period\"",
-      "findingPath": "app/src/main/java/com/runcheck/ui/storage/StorageViewModel.kt"
+      "findingPath": "app/src/main/java/com/runcheck/ui/storage/StorageViewModel.kt",
+      "findingSelectors": [
+        "key = \"storage_selected_history_period\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-thermal-view-model",
@@ -334,7 +505,10 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-thermal-view-model",
       "sourcePath": "app/src/main/java/com/runcheck/ui/thermal/ThermalViewModel.kt",
       "selector": "SELECTED_HISTORY_PERIOD_KEY = \"thermal_selected_history_period\"",
-      "findingPath": "app/src/main/java/com/runcheck/ui/thermal/ThermalViewModel.kt"
+      "findingPath": "app/src/main/java/com/runcheck/ui/thermal/ThermalViewModel.kt",
+      "findingSelectors": [
+        "key = \"thermal_selected_history_period\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-insight-repository-test",
@@ -348,7 +522,13 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-insight-repository-test",
       "sourcePath": "app/src/test/java/com/runcheck/data/insights/InsightRepositoryImplTest.kt",
       "selector": "bodyKey = \"body\"",
-      "findingPath": "app/src/test/java/com/runcheck/data/insights/InsightRepositoryImplTest.kt"
+      "findingPath": "app/src/test/java/com/runcheck/data/insights/InsightRepositoryImplTest.kt",
+      "findingSelectors": [
+        "key = \"body\"",
+        "key = \"same\"",
+        "key = \"stale\"",
+        "key = \"title\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-insight-engine-test",
@@ -362,7 +542,12 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-insight-engine-test",
       "sourcePath": "app/src/test/java/com/runcheck/domain/insights/engine/InsightEngineTest.kt",
       "selector": "dedupeKey = \"same-episode\"",
-      "findingPath": "app/src/test/java/com/runcheck/domain/insights/engine/InsightEngineTest.kt"
+      "findingPath": "app/src/test/java/com/runcheck/domain/insights/engine/InsightEngineTest.kt",
+      "findingSelectors": [
+        "key = \"body\"",
+        "key = \"same-episode\"",
+        "key = \"title\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-insight-ranking-test",
@@ -376,7 +561,11 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-insight-ranking-test",
       "sourcePath": "app/src/test/java/com/runcheck/domain/insights/policy/InsightHomeRankingPolicyTest.kt",
       "selector": "bodyKey = \"body_$id\"",
-      "findingPath": "app/src/test/java/com/runcheck/domain/insights/policy/InsightHomeRankingPolicyTest.kt"
+      "findingPath": "app/src/test/java/com/runcheck/domain/insights/policy/InsightHomeRankingPolicyTest.kt",
+      "findingSelectors": [
+        "key = \"body_$id\"",
+        "key = \"title_$id\""
+      ]
     },
     {
       "id": "runcheck-mobsf-hardcoded-insight-fixtures-test",
@@ -390,7 +579,11 @@
       "tracking": "local-review:runcheck-mobsf-hardcoded-insight-fixtures-test",
       "sourcePath": "app/src/test/java/com/runcheck/testutil/InsightFixtures.kt",
       "selector": "bodyKey = \"body\"",
-      "findingPath": "app/src/test/java/com/runcheck/testutil/InsightFixtures.kt"
+      "findingPath": "app/src/test/java/com/runcheck/testutil/InsightFixtures.kt",
+      "findingSelectors": [
+        "key = \"body\"",
+        "key = \"title\""
+      ]
     },
     {
       "id": "runcheck-owasp-false-cpe-groups",

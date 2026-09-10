@@ -5,6 +5,8 @@ import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.repository.SpeedTestRepository
 import javax.inject.Inject
 
+private const val PRO_HISTORY_LIMIT = 100
+
 class FinalizeSpeedTestUseCase
     @Inject
     constructor(
@@ -15,10 +17,7 @@ class FinalizeSpeedTestUseCase
             result: SpeedTestResult,
             freeHistoryLimit: Int,
         ) {
-            if (proStatusProvider.isPro()) {
-                speedTestRepository.saveResult(result)
-            } else {
-                speedTestRepository.saveResultAndTrim(result, freeHistoryLimit)
-            }
+            val historyLimit = if (proStatusProvider.isPro()) PRO_HISTORY_LIMIT else freeHistoryLimit
+            speedTestRepository.saveResultAndTrim(result, historyLimit)
         }
     }

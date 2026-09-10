@@ -140,7 +140,7 @@ class BillingManager
                                     reconnectJob?.cancel()
                                     reconnectJob = null
                                 }
-                                _billingAvailable.value = true
+                                _billingAvailable.value = false
                                 scope.launch {
                                     queryExistingPurchases()
                                     queryProductDetails()
@@ -245,7 +245,7 @@ class BillingManager
                 }
 
                 in reconnectableBillingResponseCodes() -> {
-                    _billingAvailable.value = cachedProductDetails != null
+                    _billingAvailable.value = false
                     scheduleReconnect()
                 }
 

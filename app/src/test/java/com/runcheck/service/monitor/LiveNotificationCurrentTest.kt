@@ -1,5 +1,6 @@
 package com.runcheck.service.monitor
 
+import com.runcheck.R
 import com.runcheck.domain.model.BatteryHealth
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.ChargingStatus
@@ -18,7 +19,21 @@ class LiveNotificationCurrentTest {
 
     @Test
     fun `available current is retained for live notification`() {
-        assertEquals(-420, batteryState(currentMa = -420, confidence = Confidence.HIGH).currentForLiveNotification())
+        assertEquals(
+            MeasuredValue(-420, Confidence.HIGH),
+            batteryState(currentMa = -420, confidence = Confidence.HIGH).currentForLiveNotification(),
+        )
+    }
+
+    @Test
+    fun `estimated current is labelled in live notification`() {
+        val current = batteryState(currentMa = -420, confidence = Confidence.LOW).currentForLiveNotification()
+
+        assertEquals(MeasuredValue(-420, Confidence.LOW), current)
+        assertEquals(
+            R.string.live_notif_estimated_current,
+            current?.let { liveNotificationCurrentLabelRes(it.confidence) },
+        )
     }
 
     private fun batteryState(

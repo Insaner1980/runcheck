@@ -15,6 +15,7 @@ import com.runcheck.R
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.Confidence
+import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.repository.BatteryRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
@@ -167,6 +168,9 @@ class RealTimeMonitorService : Service() {
                     throw e
                 } catch (e: Exception) {
                     ReleaseSafeLog.error(TAG, "Failed to load preferences in live mode check", e)
+                    if (activeBindings.get() == 0) {
+                        scheduleIdleStop()
+                    }
                 }
             }
     }
@@ -252,7 +256,7 @@ class RealTimeMonitorService : Service() {
                 requestCode = NOTIFICATION_ID,
             )
 
-        val title = titleParts.joinToString(" · ")
+        val title = titleParts.joinToString(" — ")
         val body = bodyLines.joinToString("\n").ifEmpty { getString(R.string.monitor_realtime_notification_text) }
 
         return NotificationCompat
@@ -280,7 +284,8 @@ class RealTimeMonitorService : Service() {
         battery: BatteryState,
         bodyLines: MutableList<String>,
     ) {
-        battery.currentForLiveNotification()?.let { currentMa ->
+        battery.currentForLiveNotification()?.let { measuredCurrent ->
+            val currentMa = measuredCurrent.value
             val powerW =
                 currentMa.let { ma ->
                     val watts = kotlin.math.abs(ma) * battery.voltageMv / 1_000_000f
@@ -296,7 +301,10 @@ class RealTimeMonitorService : Service() {
                 } else {
                     getString(R.string.live_notif_current, currentMa)
                 }
-            bodyLines.add(currentLine)
+            val confidenceLabelRes = liveNotificationCurrentLabelRes(measuredCurrent.confidence)
+            bodyLines.add(
+                confidenceLabelRes?.let { getString(it, currentLine) } ?: currentLine,
+            )
         }
     }
 
@@ -345,5 +353,8 @@ class RealTimeMonitorService : Service() {
     }
 }
 
-internal fun BatteryState.currentForLiveNotification(): Int? =
-    currentMa.takeIf { it.confidence != Confidence.UNAVAILABLE }?.value
+internal fun BatteryState.currentForLiveNotification(): MeasuredValue<Int>? =
+    currentMa.takeIf { it.confidence != Confidence.UNAVAILABLE }
+
+internal fun liveNotificationCurrentLabelRes(confidence: Confidence): Int? =
+    R.string.live_notif_estimated_current.takeIf { confidence == Confidence.LOW }

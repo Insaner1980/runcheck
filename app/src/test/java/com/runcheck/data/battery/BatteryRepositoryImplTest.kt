@@ -1,5 +1,6 @@
 package com.runcheck.data.battery
 
+import android.database.sqlite.SQLiteException
 import com.runcheck.data.db.dao.BatteryReadingDao
 import com.runcheck.data.db.entity.BatteryReadingEntity
 import com.runcheck.data.device.DeviceProfileProvider
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class BatteryRepositoryImplTest {
@@ -67,6 +69,33 @@ class BatteryRepositoryImplTest {
             coVerify { dao.insert(capture(slot)) }
             assertEquals(null, slot.captured.currentMa)
             assertEquals(Confidence.UNAVAILABLE.name, slot.captured.currentConfidence)
+        }
+
+    @Test
+    fun `saveReading propagates database failures`() =
+        runTest {
+            val failure = SQLiteException("database full")
+            val dao: BatteryReadingDao = mockk(relaxed = true)
+            coEvery { dao.insert(any()) } throws failure
+            val repository = createRepository(dao)
+
+            val thrown =
+                runCatching {
+                    repository.saveReading(
+                        BatteryState(
+                            level = 55,
+                            voltageMv = 3900,
+                            temperatureC = 31f,
+                            currentMa = MeasuredValue(-250, Confidence.HIGH),
+                            chargingStatus = ChargingStatus.DISCHARGING,
+                            plugType = PlugType.NONE,
+                            health = BatteryHealth.GOOD,
+                            technology = "Li-ion",
+                        ),
+                    )
+                }.exceptionOrNull()
+
+            assertSame(failure, thrown)
         }
 
     @Test

@@ -1,14 +1,41 @@
 package com.runcheck.data.storage
 
 import android.app.admin.DevicePolicyManager
+import android.content.Context
 import android.os.Environment
+import com.runcheck.util.TestAppDispatchers
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Test
 import java.io.BufferedReader
 import java.io.File
 import java.io.StringReader
 
 class StorageDataSourcePublicInfoTest {
+    @Test
+    fun `media breakdown cancellation stops storage collection`() =
+        runTest {
+            val cancellation = CancellationException("cancelled")
+            val mediaStoreScanner = mockk<MediaStoreScanner>()
+            coEvery { mediaStoreScanner.getMediaBreakdown() } throws cancellation
+            val dataSource =
+                StorageDataSource(
+                    context = mockk<Context>(relaxed = true),
+                    mediaStoreScanner = mediaStoreScanner,
+                    dispatchers = TestAppDispatchers(),
+                )
+
+            val thrown = runCatching { dataSource.getStorageInfo() }.exceptionOrNull()
+
+            assertSame(cancellation, thrown)
+            coVerify(exactly = 0) { mediaStoreScanner.getTrashInfo() }
+        }
+
     @Test
     fun `data file system parser accepts mounts whitespace and unusual options`() {
         val mounts =

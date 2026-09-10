@@ -41,7 +41,10 @@ internal class StoragePressureRuleDataLoader(
         now: Long,
         maxDaysUntilFull: Long,
     ): StoragePressureRuleData? {
-        val readings = repository.getReadingsSinceSync(now - STORAGE_PRESSURE_LOOKBACK_MS)
+        val readings =
+            repository
+                .getReadingsSinceSync(now - STORAGE_PRESSURE_LOOKBACK_MS)
+                .filter { reading -> reading.timestamp <= now }
         if (readings.size < MINIMUM_STORAGE_PRESSURE_READING_COUNT) return null
 
         val projection = analyzer.calculateProjection(readings) ?: return null

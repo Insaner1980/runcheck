@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
 import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
@@ -27,11 +28,9 @@ fun ProgressHeroMetric(
     modifier: Modifier = Modifier,
     supportingContent: @Composable ColumnScope.() -> Unit,
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg),
-    ) {
+    val useStackedLayout = LocalDensity.current.fontScale >= PROGRESS_HERO_STACKED_FONT_SCALE
+
+    val progressRing: @Composable () -> Unit = {
         ProgressRing(
             progress = progress.coerceIn(0f, 1f),
             modifier = Modifier.size(100.dp),
@@ -40,7 +39,9 @@ fun ProgressHeroMetric(
             progressColor = progressColor,
             contentDescription = contentDescription,
         ) {}
+    }
 
+    val metricText: @Composable () -> Unit = {
         Column {
             Row(verticalAlignment = Alignment.Bottom) {
                 androidx.compose.material3.Text(
@@ -58,4 +59,26 @@ fun ProgressHeroMetric(
             supportingContent()
         }
     }
+
+    if (useStackedLayout) {
+        Column(
+            modifier = modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
+        ) {
+            progressRing()
+            metricText()
+        }
+    } else {
+        Row(
+            modifier = modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg),
+        ) {
+            progressRing()
+            metricText()
+        }
+    }
 }
+
+private const val PROGRESS_HERO_STACKED_FONT_SCALE = 1.5f

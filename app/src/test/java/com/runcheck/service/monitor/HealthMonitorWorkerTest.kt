@@ -38,12 +38,14 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -155,6 +157,19 @@ class HealthMonitorWorkerTest {
             coVerify(exactly = 0) { monitoringStatusRepository.setLastWorkerHeartbeat(any()) }
         }
 
+    @Test
+    fun `doWork rethrows cancellation from latency measurement`() =
+        runTest {
+            val worker = createWorker()
+            coEvery { networkRepository.measureLatency(sampleNetworkState.defaultNetworkHandle) } throws
+                CancellationException("stopped")
+
+            val thrown = runCatching { worker.doWork() }.exceptionOrNull()
+
+            assertTrue(thrown is CancellationException)
+            coVerify(exactly = 0) { networkRepository.saveReading(any()) }
+        }
+
     private fun createWorker(
         runAttemptCount: Int = 0,
         preferencesFlow: Flow<UserPreferences> = flowOf(UserPreferences()),
@@ -170,7 +185,7 @@ class HealthMonitorWorkerTest {
         every { networkRepository.getNetworkState() } returns networkStateFlow
         every { thermalRepository.getThermalState() } returns thermalStateFlow
         every { storageRepository.getStorageState() } returns storageStateFlow
-        coEvery { networkRepository.measureLatency() } returns 23
+        coEvery { networkRepository.measureLatency(sampleNetworkState.defaultNetworkHandle) } returns 23
         coEvery { monitoringAlertStateStore.getLastSnapshot() } returns null
         coEvery { monitoringAlertStateStore.wasChargeCompleteFired() } returns false
 
@@ -273,6 +288,7 @@ class HealthMonitorWorkerTest {
                 signalDbm = -54,
                 signalQuality = SignalQuality.EXCELLENT,
                 wifiSsid = "TestWiFi",
+                defaultNetworkHandle = 7L,
             )
 
         val sampleThermalState =

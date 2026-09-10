@@ -37,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -63,12 +64,12 @@ import com.runcheck.ui.theme.spacing
 import kotlinx.coroutines.flow.Flow
 
 @Composable
-@Suppress("ViewModelForwarding")
 fun CleanupScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: CleanupViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> CleanupViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val legacyDeleteConfirmationCount by viewModel.legacyDeleteConfirmationCount.collectAsStateWithLifecycle()
     val cleanupType = viewModel.cleanupType
@@ -149,8 +150,11 @@ fun CleanupScreen(
         )
     }
 
+    val successState = uiState as? CleanupUiState.Success
+
     Box(modifier = modifier.fillMaxSize()) {
         Scaffold(
+            modifier = if (successState != null) Modifier.clearAndSetSemantics {} else Modifier,
             topBar = {
                 DetailTopBar(
                     title = stringResource(cleanupType.titleRes),
@@ -192,7 +196,6 @@ fun CleanupScreen(
         }
 
         // Success overlay on top of everything
-        val successState = uiState as? CleanupUiState.Success
         CleanupSuccessOverlay(
             visible = successState != null,
             freedBytes = successState?.freedBytes ?: 0L,
@@ -463,42 +466,81 @@ private fun LazyListScope.expandedGroupItems(
     isSelected: (ScannedFile) -> Boolean,
     onToggleSelection: (ScannedFile) -> Unit,
 ) {
-    if (lazyItems != null && lazyItems.loadState.refresh is LoadState.Loading && lazyItems.itemCount == 0) {
-        item(key = "loading_${group.category}_$pagerGeneration") {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = MaterialTheme.spacing.base),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
+    if (lazyItems == null) return
+
+    when {
+        lazyItems.loadState.refresh is LoadState.Loading && lazyItems.itemCount == 0 -> {
+            item(key = "loading_${group.category}_$pagerGeneration") {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = MaterialTheme.spacing.base),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
             }
         }
-    } else if (lazyItems != null) {
-        items(
-            count = lazyItems.itemCount,
-            key = { index -> lazyItems.peek(index)?.uri ?: "${group.category}_$index" },
-            contentType = { _ -> "cleanup_file" },
-        ) { index ->
-            val file = lazyItems[index] ?: return@items
-            val onToggle =
-                remember(file.uri) {
-                    { onToggleSelection(file) }
-                }
-            Column {
-                if (index > 0) {
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                        modifier = Modifier.padding(start = 56.dp),
+
+        lazyItems.loadState.refresh is LoadState.Error && lazyItems.itemCount == 0 -> {
+            cleanupPagingErrorItem(
+                key = "error_${group.category}_$pagerGeneration",
+                onRetry = lazyItems::retry,
+            )
+        }
+
+        else -> {
+            items(
+                count = lazyItems.itemCount,
+                key = { index -> lazyItems.peek(index)?.uri ?: "${group.category}_$index" },
+                contentType = { _ -> "cleanup_file" },
+            ) { index ->
+                val file = lazyItems[index] ?: return@items
+                val onToggle =
+                    remember(file.uri) {
+                        { onToggleSelection(file) }
+                    }
+                Column {
+                    if (index > 0) {
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                            modifier = Modifier.padding(start = 56.dp),
+                        )
+                    }
+                    FileListItem(
+                        file = file,
+                        isSelected = isSelected(file),
+                        maxFileSize = maxFileSize,
+                        onToggle = onToggle,
                     )
                 }
-                FileListItem(
-                    file = file,
-                    isSelected = isSelected(file),
-                    maxFileSize = maxFileSize,
-                    onToggle = onToggle,
+            }
+            if (lazyItems.loadState.append is LoadState.Error) {
+                cleanupPagingErrorItem(
+                    key = "append_error_${group.category}_$pagerGeneration",
+                    onRetry = lazyItems::retry,
                 )
+            }
+        }
+    }
+}
+
+private fun LazyListScope.cleanupPagingErrorItem(
+    key: String,
+    onRetry: () -> Unit,
+) {
+    item(key = key) {
+        RuncheckCard(
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+        ) {
+            Text(
+                text = stringResource(R.string.common_error_generic),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            TextButton(onClick = onRetry) {
+                Text(stringResource(R.string.common_retry))
             }
         }
     }

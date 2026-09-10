@@ -6,12 +6,15 @@ fun classifyNetworkSignalQuality(
     networkSubtype: String? = null,
 ): SignalQuality {
     if (type == ConnectionType.NONE) return SignalQuality.NO_SIGNAL
-    if (type == ConnectionType.VPN && dbm == null) return SignalQuality.GOOD
+    if ((type == ConnectionType.VPN || type == ConnectionType.ETHERNET) && dbm == null) {
+        return SignalQuality.GOOD
+    }
     if (dbm == null) return SignalQuality.NO_SIGNAL
 
     return when (type) {
         ConnectionType.WIFI -> classifyWifiSignalQuality(dbm)
         ConnectionType.CELLULAR -> classifyCellularSignalQuality(dbm, networkSubtype)
+        ConnectionType.ETHERNET -> SignalQuality.GOOD
         ConnectionType.VPN -> classifyVpnSignalQuality(dbm)
         ConnectionType.NONE -> SignalQuality.NO_SIGNAL
     }

@@ -1,43 +1,49 @@
 package com.runcheck.ui.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.runcheck.R
 import com.runcheck.domain.model.HealthScore
 import com.runcheck.domain.model.HealthStatus
+import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SignalQuality
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.formatTemperatureValue
-import com.runcheck.ui.common.healthStatusLabel
 import com.runcheck.ui.common.temperatureUnitRes
+import com.runcheck.ui.theme.HomeCream
+import com.runcheck.ui.theme.HomeGraphite
+import com.runcheck.ui.theme.HomeInk
+import com.runcheck.ui.theme.HomePeach
+import com.runcheck.ui.theme.HomeStone
 import com.runcheck.ui.theme.StatusColors
-import com.runcheck.ui.theme.TileBattery
-import com.runcheck.ui.theme.TileNetwork
-import com.runcheck.ui.theme.TileStorage
-import com.runcheck.ui.theme.TileThermal
 import com.runcheck.ui.theme.homeStatusTileTypeScale
 import com.runcheck.ui.theme.statusColor
 import com.runcheck.ui.theme.statusColorForSignalQuality
@@ -46,58 +52,9 @@ import com.runcheck.ui.theme.statusColorForTemperature
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.uiTokens
 
-internal enum class HomeStatusTileCategory(
-    val tieBreakOrder: Int,
-) {
-    BATTERY(0),
-    NETWORK(1),
-    THERMAL(2),
-    STORAGE(3),
-}
+private const val HOME_STATUS_TILE_SINGLE_COLUMN_FONT_SCALE = 1.5f
 
-@Immutable
-internal data class HomeStatusTileSlots(
-    val slotA: HomeStatusTileCategory,
-    val slotB: HomeStatusTileCategory,
-    val slotC: HomeStatusTileCategory,
-    val slotD: HomeStatusTileCategory,
-)
-
-internal fun assignHomeStatusTileSlots(
-    batteryStatus: HealthStatus,
-    networkStatus: HealthStatus,
-    thermalStatus: HealthStatus,
-    storageStatus: HealthStatus,
-): HomeStatusTileSlots {
-    val sortedCategories =
-        listOf(
-            HomeStatusTileCategory.BATTERY to batteryStatus,
-            HomeStatusTileCategory.NETWORK to networkStatus,
-            HomeStatusTileCategory.THERMAL to thermalStatus,
-            HomeStatusTileCategory.STORAGE to storageStatus,
-        ).sortedWith(
-            compareBy<Pair<HomeStatusTileCategory, HealthStatus>>(
-                { it.second.severityRank },
-                { it.first.tieBreakOrder },
-            ),
-        )
-
-    return HomeStatusTileSlots(
-        slotA = sortedCategories[0].first,
-        slotB = sortedCategories[1].first,
-        slotC = sortedCategories[2].first,
-        slotD = sortedCategories[3].first,
-    )
-}
-
-private val HealthStatus.severityRank: Int
-    get() =
-        when (this) {
-            HealthStatus.CRITICAL -> 0
-            HealthStatus.POOR -> 1
-            HealthStatus.FAIR -> 2
-            HealthStatus.HEALTHY -> 3
-        }
+internal enum class HomeStatusTileCategory { BATTERY, THERMAL, STORAGE, NETWORK }
 
 @Immutable
 private data class HomeStatusTileStatuses(
@@ -151,109 +108,62 @@ internal fun HomeStatusTiles(
     onNavigateToNetwork: () -> Unit,
     onNavigateToThermal: () -> Unit,
     onNavigateToStorage: () -> Unit,
+    compact: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val tokens = MaterialTheme.uiTokens
-    val typeScale = MaterialTheme.homeStatusTileTypeScale
-    val density = LocalDensity.current
-    val tileMinHeight =
-        with(density) {
-            maxOf(
-                tokens.homeStatusTileHeight,
-                tokens.homeStatusTileValueTop +
-                    typeScale.value.lineHeight.toDp() +
-                    tokens.homeStatusTileStatusGap +
-                    typeScale.status.lineHeight.toDp(),
-            )
-        }
     val statuses = homeStatusTileStatuses(state)
-    val slots =
-        assignHomeStatusTileSlots(
-            batteryStatus = statuses.battery,
-            networkStatus = statuses.network,
-            thermalStatus = statuses.thermal,
-            storageStatus = statuses.storage,
-        )
-
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(tokens.homeStatusTileGap),
-    ) {
-        HomeStatusTile(
-            category = slots.slotA,
-            state = state,
-            status = statuses.forCategory(slots.slotA),
-            onClick =
-                slots.slotA.navigationCallback(
-                    onNavigateToBattery = onNavigateToBattery,
-                    onNavigateToNetwork = onNavigateToNetwork,
-                    onNavigateToThermal = onNavigateToThermal,
-                    onNavigateToStorage = onNavigateToStorage,
-                ),
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = tileMinHeight),
-        )
-
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = tileMinHeight),
-            horizontalArrangement = Arrangement.spacedBy(tokens.homeStatusTileGap),
-        ) {
+    BoxWithConstraints(modifier = modifier) {
+        val singleColumn =
+            LocalDensity.current.fontScale >= HOME_STATUS_TILE_SINGLE_COLUMN_FONT_SCALE ||
+                maxWidth / LocalDensity.current.fontScale < 320.dp
+        val tile: @Composable (HomeStatusTileCategory, Modifier, Shape?) -> Unit = { category, tileModifier, shape ->
             HomeStatusTile(
-                category = slots.slotB,
+                category = category,
                 state = state,
-                status = statuses.forCategory(slots.slotB),
+                status = statuses.forCategory(category),
                 onClick =
-                    slots.slotB.navigationCallback(
-                        onNavigateToBattery = onNavigateToBattery,
-                        onNavigateToNetwork = onNavigateToNetwork,
-                        onNavigateToThermal = onNavigateToThermal,
-                        onNavigateToStorage = onNavigateToStorage,
+                    category.navigationCallback(
+                        onNavigateToBattery,
+                        onNavigateToNetwork,
+                        onNavigateToThermal,
+                        onNavigateToStorage,
                     ),
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-            )
-
-            HomeStatusTile(
-                category = slots.slotC,
-                state = state,
-                status = statuses.forCategory(slots.slotC),
-                onClick =
-                    slots.slotC.navigationCallback(
-                        onNavigateToBattery = onNavigateToBattery,
-                        onNavigateToNetwork = onNavigateToNetwork,
-                        onNavigateToThermal = onNavigateToThermal,
-                        onNavigateToStorage = onNavigateToStorage,
-                    ),
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
+                shape = shape ?: RoundedCornerShape(tokens.homeStatusTileCornerRadius),
+                compact = compact,
+                modifier = tileModifier,
             )
         }
-
-        HomeStatusTile(
-            category = slots.slotD,
-            state = state,
-            status = statuses.forCategory(slots.slotD),
-            onClick =
-                slots.slotD.navigationCallback(
-                    onNavigateToBattery = onNavigateToBattery,
-                    onNavigateToNetwork = onNavigateToNetwork,
-                    onNavigateToThermal = onNavigateToThermal,
-                    onNavigateToStorage = onNavigateToStorage,
-                ),
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = tileMinHeight),
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(tokens.homeStatusTileGap)) {
+            if (singleColumn) {
+                HomeStatusTileCategory.entries.forEach { category ->
+                    tile(category, Modifier.fillMaxWidth(), null)
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(-12.dp),
+                ) {
+                    tile(
+                        HomeStatusTileCategory.BATTERY,
+                        Modifier.weight(0.55f).fillMaxHeight(),
+                        HomeTileShape(HomeTileEdge.BATTERY),
+                    )
+                    tile(
+                        HomeStatusTileCategory.THERMAL,
+                        Modifier.weight(0.45f).fillMaxHeight(),
+                        HomeTileShape(HomeTileEdge.THERMAL),
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(tokens.homeStatusTileGap),
+                ) {
+                    tile(HomeStatusTileCategory.STORAGE, Modifier.weight(0.63f).fillMaxHeight(), null)
+                    tile(HomeStatusTileCategory.NETWORK, Modifier.weight(0.37f).fillMaxHeight(), null)
+                }
+            }
+        }
     }
 }
 
@@ -276,83 +186,120 @@ private fun HomeStatusTile(
     state: HomeUiState.Success,
     status: HealthStatus,
     onClick: () -> Unit,
+    shape: Shape,
+    compact: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val tokens = MaterialTheme.uiTokens
-    val colors = homeStatusTileColors(category = category, status = status)
-
+    val background =
+        when (category) {
+            HomeStatusTileCategory.BATTERY -> HomeCream
+            HomeStatusTileCategory.THERMAL -> HomePeach
+            HomeStatusTileCategory.STORAGE -> HomeGraphite
+            HomeStatusTileCategory.NETWORK -> HomeStone
+        }
+    val foreground = if (category == HomeStatusTileCategory.STORAGE) HomeCream else HomeInk
+    val content = category.content(state, status)
+    val badgeColor =
+        if (category == HomeStatusTileCategory.NETWORK && !state.networkState.isConnected) {
+            HomeCream
+        } else {
+            statusColor(status)
+        }
+    val curved = shape is HomeTileShape
     Surface(
         onClick = onClick,
-        modifier = modifier,
-        shape = RoundedCornerShape(tokens.homeStatusTileCornerRadius),
-        color = colors.background,
-        contentColor = colors.value,
+        modifier =
+            modifier.heightIn(
+                min =
+                    if (compact) {
+                        tokens.homeCompactStatusTileHeight
+                    } else {
+                        tokens.homeStatusTileHeight
+                    },
+            ),
+        shape = shape,
+        color = background,
+        contentColor = foreground,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
     ) {
-        Box(
+        Column(
             modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(
-                        start = tokens.homeStatusTilePaddingHorizontal,
-                        end = tokens.homeStatusTilePaddingHorizontal,
-                    ),
+                Modifier.padding(
+                    start =
+                        tokens.homeStatusTilePaddingHorizontal +
+                            if (curved && category == HomeStatusTileCategory.THERMAL) 20.dp else 0.dp,
+                    end =
+                        tokens.homeStatusTilePaddingHorizontal +
+                            if (curved && category == HomeStatusTileCategory.BATTERY) 20.dp else 0.dp,
+                    top =
+                        if (compact) {
+                            tokens.homeCompactStatusTileVerticalPadding
+                        } else {
+                            tokens.homeStatusTileCategoryTop
+                        },
+                    bottom =
+                        if (compact) {
+                            tokens.homeCompactStatusTileVerticalPadding
+                        } else {
+                            tokens.homeStatusTileCategoryTop
+                        },
+                ),
+            verticalArrangement = Arrangement.spacedBy(tokens.homeStatusTileStatusGap),
         ) {
-            Text(
-                text = category.label(),
-                style = MaterialTheme.homeStatusTileTypeScale.category,
-                color = colors.category,
-                modifier = Modifier.padding(top = tokens.homeStatusTileCategoryTop),
+            Text(text = category.label(), style = MaterialTheme.homeStatusTileTypeScale.category)
+            if (category == HomeStatusTileCategory.NETWORK) Spacer(Modifier.weight(1f))
+            TileValueLine(
+                value = content.value,
+                suffix = content.suffix,
+                valueStyle =
+                    MaterialTheme.homeStatusTileTypeScale.value.copy(
+                        fontSize =
+                            when (category) {
+                                HomeStatusTileCategory.BATTERY -> 40.sp
+                                HomeStatusTileCategory.NETWORK -> 28.sp
+                                else -> 30.sp
+                            },
+                        lineHeight = if (category == HomeStatusTileCategory.BATTERY) 44.sp else 34.sp,
+                    ),
+                suffixStyle = MaterialTheme.homeStatusTileTypeScale.suffix,
+                textColor = foreground,
             )
-
-            StandardTileContent(
-                content = category.content(state = state, status = status),
-                colors = colors,
-                modifier = Modifier.padding(top = tokens.homeStatusTileValueTop),
+            if (category == HomeStatusTileCategory.STORAGE) {
+                val context = LocalContext.current
+                Text(
+                    text =
+                        stringResource(
+                            R.string.home_storage_capacity,
+                            formatStorageSize(context, state.storageState.usedBytes),
+                            formatStorageSize(context, state.storageState.totalBytes),
+                        ),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                LinearProgressIndicator(
+                    progress = { (state.storageState.usagePercent / 100f).coerceIn(0f, 1f) },
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                    color = HomeCream,
+                    trackColor = HomeCream.copy(alpha = 0.25f),
+                    gapSize = 0.dp,
+                    drawStopIndicator = {},
+                )
+            }
+            Text(
+                text = content.status,
+                style = MaterialTheme.homeStatusTileTypeScale.status,
+                color = HomeInk,
+                modifier =
+                    Modifier
+                        .background(
+                            badgeColor,
+                            RoundedCornerShape(50),
+                        ).padding(horizontal = 10.dp, vertical = 4.dp),
             )
         }
     }
 }
-
-@Immutable
-private data class HomeStatusTileColors(
-    val background: Color,
-    val category: Color,
-    val value: Color,
-    val status: Color,
-)
-
-@Composable
-private fun homeStatusTileColors(
-    category: HomeStatusTileCategory,
-    status: HealthStatus,
-): HomeStatusTileColors {
-    val colorScheme = MaterialTheme.colorScheme
-    return if (status == HealthStatus.HEALTHY) {
-        HomeStatusTileColors(
-            background = category.categoryColor(),
-            category = colorScheme.background,
-            value = colorScheme.background,
-            status = colorScheme.background,
-        )
-    } else {
-        HomeStatusTileColors(
-            background = colorScheme.surfaceContainer,
-            category = colorScheme.onSurfaceVariant,
-            value = colorScheme.onSurface,
-            status = statusColor(status),
-        )
-    }
-}
-
-private fun HomeStatusTileCategory.categoryColor(): Color =
-    when (this) {
-        HomeStatusTileCategory.BATTERY -> TileBattery
-        HomeStatusTileCategory.NETWORK -> TileNetwork
-        HomeStatusTileCategory.THERMAL -> TileThermal
-        HomeStatusTileCategory.STORAGE -> TileStorage
-    }
 
 @Composable
 private fun HomeStatusTileCategory.label(): String =
@@ -384,7 +331,7 @@ private fun HomeStatusTileCategory.content(
                     state.networkState.signalDbm?.toString()
                         ?: stringResource(R.string.placeholder_dash),
                 suffix = stringResource(R.string.unit_dbm),
-                status = networkSignalStatusLabel(state.networkState.signalQuality),
+                status = stringResource(networkSignalStatusLabelRes(state.networkState)),
             )
         }
 
@@ -396,7 +343,15 @@ private fun HomeStatusTileCategory.content(
                         state.temperatureUnit,
                     ),
                 suffix = stringResource(temperatureUnitRes(state.temperatureUnit)),
-                status = healthStatusLabel(status),
+                status =
+                    stringResource(
+                        when (status) {
+                            HealthStatus.HEALTHY -> R.string.status_healthy
+                            HealthStatus.FAIR -> R.string.home_thermal_warm
+                            HealthStatus.POOR -> R.string.home_thermal_hot
+                            HealthStatus.CRITICAL -> R.string.home_thermal_critical
+                        },
+                    ),
             )
         }
 
@@ -408,7 +363,7 @@ private fun HomeStatusTileCategory.content(
                 ).splitValueAndSuffix()
             StatusTileContent(
                 value = formattedSize.value,
-                suffix = formattedSize.suffix,
+                suffix = stringResource(R.string.home_storage_free, formattedSize.suffix.orEmpty()),
                 status = storageStatusLabel(status),
             )
         }
@@ -421,38 +376,6 @@ private fun HomeStatusTileCategory.content(
             )
         }
     }
-
-@Composable
-private fun StandardTileContent(
-    content: StatusTileContent,
-    colors: HomeStatusTileColors,
-    modifier: Modifier = Modifier,
-) {
-    val tokens = MaterialTheme.uiTokens
-    val typeScale = MaterialTheme.homeStatusTileTypeScale
-
-    Column(modifier = modifier) {
-        TileValueLine(
-            value = content.value,
-            suffix = content.suffix,
-            valueStyle = typeScale.value,
-            suffixStyle = typeScale.suffix,
-            textColor = colors.value,
-        )
-
-        Spacer(
-            modifier = Modifier.height(tokens.homeStatusTileStatusGap),
-        )
-
-        Text(
-            text = content.status,
-            style = typeScale.status,
-            color = colors.status,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
 
 @Composable
 private fun batteryHealthStatusLabel(status: HealthStatus): String =
@@ -475,7 +398,7 @@ private fun TileValueLine(
 ) {
     val tokens = MaterialTheme.uiTokens
 
-    Row(
+    FlowRow(
         horizontalArrangement = Arrangement.spacedBy(tokens.homeStatusTileValueSuffixGap),
     ) {
         Text(
@@ -483,11 +406,7 @@ private fun TileValueLine(
             style = valueStyle,
             color = textColor,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier =
-                Modifier
-                    .weight(1f, fill = false)
-                    .alignByBaseline(),
+            modifier = Modifier.alignByBaseline(),
         )
         if (suffix != null) {
             Text(
@@ -501,17 +420,18 @@ private fun TileValueLine(
     }
 }
 
-@Composable
-private fun networkSignalStatusLabel(signalQuality: SignalQuality): String =
-    stringResource(
-        when (signalQuality) {
+internal fun networkSignalStatusLabelRes(networkState: NetworkState): Int =
+    if (!networkState.isConnected) {
+        R.string.score_unrated
+    } else {
+        when (networkState.signalQuality) {
             SignalQuality.EXCELLENT -> R.string.home_network_signal_excellent
             SignalQuality.GOOD -> R.string.home_network_signal_good
             SignalQuality.FAIR -> R.string.home_network_signal_fair
             SignalQuality.POOR -> R.string.home_network_signal_poor
             SignalQuality.NO_SIGNAL -> R.string.home_network_signal_none
-        },
-    )
+        }
+    }
 
 @Composable
 private fun storageStatusLabel(status: HealthStatus): String =

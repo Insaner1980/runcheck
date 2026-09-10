@@ -90,36 +90,22 @@ class ThermalRepositoryImpl
             thermalReadingDao.getReadingsSinceSync(since).map { it.toDomain() }
 
         override suspend fun saveReading(state: ThermalState) {
-            try {
-                val entity =
-                    ThermalReadingEntity(
-                        timestamp = System.currentTimeMillis(),
-                        batteryTempC = state.batteryTempC,
-                        cpuTempC = state.cpuTempC,
-                        thermalStatus = state.thermalStatus.ordinal,
-                        throttling = state.isThrottling,
-                    )
-                thermalReadingDao.insert(entity)
-            } catch (e: android.database.sqlite.SQLiteException) {
-                ReleaseSafeLog.error(TAG, "Failed to save thermal reading", e)
-            }
+            val entity =
+                ThermalReadingEntity(
+                    timestamp = System.currentTimeMillis(),
+                    batteryTempC = state.batteryTempC,
+                    cpuTempC = state.cpuTempC,
+                    thermalStatus = state.thermalStatus.ordinal,
+                    throttling = state.isThrottling,
+                )
+            thermalReadingDao.insert(entity)
         }
 
         override suspend fun getAllReadings(): List<ThermalReading> = thermalReadingDao.getAll().map { it.toDomain() }
 
-        override suspend fun deleteOlderThan(cutoff: Long) {
-            try {
-                thermalReadingDao.deleteOlderThan(cutoff)
-            } catch (e: android.database.sqlite.SQLiteException) {
-                ReleaseSafeLog.error(TAG, "Failed to delete old thermal readings", e)
-            }
-        }
+        override suspend fun deleteOlderThan(cutoff: Long) = thermalReadingDao.deleteOlderThan(cutoff)
 
         override suspend fun deleteAll() = thermalReadingDao.deleteAll()
-
-        private companion object {
-            const val TAG = "ThermalRepository"
-        }
     }
 
 private fun ThermalReadingEntity.toDomain() =

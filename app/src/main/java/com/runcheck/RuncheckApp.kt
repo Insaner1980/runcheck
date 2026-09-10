@@ -19,6 +19,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -66,13 +67,17 @@ class RuncheckApp :
                 WorkManager.getInstance(this@RuncheckApp).cancelUniqueWork(workName)
             }
         }
-        launchSafely(dispatchers.default, "screen state + scheduling") {
+        launchSafely(dispatchers.default, "screen state initialization") {
             screenStateRepository.get().initialize()
+        }
+        launchSafely(dispatchers.default, "monitor scheduling") {
             monitorScheduler.get().ensureScheduled()
         }
         // Update widgets when pro status changes
         launchSafely(dispatchers.default, "widget updates") {
-            proManager.get().isProUser.distinctUntilChanged().collect {
+            val manager = proManager.get()
+            manager.proAccessReady.first { it }
+            manager.isProUser.distinctUntilChanged().collect {
                 updateWidgetsAfterProStateChange()
             }
         }

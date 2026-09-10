@@ -32,4 +32,13 @@ class SpeedTestResponseParsingTest {
 
         assertEquals(50.0, DataConverter.convertToMbps(response), 0.000_001)
     }
+
+    @Test
+    fun `phase progress uses ndt7 elapsed microseconds`() {
+        val quarterComplete = ClientResponse(AppInfo(2_500_000L, 1.0), null, null)
+        val pastExpectedDuration = ClientResponse(AppInfo(12_000_000L, 1.0), null, null)
+
+        assertEquals(0.25f, speedTestPhaseProgress(quarterComplete), 0.000_001f)
+        assertEquals(1f, speedTestPhaseProgress(pastExpectedDuration), 0.000_001f)
+    }
 }

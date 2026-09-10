@@ -35,14 +35,14 @@ class FinalizeSpeedTestUseCaseTest {
         }
 
     @Test
-    fun `pro user saves without trimming`() =
+    fun `pro user saves and trims to one hundred results`() =
         runTest {
             every { proStatusProvider.isPro() } returns true
 
             useCase(result, freeHistoryLimit = 5)
 
-            coVerify(exactly = 1) { speedTestRepository.saveResult(result) }
-            coVerify(exactly = 0) { speedTestRepository.saveResultAndTrim(any(), any()) }
+            coVerify(exactly = 1) { speedTestRepository.saveResultAndTrim(result, 100) }
+            coVerify(exactly = 0) { speedTestRepository.saveResult(any()) }
         }
 
     private val result =
