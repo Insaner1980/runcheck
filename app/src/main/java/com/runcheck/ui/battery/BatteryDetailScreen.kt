@@ -273,7 +273,7 @@ private fun BatteryContent(
                 }
 
                 else -> {
-                    Unit
+                    // Ignore fullscreen chart results owned by other detail screens.
                 }
             }
         },
