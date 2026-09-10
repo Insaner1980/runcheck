@@ -28,7 +28,7 @@ androidxTestExtJunit = "1.3.0"
 androidxTestRunner = "1.7.0"
 jacoco = "0.8.14"
 
-dependencyAnalysis = "3.17.0"
+dependencyAnalysis = "3.19.1"
 ktlint = "1.8.0"
 ktlintGradle = "14.2.0"
 detekt = "2.0.0-alpha.5"
