@@ -1,5 +1,6 @@
 package com.runcheck.data.thermal
 
+import android.os.SystemClock
 import com.runcheck.data.db.dao.ThermalReadingDao
 import com.runcheck.data.db.entity.ThermalReadingEntity
 import com.runcheck.data.device.DeviceProfile
@@ -9,6 +10,9 @@ import com.runcheck.domain.model.SignConvention
 import com.runcheck.domain.model.ThermalReading
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.domain.model.ThrottlingEvent
+import com.runcheck.domain.repository.ThrottlingRepository
+import com.runcheck.domain.usecase.GetThermalStateUseCase
 import com.runcheck.domain.usecase.TrackThrottlingEventsUseCase
 import com.runcheck.testutil.assertRepositoryReads
 import com.runcheck.util.TestAppDispatchers
@@ -16,16 +20,147 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.slot
+import io.mockk.unmockkStatic
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
+import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ThermalRepositoryImplTest {
+    @Before
+    fun setUpClock() {
+        mockkStatic(SystemClock::class)
+        every { SystemClock.elapsedRealtime() } returns 1000L
+    }
+
+    @After
+    fun resetClock() {
+        unmockkStatic(SystemClock::class)
+    }
+
+    @Test
+    fun `live measurement survives event persistence failure`() =
+        runTest {
+            val events = mockk<ThrottlingRepository>(relaxed = true)
+            coEvery { events.getOpenEvent() } returns null
+            coEvery { events.insert(any()) } throws IllegalStateException("event database full")
+            val liveRepository = liveRepository(events)
+
+            val state = GetThermalStateUseCase(liveRepository)().first()
+
+            assertEquals(42f, state.batteryTempC)
+            assertEquals(ThermalStatus.SEVERE, state.thermalStatus)
+        }
+
+    @Test
+    fun `live tracking recovers on next measurement and collectors share one event`() =
+        runTest {
+            val events = mockk<ThrottlingRepository>(relaxed = true)
+            coEvery { events.getOpenEvent() } returns null
+            var failInsert = true
+            val stored = mutableListOf<ThrottlingEvent>()
+            coEvery { events.insert(any()) } coAnswers {
+                if (failInsert) error("event database full")
+                stored.add(firstArg())
+                7L
+            }
+            coEvery { events.updateSnapshot(any(), any(), any(), any(), any()) } coAnswers {
+                stored[0] = stored[0].copy(thermalStatus = secondArg())
+            }
+            coEvery { events.updateDuration(any(), any()) } coAnswers {
+                stored[0] = stored[0].copy(durationMs = secondArg())
+            }
+            val statuses = MutableStateFlow(ThermalStatus.SEVERE)
+            val repository = liveRepository(events, statuses)
+            val first = mutableListOf<ThermalState>()
+            val second = mutableListOf<ThermalState>()
+            val firstCollector = backgroundScope.launch { GetThermalStateUseCase(repository)().collect { first.add(it) } }
+            val secondCollector = backgroundScope.launch { GetThermalStateUseCase(repository)().collect { second.add(it) } }
+            runCurrent()
+            assertEquals(ThermalStatus.SEVERE, first.last().thermalStatus)
+            assertEquals(first, second)
+            assertEquals(0, stored.size)
+
+            failInsert = false
+            statuses.value = ThermalStatus.CRITICAL
+            runCurrent()
+            statuses.value = ThermalStatus.EMERGENCY
+            runCurrent()
+            statuses.value = ThermalStatus.NONE
+            runCurrent()
+
+            assertEquals(
+                listOf(ThermalStatus.SEVERE, ThermalStatus.CRITICAL, ThermalStatus.EMERGENCY, ThermalStatus.NONE),
+                first.map { it.thermalStatus },
+            )
+            assertEquals(first, second)
+            assertEquals(1, stored.size)
+            assertEquals(ThermalStatus.EMERGENCY.name, stored.single().thermalStatus)
+            assertEquals(0L, stored.single().durationMs)
+            firstCollector.cancel()
+            secondCollector.cancel()
+            runCurrent()
+            assertEquals(0, statuses.subscriptionCount.value)
+        }
+
+    @Test
+    fun `monitoring collection still propagates event persistence failure`() =
+        runTest {
+            val events = mockk<ThrottlingRepository>(relaxed = true)
+            val failure = IllegalStateException("event database full")
+            coEvery { events.getOpenEvent() } throws failure
+
+            val thrown = runCatching { liveRepository(events).getThermalState().first() }.exceptionOrNull()
+
+            assertEquals(failure.message, thrown?.message)
+        }
+
+    @Test
+    fun `live collection propagates event cancellation`() =
+        runTest {
+            val events = mockk<ThrottlingRepository>(relaxed = true)
+            coEvery { events.getOpenEvent() } throws CancellationException("tracking cancelled")
+
+            val thrown = runCatching { GetThermalStateUseCase(liveRepository(events))().first() }.exceptionOrNull()
+
+            assertTrue(thrown is CancellationException)
+        }
+
+    private fun liveRepository(
+        events: ThrottlingRepository,
+        statuses: Flow<ThermalStatus> = flowOf(ThermalStatus.SEVERE),
+    ): ThermalRepositoryImpl {
+        val source = mockk<ThermalDataSource>()
+        every { source.getBatteryTemperature() } returns flowOf(42f)
+        every { source.getCpuTemperature(emptyList()) } returns flowOf(null)
+        every { source.getThermalStatus() } returns statuses
+        every { source.getThermalHeadroom() } returns flowOf(null)
+        val profile = mockk<DeviceProfileProvider>()
+        coEvery { profile.getDeviceProfile() } returns deviceProfile()
+        return ThermalRepositoryImpl(
+            thermalDataSource = source,
+            deviceProfileProvider = profile,
+            thermalReadingDao = thermalReadingDao,
+            trackThrottlingEvents = TrackThrottlingEventsUseCase(events, mockk(relaxed = true)),
+            dispatchers = TestAppDispatchers(),
+        )
+    }
+
     private val thermalReadingDao: ThermalReadingDao = mockk(relaxed = true)
     private val repository =
         ThermalRepositoryImpl(

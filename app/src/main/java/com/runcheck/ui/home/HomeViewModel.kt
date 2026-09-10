@@ -26,7 +26,9 @@ import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.pro.ProStateProvider
 import com.runcheck.ui.common.changedUnseenIds
 import com.runcheck.ui.common.messageOrRes
+import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -128,6 +130,7 @@ class HomeViewModel
         }
 
         @OptIn(FlowPreview::class)
+        @Suppress("TooGenericExceptionCaught")
         private fun loadHome() {
             loadJob?.cancel()
             loadJob =
@@ -236,9 +239,16 @@ class HomeViewModel
                             proState = proState,
                         )
                     }.onEach { state ->
-                        chargerSessionTracker.onObservedBatteryState(state.batteryState)
+                        try {
+                            chargerSessionTracker.onObservedBatteryState(state.batteryState)
+                        } catch (error: CancellationException) {
+                            throw error
+                        } catch (error: Exception) {
+                            ReleaseSafeLog.error(TAG, "Charger session tracking failed", error)
+                        }
                     }.sample(DISPLAY_UPDATE_INTERVAL_MS)
                         .catch { e ->
+                            if (e is CancellationException) throw e
                             _uiState.value = HomeUiState.Error(e.messageOrRes(R.string.common_error_generic))
                             resetRefreshIndicator()
                         }.collect { state ->
@@ -301,6 +311,7 @@ class HomeViewModel
         )
 
         companion object {
+            private const val TAG = "HomeViewModel"
             private const val MAX_HOME_INSIGHTS = 3
             private const val DISPLAY_UPDATE_INTERVAL_MS = 333L
             private const val MIN_FULL_CHECK_INDICATOR_MILLIS = 900L

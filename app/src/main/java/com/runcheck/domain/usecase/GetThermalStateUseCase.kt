@@ -10,5 +10,5 @@ class GetThermalStateUseCase
     constructor(
         private val thermalRepository: ThermalRepository,
     ) {
-        operator fun invoke(): Flow<ThermalState> = thermalRepository.getThermalState()
+        operator fun invoke(): Flow<ThermalState> = thermalRepository.getLiveThermalState()
     }

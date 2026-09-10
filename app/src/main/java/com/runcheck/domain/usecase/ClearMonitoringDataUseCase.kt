@@ -32,18 +32,21 @@ class ClearMonitoringDataUseCase
         private val userPreferencesRepository: UserPreferencesRepository,
         private val monitoringStatusRepository: MonitoringStatusRepository,
         private val fileExportRepository: FileExportRepository,
+        private val monitoringDataCoordinator: MonitoringDataCoordinator,
     ) {
         suspend operator fun invoke() {
-            transactionRunner.runInTransaction {
-                batteryRepository.deleteAll()
-                networkRepository.deleteAll()
-                thermalRepository.deleteAll()
-                storageRepository.deleteAll()
-                throttlingRepository.deleteAll()
-                appBatteryUsageRepository.deleteAll()
-                speedTestRepository.deleteAll()
-                insightRepository.clearAll()
-                chargerRepository.deleteAll()
+            monitoringDataCoordinator.resetHistory {
+                transactionRunner.runInTransaction {
+                    batteryRepository.deleteAll()
+                    networkRepository.deleteAll()
+                    thermalRepository.deleteAll()
+                    storageRepository.deleteAll()
+                    throttlingRepository.deleteAll()
+                    appBatteryUsageRepository.deleteAll()
+                    speedTestRepository.deleteAll()
+                    insightRepository.clearAll()
+                    chargerRepository.deleteAll()
+                }
             }
 
             var cleanupFailure: Throwable? = null

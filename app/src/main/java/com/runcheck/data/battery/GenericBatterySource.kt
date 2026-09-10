@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
+import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import com.runcheck.data.device.DeviceProfile
 import com.runcheck.domain.model.BatteryHealth
@@ -27,6 +28,8 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.math.abs
 
 open class GenericBatterySource(
@@ -37,6 +40,10 @@ open class GenericBatterySource(
     protected val batteryManager: BatteryManager =
         context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
     private val sourceJob = SupervisorJob()
+    private val samsungCurrentMutex = Mutex()
+    private var previousSamsungCurrentMa: Int? = null
+    private var samsungStableReadingCount = 0
+    private var samsungEvidenceAtMs: Long? = null
     private val sourceScope =
         CoroutineScope(
             sourceJob + dispatchers.default +
@@ -202,38 +209,39 @@ open class GenericBatterySource(
         suspiciousConstantCurrentMa: Int,
     ): Flow<MeasuredValue<Int>> =
         flow {
-            var previousCurrentMa: Int? = null
-            var stableReadingCount = 0
-
             while (true) {
-                val rawCurrent = readCurrentNowRaw()
-                if (rawCurrent == null) {
-                    emit(unavailableCurrent())
-                    delay(POLLING_INTERVAL_MS)
-                    continue
-                }
-                val currentMa = alignCurrentSignWithChargeState(normalizeCurrent(rawCurrent))
+                val reading =
+                    samsungCurrentMutex.withLock {
+                        val rawCurrent = readCurrentNowRaw() ?: return@withLock unavailableCurrent()
+                        val currentMa = alignCurrentSignWithChargeState(normalizeCurrent(rawCurrent))
+                        val now = SystemClock.elapsedRealtime()
+                        val elapsed = samsungEvidenceAtMs?.let { now - it }
 
-                stableReadingCount =
-                    if (currentMa == previousCurrentMa) {
-                        stableReadingCount + 1
-                    } else {
-                        1
+                        // Count temporal evidence, not the number of collectors reading the sensor.
+                        if (currentMa != previousSamsungCurrentMa || elapsed == null ||
+                            elapsed > SAMSUNG_EVIDENCE_MAX_GAP_MS || elapsed < 0
+                        ) {
+                            samsungStableReadingCount = 1
+                            samsungEvidenceAtMs = now
+                        } else if (elapsed >= POLLING_INTERVAL_MS) {
+                            samsungStableReadingCount = (samsungStableReadingCount + 1).coerceAtMost(stableReadingThreshold)
+                            samsungEvidenceAtMs = now
+                        }
+                        previousSamsungCurrentMa = currentMa
+
+                        val looksLikeMaxTheoreticalCurrent =
+                            samsungStableReadingCount >= stableReadingThreshold &&
+                                abs(currentMa) >= suspiciousConstantCurrentMa
+                        val baseConfidence = calculateCurrentConfidence(rawCurrent)
+                        val confidence =
+                            if (baseConfidence == Confidence.HIGH && looksLikeMaxTheoreticalCurrent) {
+                                Confidence.LOW
+                            } else {
+                                baseConfidence
+                            }
+                        MeasuredValue(currentMa, confidence)
                     }
-                previousCurrentMa = currentMa
-
-                val looksLikeMaxTheoreticalCurrent =
-                    stableReadingCount >= stableReadingThreshold &&
-                        kotlin.math.abs(currentMa) >= suspiciousConstantCurrentMa
-
-                val confidence =
-                    when {
-                        rawCurrent == 0 -> Confidence.UNAVAILABLE
-                        !profile.currentNowReliable || looksLikeMaxTheoreticalCurrent -> Confidence.LOW
-                        else -> Confidence.HIGH
-                    }
-
-                emit(MeasuredValue(currentMa, confidence))
+                emit(reading)
                 delay(POLLING_INTERVAL_MS)
             }
         }.flowOn(dispatchers.io)
@@ -275,6 +283,8 @@ open class GenericBatterySource(
         private const val TAG = "GenericBatterySource"
         protected const val POLLING_INTERVAL_MS = 2000L
         private const val SAMSUNG_STABLE_READING_THRESHOLD = 3
+        // Three polling intervals also cover the live notification's five-second one-shot cadence.
+        private const val SAMSUNG_EVIDENCE_MAX_GAP_MS = 3 * POLLING_INTERVAL_MS
         private const val SAMSUNG_SUSPICIOUS_CONSTANT_CURRENT_MA = 3000
     }
 }

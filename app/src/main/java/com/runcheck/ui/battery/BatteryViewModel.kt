@@ -27,6 +27,7 @@ import com.runcheck.util.appendLiveValue
 import com.runcheck.util.getEnumOrDefault
 import com.runcheck.util.putEnum
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -137,6 +138,7 @@ class BatteryViewModel
                         )
                     }.sample(333L)
                         .catch { e ->
+                            if (e is CancellationException) throw e
                             refreshTracker.finish()
                             ReleaseSafeLog.error("BatteryVM", "Battery data failed", e)
                             _uiState.value = BatteryUiState.Error(e.messageOrRes(R.string.common_error_generic))
@@ -147,6 +149,7 @@ class BatteryViewModel
                 }
         }
 
+        @Suppress("TooGenericExceptionCaught")
         private suspend fun processBatteryUpdate(
             state: BatteryState,
             history: List<BatteryReading>,
@@ -161,7 +164,13 @@ class BatteryViewModel
 
             if (state != lastObservedBatteryState) {
                 batteryScreenInsights.updateChargingStatus(state.chargingStatus)
-                chargerSessionTracker.onObservedBatteryState(state)
+                try {
+                    chargerSessionTracker.onObservedBatteryState(state)
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    ReleaseSafeLog.error("BatteryVM", "Charger session tracking failed", error)
+                }
 
                 if (state.currentMa.confidence != Confidence.UNAVAILABLE) {
                     liveCurrentMa.appendLiveValue(state.currentMa.value.toFloat())
