@@ -3,6 +3,7 @@ package com.runcheck.data.preferences
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.IOException
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
@@ -19,7 +20,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private val Context.monitoringStatusDataStore: DataStore<Preferences>
-    by preferencesDataStore(name = "monitoring_status")
+    by preferencesDataStore(
+        name = "monitoring_status",
+        corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+    )
 
 @Singleton
 class MonitoringStatusRepositoryImpl

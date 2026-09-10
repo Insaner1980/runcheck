@@ -134,6 +134,7 @@ open class GenericBatterySource(
     protected fun calculateCurrentConfidence(rawCurrent: Int): Confidence =
         when {
             rawCurrent == 0 -> Confidence.UNAVAILABLE
+            abs(normalizeCurrent(rawCurrent).toLong()) > MAX_PLAUSIBLE_CURRENT_MA -> Confidence.UNAVAILABLE
             !profile.currentNowReliable -> Confidence.LOW
             else -> Confidence.HIGH
         }
@@ -286,5 +287,6 @@ open class GenericBatterySource(
         // Three polling intervals also cover the live notification's five-second one-shot cadence.
         private const val SAMSUNG_EVIDENCE_MAX_GAP_MS = 3 * POLLING_INTERVAL_MS
         private const val SAMSUNG_SUSPICIOUS_CONSTANT_CURRENT_MA = 3000
+        private const val MAX_PLAUSIBLE_CURRENT_MA = 10_000L
     }
 }

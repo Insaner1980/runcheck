@@ -67,6 +67,22 @@ class NetworkDrivenBatteryDrainRuleTest {
             assertTrue(evaluate(now, listOf(80, 79, 78, 77, 76, 73, 70, 67, 64), wifiReadings).isEmpty())
         }
 
+    @Test
+    fun `ignores future battery readings`() =
+        runTest {
+            val now = 100L * INSIGHT_TEST_HOUR_MS
+            val batteryReadings = batteryDrainReadingsWithFutureFinalReading(now)
+            val rule =
+                NetworkDrivenBatteryDrainRule(
+                    batteryRepository = TestBatteryRepository(batteryReadings),
+                    networkRepository = TestNetworkRepository(weakCellularDrainReadings(now)),
+                    batteryDrainAnalyzer = BatteryDrainAnalyzer(),
+                    timeWindowAligner = TimeWindowAligner(),
+                )
+
+            assertTrue(rule.evaluate(now).isEmpty())
+        }
+
     private suspend fun evaluate(
         now: Long,
         levels: List<Int>,

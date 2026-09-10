@@ -40,6 +40,7 @@ fun HistoryChartContent(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
             )
+            val tooltipSeparator = stringResource(R.string.value_separator)
             TrendChart(
                 data = chartModel.chartData,
                 modifier = Modifier.fillMaxWidth(),
@@ -48,7 +49,9 @@ fun HistoryChartContent(
                 xLabels = chartModel.xLabels.ifEmpty { null },
                 showGrid = true,
                 qualityZones = qualityZones,
-                tooltipFormatter = { index -> formatChartTooltip(chartModel, index) },
+                tooltipFormatter = { index ->
+                    formatChartTooltip(chartModel, index, tooltipSeparator)
+                },
                 onExpandClick = onExpandClick,
             )
             ChartStatsRow(chartModel = chartModel)

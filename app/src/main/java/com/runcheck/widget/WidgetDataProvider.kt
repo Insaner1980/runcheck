@@ -39,6 +39,7 @@ internal data class BatteryWidgetSnapshot(
     val level: Int,
     val temperatureC: Float,
     val currentMa: Int?,
+    val currentConfidence: Confidence?,
 )
 
 internal data class HealthWidgetSnapshot(
@@ -214,12 +215,16 @@ internal fun batteryWidgetRenderState(
 
 private const val HEALTH_INPUT_WINDOW_MS = 120_000L
 
-internal fun BatteryReadingEntity.toBatteryWidgetSnapshot(): BatteryWidgetSnapshot =
-    BatteryWidgetSnapshot(
+internal fun BatteryReadingEntity.toBatteryWidgetSnapshot(): BatteryWidgetSnapshot {
+    val confidence = parsedCurrentConfidence()
+    val availableCurrent = currentMa.takeIf { confidence != Confidence.UNAVAILABLE }
+    return BatteryWidgetSnapshot(
         level = level,
         temperatureC = temperatureC,
-        currentMa = currentMa.takeIf { parsedCurrentConfidence() != Confidence.UNAVAILABLE },
+        currentMa = availableCurrent,
+        currentConfidence = confidence.takeIf { availableCurrent != null },
     )
+}
 
 private fun BatteryReadingEntity.toBatteryState(): BatteryState {
     val confidence = parsedCurrentConfidence()

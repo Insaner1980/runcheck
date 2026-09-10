@@ -44,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
@@ -83,6 +84,7 @@ import com.runcheck.ui.common.LifecycleStartStopEffect
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.findActivity
 import com.runcheck.ui.common.formatDecimal
+import com.runcheck.ui.common.formatPing
 import com.runcheck.ui.common.isUnknownValue
 import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.common.rememberSaveableEnumState
@@ -113,6 +115,7 @@ import com.runcheck.ui.fullscreen.sanitizeFullscreenMetric
 import com.runcheck.ui.fullscreen.sanitizeFullscreenPeriod
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
+import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
 import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
@@ -230,6 +233,7 @@ private fun NetworkHeroSection(
     liveSignalDbm: List<Float> = emptyList(),
     onInfoClick: (String) -> Unit = {},
 ) {
+    val useStackedReadouts = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
     val qualityLabel =
         if (networkState.isConnected) {
             signalQualityLabel(networkState.signalQuality)
@@ -268,40 +272,20 @@ private fun NetworkHeroSection(
         }
 
         // Large dBm + latency display
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg),
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            networkState.signalDbm?.let { dbm ->
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        text = dbm.toString(),
-                        style = MaterialTheme.numericMetricDisplayTextStyle,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = stringResource(R.string.unit_dbm),
-                        style = MaterialTheme.numericHeroDisplayUnitTextStyle,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 2.dp, bottom = 8.dp),
-                    )
-                }
+        if (useStackedReadouts) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
+            ) {
+                NetworkHeroReadouts(networkState)
             }
-            networkState.latencyMs?.let { ms ->
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        text = ms.toString(),
-                        style = MaterialTheme.numericMetricDisplayTextStyle,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = stringResource(R.string.unit_ms),
-                        style = MaterialTheme.numericHeroDisplayUnitTextStyle,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 2.dp, bottom = 8.dp),
-                    )
-                }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg),
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                NetworkHeroReadouts(networkState)
             }
         }
 
@@ -311,7 +295,7 @@ private fun NetworkHeroSection(
                 currentValueLabel =
                     networkState.signalDbm?.let {
                         stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_dbm))
-                    } ?: "—",
+                    } ?: stringResource(R.string.placeholder_dash),
                 label = stringResource(R.string.network_signal_strength),
                 lineColor = qualityColor,
                 accessibilityDescription =
@@ -343,23 +327,55 @@ private fun NetworkHeroSection(
                 modifier = Modifier.weight(1f),
                 onInfoClick = { onInfoClick("bandwidth") },
             )
-            MetricPill(
-                label = bandPillLabel(networkState),
-                value = bandPillValue(networkState),
-                modifier = Modifier.weight(1f),
-                onInfoClick = {
-                    onInfoClick(
-                        if (networkState.connectionType ==
-                            ConnectionType.WIFI
-                        ) {
-                            "frequency"
-                        } else {
-                            "bandwidth"
-                        },
-                    )
-                },
-            )
+            if (networkState.connectionType != ConnectionType.ETHERNET) {
+                MetricPill(
+                    label = bandPillLabel(networkState),
+                    value = bandPillValue(networkState),
+                    modifier = Modifier.weight(1f),
+                    onInfoClick = {
+                        onInfoClick(
+                            if (networkState.connectionType ==
+                                ConnectionType.WIFI
+                            ) {
+                                "frequency"
+                            } else {
+                                "bandwidth"
+                            },
+                        )
+                    },
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun NetworkHeroReadouts(networkState: NetworkState) {
+    networkState.signalDbm?.let { dbm ->
+        NetworkHeroReadout(value = dbm.toString(), unit = stringResource(R.string.unit_dbm))
+    }
+    networkState.latencyMs?.let { ms ->
+        NetworkHeroReadout(value = ms.toString(), unit = stringResource(R.string.unit_ms))
+    }
+}
+
+@Composable
+private fun NetworkHeroReadout(
+    value: String,
+    unit: String,
+) {
+    Row(verticalAlignment = Alignment.Bottom) {
+        Text(
+            text = value,
+            style = MaterialTheme.numericMetricDisplayTextStyle,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = unit,
+            style = MaterialTheme.numericHeroDisplayUnitTextStyle,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 2.dp, bottom = 8.dp),
+        )
     }
 }
 
@@ -382,6 +398,7 @@ private fun bandwidthPillValue(state: NetworkState): String =
         }
 
         ConnectionType.CELLULAR,
+        ConnectionType.ETHERNET,
         ConnectionType.VPN,
         -> {
             state.estimatedDownstreamKbps?.let {
@@ -416,6 +433,10 @@ private fun bandPillValue(state: NetworkState): String =
 
         ConnectionType.CELLULAR -> {
             state.networkSubtype ?: stringResource(R.string.placeholder_dash)
+        }
+
+        ConnectionType.ETHERNET -> {
+            stringResource(R.string.placeholder_dash)
         }
 
         ConnectionType.VPN -> {
@@ -498,7 +519,12 @@ private fun SignalHistoryCard(
                     R.string.fullscreen_chart_title_network,
                     networkHistoryMetricLabel(metric),
                 ),
-            label = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${networkHistoryMetricLabel(metric)}",
+            label =
+                stringResource(
+                    R.string.value_two_parts_separator,
+                    historyPeriodLabel(selectedPeriod),
+                    networkHistoryMetricLabel(metric),
+                ),
             periodLabel = historyPeriodLabel(selectedPeriod),
             chartModel = chartModel,
             qualityZones = qualityZones,
@@ -556,7 +582,7 @@ private fun SpeedTestSummaryCard(
                 )
                 MetricPill(
                     label = stringResource(R.string.speed_test_ping),
-                    value = formatPingMetric(lastResult.pingMs),
+                    value = formatPing(lastResult.pingMs),
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -576,7 +602,7 @@ private fun SpeedTestSummaryCard(
 
             val serverText =
                 listOfNotNull(lastResult.serverName, lastResult.serverLocation)
-                    .joinToString(" \u00B7 ")
+                    .joinToString(stringResource(R.string.value_separator))
             if (serverText.isNotEmpty()) {
                 Text(
                     text = stringResource(R.string.network_speed_test_server, serverText),
@@ -987,15 +1013,3 @@ private fun Context.isLocationEnabled(): Boolean {
             ?: return false
     return LocationManagerCompat.isLocationEnabled(locationManager)
 }
-
-@Composable
-private fun formatPingMetric(pingMs: Int): String =
-    if (pingMs > 0) {
-        stringResource(
-            R.string.value_with_unit_int,
-            pingMs,
-            stringResource(R.string.unit_ms),
-        )
-    } else {
-        stringResource(R.string.placeholder_dash)
-    }

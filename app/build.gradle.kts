@@ -4,6 +4,7 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import java.io.StringReader
+import java.net.URI
 import java.util.Properties
 import javax.inject.Inject
 
@@ -99,6 +100,26 @@ fun debugCredential(
             providers.environmentVariable(envName).orNull?.takeIf { it.isNotBlank() }
         }
         ?: localValue
+}
+
+fun validatedDebugSentryDsn(value: String): String {
+    val trimmedValue = value.trim()
+    if (trimmedValue.isEmpty()) return ""
+
+    val uri = runCatching { URI(trimmedValue) }.getOrNull()
+    val publicKey = uri?.rawUserInfo?.substringBefore(':')
+    val projectId = uri?.path?.trim('/')?.substringAfterLast('/')
+    require(
+        uri != null &&
+            uri.scheme.equals("https", ignoreCase = true) &&
+            !publicKey.isNullOrBlank() &&
+            !uri.host.isNullOrBlank() &&
+            !projectId.isNullOrBlank(),
+    ) {
+        "Debug Sentry DSN must be blank or a valid HTTPS DSN; check RUNCHECK_SENTRY_DSN, SENTRY_DSN, " +
+            "or debug.credentials.properties."
+    }
+    return trimmedValue
 }
 
 fun quotedBuildConfigValue(value: String): String =
@@ -313,7 +334,11 @@ android {
             buildConfigField(
                 "String",
                 "SENTRY_DSN",
-                quotedBuildConfigValue(debugCredential("sentry.dsn", "RUNCHECK_SENTRY_DSN", "SENTRY_DSN")),
+                quotedBuildConfigValue(
+                    validatedDebugSentryDsn(
+                        debugCredential("sentry.dsn", "RUNCHECK_SENTRY_DSN", "SENTRY_DSN"),
+                    ),
+                ),
             )
             val debugLatencyHost =
                 validatedLatencyHost(

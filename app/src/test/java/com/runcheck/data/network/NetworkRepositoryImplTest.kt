@@ -1,5 +1,7 @@
 package com.runcheck.data.network
 
+import android.database.sqlite.SQLiteException
+import android.net.Network
 import com.runcheck.data.db.dao.NetworkReadingDao
 import com.runcheck.data.db.entity.NetworkReadingEntity
 import com.runcheck.domain.model.ConnectionType
@@ -18,6 +20,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class NetworkRepositoryImplTest {
@@ -35,20 +38,34 @@ class NetworkRepositoryImplTest {
     @Test
     fun `measureLatency returns null when connection is not validated`() =
         runTest {
-            every { networkDataSource.hasValidatedConnection() } returns false
+            every { networkDataSource.getValidatedActiveNetwork(null) } returns null
 
-            assertNull(repository.measureLatency())
-            coVerify(exactly = 0) { latencyMeasurer.measureLatency() }
+            assertNull(repository.measureLatency(expectedNetworkHandle = null))
+            coVerify(exactly = 0) { latencyMeasurer.measureLatency(any()) }
         }
 
     @Test
     fun `measureLatency returns ping from latency measurer when connection is validated`() =
         runTest {
-            every { networkDataSource.hasValidatedConnection() } returns true
-            coEvery { latencyMeasurer.measureLatency() } returns
+            val network = mockk<Network>()
+            every { networkDataSource.getValidatedActiveNetwork(7L) } returns network
+            coEvery { latencyMeasurer.measureLatency(network) } returns
                 LatencyMeasurer.LatencyResult(pingMs = 42, jitterMs = 3)
 
-            assertEquals(42, repository.measureLatency())
+            assertEquals(42, repository.measureLatency(7L))
+        }
+
+    @Test
+    fun `measureLatency discards a result after the default network changes`() =
+        runTest {
+            val measuredNetwork = mockk<Network>()
+            val replacementNetwork = mockk<Network>()
+            every { networkDataSource.getValidatedActiveNetwork(7L) } returnsMany
+                listOf(measuredNetwork, replacementNetwork)
+            coEvery { latencyMeasurer.measureLatency(measuredNetwork) } returns
+                LatencyMeasurer.LatencyResult(pingMs = 42, jitterMs = 3)
+
+            assertNull(repository.measureLatency(7L))
         }
 
     @Test
@@ -99,6 +116,26 @@ class NetworkRepositoryImplTest {
             assertEquals(42, inserted.captured.latencyMs)
             coVerify(exactly = 1) { networkReadingDao.deleteOlderThan(100L) }
             coVerify(exactly = 1) { networkReadingDao.deleteAll() }
+        }
+
+    @Test
+    fun `saveReading propagates database failures`() =
+        runTest {
+            val failure = SQLiteException("database full")
+            coEvery { networkReadingDao.insert(any()) } throws failure
+
+            val thrown =
+                runCatching {
+                    repository.saveReading(
+                        NetworkState(
+                            connectionType = ConnectionType.WIFI,
+                            signalDbm = -62,
+                            signalQuality = SignalQuality.GOOD,
+                        ),
+                    )
+                }.exceptionOrNull()
+
+            assertSame(failure, thrown)
         }
 
     private fun networkReadingEntity(): NetworkReadingEntity =

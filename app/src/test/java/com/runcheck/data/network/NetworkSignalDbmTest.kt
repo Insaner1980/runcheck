@@ -34,6 +34,27 @@ class NetworkSignalDbmTest {
     }
 
     @Test
+    fun `wifi falls back when capabilities RSSI is positive`() {
+        assertEquals(
+            -61,
+            selectSignalDbmForTransport(
+                isWifi = true,
+                isCellular = false,
+                capabilitiesWifiSignalDbm = 1,
+                wifiSignalDbm = -61,
+                cellularSignalDbm = null,
+            ),
+        )
+    }
+
+    @Test
+    fun `unknown and nonpositive wifi link metrics stay unavailable`() {
+        assertNull(normalizePositiveWifiMetric(-1))
+        assertNull(normalizePositiveWifiMetric(0))
+        assertEquals(866, normalizePositiveWifiMetric(866))
+    }
+
+    @Test
     fun `cellular ignores bearer specific capabilities value`() {
         assertEquals(
             -104,

@@ -140,10 +140,13 @@ class BillingManager
                                     reconnectJob?.cancel()
                                     reconnectJob = null
                                 }
-                                _billingAvailable.value = true
+                                _billingAvailable.value = false
                                 scope.launch {
-                                    queryExistingPurchases()
-                                    queryProductDetails()
+                                    val purchaseRefreshResult = queryExistingPurchases()
+                                    queryProductDetails(
+                                        purchaseStatusAvailable =
+                                            purchaseRefreshResult != ProPurchaseRefreshResult.UNAVAILABLE,
+                                    )
                                     initComplete.complete(Unit)
                                 }
                             }
@@ -223,7 +226,9 @@ class BillingManager
             }
         }
 
-        private suspend fun queryProductDetails(): com.android.billingclient.api.ProductDetails? {
+        private suspend fun queryProductDetails(
+            purchaseStatusAvailable: Boolean,
+        ): com.android.billingclient.api.ProductDetails? {
             val client = billingClient ?: return null
             val product =
                 QueryProductDetailsParams.Product
@@ -241,11 +246,11 @@ class BillingManager
                 BillingClient.BillingResponseCode.OK -> {
                     cachedProductDetails = result.productDetailsList?.firstOrNull()
                     cachedFormattedPrice = cachedProductDetails?.oneTimePurchaseOfferDetails?.formattedPrice
-                    _billingAvailable.value = cachedProductDetails != null
+                    _billingAvailable.value = purchaseStatusAvailable && cachedProductDetails != null
                 }
 
                 in reconnectableBillingResponseCodes() -> {
-                    _billingAvailable.value = cachedProductDetails != null
+                    _billingAvailable.value = false
                     scheduleReconnect()
                 }
 
@@ -266,7 +271,11 @@ class BillingManager
 
         override suspend fun getFormattedPrice(): String? {
             cachedFormattedPrice?.let { return it }
-            return queryProductDetails()?.oneTimePurchaseOfferDetails?.formattedPrice
+            val purchaseRefreshResult = queryExistingPurchases()
+            return queryProductDetails(
+                purchaseStatusAvailable =
+                    purchaseRefreshResult != ProPurchaseRefreshResult.UNAVAILABLE,
+            )?.oneTimePurchaseOfferDetails?.formattedPrice
         }
 
         override suspend fun refreshPurchaseStatus(): ProPurchaseRefreshResult = queryExistingPurchases()

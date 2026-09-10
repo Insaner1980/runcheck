@@ -525,4 +525,17 @@ class HomeViewModelTest {
 
             coVerify(exactly = 1) { insightRepository.dismiss(42L) }
         }
+
+    @Test
+    fun `dismiss insight database failure does not escape view model scope`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            coEvery { insightRepository.dismiss(42L) } throws IllegalStateException("database failed")
+            viewModel = createViewModel()
+
+            viewModel.dismissInsight(42L)
+            runCurrent()
+
+            coVerify(exactly = 1) { insightRepository.dismiss(42L) }
+            assertEquals(HomeUiState.Loading, viewModel.uiState.value)
+        }
 }

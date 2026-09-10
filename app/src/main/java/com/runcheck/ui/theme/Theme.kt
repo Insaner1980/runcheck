@@ -1,5 +1,9 @@
 package com.runcheck.ui.theme
 
+import android.content.Context
+import android.database.ContentObserver
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.CardColors
@@ -9,7 +13,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -77,18 +86,7 @@ private val RuncheckColorScheme =
 
 @Composable
 fun RuncheckTheme(content: @Composable () -> Unit) {
-    val context = LocalContext.current
-
-    val reducedMotion =
-        try {
-            Settings.Global.getFloat(
-                context.contentResolver,
-                Settings.Global.ANIMATOR_DURATION_SCALE,
-                1f,
-            ) == 0f
-        } catch (_: Exception) {
-            false
-        }
+    val reducedMotion = rememberReducedMotionSetting()
 
     CompositionLocalProvider(
         LocalSpacing provides Spacing(),
@@ -105,3 +103,52 @@ fun RuncheckTheme(content: @Composable () -> Unit) {
         )
     }
 }
+
+@Composable
+private fun rememberReducedMotionSetting(): Boolean {
+    val context = LocalContext.current
+    val contentResolver = context.contentResolver
+    var reducedMotion by remember(contentResolver) {
+        mutableStateOf(readReducedMotionSetting(context))
+    }
+
+    DisposableEffect(contentResolver) {
+        val observer =
+            object : ContentObserver(Handler(Looper.getMainLooper())) {
+                override fun onChange(selfChange: Boolean) {
+                    reducedMotion = readReducedMotionSetting(context)
+                }
+            }
+        var observerRegistered = false
+        try {
+            contentResolver.registerContentObserver(
+                Settings.Global.getUriFor(Settings.Global.ANIMATOR_DURATION_SCALE),
+                false,
+                observer,
+            )
+            observerRegistered = true
+            reducedMotion = readReducedMotionSetting(context)
+        } catch (_: Exception) {
+            // Keep the currently read value when this device does not expose the setting URI.
+        }
+
+        onDispose {
+            if (observerRegistered) {
+                contentResolver.unregisterContentObserver(observer)
+            }
+        }
+    }
+
+    return reducedMotion
+}
+
+private fun readReducedMotionSetting(context: Context): Boolean =
+    try {
+        Settings.Global.getFloat(
+            context.contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            1f,
+        ) == 0f
+    } catch (_: Exception) {
+        false
+    }

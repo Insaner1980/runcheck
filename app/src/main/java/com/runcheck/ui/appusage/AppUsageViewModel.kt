@@ -28,6 +28,11 @@ import javax.inject.Inject
 
 private const val APP_USAGE_LOOKBACK_MS = 24 * 60 * 60 * 1000L
 
+private data class AppUsagePagingRequest(
+    val since: Long,
+    val refreshId: Long,
+)
+
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppUsageViewModel
@@ -41,19 +46,19 @@ class AppUsageViewModel
     ) : ViewModel() {
         private val _uiState = MutableStateFlow<AppUsageUiState>(AppUsageUiState.Loading)
         val uiState: StateFlow<AppUsageUiState> = _uiState.asStateFlow()
-        private val pagingEnabled = MutableStateFlow(false)
+        private val pagingRequest = MutableStateFlow<AppUsagePagingRequest?>(null)
         val pagedApps: Flow<PagingData<com.runcheck.domain.model.AppBatteryUsage>> =
-            pagingEnabled
-                .flatMapLatest { enabled ->
-                    if (enabled) {
-                        val since = System.currentTimeMillis() - APP_USAGE_LOOKBACK_MS
-                        getAppBatteryUsage(since)
+            pagingRequest
+                .flatMapLatest { request ->
+                    if (request != null) {
+                        getAppBatteryUsage(request.since)
                     } else {
                         flowOf(PagingData.empty())
                     }
                 }.cachedIn(viewModelScope)
         private var proObserverJob: Job? = null
         private var loadJob: Job? = null
+        private var nextPagingRefreshId = 0L
 
         fun refresh() {
             if (isProUser()) {
@@ -83,7 +88,7 @@ class AppUsageViewModel
                         observeProAccess().collectLatest { isPro ->
                             if (!isPro) {
                                 loadJob?.cancel()
-                                pagingEnabled.value = false
+                                pagingRequest.value = null
                                 _uiState.value = AppUsageUiState.Locked
                                 return@collectLatest
                             }
@@ -98,13 +103,18 @@ class AppUsageViewModel
         }
 
         private fun loadUsageData() {
-            val since = System.currentTimeMillis() - APP_USAGE_LOOKBACK_MS
             loadJob?.cancel()
             loadJob =
                 viewModelScope.launch {
                     try {
                         refreshAppUsageSnapshot()
-                        pagingEnabled.value = true
+                        val since = System.currentTimeMillis() - APP_USAGE_LOOKBACK_MS
+                        pagingRequest.emit(
+                            AppUsagePagingRequest(
+                                since = since,
+                                refreshId = nextPagingRefreshId++,
+                            ),
+                        )
                         getAppBatteryUsageSummary(since)
                             .catch { e ->
                                 _uiState.value = AppUsageUiState.Error(e.messageOrRes(R.string.common_error_generic))

@@ -47,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -62,7 +63,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
+import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.model.MediaBreakdown
 import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.StorageReading
@@ -97,6 +100,8 @@ import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.ListRow
 import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.MetricPillItem
+import com.runcheck.ui.components.MetricPillItems
 import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.ProgressHeroMetric
@@ -116,6 +121,7 @@ import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.storage.MediaDeleteRequestResult
+import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
 import com.runcheck.ui.theme.categoryColor
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
@@ -135,8 +141,9 @@ fun StorageDetailScreen(
     onNavigateToCleanup: (com.runcheck.ui.storage.cleanup.CleanupType) -> Unit = {},
     onUpgradeToPro: () -> Unit = {},
     onNavigateToLearnArticle: (articleId: String) -> Unit = {},
-    viewModel: StorageViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> StorageViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -349,6 +356,7 @@ private fun StorageContent(
         StorageToolsSection(
             state = state,
             storage = storage,
+            hasAllMediaPermissions = hasAllMediaPermissions,
             onPeriodChange = onPeriodChange,
             onNavigateToCleanup = onNavigateToCleanup,
             onEmptyTrash = onEmptyTrash,
@@ -440,6 +448,7 @@ private fun StorageOverviewSection( // NOSONAR
 private fun StorageToolsSection(
     state: StorageUiState.Success,
     storage: StorageState,
+    hasAllMediaPermissions: Boolean,
     onPeriodChange: (HistoryPeriod) -> Unit,
     onNavigateToCleanup: (com.runcheck.ui.storage.cleanup.CleanupType) -> Unit,
     onEmptyTrash: () -> Unit,
@@ -455,11 +464,13 @@ private fun StorageToolsSection(
     }
 
     if (state.isPro) {
-        StorageCleanupToolsSection(
-            storage = storage,
-            onNavigateToCleanup = onNavigateToCleanup,
-            onEmptyTrash = onEmptyTrash,
-        )
+        if (hasAllMediaPermissions) {
+            StorageCleanupToolsSection(
+                storage = storage,
+                onNavigateToCleanup = onNavigateToCleanup,
+                onEmptyTrash = onEmptyTrash,
+            )
+        }
     } else {
         SectionHeader(text = stringResource(R.string.storage_cleanup_tools))
         ProFeatureCalloutCard(
@@ -554,6 +565,7 @@ private fun StorageHeroCard(
     liveUsagePercent: List<Float>,
     onInfoClick: (String) -> Unit = {},
 ) {
+    val useStackedMetrics = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
     val context = LocalContext.current
     val usedFormatted = formatStorageSize(context, storage.usedBytes)
     val totalFormatted = formatStorageSize(context, storage.totalBytes)
@@ -634,33 +646,75 @@ private fun StorageHeroCard(
 
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.base))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-                verticalAlignment = Alignment.Top,
-            ) {
-                storage.totalCacheBytes?.let { cache ->
-                    MetricPill(
+            StorageHeroMetrics(
+                storage = storage,
+                useStackedLayout = useStackedMetrics,
+                onInfoClick = onInfoClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun StorageHeroMetrics(
+    storage: StorageState,
+    useStackedLayout: Boolean,
+    onInfoClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val measuredFillRateEstimate =
+        storage.fillRateEstimate?.let { estimate ->
+            MeasuredValue(estimate, Confidence.LOW)
+        }
+    val metrics =
+        buildList {
+            storage.measuredTotalCacheBytes?.let { cache ->
+                add(
+                    MetricPillItem(
                         label = stringResource(R.string.storage_cache_total),
-                        value = formatStorageSize(context, cache),
-                        modifier = Modifier.weight(1f),
-                        onInfoClick = { onInfoClick("cache") },
-                    )
-                }
-                MetricPill(
-                    label = stringResource(R.string.storage_fill_rate),
-                    value =
-                        storage.fillRateEstimate?.let { stringResource(R.string.unit_approx_prefix, it) }
-                            ?: stringResource(R.string.battery_estimating),
-                    modifier = Modifier.weight(1f),
-                    onInfoClick = { onInfoClick("fillRate") },
-                )
-                MetricPill(
-                    label = stringResource(R.string.storage_available),
-                    value = freeFormatted,
-                    modifier = Modifier.weight(1f),
+                        value = formatStorageSize(context, cache.value),
+                        infoKey = "cache",
+                        confidence = cache.confidence,
+                    ),
                 )
             }
+            add(
+                MetricPillItem(
+                    label = stringResource(R.string.storage_fill_rate),
+                    value =
+                        measuredFillRateEstimate?.let {
+                            stringResource(R.string.unit_approx_prefix, it.value)
+                        }
+                            ?: stringResource(R.string.battery_estimating),
+                    infoKey = "fillRate",
+                    confidence = measuredFillRateEstimate?.confidence,
+                ),
+            )
+            add(
+                MetricPillItem(
+                    label = stringResource(R.string.storage_available),
+                    value = formatStorageSize(context, storage.measuredAvailableBytes.value),
+                    confidence = storage.measuredAvailableBytes.confidence,
+                ),
+            )
+        }
+
+    if (useStackedLayout) {
+        Column(modifier = modifier) {
+            MetricPillItems(items = metrics, onInfoClick = onInfoClick)
+        }
+    } else {
+        Row(
+            modifier = modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
+            verticalAlignment = Alignment.Top,
+        ) {
+            MetricPillItems(
+                items = metrics,
+                modifier = Modifier.weight(1f),
+                onInfoClick = onInfoClick,
+            )
         }
     }
 }
@@ -780,7 +834,12 @@ private fun StorageHistoryCard(
                     R.string.fullscreen_chart_title_storage,
                     storageHistoryMetricLabel(metric),
                 ),
-            label = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${storageHistoryMetricLabel(metric)}",
+            label =
+                stringResource(
+                    R.string.value_two_parts_separator,
+                    historyPeriodLabel(selectedPeriod),
+                    storageHistoryMetricLabel(metric),
+                ),
             periodLabel = historyPeriodLabel(selectedPeriod),
             chartModel = chartModel,
             qualityZones = storageQualityZones(metric),

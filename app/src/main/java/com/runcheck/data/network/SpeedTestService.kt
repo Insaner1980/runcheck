@@ -179,8 +179,6 @@ class SpeedTestService
             var latestRttVarMs: Int? = null
             var serverName: String? = null
             var serverLocation: String? = null
-            val downloadStartTime: Long = System.nanoTime()
-            var uploadStartTime = 0L
             private var activeTest: NdtTest? = null
             var hasEnded = false
                 private set
@@ -286,9 +284,9 @@ class SpeedTestService
                         applyServerMetadata(clientResponse)
                         val mbps = DataConverter.convertToMbps(clientResponse)
                         downloadMbps = mbps
-                        val elapsed = (System.nanoTime() - downloadStartTime).toFloat()
-                        val progress = (elapsed / (TEST_DURATION_NS)).coerceAtMost(1f)
-                        scope.trySend(SpeedTestProgress.DownloadPhase(mbps, progress))
+                        scope.trySend(
+                            SpeedTestProgress.DownloadPhase(mbps, speedTestPhaseProgress(clientResponse)),
+                        )
                     }
 
                     override fun onMeasurementDownloadProgress(measurement: Measurement) {
@@ -302,10 +300,9 @@ class SpeedTestService
                         applyServerMetadata(clientResponse)
                         val mbps = DataConverter.convertToMbps(clientResponse)
                         uploadMbps = mbps
-                        if (uploadStartTime == 0L) uploadStartTime = System.nanoTime()
-                        val elapsed = (System.nanoTime() - uploadStartTime).toFloat()
-                        val progress = (elapsed / (TEST_DURATION_NS)).coerceAtMost(1f)
-                        scope.trySend(SpeedTestProgress.UploadPhase(mbps, progress))
+                        scope.trySend(
+                            SpeedTestProgress.UploadPhase(mbps, speedTestPhaseProgress(clientResponse)),
+                        )
                     }
 
                     override fun onMeasurementUploadProgress(measurement: Measurement) {
@@ -395,11 +392,12 @@ class SpeedTestService
                 signalDbm = signalDbm,
             )
         }
-
-        companion object {
-            private const val TEST_DURATION_NS = 10_000_000_000f // ~10 seconds per phase
-        }
     }
+
+private const val NDT_PHASE_DURATION_MICROSECONDS = 10_000_000f
+
+internal fun speedTestPhaseProgress(clientResponse: ClientResponse): Float =
+    (clientResponse.appInfo.elapsedTime / NDT_PHASE_DURATION_MICROSECONDS).coerceIn(0f, 1f)
 
 internal fun parseServerMetadata(clientResponse: ClientResponse?): ServerMetadata? {
     val serverName = clientResponse?.origin.toServerMetadataValue(PROTOCOL_ORIGINS)

@@ -6,7 +6,8 @@ import com.runcheck.R
 import com.runcheck.domain.insights.policy.visibleForProAccess
 import com.runcheck.domain.repository.InsightRepository
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
-import com.runcheck.ui.common.changedUnseenIds
+import com.runcheck.ui.common.UnseenInsightTracker
+import com.runcheck.ui.common.launchUiMutation
 import com.runcheck.ui.common.messageOrRes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,14 +28,14 @@ class InsightsViewModel
         private val _uiState = MutableStateFlow<InsightsUiState>(InsightsUiState.Loading)
         val uiState: StateFlow<InsightsUiState> = _uiState.asStateFlow()
 
-        private var lastSeenInsightIds: Set<Long> = emptySet()
+        private val unseenInsightTracker = UnseenInsightTracker()
 
         init {
             observeInsights()
         }
 
         fun dismissInsight(id: Long) {
-            viewModelScope.launch {
+            viewModelScope.launchUiMutation(TAG, "dismiss insight") {
                 insightRepository.dismiss(id)
             }
         }
@@ -62,11 +63,19 @@ class InsightsViewModel
         }
 
         private fun maybeMarkSeen(state: InsightsUiState.Success) {
-            val unseenIds = state.insights.changedUnseenIds(lastSeenInsightIds) ?: return
-            lastSeenInsightIds = unseenIds
-            if (unseenIds.isEmpty()) return
-            viewModelScope.launch {
-                insightRepository.markSeen(unseenIds)
+            val unseenIds = unseenInsightTracker.idsToMarkSeen(state.insights) ?: return
+            viewModelScope.launchUiMutation(TAG, "mark insights seen") {
+                var succeeded = false
+                try {
+                    insightRepository.markSeen(unseenIds)
+                    succeeded = true
+                } finally {
+                    unseenInsightTracker.complete(unseenIds, succeeded)
+                }
             }
+        }
+
+        private companion object {
+            const val TAG = "InsightsViewModel"
         }
     }

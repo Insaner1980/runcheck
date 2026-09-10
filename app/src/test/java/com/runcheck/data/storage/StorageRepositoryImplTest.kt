@@ -1,5 +1,6 @@
 package com.runcheck.data.storage
 
+import android.database.sqlite.SQLiteException
 import com.runcheck.data.db.dao.StorageReadingDao
 import com.runcheck.data.db.entity.StorageReadingEntity
 import com.runcheck.domain.insights.analysis.StorageGrowthAnalyzer
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class StorageRepositoryImplTest {
@@ -102,6 +104,27 @@ class StorageRepositoryImplTest {
             assertEquals(1_500L, inserted.captured.mediaBytes)
             coVerify(exactly = 1) { storageReadingDao.deleteOlderThan(100L) }
             coVerify(exactly = 1) { storageReadingDao.deleteAll() }
+        }
+
+    @Test
+    fun `saveReading propagates database failures`() =
+        runTest {
+            val failure = SQLiteException("database full")
+            coEvery { storageReadingDao.insert(any()) } throws failure
+
+            val thrown =
+                runCatching {
+                    repository.saveReading(
+                        StorageState(
+                            totalBytes = 10_000L,
+                            availableBytes = 4_000L,
+                            usedBytes = 6_000L,
+                            usagePercent = 60f,
+                        ),
+                    )
+                }.exceptionOrNull()
+
+            assertSame(failure, thrown)
         }
 
     @Test

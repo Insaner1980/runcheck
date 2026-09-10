@@ -1,6 +1,7 @@
 package com.runcheck.ui.network
 
 import androidx.lifecycle.SavedStateHandle
+import com.runcheck.R
 import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SignalQuality
@@ -16,6 +17,7 @@ import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.RunSpeedTestUseCase
 import com.runcheck.ui.MainDispatcherRule
 import com.runcheck.ui.common.UiText
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -330,11 +332,39 @@ class NetworkViewModelTest {
             assertFalse("Speed test should not be running after error", speedState.isRunning)
 
             val failedPhase = speedState.phase as SpeedTestPhase.Failed
-            // Error message should contain the exception message
-            assertTrue(
-                "Error message should reflect the exception",
-                failedPhase.error is UiText.Dynamic && failedPhase.error.value == "Network timeout",
-            )
+            assertEquals(UiText.Resource(R.string.speed_test_failed), failedPhase.error)
+            viewModel.stopObserving()
+        }
+
+    @Test
+    fun `speed test finalization error does not expose exception details`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            every { getMeasuredNetworkState() } returns MutableStateFlow(testNetworkState)
+            every { runSpeedTest(any()) } returns
+                flowOf(
+                    SpeedTestProgress.Completed(
+                        downloadMbps = 95.0,
+                        uploadMbps = 35.0,
+                        pingMs = 12,
+                        jitterMs = 2,
+                        serverName = null,
+                        serverLocation = null,
+                        connectionInfo = SpeedTestConnectionInfo(ConnectionType.WIFI, "WiFi 6", -50),
+                    ),
+                )
+            coEvery { finalizeSpeedTest(any(), any()) } throws
+                IllegalStateException("Database path: /data/user/0/com.runcheck/databases/runcheck.db")
+
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceNetworkSample()
+
+            viewModel.startSpeedTest()
+            runCurrent()
+
+            val failedPhase = viewModel.speedTestState.value.phase as SpeedTestPhase.Failed
+            assertEquals(UiText.Resource(R.string.speed_test_error_generic), failedPhase.error)
+            assertFalse(viewModel.speedTestState.value.isRunning)
             viewModel.stopObserving()
         }
 

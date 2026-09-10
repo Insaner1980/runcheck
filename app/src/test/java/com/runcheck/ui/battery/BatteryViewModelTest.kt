@@ -190,7 +190,10 @@ class BatteryViewModelTest {
             viewModel.startObserving()
             advanceBatterySample()
 
-            assertTrue("Expected Success but got ${viewModel.uiState.value}", viewModel.uiState.value is BatteryUiState.Success)
+            assertTrue(
+                "Expected Success but got ${viewModel.uiState.value}",
+                viewModel.uiState.value is BatteryUiState.Success,
+            )
             assertEquals(battery, (viewModel.uiState.value as BatteryUiState.Success).batteryState)
             states.value = battery.copy(level = 76)
             advanceBatterySample()
@@ -375,7 +378,7 @@ class BatteryViewModelTest {
         }
 
     @Test
-    fun `stats stay intact through plugged status flaps`() =
+    fun `stats reset through plugged status changes`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val batteryFlow = startBatteryFlow()
 
@@ -388,22 +391,30 @@ class BatteryViewModelTest {
                     ),
                     makeBatteryState(
                         currentMa = 1200,
-                        chargingStatus = ChargingStatus.FULL,
+                        chargingStatus = ChargingStatus.CHARGING,
                         plugType = PlugType.USB,
                     ),
+                )
+
+                assertNotNull(
+                    "Stats should exist before charging status changes",
+                    (viewModel.uiState.value as BatteryUiState.Success).currentStats,
+                )
+
+                batteryFlow.emitSample(
                     makeBatteryState(
-                        currentMa = 1000,
+                        currentMa = -1000,
                         chargingStatus = ChargingStatus.NOT_CHARGING,
                         plugType = PlugType.USB,
                     ),
                 )
 
-                val stats = (viewModel.uiState.value as BatteryUiState.Success).currentStats
-                requireNotNull(stats)
-                assertEquals(3, stats.sampleCount)
-                assertEquals(1233, stats.avg)
-                assertEquals(1000, stats.min)
-                assertEquals(1500, stats.max)
+                val statsAfterStatusChange =
+                    (viewModel.uiState.value as BatteryUiState.Success).currentStats
+                assertNull(
+                    "Stats should reset when charging status changes without unplugging",
+                    statsAfterStatusChange,
+                )
             } finally {
                 viewModel.stopObserving()
             }

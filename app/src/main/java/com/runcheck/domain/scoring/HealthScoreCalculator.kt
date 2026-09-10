@@ -300,6 +300,7 @@ class HealthScoreCalculator
                 when (connectionType) {
                     ConnectionType.WIFI -> 50.0
                     ConnectionType.CELLULAR -> 20.0
+                    ConnectionType.ETHERNET -> 50.0
                     ConnectionType.VPN -> 20.0
                     ConnectionType.NONE -> 1.0
                 }

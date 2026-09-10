@@ -76,7 +76,11 @@ class NetworkDataSource
                 fun emitCurrentCallbackState() {
                     val info =
                         currentCapabilities?.let { capabilities ->
-                            buildNetworkInfo(capabilities, currentLinkProperties)
+                            buildNetworkInfo(
+                                capabilities = capabilities,
+                                linkProperties = currentLinkProperties,
+                                defaultNetworkHandle = currentDefaultNetwork?.networkHandle,
+                            )
                         } ?: NetworkState.disconnected()
                     trySend(info)
                 }
@@ -84,6 +88,10 @@ class NetworkDataSource
                 val callback =
                     object : ConnectivityManager.NetworkCallback() {
                         override fun onAvailable(network: Network) {
+                            if (currentDefaultNetwork != network) {
+                                currentCapabilities = null
+                                currentLinkProperties = null
+                            }
                             currentDefaultNetwork = network
                         }
 
@@ -190,7 +198,11 @@ class NetworkDataSource
             val capabilities = activeNetwork?.let(connectivityManager::getNetworkCapabilities)
             val linkProperties = activeNetwork?.let(connectivityManager::getLinkProperties)
             return if (capabilities != null) {
-                buildNetworkInfo(capabilities, linkProperties)
+                buildNetworkInfo(
+                    capabilities = capabilities,
+                    linkProperties = linkProperties,
+                    defaultNetworkHandle = activeNetwork.networkHandle,
+                )
             } else {
                 NetworkState.disconnected()
             }
@@ -201,20 +213,27 @@ class NetworkDataSource
             linkProperties: android.net.LinkProperties? = null,
         ): NetworkState = buildNetworkInfo(capabilities, linkProperties)
 
-        fun hasValidatedConnection(): Boolean {
-            val activeNetwork = connectivityManager.activeNetwork ?: return false
-            val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
-            return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+        fun getValidatedActiveNetwork(expectedNetworkHandle: Long? = null): Network? {
+            val activeNetwork = connectivityManager.activeNetwork ?: return null
+            val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return null
+            val isValidated =
+                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            return activeNetwork.takeIf {
+                isValidated &&
+                    (expectedNetworkHandle == null || activeNetwork.networkHandle == expectedNetworkHandle)
+            }
         }
 
         @Suppress("LongMethod", "CyclomaticComplexMethod")
         private fun buildNetworkInfo(
             capabilities: NetworkCapabilities,
             linkProperties: android.net.LinkProperties?,
+            defaultNetworkHandle: Long? = null,
         ): NetworkState {
             val isWifi = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
             val isCellular = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+            val isEthernet = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
             val isVpn =
                 resolveVpnState(
                     hasVpnTransport = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN),
@@ -222,13 +241,7 @@ class NetworkDataSource
                 )
             val canReadWifiDetails = canReadWifiDetails()
 
-            val connectionType =
-                when {
-                    isWifi -> ConnectionType.WIFI
-                    isCellular -> ConnectionType.CELLULAR
-                    isVpn -> ConnectionType.VPN
-                    else -> ConnectionType.NONE
-                }
+            val connectionType = resolveConnectionType(isWifi, isCellular, isEthernet, isVpn)
 
             // NetworkCapabilities uses bearer-specific units. Only WiFi defines them as RSSI dBm.
             val capabilitiesWifiSignalDbm =
@@ -327,8 +340,9 @@ class NetworkDataSource
                 signalAsu = signalAsu,
                 signalQuality = signalQuality,
                 wifiSsid = wifiInfo?.ssid,
-                wifiSpeedMbps = wifiInfo?.speedMbps ?: wifiSignal?.speedMbps,
-                wifiFrequencyMhz = wifiInfo?.frequencyMhz ?: wifiSignal?.frequencyMhz,
+                wifiSpeedMbps = normalizePositiveWifiMetric(wifiInfo?.speedMbps ?: wifiSignal?.speedMbps),
+                wifiFrequencyMhz =
+                    normalizePositiveWifiMetric(wifiInfo?.frequencyMhz ?: wifiSignal?.frequencyMhz),
                 carrier = cellInfo?.carrier,
                 networkSubtype = cellInfo?.networkType,
                 estimatedDownstreamKbps = estimatedDownstreamKbps,
@@ -341,6 +355,7 @@ class NetworkDataSource
                 mtuBytes = mtuBytes,
                 wifiBssid = wifiBssid,
                 wifiStandard = wifiStandard,
+                defaultNetworkHandle = defaultNetworkHandle,
             )
         }
 
@@ -401,7 +416,7 @@ class NetworkDataSource
                             ssid = ssid,
                             speedMbps = wifiInfo.linkSpeed,
                             frequencyMhz = wifiInfo.frequency,
-                            rssi = if (rssi != -127 && rssi != 0) rssi else null,
+                            rssi = rssi.validWifiSignalDbm(),
                         )
                     }
                 }
@@ -416,7 +431,7 @@ class NetworkDataSource
                 ssid = ssid,
                 speedMbps = info.linkSpeed,
                 frequencyMhz = info.frequency,
-                rssi = if (rssi != -127 && rssi != 0) rssi else null,
+                rssi = rssi.validWifiSignalDbm(),
             )
         }
 
@@ -447,7 +462,7 @@ class NetworkDataSource
                                 ssid = ssid,
                                 speedMbps = wifiInfo.linkSpeed,
                                 frequencyMhz = wifiInfo.frequency,
-                                rssi = if (rssi != -127 && rssi != 0) rssi else null,
+                                rssi = rssi.validWifiSignalDbm(),
                                 wifiStandard = wifiInfo.toWifiStandardLabel(wifiInfo.frequency),
                             )
                     }
@@ -668,7 +683,7 @@ class NetworkDataSource
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val wifiInfo = capabilities.transportInfo as? WifiInfo
                 if (wifiInfo != null) {
-                    val rssi = wifiInfo.rssi.takeIf { it != -127 && it != 0 }
+                    val rssi = wifiInfo.rssi.validWifiSignalDbm()
                     return WifiSignalInfo(
                         rssi = rssi,
                         speedMbps = wifiInfo.linkSpeed.takeIf { it > 0 },
@@ -678,7 +693,7 @@ class NetworkDataSource
             }
             // Fallback: WifiManager.connectionInfo
             val info = wifiManager?.connectionInfo ?: return null
-            val rssi = info.rssi.takeIf { it != -127 && it != 0 }
+            val rssi = info.rssi.validWifiSignalDbm()
             return WifiSignalInfo(
                 rssi = rssi,
                 speedMbps = info.linkSpeed.takeIf { it > 0 },
@@ -717,6 +732,20 @@ internal fun resolveVpnState(
     hasNotVpnCapability: Boolean,
 ): Boolean = hasVpnTransport && !hasNotVpnCapability
 
+internal fun resolveConnectionType(
+    isWifi: Boolean,
+    isCellular: Boolean,
+    isEthernet: Boolean,
+    isVpn: Boolean,
+): ConnectionType =
+    when {
+        isWifi -> ConnectionType.WIFI
+        isCellular -> ConnectionType.CELLULAR
+        isEthernet -> ConnectionType.ETHERNET
+        isVpn -> ConnectionType.VPN
+        else -> ConnectionType.NONE
+    }
+
 internal fun selectSignalDbmForTransport(
     isWifi: Boolean,
     isCellular: Boolean,
@@ -730,7 +759,9 @@ internal fun selectSignalDbmForTransport(
         else -> null
     }
 
-private fun Int.validWifiSignalDbm(): Int? = takeUnless { it == Int.MIN_VALUE || it == -127 || it == 0 }
+private fun Int.validWifiSignalDbm(): Int? = takeIf { it in -126..-1 }
+
+internal fun normalizePositiveWifiMetric(value: Int?): Int? = value?.takeIf { it > 0 }
 
 @Suppress("TooGenericExceptionCaught")
 internal inline fun registerCallbackWithReceiverRollback(

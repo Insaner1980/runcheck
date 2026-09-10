@@ -7,7 +7,7 @@ import com.runcheck.data.device.DeviceProfile
 import com.runcheck.util.AppDispatchers
 
 /**
- * OnePlus on API 34+: inherits cycle count / health % from [Android14BatterySource]
+ * OnePlus on API 34+: inherits the public-API cycle count from [Android14BatterySource]
  * while keeping profile-based OnePlus SUPERVOOC current sign correction.
  */
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)

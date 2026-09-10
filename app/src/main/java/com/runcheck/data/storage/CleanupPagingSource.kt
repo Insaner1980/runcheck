@@ -3,6 +3,7 @@ package com.runcheck.data.storage
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.runcheck.domain.model.ScannedFile
+import kotlinx.coroutines.CancellationException
 
 internal class CleanupPagingSource(
     private val loader: suspend (offset: Int, limit: Int) -> List<ScannedFile>,
@@ -24,6 +25,8 @@ internal class CleanupPagingSource(
                 prevKey = if (offset == 0) null else (offset - params.loadSize).coerceAtLeast(0),
                 nextKey = nextKey,
             )
+        } catch (error: CancellationException) {
+            throw error
         } catch (t: Throwable) {
             LoadResult.Error(t)
         }

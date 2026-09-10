@@ -18,7 +18,10 @@ class NetworkSignalPatternRule
         override val ruleId: String = RULE_ID
 
         override suspend fun evaluate(now: Long): List<InsightCandidate> {
-            val readings = networkRepository.getReadingsSinceSync(now - LOOKBACK_MS)
+            val readings =
+                networkRepository
+                    .getReadingsSinceSync(now - LOOKBACK_MS)
+                    .filter { reading -> reading.timestamp <= now }
             val cellularSamples =
                 readings.filter { reading ->
                     reading.type == ConnectionType.CELLULAR.name && reading.signalDbm != null

@@ -104,4 +104,34 @@ class HeavyAppUsageRuleTest {
 
             assertTrue(insights.isEmpty())
         }
+
+    @Test
+    fun `ignores future app usage snapshots`() =
+        runTest {
+            val hourMs = 60L * 60L * 1000L
+            val now = 10L * hourMs
+            val readings =
+                listOf(
+                    appUsage(now - hourMs, "video.app", "VideoApp", 90L * 60L * 1000L),
+                    appUsage(now + hourMs, "video.app", "VideoApp", 90L * 60L * 1000L),
+                    appUsage(now - hourMs, "chat.app", "ChatApp", 30L * 60L * 1000L),
+                    appUsage(now - hourMs, "maps.app", "Maps", 30L * 60L * 1000L),
+                )
+            val rule = HeavyAppUsageRule(TestAppBatteryUsageRepository(readings))
+
+            assertTrue(rule.evaluate(now).isEmpty())
+        }
+
+    private fun appUsage(
+        timestamp: Long,
+        packageName: String,
+        appLabel: String,
+        foregroundTimeMs: Long,
+    ) = AppBatteryUsage(
+        timestamp = timestamp,
+        packageName = packageName,
+        appLabel = appLabel,
+        foregroundTimeMs = foregroundTimeMs,
+        estimatedDrainMah = null,
+    )
 }

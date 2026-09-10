@@ -1,10 +1,12 @@
 package com.runcheck.ui.insights
 
+import com.runcheck.domain.insights.model.Insight
 import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.repository.InsightRepository
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.testutil.insightFixture
 import com.runcheck.ui.MainDispatcherRule
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -25,13 +27,17 @@ class InsightsViewModelTest {
     private val insightRepository: InsightRepository = mockk(relaxed = true)
     private val observeProAccess: ObserveProAccessUseCase = mockk()
 
+    private fun stubActiveInsight(insight: Insight) {
+        every { insightRepository.getActiveInsights() } returns flowOf(listOf(insight))
+        every { insightRepository.getUnseenCount() } returns flowOf(1)
+        every { observeProAccess() } returns flowOf(false)
+    }
+
     @Test
     fun `loads active insights and marks unseen entries as seen`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val insight = insightFixture(seen = false)
-            every { insightRepository.getActiveInsights() } returns flowOf(listOf(insight))
-            every { insightRepository.getUnseenCount() } returns flowOf(1)
-            every { observeProAccess() } returns flowOf(false)
+            stubActiveInsight(insight)
 
             val viewModel =
                 InsightsViewModel(
@@ -91,5 +97,24 @@ class InsightsViewModelTest {
             runCurrent()
 
             coVerify(exactly = 1) { insightRepository.dismiss(42L) }
+        }
+
+    @Test
+    fun `mark seen database failure keeps loaded insights visible`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val insight = insightFixture(seen = false)
+            stubActiveInsight(insight)
+            coEvery { insightRepository.markSeen(setOf(1L)) } throws IllegalStateException("database failed")
+
+            val viewModel =
+                InsightsViewModel(
+                    insightRepository = insightRepository,
+                    observeProAccess = observeProAccess,
+                )
+            runCurrent()
+
+            val state = viewModel.uiState.value as InsightsUiState.Success
+            assertEquals(listOf(insight), state.insights)
+            coVerify(exactly = 1) { insightRepository.markSeen(setOf(1L)) }
         }
 }

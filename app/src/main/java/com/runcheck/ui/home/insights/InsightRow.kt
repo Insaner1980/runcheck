@@ -35,14 +35,23 @@ fun InsightRow(
     onClick: (() -> Unit)?,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    compact: Boolean = false,
 ) {
     val spacing = MaterialTheme.spacing
     val tokens = MaterialTheme.uiTokens
+    val title = resolveInsightTitle(insight)
+    val dismissDescription = stringResource(R.string.a11y_dismiss_insight, title)
     val priorityTint =
         when (insight.priority) {
             InsightPriority.HIGH -> MaterialTheme.statusColors.critical
             InsightPriority.MEDIUM -> MaterialTheme.statusColors.poor
             InsightPriority.LOW -> MaterialTheme.statusColors.fair
+        }
+    val priorityDescription =
+        when (insight.priority) {
+            InsightPriority.HIGH -> stringResource(R.string.a11y_high_priority)
+            InsightPriority.MEDIUM -> stringResource(R.string.a11y_medium_priority)
+            InsightPriority.LOW -> stringResource(R.string.a11y_low_priority)
         }
 
     val content: @Composable () -> Unit = {
@@ -54,13 +63,22 @@ fun InsightRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(spacing.md),
         ) {
-            IconCircle(
-                icon = Icons.Outlined.WarningAmber,
-                tint = priorityTint,
-            )
+            if (compact) {
+                Icon(
+                    imageVector = Icons.Outlined.WarningAmber,
+                    contentDescription = priorityDescription,
+                    modifier = Modifier.size(tokens.iconMedium),
+                    tint = priorityTint,
+                )
+            } else {
+                IconCircle(
+                    icon = Icons.Outlined.WarningAmber,
+                    tint = priorityTint,
+                )
+            }
             Column(modifier = with(this) { Modifier.weight(1f) }) {
                 Text(
-                    text = resolveInsightTitle(insight),
+                    text = title,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -80,7 +98,7 @@ fun InsightRow(
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Close,
-                        contentDescription = stringResource(R.string.a11y_dismiss_card),
+                        contentDescription = dismissDescription,
                         modifier = Modifier.size(tokens.iconMedium),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

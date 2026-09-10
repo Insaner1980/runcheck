@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Router
 import androidx.compose.material.icons.outlined.SignalCellularAlt
 import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.AlertDialog
@@ -54,6 +55,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -69,17 +71,23 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
+import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SpeedTestResult
 import com.runcheck.ui.common.connectionDisplayLabel
 import com.runcheck.ui.common.formatDecimal
+import com.runcheck.ui.common.formatPing
 import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.AnimatedFloatText
+import com.runcheck.ui.components.ConfidenceBadge
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPill
+import com.runcheck.ui.components.MetricPillItem
+import com.runcheck.ui.components.MetricPillItems
 import com.runcheck.ui.components.MetricPillRow
 import com.runcheck.ui.components.ObservedScreenScaffold
 import com.runcheck.ui.components.RuncheckCard
@@ -87,6 +95,7 @@ import com.runcheck.ui.components.RuncheckCardSurface
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
+import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
 import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.RuncheckTheme
 import com.runcheck.ui.theme.numericFontFamily
@@ -264,6 +273,7 @@ private fun NetworkContextPanel(networkState: NetworkState) {
 
             ConnectionType.WIFI,
             ConnectionType.CELLULAR,
+            ConnectionType.ETHERNET,
             ConnectionType.VPN,
             -> {
                 connectionDisplayLabel(
@@ -274,30 +284,59 @@ private fun NetworkContextPanel(networkState: NetworkState) {
             }
         }
 
-    RuncheckCardSurface {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.base),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            MetricPill(
-                label = stringResource(R.string.speed_test_connection),
-                value = connectionLabel,
-            )
+    val metrics =
+        buildList {
+            add(MetricPillItem(stringResource(R.string.speed_test_connection), connectionLabel))
             networkState.latencyMs?.let { latency ->
-                MetricPill(
-                    label = stringResource(R.string.speed_test_ping),
-                    value =
-                        stringResource(
-                            R.string.value_with_unit_int,
-                            latency,
-                            stringResource(R.string.unit_ms),
-                        ),
+                val measuredLatency = MeasuredValue(latency, Confidence.HIGH)
+                add(
+                    MetricPillItem(
+                        label = stringResource(R.string.speed_test_ping),
+                        value =
+                            stringResource(
+                                R.string.value_with_unit_int,
+                                measuredLatency.value,
+                                stringResource(R.string.unit_ms),
+                            ),
+                        confidence = measuredLatency.confidence,
+                    ),
                 )
             }
+        }
+
+    RuncheckCardSurface {
+        SpeedMetricRow(
+            metrics = metrics,
+            modifier = Modifier.padding(MaterialTheme.spacing.base),
+            onInfoClick = {},
+        )
+    }
+}
+
+@Composable
+private fun SpeedMetricRow(
+    metrics: List<MetricPillItem>,
+    onInfoClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE) {
+        Column(
+            modifier = modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+        ) {
+            MetricPillItems(
+                items = metrics,
+                modifier = Modifier.fillMaxWidth(),
+                onInfoClick = onInfoClick,
+            )
+        }
+    } else {
+        MetricPillRow(modifier = modifier, spacing = 12.dp) {
+            MetricPillItems(
+                items = metrics,
+                modifier = Modifier.weight(1f),
+                onInfoClick = onInfoClick,
+            )
         }
     }
 }
@@ -642,75 +681,85 @@ private fun SpeedMetricsCard(
     onInfoClick: (String) -> Unit = {},
 ) {
     val accent = MaterialTheme.colorScheme.primary
+    val measuredDownload = state.measuredDownloadMbps
+    val measuredUpload = state.measuredUploadMbps
+    val measuredPing = state.measuredPingMs
+    val measuredJitter = state.measuredJitterMs
 
     RuncheckCard(
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
         contentModifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // Row 1: Download + Upload
-        MetricPillRow(spacing = 12.dp) {
-            MetricPill(
-                label = stringResource(R.string.speed_test_download),
-                value =
-                    stringResource(
-                        R.string.value_with_unit_text,
-                        formatDecimal(state.downloadMbps, 1),
-                        stringResource(R.string.unit_mbps),
+        SpeedMetricRow(
+            metrics =
+                listOf(
+                    MetricPillItem(
+                        label = stringResource(R.string.speed_test_download),
+                        value =
+                            stringResource(
+                                R.string.value_with_unit_text,
+                                formatDecimal(measuredDownload.value, 1),
+                                stringResource(R.string.unit_mbps),
+                            ),
+                        valueColor = accent,
+                        infoKey = "download",
+                        confidence = measuredDownload.confidence,
                     ),
-                valueColor = accent,
-                modifier = Modifier.weight(1f),
-                onInfoClick = { onInfoClick("download") },
-            )
-            MetricPill(
-                label = stringResource(R.string.speed_test_upload),
-                value =
-                    stringResource(
-                        R.string.value_with_unit_text,
-                        formatDecimal(state.uploadMbps, 1),
-                        stringResource(R.string.unit_mbps),
+                    MetricPillItem(
+                        label = stringResource(R.string.speed_test_upload),
+                        value =
+                            stringResource(
+                                R.string.value_with_unit_text,
+                                formatDecimal(measuredUpload.value, 1),
+                                stringResource(R.string.unit_mbps),
+                            ),
+                        valueColor = accent,
+                        infoKey = "upload",
+                        confidence = measuredUpload.confidence,
                     ),
-                valueColor = accent,
-                modifier = Modifier.weight(1f),
-                onInfoClick = { onInfoClick("upload") },
-            )
-        }
+                ),
+            onInfoClick = onInfoClick,
+        )
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
 
-        // Row 2: Ping + Jitter
-        MetricPillRow(spacing = 12.dp) {
-            MetricPill(
-                label = stringResource(R.string.speed_test_ping),
-                value =
-                    if (state.pingMs > 0) {
-                        stringResource(
-                            R.string.value_with_unit_int,
-                            state.pingMs,
-                            stringResource(R.string.unit_ms),
-                        )
-                    } else {
-                        stringResource(R.string.placeholder_dash)
-                    },
-                modifier = Modifier.weight(1f),
-                onInfoClick = { onInfoClick("ping") },
-            )
-            MetricPill(
-                label = stringResource(R.string.speed_test_jitter),
-                value =
-                    if (state.jitterMs != null) {
-                        stringResource(
-                            R.string.value_with_unit_int,
-                            state.jitterMs,
-                            stringResource(R.string.unit_ms),
-                        )
-                    } else {
-                        stringResource(R.string.placeholder_dash)
-                    },
-                modifier = Modifier.weight(1f),
-                onInfoClick = { onInfoClick("jitter") },
-            )
-        }
+        SpeedMetricRow(
+            metrics =
+                listOf(
+                    MetricPillItem(
+                        label = stringResource(R.string.speed_test_ping),
+                        value =
+                            if (measuredPing.confidence != Confidence.UNAVAILABLE) {
+                                stringResource(
+                                    R.string.value_with_unit_int,
+                                    measuredPing.value,
+                                    stringResource(R.string.unit_ms),
+                                )
+                            } else {
+                                stringResource(R.string.placeholder_dash)
+                            },
+                        infoKey = "ping",
+                        confidence = measuredPing.confidence,
+                    ),
+                    MetricPillItem(
+                        label = stringResource(R.string.speed_test_jitter),
+                        value =
+                            if (measuredJitter != null) {
+                                stringResource(
+                                    R.string.value_with_unit_int,
+                                    measuredJitter.value,
+                                    stringResource(R.string.unit_ms),
+                                )
+                            } else {
+                                stringResource(R.string.placeholder_dash)
+                            },
+                        infoKey = "jitter",
+                        confidence = measuredJitter?.confidence,
+                    ),
+                ),
+            onInfoClick = onInfoClick,
+        )
     }
 }
 
@@ -784,6 +833,9 @@ private fun EmptyHistoryCard() {
 private fun LatestResultCard(result: SpeedTestResult) {
     val dateLabel = rememberTimestampLabel(result.timestamp)
     val accent = MaterialTheme.colorScheme.primary
+    val measuredDownload = result.measuredDownloadMbps
+    val measuredUpload = result.measuredUploadMbps
+    val measuredPing = result.measuredPingMs
 
     RuncheckCard(
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
@@ -804,35 +856,39 @@ private fun LatestResultCard(result: SpeedTestResult) {
 
         ConnectionTypeBadge(result = result)
 
-        MetricPillRow(spacing = 12.dp) {
-            MetricPill(
-                label = stringResource(R.string.speed_test_download),
-                value =
-                    stringResource(
-                        R.string.value_with_unit_text,
-                        formatDecimal(result.downloadMbps, 1),
-                        stringResource(R.string.unit_mbps),
+        SpeedMetricRow(
+            metrics =
+                listOf(
+                    MetricPillItem(
+                        label = stringResource(R.string.speed_test_download),
+                        value =
+                            stringResource(
+                                R.string.value_with_unit_text,
+                                formatDecimal(measuredDownload.value, 1),
+                                stringResource(R.string.unit_mbps),
+                            ),
+                        valueColor = accent,
+                        confidence = measuredDownload.confidence,
                     ),
-                valueColor = accent,
-                modifier = Modifier.weight(1f),
-            )
-            MetricPill(
-                label = stringResource(R.string.speed_test_upload),
-                value =
-                    stringResource(
-                        R.string.value_with_unit_text,
-                        formatDecimal(result.uploadMbps, 1),
-                        stringResource(R.string.unit_mbps),
+                    MetricPillItem(
+                        label = stringResource(R.string.speed_test_upload),
+                        value =
+                            stringResource(
+                                R.string.value_with_unit_text,
+                                formatDecimal(measuredUpload.value, 1),
+                                stringResource(R.string.unit_mbps),
+                            ),
+                        valueColor = accent,
+                        confidence = measuredUpload.confidence,
                     ),
-                valueColor = accent,
-                modifier = Modifier.weight(1f),
-            )
-            MetricPill(
-                label = stringResource(R.string.speed_test_ping),
-                value = formatPingValue(result.pingMs),
-                modifier = Modifier.weight(1f),
-            )
-        }
+                    MetricPillItem(
+                        label = stringResource(R.string.speed_test_ping),
+                        value = formatPing(measuredPing.value),
+                        confidence = measuredPing.confidence,
+                    ),
+                ),
+            onInfoClick = {},
+        )
 
         result.serverName?.let { server ->
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
@@ -862,91 +918,125 @@ private fun HistorySection(results: List<SpeedTestResult>) {
 
 @Composable
 private fun HistoryResultItem(result: SpeedTestResult) {
+    val measuredDownload = result.measuredDownloadMbps
+    val measuredUpload = result.measuredUploadMbps
+    val measuredPing = result.measuredPingMs
+    val metrics =
+        listOf(
+            MetricPillItem(
+                label = stringResource(R.string.speed_test_download),
+                value =
+                    stringResource(
+                        R.string.value_with_unit_text,
+                        formatDecimal(measuredDownload.value, 0),
+                        stringResource(R.string.unit_mbps),
+                    ),
+                valueColor = MaterialTheme.colorScheme.primary,
+                confidence = measuredDownload.confidence,
+            ),
+            MetricPillItem(
+                label = stringResource(R.string.speed_test_upload),
+                value =
+                    stringResource(
+                        R.string.value_with_unit_text,
+                        formatDecimal(measuredUpload.value, 0),
+                        stringResource(R.string.unit_mbps),
+                    ),
+                valueColor = MaterialTheme.colorScheme.primary,
+                confidence = measuredUpload.confidence,
+            ),
+            MetricPillItem(
+                label = stringResource(R.string.speed_test_ping),
+                value = formatPing(measuredPing.value),
+                confidence = measuredPing.confidence,
+            ),
+        )
+    val useStackedLayout = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
+
     RuncheckCardSurface {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    ConnectionTypeIcon(
-                        connectionType = result.connectionType,
-                        modifier = Modifier.size(14.dp),
-                    )
-                    Text(
-                        text = connectionTypeShortLabel(result),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Text(
-                    text = rememberTimestampLabel(result.timestamp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                )
+        if (useStackedLayout) {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+            ) {
+                HistoryResultMetadata(result = result)
+                SpeedMetricRow(metrics = metrics, onInfoClick = {})
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = formatDecimal(result.downloadMbps, 0),
-                        style =
-                            MaterialTheme.typography.titleSmall.copy(
-                                fontFamily = MaterialTheme.numericFontFamily,
-                            ),
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = stringResource(R.string.speed_test_download),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = formatDecimal(result.uploadMbps, 0),
-                        style =
-                            MaterialTheme.typography.titleSmall.copy(
-                                fontFamily = MaterialTheme.numericFontFamily,
-                            ),
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = stringResource(R.string.speed_test_upload),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text =
-                            if (result.pingMs >
-                                0
-                            ) {
-                                result.pingMs.toString()
-                            } else {
-                                stringResource(R.string.placeholder_dash)
-                            },
-                        style =
-                            MaterialTheme.typography.titleSmall.copy(
-                                fontFamily = MaterialTheme.numericFontFamily,
-                            ),
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = stringResource(R.string.speed_test_ping),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+        } else {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                HistoryResultMetadata(result = result, modifier = Modifier.weight(1f))
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    metrics.forEach { metric ->
+                        HistoryResultMetric(metric = metric)
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun HistoryResultMetadata(
+    result: SpeedTestResult,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            ConnectionTypeIcon(
+                connectionType = result.connectionType,
+                modifier = Modifier.size(14.dp),
+            )
+            Text(
+                text = connectionTypeShortLabel(result),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            text = rememberTimestampLabel(result.timestamp),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+        )
+    }
+}
+
+@Composable
+private fun HistoryResultMetric(metric: MetricPillItem) {
+    Column(horizontalAlignment = Alignment.End) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = metric.value,
+                style =
+                    MaterialTheme.typography.titleSmall.copy(
+                        fontFamily = MaterialTheme.numericFontFamily,
+                    ),
+                color = metric.valueColor ?: MaterialTheme.colorScheme.onSurface,
+            )
+            metric.confidence?.let { confidence ->
+                ConfidenceBadge(confidence = confidence)
+            }
+        }
+        Text(
+            text = metric.label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -990,16 +1080,11 @@ private fun ConnectionTypeIcon(
         when (connectionType) {
             ConnectionType.WIFI -> Icons.Outlined.Wifi
             ConnectionType.CELLULAR -> Icons.Outlined.SignalCellularAlt
+            ConnectionType.ETHERNET -> Icons.Outlined.Router
             ConnectionType.VPN -> Icons.Outlined.Wifi
             ConnectionType.NONE -> return
         }
-    val description =
-        when (connectionType) {
-            ConnectionType.WIFI -> stringResource(R.string.connection_wifi)
-            ConnectionType.CELLULAR -> stringResource(R.string.connection_cellular)
-            ConnectionType.VPN -> stringResource(R.string.connection_vpn)
-            ConnectionType.NONE -> return
-        }
+    val description = connectionType.shortLabel()
     Icon(
         imageVector = icon,
         contentDescription = description,
@@ -1034,18 +1119,6 @@ private fun heroInstructionText(
         phase == SpeedTestPhase.Completed -> stringResource(R.string.speed_test_tap_ring_restart)
         phase is SpeedTestPhase.Failed -> stringResource(R.string.speed_test_tap_ring_retry)
         else -> ""
-    }
-
-@Composable
-private fun formatPingValue(pingMs: Int): String =
-    if (pingMs > 0) {
-        stringResource(
-            R.string.value_with_unit_int,
-            pingMs,
-            stringResource(R.string.unit_ms),
-        )
-    } else {
-        stringResource(R.string.placeholder_dash)
     }
 
 // ── Preview ──────────────────────────────────────────────────────────────────────

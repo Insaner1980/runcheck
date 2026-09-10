@@ -71,6 +71,22 @@ class HeatAcceleratedBatteryWearRuleTest {
             )
         }
 
+    @Test
+    fun `ignores future battery readings`() =
+        runTest {
+            val now = 100L * INSIGHT_TEST_HOUR_MS
+            val batteryReadings = batteryDrainReadingsWithFutureFinalReading(now)
+            val rule =
+                HeatAcceleratedBatteryWearRule(
+                    batteryRepository = TestBatteryRepository(batteryReadings),
+                    thermalRepository = TestThermalRepository(heatDrainThermalReadings(now)),
+                    batteryDrainAnalyzer = BatteryDrainAnalyzer(),
+                    timeWindowAligner = TimeWindowAligner(),
+                )
+
+            assertTrue(rule.evaluate(now).isEmpty())
+        }
+
     private suspend fun evaluate(
         now: Long,
         levels: List<Int>,

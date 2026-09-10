@@ -14,6 +14,7 @@
   ],
   "buildTasks": [":app:assembleDebug"],
   "testTasks": [":app:testDebugUnitTest"],
+  "deviceTestTasks": [":app:connectedDebugAndroidTest"],
   "includedBuilds": [],
   "checks": {
     "ktlintTasks": [":app:ktlintCheck"],

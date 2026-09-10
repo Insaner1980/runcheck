@@ -27,9 +27,7 @@ private val appEnglishLocale: Locale = Locale.ENGLISH
 
 fun Throwable.messageOrRes(
     @androidx.annotation.StringRes defaultRes: Int,
-): UiText =
-    message?.takeUnless(String::isBlank)?.let { UiText.Dynamic(it) }
-        ?: UiText.Resource(defaultRes)
+): UiText = UiText.Resource(defaultRes)
 
 fun formatStorageSize(
     context: Context,
@@ -115,6 +113,18 @@ fun isUnknownValue(value: String?): Boolean =
 fun formatPercent(value: Int): String = stringResource(R.string.value_percent, value)
 
 @Composable
+fun formatPing(pingMs: Int): String =
+    if (pingMs > 0) {
+        stringResource(
+            R.string.value_with_unit_int,
+            pingMs,
+            stringResource(R.string.unit_ms),
+        )
+    } else {
+        stringResource(R.string.placeholder_dash)
+    }
+
+@Composable
 fun formatPercent(
     value: Float,
     fractionDigits: Int = 1,
@@ -167,6 +177,10 @@ fun connectionDisplayLabel(
             networkSubtype
                 ?.takeUnless(::isUnknownValue)
                 ?: stringResource(R.string.connection_cellular)
+        }
+
+        ConnectionType.ETHERNET -> {
+            stringResource(R.string.connection_ethernet)
         }
 
         ConnectionType.VPN -> {

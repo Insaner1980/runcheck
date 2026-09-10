@@ -360,6 +360,29 @@ class CleanupViewModelTest {
         }
 
     @Test
+    fun `unsupported cleanup route is rejected without scanning`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val viewModel = createViewModel(type = "NOT_A_CLEANUP_TYPE")
+
+            assertEquals(
+                CleanupUiState.Error(UiText.Resource(R.string.common_error_generic)),
+                viewModel.uiState.value,
+            )
+            advanceUntilIdle()
+            coVerify(exactly = 0) { storageCleanup.getCleanupSummary(any()) }
+        }
+
+    @Test
+    fun `missing cleanup route uses large files default`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val viewModel = createViewModel(savedStateValues = emptyMap())
+            advanceUntilIdle()
+
+            assertEquals(CleanupType.LARGE_FILES, viewModel.cleanupType)
+            assertTrue(viewModel.uiState.value is CleanupUiState.Results)
+        }
+
+    @Test
     fun `android 10 delete waits for explicit confirmation`() =
         runTest(mainDispatcherRule.testDispatcher) {
             coEvery { storageCleanup.deleteLegacy(any()) } returns setOf(testFiles[0].uri)
@@ -378,6 +401,26 @@ class CleanupViewModelTest {
 
             assertEquals(null, viewModel.legacyDeleteConfirmationCount.value)
             coVerify(exactly = 1) { storageCleanup.deleteLegacy(listOf(testFiles[0].uri)) }
+        }
+
+    @Test
+    fun `legacy delete result is revalidated before reporting success`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            coEvery { storageCleanup.deleteLegacy(any()) } returns setOf(testFiles[0].uri)
+            coEvery { storageCleanup.findExistingUris(any()) } returns setOf(testFiles[0].uri)
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+            viewModel.toggleSelection(testFiles[0])
+
+            viewModel.requestDelete(apiLevel = Build.VERSION_CODES.Q)
+            advanceUntilIdle()
+            viewModel.confirmLegacyDelete()
+            advanceUntilIdle()
+
+            assertEquals(
+                CleanupUiState.Error(UiText.Resource(R.string.cleanup_delete_failed)),
+                viewModel.uiState.value,
+            )
         }
 
     @Test
@@ -478,6 +521,48 @@ class CleanupViewModelTest {
                 CleanupUiState.Error(UiText.Resource(R.string.cleanup_delete_permission_error)),
                 recreatedViewModel.uiState.value,
             )
+        }
+
+    @Test
+    fun `approved delete request that removes nothing is not reported as success`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            coEvery { storageCleanup.findExistingUris(any()) } returns setOf(testFiles[0].uri)
+            val recreatedViewModel =
+                createViewModel(savedStateValues = pendingDeleteState(listOf(testFiles[0])))
+            advanceUntilIdle()
+
+            recreatedViewModel.onDeleteConfirmed()
+            advanceTimeBy(200L)
+            runCurrent()
+
+            assertEquals(
+                CleanupUiState.Error(UiText.Resource(R.string.cleanup_delete_failed)),
+                recreatedViewModel.uiState.value,
+            )
+        }
+
+    @Test
+    fun `group selection query failure does not start a delete request`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+            viewModel.toggleGroupSelection(MediaCategory.VIDEO)
+            coEvery { storageCleanup.getCleanupGroupFileSizes(any(), MediaCategory.VIDEO) } throws
+                IllegalStateException("query failed")
+            val pendingRequest =
+                async(start = CoroutineStart.UNDISPATCHED) {
+                    viewModel.deleteRequestUris.first()
+                }
+
+            viewModel.requestDelete(apiLevel = Build.VERSION_CODES.R)
+            advanceUntilIdle()
+
+            assertEquals(
+                CleanupUiState.Error(UiText.Resource(R.string.common_error_generic)),
+                viewModel.uiState.value,
+            )
+            assertFalse(pendingRequest.isCompleted)
+            pendingRequest.cancel()
         }
 
     @Test

@@ -4,8 +4,10 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.runcheck.domain.model.ScannedFile
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -32,6 +34,30 @@ class CleanupPagingSourceTest {
             )
 
             assertEquals(0 to 120, request)
+        }
+
+    @Test
+    fun `load propagates cancellation`() =
+        runTest {
+            val cancellation = CancellationException("cancelled")
+            val source =
+                CleanupPagingSource(
+                    loader = { _, _ -> throw cancellation },
+                    registerInvalidation = { {} },
+                )
+
+            val thrown =
+                runCatching {
+                    source.load(
+                        PagingSource.LoadParams.Refresh(
+                            key = null,
+                            loadSize = 40,
+                            placeholdersEnabled = false,
+                        ),
+                    )
+                }.exceptionOrNull()
+
+            assertSame(cancellation, thrown)
         }
 
     @Test

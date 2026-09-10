@@ -30,7 +30,7 @@ class ChargerPerformanceRule
 
             val completedRecentSessions =
                 sessions.filter { session ->
-                    session.endTime != null && session.endTime >= now - LOOKBACK_MS
+                    session.endTime != null && session.endTime in (now - LOOKBACK_MS)..now
                 }
             if (completedRecentSessions.size < MINIMUM_TOTAL_COMPLETED_SESSIONS) return null
 
@@ -48,15 +48,14 @@ class ChargerPerformanceRule
             val bestCharger = maxByOrNull { it.avgPowerMw }
             val weakestCharger =
                 bestCharger?.let { best ->
-                    filter { it.chargerId != best.chargerId }.maxByOrNull { it.lastUsed ?: 0L }
+                    filter { candidate ->
+                        candidate.chargerId != best.chargerId &&
+                            best.minPowerMw > 0 &&
+                            percentSlower(candidate.maxPowerMw, best.minPowerMw) >= MINIMUM_SLOWER_PERCENT
+                    }.minByOrNull { it.avgPowerMw }
                 }
 
-            return if (
-                bestCharger != null &&
-                weakestCharger != null &&
-                bestCharger.minPowerMw > 0 &&
-                percentSlower(weakestCharger.maxPowerMw, bestCharger.minPowerMw) >= MINIMUM_SLOWER_PERCENT
-            ) {
+            return if (bestCharger != null && weakestCharger != null) {
                 ChargerPerformanceComparison(
                     bestCharger = bestCharger,
                     weakestCharger = weakestCharger,

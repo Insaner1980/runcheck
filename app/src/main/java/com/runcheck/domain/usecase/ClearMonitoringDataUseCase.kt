@@ -6,6 +6,7 @@ import com.runcheck.domain.repository.ChargerRepository
 import com.runcheck.domain.repository.DatabaseTransactionRunner
 import com.runcheck.domain.repository.FileExportRepository
 import com.runcheck.domain.repository.InsightRepository
+import com.runcheck.domain.repository.MonitoringAlertStateRepository
 import com.runcheck.domain.repository.MonitoringStatusRepository
 import com.runcheck.domain.repository.NetworkRepository
 import com.runcheck.domain.repository.SpeedTestRepository
@@ -30,6 +31,7 @@ class ClearMonitoringDataUseCase
         private val insightRepository: InsightRepository,
         private val chargerRepository: ChargerRepository,
         private val userPreferencesRepository: UserPreferencesRepository,
+        private val monitoringAlertStateRepository: MonitoringAlertStateRepository,
         private val monitoringStatusRepository: MonitoringStatusRepository,
         private val fileExportRepository: FileExportRepository,
         private val monitoringDataCoordinator: MonitoringDataCoordinator,
@@ -58,6 +60,7 @@ class ClearMonitoringDataUseCase
             }
 
             attemptCleanup { userPreferencesRepository.clearMonitoringDataState() }
+            attemptCleanup { monitoringAlertStateRepository.clearAlertState() }
             attemptCleanup { monitoringStatusRepository.clearLastWorkerHeartbeat() }
             attemptCleanup { fileExportRepository.clearPreparedExports() }
             cleanupFailure?.let { throw it }

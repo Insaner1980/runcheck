@@ -1,6 +1,7 @@
 package com.runcheck.ui.appusage
 
 import androidx.paging.PagingData
+import com.runcheck.R
 import com.runcheck.domain.model.AppBatteryUsage
 import com.runcheck.domain.model.AppUsageListSummary
 import com.runcheck.domain.usecase.GetAppBatteryUsageSummaryUseCase
@@ -14,8 +15,10 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -81,7 +84,28 @@ class AppUsageViewModelTest {
 
             val state = viewModel.uiState.value
             assertTrue(state is AppUsageUiState.Error)
-            assertEquals(UiText.Dynamic("usage failed"), (state as AppUsageUiState.Error).message)
+            assertEquals(UiText.Resource(R.string.common_error_generic), (state as AppUsageUiState.Error).message)
+        }
+
+    @Test
+    fun `refresh restarts paging with the current lookback boundary`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            every { observeProAccess() } returns flowOf(true)
+            every { isProUser() } returns true
+            every { getAppBatteryUsage(any()) } returns flowOf(PagingData.empty<AppBatteryUsage>())
+            every { getAppBatteryUsageSummary(any()) } returns
+                flowOf(AppUsageListSummary(totalForegroundTimeMs = 0L, maxForegroundTimeMs = 0L))
+            val viewModel = createViewModel()
+            val pagingJob = backgroundScope.launch { viewModel.pagedApps.collect {} }
+
+            viewModel.startObserving()
+            runCurrent()
+            viewModel.refresh()
+            runCurrent()
+
+            verify(exactly = 2) { getAppBatteryUsage(any()) }
+            pagingJob.cancel()
+            viewModel.stopObserving()
         }
 
     private fun createViewModel(): AppUsageViewModel =

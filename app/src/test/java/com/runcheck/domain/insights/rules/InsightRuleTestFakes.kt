@@ -50,7 +50,7 @@ internal class TestNetworkRepository(
 ) : NetworkRepository {
     override fun getNetworkState(): Flow<NetworkState> = emptyFlow()
 
-    override suspend fun measureLatency(): Int? = null
+    override suspend fun measureLatency(expectedNetworkHandle: Long?): Int? = null
 
     override suspend fun saveReading(state: NetworkState) = Unit
 
@@ -171,6 +171,12 @@ internal fun batteryDrainReadings(
         batteryReading(now - offsetHours * INSIGHT_TEST_HOUR_MS, level)
     }
 }
+
+internal fun batteryDrainReadingsWithFutureFinalReading(now: Long): List<BatteryReading> =
+    batteryDrainReadings(now, listOf(80, 79, 78, 77, 76, 73, 70, 67, 64))
+        .mapIndexed { index, reading ->
+            if (index == 8) reading.copy(timestamp = now + 1L) else reading
+        }
 
 internal fun thermalReading(
     timestamp: Long,

@@ -18,4 +18,9 @@ data class StorageState(
     val fileSystemType: String? = null,
     val encryptionStatus: String? = null,
     val storageVolumes: Int = 0,
-)
+) {
+    val measuredAvailableBytes: MeasuredValue<Long>
+        get() = MeasuredValue(availableBytes, Confidence.HIGH)
+    val measuredTotalCacheBytes: MeasuredValue<Long>?
+        get() = totalCacheBytes?.let { MeasuredValue(it, Confidence.HIGH) }
+}

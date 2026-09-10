@@ -59,9 +59,9 @@ val MaterialTheme.homeHealthScoreTextStyle: TextStyle
     get() =
         typography.displayLarge.copy(
             fontFamily = numericFontFamily,
-            fontSize = 120.sp,
+            fontSize = 52.sp,
             fontWeight = FontWeight.Bold,
-            lineHeight = 0.85.em,
+            lineHeight = 0.9.em,
             lineHeightStyle =
                 LineHeightStyle(
                     alignment = LineHeightStyle.Alignment.Center,
@@ -77,8 +77,11 @@ val MaterialTheme.homeHealthScoreUnitTextStyle: TextStyle
     @ReadOnlyComposable
     get() =
         typography.displaySmall.copy(
-            fontSize = 32.sp,
+            fontFamily = numericFontFamily,
+            fontSize = 20.sp,
             fontWeight = FontWeight.SemiBold,
+            lineHeight = 20.sp,
+            platformStyle = PlatformTextStyle(includeFontPadding = false),
         )
 
 val MaterialTheme.homeHealthStatusTextStyle: TextStyle
@@ -86,9 +89,11 @@ val MaterialTheme.homeHealthStatusTextStyle: TextStyle
     @ReadOnlyComposable
     get() =
         typography.displaySmall.copy(
-            fontSize = 26.sp,
+            fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold,
+            lineHeight = 22.sp,
             letterSpacing = (-0.025).em,
+            platformStyle = PlatformTextStyle(includeFontPadding = false),
         )
 
 val MaterialTheme.homeHealthContextTextStyle: TextStyle
@@ -103,7 +108,9 @@ val MaterialTheme.homeHealthContextTextStyle: TextStyle
 @Immutable
 data class HomeStatusTileTypeScale(
     val category: TextStyle,
-    val value: TextStyle,
+    val batteryValue: TextStyle,
+    val standardValue: TextStyle,
+    val networkValue: TextStyle,
     val suffix: TextStyle,
     val status: TextStyle,
 )
@@ -115,14 +122,14 @@ val MaterialTheme.homeStatusTileTypeScale: HomeStatusTileTypeScale
         HomeStatusTileTypeScale(
             category =
                 typography.titleSmall.copy(
-                    fontFamily = ManropeFontFamily,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontFamily = HomeManropeFontFamily,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                 ),
-            value =
+            batteryValue =
                 typography.displayMedium.copy(
-                    fontFamily = ManropeFontFamily,
+                    fontFamily = HomeManropeFontFamily,
                     fontSize = 40.sp,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 40.sp,
@@ -136,18 +143,38 @@ val MaterialTheme.homeStatusTileTypeScale: HomeStatusTileTypeScale
                     fontFeatureSettings = "tnum",
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                 ),
+            standardValue =
+                typography.displayMedium.copy(
+                    fontFamily = HomeManropeFontFamily,
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 34.sp,
+                    letterSpacing = (-0.03).em,
+                    fontFeatureSettings = "tnum",
+                    platformStyle = PlatformTextStyle(includeFontPadding = false),
+                ),
+            networkValue =
+                typography.displayMedium.copy(
+                    fontFamily = HomeManropeFontFamily,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 34.sp,
+                    letterSpacing = (-0.03).em,
+                    fontFeatureSettings = "tnum",
+                    platformStyle = PlatformTextStyle(includeFontPadding = false),
+                ),
             suffix =
                 typography.headlineLarge.copy(
-                    fontFamily = ManropeFontFamily,
-                    fontSize = 18.sp,
+                    fontFamily = HomeManropeFontFamily,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                 ),
             status =
                 typography.titleMedium.copy(
-                    fontFamily = ManropeFontFamily,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontFamily = HomeManropeFontFamily,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
                     lineHeight = 15.sp,
                     lineHeightStyle =
                         LineHeightStyle(

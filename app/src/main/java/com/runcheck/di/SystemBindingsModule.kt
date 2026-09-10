@@ -10,6 +10,7 @@ import com.runcheck.data.db.RoomTransactionRunner
 import com.runcheck.data.device.DeviceProfileProvider
 import com.runcheck.data.device.DeviceProfileRepositoryImpl
 import com.runcheck.domain.repository.DatabaseTransactionRunner
+import com.runcheck.domain.repository.MonitoringAlertStateRepository
 import com.runcheck.domain.repository.MonitoringScheduler
 import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.repository.ScreenStateRepository
@@ -17,6 +18,7 @@ import com.runcheck.domain.usecase.TrackThrottlingEventsUseCase
 import com.runcheck.pro.ProManager
 import com.runcheck.pro.ProStateProvider
 import com.runcheck.service.monitor.MonitorScheduler
+import com.runcheck.service.monitor.MonitoringAlertStateStore
 import com.runcheck.service.monitor.ScreenStateTracker
 import dagger.Binds
 import dagger.Module
@@ -52,6 +54,10 @@ abstract class SystemBindingsModule {
     @Binds
     @Singleton
     abstract fun bindMonitoringScheduler(impl: MonitorScheduler): MonitoringScheduler
+
+    @Binds
+    @Singleton
+    abstract fun bindMonitoringAlertStateRepository(impl: MonitoringAlertStateStore): MonitoringAlertStateRepository
 
     @Binds
     @Singleton

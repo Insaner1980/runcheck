@@ -109,6 +109,29 @@ class ProManagerTest {
         }
 
     @Test
+    fun `cached purchase is visible while authoritative purchase status is unresolved`() =
+        runTest(testDispatcher) {
+            val purchaseStatusReady = CompletableDeferred<Unit>()
+            isProUserFlow.value = true
+            coEvery { proPurchaseManager.awaitPurchaseStatusReady() } coAnswers {
+                purchaseStatusReady.await()
+            }
+
+            proManager.initialize()
+            advanceUntilIdle()
+
+            assertEquals(ProStatus.PRO_PURCHASED, proManager.proState.value.status)
+            assertFalse(proManager.isProStatusReady)
+
+            isProUserFlow.value = false
+            purchaseStatusReady.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals(ProStatus.FREE, proManager.proState.value.status)
+            assertTrue(proManager.isProStatusReady)
+        }
+
+    @Test
     fun `purchase status changes update access in both directions`() =
         runTest(testDispatcher) {
             proManager.initialize()

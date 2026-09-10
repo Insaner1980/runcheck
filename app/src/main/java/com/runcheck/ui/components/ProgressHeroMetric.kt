@@ -12,7 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
 import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
 import com.runcheck.ui.theme.spacing
@@ -27,11 +29,9 @@ fun ProgressHeroMetric(
     modifier: Modifier = Modifier,
     supportingContent: @Composable ColumnScope.() -> Unit,
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg),
-    ) {
+    val useStackedLayout = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
+
+    val progressRing: @Composable () -> Unit = {
         ProgressRing(
             progress = progress.coerceIn(0f, 1f),
             modifier = Modifier.size(100.dp),
@@ -40,8 +40,10 @@ fun ProgressHeroMetric(
             progressColor = progressColor,
             contentDescription = contentDescription,
         ) {}
+    }
 
-        Column {
+    val metricText: @Composable (Modifier) -> Unit = { textModifier ->
+        Column(modifier = textModifier) {
             Row(verticalAlignment = Alignment.Bottom) {
                 androidx.compose.material3.Text(
                     text = value,
@@ -56,6 +58,26 @@ fun ProgressHeroMetric(
                 )
             }
             supportingContent()
+        }
+    }
+
+    if (useStackedLayout) {
+        Column(
+            modifier = modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
+        ) {
+            progressRing()
+            metricText(Modifier)
+        }
+    } else {
+        Row(
+            modifier = modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg),
+        ) {
+            progressRing()
+            metricText(Modifier.weight(1f))
         }
     }
 }

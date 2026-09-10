@@ -1,6 +1,8 @@
 package com.runcheck.ui.network
 
+import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SpeedTestResult
@@ -54,4 +56,22 @@ data class SpeedTestUiState(
     val lastResult: SpeedTestResult? = null,
     val recentResults: List<SpeedTestResult> = emptyList(),
     val showCellularWarning: Boolean = false,
-)
+) {
+    val measuredPingMs: MeasuredValue<Int>
+        get() = measuredNetworkValue(pingMs, pingMs > 0)
+    val measuredJitterMs: MeasuredValue<Int>?
+        get() = jitterMs?.let { measuredNetworkValue(it, true) }
+    val measuredDownloadMbps: MeasuredValue<Double>
+        get() = measuredNetworkValue(downloadMbps, downloadMbps > 0.0)
+    val measuredUploadMbps: MeasuredValue<Double>
+        get() = measuredNetworkValue(uploadMbps, uploadMbps > 0.0)
+}
+
+private fun <T> measuredNetworkValue(
+    value: T,
+    available: Boolean,
+): MeasuredValue<T> =
+    MeasuredValue(
+        value = value,
+        confidence = if (available) Confidence.HIGH else Confidence.UNAVAILABLE,
+    )

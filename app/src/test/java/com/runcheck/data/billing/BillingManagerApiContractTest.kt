@@ -51,7 +51,7 @@ class BillingManagerApiContractTest {
         val queryFunction =
             billingManagerSource
                 .substringAfter("private suspend fun queryExistingPurchases()")
-                .substringBefore("private suspend fun queryProductDetails()")
+                .substringBefore("private suspend fun queryProductDetails(")
 
         assertFalse(
             "queryPurchasesAsync must be called while disconnected so BillingClient auto reconnection can run",
@@ -62,6 +62,49 @@ class BillingManagerApiContractTest {
             queryFunction.contains("BillingClient.ConnectionState.CONNECTING"),
         )
         assertTrue(queryFunction.contains("client.queryPurchasesAsync(params)"))
+    }
+
+    @Test
+    fun `billing availability requires ready one-time product details`() {
+        val setupCallback =
+            billingManagerSource
+                .substringAfter("override fun onBillingSetupFinished")
+                .substringBefore("override fun onBillingServiceDisconnected")
+        val queryFunction =
+            billingManagerSource
+                .substringAfter("private suspend fun queryProductDetails(")
+                .substringBefore("override suspend fun getFormattedPrice()")
+        val reconnectableBranch =
+            queryFunction
+                .substringAfter("in reconnectableBillingResponseCodes() -> {")
+                .substringBefore("in nonReadyBillingResponseCodes()")
+
+        assertFalse(
+            "A connected client is not purchasable until product details have loaded",
+            setupCallback.contains("_billingAvailable.value = true"),
+        )
+        assertTrue(
+            setupCallback.contains("val purchaseRefreshResult = queryExistingPurchases()") &&
+                setupCallback.contains(
+                    "purchaseRefreshResult != ProPurchaseRefreshResult.UNAVAILABLE",
+                ),
+        )
+        assertTrue(
+            queryFunction.contains(
+                "_billingAvailable.value = purchaseStatusAvailable && cachedProductDetails != null",
+            ),
+        )
+        assertFalse(billingManagerSource.contains("purchaseStatusAvailable: Boolean = true"))
+        assertTrue(
+            billingManagerSource
+                .substringAfter("override suspend fun getFormattedPrice()")
+                .substringBefore("override suspend fun refreshPurchaseStatus()")
+                .contains("purchaseRefreshResult != ProPurchaseRefreshResult.UNAVAILABLE"),
+        )
+        assertTrue(
+            "A failed product query must not leave the purchase button enabled from cached details",
+            reconnectableBranch.contains("_billingAvailable.value = false"),
+        )
     }
 
     @Test

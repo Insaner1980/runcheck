@@ -1,6 +1,7 @@
 package com.runcheck.ui.thermal
 
 import androidx.lifecycle.SavedStateHandle
+import com.runcheck.R
 import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.ThermalReading
 import com.runcheck.domain.model.ThermalState
@@ -162,7 +163,10 @@ class ThermalViewModelTest {
                 viewModel.startObserving()
                 runCurrent()
 
-                assertEquals(ThermalUiState.Error(UiText.Dynamic("thermal failed")), viewModel.uiState.value)
+                assertEquals(
+                    ThermalUiState.Error(UiText.Resource(R.string.common_error_generic)),
+                    viewModel.uiState.value,
+                )
             } finally {
                 viewModel.stopObserving()
             }

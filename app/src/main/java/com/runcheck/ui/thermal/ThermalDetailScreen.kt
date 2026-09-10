@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
@@ -101,6 +102,7 @@ import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.components.observedScreenState
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
+import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
 import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
@@ -119,8 +121,9 @@ fun ThermalDetailScreen(
     onUpgradeToPro: () -> Unit,
     modifier: Modifier = Modifier,
     onNavigateToLearnArticle: (articleId: String) -> Unit = {},
-    viewModel: ThermalViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> ThermalViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     // CPD-OFF: Keep StateFlow collection at the screen boundary for Compose stability.
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
@@ -377,6 +380,7 @@ private fun ThermalHeroCard(
     sessionMinTemp: Float? = null,
     sessionMaxTemp: Float? = null,
 ) {
+    val useStackedTemperature = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
     val tempColor = statusColorForTemperature(thermal.batteryTempC)
     val bandLabel = temperatureBandLabel(thermal.batteryTempC)
     val statusColors = MaterialTheme.statusColors
@@ -411,18 +415,33 @@ private fun ThermalHeroCard(
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
 
         // Large typographic temperature
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                text = formatTemperatureValue(thermal.batteryTempC, temperatureUnit),
-                style = MaterialTheme.numericHeroDisplayTextStyle,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = stringResource(temperatureUnitRes(temperatureUnit)),
-                style = MaterialTheme.numericHeroDisplayUnitTextStyle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 2.dp, bottom = 12.dp),
-            )
+        if (useStackedTemperature) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = formatTemperatureValue(thermal.batteryTempC, temperatureUnit),
+                    style = MaterialTheme.numericHeroValueTextStyle,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(temperatureUnitRes(temperatureUnit)),
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = formatTemperatureValue(thermal.batteryTempC, temperatureUnit),
+                    style = MaterialTheme.numericHeroDisplayTextStyle,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(temperatureUnitRes(temperatureUnit)),
+                    style = MaterialTheme.numericHeroDisplayUnitTextStyle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 2.dp, bottom = 12.dp),
+                )
+            }
         }
 
         Text(
@@ -446,7 +465,7 @@ private fun ThermalHeroCard(
                                 ),
                             )
                         }
-                        append(" · ")
+                        append(stringResource(R.string.value_separator))
                         withStyle(SpanStyle(color = statusColorForTemperature(sessionMaxTemp))) {
                             append(
                                 stringResource(
@@ -483,6 +502,7 @@ private fun ThermalMetricsCard(
     liveHeadroom: List<Float> = emptyList(),
     onInfoClick: (String) -> Unit = {},
 ) {
+    val useStackedMetrics = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
     val useNeutralThermalStatus = shouldUseNeutralThermalStatus(thermal)
     val defaultOnSurface = MaterialTheme.colorScheme.onSurface
     val unavailableText = stringResource(R.string.thermal_cpu_unavailable)
@@ -539,50 +559,78 @@ private fun ThermalMetricsCard(
     RuncheckCard(
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
     ) {
-        // Row 1: CPU Temperature + Thermal Headroom
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
-            verticalAlignment = Alignment.Top,
-        ) {
+        if (useStackedMetrics) {
             MetricPill(
                 label = stringResource(R.string.thermal_cpu_temp),
                 value = cpuTempValue,
                 valueColor = cpuTempColor,
                 onInfoClick = { onInfoClick("cpuTemp") },
-                modifier = Modifier.weight(1f),
             )
             MetricPill(
                 label = stringResource(R.string.thermal_headroom),
                 value = headroomValue,
                 valueColor = headroomValueColor,
                 onInfoClick = { onInfoClick("thermalHeadroom") },
-                modifier = Modifier.weight(1f),
             )
-        }
-
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-
-        // Row 2: Thermal Status + Throttling
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
-            verticalAlignment = Alignment.Top,
-        ) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
             MetricPill(
                 label = stringResource(R.string.thermal_status),
                 value = statusValue,
                 valueColor = statusValueColor,
                 onInfoClick = { onInfoClick("thermalStatus") },
-                modifier = Modifier.weight(1f),
             )
             MetricPill(
                 label = stringResource(R.string.thermal_throttling),
                 value = throttlingValue,
                 valueColor = throttlingValueColor,
                 onInfoClick = { onInfoClick("throttling") },
-                modifier = Modifier.weight(1f),
             )
+        } else {
+            // Row 1: CPU Temperature + Thermal Headroom
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
+                verticalAlignment = Alignment.Top,
+            ) {
+                MetricPill(
+                    label = stringResource(R.string.thermal_cpu_temp),
+                    value = cpuTempValue,
+                    valueColor = cpuTempColor,
+                    onInfoClick = { onInfoClick("cpuTemp") },
+                    modifier = Modifier.weight(1f),
+                )
+                MetricPill(
+                    label = stringResource(R.string.thermal_headroom),
+                    value = headroomValue,
+                    valueColor = headroomValueColor,
+                    onInfoClick = { onInfoClick("thermalHeadroom") },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+
+            // Row 2: Thermal Status + Throttling
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md),
+                verticalAlignment = Alignment.Top,
+            ) {
+                MetricPill(
+                    label = stringResource(R.string.thermal_status),
+                    value = statusValue,
+                    valueColor = statusValueColor,
+                    onInfoClick = { onInfoClick("thermalStatus") },
+                    modifier = Modifier.weight(1f),
+                )
+                MetricPill(
+                    label = stringResource(R.string.thermal_throttling),
+                    value = throttlingValue,
+                    valueColor = throttlingValueColor,
+                    onInfoClick = { onInfoClick("throttling") },
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
 
         ThermalLiveCharts(
@@ -693,7 +741,12 @@ private fun ThermalHistoryCard(
                     R.string.fullscreen_chart_title_thermal,
                     thermalHistoryMetricLabel(metric),
                 ),
-            label = "${historyPeriodLabel(selectedPeriod)} \u00B7 ${thermalHistoryMetricLabel(metric)}",
+            label =
+                stringResource(
+                    R.string.value_two_parts_separator,
+                    historyPeriodLabel(selectedPeriod),
+                    thermalHistoryMetricLabel(metric),
+                ),
             periodLabel = historyPeriodLabel(selectedPeriod),
             chartModel = chartModel,
             qualityZones = qualityZones,

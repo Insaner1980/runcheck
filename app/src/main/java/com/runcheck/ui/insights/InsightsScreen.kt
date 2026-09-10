@@ -35,8 +35,9 @@ fun InsightsScreen(
     onBack: () -> Unit,
     navigationHandlers: InsightNavigationHandlers,
     modifier: Modifier = Modifier,
-    viewModel: InsightsViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> InsightsViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(modifier = modifier.fillMaxSize()) {

@@ -24,7 +24,8 @@ import com.runcheck.domain.usecase.GetStorageStateUseCase
 import com.runcheck.domain.usecase.GetThermalStateUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.pro.ProStateProvider
-import com.runcheck.ui.common.changedUnseenIds
+import com.runcheck.ui.common.UnseenInsightTracker
+import com.runcheck.ui.common.launchUiMutation
 import com.runcheck.ui.common.messageOrRes
 import com.runcheck.util.ReleaseSafeLog
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -69,7 +70,7 @@ class HomeViewModel
         private var loadJob: Job? = null
         private var refreshIndicatorJob: Job? = null
         private var refreshStartedAtUptimeMillis = 0L
-        private var lastSeenInsightIds: Set<Long> = emptySet()
+        private val unseenInsightTracker = UnseenInsightTracker()
 
         fun startObserving() {
             if (loadJob?.isActive == true) return
@@ -124,7 +125,7 @@ class HomeViewModel
         }
 
         fun dismissInsight(id: Long) {
-            viewModelScope.launch {
+            viewModelScope.launchUiMutation(TAG, "dismiss insight") {
                 insightRepository.dismiss(id)
             }
         }
@@ -260,11 +261,15 @@ class HomeViewModel
         }
 
         private fun maybeMarkInsightsSeen(state: HomeUiState.Success) {
-            val unseenIds = state.insights.changedUnseenIds(lastSeenInsightIds) ?: return
-            lastSeenInsightIds = unseenIds
-            if (unseenIds.isEmpty()) return
-            viewModelScope.launch {
-                insightRepository.markSeen(unseenIds)
+            val unseenIds = unseenInsightTracker.idsToMarkSeen(state.insights) ?: return
+            viewModelScope.launchUiMutation(TAG, "mark insights seen") {
+                var succeeded = false
+                try {
+                    insightRepository.markSeen(unseenIds)
+                    succeeded = true
+                } finally {
+                    unseenInsightTracker.complete(unseenIds, succeeded)
+                }
             }
         }
 

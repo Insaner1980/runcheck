@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.HorizontalDivider
@@ -29,6 +30,7 @@ import com.runcheck.R
 import com.runcheck.ui.components.info.InfoIcon
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.uiTokens
 
 @Composable
 fun MetricRow(
@@ -42,6 +44,7 @@ fun MetricRow(
     onInfoClick: (() -> Unit)? = null,
 ) {
     val truncate = maxLines < Int.MAX_VALUE
+    val tokens = MaterialTheme.uiTokens
 
     val clickModifier =
         if (copyable) {
@@ -49,10 +52,12 @@ fun MetricRow(
             val copiedMessage = stringResource(R.string.copied_to_clipboard)
             val clickLabel = stringResource(R.string.a11y_copy_to_clipboard)
             remember(label, value) {
-                Modifier.clickable(onClickLabel = clickLabel) {
-                    copyToClipboard(context, label, value)
-                    Toast.makeText(context, copiedMessage, Toast.LENGTH_SHORT).show()
-                }
+                Modifier
+                    .defaultMinSize(minHeight = tokens.touchTarget)
+                    .clickable(onClickLabel = clickLabel) {
+                        copyToClipboard(context, label, value)
+                        Toast.makeText(context, copiedMessage, Toast.LENGTH_SHORT).show()
+                    }
             }
         } else {
             Modifier

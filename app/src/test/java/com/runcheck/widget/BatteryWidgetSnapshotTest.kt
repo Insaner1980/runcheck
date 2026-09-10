@@ -1,5 +1,6 @@
 package com.runcheck.widget
 
+import com.runcheck.R
 import com.runcheck.data.db.entity.BatteryReadingEntity
 import com.runcheck.domain.model.BatteryHealth
 import com.runcheck.domain.model.ChargingStatus
@@ -38,6 +39,35 @@ class BatteryWidgetSnapshotTest {
                 .toBatteryWidgetSnapshot()
 
         assertNull(snapshot.currentMa)
+        assertNull(snapshot.currentConfidence)
+    }
+
+    @Test
+    fun `estimated persisted current keeps its confidence for the battery widget`() {
+        val snapshot =
+            batteryReading(currentMa = 100, currentConfidence = Confidence.LOW.name)
+                .toBatteryWidgetSnapshot()
+
+        assertEquals(100, snapshot.currentMa)
+        assertEquals(Confidence.LOW, snapshot.currentConfidence)
+        assertEquals(
+            R.string.value_with_estimated_badge,
+            batteryWidgetCurrentLabelRes(snapshot.currentConfidence),
+        )
+    }
+
+    @Test
+    fun `accurate persisted current keeps its confidence for the battery widget`() {
+        val snapshot =
+            batteryReading(currentMa = 100, currentConfidence = Confidence.HIGH.name)
+                .toBatteryWidgetSnapshot()
+
+        assertEquals(100, snapshot.currentMa)
+        assertEquals(Confidence.HIGH, snapshot.currentConfidence)
+        assertEquals(
+            R.string.value_with_accurate_badge,
+            batteryWidgetCurrentLabelRes(snapshot.currentConfidence),
+        )
     }
 
     private fun batteryReading(
