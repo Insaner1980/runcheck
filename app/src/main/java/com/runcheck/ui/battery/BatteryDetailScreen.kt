@@ -274,6 +274,7 @@ private fun BatteryContent(
                 }
 
                 else -> {
+                    // Ignore fullscreen chart results owned by other detail screens.
                 }
             }
         },
