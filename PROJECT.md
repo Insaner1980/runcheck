@@ -64,7 +64,7 @@ The highest-risk review surfaces are layer boundaries, Android API guards, measu
 - Widgets: Glance app widgets
 - Speed test backend: M-Lab NDT7
 - Build: Gradle Kotlin DSL
-- Build tooling: Gradle wrapper 9.7.0, AGP 9.2.1, Kotlin Gradle/Compose plugin 2.4.10, Kotlin runtime constraints 2.3.20, KSP 2.3.11, Compose BOM 2026.06.01
+- Build tooling: Gradle wrapper 9.7.1, AGP 9.2.1, Kotlin Gradle/Compose plugin 2.4.10, Kotlin runtime constraints 2.4.20, KSP 2.3.11, Compose BOM 2026.06.01
 - Compile SDK: Android 17 (API 37)
 - Target SDK: Android 17 (API 37)
 - Min SDK: 26
@@ -115,7 +115,7 @@ Debug/release-specific insight tooling also lives outside the shared main source
 
 - `gradle/libs.versions.toml` is the source of truth for dependency and plugin versions.
 - `gradle.properties` owns the `runcheck.buildTools.*` security versions for vulnerable transitive build-tool dependencies. Root `build.gradle.kts` applies these pins only to the matching buildscript, ktlint, Android Lint, and Unified Test Platform configurations; application runtime configurations remain unaffected.
-- `gradle/wrapper/gradle-wrapper.properties` pins Gradle to `9.7.0` and verifies the binary distribution with the checked-in SHA-256.
+- `gradle/wrapper/gradle-wrapper.properties` pins Gradle to `9.7.1` and verifies the binary distribution with the checked-in SHA-256.
 - `settings.gradle.kts` enforces centralized repositories with `RepositoriesMode.FAIL_ON_PROJECT_REPOS`.
 - Approved repositories are `google()`, `mavenCentral()`, and JitPack only for `com.github.m-lab`.
 - `settings.gradle.kts` pins `org.gradle.toolchains.foojay-resolver-convention` to `1.0.0` and applies repository content filters to plugin resolution.
@@ -128,10 +128,10 @@ Current version catalog highlights:
 
 | Area | Current value |
 |------|---------------|
-| Gradle wrapper | `9.7.0` |
+| Gradle wrapper | `9.7.1` |
 | Android Gradle Plugin | `9.2.1` |
 | Kotlin Gradle / Compose plugin | `2.4.10` |
-| Kotlin runtime constraints | `2.3.20` |
+| Kotlin runtime constraints | `2.4.20` |
 | KSP | `2.3.11` |
 | Hilt | `2.60.1` |
 | Hilt AndroidX / Hilt Work | `1.4.0` |
@@ -157,13 +157,13 @@ Current version catalog highlights:
 | AndroidX Test Ext JUnit | `1.3.0` |
 | AndroidX Test Runner | `1.7.0` |
 | Sentry debug-only core | `8.51.0` |
-| Dependency Analysis Gradle plugin | `3.17.0` |
+| Dependency Analysis Gradle plugin | `3.19.1` |
 | ktlint rule engine | `1.8.0` |
 | ktlint Gradle plugin | `14.2.0` |
-| Detekt | `2.0.0-alpha.5` |
+| Detekt | `2.0.0-alpha.6` |
 | compose-rules for ktlint | `0.6.4` |
 | compose-rules for Detekt | `0.6.4` |
-| OWASP Dependency-Check Gradle plugin | `12.2.2` |
+| OWASP Dependency-Check Gradle plugin | `13.0.0` |
 | SonarQube Gradle plugin | `7.4.0.8496` |
 | Compose Stability Analyzer | `0.12.0` |
 | Google Android Security Lints | `1.0.4` |
@@ -198,7 +198,7 @@ These pins are deliberately configuration-scoped in root `build.gradle.kts`; the
 
 ### Toolchain compatibility and build execution
 
-- The active coordinated toolchain is AGP 9.2.1, Kotlin Gradle/Compose plugin 2.4.10, Kotlin runtime constraints 2.3.20, KSP 2.3.11, Hilt 2.60.1, Detekt 2.0.0-alpha.5, and Compose Stability Analyzer 0.12.0.
+- The active coordinated toolchain is AGP 9.2.1, Kotlin Gradle/Compose plugin 2.4.10, Kotlin runtime constraints 2.4.20, KSP 2.3.11, Hilt 2.60.1, Detekt 2.0.0-alpha.6, and Compose Stability Analyzer 0.12.0.
 - The earlier Kotlin 2.4 / stability-analyzer incompatibility is resolved. Both debug and release stability variants have current baselines and `failOnStabilityChange = true`; missing baselines are not allowed.
 - Compose library versions come from the Compose BOM, while the Compose compiler is managed through the Kotlin Compose plugin. Treat Kotlin, Compose, KSP, Detekt, analyzer, AGP, dependency verification, and CI extractor changes as a compatibility set.
 - Gradle configuration cache is enabled. Build cache and parallel execution are disabled, `org.gradle.workers.max = 2`, and the Kotlin compiler execution strategy is in-process.

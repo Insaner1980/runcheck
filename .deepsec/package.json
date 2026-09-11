@@ -12,10 +12,10 @@
     "deepsec:report:custom": "pnpm run deepsec:scan:custom && pnpm run deepsec:process && pnpm run deepsec:export"
   },
   "dependencies": {
-    "deepsec": "2.3.8"
+    "deepsec": "2.3.9"
   },
   "devDependencies": {
-    "@types/node": "^26.4.1",
+    "@types/node": "^26.5.0",
     "typescript": "^7.0.2"
   }
 }

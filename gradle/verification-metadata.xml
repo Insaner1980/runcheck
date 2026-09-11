@@ -12041,5 +12041,203 @@
             <sha256 value="5fe3c8ee5c6b3f47efd1fced1d6418084037f54f13290816c5db717e6b5c92aa" origin="Verified by two independent HTTPS downloads from https://dl.google.com/dl/android/maven2/com/android/tools/build/aapt2/9.4.0-15978811/aapt2-9.4.0-15978811-windows.jar"/>
          </artifact>
       </component>
+      <component group="org.owasp.dependencycheck" name="org.owasp.dependencycheck.gradle.plugin" version="13.0.0">
+         <artifact name="org.owasp.dependencycheck.gradle.plugin-13.0.0.pom">
+            <sha256 value="2125e8fad1de83730a3f2ab74c68ee42cebbe943f3371d9c90f975f385526159" origin="Verified against Gradle Plugin Portal HTTPS artifact"/>
+         </artifact>
+      </component>
+      <component group="com.autonomousapps.dependency-analysis" name="com.autonomousapps.dependency-analysis.gradle.plugin" version="3.19.1">
+         <artifact name="com.autonomousapps.dependency-analysis.gradle.plugin-3.19.1.pom">
+            <sha256 value="9ed9618ab6e10c03e4c36e3b363aa5e9492d55689fe9d46cb4937b78caaf25b0" origin="Verified against Maven Central HTTPS artifact"/>
+         </artifact>
+      </component>
+      <component group="com.github.ben-manes.caffeine" name="caffeine" version="3.2.4">
+         <artifact name="caffeine-3.2.4.jar">
+            <sha256 value="9d9d2cfd681fd9272ded3d27c9930db12f89f732345975aa113ebc223bbf1224" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/github/ben-manes/caffeine/caffeine/3.2.4/caffeine-3.2.4.jar"/>
+         </artifact>
+         <artifact name="caffeine-3.2.4.module">
+            <sha256 value="b5f16a0f6f9000a46a62b18306bb38777bd1ecfc582c4c9ad05c928d451ba402" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/github/ben-manes/caffeine/caffeine/3.2.4/caffeine-3.2.4.module"/>
+         </artifact>
+      </component>
+      <component group="com.autonomousapps" name="dependency-analysis-gradle-plugin" version="3.19.1">
+         <artifact name="dependency-analysis-gradle-plugin-3.19.1.jar">
+            <sha256 value="75bc3f16db71938fcebb1930c394990aff8897925f949030d306edc7447d3ba8" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/autonomousapps/dependency-analysis-gradle-plugin/3.19.1/dependency-analysis-gradle-plugin-3.19.1.jar"/>
+         </artifact>
+         <artifact name="dependency-analysis-gradle-plugin-3.19.1.module">
+            <sha256 value="90d4d39275032e86f95e77c7b2b0e676ec511619e25e17182df5ab9a562f6fb6" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/autonomousapps/dependency-analysis-gradle-plugin/3.19.1/dependency-analysis-gradle-plugin-3.19.1.module"/>
+         </artifact>
+      </component>
+      <component group="org.owasp" name="dependency-check-core" version="13.0.0">
+         <artifact name="dependency-check-core-13.0.0.jar">
+            <sha256 value="698c9958e5e1c12911845ea20a7bc5a1eb3c55cd69e808890d643716da4ed596" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/owasp/dependency-check-core/13.0.0/dependency-check-core-13.0.0.jar"/>
+         </artifact>
+         <artifact name="dependency-check-core-13.0.0.pom">
+            <sha256 value="de6da39002b5eb4b5aad04003bea0d18728e86c263f90c80ed4ec5e28073af9b" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/owasp/dependency-check-core/13.0.0/dependency-check-core-13.0.0.pom"/>
+         </artifact>
+      </component>
+      <component group="org.owasp" name="dependency-check-gradle" version="13.0.0">
+         <artifact name="dependency-check-gradle-13.0.0.jar">
+            <sha256 value="c752bf955698fa860301742be19e754a3d1f6dc0a69d70822f9de00773a6bc1f" origin="Verified against independent HTTPS download from https://plugins.gradle.org/m2/org/owasp/dependency-check-gradle/13.0.0/dependency-check-gradle-13.0.0.jar"/>
+         </artifact>
+         <artifact name="dependency-check-gradle-13.0.0.module">
+            <sha256 value="1b64e16d18bfe83905c607ec58b13b4dc40b708f9de389d88c270e194daf47c4" origin="Verified against independent HTTPS download from https://plugins.gradle.org/m2/org/owasp/dependency-check-gradle/13.0.0/dependency-check-gradle-13.0.0.module"/>
+         </artifact>
+      </component>
+      <component group="org.owasp" name="dependency-check-parent" version="13.0.0">
+         <artifact name="dependency-check-parent-13.0.0.pom">
+            <sha256 value="ee4c49a17083d24b2ae4a2aca8364581b7e4936f47bb8540102a565b931f34bf" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/owasp/dependency-check-parent/13.0.0/dependency-check-parent-13.0.0.pom"/>
+         </artifact>
+      </component>
+      <component group="org.owasp" name="dependency-check-utils" version="13.0.0">
+         <artifact name="dependency-check-utils-13.0.0.jar">
+            <sha256 value="28b00a6ba5a204334a6fd9261604e4130a68d1132ae79c144ad47ce4e0ec609c" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/owasp/dependency-check-utils/13.0.0/dependency-check-utils-13.0.0.jar"/>
+         </artifact>
+         <artifact name="dependency-check-utils-13.0.0.pom">
+            <sha256 value="dda475efc33b7603a6c20db4af82a9df553128b2fe05255578b5b00cd890c9c3" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/owasp/dependency-check-utils/13.0.0/dependency-check-utils-13.0.0.pom"/>
+         </artifact>
+      </component>
+      <component group="com.google.errorprone" name="error_prone_annotations" version="2.49.0">
+         <artifact name="error_prone_annotations-2.49.0.jar">
+            <sha256 value="3b1003e51b8ae56fdbd7c71073e81d1683b97e6c4dff5a9151164d59b769d13c" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.49.0/error_prone_annotations-2.49.0.jar"/>
+         </artifact>
+         <artifact name="error_prone_annotations-2.49.0.pom">
+            <sha256 value="601d673cb736ccadecc8acca5d47d88d31d8e8775be45ae6bedcd8b2359c9cc5" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.49.0/error_prone_annotations-2.49.0.pom"/>
+         </artifact>
+      </component>
+      <component group="com.google.errorprone" name="error_prone_parent" version="2.49.0">
+         <artifact name="error_prone_parent-2.49.0.pom">
+            <sha256 value="7313bdb222d17ff3cd02ada01c3f344e9a0d8ad121a93ae26964ed286279028d" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_parent/2.49.0/error_prone_parent-2.49.0.pom"/>
+         </artifact>
+      </component>
+      <component group="org.apache.httpcomponents.client5" name="httpclient5-cache" version="5.6.2">
+         <artifact name="httpclient5-cache-5.6.2.jar">
+            <sha256 value="c78d7e5c9c665668e8e5557e71fcfe64d8b46313e7e5cfa0e4d4fee98cfdcf78" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/apache/httpcomponents/client5/httpclient5-cache/5.6.2/httpclient5-cache-5.6.2.jar"/>
+         </artifact>
+         <artifact name="httpclient5-cache-5.6.2.pom">
+            <sha256 value="5836d6e988bb7015758a9a8129e6718b35d5357aae59ccc6a054054f5b57017d" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/apache/httpcomponents/client5/httpclient5-cache/5.6.2/httpclient5-cache-5.6.2.pom"/>
+         </artifact>
+      </component>
+      <component group="org.apache.httpcomponents.client5" name="httpclient5-parent" version="5.6.2">
+         <artifact name="httpclient5-parent-5.6.2.pom">
+            <sha256 value="fd8e478bcd50353c961e95648a209e2739a89ae464eb68acd8aaedd2b46695d5" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/apache/httpcomponents/client5/httpclient5-parent/5.6.2/httpclient5-parent-5.6.2.pom"/>
+         </artifact>
+      </component>
+      <component group="org.eclipse.parsson" name="jakarta.json" version="1.1.9">
+         <artifact name="jakarta.json-1.1.9.jar">
+            <sha256 value="75b97f4c8dd035aae97a92478fdd7fe961a6ed7c4051b54377152decafa62a57" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/eclipse/parsson/jakarta.json/1.1.9/jakarta.json-1.1.9.jar"/>
+         </artifact>
+         <artifact name="jakarta.json-1.1.9.pom">
+            <sha256 value="26d3f0a418b242a74516fc2b1762276ac6e69100907a6449f43e43260bdf685b" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/eclipse/parsson/jakarta.json/1.1.9/jakarta.json-1.1.9.pom"/>
+         </artifact>
+      </component>
+      <component group="org.slf4j" name="jcl-over-slf4j" version="2.0.18">
+         <artifact name="jcl-over-slf4j-2.0.18.jar">
+            <sha256 value="ec5c36d57d2dbe100f84878f944575cb7871da32c7a115b8d7e0721277045d67" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/slf4j/jcl-over-slf4j/2.0.18/jcl-over-slf4j-2.0.18.jar"/>
+         </artifact>
+         <artifact name="jcl-over-slf4j-2.0.18.pom">
+            <sha256 value="869b2adce08e689721d1239ce4c10a7cd3be7daf89347b010996da7ee0d59bb9" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/slf4j/jcl-over-slf4j/2.0.18/jcl-over-slf4j-2.0.18.pom"/>
+         </artifact>
+      </component>
+      <component group="org.json" name="json" version="20260522">
+         <artifact name="json-20260522.jar">
+            <sha256 value="d671b45e5954211f3566722aa614fbd3b5d46e95f4f9da4dc58c173280bb1799" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/json/json/20260522/json-20260522.jar"/>
+         </artifact>
+         <artifact name="json-20260522.pom">
+            <sha256 value="8f4d7ed74a9340e834d6ef14a7b2eb4b3dcf2368fabc405ee6466d4bc81ef981" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/json/json/20260522/json-20260522.pom"/>
+         </artifact>
+      </component>
+      <component group="org.slf4j" name="jul-to-slf4j" version="2.0.18">
+         <artifact name="jul-to-slf4j-2.0.18.jar">
+            <sha256 value="cbb7d1aaaa9e871eb1a06594abd911bf97027152976edf1edc315be75239204e" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/slf4j/jul-to-slf4j/2.0.18/jul-to-slf4j-2.0.18.jar"/>
+         </artifact>
+         <artifact name="jul-to-slf4j-2.0.18.pom">
+            <sha256 value="eae8e0ffbd8b31fa8f8a610d62d387b4e10295ba74d0e14d66404560b74d8295" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/slf4j/jul-to-slf4j/2.0.18/jul-to-slf4j-2.0.18.pom"/>
+         </artifact>
+      </component>
+      <component group="org.junit" name="junit-bom" version="5.14.4">
+         <artifact name="junit-bom-5.14.4.pom">
+            <sha256 value="5706e8f29a0a07f56efbbea4a0670793414194bb8d24d8143ba1e787a2f32856" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.14.4/junit-bom-5.14.4.pom"/>
+         </artifact>
+      </component>
+      <component group="org.jetbrains.kotlin" name="kotlin-bom" version="2.4.0">
+         <artifact name="kotlin-bom-2.4.0.pom">
+            <sha256 value="cea26953f7aa75bcadc8e952017eafbb7bafaa5bda4d85093e6a28b4eaee8a60" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-bom/2.4.0/kotlin-bom-2.4.0.pom"/>
+         </artifact>
+      </component>
+      <component group="com.autonomousapps" name="kotlin-editor-relocated" version="0.25.0">
+         <artifact name="kotlin-editor-relocated-0.25.0.jar">
+            <sha256 value="95a6a040b8d869cbf1c91cbbdc012d7049347e27566f4eb4a2f3409550027be8" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/autonomousapps/kotlin-editor-relocated/0.25.0/kotlin-editor-relocated-0.25.0.jar"/>
+         </artifact>
+         <artifact name="kotlin-editor-relocated-0.25.0.module">
+            <sha256 value="488c7b5db935e4a2bb49f9207184d433c77bc5a6ecbd83fd013cb7b9ff923cf8" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/autonomousapps/kotlin-editor-relocated/0.25.0/kotlin-editor-relocated-0.25.0.module"/>
+         </artifact>
+      </component>
+      <component group="org.jetbrains.kotlin" name="kotlin-stdlib-jdk8" version="2.1.21">
+         <artifact name="kotlin-stdlib-jdk8-2.1.21.pom">
+            <sha256 value="f4a9161f62e952af50fd62a1a26081f38d777fecd6947fd8403f1447f8669daa" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk8/2.1.21/kotlin-stdlib-jdk8-2.1.21.pom"/>
+         </artifact>
+      </component>
+      <component group="com.squareup.okio" name="okio" version="3.15.0">
+         <artifact name="okio-3.15.0.module">
+            <sha256 value="116826066ceb4d3336a74e7172a33751617ec344bc50a34f99b0d24959a4a39d" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/squareup/okio/okio/3.15.0/okio-3.15.0.module"/>
+         </artifact>
+      </component>
+      <component group="com.squareup.okio" name="okio-bom" version="3.15.0">
+         <artifact name="okio-bom-3.15.0.module">
+            <sha256 value="c775b82332bad4096122de6c554a9dd8f94b82f254c70afb0a7c3d964c4df066" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/squareup/okio/okio-bom/3.15.0/okio-bom-3.15.0.module"/>
+         </artifact>
+      </component>
+      <component group="com.squareup.okio" name="okio-jvm" version="3.15.0">
+         <artifact name="okio-jvm-3.15.0.jar">
+            <sha256 value="483dc383b1049d220892322a0d6a4308425f09bb05b48c43d4eaa9ff82b1cd16" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/squareup/okio/okio-jvm/3.15.0/okio-jvm-3.15.0.jar"/>
+         </artifact>
+         <artifact name="okio-jvm-3.15.0.module">
+            <sha256 value="989454a94aefbc297032888f135acda14a9ffb46960e7d84603925d269241ee7" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/squareup/okio/okio-jvm/3.15.0/okio-jvm-3.15.0.module"/>
+         </artifact>
+      </component>
+      <component group="io.github.jeremylong" name="open-vulnerability-clients" version="9.0.6">
+         <artifact name="open-vulnerability-clients-9.0.6.jar">
+            <sha256 value="34028f01a88cf7d032809c581e22bc005740391704b88f8147eeeb358fd75068" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/io/github/jeremylong/open-vulnerability-clients/9.0.6/open-vulnerability-clients-9.0.6.jar"/>
+         </artifact>
+         <artifact name="open-vulnerability-clients-9.0.6.module">
+            <sha256 value="94cbce9c4cf9bcb3698c97639da7530b3b392d70bc3e872a6dce8c60550456cf" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/io/github/jeremylong/open-vulnerability-clients/9.0.6/open-vulnerability-clients-9.0.6.module"/>
+         </artifact>
+      </component>
+      <component group="org.eclipse.parsson" name="parsson-bundles" version="1.1.9">
+         <artifact name="parsson-bundles-1.1.9.pom">
+            <sha256 value="f063a382980726c23ec620639b299e5891fecda610262b03fc774e28bcf2bb62" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/eclipse/parsson/parsson-bundles/1.1.9/parsson-bundles-1.1.9.pom"/>
+         </artifact>
+      </component>
+      <component group="org.eclipse.parsson" name="project" version="1.1.9">
+         <artifact name="project-1.1.9.pom">
+            <sha256 value="6cfa0cda39ad5494b4e86ae67ffc3b13b8910cc6d3ce82fed1995c71939782da" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/eclipse/parsson/project/1.1.9/project-1.1.9.pom"/>
+         </artifact>
+      </component>
+      <component group="org.slf4j" name="slf4j-api" version="2.0.18">
+         <artifact name="slf4j-api-2.0.18.jar">
+            <sha256 value="44508fd1576500688c790b190acdd16fec4f8c79a3e0b900afd70503cf055f55" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.18/slf4j-api-2.0.18.jar"/>
+         </artifact>
+         <artifact name="slf4j-api-2.0.18.pom">
+            <sha256 value="6c2c7f2c02774cc2b7b619fbd2df7873cdad29718926e44754b87f70d1eb43cb" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.18/slf4j-api-2.0.18.pom"/>
+         </artifact>
+      </component>
+      <component group="org.slf4j" name="slf4j-bom" version="2.0.18">
+         <artifact name="slf4j-bom-2.0.18.pom">
+            <sha256 value="9219aab601575126c4e66e1331eb2b0c6c17a330ac4d5a07e3cd11d580a0c12d" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/slf4j/slf4j-bom/2.0.18/slf4j-bom-2.0.18.pom"/>
+         </artifact>
+      </component>
+      <component group="org.slf4j" name="slf4j-parent" version="2.0.18">
+         <artifact name="slf4j-parent-2.0.18.pom">
+            <sha256 value="0b3896bedad2c9ed9697edcbea1da0c54cd238a723583a81358a83bfb782e9fa" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/slf4j/slf4j-parent/2.0.18/slf4j-parent-2.0.18.pom"/>
+         </artifact>
+      </component>
+      <component group="com.autonomousapps" name="variant-artifacts" version="0.7.0">
+         <artifact name="variant-artifacts-0.7.0.jar">
+            <sha256 value="da74ae4a28b302eb27fc8f38990aef916b2b24c0127df926295810c710f87fd7" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/autonomousapps/variant-artifacts/0.7.0/variant-artifacts-0.7.0.jar"/>
+         </artifact>
+         <artifact name="variant-artifacts-0.7.0.module">
+            <sha256 value="eb3d976bec8596cfd709fd368ed883bf7d84c887fdf41471932786cd480cb444" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/autonomousapps/variant-artifacts/0.7.0/variant-artifacts-0.7.0.module"/>
+         </artifact>
+      </component>
    </components>
 </verification-metadata>
