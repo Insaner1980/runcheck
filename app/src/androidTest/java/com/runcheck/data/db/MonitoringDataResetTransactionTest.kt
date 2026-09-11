@@ -34,10 +34,11 @@ class MonitoringDataResetTransactionTest {
     @Before
     fun setUp() {
         database =
-            Room.inMemoryDatabaseBuilder(
-                InstrumentationRegistry.getInstrumentation().targetContext,
-                RuncheckDatabase::class.java,
-            ).build()
+            Room
+                .inMemoryDatabaseBuilder(
+                    InstrumentationRegistry.getInstrumentation().targetContext,
+                    RuncheckDatabase::class.java,
+                ).build()
         repository = ThrottlingRepositoryImpl(database.throttlingEventDao(), AppDispatchers())
         tracker =
             TrackThrottlingEventsUseCase(
@@ -91,12 +92,13 @@ class MonitoringDataResetTransactionTest {
             observe(100)
             val original = requireNotNull(repository.getOpenEvent())
             val deleted = CompletableDeferred<Unit>()
-            val reset = launch {
-                reset {
-                    deleted.complete(Unit)
-                    awaitCancellation()
+            val reset =
+                launch {
+                    reset {
+                        deleted.complete(Unit)
+                        awaitCancellation()
+                    }
                 }
-            }
             deleted.await()
             reset.cancelAndJoin()
             assertEquals(original, repository.getEventsSinceSync(0).single())

@@ -12052,6 +12052,9 @@
          </artifact>
       </component>
       <component group="com.github.ben-manes.caffeine" name="caffeine" version="3.2.4">
+         <artifact name="caffeine-3.2.4.pom">
+            <sha256 value="624ec9fc538e1a618964dfa9f8cf9344435607c58e45a818378e7a643d4e09b3" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/github/ben-manes/caffeine/caffeine/3.2.4/caffeine-3.2.4.pom"/>
+         </artifact>
          <artifact name="caffeine-3.2.4.jar">
             <sha256 value="9d9d2cfd681fd9272ded3d27c9930db12f89f732345975aa113ebc223bbf1224" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/github/ben-manes/caffeine/caffeine/3.2.4/caffeine-3.2.4.jar"/>
          </artifact>
@@ -12060,6 +12063,9 @@
          </artifact>
       </component>
       <component group="com.autonomousapps" name="dependency-analysis-gradle-plugin" version="3.19.1">
+         <artifact name="dependency-analysis-gradle-plugin-3.19.1.pom">
+            <sha256 value="8b3422ee9342763cc6376b711cd80ab180638758cf0be5bc8e467a3f2597db3f" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/autonomousapps/dependency-analysis-gradle-plugin/3.19.1/dependency-analysis-gradle-plugin-3.19.1.pom"/>
+         </artifact>
          <artifact name="dependency-analysis-gradle-plugin-3.19.1.jar">
             <sha256 value="75bc3f16db71938fcebb1930c394990aff8897925f949030d306edc7447d3ba8" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/autonomousapps/dependency-analysis-gradle-plugin/3.19.1/dependency-analysis-gradle-plugin-3.19.1.jar"/>
          </artifact>
@@ -12076,6 +12082,9 @@
          </artifact>
       </component>
       <component group="org.owasp" name="dependency-check-gradle" version="13.0.0">
+         <artifact name="dependency-check-gradle-13.0.0.pom">
+            <sha256 value="502b3df6c06c5b86fc31dd1cef0492599eaba2f115059aee7bb5ed3e75fbd9d1" origin="Verified against independent HTTPS download from https://plugins.gradle.org/m2/org/owasp/dependency-check-gradle/13.0.0/dependency-check-gradle-13.0.0.pom"/>
+         </artifact>
          <artifact name="dependency-check-gradle-13.0.0.jar">
             <sha256 value="c752bf955698fa860301742be19e754a3d1f6dc0a69d70822f9de00773a6bc1f" origin="Verified against independent HTTPS download from https://plugins.gradle.org/m2/org/owasp/dependency-check-gradle/13.0.0/dependency-check-gradle-13.0.0.jar"/>
          </artifact>
@@ -12155,6 +12164,9 @@
          </artifact>
       </component>
       <component group="org.junit" name="junit-bom" version="5.14.4">
+         <artifact name="junit-bom-5.14.4.module">
+            <sha256 value="8a5e98d131de7d7aadb1ee88bfd86d66e62a7c2e2a4074a3b2498b03d236eb64" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.14.4/junit-bom-5.14.4.module"/>
+         </artifact>
          <artifact name="junit-bom-5.14.4.pom">
             <sha256 value="5706e8f29a0a07f56efbbea4a0670793414194bb8d24d8143ba1e787a2f32856" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/org/junit/junit-bom/5.14.4/junit-bom-5.14.4.pom"/>
          </artifact>
@@ -12165,6 +12177,9 @@
          </artifact>
       </component>
       <component group="com.autonomousapps" name="kotlin-editor-relocated" version="0.25.0">
+         <artifact name="kotlin-editor-relocated-0.25.0.pom">
+            <sha256 value="b29ce9f5d99773285f8fb00142ff24d29b7f4e96b04711fe6896cb6b7b444485" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/autonomousapps/kotlin-editor-relocated/0.25.0/kotlin-editor-relocated-0.25.0.pom"/>
+         </artifact>
          <artifact name="kotlin-editor-relocated-0.25.0.jar">
             <sha256 value="95a6a040b8d869cbf1c91cbbdc012d7049347e27566f4eb4a2f3409550027be8" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/autonomousapps/kotlin-editor-relocated/0.25.0/kotlin-editor-relocated-0.25.0.jar"/>
          </artifact>
@@ -12178,16 +12193,25 @@
          </artifact>
       </component>
       <component group="com.squareup.okio" name="okio" version="3.15.0">
+         <artifact name="okio-3.15.0.pom">
+            <sha256 value="2d73785411404eeac32f0473a2e07ab1516b9850a9280cc61a08b479790cccf8" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/squareup/okio/okio/3.15.0/okio-3.15.0.pom"/>
+         </artifact>
          <artifact name="okio-3.15.0.module">
             <sha256 value="116826066ceb4d3336a74e7172a33751617ec344bc50a34f99b0d24959a4a39d" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/squareup/okio/okio/3.15.0/okio-3.15.0.module"/>
          </artifact>
       </component>
       <component group="com.squareup.okio" name="okio-bom" version="3.15.0">
+         <artifact name="okio-bom-3.15.0.pom">
+            <sha256 value="77dd473183d8b7ff2da4954b4ac602063ee6327864fe7629c588308f5f25e04a" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/squareup/okio/okio-bom/3.15.0/okio-bom-3.15.0.pom"/>
+         </artifact>
          <artifact name="okio-bom-3.15.0.module">
             <sha256 value="c775b82332bad4096122de6c554a9dd8f94b82f254c70afb0a7c3d964c4df066" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/squareup/okio/okio-bom/3.15.0/okio-bom-3.15.0.module"/>
          </artifact>
       </component>
       <component group="com.squareup.okio" name="okio-jvm" version="3.15.0">
+         <artifact name="okio-jvm-3.15.0.pom">
+            <sha256 value="078e42f68ca4613ff2597fbc5541c5ce578cdcc48839da89da7ca760518bfb79" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/squareup/okio/okio-jvm/3.15.0/okio-jvm-3.15.0.pom"/>
+         </artifact>
          <artifact name="okio-jvm-3.15.0.jar">
             <sha256 value="483dc383b1049d220892322a0d6a4308425f09bb05b48c43d4eaa9ff82b1cd16" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/squareup/okio/okio-jvm/3.15.0/okio-jvm-3.15.0.jar"/>
          </artifact>
@@ -12196,6 +12220,9 @@
          </artifact>
       </component>
       <component group="io.github.jeremylong" name="open-vulnerability-clients" version="9.0.6">
+         <artifact name="open-vulnerability-clients-9.0.6.pom">
+            <sha256 value="f954a0ff42530862f170ab0cec84bfdad185005b01a7bff544d7578024b7b1c9" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/io/github/jeremylong/open-vulnerability-clients/9.0.6/open-vulnerability-clients-9.0.6.pom"/>
+         </artifact>
          <artifact name="open-vulnerability-clients-9.0.6.jar">
             <sha256 value="34028f01a88cf7d032809c581e22bc005740391704b88f8147eeeb358fd75068" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/io/github/jeremylong/open-vulnerability-clients/9.0.6/open-vulnerability-clients-9.0.6.jar"/>
          </artifact>
@@ -12232,6 +12259,9 @@
          </artifact>
       </component>
       <component group="com.autonomousapps" name="variant-artifacts" version="0.7.0">
+         <artifact name="variant-artifacts-0.7.0.pom">
+            <sha256 value="66d6dcd65d78525c1bd1b81ddeb530287fa075cbd3f270cc5c607ac9fd90f680" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/autonomousapps/variant-artifacts/0.7.0/variant-artifacts-0.7.0.pom"/>
+         </artifact>
          <artifact name="variant-artifacts-0.7.0.jar">
             <sha256 value="da74ae4a28b302eb27fc8f38990aef916b2b24c0127df926295810c710f87fd7" origin="Verified against independent HTTPS download from https://repo.maven.apache.org/maven2/com/autonomousapps/variant-artifacts/0.7.0/variant-artifacts-0.7.0.jar"/>
          </artifact>
