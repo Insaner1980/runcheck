@@ -13,6 +13,7 @@ import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SpeedTestResult
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
+import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.repository.InsightRepository
 import com.runcheck.domain.repository.MonitoringStatusRepository
 import com.runcheck.domain.scoring.HealthScoreCalculator
@@ -33,6 +34,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -138,77 +140,12 @@ class HomeViewModel
                 viewModelScope.launch {
                     val preferencesFlow = manageUserPreferences.observePreferences()
                     val freshnessTicker = monitoringFreshnessTicker()
-                    val monitoringStaleFlow =
-                        combine(
-                            monitoringStatusRepository.observeLastWorkerHeartbeat(),
-                            preferencesFlow,
-                            freshnessTicker,
-                        ) { heartbeat, preferences, tick ->
-                            MonitoringFreshnessPolicy.isStale(
-                                heartbeat = heartbeat,
-                                currentIntervalMinutes = preferences.monitoringInterval.minutes,
-                                currentUptimeMillis = tick.uptimeMillis,
-                                currentEpochMillis = tick.epochMillis,
-                            )
-                        }.distinctUntilChanged()
+                    val monitoringStaleFlow = observeMonitoringStale(preferencesFlow, freshnessTicker)
 
-                    val speedTestScoreContextFlow =
-                        combine(
-                            getSpeedTestHistory.getLatest(),
-                            freshnessTicker,
-                        ) { speedTest, tick -> SpeedTestScoreContext(speedTest, tick.epochMillis) }
+                    val dataFlow = observeData(freshnessTicker)
 
-                    val liveDataFlow =
-                        combine(
-                            getBatteryState(),
-                            getNetworkState(),
-                            getThermalState(),
-                            getStorageState(),
-                        ) { battery, network, thermal, storage ->
-                            LiveDataSnapshot(
-                                battery = battery,
-                                network = network,
-                                thermal = thermal,
-                                storage = storage,
-                                updatedAtEpochMillis = System.currentTimeMillis(),
-                            )
-                        }
-
-                    val dataFlow =
-                        combine(
-                            liveDataFlow,
-                            speedTestScoreContextFlow,
-                        ) { liveData, speedTestContext ->
-                            DataSnapshot(
-                                battery = liveData.battery,
-                                network = liveData.network,
-                                thermal = liveData.thermal,
-                                storage = liveData.storage,
-                                health =
-                                    healthScoreCalculator.calculate(
-                                        battery = liveData.battery,
-                                        network = liveData.network,
-                                        thermal = liveData.thermal,
-                                        storage = liveData.storage,
-                                        recentSpeedTest = speedTestContext.speedTest,
-                                        nowMillis = speedTestContext.nowMillis,
-                                    ),
-                                updatedAtEpochMillis = liveData.updatedAtEpochMillis,
-                            )
-                        }
-
-                    val insightFlow =
-                        combine(
-                            insightRepository.getActiveInsights(),
-                            insightRepository.getUnseenCount(),
-                        ) { activeInsights, _ -> activeInsights }
-
-                    val readyProStateFlow =
-                        combine(
-                            proStateProvider.proState,
-                            proStateProvider.proAccessReady,
-                        ) { proState, ready -> proState.takeIf { ready } }
-                            .filterNotNull()
+                    val insightFlow = observeInsights()
+                    val readyProStateFlow = observeReadyProState()
 
                     combine(
                         dataFlow,
@@ -259,6 +196,82 @@ class HomeViewModel
                         }
                 }
         }
+
+        private fun observeData(freshnessTicker: Flow<FreshnessTick>): Flow<DataSnapshot> {
+            val speedTestScoreContextFlow =
+                combine(
+                    getSpeedTestHistory.getLatest(),
+                    freshnessTicker,
+                ) { speedTest, tick -> SpeedTestScoreContext(speedTest, tick.epochMillis) }
+
+            val liveDataFlow =
+                combine(
+                    getBatteryState(),
+                    getNetworkState(),
+                    getThermalState(),
+                    getStorageState(),
+                ) { battery, network, thermal, storage ->
+                    LiveDataSnapshot(
+                        battery = battery,
+                        network = network,
+                        thermal = thermal,
+                        storage = storage,
+                        updatedAtEpochMillis = System.currentTimeMillis(),
+                    )
+                }
+
+            return combine(
+                liveDataFlow,
+                speedTestScoreContextFlow,
+            ) { liveData, speedTestContext ->
+                DataSnapshot(
+                    battery = liveData.battery,
+                    network = liveData.network,
+                    thermal = liveData.thermal,
+                    storage = liveData.storage,
+                    health =
+                        healthScoreCalculator.calculate(
+                            battery = liveData.battery,
+                            network = liveData.network,
+                            thermal = liveData.thermal,
+                            storage = liveData.storage,
+                            recentSpeedTest = speedTestContext.speedTest,
+                            nowMillis = speedTestContext.nowMillis,
+                        ),
+                    updatedAtEpochMillis = liveData.updatedAtEpochMillis,
+                )
+            }
+        }
+
+        private fun observeMonitoringStale(
+            preferencesFlow: Flow<UserPreferences>,
+            freshnessTicker: Flow<FreshnessTick>,
+        ): Flow<Boolean> =
+            combine(
+                monitoringStatusRepository.observeLastWorkerHeartbeat(),
+                preferencesFlow,
+                freshnessTicker,
+            ) { heartbeat, preferences, tick ->
+                MonitoringFreshnessPolicy.isStale(
+                    heartbeat = heartbeat,
+                    currentIntervalMinutes = preferences.monitoringInterval.minutes,
+                    currentUptimeMillis = tick.uptimeMillis,
+                    currentEpochMillis = tick.epochMillis,
+                )
+            }.distinctUntilChanged()
+
+        private fun observeInsights() =
+            combine(
+                insightRepository.getActiveInsights(),
+                insightRepository.getUnseenCount(),
+            ) { activeInsights, _ -> activeInsights }
+
+        private fun observeReadyProState() =
+            combine(
+                proStateProvider.proState,
+                proStateProvider.proAccessReady,
+            ) { proState, ready -> proState.takeIf { ready } }
+                .filterNotNull()
 
         private fun maybeMarkInsightsSeen(state: HomeUiState.Success) {
             val unseenIds = unseenInsightTracker.idsToMarkSeen(state.insights) ?: return

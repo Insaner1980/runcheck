@@ -14,6 +14,7 @@ class BillingManagerApiContractTest {
         findRootDir()
             .resolve("app/src/main/java/com/runcheck/data/billing/BillingManager.kt")
             .readText()
+            .replace("\r\n", "\n")
 
     @Test
     fun `BillingClient builder enables Play Billing auto service reconnection`() {

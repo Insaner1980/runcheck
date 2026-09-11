@@ -32,7 +32,10 @@ class MonitoringDataResetTest {
         runTest {
             val fixture = Fixture()
             fixture.observe(100)
-            val oldId = fixture.events.rows.single().id
+            val oldId =
+                fixture.events.rows
+                    .single()
+                    .id
 
             fixture.clear()
             fixture.observe(200)
@@ -59,10 +62,11 @@ class MonitoringDataResetTest {
             val generation = launch { fixture.engine.generateInsights(150) }
             consumed.await()
             var resetCompleted = false
-            val reset = launch(start = CoroutineStart.UNDISPATCHED) {
-                fixture.clear()
-                resetCompleted = true
-            }
+            val reset =
+                launch(start = CoroutineStart.UNDISPATCHED) {
+                    fixture.clear()
+                    resetCompleted = true
+                }
             fixture.insights.onPublish = { assertTrue("Old history published after reset", !resetCompleted) }
             release.complete(Unit)
             generation.join()
@@ -81,7 +85,10 @@ class MonitoringDataResetTest {
         runTest {
             val fixture = Fixture()
             fixture.observe(100)
-            val oldId = fixture.events.rows.single().id
+            val oldId =
+                fixture.events.rows
+                    .single()
+                    .id
             val consumed = CompletableDeferred<Unit>()
             val release = CompletableDeferred<Unit>()
             fixture.afterRead = {
@@ -95,7 +102,12 @@ class MonitoringDataResetTest {
             release.complete(Unit)
             generation.join()
             fixture.observe(200)
-            assertEquals(oldId, fixture.events.rows.single().id)
+            assertEquals(
+                oldId,
+                fixture.events.rows
+                    .single()
+                    .id,
+            )
             fixture.clear()
             assertTrue(fixture.events.rows.isEmpty())
         }
@@ -119,7 +131,12 @@ class MonitoringDataResetTest {
             fixture.afterRead = {}
             fixture.observe(200)
             fixture.engine.generateInsights(250)
-            assertEquals("200", fixture.insights.rows.single().dedupeKey)
+            assertEquals(
+                "200",
+                fixture.insights.rows
+                    .single()
+                    .dedupeKey,
+            )
         }
 
     @Test
@@ -130,7 +147,12 @@ class MonitoringDataResetTest {
             coEvery { fixture.preferences.clearMonitoringDataState() } throws IllegalStateException("cleanup")
             assertTrue(runCatching { fixture.clear() }.exceptionOrNull() is IllegalStateException)
             fixture.observe(200)
-            assertEquals(200L, fixture.events.rows.single().timestamp)
+            assertEquals(
+                200L,
+                fixture.events.rows
+                    .single()
+                    .timestamp,
+            )
             coEvery { fixture.preferences.clearMonitoringDataState() } returns Unit
             fixture.clear()
             assertTrue(fixture.events.rows.isEmpty())
@@ -150,7 +172,12 @@ class MonitoringDataResetTest {
             cleanupStarted.await()
             reset.cancelAndJoin()
             fixture.observe(200)
-            assertEquals(200L, fixture.events.rows.single().timestamp)
+            assertEquals(
+                200L,
+                fixture.events.rows
+                    .single()
+                    .timestamp,
+            )
             coEvery { fixture.preferences.clearMonitoringDataState() } returns Unit
             fixture.clear()
         }
@@ -174,7 +201,12 @@ class MonitoringDataResetTest {
             assertTrue(fixture.events.rows.isEmpty())
             fixture.beforeInsert = {}
             fixture.observe(200)
-            assertEquals(200L, fixture.events.rows.single().timestamp)
+            assertEquals(
+                200L,
+                fixture.events.rows
+                    .single()
+                    .timestamp,
+            )
         }
 
     @Test
@@ -189,7 +221,12 @@ class MonitoringDataResetTest {
             fixture.afterRead = {}
             fixture.observe(200)
             fixture.engine.generateInsights(250)
-            assertEquals("200", fixture.insights.rows.single().dedupeKey)
+            assertEquals(
+                "200",
+                fixture.insights.rows
+                    .single()
+                    .dedupeKey,
+            )
         }
 
     @Test
@@ -206,7 +243,12 @@ class MonitoringDataResetTest {
             committed.await()
             reset.cancelAndJoin()
             fixture.observe(200)
-            assertEquals(200L, fixture.events.rows.single().timestamp)
+            assertEquals(
+                200L,
+                fixture.events.rows
+                    .single()
+                    .timestamp,
+            )
             fixture.afterTransaction = {}
             fixture.clear()
         }
@@ -232,6 +274,7 @@ class MonitoringDataResetTest {
         private val rule =
             object : InsightRule {
                 override val ruleId = "history"
+
                 override suspend fun evaluate(now: Long): List<InsightCandidate> {
                     val history = events.getEventsSinceSync(0)
                     afterRead()
@@ -255,13 +298,15 @@ class MonitoringDataResetTest {
                 }
             }
         val engine = InsightEngine(setOf(rule), insights, coordinator)
+
         // This fixture proves coordination, not Room rollback.
         val clear =
             ClearMonitoringDataUseCase(
-                transactionRunner = DatabaseTransactionRunner {
-                    it()
-                    afterTransaction()
-                },
+                transactionRunner =
+                    DatabaseTransactionRunner {
+                        it()
+                        afterTransaction()
+                    },
                 batteryRepository = mockk(relaxed = true),
                 networkRepository = mockk(relaxed = true),
                 thermalRepository = mockk(relaxed = true),
@@ -282,7 +327,11 @@ class MonitoringDataResetTest {
             time: Long,
             status: ThermalStatus = ThermalStatus.SEVERE,
         ) {
-            tracker(ThermalState(40f, thermalStatus = status, isThrottling = status >= ThermalStatus.SEVERE), time, time)
+            tracker(
+                ThermalState(40f, thermalStatus = status, isThrottling = status >= ThermalStatus.SEVERE),
+                time,
+                time,
+            )
         }
     }
 
@@ -298,7 +347,11 @@ class MonitoringDataResetTest {
 
         override suspend fun getOpenEvent(): ThrottlingEvent? = rows.firstOrNull { it.durationMs == null }
 
-        override suspend fun getEventsSinceSync(since: Long): List<ThrottlingEvent> = rows.filter { it.timestamp >= since }
+        override suspend fun getEventsSinceSync(since: Long): List<ThrottlingEvent> =
+            rows.filter {
+                it.timestamp >=
+                    since
+            }
 
         override suspend fun deleteAll() = rows.clear()
 

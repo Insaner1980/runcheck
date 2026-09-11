@@ -57,7 +57,7 @@ jobs:
     name: OWASP Dependency-Check
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 195
     permissions:
       contents: read
     steps:
@@ -90,14 +90,22 @@ jobs:
             ${{ runner.os }}-dependency-check-data-
 
       - name: OWASP Dependency-Check
-        timeout-minutes: 35
-        run: ./gradlew :app:dependencyCheckAnalyze --no-daemon --no-configuration-cache --console=plain
+        timeout-minutes: 180
+        run: ./gradlew :app:dependencyCheckAnalyze --no-daemon --no-configuration-cache --console=plain --info
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
           DEPENDENCY_CHECK_AUTO_UPDATE: 'true'
           DEPENDENCY_CHECK_DATA_DIRECTORY: ${{ github.workspace }}/.gradle/dependency-check-data
           NVD_API_MAX_RETRY_COUNT: '5'
           NVD_VALID_FOR_HOURS: '168'
+
+      - name: Upload dependency verification diagnostics
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: dependency-verification-report
+          path: build/reports/dependency-verification/
+          if-no-files-found: ignore
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always() && hashFiles('reports/dependency-check-report.*') != ''

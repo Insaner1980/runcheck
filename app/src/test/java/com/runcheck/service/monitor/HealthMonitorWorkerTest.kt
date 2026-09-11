@@ -216,10 +216,11 @@ class HealthMonitorWorkerTest {
             coEvery { sessions.getActiveSession() } returns null
             coEvery { sessions.insertSession(any()) } throws IllegalStateException("session database full")
             val tracker = ChargerSessionTracker(sessions, batteryRepository, preferences, mockk())
-            val worker = createWorker(
-                batteryStateFlow = flowOf(sampleBatteryState.copy(chargingStatus = ChargingStatus.CHARGING)),
-                chargerSessionTracker = tracker,
-            )
+            val worker =
+                createWorker(
+                    batteryStateFlow = flowOf(sampleBatteryState.copy(chargingStatus = ChargingStatus.CHARGING)),
+                    chargerSessionTracker = tracker,
+                )
 
             assertEquals(ListenableWorker.Result.retry(), worker.doWork())
             coVerify(exactly = 0) { monitoringStatusRepository.setLastWorkerHeartbeat(any()) }
@@ -237,14 +238,18 @@ class HealthMonitorWorkerTest {
             every { source.getThermalStatus() } returns flowOf(ThermalStatus.SEVERE)
             every { source.getThermalHeadroom() } returns flowOf(null)
             val profile = mockk<DeviceProfileProvider>()
-            coEvery { profile.getDeviceProfile() } returns mockk {
-                every { thermalZonesAvailable } returns emptyList()
-            }
-            val repository = ThermalRepositoryImpl(
-                source, profile, mockk(),
-                TrackThrottlingEventsUseCase(events, mockk()),
-                TestAppDispatchers(),
-            )
+            coEvery { profile.getDeviceProfile() } returns
+                mockk {
+                    every { thermalZonesAvailable } returns emptyList()
+                }
+            val repository =
+                ThermalRepositoryImpl(
+                    source,
+                    profile,
+                    mockk(),
+                    TrackThrottlingEventsUseCase(events, mockk()),
+                    TestAppDispatchers(),
+                )
             val worker = createWorker(thermalStateFlow = repository.getThermalState())
 
             assertEquals(ListenableWorker.Result.retry(), worker.doWork())

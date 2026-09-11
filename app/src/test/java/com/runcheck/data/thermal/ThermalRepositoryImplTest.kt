@@ -91,8 +91,18 @@ class ThermalRepositoryImplTest {
             val repository = liveRepository(events, statuses)
             val first = mutableListOf<ThermalState>()
             val second = mutableListOf<ThermalState>()
-            val firstCollector = backgroundScope.launch { GetThermalStateUseCase(repository)().collect { first.add(it) } }
-            val secondCollector = backgroundScope.launch { GetThermalStateUseCase(repository)().collect { second.add(it) } }
+            val firstCollector =
+                backgroundScope.launch {
+                    GetThermalStateUseCase(
+                        repository,
+                    )().collect { first.add(it) }
+                }
+            val secondCollector =
+                backgroundScope.launch {
+                    GetThermalStateUseCase(
+                        repository,
+                    )().collect { second.add(it) }
+                }
             runCurrent()
             assertEquals(ThermalStatus.SEVERE, first.last().thermalStatus)
             assertEquals(first, second)

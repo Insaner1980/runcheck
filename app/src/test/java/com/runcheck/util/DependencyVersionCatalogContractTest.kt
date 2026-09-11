@@ -33,7 +33,7 @@ class DependencyVersionCatalogContractTest {
                 "okhttp" to "5.5.0",
                 "gson" to "2.14.0",
                 "mockk" to "1.14.11",
-                "dependencyAnalysis" to "3.17.0",
+                "dependencyAnalysis" to "3.19.1",
                 "sentry" to "8.54.0",
             )
 
@@ -49,10 +49,10 @@ class DependencyVersionCatalogContractTest {
             mapOf(
                 "agp" to "9.4.0",
                 "kotlin" to "2.4.10",
-                "kotlinRuntime" to "2.3.20",
+                "kotlinRuntime" to "2.4.20",
                 "ksp" to "2.3.11",
                 "hilt" to "2.60.1",
-                "detekt" to "2.0.0-alpha.5",
+                "detekt" to "2.0.0-alpha.6",
                 "stabilityAnalyzer" to "0.12.0",
             )
 
@@ -98,13 +98,13 @@ class DependencyVersionCatalogContractTest {
             dependencyAnalysisVersion.isAtLeast("3.16.0"),
         )
         assertTrue(
-            "Gradle wrapper must stay on the verified 9.7.0 binary distribution",
-            wrapperProperties.contains("gradle-9.7.0-bin.zip"),
+            "Gradle wrapper must stay on the verified 9.7.1 binary distribution",
+            wrapperProperties.contains("gradle-9.7.1-bin.zip"),
         )
         assertTrue(
-            "Gradle wrapper must verify the official 9.7.0 binary distribution checksum",
+            "Gradle wrapper must verify the official 9.7.1 binary distribution checksum",
             wrapperProperties.contains(
-                "distributionSha256Sum=84fbba45c7f4c64abc77460e1c00f541e9f960e3c7ed2538f1ede19eacd873ae",
+                "distributionSha256Sum=acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a",
             ),
         )
     }
@@ -117,8 +117,8 @@ class DependencyVersionCatalogContractTest {
         val detektPluginId = versionsCatalog.pluginIdFor("detekt")
 
         assertTrue(
-            "Detekt version $detektVersion is not the verified 2.0.0-alpha.5 release",
-            detektVersion == "2.0.0-alpha.5",
+            "Detekt version $detektVersion is not the verified 2.0.0-alpha.6 release",
+            detektVersion == "2.0.0-alpha.6",
         )
         assertTrue(
             "compose-rules Detekt version $composeRulesDetektVersion is not on the Detekt 2 compatible 0.6.4 line",
@@ -142,7 +142,7 @@ class DependencyVersionCatalogContractTest {
         val unexpectedPrereleases =
             versionEntries.filter { (alias, version) ->
                 prereleaseMarker.containsMatchIn(version) &&
-                    !(alias == "detekt" && version == "2.0.0-alpha.5")
+                    !(alias == "detekt" && version == "2.0.0-alpha.6")
             }
 
         assertTrue("Unapproved prerelease versions: $unexpectedPrereleases", unexpectedPrereleases.isEmpty())

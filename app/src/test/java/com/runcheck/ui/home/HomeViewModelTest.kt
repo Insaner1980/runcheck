@@ -152,7 +152,9 @@ class HomeViewModelTest {
         unmockkStatic(SystemClock::class)
     }
 
-    private fun createViewModel(chargerSessionTracker: ChargerSessionTracker = this.chargerSessionTracker): HomeViewModel =
+    private fun createViewModel(
+        chargerSessionTracker: ChargerSessionTracker = this.chargerSessionTracker,
+    ): HomeViewModel =
         HomeViewModel(
             getBatteryState = getBatteryState,
             getNetworkState = getNetworkState,
@@ -190,7 +192,10 @@ class HomeViewModelTest {
             viewModel.startObserving()
             advanceAll()
 
-            assertTrue("Expected Success but got ${viewModel.uiState.value}", viewModel.uiState.value is HomeUiState.Success)
+            assertTrue(
+                "Expected Success but got ${viewModel.uiState.value}",
+                viewModel.uiState.value is HomeUiState.Success,
+            )
             assertEquals(battery, (viewModel.uiState.value as HomeUiState.Success).batteryState)
             states.value = battery.copy(level = 86)
             advanceAll()
