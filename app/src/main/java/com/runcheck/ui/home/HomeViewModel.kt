@@ -246,8 +246,8 @@ class HomeViewModel
         private fun observeMonitoringStale(
             preferencesFlow: Flow<UserPreferences>,
             freshnessTicker: Flow<FreshnessTick>,
-        ): Flow<Boolean> {
-            return combine(
+        ): Flow<Boolean> =
+            combine(
                 monitoringStatusRepository.observeLastWorkerHeartbeat(),
                 preferencesFlow,
                 freshnessTicker,
@@ -259,7 +259,6 @@ class HomeViewModel
                     currentEpochMillis = tick.epochMillis,
                 )
             }.distinctUntilChanged()
-        }
 
         private fun observeInsights() =
             combine(

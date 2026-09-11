@@ -45,7 +45,8 @@ class InsightEngineTest {
                 listOf(candidate(ThermalPatternDetectionRule.RULE_ID))
             coEvery { recurringThrottlingRule.evaluate(NOW) } returns
                 listOf(candidate(RecurringThermalThrottlingRule.RULE_ID))
-            val engine = InsightEngine(linkedSetOf(thermalPatternRule, recurringThrottlingRule), insightRepository, coordinator)
+            val engine =
+                InsightEngine(linkedSetOf(thermalPatternRule, recurringThrottlingRule), insightRepository, coordinator)
 
             engine.generateInsights(NOW)
 

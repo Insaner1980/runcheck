@@ -16,11 +16,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -112,7 +112,12 @@ class SamsungCurrentConfidenceOwnershipTest {
             withSource { source, _ ->
                 val readings = List(3) { async { source.getCurrentNow().take(3).toList() } }.awaitAll()
                 readings.forEach {
-                    assertEquals(listOf(Confidence.HIGH, Confidence.HIGH, Confidence.LOW), it.map { value -> value.confidence })
+                    assertEquals(
+                        listOf(Confidence.HIGH, Confidence.HIGH, Confidence.LOW),
+                        it.map { value ->
+                            value.confidence
+                        },
+                    )
                 }
             }
         }
@@ -137,7 +142,15 @@ class SamsungCurrentConfidenceOwnershipTest {
     fun `changed current and charging direction restart evidence without stale values`() =
         runTest {
             withSource { source, manager ->
-                assertEquals(Confidence.LOW, source.getCurrentNow().take(3).toList().last().confidence)
+                assertEquals(
+                    Confidence.LOW,
+                    source
+                        .getCurrentNow()
+                        .take(3)
+                        .toList()
+                        .last()
+                        .confidence,
+                )
                 every { manager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) } returns -4_000_000
                 assertEquals(MeasuredValue(-4_000, Confidence.HIGH), source.getCurrentNow().first())
                 advanceTimeBy(2_000)
@@ -153,7 +166,15 @@ class SamsungCurrentConfidenceOwnershipTest {
     fun `missing observations preserve recent evidence but do not refresh its expiry`() =
         runTest {
             withSource { source, manager ->
-                assertEquals(Confidence.LOW, source.getCurrentNow().take(3).toList().last().confidence)
+                assertEquals(
+                    Confidence.LOW,
+                    source
+                        .getCurrentNow()
+                        .take(3)
+                        .toList()
+                        .last()
+                        .confidence,
+                )
                 every { manager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) } returns Int.MIN_VALUE
                 advanceTimeBy(2_000)
                 assertEquals(Confidence.UNAVAILABLE, source.getCurrentNow().first().confidence)
@@ -188,14 +209,31 @@ class SamsungCurrentConfidenceOwnershipTest {
     fun `generic current and invalid or untrusted confidence rules remain unchanged`() =
         runTest {
             withSource(samsung = false) { source, _ ->
-                assertEquals(List(4) { Confidence.HIGH }, source.getCurrentNow().take(4).toList().map { it.confidence })
+                assertEquals(
+                    List(4) { Confidence.HIGH },
+                    source
+                        .getCurrentNow()
+                        .take(4)
+                        .toList()
+                        .map { it.confidence },
+                )
             }
             for (reliable in listOf(true, false)) {
                 withSource(reliable = reliable) { source, manager ->
-                    assertEquals(if (reliable) Confidence.HIGH else Confidence.LOW, source.getCurrentNow().first().confidence)
+                    assertEquals(
+                        if (reliable) Confidence.HIGH else Confidence.LOW,
+                        source.getCurrentNow().first().confidence,
+                    )
                     for (raw in listOf(0, 10_001_000, -10_001_000, Int.MIN_VALUE)) {
                         every { manager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) } returns raw
-                        assertEquals(List(3) { Confidence.UNAVAILABLE }, source.getCurrentNow().take(3).toList().map { it.confidence })
+                        assertEquals(
+                            List(3) { Confidence.UNAVAILABLE },
+                            source
+                                .getCurrentNow()
+                                .take(3)
+                                .toList()
+                                .map { it.confidence },
+                        )
                     }
                 }
             }
@@ -216,7 +254,15 @@ class SamsungCurrentConfidenceOwnershipTest {
         val profile = DeviceProfile(manufacturer = if (samsung) "samsung" else "google", currentNowReliable = reliable)
         val dispatchers = TestAppDispatchers(StandardTestDispatcher(testScheduler))
         val source =
-            if (samsung) SamsungBatterySource(context, profile, dispatchers) else GenericBatterySource(context, profile, dispatchers)
+            if (samsung) {
+                SamsungBatterySource(
+                    context,
+                    profile,
+                    dispatchers,
+                )
+            } else {
+                GenericBatterySource(context, profile, dispatchers)
+            }
         try {
             block(source, manager)
         } finally {

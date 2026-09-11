@@ -225,7 +225,8 @@ open class GenericBatterySource(
                             samsungStableReadingCount = 1
                             samsungEvidenceAtMs = now
                         } else if (elapsed >= POLLING_INTERVAL_MS) {
-                            samsungStableReadingCount = (samsungStableReadingCount + 1).coerceAtMost(stableReadingThreshold)
+                            samsungStableReadingCount =
+                                (samsungStableReadingCount + 1).coerceAtMost(stableReadingThreshold)
                             samsungEvidenceAtMs = now
                         }
                         previousSamsungCurrentMa = currentMa
@@ -284,6 +285,7 @@ open class GenericBatterySource(
         private const val TAG = "GenericBatterySource"
         protected const val POLLING_INTERVAL_MS = 2000L
         private const val SAMSUNG_STABLE_READING_THRESHOLD = 3
+
         // Three polling intervals also cover the live notification's five-second one-shot cadence.
         private const val SAMSUNG_EVIDENCE_MAX_GAP_MS = 3 * POLLING_INTERVAL_MS
         private const val SAMSUNG_SUSPICIOUS_CONSTANT_CURRENT_MA = 3000

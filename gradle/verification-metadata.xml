@@ -11271,6 +11271,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.animation" name="animation-android" version="1.12.0">
+         <artifact name="animation-android-1.12.0.pom">
+            <sha256 value="bdf8bfac92c241adf995f48e77b3fbd0e7181e79dad38eaff145039785e1702e" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation-android/1.12.0/animation-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="animation-android-1.12.0.module">
             <sha256 value="163e88a2f9076094ead56379b7160b90cfd95fd7aee2f01a334cb74aee3c6b7e" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation-android/1.12.0/animation-android-1.12.0.module"/>
          </artifact>
@@ -11284,6 +11287,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.animation" name="animation-core-android" version="1.12.0">
+         <artifact name="animation-core-android-1.12.0.pom">
+            <sha256 value="2634199f93f47d3a273d68e90a339a9e8864046b976cb1f88524d8e6776f809e" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation-core-android/1.12.0/animation-core-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="animation-core-android-1.12.0.module">
             <sha256 value="cc9e17e3f703a914393171c430c0622d01b23a25acf300c4a86d7682b7dc1bee" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation-core-android/1.12.0/animation-core-android-1.12.0.module"/>
          </artifact>
@@ -11297,6 +11303,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.foundation" name="foundation-android" version="1.12.0">
+         <artifact name="foundation-android-1.12.0.pom">
+            <sha256 value="bf8f258f0657eea224a663dc463f43ca6f7c61897342fb07066a98c121e141da" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation-android/1.12.0/foundation-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="foundation-android-1.12.0.module">
             <sha256 value="0ad286ab51599e038e3ba8b8feb5467f9296d79032b9b2fffd2a95c6cba1beca" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation-android/1.12.0/foundation-android-1.12.0.module"/>
          </artifact>
@@ -11310,6 +11319,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.foundation" name="foundation-layout-android" version="1.12.0">
+         <artifact name="foundation-layout-android-1.12.0.pom">
+            <sha256 value="30831b553b57d550dbb48aed7ca1ad811a81d7794d7c5ae8fddec647c2103a5c" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation-layout-android/1.12.0/foundation-layout-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="foundation-layout-android-1.12.0.module">
             <sha256 value="a17c530860d0790a815ebddee5c50bd934d1dcf2611049c079c4d4aaf76b6243" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation-layout-android/1.12.0/foundation-layout-android-1.12.0.module"/>
          </artifact>
@@ -11323,6 +11335,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.material" name="material-ripple-android" version="1.12.0">
+         <artifact name="material-ripple-android-1.12.0.pom">
+            <sha256 value="e74d03149d0b9a5ba0fec9edbb23e3686d8a522d8b3e769de9e3dd0aed42fc68" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/material/material-ripple-android/1.12.0/material-ripple-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="material-ripple-android-1.12.0.module">
             <sha256 value="6e50e7fce800800c494c74749ec4167360c90fbcc62a65daa8a5b616b6b0533c" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/material/material-ripple-android/1.12.0/material-ripple-android-1.12.0.module"/>
          </artifact>
@@ -11336,6 +11351,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.runtime" name="runtime-android" version="1.12.0">
+         <artifact name="runtime-android-1.12.0.pom">
+            <sha256 value="2d0376211209ae538392b7bebd17a0e7d76ab0133dc6508de09f2ca4cd6e4502" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-android/1.12.0/runtime-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="runtime-android-1.12.0.module">
             <sha256 value="3f7650ed82d2cbc46cfa1b2f3cba79955c0b8d4ae57a518240f63ed7645cdc3a" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-android/1.12.0/runtime-android-1.12.0.module"/>
          </artifact>
@@ -11349,6 +11367,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.runtime" name="runtime-annotation-android" version="1.12.0">
+         <artifact name="runtime-annotation-android-1.12.0.pom">
+            <sha256 value="6f50b9fc11d54cca2fae7bae49a90fd10ae05388245a5ad535e4fa4958694457" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-annotation-android/1.12.0/runtime-annotation-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="runtime-annotation-android-1.12.0.module">
             <sha256 value="3b8ee24a198d17f5817a6a20587cf79d750bcf3abfa84778a71add0bb2ac3ef8" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-annotation-android/1.12.0/runtime-annotation-android-1.12.0.module"/>
          </artifact>
@@ -11362,6 +11383,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.runtime" name="runtime-retain-android" version="1.12.0">
+         <artifact name="runtime-retain-android-1.12.0.pom">
+            <sha256 value="ba35f0c687a1467ab8742165a38a0e135c601839506cda0da771a6ef6ebe4bbc" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-retain-android/1.12.0/runtime-retain-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="runtime-retain-android-1.12.0.module">
             <sha256 value="0aef2891fe991934a593a768c3ec6c78ec21515c106b82e5959197ac3a9ac9a3" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-retain-android/1.12.0/runtime-retain-android-1.12.0.module"/>
          </artifact>
@@ -11375,6 +11399,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.runtime" name="runtime-saveable-android" version="1.12.0">
+         <artifact name="runtime-saveable-android-1.12.0.pom">
+            <sha256 value="14d5aaf7cfdedbbdac10dc693e67b912909c34957a9b7d4b38f7489232b5f5fa" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-saveable-android/1.12.0/runtime-saveable-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="runtime-saveable-android-1.12.0.module">
             <sha256 value="6511682401dd1254aef640111c4067c7ab98a701eecb98925be4d2b4d98373f2" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-saveable-android/1.12.0/runtime-saveable-android-1.12.0.module"/>
          </artifact>
@@ -11388,6 +11415,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.ui" name="ui-android" version="1.12.0">
+         <artifact name="ui-android-1.12.0.pom">
+            <sha256 value="aabfd1a533c2de912fda349dd062a89148e6d02dcaf62c89befc62a13f09e199" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="ui-android-1.12.0.module">
             <sha256 value="f05b0571bc82b7272381b06665f6282be3ad00c47fdd4427277fd7241d733587" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0.module"/>
          </artifact>
@@ -11401,6 +11431,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.ui" name="ui-geometry-android" version="1.12.0">
+         <artifact name="ui-geometry-android-1.12.0.pom">
+            <sha256 value="6aab2cdbdd423bbc9a3ec2bc20d064e218c95fc031d48bfa7e8070161b5f6f83" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-geometry-android/1.12.0/ui-geometry-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="ui-geometry-android-1.12.0.module">
             <sha256 value="78aede37eeeb6b993708d70454d149aaaceb231b50ef3ba0a16796448aca2a5f" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-geometry-android/1.12.0/ui-geometry-android-1.12.0.module"/>
          </artifact>
@@ -11414,6 +11447,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.ui" name="ui-graphics-android" version="1.12.0">
+         <artifact name="ui-graphics-android-1.12.0.pom">
+            <sha256 value="384a3f07ce50b7e793e7abd32653d10a6c37cdce38789058dd92ad8eff2a850a" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-graphics-android/1.12.0/ui-graphics-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="ui-graphics-android-1.12.0.module">
             <sha256 value="d3a1f7970815a927683b2cbaa2eea3d7c8e2533ead3bb97853df8a3b2d36caa4" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-graphics-android/1.12.0/ui-graphics-android-1.12.0.module"/>
          </artifact>
@@ -11427,6 +11463,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.ui" name="ui-text-android" version="1.12.0">
+         <artifact name="ui-text-android-1.12.0.pom">
+            <sha256 value="978a3cbe9c74f8a2080c3a701532247e585878daae922081cd50388bf6e23d68" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-text-android/1.12.0/ui-text-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="ui-text-android-1.12.0.module">
             <sha256 value="be6ebcd43529810c2449d9fa51dc4c811984d21ca2945b2d862cd58a55c6f19d" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-text-android/1.12.0/ui-text-android-1.12.0.module"/>
          </artifact>
@@ -11440,6 +11479,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.ui" name="ui-tooling-android" version="1.12.0">
+         <artifact name="ui-tooling-android-1.12.0.pom">
+            <sha256 value="bed1cf4287940ce804115233594423a13679977b802aada420ab1af00232fd3c" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-tooling-android/1.12.0/ui-tooling-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="ui-tooling-android-1.12.0.module">
             <sha256 value="b154136f0994e5a3672eb6e1d523702de3ee6cd510e55283310b55aa4e41a6a5" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-tooling-android/1.12.0/ui-tooling-android-1.12.0.module"/>
          </artifact>
@@ -11453,6 +11495,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.ui" name="ui-tooling-data-android" version="1.12.0">
+         <artifact name="ui-tooling-data-android-1.12.0.pom">
+            <sha256 value="6b5b9429a2bd2470bbca82ca73de17852cb7c8eed860e274885541879a57b2d3" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-tooling-data-android/1.12.0/ui-tooling-data-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="ui-tooling-data-android-1.12.0.module">
             <sha256 value="6dece92983fb158151aa9ed58694254bc39ca921b47f0604cf927016d65b9b02" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-tooling-data-android/1.12.0/ui-tooling-data-android-1.12.0.module"/>
          </artifact>
@@ -11466,6 +11511,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.ui" name="ui-tooling-preview-android" version="1.12.0">
+         <artifact name="ui-tooling-preview-android-1.12.0.pom">
+            <sha256 value="70c9e1d49a69658786f1f10d67e8f0b5cae8601840b1f66e222e6cc83635f4de" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-tooling-preview-android/1.12.0/ui-tooling-preview-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="ui-tooling-preview-android-1.12.0.module">
             <sha256 value="a5243a5333dcdba0fd60270fb0f0b476ed28d1d94396897f32f80db86607a8e1" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-tooling-preview-android/1.12.0/ui-tooling-preview-android-1.12.0.module"/>
          </artifact>
@@ -11479,6 +11527,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.ui" name="ui-unit-android" version="1.12.0">
+         <artifact name="ui-unit-android-1.12.0.pom">
+            <sha256 value="4482c15b14178a09375dd26429028014474bb2006e2f72c62b2a76f8e1f292f8" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-unit-android/1.12.0/ui-unit-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="ui-unit-android-1.12.0.module">
             <sha256 value="2e8f35c1c3e717749a2bb2777a639dc6a0ad9e898f49b1f4e793fb44e561da2b" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-unit-android/1.12.0/ui-unit-android-1.12.0.module"/>
          </artifact>
@@ -11492,6 +11543,9 @@
          </artifact>
       </component>
       <component group="androidx.compose.ui" name="ui-util-android" version="1.12.0">
+         <artifact name="ui-util-android-1.12.0.pom">
+            <sha256 value="c584228b2832fbd0ddcaac59bb47508d39f7e6f47c6393501ac364e3c0b4186b" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-util-android/1.12.0/ui-util-android-1.12.0.pom"/>
+         </artifact>
          <artifact name="ui-util-android-1.12.0.module">
             <sha256 value="1c8c1b77057a29f0e361684f40cccebdef25f3822ad70ca318f52b88ece76166" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-util-android/1.12.0/ui-util-android-1.12.0.module"/>
          </artifact>
@@ -11521,6 +11575,9 @@
          </artifact>
       </component>
       <component group="androidx.paging" name="paging-common-android" version="3.5.1">
+         <artifact name="paging-common-android-3.5.1.pom">
+            <sha256 value="44fe364d8b1a714ad90f17e2b3c3b704d96bd88ef698efa4f442daab1b3bcf46" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/paging/paging-common-android/3.5.1/paging-common-android-3.5.1.pom"/>
+         </artifact>
          <artifact name="paging-common-android-3.5.1.module">
             <sha256 value="eae8c8a673504ccd3088d51e89f78bc37ba799d4a3d2fcb2bb5d5fec08f6e6bf" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/paging/paging-common-android/3.5.1/paging-common-android-3.5.1.module"/>
          </artifact>
@@ -11529,6 +11586,9 @@
          </artifact>
       </component>
       <component group="androidx.paging" name="paging-common-ktx" version="3.5.1">
+         <artifact name="paging-common-ktx-3.5.1.pom">
+            <sha256 value="9f24e2f8c5175b501f159646c9ed876b259642353ec5443ea9738e44b7c51e60" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/paging/paging-common-ktx/3.5.1/paging-common-ktx-3.5.1.pom"/>
+         </artifact>
          <artifact name="paging-common-ktx-3.5.1.jar">
             <sha256 value="6517ee98aed511c5fd960f7828d7b7cd926cdadcf5898028615befb8a408579b" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/paging/paging-common-ktx/3.5.1/paging-common-ktx-3.5.1.jar"/>
          </artifact>
@@ -11542,6 +11602,9 @@
          </artifact>
       </component>
       <component group="androidx.paging" name="paging-compose-android" version="3.5.1">
+         <artifact name="paging-compose-android-3.5.1.pom">
+            <sha256 value="d888fcc95b59354f5527ce6861a3b92548f2397b48b3a911c5e05bc03f0ca4a6" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/paging/paging-compose-android/3.5.1/paging-compose-android-3.5.1.pom"/>
+         </artifact>
          <artifact name="paging-compose-android-3.5.1.module">
             <sha256 value="12e2de1bf0df7bbf7d961e73f88eea8a3f0c7cee91681e05434be86ef46b9350" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/paging/paging-compose-android/3.5.1/paging-compose-android-3.5.1.module"/>
          </artifact>
@@ -11550,6 +11613,9 @@
          </artifact>
       </component>
       <component group="androidx.paging" name="paging-runtime" version="3.5.1">
+         <artifact name="paging-runtime-3.5.1.pom">
+            <sha256 value="103a5511024ea0d034a9b0c13e3c3efb4e72b3a5f0c580b4e30faff0ae4e3233" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/paging/paging-runtime/3.5.1/paging-runtime-3.5.1.pom"/>
+         </artifact>
          <artifact name="paging-runtime-3.5.1.aar">
             <sha256 value="eb09da9e8444f4055f2026ab3d8c8027eb3083a80ee8561eb3087ae63e7e5c3b" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/paging/paging-runtime/3.5.1/paging-runtime-3.5.1.aar"/>
          </artifact>
@@ -11558,6 +11624,9 @@
          </artifact>
       </component>
       <component group="androidx.paging" name="paging-runtime-ktx" version="3.5.1">
+         <artifact name="paging-runtime-ktx-3.5.1.pom">
+            <sha256 value="33cb2914234ce531328a1e2529de016d3a2d7680895a7bdaed16d74dfd842fe9" origin="Verified by two HTTPS downloads from https://dl.google.com/dl/android/maven2/androidx/paging/paging-runtime-ktx/3.5.1/paging-runtime-ktx-3.5.1.pom"/>
+         </artifact>
          <artifact name="paging-runtime-ktx-3.5.1.aar">
             <sha256 value="be3d87d5d4a02bf2b8dc2a28c51d6749a3c4fd72ef2f5f4ae0849854524bea28" origin="Verified by independent HTTPS fetch from https://dl.google.com/dl/android/maven2/androidx/paging/paging-runtime-ktx/3.5.1/paging-runtime-ktx-3.5.1.aar"/>
          </artifact>
