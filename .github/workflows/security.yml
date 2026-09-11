@@ -57,7 +57,7 @@ jobs:
     name: OWASP Dependency-Check
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 195
     permissions:
       contents: read
     steps:
@@ -90,7 +90,7 @@ jobs:
             ${{ runner.os }}-dependency-check-data-
 
       - name: OWASP Dependency-Check
-        timeout-minutes: 35
+        timeout-minutes: 180
         run: ./gradlew :app:dependencyCheckAnalyze --no-daemon --no-configuration-cache --console=plain --info
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
