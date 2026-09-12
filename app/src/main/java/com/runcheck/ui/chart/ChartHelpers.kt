@@ -32,10 +32,12 @@ private const val TARGET_CHARGE_FULL = 100
 // ── Downsampling ────────────────────────────────────────────────────────────────
 
 fun List<Pair<Long, Float>>.downsamplePairs(maxPoints: Int): List<Pair<Long, Float>> {
-    if (maxPoints <= 0) return emptyList()
-    if (size <= maxPoints) return this
-    if (maxPoints == 1) return listOf(first())
-    if (maxPoints == 2) return listOf(first(), last())
+    when {
+        maxPoints <= 0 -> return emptyList()
+        size <= maxPoints -> return this
+        maxPoints == 1 -> return listOf(first())
+        maxPoints == 2 -> return listOf(first(), last())
+    }
 
     val bucketSize = (size - 2).toDouble() / (maxPoints - 2)
     val originTimestamp = first().first
@@ -51,11 +53,16 @@ fun List<Pair<Long, Float>>.downsamplePairs(maxPoints: Int): List<Pair<Long, Flo
             val averageEnd =
                 (floor((bucketIndex + 2) * bucketSize).toInt() + 1)
                     .coerceAtMost(this@downsamplePairs.size)
-            val averageRange = this@downsamplePairs.subList(averageStart, averageEnd)
-            val averageTimestamp =
-                averageRange.sumOf { (timestamp, _) -> (timestamp - originTimestamp).toDouble() } /
-                    averageRange.size
-            val averageValue = averageRange.sumOf { (_, value) -> value.toDouble() } / averageRange.size
+            var timestampSum = 0.0
+            var valueSum = 0.0
+            for (averageIndex in averageStart until averageEnd) {
+                val point = this@downsamplePairs[averageIndex]
+                timestampSum += (point.first - originTimestamp).toDouble()
+                valueSum += point.second.toDouble()
+            }
+            val averageCount = averageEnd - averageStart
+            val averageTimestamp = timestampSum / averageCount
+            val averageValue = valueSum / averageCount
 
             val rangeStart = floor(bucketIndex * bucketSize).toInt() + 1
             val rangeEnd =
@@ -247,7 +254,15 @@ private fun sessionAverageCurrent(
     deliveredMah: Int?,
 ): Int? {
     if (deliveredMah == null || session.size < 2) return null
-    val durationMs = (session.last().timestamp - session.first().timestamp).coerceAtLeast(0L)
+    val durationMs =
+        session.zipWithNext().sumOf { (start, end) ->
+            val intervalMs = end.timestamp - start.timestamp
+            if (start.currentMa != null && end.currentMa != null && intervalMs in 1..MAX_SESSION_SAMPLE_GAP_MS) {
+                intervalMs
+            } else {
+                0L
+            }
+        }
     if (durationMs <= 0L) return null
     return (deliveredMah / (durationMs / 3_600_000f)).roundToInt()
 }
@@ -263,9 +278,14 @@ private fun estimateRemainingChargeMs(
     return (((targetLevel - currentLevel) / pacePctPerHour) * 3_600_000f).roundToInt().toLong()
 }
 
-fun ChargingSessionSummary.hasGraphData(): Boolean =
-    readings.graphPointsFor(SessionGraphMetric.CURRENT, SessionGraphWindow.ALL).size >= 2 ||
-        readings.graphPointsFor(SessionGraphMetric.POWER, SessionGraphWindow.ALL).size >= 2
+fun ChargingSessionSummary.hasGraphData(): Boolean {
+    // Both graph metrics require currentMa; voltage is non-null for every reading.
+    var validPoints = 0
+    for (reading in readings) {
+        if (reading.currentMa != null && ++validPoints == 2) return true
+    }
+    return false
+}
 
 // ── Y-axis label builders ───────────────────────────────────────────────────────
 

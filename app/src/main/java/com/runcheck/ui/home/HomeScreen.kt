@@ -260,6 +260,8 @@ private fun HomeContent(
             val layoutMode = homeLayoutMode(maxHeight, LocalDensity.current.fontScale)
             val compact = layoutMode == HomeLayoutMode.COMPACT
             val sectionSpacing = if (compact) spacing.sm else spacing.md
+            val heroPadding = if (compact) tokens.homeCompactHeroHorizontalPadding else spacing.lg
+            val bottomSpacing = if (compact) spacing.sm else spacing.xl
 
             Column(
                 modifier =
@@ -276,14 +278,7 @@ private fun HomeContent(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(
-                                horizontal =
-                                    if (compact) {
-                                        tokens.homeCompactHeroHorizontalPadding
-                                    } else {
-                                        spacing.lg
-                                    },
-                            ),
+                            .padding(horizontal = heroPadding),
                 )
 
                 Spacer(modifier = Modifier.height(sectionSpacing))
@@ -306,14 +301,13 @@ private fun HomeContent(
                     Spacer(modifier = Modifier.height(sectionSpacing))
                 }
 
-                if (state.monitoringStale) {
-                    MonitoringStaleWarning(
-                        onLearnWhy = {
-                            navigation.onNavigateToLearnArticle(LearnArticleIds.BACKGROUND_MONITORING)
-                        },
-                    )
-                    Spacer(modifier = Modifier.height(sectionSpacing))
-                }
+                HomeMonitoringWarning(
+                    monitoringStale = state.monitoringStale,
+                    sectionSpacing = sectionSpacing,
+                    onLearnWhy = {
+                        navigation.onNavigateToLearnArticle(LearnArticleIds.BACKGROUND_MONITORING)
+                    },
+                )
 
                 HomeStatusTiles(
                     state = state,
@@ -336,9 +330,21 @@ private fun HomeContent(
                     compact = compact,
                 )
 
-                Spacer(modifier = Modifier.height(if (compact) spacing.sm else spacing.xl))
+                Spacer(modifier = Modifier.height(bottomSpacing))
             }
         }
+    }
+}
+
+@Composable
+private fun HomeMonitoringWarning(
+    monitoringStale: Boolean,
+    sectionSpacing: Dp,
+    onLearnWhy: () -> Unit,
+) {
+    if (monitoringStale) {
+        MonitoringStaleWarning(onLearnWhy = onLearnWhy)
+        Spacer(modifier = Modifier.height(sectionSpacing))
     }
 }
 

@@ -174,6 +174,7 @@ class BatteryViewModelTest {
         assertEquals(BatteryUiState.Loading, viewModel.uiState.value)
     }
 
+    // CPD-OFF: Keep equivalent failure-path coverage explicit for each observing ViewModel.
     @Test
     fun `live battery survives session persistence failure`() =
         runTest(mainDispatcherRule.testDispatcher) {
@@ -200,6 +201,7 @@ class BatteryViewModelTest {
             assertEquals(states.value, (viewModel.uiState.value as BatteryUiState.Success).batteryState)
             viewModel.stopObserving()
         }
+    // CPD-ON
 
     @Test
     fun `session cancellation does not become a UI error`() =
@@ -215,6 +217,7 @@ class BatteryViewModelTest {
             viewModel.stopObserving()
         }
 
+    // CPD-OFF: Keep equivalent cancellation coverage explicit for each observing ViewModel.
     @Test
     fun `stopping observation cancels suspended session tracking`() =
         runTest(mainDispatcherRule.testDispatcher) {
@@ -236,6 +239,7 @@ class BatteryViewModelTest {
             assertTrue(finished)
             assertEquals(BatteryUiState.Loading, viewModel.uiState.value)
         }
+    // CPD-ON
 
     @Test
     fun `refresh finishes when live source emits the same state`() =

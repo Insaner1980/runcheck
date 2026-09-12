@@ -3,6 +3,7 @@ package com.runcheck.ui.storage
 import androidx.lifecycle.SavedStateHandle
 import com.runcheck.R
 import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.usecase.GetStorageHistoryUseCase
@@ -20,6 +21,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runCurrent
@@ -42,6 +44,26 @@ class StorageViewModelTest {
     private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase = mockk()
     private val manageUserPreferences: ManageUserPreferencesUseCase = mockk()
     private val getStorageHistory: GetStorageHistoryUseCase = mockk()
+
+    @Test
+    fun `history received before the first live sample is retained`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            prepareProStorageState()
+            val readings = listOf(StorageReading(1L, 100L, 40L, null, 0L))
+            val live = MutableSharedFlow<StorageState>(replay = 1)
+            every { getStorageState() } returns live
+            every { getStorageHistory(any()) } returns MutableStateFlow(readings)
+            val viewModel = createViewModel()
+            try {
+                viewModel.startObserving()
+                advanceStorageSample()
+                live.emit(StorageState(100L, 40L, 60L, 60f))
+                advanceStorageSample()
+                assertEquals(readings, (viewModel.uiState.value as StorageUiState.Success).storageHistory)
+            } finally {
+                viewModel.stopObserving()
+            }
+        }
 
     @Test
     fun `refresh finishes when live source emits the same state`() =

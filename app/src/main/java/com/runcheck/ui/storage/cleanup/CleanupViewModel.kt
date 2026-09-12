@@ -76,7 +76,11 @@ class CleanupViewModel
             _legacyDeleteConfirmationCount.asStateFlow()
 
         private var selectedFilter: Int
-            get() = savedStateHandle.getIntOrDefault(SELECTED_FILTER_KEY, cleanupType.defaultFilterIndex)
+            get() =
+                savedStateHandle
+                    .getIntOrDefault(SELECTED_FILTER_KEY, cleanupType.defaultFilterIndex)
+                    .takeIf { it in cleanupType.filterOptions.indices }
+                    ?: cleanupType.defaultFilterIndex
             set(value) {
                 savedStateHandle[SELECTED_FILTER_KEY] = value
             }
@@ -346,6 +350,7 @@ class CleanupViewModel
             val state = _uiState.value as? CleanupUiState.Results ?: return
             if (state.selectedCount == 0) return
 
+            _uiState.value = CleanupUiState.Deleting(state.selectedCount)
             viewModelScope.launch {
                 val uris =
                     try {
@@ -357,7 +362,14 @@ class CleanupViewModel
                         _uiState.value = CleanupUiState.Error(UiText.Resource(R.string.common_error_generic))
                         return@launch
                     }
-                if (uris.isEmpty()) return@launch
+                if (!isProUser()) {
+                    revokeProAccess()
+                    return@launch
+                }
+                if (uris.isEmpty()) {
+                    emitResults()
+                    return@launch
+                }
                 pendingDeleteUris = uris.toSet()
                 activeDeleteRequestUris = emptySet()
                 confirmedDeleteRequestUris = emptySet()
@@ -377,6 +389,7 @@ class CleanupViewModel
                 revokeProAccess()
                 return
             }
+            if (_legacyDeleteConfirmationCount.value == null) return
             val uris = pendingDeleteUris.toList()
             if (uris.isEmpty()) return
             savedStateHandle[PENDING_LEGACY_CONFIRMATION_KEY] = false
@@ -672,6 +685,8 @@ class CleanupViewModel
                 } else {
                     onDeleteSuccess(result.freedBytes, result.remainingUris)
                 }
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: SecurityException) {
                 ReleaseSafeLog.error("CleanupVM", "Delete result access denied", error)
                 restorePendingSelection(UiText.Resource(R.string.cleanup_delete_permission_error))

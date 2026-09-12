@@ -210,12 +210,14 @@ class HealthMonitorWorkerTest {
     @Test
     fun `session persistence failure remains retryable`() =
         runTest {
+            // CPD-OFF: Keep this worker-specific failure fixture local to its retry contract.
             val sessions = mockk<ChargerRepository>()
             val preferences = mockk<UserPreferencesRepository>()
             coEvery { preferences.getSelectedChargerId() } returns 7L
             coEvery { sessions.getActiveSession() } returns null
             coEvery { sessions.insertSession(any()) } throws IllegalStateException("session database full")
             val tracker = ChargerSessionTracker(sessions, batteryRepository, preferences, mockk())
+            // CPD-ON
             val worker =
                 createWorker(
                     batteryStateFlow = flowOf(sampleBatteryState.copy(chargingStatus = ChargingStatus.CHARGING)),

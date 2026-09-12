@@ -90,7 +90,7 @@ Defined in `Color.kt` and exposed through `Theme.kt`.
 | `AccentBlue` | `#4A9EDE` | `primary`; primary actions, links, main accent |
 | `AccentAmber` | `#E8C44A` | `tertiary`; fair/warning status |
 | `AccentOrange` | `#F5963A` | poor status |
-| `AccentRed` | `#F06040` | `error`; error text and destructive actions |
+| `AccentRed` | `#F06040` | Red accent; text uses `StatusCritical` for sufficient contrast |
 | `StatusCritical` | `#F66A4C` | critical status text and indicators on card surfaces |
 | `AccentLime` | `#C8E636` | storage/category accent |
 | `AccentYellow` | `#F5D03A` | storage/category accent |
@@ -114,7 +114,7 @@ Defined in `Color.kt` and exposed through `Theme.kt`.
 | `primary` | `AccentBlue` |
 | `secondary` | `AccentTeal` |
 | `tertiary` | `AccentAmber` |
-| `error` | `AccentRed` |
+| `error` | `StatusCritical` |
 | `onSurface` | `TextPrimary` |
 | `onBackground` | `TextPrimary` |
 | `onSurfaceVariant` | `TextSecondary` |
@@ -163,7 +163,7 @@ Confidence badge colors:
 |---|---|---|
 | Accurate/High | `AccentBlue` | `BgPage` |
 | Estimated/Low | `AccentAmber` | `BgPage` |
-| Unavailable | `TextMuted` | `TextPrimary` |
+| Unavailable | `TextMuted` | `BgPage` |
 
 Storage media category colors from `categoryColor()`:
 
@@ -210,7 +210,8 @@ Defined in `Type.kt`.
 
 Font families:
 
-- Material typography: Manrope from `R.font.manrope`.
+- Material typography: Manrope from `R.font.manrope`, with explicit 400/500/600/700
+  weights and matching `FontVariation.Settings` for the variable font.
 - Numeric and chart typography: JetBrains Mono from `R.font.jetbrains_mono`.
 
 ### 3.1 Material Typography Scale
@@ -435,6 +436,9 @@ Easings:
 
 Default route transitions in `NavGraph.kt`:
 
+`RuncheckNavHost` applies and consumes horizontal and bottom safe-drawing insets;
+top bars handle the top inset. Child inset modifiers use only the remaining insets.
+
 - Forward enter: slide into container from Start direction plus fade in,
   `MotionTokens.MEDIUM` 300ms.
 - Forward exit: slide out toward Start direction plus fade out, 300ms.
@@ -644,7 +648,7 @@ for new Home work or extend its decorative status strip.
 - Inactive alpha: 0.2.
 - Labels appear below after 4dp.
 - Current segment: last segment whose range start is <= current value.
-- Inactive label color: `onSurfaceVariant.copy(alpha = 0.5f)`.
+- Inactive label color: `onSurfaceVariant`; scale labels remain readable even when their segment is inactive.
 
 ### 7.10 SignalBars
 
@@ -799,7 +803,8 @@ for new Home work or extend its decorative status strip.
 - Padding: horizontal 8dp, vertical 3dp.
 - Row gap: 4dp.
 - Lock icon: 12dp.
-- Text style: `labelMedium`, primary.
+- Text style: `labelMedium`. Text and icon use `contentColor` (default `onSurface`);
+  Home's light cards supply their dark foreground color.
 
 `ProFeatureCalloutCard`:
 
@@ -1421,7 +1426,7 @@ Speed test hero:
 Speed metrics card:
 
 - Card padding: 24dp horizontal, 16dp vertical.
-- Live region semantics.
+- Metric values are readable without live-region announcements; the separate test-phase text is a polite live region.
 - Vertical gap: 16dp.
 - Two metric rows with 12dp horizontal gap.
 - Divider between rows.
@@ -1703,7 +1708,7 @@ Cleanup success overlay:
 
 - `AnimatedVisibility`.
 - Enter fade in over 300ms from alpha 0.
-- Exit fade out over 300ms.
+- Exit immediately when scanning resumes, so the old announcement cannot coexist with the restored content semantics.
 - Reduced motion: no transition.
 - Full-screen box.
 - Background: `surfaceContainer.copy(alpha = 0.95f)`.
@@ -2195,7 +2200,7 @@ Current accessibility behaviors in code:
   - Cleanup projection.
 - Cleanup scanning/deleting states use polite live regions.
 - Cleanup success overlay uses assertive live region.
-- Speed metrics card uses live region semantics.
+- Speed-test phase text uses a polite live region; frequently changing metrics do not.
 - Settings sliders expose a label/value content description.
 - Cleanup group headers expose heading and expand/collapse semantics.
 - Cleanup rows expose checkbox role and toggle state.

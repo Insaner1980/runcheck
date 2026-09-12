@@ -590,6 +590,13 @@ public fun com.runcheck.ui.common.formatPercent(value: kotlin.Float, fractionDig
     - fractionDigits: STABLE (primitive type)
 
 @Composable
+public fun com.runcheck.ui.common.formatPing(pingMs: kotlin.Int): kotlin.String
+  skippable: false
+  restartable: false
+  params:
+    - pingMs: STABLE (primitive type)
+
+@Composable
 public fun com.runcheck.ui.common.formatTemperature(valueCelsius: kotlin.Float, unit: com.runcheck.domain.model.TemperatureUnit, fractionDigits: kotlin.Int): kotlin.String
   skippable: false
   restartable: false
@@ -824,7 +831,7 @@ private fun com.runcheck.ui.components.LiveChartCanvas(data: kotlin.collections.
     - reducedMotion: STABLE (primitive type)
 
 @Composable
-public fun com.runcheck.ui.components.MetricPill(label: kotlin.String, value: kotlin.String, modifier: androidx.compose.ui.Modifier, valueColor: androidx.compose.ui.graphics.Color, onInfoClick: kotlin.Function0<kotlin.Unit>?): kotlin.Unit
+public fun com.runcheck.ui.components.MetricPill(label: kotlin.String, value: kotlin.String, modifier: androidx.compose.ui.Modifier, valueColor: androidx.compose.ui.graphics.Color, confidence: com.runcheck.domain.model.Confidence?, onInfoClick: kotlin.Function0<kotlin.Unit>?): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -832,16 +839,17 @@ public fun com.runcheck.ui.components.MetricPill(label: kotlin.String, value: ko
     - value: STABLE (String is immutable)
     - modifier: STABLE (marked @Stable or @Immutable)
     - valueColor: STABLE (marked @Stable or @Immutable)
+    - confidence: STABLE (class with no mutable properties)
     - onInfoClick: STABLE (function type)
 
 @Composable
-internal fun com.runcheck.ui.components.MetricPillItems(items: kotlin.collections.List<com.runcheck.ui.components.MetricPillItem>, modifier: androidx.compose.ui.Modifier, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
+internal fun com.runcheck.ui.components.MetricPillItems(items: kotlin.collections.List<com.runcheck.ui.components.MetricPillItem>, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
   skippable: false
   restartable: true
   params:
     - items: RUNTIME (requires runtime check)
-    - modifier: STABLE (marked @Stable or @Immutable)
     - onInfoClick: STABLE (function type)
+    - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
 public fun com.runcheck.ui.components.MetricPillRow(modifier: androidx.compose.ui.Modifier, spacing: androidx.compose.ui.unit.Dp, verticalAlignment: androidx.compose.ui.Alignment.Vertical, content: @[Composable] @[ExtensionFunctionType] androidx.compose.runtime.internal.ComposableFunction1<androidx.compose.foundation.layout.RowScope, kotlin.Unit>): kotlin.Unit
@@ -902,12 +910,13 @@ public fun com.runcheck.ui.components.PrimaryTopBar(title: kotlin.String, modifi
     - actions: STABLE (composable function type)
 
 @Composable
-public fun com.runcheck.ui.components.ProBadgePill(modifier: androidx.compose.ui.Modifier, text: kotlin.String?): kotlin.Unit
+public fun com.runcheck.ui.components.ProBadgePill(modifier: androidx.compose.ui.Modifier, text: kotlin.String?, contentColor: androidx.compose.ui.graphics.Color): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - modifier: STABLE (marked @Stable or @Immutable)
     - text: STABLE (class with no mutable properties)
+    - contentColor: STABLE (marked @Stable or @Immutable)
 
 @Composable
 internal fun com.runcheck.ui.components.ProFeatureActionButton(actionLabel: kotlin.String, onAction: kotlin.Function0<kotlin.Unit>): kotlin.Unit
@@ -1329,6 +1338,15 @@ private fun com.runcheck.ui.home.HomeFullCheckButton(isRefreshing: kotlin.Boolea
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
+private fun com.runcheck.ui.home.HomeMonitoringWarning(monitoringStale: kotlin.Boolean, sectionSpacing: androidx.compose.ui.unit.Dp, onLearnWhy: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - monitoringStale: STABLE (primitive type)
+    - sectionSpacing: STABLE (marked @Stable or @Immutable)
+    - onLearnWhy: STABLE (function type)
+
+@Composable
 internal fun com.runcheck.ui.home.HomeQuickToolsSection(isPro: kotlin.Boolean, onNavigateToSpeedTest: kotlin.Function0<kotlin.Unit>, onNavigateToAppUsage: kotlin.Function0<kotlin.Unit>, onNavigateToProUpgrade: kotlin.Function0<kotlin.Unit>, onNavigateToLearn: kotlin.Function0<kotlin.Unit>, compact: kotlin.Boolean): kotlin.Unit
   skippable: true
   restartable: true
@@ -1387,15 +1405,11 @@ internal fun com.runcheck.ui.home.HomeStatusTiles(state: com.runcheck.ui.home.Ho
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
-private fun com.runcheck.ui.home.HomeToolTile(title: kotlin.String, description: kotlin.String, icon: androidx.compose.ui.graphics.vector.ImageVector, background: androidx.compose.ui.graphics.Color, foreground: androidx.compose.ui.graphics.Color, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, shape: androidx.compose.ui.graphics.Shape, locked: kotlin.Boolean, compact: kotlin.Boolean): kotlin.Unit
+private fun com.runcheck.ui.home.HomeToolTile(content: com.runcheck.ui.home.HomeToolContent, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, shape: androidx.compose.ui.graphics.Shape, locked: kotlin.Boolean, compact: kotlin.Boolean): kotlin.Unit
   skippable: true
   restartable: true
   params:
-    - title: STABLE (String is immutable)
-    - description: STABLE (String is immutable)
-    - icon: STABLE (marked @Stable or @Immutable)
-    - background: STABLE (marked @Stable or @Immutable)
-    - foreground: STABLE (marked @Stable or @Immutable)
+    - content: STABLE (marked @Stable or @Immutable)
     - onClick: STABLE (function type)
     - modifier: STABLE (marked @Stable or @Immutable)
     - shape: STABLE (marked @Stable or @Immutable)
@@ -1436,11 +1450,28 @@ private fun com.runcheck.ui.home.content(state: com.runcheck.ui.home.HomeUiState
     - status: STABLE (class with no mutable properties)
 
 @Composable
+private fun com.runcheck.ui.home.homeStatusTilePadding(category: com.runcheck.ui.home.HomeStatusTileCategory, shape: androidx.compose.ui.graphics.Shape, compact: kotlin.Boolean): androidx.compose.foundation.layout.PaddingValues
+  skippable: false
+  restartable: false
+  params:
+    - category: STABLE (class with no mutable properties)
+    - shape: STABLE (marked @Stable or @Immutable)
+    - compact: STABLE (primitive type)
+
+@Composable
 private fun com.runcheck.ui.home.homeStatusTileStatuses(state: com.runcheck.ui.home.HomeUiState.Success): com.runcheck.ui.home.HomeStatusTileStatuses
   skippable: false
   restartable: false
   params:
     - state: RUNTIME (requires runtime check)
+
+@Composable
+private fun com.runcheck.ui.home.homeToolShape(singleColumn: kotlin.Boolean, edge: com.runcheck.ui.home.HomeTileEdge): androidx.compose.ui.graphics.Shape
+  skippable: false
+  restartable: false
+  params:
+    - singleColumn: STABLE (primitive type)
+    - edge: STABLE (class with no mutable properties)
 
 @Composable
 public fun com.runcheck.ui.home.insights.InsightRow(insight: com.runcheck.domain.insights.model.Insight, onClick: kotlin.Function0<kotlin.Unit>?, onDismiss: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, compact: kotlin.Boolean): kotlin.Unit
@@ -1497,6 +1528,12 @@ private fun com.runcheck.ui.home.storageStatusLabel(status: com.runcheck.domain.
   restartable: false
   params:
     - status: STABLE (class with no mutable properties)
+
+@Composable
+private fun com.runcheck.ui.home.valueStyle(): androidx.compose.ui.text.TextStyle
+  skippable: false
+  restartable: false
+  params:
 
 @Composable
 public fun com.runcheck.ui.insights.InsightsScreen(onBack: kotlin.Function0<kotlin.Unit>, navigationHandlers: com.runcheck.ui.home.insights.InsightNavigationHandlers, modifier: androidx.compose.ui.Modifier, viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.runcheck.ui.insights.InsightsViewModel>): kotlin.Unit
@@ -1748,6 +1785,14 @@ public fun com.runcheck.ui.network.NetworkDetailScreen(onNavigateToSpeedTest: ko
     - viewModelProvider: STABLE (composable function type)
 
 @Composable
+private fun com.runcheck.ui.network.NetworkHeroMetrics(networkState: com.runcheck.domain.model.NetworkState, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - networkState: RUNTIME (requires runtime check)
+    - onInfoClick: STABLE (function type)
+
+@Composable
 private fun com.runcheck.ui.network.NetworkHeroReadout(value: kotlin.String, unit: kotlin.String): kotlin.Unit
   skippable: true
   restartable: true
@@ -1836,13 +1881,13 @@ private fun com.runcheck.ui.network.SpeedHeroValue(value: kotlin.Float, footer: 
     - footerWeight: STABLE (marked @Stable or @Immutable)
 
 @Composable
-private fun com.runcheck.ui.network.SpeedMetricRow(metrics: kotlin.collections.List<com.runcheck.ui.components.MetricPillItem>, modifier: androidx.compose.ui.Modifier, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
+private fun com.runcheck.ui.network.SpeedMetricRow(metrics: kotlin.collections.List<com.runcheck.ui.components.MetricPillItem>, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
   skippable: false
   restartable: true
   params:
     - metrics: RUNTIME (requires runtime check)
-    - modifier: STABLE (marked @Stable or @Immutable)
     - onInfoClick: STABLE (function type)
+    - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
 private fun com.runcheck.ui.network.SpeedMetricsCard(state: com.runcheck.ui.network.SpeedTestUiState, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>): kotlin.Unit
@@ -1952,20 +1997,6 @@ private fun com.runcheck.ui.network.connectionTypeShortLabel(result: com.runchec
     - result: STABLE (class with no mutable properties)
 
 @Composable
-private fun com.runcheck.ui.network.formatPingMetric(pingMs: kotlin.Int): kotlin.String
-  skippable: false
-  restartable: false
-  params:
-    - pingMs: STABLE (primitive type)
-
-@Composable
-private fun com.runcheck.ui.network.formatPingValue(pingMs: kotlin.Int): kotlin.String
-  skippable: false
-  restartable: false
-  params:
-    - pingMs: STABLE (primitive type)
-
-@Composable
 private fun com.runcheck.ui.network.heroInstructionText(hasConnection: kotlin.Boolean, phase: com.runcheck.ui.network.SpeedTestPhase): kotlin.String
   skippable: false
   restartable: false
@@ -1985,6 +2016,16 @@ internal fun com.runcheck.ui.network.shortLabel(): kotlin.String
   skippable: false
   restartable: false
   params:
+
+@Composable
+private fun com.runcheck.ui.network.throughputMetric(label: kotlin.String, measuredValue: com.runcheck.domain.model.MeasuredValue<kotlin.Double>, accent: androidx.compose.ui.graphics.Color, infoKey: kotlin.String?): com.runcheck.ui.components.MetricPillItem
+  skippable: false
+  restartable: false
+  params:
+    - label: STABLE (String is immutable)
+    - measuredValue: RUNTIME (requires runtime check)
+    - accent: STABLE (marked @Stable or @Immutable)
+    - infoKey: STABLE (class with no mutable properties)
 
 @Composable
 private fun com.runcheck.ui.pro.FeatureRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: kotlin.String): kotlin.Unit
@@ -2339,12 +2380,11 @@ private fun com.runcheck.ui.storage.StorageHeroCard(storage: com.runcheck.domain
     - onInfoClick: STABLE (function type)
 
 @Composable
-private fun com.runcheck.ui.storage.StorageHeroMetrics(storage: com.runcheck.domain.model.StorageState, freeFormatted: kotlin.String, useStackedLayout: kotlin.Boolean, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+private fun com.runcheck.ui.storage.StorageHeroMetrics(storage: com.runcheck.domain.model.StorageState, useStackedLayout: kotlin.Boolean, onInfoClick: kotlin.Function1<kotlin.String, kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - storage: STABLE (class with no mutable properties)
-    - freeFormatted: STABLE (String is immutable)
     - useStackedLayout: STABLE (primitive type)
     - onInfoClick: STABLE (function type)
     - modifier: STABLE (marked @Stable or @Immutable)

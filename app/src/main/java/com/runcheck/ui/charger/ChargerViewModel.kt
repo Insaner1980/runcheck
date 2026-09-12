@@ -37,6 +37,7 @@ class ChargerViewModel
         val uiState: StateFlow<ChargerUiState> = _uiState.asStateFlow()
         private var proObserverJob: Job? = null
         private var loadJob: Job? = null
+        private var mutationJob: Job? = null
 
         fun refresh() {
             if (isProUser()) {
@@ -67,16 +68,17 @@ class ChargerViewModel
         fun clearSelectedCharger() = launchProAction { manageUserPreferences.setSelectedChargerId(null) }
 
         private fun launchProAction(block: suspend () -> Unit) {
-            if (!isProUser()) return
-            viewModelScope.launch {
-                try {
-                    block()
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    _uiState.value = ChargerUiState.Error(e.messageOrRes(R.string.common_error_generic))
+            if (!isProUser() || mutationJob?.isActive == true) return
+            mutationJob =
+                viewModelScope.launch {
+                    try {
+                        block()
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        _uiState.value = ChargerUiState.Error(e.messageOrRes(R.string.common_error_generic))
+                    }
                 }
-            }
         }
 
         private fun observeProState() {

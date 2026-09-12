@@ -170,8 +170,8 @@ When reviewing a PR or file, check for these in order:
 - Are ViewModels the only bridge between `ui/` and `domain/`?
 
 ### 2. Measurement reliability
-- Every sensor value must be wrapped in `MeasuredValue<T>` with a confidence level: `ACCURATE`, `ESTIMATED`, or `UNAVAILABLE`.
-- Raw values must never be shown to the user without a confidence indicator (ConfidenceBadge component).
+- `MeasuredValue<T>` uses `Confidence.HIGH`, `LOW`, or `UNAVAILABLE`; `ConfidenceBadge` displays these as Accurate, Estimated, or N/A.
+- Battery current and explicit measured metric projections use this wrapper. Other sensor fields use scalar, nullable, or status representations; preserve their availability semantics rather than requiring a universal wrapper.
 - `BATTERY_PROPERTY_CURRENT_NOW` must be validated: multiple reads, non-zero, range -10000..+10000 mA, sign matches charge state.
 - Thermal data must use `PowerManager.getCurrentThermalStatus()` (API 29+) and `getThermalHeadroom()` (API 30+). No sysfs reads — SELinux blocks these on modern Android.
 
@@ -182,7 +182,7 @@ When reviewing a PR or file, check for these in order:
 - Minimum SDK is 26. No calls to APIs below 26 without a fallback.
 
 ### 4. Pro feature gating
-- Pro features: Charger Comparison, Per-App Battery, Extended History, Thermal Logs, CSV Export, Widgets.
+- Pro features: Charger Comparison, App Usage (foreground time, without per-app battery attribution), Extended History, Thermal Logs, CSV Export, Widgets.
 - Each must check `ProManager.isPro()` or the injected `ProStatusProvider` / `IsProUserUseCase` path before showing content.
 - Locked state must use `ProFeatureLockedState` component, not custom implementations.
 - The top-level Home Insights card is not a Pro feature. It may link into Pro-gated destinations, but the destinations themselves must remain gated.
@@ -190,7 +190,7 @@ When reviewing a PR or file, check for these in order:
 ### 5. Speed test
 - Uses M-Lab NDT7 (`ndt7-client-android` Kotlin library). No other speed test backend.
 - Never hardcode a fixed server — NDT7 auto-selects nearest global server.
-- Cellular warning dialog must appear before test starts if active network is not WiFi.
+- Cellular warning dialog must appear before the test starts when the resolved connection type is `CELLULAR` and the current attempt has not been confirmed.
 - Outbound network calls are allowed only for user-initiated speed tests, latency measurement, and Google Play Billing.
 - Reading current connection details (WiFi, 5G, SSID, signal, IP, DNS) must stay on-device via Android APIs and must not trigger socket, HTTP, or ping-style probes.
 
@@ -214,7 +214,7 @@ When reviewing a PR or file, check for these in order:
 - Icons: use `Icons.Outlined` exclusively — no `Icons.Default`, `Icons.Filled`, or `Icons.Rounded`
 - Padding and spacing use the 4dp grid (2/4/8/12/16/24/32dp); the exact Home status mosaic dimensions centralized in `UiTokens` and documented in `UI-SPEC.md` are an explicit visual-system exception.
 - All animation durations must use `MotionTokens` constants, never bare `tween()` without explicit spec
-- All ViewModels with live state flows must use `.sample(333L)` to throttle UI updates
+- High-frequency sensor display flows use 333ms sampling (`.sample(333L)` or the named Home interval). Do not sample discrete state or event flows such as billing, settings, or speed-test phase transitions.
 
 ### 8. Accessibility
 - Minimum touch target: 48dp.
@@ -229,7 +229,7 @@ Raise a review comment for any of the following:
 
 - Layer violation (data/domain/ui boundary crossed)
 - Missing API level guard on a version-gated API
-- Sensor value shown without MeasuredValue wrapper or ConfidenceBadge
+- A measured metric loses its confidence indicator, or unavailable sensor data is displayed as an available measurement
 - Pro feature accessible without `isPro()` check
 - Animation missing reduced motion check
 - Hardcoded color hex that doesn't match the palette above

@@ -12,6 +12,18 @@ import org.junit.Test
 
 class BatteryDegradationTrendRuleTest {
     @Test
+    fun `zero duration pair does not inflate average drain`() {
+        val readings =
+            listOf(
+                batteryReading(timestamp = 0L, level = 100),
+                batteryReading(timestamp = 0L, level = 90),
+                batteryReading(timestamp = 3_600_000L, level = 89),
+            )
+
+        assertEquals(1f, BatteryDrainAnalyzer().calculateAverageDrainRate(readings))
+    }
+
+    @Test
     fun `emits high priority battery insight when current week drains faster than previous week`() =
         runTest {
             val rule = degradationRule(comparisonReadings(previousDrop = 1, currentDrop = 3))

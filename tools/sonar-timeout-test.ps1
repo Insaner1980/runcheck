@@ -12,6 +12,7 @@ try {
     New-Item -ItemType Directory -Force -Path (Join-Path $tempRoot ".git") | Out-Null
     New-Item -ItemType Directory -Force -Path (Join-Path $tempRoot "tools") | Out-Null
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot "sonar.ps1") -Destination (Join-Path $tempRoot "tools\sonar.ps1")
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot "Invoke-RuncheckProjectCheck.ps1") -Destination (Join-Path $tempRoot "tools\Invoke-RuncheckProjectCheck.ps1")
     Set-Content -LiteralPath (Join-Path $tempRoot "sonar-project.properties") -Encoding utf8 -Value @(
         "sonar.projectKey=fixture"
         "sonar.host.url=https://example.invalid"

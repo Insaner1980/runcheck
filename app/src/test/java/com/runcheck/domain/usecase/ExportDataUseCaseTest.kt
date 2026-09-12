@@ -355,6 +355,40 @@ class ExportDataUseCaseTest {
 
     // --- Pro gate tests ---
 
+    @Test
+    fun `share preparation stops if pro is revoked while reading the final dataset`() =
+        runTest {
+            var isPro = true
+            every { proStatusProvider.isPro() } answers { isPro }
+            coEvery { storageRepository.getAllReadings() } coAnswers {
+                isPro = false
+                emptyList()
+            }
+            coEvery { fileExportRepository.prepareExportShare(any()) } returns listOf("content://runcheck/export.csv")
+
+            val result = runCatching { useCase.prepareExportShare() }
+
+            assertTrue(result.exceptionOrNull() is IllegalStateException)
+            coVerify(exactly = 0) { fileExportRepository.prepareExportShare(any()) }
+        }
+
+    @Test
+    fun `share preparation clears cached exports if pro is revoked while writing files`() =
+        runTest {
+            var isPro = true
+            every { proStatusProvider.isPro() } answers { isPro }
+            coEvery { fileExportRepository.prepareExportShare(any()) } coAnswers {
+                isPro = false
+                listOf("content://runcheck/export.csv")
+            }
+            coEvery { fileExportRepository.clearPreparedExports() } returns Unit
+
+            val result = runCatching { useCase.prepareExportShare() }
+
+            assertTrue(result.exceptionOrNull() is IllegalStateException)
+            coVerify(exactly = 1) { fileExportRepository.clearPreparedExports() }
+        }
+
     @Test(expected = IllegalStateException::class)
     fun `battery export throws for non-Pro user`() =
         runTest {

@@ -142,15 +142,7 @@ class SamsungCurrentConfidenceOwnershipTest {
     fun `changed current and charging direction restart evidence without stale values`() =
         runTest {
             withSource { source, manager ->
-                assertEquals(
-                    Confidence.LOW,
-                    source
-                        .getCurrentNow()
-                        .take(3)
-                        .toList()
-                        .last()
-                        .confidence,
-                )
+                source.assertEvidenceAgesToLow()
                 every { manager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) } returns -4_000_000
                 assertEquals(MeasuredValue(-4_000, Confidence.HIGH), source.getCurrentNow().first())
                 advanceTimeBy(2_000)
@@ -166,15 +158,7 @@ class SamsungCurrentConfidenceOwnershipTest {
     fun `missing observations preserve recent evidence but do not refresh its expiry`() =
         runTest {
             withSource { source, manager ->
-                assertEquals(
-                    Confidence.LOW,
-                    source
-                        .getCurrentNow()
-                        .take(3)
-                        .toList()
-                        .last()
-                        .confidence,
-                )
+                source.assertEvidenceAgesToLow()
                 every { manager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) } returns Int.MIN_VALUE
                 advanceTimeBy(2_000)
                 assertEquals(Confidence.UNAVAILABLE, source.getCurrentNow().first().confidence)
@@ -238,6 +222,17 @@ class SamsungCurrentConfidenceOwnershipTest {
                 }
             }
         }
+
+    private suspend fun GenericBatterySource.assertEvidenceAgesToLow() {
+        assertEquals(
+            Confidence.LOW,
+            getCurrentNow()
+                .take(3)
+                .toList()
+                .last()
+                .confidence,
+        )
+    }
 
     private suspend fun TestScope.withSource(
         samsung: Boolean = true,

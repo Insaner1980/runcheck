@@ -10,9 +10,11 @@ import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.MainDispatcherRule
 import com.runcheck.ui.common.UiText
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -43,6 +45,32 @@ class ChargerViewModelTest {
         every { manageUserPreferences.observeSelectedChargerId() } returns flowOf(null)
         every { getChargerComparison() } returns flowOf(emptyList())
     }
+
+    @Test
+    fun `overlapping charger mutations are rejected and a completed action permits another`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            every { isProUser() } returns true
+            val completion = CompletableDeferred<Unit>()
+            coEvery { addChargerUseCase(any()) } coAnswers {
+                completion.await()
+                7L
+            }
+            val viewModel = createViewModel()
+
+            viewModel.addCharger("Travel charger")
+            runCurrent()
+            viewModel.addCharger("Travel charger")
+            viewModel.selectCharger(7L)
+            runCurrent()
+            coVerify(exactly = 1) { addChargerUseCase(any()) }
+            coVerify(exactly = 0) { manageUserPreferences.setSelectedChargerId(any()) }
+
+            completion.complete(Unit)
+            runCurrent()
+            viewModel.selectCharger(7L)
+            runCurrent()
+            coVerify(exactly = 1) { manageUserPreferences.setSelectedChargerId(7L) }
+        }
 
     @Test
     fun `refresh locks charger comparison for non pro users`() {

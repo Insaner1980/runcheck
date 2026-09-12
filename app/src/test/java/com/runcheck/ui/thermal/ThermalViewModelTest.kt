@@ -20,6 +20,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -62,6 +63,34 @@ class ThermalViewModelTest {
             mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
         }
     }
+
+    @Test
+    fun `history received before live data and during sampling is retained`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val readings = listOf(thermalReading(1L, 36f))
+            val history = MutableStateFlow(readings)
+            val live = MutableSharedFlow<ThermalState>(replay = 1)
+            every { getThermalHistory(any()) } returns history
+            every { getThermalState() } returns live
+            viewModel = createViewModel()
+            try {
+                viewModel.startObserving()
+                advanceThermalSample()
+
+                live.emit(thermalState(35f))
+                advanceThermalSample()
+                assertEquals(readings, (viewModel.uiState.value as ThermalUiState.Success).thermalHistory)
+
+                live.emit(thermalState(37f))
+                runCurrent()
+                val updatedReadings = readings + thermalReading(2L, 37f)
+                history.value = updatedReadings
+                advanceThermalSample()
+                assertEquals(updatedReadings, (viewModel.uiState.value as ThermalUiState.Success).thermalHistory)
+            } finally {
+                viewModel.stopObserving()
+            }
+        }
 
     @Test
     fun `startObserving emits success state with live thermal buffers and session bounds`() =

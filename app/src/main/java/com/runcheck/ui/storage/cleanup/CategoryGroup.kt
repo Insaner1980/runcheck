@@ -59,12 +59,6 @@ fun CategoryGroup(
             else -> ToggleableState.Indeterminate
         }
     val useStackedHeader = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
-    val expandedLabel =
-        if (group.expanded) {
-            stringResource(R.string.a11y_collapse)
-        } else {
-            stringResource(R.string.a11y_expand)
-        }
     val expansionStateLabel =
         if (group.expanded) {
             stringResource(R.string.a11y_expanded)

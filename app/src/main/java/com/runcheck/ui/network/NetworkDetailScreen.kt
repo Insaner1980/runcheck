@@ -307,44 +307,52 @@ private fun NetworkHeroSection(
             )
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-            verticalAlignment = Alignment.Top,
-        ) {
+        NetworkHeroMetrics(networkState, onInfoClick)
+    }
+}
+
+@Composable
+private fun NetworkHeroMetrics(
+    networkState: NetworkState,
+    onInfoClick: (String) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
+        verticalAlignment = Alignment.Top,
+    ) {
+        MetricPill(
+            label = stringResource(R.string.network_latency),
+            value =
+                networkState.latencyMs?.let {
+                    stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_ms))
+                } ?: stringResource(R.string.placeholder_dash),
+            modifier = Modifier.weight(1f),
+            onInfoClick = { onInfoClick("latency") },
+        )
+        MetricPill(
+            label = bandwidthPillLabel(networkState),
+            value = bandwidthPillValue(networkState),
+            modifier = Modifier.weight(1f),
+            onInfoClick = { onInfoClick("bandwidth") },
+        )
+        if (networkState.connectionType != ConnectionType.ETHERNET) {
             MetricPill(
-                label = stringResource(R.string.network_latency),
-                value =
-                    networkState.latencyMs?.let {
-                        stringResource(R.string.value_with_unit_int, it, stringResource(R.string.unit_ms))
-                    } ?: stringResource(R.string.placeholder_dash),
+                label = bandPillLabel(networkState),
+                value = bandPillValue(networkState),
                 modifier = Modifier.weight(1f),
-                onInfoClick = { onInfoClick("latency") },
+                onInfoClick = {
+                    onInfoClick(
+                        if (networkState.connectionType ==
+                            ConnectionType.WIFI
+                        ) {
+                            "frequency"
+                        } else {
+                            "bandwidth"
+                        },
+                    )
+                },
             )
-            MetricPill(
-                label = bandwidthPillLabel(networkState),
-                value = bandwidthPillValue(networkState),
-                modifier = Modifier.weight(1f),
-                onInfoClick = { onInfoClick("bandwidth") },
-            )
-            if (networkState.connectionType != ConnectionType.ETHERNET) {
-                MetricPill(
-                    label = bandPillLabel(networkState),
-                    value = bandPillValue(networkState),
-                    modifier = Modifier.weight(1f),
-                    onInfoClick = {
-                        onInfoClick(
-                            if (networkState.connectionType ==
-                                ConnectionType.WIFI
-                            ) {
-                                "frequency"
-                            } else {
-                                "bandwidth"
-                            },
-                        )
-                    },
-                )
-            }
         }
     }
 }

@@ -1,6 +1,6 @@
 # runcheck Privacy Policy
 
-**Last updated:** March 27, 2026
+**Last updated:** September 12, 2026
 
 ## What data runcheck collects
 
@@ -16,17 +16,17 @@ runcheck monitors your device's hardware metrics locally on your device:
 
 Measurement history, throttling events, and settings are stored **locally on your device** using on-device Room and DataStore storage. The local database is not encrypted at the application layer.
 
-Free users' data is automatically cleaned up after 24 hours. Pro users can choose longer retention windows (3 months, 6 months, 1 year, or forever) and can export CSV files for sharing from the app.
+For free users, measurement history older than 24 hours is eligible for deletion during periodic maintenance. Cleanup can be delayed by Android scheduling and purchase-status initialization. Pro users can choose longer retention windows (3 months, 6 months, 1 year, or forever) and can export CSV files for sharing from the app.
 
 ## Network access
 
-runcheck uses network access only for:
+Release builds of runcheck use network access only for:
 
 - **Latency measurement**: A TCP connection sample to the configured latency endpoint. By default this is `locate.measurementlab.net:443`.
 - **In-app purchases**: Google Play Billing for the Pro upgrade
 - **Speed testing**: Optional M-Lab NDT7 network throughput testing initiated by the user
 
-No analytics, crash reporting, or telemetry data is ever sent.
+Release builds do not send analytics, crash reports, or telemetry. Development (debug) builds can send crash reports to Sentry when a developer configures a Sentry DSN. This integration is excluded from release builds.
 
 ## Third-party services
 
@@ -53,7 +53,7 @@ No analytics, crash reporting, or telemetry data is ever sent.
 
 ## Data deletion
 
-Uninstalling runcheck removes all locally stored app data. Free users' data is automatically deleted after 24 hours.
+Uninstalling runcheck removes all locally stored app data. Measurement history can also be cleared from Settings. Retention-based deletion runs during periodic maintenance, as described above.
 
 ## Children's privacy
 

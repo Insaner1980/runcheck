@@ -6,9 +6,14 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.os.BatteryManager
 import android.os.PowerManager
+import android.os.SystemClock
+import android.provider.Settings
 import com.runcheck.domain.model.ChargingStatus
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -25,6 +30,9 @@ class ScreenStateTrackerTest {
 
     @Before
     fun setUp() {
+        mockkStatic(SystemClock::class, Settings.Global::class)
+        every { SystemClock.elapsedRealtime() } returns 10_000_000L
+        every { Settings.Global.getInt(any(), Settings.Global.BOOT_COUNT, any()) } returns 7
         val batteryIntent: Intent = mockk(relaxed = true)
 
         every { context.getSystemService(Context.POWER_SERVICE) } returns powerManager
@@ -36,6 +44,66 @@ class ScreenStateTrackerTest {
         every { powerManager.isInteractive } returns false
         every { powerManager.isDeviceIdleMode } returns false
         every { batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) } returns 60
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic(SystemClock::class, Settings.Global::class)
+    }
+
+    @Test
+    fun `wrong type in persisted screen state starts a fresh interval`() {
+        val corrupted = mockk<SharedPreferences>()
+        every { context.getSharedPreferences("screen_state_tracker", Context.MODE_PRIVATE) } returns corrupted
+        every { corrupted.contains(any()) } returns true
+        every { corrupted.getInt("elapsed_realtime_boot_count", -1) } throws ClassCastException("Not an integer")
+        every { corrupted.edit() } returns prefs.edit()
+
+        assertNull(ScreenStateTracker(context).getScreenUsageStats())
+        assertEquals(7, prefs.getInt("elapsed_realtime_boot_count", -1))
+    }
+
+    @Test
+    fun `invalid persisted level and drain cannot produce a bogus drain rate`() {
+        persistScreenState(
+            timestamp = 9_880_000L,
+            level = 500,
+            screenOffDurationMs = -10_000L,
+            screenOffDrainPct = Float.NaN,
+            deepSleepDurationMs = -10_000L,
+            heldAwakeDurationMs = -10_000L,
+        )
+        prefs.edit().putInt("elapsed_realtime_boot_count", 7).commit()
+
+        val tracker = ScreenStateTracker(context)
+        val stats = requireNotNull(tracker.getScreenUsageStats())
+
+        assertEquals(120_000L, stats.screenOffDurationMs)
+        assertEquals(0f, stats.screenOffDrainPct, 0f)
+        assertEquals(0f, requireNotNull(stats.screenOffDrainRate), 0f)
+        assertEquals(0L, requireNotNull(tracker.getSleepAnalysis()).deepSleepDurationMs)
+    }
+
+    @Test
+    fun `elapsed time drives screen and sleep duration across tracker recreation`() {
+        val tracker = ScreenStateTracker(context)
+        assertNull(tracker.getScreenUsageStats())
+        every { SystemClock.elapsedRealtime() } returns 10_120_000L
+
+        val recreated = ScreenStateTracker(context)
+        assertEquals(120_000L, requireNotNull(recreated.getScreenUsageStats()).screenOffDurationMs)
+        assertEquals(120_000L, requireNotNull(recreated.getSleepAnalysis()).heldAwakeDurationMs)
+    }
+
+    @Test
+    fun `reboot preserves completed durations without counting the gap`() {
+        persistScreenState(timestamp = 1_000L, screenOffDurationMs = 90_000L)
+        prefs.edit().putInt("elapsed_realtime_boot_count", 6).commit()
+
+        val stats = requireNotNull(ScreenStateTracker(context).getScreenUsageStats())
+
+        assertEquals(90_000L, stats.screenOffDurationMs)
+        assertEquals(7, prefs.getInt("elapsed_realtime_boot_count", -1))
     }
 
     private fun persistScreenState(
@@ -94,7 +162,7 @@ class ScreenStateTrackerTest {
         assertTrue(stats.screenOffDurationMs >= 5 * 60_000L)
         assertEquals(2f, stats.screenOffDrainPct, 0.01f)
         assertTrue(prefs.getBoolean("screen_on", false))
-        assertTrue(prefs.getLong("last_transition_time", 0L) >= persistedAt)
+        assertEquals(SystemClock.elapsedRealtime(), prefs.getLong("last_transition_time", 0L))
     }
 
     @Test

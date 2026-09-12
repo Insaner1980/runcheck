@@ -25,6 +25,8 @@ import com.runcheck.domain.usecase.SetNotificationsEnabledUseCase
 import com.runcheck.ui.common.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +34,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import javax.inject.Inject
 
 @HiltViewModel
@@ -55,6 +58,7 @@ class SettingsViewModel
         private val _uiState = MutableStateFlow(SettingsUiState())
         val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
         private var isFetchingPrice = false
+        private val monitoringDataOperationMutex = Mutex()
 
         init {
             _uiState.update { it.copy(debugInsightsAvailable = insightDebugActions.isAvailable) }
@@ -212,13 +216,15 @@ class SettingsViewModel
                 }
                 return
             }
-            viewModelScope.launch {
+            // Reject overlapping requests immediately, before dispatching any history reads.
+            viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                ensureActive()
+                if (!monitoringDataOperationMutex.tryLock()) return@launch
                 try {
                     _uiState.update { it.copy(isExporting = true, exportStatus = null) }
                     val exportUris = exportDataUseCase.prepareExportShare()
                     _uiState.update {
                         it.copy(
-                            isExporting = false,
                             exportUris = exportUris,
                             exportStatus =
                                 if (exportUris.isNotEmpty()) {
@@ -233,10 +239,12 @@ class SettingsViewModel
                 } catch (_: Exception) {
                     _uiState.update {
                         it.copy(
-                            isExporting = false,
                             exportStatus = UiText.Resource(R.string.settings_export_error),
                         )
                     }
+                } finally {
+                    _uiState.update { it.copy(isExporting = false) }
+                    monitoringDataOperationMutex.unlock()
                 }
             }
         }
@@ -382,7 +390,9 @@ class SettingsViewModel
         }
 
         fun clearAllData() {
-            viewModelScope.launch {
+            viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                ensureActive()
+                if (!monitoringDataOperationMutex.tryLock()) return@launch
                 try {
                     clearMonitoringDataUseCase()
                     _uiState.update {
@@ -392,6 +402,8 @@ class SettingsViewModel
                     throw e
                 } catch (_: Exception) {
                     _uiState.update { it.copy(errorMessage = UiText.Resource(R.string.common_error_generic)) }
+                } finally {
+                    monitoringDataOperationMutex.unlock()
                 }
             }
         }

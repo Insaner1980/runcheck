@@ -188,19 +188,7 @@ private fun AppUsageContent(
                         )
                         TextButton(
                             onClick = {
-                                try {
-                                    context.startActivity(
-                                        Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(
-                                            Intent.FLAG_ACTIVITY_NEW_TASK,
-                                        ),
-                                    )
-                                } catch (_: ActivityNotFoundException) {
-                                    context.startActivity(
-                                        Intent(Settings.ACTION_SETTINGS).addFlags(
-                                            Intent.FLAG_ACTIVITY_NEW_TASK,
-                                        ),
-                                    )
-                                }
+                                context.openUsageAccessSettings()
                             },
                         ) {
                             Text(stringResource(R.string.app_usage_permission_open_settings))
@@ -274,6 +262,23 @@ private fun AppUsageContent(
                             maxTime = maxTime,
                             totalTime = totalTime,
                         )
+                    }
+                }
+            }
+        }
+
+        if (
+            hasUsageAccess && appItems.itemCount > 0 &&
+            (appItems.loadState.refresh is LoadState.Error || appItems.loadState.append is LoadState.Error)
+        ) {
+            item {
+                RuncheckCard(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
+                    Text(
+                        text = stringResource(R.string.common_error_generic),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    TextButton(onClick = { appItems.retry() }) {
+                        Text(stringResource(R.string.common_retry))
                     }
                 }
             }
@@ -450,6 +455,22 @@ private suspend fun loadAppIconBitmap(
             null
         }
     }
+
+private fun Context.openUsageAccessSettings() {
+    try {
+        startActivity(
+            Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK,
+            ),
+        )
+    } catch (_: ActivityNotFoundException) {
+        startActivity(
+            Intent(Settings.ACTION_SETTINGS).addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK,
+            ),
+        )
+    }
+}
 
 private fun Context.hasUsageStatsAccess(): Boolean {
     val appOps = getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return false

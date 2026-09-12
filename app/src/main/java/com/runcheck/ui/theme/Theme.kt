@@ -61,7 +61,7 @@ fun runcheckCardElevation(): CardElevation = CardDefaults.cardElevation(defaultE
 fun runcheckOutlinedCardBorder(): BorderStroke =
     BorderStroke(width = MaterialTheme.uiTokens.outlineWidth, color = MaterialTheme.cardStrokeColor)
 
-private val RuncheckColorScheme =
+internal val RuncheckColorScheme =
     darkColorScheme(
         background = BgPage,
         surface = BgPage,
@@ -71,7 +71,7 @@ private val RuncheckColorScheme =
         primary = AccentBlue,
         secondary = AccentTeal,
         tertiary = AccentAmber,
-        error = AccentRed,
+        error = StatusCritical,
         onSurface = TextPrimary,
         onSurfaceVariant = TextSecondary,
         outline = TextMuted,

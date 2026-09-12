@@ -1,6 +1,7 @@
 package com.runcheck.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.max
@@ -8,6 +9,31 @@ import kotlin.math.min
 import kotlin.math.pow
 
 class ThemeContrastTest {
+    @Test
+    fun `confidence badge text meets minimum contrast in every state`() {
+        with(RuncheckStatusColors) {
+            assertContrastAtLeast(confidenceAccurateText, confidenceAccurateBg, 4.5)
+            assertContrastAtLeast(confidenceEstimatedText, confidenceEstimatedBg, 4.5)
+            assertContrastAtLeast(confidenceUnavailableText, confidenceUnavailableBg, 4.5)
+        }
+    }
+
+    @Test
+    fun `body and error text meet minimum contrast on detail cards`() {
+        listOf(BgPage, BgCard, BgCardAlt, BgCardDeep).forEach { background ->
+            assertContrastAtLeast(RuncheckColorScheme.onSurface, background, 4.5)
+            assertContrastAtLeast(RuncheckColorScheme.onSurfaceVariant, background, 4.5)
+            assertContrastAtLeast(RuncheckColorScheme.error, background, 4.5)
+        }
+    }
+
+    @Test
+    fun `pro badge content meets minimum contrast on detail and Home cards`() {
+        val badgeAlpha = UiTokens().proBadgeBackgroundAlpha
+        assertContrastAtLeast(TextPrimary, AccentBlue.copy(alpha = badgeAlpha).compositeOver(BgCard), 4.5)
+        assertContrastAtLeast(HomeInk, HomePeach.copy(alpha = badgeAlpha).compositeOver(HomeCream), 4.5)
+    }
+
     @Test
     fun `documented text and status combinations meet WCAG AA`() {
         listOf(

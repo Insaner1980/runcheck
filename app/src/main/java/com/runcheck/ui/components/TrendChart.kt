@@ -532,8 +532,7 @@ fun TrendChart(
                         strokeWidth = chartStyle.gridStrokeWidth.toPx(),
                     )
                     val labelX =
-                        (x - measured.size.width / 2f)
-                            .coerceIn(chartLeft, chartLeft + chartWidth - measured.size.width)
+                        chartXLabelLeft(x, measured.size.width.toFloat(), chartLeft, chartWidth)
                     drawText(
                         textLayoutResult = measured,
                         topLeft =
@@ -854,6 +853,17 @@ fun TrendChart(
         }
     } // Box
 }
+
+internal fun chartXLabelLeft(
+    centerX: Float,
+    labelWidth: Float,
+    chartLeft: Float,
+    chartWidth: Float,
+): Float =
+    (centerX - labelWidth / 2f).coerceIn(
+        chartLeft,
+        (chartLeft + chartWidth - labelWidth).coerceAtLeast(chartLeft),
+    )
 
 internal fun nearestChartPointIndex(
     positionX: Float,

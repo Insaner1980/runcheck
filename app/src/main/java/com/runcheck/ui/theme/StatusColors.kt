@@ -40,7 +40,7 @@ val RuncheckStatusColors =
         confidenceEstimatedBg = AccentAmber,
         confidenceEstimatedText = BgPage,
         confidenceUnavailableBg = TextMuted,
-        confidenceUnavailableText = TextPrimary,
+        confidenceUnavailableText = BgPage,
     )
 
 val LocalStatusColors = staticCompositionLocalOf { RuncheckStatusColors }

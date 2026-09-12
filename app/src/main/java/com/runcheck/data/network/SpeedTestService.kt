@@ -165,7 +165,8 @@ class SpeedTestService
             startingDefaultNetwork: Network,
             val scope: ProducerScope<SpeedTestProgress>,
         ) {
-            private val networkIdentityLock = DefaultNetworkIdentityLock(startingDefaultNetwork)
+            private val networkIdentityLock =
+                DefaultNetworkIdentityLock(startingDefaultNetwork, connectionInfo.connectionType)
             private val networkBoundHttpClient =
                 HttpClientFactory
                     .createHttpClient()
@@ -460,6 +461,7 @@ internal enum class NetworkLockFailure {
 
 internal class DefaultNetworkIdentityLock(
     private val lockedNetwork: Network,
+    private val lockedConnectionType: ConnectionType,
 ) {
     fun failureForCurrentDefault(network: Network?): NetworkLockFailure? =
         when {
@@ -483,6 +485,19 @@ internal class DefaultNetworkIdentityLock(
             !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ||
                 !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) -> {
                 NetworkLockFailure.NO_INTERNET
+            }
+
+            resolveConnectionType(
+                isWifi = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI),
+                isCellular = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR),
+                isEthernet = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET),
+                isVpn =
+                    resolveVpnState(
+                        hasVpnTransport = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN),
+                        hasNotVpnCapability = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN),
+                    ),
+            ) != lockedConnectionType -> {
+                NetworkLockFailure.CONNECTION_CHANGED
             }
 
             else -> {

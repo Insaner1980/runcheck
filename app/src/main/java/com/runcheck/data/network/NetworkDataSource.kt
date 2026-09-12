@@ -395,8 +395,7 @@ class NetworkDataSource
                 val signalStrength = telephonyManager?.signalStrength ?: return null
                 signalStrength.cellSignalStrengths
                     .mapNotNull { css ->
-                        val asu = css.asuLevel
-                        if (asu == Int.MAX_VALUE || asu < 0) null else asu
+                        normalizeCellularSignalAsu(css.asuLevel)
                     }.maxOrNull()
             } catch (_: Exception) {
                 null
@@ -762,6 +761,8 @@ internal fun selectSignalDbmForTransport(
 private fun Int.validWifiSignalDbm(): Int? = takeIf { it in -126..-1 }
 
 internal fun normalizePositiveWifiMetric(value: Int?): Int? = value?.takeIf { it > 0 }
+
+internal fun normalizeCellularSignalAsu(value: Int): Int? = value.takeIf { it in 0..97 }
 
 @Suppress("TooGenericExceptionCaught")
 internal inline fun registerCallbackWithReceiverRollback(

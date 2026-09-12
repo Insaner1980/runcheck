@@ -19,6 +19,19 @@ import org.junit.Test
 
 class GenericBatterySourceTest {
     @Test
+    fun `battery level normalization stays in percentage range without integer overflow`() {
+        val source = createTestSource(CurrentUnit.MICROAMPS, SignConvention.POSITIVE_CHARGING)
+
+        assertEquals(0, source.testNormalizeLevel(0, 100))
+        assertEquals(50, source.testNormalizeLevel(100, 200))
+        assertEquals(0, source.testNormalizeLevel(-1, 100))
+        assertEquals(100, source.testNormalizeLevel(101, 100))
+        assertEquals(0, source.testNormalizeLevel(50, 0))
+        assertEquals(0, source.testNormalizeLevel(50, -1))
+        assertEquals(100, source.testNormalizeLevel(Int.MAX_VALUE, Int.MAX_VALUE))
+    }
+
+    @Test
     fun `normalizeCurrent converts microamps to milliamps`() {
         val source =
             createTestSource(
@@ -241,6 +254,11 @@ class GenericBatterySourceTest {
         profile: DeviceProfile,
         dispatchers: AppDispatchers,
     ) : GenericBatterySource(context, profile, dispatchers) {
+        fun testNormalizeLevel(
+            level: Int,
+            scale: Int,
+        ): Int = normalizeLevel(level, scale)
+
         fun testNormalizeCurrent(raw: Int): Int = normalizeCurrent(raw)
 
         fun testCalculateCurrentConfidence(raw: Int): Confidence = calculateCurrentConfidence(raw)

@@ -563,7 +563,7 @@ class MediaStoreScanner
                     ).filter { seen.add(it.uri) }
             }
             return results
-                .sortedWith(compareByDescending<ScannedFile> { it.sizeBytes }.thenBy { it.uri })
+                .sortedWith(APK_FILE_ORDER)
                 .drop(offset)
                 .take(limit)
         }
@@ -825,6 +825,12 @@ class MediaStoreScanner
                 )
         }
     }
+
+// Keep each collection's numeric ID order when merging paged prefixes.
+internal val APK_FILE_ORDER: Comparator<ScannedFile> =
+    compareByDescending<ScannedFile> { it.sizeBytes }
+        .thenBy { it.uri.substringAfterLast('/').toLong() }
+        .thenBy { it.uri }
 
 internal data class MediaBreakdownSelection(
     val sql: String,

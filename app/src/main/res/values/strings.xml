@@ -84,7 +84,7 @@
     <string name="insight_storage_impact_title">Storage pressure coincides with lower storage health</string>
     <string name="insight_storage_impact_body">Storage health is down to %1$s/100, and free space may run out in about %2$s at the current growth rate.</string>
     <string name="insight_thermal_pattern_title">Heat has stayed elevated recently</string>
-    <string name="insight_thermal_pattern_body">Recent thermal readings were elevated about %1$s%% of the time, averaging around %2$s°C battery temperature.</string>
+    <string name="insight_thermal_pattern_body">Temperature was elevated in about %1$s%% of recent checks, averaging around %2$s°C battery temperature.</string>
     <string name="insight_thermal_throttling_title">Thermal throttling is recurring</string>
     <string name="insight_thermal_throttling_body">%1$s severe thermal events were recorded this week, peaking at %2$s around %3$s°C battery temperature.</string>
     <string name="insight_app_usage_title">One app is dominating screen time</string>
@@ -767,7 +767,7 @@
     <string name="pro_upgrade_one_time">One-time purchase. No subscription.</string>
     <string name="pro_feature_extended_history">Extended battery history (week, month, all-time)</string>
     <string name="pro_feature_charger_comparison">Charger comparison &amp; testing</string>
-    <string name="pro_feature_per_app_battery">Per-app battery usage</string>
+    <string name="pro_feature_per_app_battery">Per-app foreground time</string>
     <string name="pro_feature_widgets">Home screen widgets</string>
     <string name="pro_feature_csv_export">CSV data export</string>
     <string name="pro_feature_thermal_logs">Thermal throttling logs</string>
@@ -793,8 +793,6 @@
     <string name="a11y_copy_to_clipboard">Copy to clipboard</string>
     <string name="a11y_locked_pro_feature">Locked, Pro feature</string>
     <string name="a11y_loading">Loading</string>
-    <string name="a11y_expand">Expand</string>
-    <string name="a11y_collapse">Collapse</string>
     <string name="a11y_expanded">Expanded</string>
     <string name="a11y_collapsed">Collapsed</string>
     <string name="a11y_high_priority">High priority</string>

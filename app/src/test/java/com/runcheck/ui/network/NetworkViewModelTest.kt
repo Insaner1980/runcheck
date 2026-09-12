@@ -3,6 +3,7 @@ package com.runcheck.ui.network
 import androidx.lifecycle.SavedStateHandle
 import com.runcheck.R
 import com.runcheck.domain.model.ConnectionType
+import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SignalQuality
 import com.runcheck.domain.model.SpeedTestConnectionInfo
@@ -111,6 +112,22 @@ class NetworkViewModelTest {
             viewModel = createViewModel()
             viewModel.startObserving()
             advanceNetworkSample()
+        }
+
+    @Test
+    fun `history received before the first live sample is retained`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val readings = listOf(NetworkReading(1L, "WIFI", -50, null, null, null, null, 25))
+            every { getNetworkHistory(any()) } returns MutableStateFlow(readings)
+            every { getMeasuredNetworkState() } returns MutableStateFlow(testNetworkState)
+            viewModel = createViewModel()
+            try {
+                viewModel.startObserving()
+                advanceNetworkSample()
+                assertEquals(readings, (viewModel.networkUiState.value as NetworkUiState.Success).signalHistory)
+            } finally {
+                viewModel.stopObserving()
+            }
         }
 
     @Test

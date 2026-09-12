@@ -2,6 +2,7 @@ package com.runcheck.ui.storage.cleanup
 
 import android.os.Build
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModelStore
 import androidx.paging.PagingData
 import com.runcheck.R
 import com.runcheck.domain.model.CleanupGroupSummary
@@ -19,6 +20,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -46,64 +48,11 @@ class CleanupViewModelTest {
     private val isProUser: IsProUserUseCase = mockk()
     private val proAccessFlow = MutableStateFlow(true)
 
-    private val testFiles =
-        listOf(
-            ScannedFile(
-                uri = "content://media/1",
-                displayName = "video1.mp4",
-                sizeBytes = 500_000_000L,
-                mimeType = "video/mp4",
-                dateModified = System.currentTimeMillis() - 86_400_000,
-                category = MediaCategory.VIDEO,
-            ),
-            ScannedFile(
-                uri = "content://media/2",
-                displayName = "video2.mp4",
-                sizeBytes = 200_000_000L,
-                mimeType = "video/mp4",
-                dateModified = System.currentTimeMillis() - 172_800_000,
-                category = MediaCategory.VIDEO,
-            ),
-            ScannedFile(
-                uri = "content://media/3",
-                displayName = "photo1.jpg",
-                sizeBytes = 80_000_000L,
-                mimeType = "image/jpeg",
-                dateModified = System.currentTimeMillis() - 259_200_000,
-                category = MediaCategory.IMAGE,
-            ),
-            ScannedFile(
-                uri = "content://media/4",
-                displayName = "document1.pdf",
-                sizeBytes = 60_000_000L,
-                mimeType = "application/pdf",
-                dateModified = System.currentTimeMillis() - 345_600_000,
-                category = MediaCategory.DOCUMENT,
-            ),
-        )
-
-    private val storageState =
-        StorageState(
-            totalBytes = 128_000_000_000L,
-            availableBytes = 64_000_000_000L,
-            usedBytes = 64_000_000_000L,
-            usagePercent = 50f,
-            appsBytes = null,
-            totalCacheBytes = null,
-            appCount = null,
-            mediaBreakdown = null,
-            trashInfo = null,
-            removableStorageAvailable = false,
-            removableStorageTotalBytes = null,
-            removableStorageAvailableBytes = null,
-            fileSystemType = null,
-            encryptionStatus = null,
-            storageVolumes = 1,
-        )
+    private val testFiles = createTestFiles()
 
     @Before
     fun setup() {
-        coEvery { storageCleanup.getCurrentStorageState() } returns storageState
+        coEvery { storageCleanup.getCurrentStorageState() } returns createStorageState()
         coEvery { storageCleanup.findExistingUris(any()) } returns emptySet()
         every { observeProAccess() } returns proAccessFlow
         every { isProUser() } answers { proAccessFlow.value }
@@ -139,6 +88,14 @@ class CleanupViewModelTest {
             val category = secondArg<MediaCategory>()
             files.filter { it.category == category }.associate { it.uri to it.sizeBytes }
         }
+    }
+
+    private fun deferVideoGroupResolution(): CompletableDeferred<Map<String, Long>> {
+        val resolution = CompletableDeferred<Map<String, Long>>()
+        coEvery { storageCleanup.getCleanupGroupFileSizes(any(), MediaCategory.VIDEO) } coAnswers {
+            resolution.await()
+        }
+        return resolution
     }
 
     private fun createViewModel(
@@ -326,6 +283,54 @@ class CleanupViewModelTest {
         }
 
     @Test
+    fun `delete taps are suppressed while resolving selection and cancellation permits retry`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+            viewModel.toggleGroupSelection(MediaCategory.VIDEO)
+            val resolution = deferVideoGroupResolution()
+
+            viewModel.requestDelete(apiLevel = 30)
+            viewModel.requestDelete(apiLevel = 30)
+            runCurrent()
+            assertTrue(viewModel.uiState.value is CleanupUiState.Deleting)
+            coVerify(exactly = 1) { storageCleanup.getCleanupGroupFileSizes(any(), MediaCategory.VIDEO) }
+
+            resolution.complete(mapOf(testFiles[0].uri to testFiles[0].sizeBytes))
+            runCurrent()
+            viewModel.onDeleteCancelled()
+            runCurrent()
+            viewModel.requestDelete(apiLevel = 30)
+            runCurrent()
+            coVerify(exactly = 2) { storageCleanup.getCleanupGroupFileSizes(any(), MediaCategory.VIDEO) }
+        }
+
+    @Test
+    fun `pro access loss during group resolution prevents delete request`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+            viewModel.toggleGroupSelection(MediaCategory.VIDEO)
+            val resolution = deferVideoGroupResolution()
+            val request = async(start = CoroutineStart.UNDISPATCHED) { viewModel.deleteRequestUris.first() }
+
+            viewModel.requestDelete(apiLevel = 30)
+            runCurrent()
+            proAccessFlow.value = false
+            runCurrent()
+            resolution.complete(mapOf(testFiles[0].uri to testFiles[0].sizeBytes))
+            runCurrent()
+
+            val requestEmitted = request.isCompleted
+            request.cancel()
+            assertFalse(requestEmitted)
+            assertEquals(
+                CleanupUiState.Error(UiText.Resource(R.string.pro_feature_locked_generic)),
+                viewModel.uiState.value,
+            )
+        }
+
+    @Test
     fun `empty scan result produces Empty state`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val viewModel = createViewModel(files = emptyList())
@@ -396,6 +401,7 @@ class CleanupViewModelTest {
             assertEquals(1, viewModel.legacyDeleteConfirmationCount.value)
             coVerify(exactly = 0) { storageCleanup.deleteLegacy(any()) }
 
+            viewModel.confirmLegacyDelete()
             viewModel.confirmLegacyDelete()
             advanceUntilIdle()
 
@@ -659,6 +665,43 @@ class CleanupViewModelTest {
         }
 
     @Test
+    fun `invalid restored filter uses the default for both selection and query`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            listOf(-1, Int.MAX_VALUE).forEach { invalidIndex ->
+                val viewModel =
+                    createViewModel(
+                        savedStateValues =
+                            mapOf(
+                                "type" to "LARGE_FILES",
+                                "cleanup_selected_filter" to invalidIndex,
+                            ),
+                    )
+                advanceUntilIdle()
+
+                assertEquals(CleanupType.LARGE_FILES.defaultFilterIndex, viewModel.getSelectedFilterIndex())
+            }
+            coVerify(exactly = 2) {
+                storageCleanup.getCleanupSummary(match { it.filterValue == 50L * 1_000_000 })
+            }
+        }
+
+    @Test
+    fun `clearing view model during delete verification does not restore an error state`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val viewModel = createViewModel(savedStateValues = pendingDeleteState(listOf(testFiles[0])))
+            val store = ViewModelStore().apply { put("cleanup", viewModel) }
+            advanceUntilIdle()
+
+            viewModel.onDeleteConfirmed()
+            runCurrent()
+            store.clear()
+            runCurrent()
+
+            assertEquals(CleanupUiState.Deleting(1), viewModel.uiState.value)
+            coVerify(exactly = 0) { storageCleanup.findExistingUris(any()) }
+        }
+
+    @Test
     fun `selected filter restores from saved state`() =
         runTest(mainDispatcherRule.testDispatcher) {
             val viewModel =
@@ -679,3 +722,58 @@ class CleanupViewModelTest {
             }
         }
 }
+
+private fun createTestFiles(): List<ScannedFile> =
+    listOf(
+        ScannedFile(
+            uri = "content://media/1",
+            displayName = "video1.mp4",
+            sizeBytes = 500_000_000L,
+            mimeType = "video/mp4",
+            dateModified = System.currentTimeMillis() - 86_400_000,
+            category = MediaCategory.VIDEO,
+        ),
+        ScannedFile(
+            uri = "content://media/2",
+            displayName = "video2.mp4",
+            sizeBytes = 200_000_000L,
+            mimeType = "video/mp4",
+            dateModified = System.currentTimeMillis() - 172_800_000,
+            category = MediaCategory.VIDEO,
+        ),
+        ScannedFile(
+            uri = "content://media/3",
+            displayName = "photo1.jpg",
+            sizeBytes = 80_000_000L,
+            mimeType = "image/jpeg",
+            dateModified = System.currentTimeMillis() - 259_200_000,
+            category = MediaCategory.IMAGE,
+        ),
+        ScannedFile(
+            uri = "content://media/4",
+            displayName = "document1.pdf",
+            sizeBytes = 60_000_000L,
+            mimeType = "application/pdf",
+            dateModified = System.currentTimeMillis() - 345_600_000,
+            category = MediaCategory.DOCUMENT,
+        ),
+    )
+
+private fun createStorageState(): StorageState =
+    StorageState(
+        totalBytes = 128_000_000_000L,
+        availableBytes = 64_000_000_000L,
+        usedBytes = 64_000_000_000L,
+        usagePercent = 50f,
+        appsBytes = null,
+        totalCacheBytes = null,
+        appCount = null,
+        mediaBreakdown = null,
+        trashInfo = null,
+        removableStorageAvailable = false,
+        removableStorageTotalBytes = null,
+        removableStorageAvailableBytes = null,
+        fileSystemType = null,
+        encryptionStatus = null,
+        storageVolumes = 1,
+    )

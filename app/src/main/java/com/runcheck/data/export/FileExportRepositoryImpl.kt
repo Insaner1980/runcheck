@@ -9,6 +9,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.UUID
@@ -76,7 +77,9 @@ class FileExportRepositoryImpl
         override suspend fun clearPreparedExports() {
             withContext(dispatchers.io) {
                 cacheMutex.withLock {
-                    File(context.cacheDir, EXPORT_DIR_NAME).deleteRecursively()
+                    if (!File(context.cacheDir, EXPORT_DIR_NAME).deleteRecursively()) {
+                        throw IOException("Could not delete prepared export files")
+                    }
                 }
             }
         }

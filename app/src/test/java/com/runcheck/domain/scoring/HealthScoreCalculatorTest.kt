@@ -74,6 +74,22 @@ class HealthScoreCalculatorTest {
         )
 
     @Test
+    fun `unavailable voltage does not count as a critically low measured voltage`() {
+        for (voltage in listOf(0, -1)) {
+            val score =
+                calculator.calculate(
+                    healthyBattery().copy(voltageMv = voltage),
+                    healthyNetwork(),
+                    healthyThermal(),
+                    healthyStorage(),
+                )
+
+            assertEquals(0, score.diagnostics.battery.voltagePenalty)
+            assertEquals(100, score.batteryScore)
+        }
+    }
+
+    @Test
     fun `healthy device scores 75+`() {
         val score =
             calculator.calculate(

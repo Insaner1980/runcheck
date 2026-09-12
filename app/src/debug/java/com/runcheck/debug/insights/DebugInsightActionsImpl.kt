@@ -5,6 +5,7 @@ import com.runcheck.data.insights.debug.InsightTestDataSeeder
 import com.runcheck.domain.insights.engine.InsightEngine
 import com.runcheck.domain.repository.InsightDebugActions
 import com.runcheck.domain.repository.InsightRepository
+import com.runcheck.domain.usecase.MonitoringDataCoordinator
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -16,6 +17,7 @@ class DebugInsightActionsImpl
         private val insightRepository: InsightRepository,
         private val insightEngine: InsightEngine,
         private val insightTestDataSeeder: InsightTestDataSeeder,
+        private val monitoringDataCoordinator: MonitoringDataCoordinator,
     ) : InsightDebugActions {
         override val isAvailable: Boolean = true
 
@@ -33,7 +35,9 @@ class DebugInsightActionsImpl
         }
 
         override suspend fun clearInsights(): Int {
-            insightRepository.clearAll()
+            monitoringDataCoordinator.withInsightGeneration {
+                insightRepository.clearAll()
+            }
             return 0
         }
     }

@@ -76,8 +76,9 @@ class AppUsageDataSource
                         endTimeMs,
                     ).orEmpty()
                     .asSequence()
-                    .filter { stat -> stat.packageName.isNotBlank() && stat.lastTimeUsed > 0L }
-                    .maxByOrNull { stat -> stat.lastTimeUsed }
+                    .filter { stat ->
+                        stat.packageName.isNotBlank() && stat.lastTimeUsed in startTimeMs until endTimeMs
+                    }.maxByOrNull { stat -> stat.lastTimeUsed }
                     ?.packageName
                     ?.let { packageName -> resolveAppLabel(packageManager, packageName) }
             }

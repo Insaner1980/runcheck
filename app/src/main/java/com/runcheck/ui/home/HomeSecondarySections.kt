@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -51,62 +52,54 @@ internal fun HomeQuickToolsSection(
     BoxWithConstraints {
         val fontScale = LocalDensity.current.fontScale
         val singleColumn = homeUsesSingleColumn(maxWidth, fontScale)
+        val appUsageClick = if (isPro) onNavigateToAppUsage else onNavigateToProUpgrade
+        val learnModifier = if (singleColumn) Modifier else Modifier.fillMaxWidth().zIndex(1f)
+        val learnShape = homeToolShape(singleColumn, HomeTileEdge.LEARN)
+        val speedShape = homeToolShape(singleColumn, HomeTileEdge.SPEED)
         val appUsage: @Composable () -> Unit = {
             HomeToolTile(
-                title = stringResource(R.string.home_app_usage_card),
-                description = stringResource(R.string.home_app_usage_description),
-                icon = Icons.Outlined.GridView,
-                background = HomeCream,
-                foreground = HomeInk,
-                onClick = if (isPro) onNavigateToAppUsage else onNavigateToProUpgrade,
+                content =
+                    HomeToolContent(
+                        title = stringResource(R.string.home_app_usage_card),
+                        description = stringResource(R.string.home_app_usage_description),
+                        icon = Icons.Outlined.GridView,
+                        background = HomeCream,
+                        foreground = HomeInk,
+                    ),
+                onClick = appUsageClick,
                 locked = !isPro,
                 compact = compact,
             )
         }
         val learn: @Composable () -> Unit = {
             HomeToolTile(
-                title = stringResource(R.string.home_learn),
-                description = stringResource(R.string.home_learn_description),
-                icon = Icons.AutoMirrored.Outlined.MenuBook,
-                background = HomeGraphite,
-                foreground = HomeCream,
+                content =
+                    HomeToolContent(
+                        title = stringResource(R.string.home_learn),
+                        description = stringResource(R.string.home_learn_description),
+                        icon = Icons.AutoMirrored.Outlined.MenuBook,
+                        background = HomeGraphite,
+                        foreground = HomeCream,
+                    ),
                 onClick = onNavigateToLearn,
                 compact = compact,
-                modifier =
-                    if (singleColumn) {
-                        Modifier
-                    } else {
-                        Modifier
-                            .fillMaxWidth()
-                            .zIndex(1f)
-                    },
-                shape =
-                    if (singleColumn) {
-                        RoundedCornerShape(
-                            tokens.homeStatusTileCornerRadius,
-                        )
-                    } else {
-                        HomeTileShape(HomeTileEdge.LEARN)
-                    },
+                modifier = learnModifier,
+                shape = learnShape,
             )
         }
         val speed: @Composable (Modifier) -> Unit = { modifier ->
             HomeToolTile(
-                title = stringResource(R.string.home_speed_test),
-                description = stringResource(R.string.home_speed_test_description),
-                icon = Icons.Outlined.Speed,
-                background = HomeStone,
-                foreground = HomeInk,
+                content =
+                    HomeToolContent(
+                        title = stringResource(R.string.home_speed_test),
+                        description = stringResource(R.string.home_speed_test_description),
+                        icon = Icons.Outlined.Speed,
+                        background = HomeStone,
+                        foreground = HomeInk,
+                    ),
                 onClick = onNavigateToSpeedTest,
                 compact = compact,
-                shape =
-                    if (singleColumn) {
-                        RoundedCornerShape(
-                            tokens.homeStatusTileCornerRadius,
-                        )
-                    } else {
-                        HomeTileShape(HomeTileEdge.SPEED)
-                    },
+                shape = speedShape,
                 modifier = modifier,
             )
         }
@@ -135,12 +128,28 @@ internal fun HomeQuickToolsSection(
 }
 
 @Composable
+private fun homeToolShape(
+    singleColumn: Boolean,
+    edge: HomeTileEdge,
+): Shape =
+    if (singleColumn) {
+        RoundedCornerShape(MaterialTheme.uiTokens.homeStatusTileCornerRadius)
+    } else {
+        HomeTileShape(edge)
+    }
+
+@Immutable
+private data class HomeToolContent(
+    val title: String,
+    val description: String,
+    val icon: ImageVector,
+    val background: Color,
+    val foreground: Color,
+)
+
+@Composable
 private fun HomeToolTile(
-    title: String,
-    description: String,
-    icon: ImageVector,
-    background: Color,
-    foreground: Color,
+    content: HomeToolContent,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(MaterialTheme.uiTokens.homeStatusTileCornerRadius),
@@ -162,8 +171,8 @@ private fun HomeToolTile(
                         },
                 ),
         shape = shape,
-        color = background,
-        contentColor = foreground,
+        color = content.background,
+        contentColor = content.foreground,
     ) {
         Column(
             modifier =
@@ -179,12 +188,16 @@ private fun HomeToolTile(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(icon, contentDescription = null, modifier = Modifier.size(MaterialTheme.uiTokens.iconXLarge))
-                if (locked) ProBadgePill()
+                Icon(
+                    content.icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(MaterialTheme.uiTokens.iconXLarge),
+                )
+                if (locked) ProBadgePill(contentColor = content.foreground)
             }
-            Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(text = content.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             if (!compact) {
-                Text(text = description, style = MaterialTheme.typography.bodySmall)
+                Text(text = content.description, style = MaterialTheme.typography.bodySmall)
             }
         }
     }

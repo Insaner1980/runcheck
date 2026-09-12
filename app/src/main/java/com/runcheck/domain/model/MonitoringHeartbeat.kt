@@ -4,4 +4,5 @@ data class MonitoringHeartbeat(
     val recordedAtEpochMillis: Long,
     val recordedAtUptimeMillis: Long,
     val intervalMinutes: Int,
+    val isFromPreviousBoot: Boolean = false,
 )

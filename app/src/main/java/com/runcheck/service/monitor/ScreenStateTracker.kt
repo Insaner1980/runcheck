@@ -6,6 +6,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.PowerManager
+import android.os.SystemClock
+import android.provider.Settings
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import com.runcheck.domain.model.ChargingStatus
@@ -29,6 +31,7 @@ class ScreenStateTracker
     ) : ScreenStateRepository {
         private val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        private val bootCount = Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, -1)
         private val lock = Any()
         private var stateReceiverRegistered = false
         private var idleModeReceiverRegistered = false
@@ -62,13 +65,13 @@ class ScreenStateTracker
             synchronized(lock) {
                 registerStateReceiverIfNeeded()
                 registerIdleModeReceiverIfNeeded()
-                synchronizeState(now = System.currentTimeMillis(), persist = true)
+                synchronizeState(now = SystemClock.elapsedRealtime(), persist = true)
             }
         }
 
         override fun onScreenTurnedOn() {
             synchronized(lock) {
-                val now = System.currentTimeMillis()
+                val now = SystemClock.elapsedRealtime()
                 val state = synchronizeState(now, persist = false)
                 persistState(applyScreenStateChange(state, isScreenOn = true, now = now))
             }
@@ -76,7 +79,7 @@ class ScreenStateTracker
 
         override fun onScreenTurnedOff() {
             synchronized(lock) {
-                val now = System.currentTimeMillis()
+                val now = SystemClock.elapsedRealtime()
                 val state = synchronizeState(now, persist = false)
                 persistState(applyScreenStateChange(state, isScreenOn = false, now = now))
             }
@@ -84,7 +87,7 @@ class ScreenStateTracker
 
         override fun onPowerConnected() {
             synchronized(lock) {
-                val now = System.currentTimeMillis()
+                val now = SystemClock.elapsedRealtime()
                 synchronizeState(now, persist = false)
                 persistState(resetAll(now, getCurrentChargingStatus()))
             }
@@ -92,7 +95,7 @@ class ScreenStateTracker
 
         override fun onPowerDisconnected() {
             synchronized(lock) {
-                val now = System.currentTimeMillis()
+                val now = SystemClock.elapsedRealtime()
                 synchronizeState(now, persist = false)
                 persistState(resetAll(now, getCurrentChargingStatus()))
             }
@@ -100,7 +103,7 @@ class ScreenStateTracker
 
         override fun onDeviceIdleModeChanged() {
             synchronized(lock) {
-                val now = System.currentTimeMillis()
+                val now = SystemClock.elapsedRealtime()
                 val state = synchronizeState(now, persist = false)
                 persistState(applyIdleStateChange(state, now, getCurrentIdleState()))
             }
@@ -108,7 +111,7 @@ class ScreenStateTracker
 
         override fun updateChargingStatus(chargingStatus: ChargingStatus) {
             synchronized(lock) {
-                val now = System.currentTimeMillis()
+                val now = SystemClock.elapsedRealtime()
                 val state = loadStateOrCreate(now)
                 val synced = syncChargingStatus(state, now, chargingStatus)
                 if (synced != state) {
@@ -119,7 +122,7 @@ class ScreenStateTracker
 
         override fun getScreenUsageStats(): ScreenUsageStats? {
             synchronized(lock) {
-                val now = System.currentTimeMillis()
+                val now = SystemClock.elapsedRealtime()
                 val state = synchronizeState(now, persist = true)
                 val currentLevel = getCurrentBatteryLevel() ?: return null
                 val snapshot = state.snapshot(now = now, currentLevel = currentLevel)
@@ -154,7 +157,7 @@ class ScreenStateTracker
 
         override fun getSleepAnalysis(): SleepAnalysis? {
             synchronized(lock) {
-                val now = System.currentTimeMillis()
+                val now = SystemClock.elapsedRealtime()
                 val state = synchronizeState(now, persist = true)
                 val snapshot = state.snapshot(now = now, currentLevel = getCurrentBatteryLevel())
                 val totalSleepTrackedMs = snapshot.deepSleepDurationMs + snapshot.heldAwakeDurationMs
@@ -190,24 +193,47 @@ class ScreenStateTracker
             return state
         }
 
-        private fun loadStateOrCreate(now: Long): PersistedState {
+        private fun loadStateOrCreate(now: Long): PersistedState =
+            try {
+                readPersistedState(now)
+            } catch (_: ClassCastException) {
+                createInitialState(now, getCurrentChargingStatus())
+            }
+
+        private fun readPersistedState(now: Long): PersistedState {
             if (!prefs.contains(KEY_LAST_TRANSITION_TIME)) {
                 return createInitialState(now, getCurrentChargingStatus())
             }
+            val hasElapsedTime = prefs.contains(KEY_ELAPSED_REALTIME_BOOT_COUNT)
+            val rebooted = hasElapsedTime && prefs.getInt(KEY_ELAPSED_REALTIME_BOOT_COUNT, -1) != bootCount
+            // Convert legacy wall-clock anchors once; elapsed time remains stable across clock changes.
+            val legacyOffset = if (hasElapsedTime) 0L else now - System.currentTimeMillis()
+            val lastTransitionTime =
+                if (rebooted) {
+                    now
+                } else {
+                    (prefs.getLong(KEY_LAST_TRANSITION_TIME, now - legacyOffset) + legacyOffset).coerceIn(0L, now)
+                }
+            val lastIdleCheckTime =
+                if (rebooted) {
+                    now
+                } else {
+                    (prefs.getLong(KEY_LAST_IDLE_CHECK_TIME, now - legacyOffset) + legacyOffset).coerceIn(0L, now)
+                }
             return PersistedState(
                 screenOn = prefs.getBoolean(KEY_SCREEN_ON, powerManager.isInteractive),
-                lastTransitionTime = prefs.getLong(KEY_LAST_TRANSITION_TIME, now),
+                lastTransitionTime = lastTransitionTime,
                 lastTransitionLevel =
                     prefs
                         .getInt(KEY_LAST_TRANSITION_LEVEL, INVALID_LEVEL)
-                        .takeUnless { it == INVALID_LEVEL },
-                screenOnDurationMs = prefs.getLong(KEY_SCREEN_ON_DURATION_MS, 0L),
-                screenOffDurationMs = prefs.getLong(KEY_SCREEN_OFF_DURATION_MS, 0L),
+                        .takeIf { it in 0..100 },
+                screenOnDurationMs = prefs.getLong(KEY_SCREEN_ON_DURATION_MS, 0L).coerceAtLeast(0L),
+                screenOffDurationMs = prefs.getLong(KEY_SCREEN_OFF_DURATION_MS, 0L).coerceAtLeast(0L),
                 screenOnDrainPct = boundedDrainPct(prefs.getFloat(KEY_SCREEN_ON_DRAIN_PCT, 0f)),
                 screenOffDrainPct = boundedDrainPct(prefs.getFloat(KEY_SCREEN_OFF_DRAIN_PCT, 0f)),
-                deepSleepDurationMs = prefs.getLong(KEY_DEEP_SLEEP_DURATION_MS, 0L),
-                heldAwakeDurationMs = prefs.getLong(KEY_HELD_AWAKE_DURATION_MS, 0L),
-                lastIdleCheckTime = prefs.getLong(KEY_LAST_IDLE_CHECK_TIME, now),
+                deepSleepDurationMs = prefs.getLong(KEY_DEEP_SLEEP_DURATION_MS, 0L).coerceAtLeast(0L),
+                heldAwakeDurationMs = prefs.getLong(KEY_HELD_AWAKE_DURATION_MS, 0L).coerceAtLeast(0L),
+                lastIdleCheckTime = lastIdleCheckTime,
                 lastIdleState =
                     prefs.getBoolean(
                         KEY_LAST_IDLE_STATE,
@@ -223,6 +249,7 @@ class ScreenStateTracker
 
         private fun persistState(state: PersistedState) {
             prefs.edit {
+                putInt(KEY_ELAPSED_REALTIME_BOOT_COUNT, bootCount)
                 putBoolean(KEY_SCREEN_ON, state.screenOn)
                 putLong(KEY_LAST_TRANSITION_TIME, state.lastTransitionTime)
                 putInt(KEY_LAST_TRANSITION_LEVEL, state.lastTransitionLevel ?: INVALID_LEVEL)
@@ -476,6 +503,7 @@ class ScreenStateTracker
                 )
             internal const val IDLE_MODE_RECEIVER_ACTION = PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED
             private const val KEY_SCREEN_ON = "screen_on"
+            private const val KEY_ELAPSED_REALTIME_BOOT_COUNT = "elapsed_realtime_boot_count"
             private const val KEY_LAST_TRANSITION_TIME = "last_transition_time"
             private const val KEY_LAST_TRANSITION_LEVEL = "last_transition_level"
             private const val KEY_SCREEN_ON_DURATION_MS = "screen_on_duration_ms"
@@ -488,6 +516,7 @@ class ScreenStateTracker
             private const val KEY_LAST_IDLE_STATE = "last_idle_state"
             private const val KEY_LAST_CHARGING_STATUS = "last_charging_status"
 
-            private fun boundedDrainPct(value: Float): Float = value.coerceIn(0f, MAX_DRAIN_PCT)
+            private fun boundedDrainPct(value: Float): Float =
+                if (value.isFinite()) value.coerceIn(0f, MAX_DRAIN_PCT) else 0f
         }
     }

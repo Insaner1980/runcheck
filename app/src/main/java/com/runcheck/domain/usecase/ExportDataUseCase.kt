@@ -156,5 +156,14 @@ class ExportDataUseCase
                 )
             }
 
-        suspend fun prepareExportShare() = fileExportRepository.prepareExportShare(exportAllCsv())
+        suspend fun prepareExportShare(): List<String> {
+            val files = exportAllCsv()
+            requirePro()
+            val uris = fileExportRepository.prepareExportShare(files)
+            if (!proStatusProvider.isPro()) {
+                fileExportRepository.clearPreparedExports()
+                error("CSV export requires runcheck Pro")
+            }
+            return uris
+        }
     }

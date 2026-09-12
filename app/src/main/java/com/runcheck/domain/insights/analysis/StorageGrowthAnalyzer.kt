@@ -10,12 +10,14 @@ class StorageGrowthAnalyzer
             if (readings.size < MIN_READINGS) return null
 
             val sorted = readings.sortedBy { it.timestamp }
-            val usedValues = sorted.map { it.totalBytes - it.availableBytes }
-            val times = sorted.map { it.timestamp.toDouble() }
+            val first = sorted.first()
+            val firstUsedBytes = first.totalBytes.toDouble() - first.availableBytes.toDouble()
+            val usedValues = sorted.map { it.totalBytes.toDouble() - it.availableBytes.toDouble() - firstUsedBytes }
+            val times = sorted.map { it.timestamp.toDouble() - first.timestamp.toDouble() }
             val n = sorted.size
 
             val sumX = times.sum()
-            val sumY = usedValues.sumOf { it.toDouble() }
+            val sumY = usedValues.sum()
             val sumXY = times.zip(usedValues).sumOf { (x, y) -> x * y }
             val sumX2 = times.sumOf { it * it }
 

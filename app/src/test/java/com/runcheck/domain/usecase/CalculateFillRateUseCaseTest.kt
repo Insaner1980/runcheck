@@ -20,6 +20,23 @@ class CalculateFillRateUseCaseTest {
     // --- invoke() tests ---
 
     @Test
+    fun `small growth at current epoch retains precision`() {
+        val readings =
+            (0..2).map { index ->
+                StorageReading(
+                    timestamp = 1_800_000_000_000L + index * 900_000L,
+                    totalBytes = 128_000_000_000L,
+                    availableBytes = 64_000_000_000L - index * 1_000L,
+                    appsBytes = null,
+                    mediaBytes = 0L,
+                )
+            }
+
+        assertEquals(96_000L, useCase(readings))
+        assertEquals(96_000L, useCase(readings.reversed()))
+    }
+
+    @Test
     fun `steady growth over 5 readings returns correct positive bytes per day`() {
         val baseTime = 1_000_000_000L
         val dayMs = 24L * 60 * 60 * 1000

@@ -175,9 +175,8 @@ When reviewing or modifying code, check these first and in this order.
 
 ### 2. Measurement reliability
 
-- Every sensor-facing value must use `MeasuredValue<T>`
-- Confidence must be `ACCURATE`, `ESTIMATED`, or `UNAVAILABLE`
-- Raw values must not be shown without a confidence indicator such as `ConfidenceBadge`
+- `MeasuredValue<T>` uses `Confidence.HIGH`, `LOW`, or `UNAVAILABLE`; `ConfidenceBadge` displays these as Accurate, Estimated, or N/A.
+- Battery current and explicit measured metric projections use this wrapper. Other sensor fields use scalar, nullable, or status representations; preserve their availability semantics rather than requiring a universal wrapper.
 - Validate `BATTERY_PROPERTY_CURRENT_NOW` with repeated reads, non-zero checks, plausible range `-10000..+10000 mA`, and charge-state sign sanity
 - Thermal data must use `PowerManager.getCurrentThermalStatus()` on API 29+ and `getThermalHeadroom()` on API 30+
 - Do not add sysfs-based thermal reads
@@ -194,7 +193,7 @@ When reviewing or modifying code, check these first and in this order.
 Pro features are:
 
 - Charger Comparison
-- Per-App Battery
+- App Usage (foreground time, without per-app battery attribution)
 - Extended History
 - Thermal Logs
 - CSV Export
@@ -211,7 +210,7 @@ Rules:
 
 - Use M-Lab NDT7 only
 - Do not hardcode a server; NDT7 chooses the nearest server
-- Show the cellular warning before the test starts when the active network is not Wi-Fi
+- Cellular warning dialog must appear before the test starts when the resolved connection type is `CELLULAR` and the current attempt has not been confirmed.
 - Outbound network calls are allowed only for user-initiated speed tests, latency measurement, and Google Play Billing
 - Reading current connection details such as Wi-Fi, 5G, SSID, signal, IP, or DNS must stay on-device via Android APIs and must not trigger socket, HTTP, or ping-style probes
 
@@ -250,7 +249,7 @@ Rules:
 - Padding and spacing use the 4dp grid (2/4/8/12/16/24/32dp); the exact Home status mosaic dimensions centralized in `UiTokens` and documented in `UI-SPEC.md` are an explicit visual-system exception.
 - Shared touch targets, icon sizes, icon circles, and common CTA heights should come from `UiTokens` instead of being repeated in shared components
 - All animation durations must use `MotionTokens` constants, never bare `tween()` without explicit spec
-- All ViewModels with live state flows must use `.sample(333L)` to throttle UI updates
+- High-frequency sensor display flows use 333ms sampling (`.sample(333L)` or the named Home interval). Do not sample discrete state or event flows such as billing, settings, or speed-test phase transitions.
 
 ### 8. Accessibility
 
@@ -264,7 +263,7 @@ Raise a review comment or fix request for any of these:
 
 - Layer boundary violations
 - Missing API guards
-- Sensor data shown without `MeasuredValue` or `ConfidenceBadge`
+- A measured metric loses its confidence indicator, or unavailable sensor data is displayed as an available measurement
 - Pro content exposed without `isPro()` gating
 - Animation ignoring reduced motion
 - Hardcoded colors that do not match the palette

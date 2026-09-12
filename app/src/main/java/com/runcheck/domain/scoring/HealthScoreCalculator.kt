@@ -123,6 +123,7 @@ class HealthScoreCalculator
 
         private fun batteryVoltagePenalty(voltageMv: Int): Int =
             when {
+                voltageMv <= 0 -> 0
                 voltageMv < 3200 -> 20
                 voltageMv < 3500 -> 10
                 voltageMv in 3500..4250 -> 0

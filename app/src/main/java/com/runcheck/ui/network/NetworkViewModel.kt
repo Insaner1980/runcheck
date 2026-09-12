@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.runcheck.R
 import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SpeedTestProgress
 import com.runcheck.domain.model.SpeedTestResult
@@ -64,6 +65,8 @@ class NetworkViewModel
         val isRefreshing: StateFlow<Boolean> = refreshTracker.isRefreshing
 
         private val liveSignalDbm = mutableListOf<Float>()
+        private var latestHistory: List<NetworkReading> = emptyList()
+        private var historyLoadError: UiText? = null
 
         private val _speedTestState = MutableStateFlow(SpeedTestUiState())
         val speedTestState: StateFlow<SpeedTestUiState> = _speedTestState.asStateFlow()
@@ -331,13 +334,12 @@ class NetworkViewModel
 
         private fun applyNetworkSnapshot(snapshot: NetworkScreenSnapshot) {
             snapshot.state.signalDbm?.let { liveSignalDbm.appendLiveValue(it.toFloat()) }
-            _networkUiState.update { current ->
-                val existing = current as? NetworkUiState.Success
+            _networkUiState.update {
                 NetworkUiState.Success(
                     networkState = snapshot.state,
-                    signalHistory = existing?.signalHistory ?: emptyList(),
+                    signalHistory = latestHistory,
                     selectedHistoryPeriod = selectedHistoryPeriod,
-                    historyLoadError = existing?.historyLoadError,
+                    historyLoadError = historyLoadError,
                     isPro = snapshot.isPro,
                     dismissedInfoCards = snapshot.dismissedCards,
                     showInfoCards = snapshot.showInfoCards,
@@ -348,14 +350,17 @@ class NetworkViewModel
         }
 
         private fun handleNetworkHistoryError(error: Throwable) {
+            historyLoadError = error.messageOrRes(R.string.common_error_generic)
             _networkUiState.update { current ->
                 (current as? NetworkUiState.Success)?.copy(
-                    historyLoadError = error.messageOrRes(R.string.common_error_generic),
+                    historyLoadError = historyLoadError,
                 ) ?: current
             }
         }
 
-        private fun applyNetworkHistory(readings: List<com.runcheck.domain.model.NetworkReading>) {
+        private fun applyNetworkHistory(readings: List<NetworkReading>) {
+            latestHistory = readings
+            historyLoadError = null
             _networkUiState.update { current ->
                 (current as? NetworkUiState.Success)?.copy(
                     signalHistory = readings,

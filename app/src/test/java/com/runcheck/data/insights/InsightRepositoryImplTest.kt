@@ -24,6 +24,25 @@ class InsightRepositoryImplTest {
     private val transactionRunner = DatabaseTransactionRunner { block -> block() }
 
     @Test
+    fun `matching expired insight retains seen state during regeneration`() =
+        runTest {
+            val insightDao: InsightDao = mockk(relaxed = true)
+            val repository = createRepository(insightDao)
+            val rows = mutableListOf(insightEntity(id = 5L, seen = true, expiresAt = 500L))
+            coEvery { insightDao.getByRules(setOf("rule")) } answers { rows.toList() }
+            coEvery { insightDao.deleteExpired(500L) } answers {
+                rows.removeAll { !it.dismissed && it.expiresAt <= 500L }
+            }
+
+            repository.replaceGenerationResults(mapOf("rule" to listOf(insightCandidate())), now = 500L)
+
+            val inserted = slot<List<InsightEntity>>()
+            coVerify(exactly = 1) { insightDao.insertAll(capture(inserted)) }
+            assertEquals(5L, inserted.captured.single().id)
+            assertEquals(true, inserted.captured.single().seen)
+        }
+
+    @Test
     fun `replaceGenerationResults preserves seen and dismissed state for matching dedupe keys`() =
         runTest {
             val insightDao: InsightDao = mockk(relaxed = true)

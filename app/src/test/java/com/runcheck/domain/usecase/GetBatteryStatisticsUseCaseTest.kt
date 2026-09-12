@@ -114,6 +114,20 @@ class GetBatteryStatisticsUseCaseTest {
         }
 
     @Test
+    fun `charging session in the first row counts even when the next row is discharging`() =
+        runTest {
+            val result =
+                calculate(
+                    readings(
+                        levels = listOf(80, 79),
+                        statuses = listOf("CHARGING", "DISCHARGING"),
+                    ),
+                )
+
+            assertEquals(1, requireNotNull(result).chargeSessions)
+        }
+
+    @Test
     fun `session count detection counts charge session starts`() =
         runTest {
             // Two separate charging sessions:

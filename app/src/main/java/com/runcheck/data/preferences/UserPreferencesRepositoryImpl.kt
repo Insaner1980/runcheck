@@ -2,7 +2,6 @@ package com.runcheck.data.preferences
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.core.IOException
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -22,7 +21,6 @@ import com.runcheck.domain.repository.InfoCardDismissalRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.transform
@@ -37,19 +35,16 @@ private val Context.dataStore: DataStore<Preferences>
 
 @Singleton
 class UserPreferencesRepositoryImpl
-    @Inject
-    constructor(
-        @param:ApplicationContext private val context: Context,
+    internal constructor(
+        private val dataStore: DataStore<Preferences>,
     ) : UserPreferencesRepository,
         InfoCardDismissalRepository {
-        private val preferencesFlow: Flow<Preferences> =
-            context.dataStore.data.catch { error ->
-                if (error is IOException) {
-                    emit(emptyPreferences())
-                } else {
-                    throw error
-                }
-            }
+        @Inject
+        constructor(
+            @ApplicationContext context: Context,
+        ) : this(context.dataStore)
+
+        private val preferencesFlow: Flow<Preferences> = dataStore.data
 
         // Dismissals are app-local UI state. Clearing app data or reinstalling should show cards again.
         override fun observeDismissedCardIds(): Flow<Set<String>> =
@@ -57,7 +52,7 @@ class UserPreferencesRepositoryImpl
                 val stored = prefs[KEY_DISMISSED_INFO_CARDS] ?: emptySet()
                 val normalized = normalizeDismissedCardIds(stored)
                 if (normalized != stored) {
-                    context.dataStore.edit { currentPrefs ->
+                    dataStore.edit { currentPrefs ->
                         val current = currentPrefs[KEY_DISMISSED_INFO_CARDS] ?: emptySet()
                         currentPrefs[KEY_DISMISSED_INFO_CARDS] = normalizeDismissedCardIds(current)
                     }
@@ -66,14 +61,14 @@ class UserPreferencesRepositoryImpl
             }
 
         override suspend fun dismissCard(cardId: String) {
-            context.dataStore.edit { prefs ->
+            dataStore.edit { prefs ->
                 val current = prefs[KEY_DISMISSED_INFO_CARDS] ?: emptySet()
                 prefs[KEY_DISMISSED_INFO_CARDS] = normalizeDismissedCardIds(current + cardId)
             }
         }
 
         override suspend fun resetDismissedCards() {
-            context.dataStore.edit { prefs ->
+            dataStore.edit { prefs ->
                 prefs.remove(KEY_DISMISSED_INFO_CARDS)
             }
         }
@@ -118,15 +113,15 @@ class UserPreferencesRepositoryImpl
             }
 
         override suspend fun setMonitoringInterval(interval: MonitoringInterval) {
-            context.dataStore.edit { it[KEY_MONITORING_INTERVAL] = interval.name }
+            dataStore.edit { it[KEY_MONITORING_INTERVAL] = interval.name }
         }
 
         override suspend fun setNotificationsEnabled(enabled: Boolean) {
-            context.dataStore.edit { it[KEY_NOTIFICATIONS] = enabled }
+            dataStore.edit { it[KEY_NOTIFICATIONS] = enabled }
         }
 
         override suspend fun setDataRetention(retention: DataRetention) {
-            context.dataStore.edit { it[KEY_DATA_RETENTION] = retention.name }
+            dataStore.edit { it[KEY_DATA_RETENTION] = retention.name }
         }
 
         override fun getPermissionEducationSeen(): Flow<Boolean> =
@@ -135,14 +130,14 @@ class UserPreferencesRepositoryImpl
             }
 
         override suspend fun setPermissionEducationSeen(seen: Boolean) {
-            context.dataStore.edit { it[KEY_PERMISSION_EDUCATION_SEEN] = seen }
+            dataStore.edit { it[KEY_PERMISSION_EDUCATION_SEEN] = seen }
         }
 
         override suspend fun getAppUsageLastCollectedAt(): Long? =
             preferencesFlow.map { prefs -> prefs[KEY_APP_USAGE_LAST_COLLECTED_AT] }.first()
 
         override suspend fun setAppUsageLastCollectedAt(timestamp: Long) {
-            context.dataStore.edit { it[KEY_APP_USAGE_LAST_COLLECTED_AT] = timestamp }
+            dataStore.edit { it[KEY_APP_USAGE_LAST_COLLECTED_AT] = timestamp }
         }
 
         override fun observeSelectedChargerId(): Flow<Long?> =
@@ -154,7 +149,7 @@ class UserPreferencesRepositoryImpl
             preferencesFlow.map { prefs -> prefs[KEY_SELECTED_CHARGER_ID] }.first()
 
         override suspend fun setSelectedChargerId(chargerId: Long?) {
-            context.dataStore.edit { prefs ->
+            dataStore.edit { prefs ->
                 if (chargerId == null) {
                     prefs.remove(KEY_SELECTED_CHARGER_ID)
                 } else {
@@ -164,70 +159,70 @@ class UserPreferencesRepositoryImpl
         }
 
         override suspend fun clearMonitoringDataState() {
-            context.dataStore.edit { prefs ->
+            dataStore.edit { prefs ->
                 prefs.remove(KEY_APP_USAGE_LAST_COLLECTED_AT)
                 prefs.remove(KEY_SELECTED_CHARGER_ID)
             }
         }
 
         override suspend fun setNotifLowBattery(enabled: Boolean) {
-            context.dataStore.edit { it[KEY_NOTIF_LOW_BATTERY] = enabled }
+            dataStore.edit { it[KEY_NOTIF_LOW_BATTERY] = enabled }
         }
 
         override suspend fun setNotifHighTemp(enabled: Boolean) {
-            context.dataStore.edit { it[KEY_NOTIF_HIGH_TEMP] = enabled }
+            dataStore.edit { it[KEY_NOTIF_HIGH_TEMP] = enabled }
         }
 
         override suspend fun setNotifLowStorage(enabled: Boolean) {
-            context.dataStore.edit { it[KEY_NOTIF_LOW_STORAGE] = enabled }
+            dataStore.edit { it[KEY_NOTIF_LOW_STORAGE] = enabled }
         }
 
         override suspend fun setNotifChargeComplete(enabled: Boolean) {
-            context.dataStore.edit { it[KEY_NOTIF_CHARGE_COMPLETE] = enabled }
+            dataStore.edit { it[KEY_NOTIF_CHARGE_COMPLETE] = enabled }
         }
 
         override suspend fun setAlertBatteryThreshold(value: Int) {
-            context.dataStore.edit { it[KEY_ALERT_BATTERY] = value }
+            dataStore.edit { it[KEY_ALERT_BATTERY] = value }
         }
 
         override suspend fun setAlertTempThreshold(value: Int) {
-            context.dataStore.edit { it[KEY_ALERT_TEMP] = value }
+            dataStore.edit { it[KEY_ALERT_TEMP] = value }
         }
 
         override suspend fun setAlertStorageThreshold(value: Int) {
-            context.dataStore.edit { it[KEY_ALERT_STORAGE] = value }
+            dataStore.edit { it[KEY_ALERT_STORAGE] = value }
         }
 
         override suspend fun setTemperatureUnit(unit: TemperatureUnit) {
-            context.dataStore.edit { it[KEY_TEMP_UNIT] = unit.name }
+            dataStore.edit { it[KEY_TEMP_UNIT] = unit.name }
         }
 
         override suspend fun setLiveNotificationEnabled(enabled: Boolean) {
-            context.dataStore.edit { it[KEY_LIVE_NOTIF_ENABLED] = enabled }
+            dataStore.edit { it[KEY_LIVE_NOTIF_ENABLED] = enabled }
         }
 
         override suspend fun setLiveNotifCurrent(enabled: Boolean) {
-            context.dataStore.edit { it[KEY_LIVE_NOTIF_CURRENT] = enabled }
+            dataStore.edit { it[KEY_LIVE_NOTIF_CURRENT] = enabled }
         }
 
         override suspend fun setLiveNotifDrainRate(enabled: Boolean) {
-            context.dataStore.edit { it[KEY_LIVE_NOTIF_DRAIN_RATE] = enabled }
+            dataStore.edit { it[KEY_LIVE_NOTIF_DRAIN_RATE] = enabled }
         }
 
         override suspend fun setLiveNotifTemperature(enabled: Boolean) {
-            context.dataStore.edit { it[KEY_LIVE_NOTIF_TEMPERATURE] = enabled }
+            dataStore.edit { it[KEY_LIVE_NOTIF_TEMPERATURE] = enabled }
         }
 
         override suspend fun setLiveNotifScreenStats(enabled: Boolean) {
-            context.dataStore.edit { it[KEY_LIVE_NOTIF_SCREEN_STATS] = enabled }
+            dataStore.edit { it[KEY_LIVE_NOTIF_SCREEN_STATS] = enabled }
         }
 
         override suspend fun setLiveNotifRemainingTime(enabled: Boolean) {
-            context.dataStore.edit { it[KEY_LIVE_NOTIF_REMAINING_TIME] = enabled }
+            dataStore.edit { it[KEY_LIVE_NOTIF_REMAINING_TIME] = enabled }
         }
 
         override suspend fun setShowInfoCards(enabled: Boolean) {
-            context.dataStore.edit { it[KEY_SHOW_INFO_CARDS] = enabled }
+            dataStore.edit { it[KEY_SHOW_INFO_CARDS] = enabled }
         }
 
         companion object {

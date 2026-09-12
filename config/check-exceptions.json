@@ -568,6 +568,24 @@
       ]
     },
     {
+      "id": "runcheck-mobsf-hardcoded-monitoring-data-reset-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Insight fixture keys in MonitoringDataResetTest.kt",
+      "reason": "The exact MobSF matches are local test fixture keys, not credentials or secrets.",
+      "owner": "project-maintainers",
+      "added": "2026-09-11",
+      "expires": "2026-10-31",
+      "tracking": "local-review:runcheck-mobsf-hardcoded-monitoring-data-reset-test",
+      "sourcePath": "app/src/test/java/com/runcheck/domain/usecase/MonitoringDataResetTest.kt",
+      "selector": "bodyKey = \"body\"",
+      "findingPath": "app/src/test/java/com/runcheck/domain/usecase/MonitoringDataResetTest.kt",
+      "findingSelectors": [
+        "key = \"body\"",
+        "key = \"title\""
+      ]
+    },
+    {
       "id": "runcheck-mobsf-hardcoded-insight-fixtures-test",
       "tool": "mobsfscan",
       "rule": "android_kotlin_hardcoded",
@@ -597,34 +615,6 @@
       "tracking": "local-review:runcheck-owasp-false-cpe-groups",
       "sourcePath": "config/dependency-check/suppressions.xml",
       "selector": "androidx\\.sqlite/sqlite(-framework)?-android@2\\.6\\.2"
-    },
-    {
-      "id": "runcheck-codeql-notification-content-intents",
-      "tool": "codeql",
-      "rule": "java/android/implicit-pendingintents",
-      "scope": "immutable explicit MainActivity notification content intents in NotificationHelper.kt",
-      "reason": "CodeQL 2.26.2 does not recognize the explicit component and FLAG_IMMUTABLE through the Kotlin apply and helper flow.",
-      "owner": "project-maintainers",
-      "added": "2026-08-14",
-      "expires": "2026-10-31",
-      "tracking": "local-review:runcheck-codeql-notification-content-intents",
-      "sourcePath": "app/src/main/java/com/runcheck/service/monitor/NotificationHelper.kt",
-      "selector": "PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE",
-      "findingPath": "app/src/main/java/com/runcheck/service/monitor/NotificationHelper.kt"
-    },
-    {
-      "id": "runcheck-codeql-real-time-notification-content-intent",
-      "tool": "codeql",
-      "rule": "java/android/implicit-pendingintents",
-      "scope": "immutable explicit MainActivity notification content intent used by RealTimeMonitorService.kt",
-      "reason": "CodeQL 2.26.2 does not recognize the explicit component and FLAG_IMMUTABLE through the Kotlin helper flow.",
-      "owner": "project-maintainers",
-      "added": "2026-08-14",
-      "expires": "2026-10-31",
-      "tracking": "local-review:runcheck-codeql-real-time-notification-content-intent",
-      "sourcePath": "app/src/main/java/com/runcheck/service/monitor/NotificationHelper.kt",
-      "selector": "PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE",
-      "findingPath": "app/src/main/java/com/runcheck/service/monitor/RealTimeMonitorService.kt"
     }
   ]
 }

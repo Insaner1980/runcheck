@@ -93,14 +93,7 @@ class ProUpgradeViewModelTest {
     @Test
     fun `successful purchase shows dismissible thank you`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            val purchaseEvents = MutableSharedFlow<PurchaseEvent>()
-            val purchaseManager = mockk<ProPurchaseManager>()
-            every { purchaseManager.billingAvailable } returns MutableStateFlow(false)
-            every { purchaseManager.hasPendingPurchase } returns MutableStateFlow(false)
-            every { purchaseManager.purchaseEvents } returns purchaseEvents
-            val proStateProvider = mockk<ProStateProvider>()
-            every { proStateProvider.proState } returns MutableStateFlow(ProState())
-            val viewModel = ProUpgradeViewModel(proStateProvider, purchaseManager)
+            val (viewModel, purchaseEvents) = createPurchaseEventViewModel()
             runCurrent()
 
             purchaseEvents.emit(PurchaseEvent.Success)
@@ -116,14 +109,7 @@ class ProUpgradeViewModelTest {
     @Test
     fun `canceled purchase clears pending state and error`() =
         runTest(mainDispatcherRule.testDispatcher) {
-            val purchaseEvents = MutableSharedFlow<PurchaseEvent>()
-            val purchaseManager = mockk<ProPurchaseManager>()
-            every { purchaseManager.billingAvailable } returns MutableStateFlow(false)
-            every { purchaseManager.hasPendingPurchase } returns MutableStateFlow(false)
-            every { purchaseManager.purchaseEvents } returns purchaseEvents
-            val proStateProvider = mockk<ProStateProvider>()
-            every { proStateProvider.proState } returns MutableStateFlow(ProState())
-            val viewModel = ProUpgradeViewModel(proStateProvider, purchaseManager)
+            val (viewModel, purchaseEvents) = createPurchaseEventViewModel()
             runCurrent()
 
             purchaseEvents.emit(PurchaseEvent.Pending)
@@ -137,4 +123,15 @@ class ProUpgradeViewModelTest {
             assertFalse(viewModel.uiState.value.purchasePending)
             assertNull(viewModel.uiState.value.purchaseError)
         }
+
+    private fun createPurchaseEventViewModel(): Pair<ProUpgradeViewModel, MutableSharedFlow<PurchaseEvent>> {
+        val purchaseEvents = MutableSharedFlow<PurchaseEvent>()
+        val purchaseManager = mockk<ProPurchaseManager>()
+        every { purchaseManager.billingAvailable } returns MutableStateFlow(false)
+        every { purchaseManager.hasPendingPurchase } returns MutableStateFlow(false)
+        every { purchaseManager.purchaseEvents } returns purchaseEvents
+        val proStateProvider = mockk<ProStateProvider>()
+        every { proStateProvider.proState } returns MutableStateFlow(ProState())
+        return ProUpgradeViewModel(proStateProvider, purchaseManager) to purchaseEvents
+    }
 }

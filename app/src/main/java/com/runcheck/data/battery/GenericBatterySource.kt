@@ -181,8 +181,13 @@ open class GenericBatterySource(
         batteryChangedSharedFlow.map { intent ->
             val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0)
             val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100)
-            if (scale > 0) (level * 100) / scale else 0
+            normalizeLevel(level, scale)
         }
+
+    protected fun normalizeLevel(
+        level: Int,
+        scale: Int,
+    ): Int = if (scale > 0) ((level.toLong() * 100L) / scale).coerceIn(0L, 100L).toInt() else 0
 
     override fun getTechnology(): Flow<String> =
         batteryChangedSharedFlow.map { intent ->

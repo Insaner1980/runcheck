@@ -1,5 +1,7 @@
 package com.runcheck.data.storage
 
+import com.runcheck.domain.model.MediaCategory
+import com.runcheck.domain.model.ScannedFile
 import com.runcheck.ui.storage.cleanup.CleanupType
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -8,6 +10,25 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CleanupFilterSelectionTest {
+    @Test
+    fun `equal size APK pages preserve numeric provider order without duplicates or omissions`() {
+        val files =
+            (1..160).map { id ->
+                ScannedFile(
+                    uri = "content://media/external/file/$id",
+                    displayName = "$id.apk",
+                    sizeBytes = 100L,
+                    mimeType = "application/vnd.android.package-archive",
+                    dateModified = 0L,
+                    category = MediaCategory.APK,
+                )
+            }
+        val firstPage = files.take(120).sortedWith(APK_FILE_ORDER)
+        val secondPage = files.sortedWith(APK_FILE_ORDER).drop(120).take(40)
+
+        assertEquals(files, firstPage + secondPage)
+    }
+
     @Test
     fun `large file filters use exact SI megabyte boundaries`() {
         assertEquals(

@@ -880,7 +880,7 @@ private fun BatteryHeroSection(
         }
 
     val powerW =
-        remember(battery.currentMa.value, battery.voltageMv) {
+        remember(battery.currentMa, battery.voltageMv) {
             if (battery.currentMa.confidence != Confidence.UNAVAILABLE) {
                 val currentA = battery.currentMa.value / 1000f
                 val voltageV = battery.voltageMv / 1000f
@@ -891,7 +891,7 @@ private fun BatteryHeroSection(
         }
 
     val remainingHours =
-        remember(battery.level, drainRatePctPerHour) {
+        remember(battery.level, drainRatePctPerHour, battery.chargingStatus) {
             if (drainRatePctPerHour != null && drainRatePctPerHour > 0.1f &&
                 battery.chargingStatus != ChargingStatus.CHARGING
             ) {

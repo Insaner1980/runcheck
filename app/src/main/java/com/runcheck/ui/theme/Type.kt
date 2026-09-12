@@ -5,19 +5,28 @@ import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.runcheck.R
 
-private val ManropeFontFamily =
+@OptIn(ExperimentalTextApi::class)
+internal val ManropeFontFamily =
     FontFamily(
-        Font(R.font.manrope),
+        listOf(FontWeight.Normal, FontWeight.Medium, FontWeight.SemiBold, FontWeight.Bold).map { weight ->
+            Font(
+                R.font.manrope,
+                weight = weight,
+                variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight)),
+            )
+        },
     )
 
 val JetBrainsMonoFontFamily =

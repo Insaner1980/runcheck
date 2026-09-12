@@ -17,6 +17,29 @@ import org.junit.Test
 
 class ChartRenderModelTest {
     @Test
+    fun `downsampling preserves baseline selections for benchmark histories`() {
+        val expectedHashes = mapOf(240 to -1113546751, 2_880 to 1613410145, 28_800 to 1432318977)
+        for ((size, expectedHash) in expectedHashes) {
+            val points =
+                List(size) { index ->
+                    (1_700_000_000_000L + index * 60_000L) to (500 + index % 1_500).toFloat()
+                }
+            assertEquals(expectedHash, points.downsamplePairs(300).hashCode())
+        }
+    }
+
+    @Test
+    fun `downsampling handles empty input and small point budgets`() {
+        val points = listOf(1L to 0f, 2L to 10f, 3L to 0f, 4L to 0f)
+        assertEquals(emptyList<Pair<Long, Float>>(), emptyList<Pair<Long, Float>>().downsamplePairs(3))
+        assertEquals(emptyList<Pair<Long, Float>>(), points.downsamplePairs(0))
+        assertEquals(listOf(points.first()), points.downsamplePairs(1))
+        assertEquals(listOf(points.first(), points.last()), points.downsamplePairs(2))
+        assertEquals(listOf(points[0], points[1], points[3]), points.downsamplePairs(3))
+        assertTrue(points === points.downsamplePairs(4))
+    }
+
+    @Test
     fun `battery temperature chart honors fahrenheit preference`() {
         val history =
             listOf(
@@ -48,6 +71,28 @@ class ChartRenderModelTest {
         assertEquals(0L, points.first().first)
         assertEquals(999 * 60_000L, points.last().first)
         assertTrue(points.zipWithNext().all { (first, second) -> first.first <= second.first })
+    }
+
+    @Test
+    fun `charging current average excludes missing intervals and long gaps`() {
+        val summary =
+            calculateChargingSessionSummary(
+                history =
+                    listOf(
+                        batteryReading(timestamp = 0L, level = 50),
+                        batteryReading(timestamp = 10 * 60_000L, level = 52),
+                        batteryReading(timestamp = 20 * 60_000L, level = 54).copy(currentMa = null),
+                        batteryReading(timestamp = 30 * 60_000L, level = 56),
+                        batteryReading(timestamp = 70 * 60_000L, level = 64),
+                        batteryReading(timestamp = 80 * 60_000L, level = 66),
+                    ),
+                currentLevel = 66,
+                chargingStatus = ChargingStatus.CHARGING,
+            )
+
+        assertEquals(400, summary?.deliveredMah)
+        assertEquals(1_200, summary?.averageCurrentMa)
+        assertEquals(4.8f, summary?.averagePowerW ?: 0f, 0.01f)
     }
 
     @Test

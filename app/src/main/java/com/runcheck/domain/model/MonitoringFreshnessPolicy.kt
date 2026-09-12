@@ -13,7 +13,7 @@ object MonitoringFreshnessPolicy {
         val effectiveIntervalMinutes =
             maxOf(currentIntervalMinutes, heartbeat.intervalMinutes)
         val elapsedMillis =
-            if (currentUptimeMillis >= recordedUptimeMillis) {
+            if (!heartbeat.isFromPreviousBoot && currentUptimeMillis >= recordedUptimeMillis) {
                 currentUptimeMillis - recordedUptimeMillis
             } else {
                 currentEpochMillis - heartbeat.recordedAtEpochMillis

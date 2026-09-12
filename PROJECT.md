@@ -10,7 +10,7 @@ Reading map:
 - [Home](#home-screen), [Insights](#insights-screen), [Battery](#battery-detail), [Charger](#charger-comparison), [Network](#network-detail), [Speed Test](#speed-test), [Thermal](#thermal-detail), [Storage](#storage-detail), [Cleanup](#cleanup-screen), [App Usage](#app-usage), [Learn](#learn), [Fullscreen Chart](#fullscreen-chart), [Settings](#settings), [Pro Upgrade](#pro-upgrade-screen): screen-specific behavior.
 - [Persistence](#persistence), [monetization](#monetization-model), [security/privacy](#security-and-privacy-surface): storage, reset/export, entitlements, platform boundaries.
 - [Design system](#brand--design-system), [responsive layout](#responsive-layout-and-interaction-reference): colors, typography, dimensions, semantics, motion, font-scale branches.
-- [Testing](#testing-and-verification), [CI/CD](#cicd-pipeline), [Insight rule inputs](#rule-inputs-windows-and-interpretation): verification limits, operational tooling, algorithm review.
+- [Testing](#testing-and-verification), [CI/CD](#cicd-pipeline), [Insights Engine](#insights-engine), [Insight rule inputs](#rule-inputs-windows-and-interpretation), [companion discrepancies](#companion-documentation-and-unverified-boundaries): verification limits, operational tooling, algorithm review.
 
 ---
 
@@ -20,9 +20,9 @@ This document is the detailed current-state map for architecture reviews, code-r
 
 Snapshot rules:
 
-- Last source-backed refresh: **2026-09-08**.
-- At refresh time the checkout was on `codex/julkaise-paikalliset-muutokset-20260726` at commit `0eec4dd74cd11646a39e4d847d5ad6b3fb177085`, with pre-existing uncommitted work. This document was updated in place without reverting or rewriting that work.
-- The snapshot includes the existing uncommitted Home redesign, enlarged-text layouts, ViewModel provider seams, network identity/Ethernet handling, battery validity checks, persistence/error handling, cleanup verification, billing transitions, tests, and checker configuration. It describes current files, not only `HEAD`.
+- Last source-backed refresh: **2026-09-11**.
+- Audit baseline: branch `main`, HEAD `fe98980e1874025af88ec884e3a3ebe62e437ba5`. The initial worktree had 28 modified tracked files, three untracked files, and no staged changes. `PROJECT.md` already contained uncommitted performance documentation. All of that work is part of this snapshot and was preserved; this audit changes only `PROJECT.md`.
+- The snapshot includes uncommitted UI/accessibility changes, export/reset serialization and cleanup error handling, shared unseen-insight tracking, chart performance changes and tests, stability baselines, exact scanner exceptions, and dependency-verification metadata. The three untracked inputs are `ChartPerformanceBenchmark.kt`, `SessionGraphAvailabilityTest.kt`, and `docs/performance-2026-09-11.md`. It describes current files, not only `HEAD`.
 - This refresh is a documentation-only source/configuration review. No Gradle task, scanner, emulator, physical-device session, or external service status check was run. Test descriptions below identify source coverage, not passing results from this refresh.
 - This is a checkout snapshot, not an API compatibility promise, release note, or proof that every runtime path has been exercised on a physical device.
 - If this document conflicts with executable code or configuration, the executable source wins and this document must be corrected.
@@ -94,14 +94,14 @@ Source inventory at this snapshot:
 
 | Source surface | Kotlin files | Notes |
 |----------------|-------------:|-------|
-| `app/src/main/java` | 369 | Includes `MainActivity`, `RuncheckApp`, and all shared production packages |
+| `app/src/main/java` | 370 | Includes `MainActivity`, `RuncheckApp`, and all shared production packages |
 | `app/src/debug/java` | 4 | Debug Sentry and insight tooling/bindings |
 | `app/src/release/java` | 2 | Release-safe Sentry and insight bindings |
-| `app/src/test/java` | 126 | JVM unit-test source files |
+| `app/src/test/java` | 131 | JVM unit-test source files |
 | `app/src/testDebug/java` | 2 | Debug-source-set tests |
-| `app/src/androidTest/java` | 2 | Instrumented/migration test sources |
+| `app/src/androidTest/java` | 3 | Instrumented/migration test sources |
 
-The largest shared source areas are `ui/` (145 files), `domain/` (129), and `data/` (59). This count is an orientation aid, not an architectural quality metric; review questions should follow dependencies and runtime ownership rather than file volume.
+The largest shared source areas are `ui/` (145 files), `domain/` (130), and `data/` (59). This count is an orientation aid, not an architectural quality metric; review questions should follow dependencies and runtime ownership rather than file volume.
 
 Debug/release-specific insight tooling also lives outside the shared main source tree:
 
@@ -145,18 +145,18 @@ Current version catalog highlights:
 | ProfileInstaller | `1.4.1` |
 | WorkManager | `2.11.2` |
 | DataStore | `1.2.1` |
-| Paging | `3.5.0` |
+| Paging | `3.5.1` |
 | Play Billing | `9.1.0` |
 | Glance | `1.1.1` |
 | M-Lab NDT7 client | `e0cb663613eb252a7793216ad28cf54a35677b8f` |
-| OkHttp | `5.4.0` |
+| OkHttp | `5.5.0` |
 | Gson | `2.14.0` |
 | kotlinx.serialization JSON | `1.11.0` |
 | JUnit | `4.13.2` |
 | MockK | `1.14.11` |
 | AndroidX Test Ext JUnit | `1.3.0` |
 | AndroidX Test Runner | `1.7.0` |
-| Sentry debug-only core | `8.51.0` |
+| Sentry debug-only core | `8.54.0` |
 | Dependency Analysis Gradle plugin | `3.19.1` |
 | ktlint rule engine | `1.8.0` |
 | ktlint Gradle plugin | `14.2.0` |
@@ -174,8 +174,8 @@ Local checker-helper versions outside the Android application dependency graph:
 | Area | Current value | Ownership and scope |
 |------|---------------|---------------------|
 | DeepSec | `2.3.9` | Exact dependency in `.deepsec/package.json` and `.deepsec/pnpm-lock.yaml`; used only by the local DeepSec scan/process/export scripts |
-| TypeScript | `^7.0.2` | `.deepsec` development dependency, not an Android runtime dependency |
-| Node type declarations | `^26.5.0 (locked 26.5.1)` | `.deepsec` development dependency, not an Android runtime dependency |
+| TypeScript | `^7.0.2` (locked `7.0.2`) | `.deepsec` development dependency, not an Android runtime dependency |
+| Node type declarations | `^26.5.0` (locked `26.5.1`) | `.deepsec` development dependency, not an Android runtime dependency |
 
 The `.deepsec` scripts expose full/custom scan, process, revalidate, and Markdown export paths. The custom scan is restricted to the repository's named Android/export/FileProvider/URI-sharing/network/telemetry/logging matcher set. OSV source scanning excludes `.deepsec`, so these helper dependencies are reviewed through the DeepSec/helper-tool path rather than being reported as app dependencies.
 
@@ -199,7 +199,7 @@ These pins are deliberately configuration-scoped in root `build.gradle.kts`; the
 ### Toolchain compatibility and build execution
 
 - The active coordinated toolchain is AGP 9.4.0, Kotlin Gradle/Compose plugin 2.4.10, Kotlin runtime constraints 2.4.20, KSP 2.3.11, Hilt 2.60.1, Detekt 2.0.0-alpha.6, and Compose Stability Analyzer 0.12.0.
-- The earlier Kotlin 2.4 / stability-analyzer incompatibility is resolved. Both debug and release stability variants have current baselines and `failOnStabilityChange = true`; missing baselines are not allowed.
+- Both debug and release stability baselines are present and already modified in this worktree. Analyzer 0.12.0 is configured with `includeTests = false`, `failOnStabilityChange = true`, `allowNonRegressiveChanges = false`, and missing baselines disallowed. Earlier documentation records resolution of the Kotlin 2.4 compatibility issue; this source-only refresh did not regenerate either variant.
 - Compose library versions come from the Compose BOM, while the Compose compiler is managed through the Kotlin Compose plugin. Treat Kotlin, Compose, KSP, Detekt, analyzer, AGP, dependency verification, and CI extractor changes as a compatibility set.
 - Gradle configuration cache is enabled. Build cache and parallel execution are disabled, `org.gradle.workers.max = 2`, and the Kotlin compiler execution strategy is in-process.
 - Gradle and Kotlin task build caches are disabled through `org.gradle.caching=false` and `kotlin.caching.enabled=false` while the time-bounded CVE-2026-53914 advisory exception remains active.
@@ -207,9 +207,17 @@ These pins are deliberately configuration-scoped in root `build.gradle.kts`; the
 - Release artifact tasks validate signing inputs, require `--no-configuration-cache`, and require the version-code floor described in the Technical Snapshot. Ordinary debug checks do not require release signing.
 - Debug BuildConfig values may read validated local/environment overrides for Sentry DSN, latency host/port, and Pro product id. Release keeps the checked-in product id and no-op Sentry path.
 
+Build/release details that configuration alone cannot prove:
+
+- Only `:app` is included; there is no benchmark or baseline-profile generation module. `app/src/main/baseline-prof.txt` has 18 checked-in HSP entries and ProfileInstaller is a runtime dependency. Their presence does not prove installation, compilation benefit, startup time, or release performance.
+- `settings-gradle.lockfile` records an empty incoming catalog configuration (`empty=incomingCatalogForLibs0`). There is no maintained application dependency-lock graph. Catalog pins, the restricted repositories, and `verification-metadata.xml` provide different controls from complete dependency locking.
+- The Gradle daemon heap is 2GB, workers are capped at two, and Gradle parallel execution is disabled; Detekt separately sets its own parallel flag. Do not infer every tool is single-threaded.
+- Artifact task names such as assemble/bundle/package/publish Release trigger signing/version-floor validation at configuration and execution. The floor must be non-negative and strictly below current code 1; this task did not query Play's published version.
+- `copyReleaseArtifacts` writes to `app/build/outputs/release-upload/`. R8 full mode, minification, and shrinking are configured; signed APK/AAB contents, merged release manifest, and effective dependency graph remain unverified here.
+
 ### Build-time and checker configuration inputs
 
-The repository contains variable names and defaults, but no secret values. Review configuration changes against these exact ownership boundaries:
+The following table records variable names and defaults, never credential values. This audit did not run a secrets scanner and does not certify the entire worktree secret-free. Review configuration changes against these ownership boundaries:
 
 | Input | Scope and current behavior |
 |-------|----------------------------|
@@ -270,6 +278,28 @@ Use this map to turn a broad review topic into questions that point at the real 
 | Security/privacy | manifest and XML security resources, source-set Sentry, `ReleaseSafeLog.kt`, project Semgrep rules | Are exported components minimal, backup/cleartext/FileProvider rules restrictive, package visibility narrow, sensitive logging debug-only, release telemetry absent, and every new socket/HTTP/client call inside an approved network surface? |
 | Compose UI/accessibility | `ui/theme/`, shared `ui/components/`, screen composables, `UI-SPEC.md` | Are colors/spacing/type/motion centralized, icons outlined, touch targets at least 48dp, visual charts described semantically, state not color-only, reduced motion honored, and high-frequency flows sampled before recomposition? |
 | Tests and analyzers | `app/src/test/`, `app/src/androidTest/`, `app/schemas/`, `config/android-check.json`, `config/check-exceptions.json`, wrapper reports | Does the test actually exercise the claimed production branch? Is a report fresh and scoped to this worktree? Are scanner exceptions exact, owned, time-bounded, and still justified? |
+
+### Feature ownership and state map
+
+All paths below are relative to `app/src/main/java/com/runcheck/`. Repository contracts live in `domain/repository/`; implementations bind through `di/`.
+
+| Surface | State owner and domain entry points | Data/platform owner |
+|---------|------------------------------------|---------------------|
+| Home | `ui/home/HomeViewModel`; four live-state use cases, latest speed test, `InsightRepository`, `MonitoringStatusRepository` | Four sensor repositories, Room insights/speed results, heartbeat DataStore |
+| Battery | `ui/battery/BatteryViewModel`; history/statistics, `BatteryScreenInsightsUseCase`, `ChargerSessionTracker` | `data/battery/`, Room battery rows, `ScreenStateTracker`, charger repository |
+| Charger | `ui/charger/ChargerViewModel`; comparison/add/delete use cases, selected-charger preference | `data/charger/ChargerRepositoryImpl`, Room profiles/sessions and settings DataStore |
+| Network and Speed Test | `ui/network/NetworkViewModel`; measured-state, run/finalize/history use cases | `data/network/NetworkDataSource`, `LatencyMeasurer`, `SpeedTestService`, network/speed repositories |
+| Thermal | `ui/thermal/ThermalViewModel`; live thermal and history/log use cases | `data/thermal/`, singleton `TrackThrottlingEventsUseCase`, Room events |
+| Storage and cleanup | `ui/storage/StorageViewModel`, `ui/storage/cleanup/CleanupViewModel`; storage state/history and `StorageCleanupUseCase` | `data/storage/`, StorageStatsManager, MediaStore, Paging, system consent |
+| App Usage | `ui/appusage/AppUsageViewModel`; refresh, page, summary use cases | `data/appusage/`, UsageStatsManager/AppOps, Room snapshots, DataStore cursor |
+| Insights | `ui/insights/InsightsViewModel`; domain `InsightRepository` plus observed Pro access | `data/insights/`; generation separately owned by `InsightEngine` and worker |
+| Learn | Catalog/resources and Compose screens; no Learn ViewModel or repository | Local article resource text and validated route aliases |
+| Fullscreen | `ui/fullscreen/FullscreenChartViewModel`; history/live use cases and `FullscreenChartSeedStore` | Shared chart models; existing battery/network repositories |
+| Settings | `ui/settings/SettingsViewModel`; observe/set/reset/export use cases and speed-result repository | Preferences, device profile, billing abstractions, FileProvider cache |
+| Pro Upgrade | `ui/pro/ProUpgradeViewModel`; Pro access and purchase abstraction | `data/billing/BillingManager`, `pro/ProManager`, Play client/cache |
+| Widgets | `widget/` data providers and render-state models | Hilt entry point accesses DAOs directly, outside the `ui/` package |
+
+ViewModels may depend directly on **domain repository interfaces**, notably Home/Insights and Settings; "only use cases" is not an accurate description of all current constructors. Widgets and service orchestration have their own data-entry boundaries. Route state, persistent domain data, and short-lived display state are different lifetimes: stopped collectors do not erase Room history, while an in-memory chart buffer or refresh flag is not process-death persistence.
 
 Explicit non-capabilities that must not be “filled in” during review or implementation:
 
@@ -344,11 +374,13 @@ These contracts matter when reviewing a successful-looking UI or worker result:
 | Duplicate seen writes | Both ViewModels own an `UnseenInsightTracker`. It suppresses an identical in-flight write, records the unseen-ID set only after persistence succeeds, and allows an unchanged set to retry after failure. An empty set resets the tracker. |
 | Speed-test finalization | `NetworkViewModel` reports `Failed` if persistence/finalization throws, even after NDT7 completes. Cancellation still propagates. Successful transfer and successfully stored result are separate milestones. |
 | App usage permission loss | `AppUsageDataSource.getUsageSince` returns null for missing permission/service, distinguishing unavailable collection from a successful empty interval. The repository does not advance its collection cursor for null. |
-| MediaStore reads | Null cursors and provider failures in summaries, pages, and file-size verification propagate; they are not silently interpreted as zero files or confirmed deletion. `StorageDataSource` may show null media/trash data while retaining primary capacity data; cancellation is rethrown. |
+| MediaStore reads | Cleanup summaries/pages/file verification propagate provider failures rather than inventing confirmed deletion. Storage's optional breakdown can degrade to unavailable, and its separate trash query has empty-list fallbacks. These paths do not share one universal error contract. |
 | Settings reset tips | Success text is set only after dismissal-state persistence succeeds. Failure sets a generic UI error instead of showing a premature success toast. |
 | External Settings/share intents | `startActivitySafely` returns false for `ActivityNotFoundException` or `SecurityException`; callers can handle failure. CSV sharing attaches every shared URI to ClipData with read grants. |
 
 Application startup jobs use `launchSafely` to retain sibling work after failures. The Pro-driven widget observer waits for `proAccessReady` and catches each refresh failure inside the observation loop, so one failed refresh does not permanently stop future Pro updates.
+
+There is no explicit first-frame barrier: jobs are launched during application initialization even though a nearby comment describes deferral. `onTerminate()` cleanup is not a guaranteed normal-device shutdown callback. Live sensor ViewModels commonly sample at 333ms; this is not a blanket sampling guarantee for Settings, Paging, purchase events, or every other flow.
 
 ---
 
@@ -356,11 +388,6 @@ Application startup jobs use `launchSafely` to retain sibling work after failure
 
 - `MonitoringDataCoordinator` serializes the `ClearMonitoringDataUseCase` Room deletion transaction and debug history seeding with the complete insight read/evaluate/publish operation. Reset waits for admitted generation before deleting its results; later generation reads the remaining or newly collected history. Lock order is coordinator, thermal tracker, then Room. The tracker invalidates its cached active event in `finally` before releasing its lock, including failed or cancelled resets, and restores any surviving Room event on the next observation. Lock waits remain cancellable; monitoring schedules are unchanged.
 - Samsung constant-current evidence belongs to the source instance. A mutex serializes sensor reads and evidence updates across collectors; equal readings count at most once per two seconds. A changed signed value or a gap greater than six seconds since the last counted observation restarts the count. Six seconds covers three normal polling intervals and the live notification's five-second one-shot cadence. Missing readings do not refresh evidence. Measurements are read afresh on demand, with no current replay cache or polling after collectors detach.
-
-| Path | Failure and cancellation ownership |
-|------|------------------------------------|
-| Interactive thermal event tracking | `GetThermalStateUseCase` uses `getLiveThermalState`. Event-tracking exceptions are reported through `ReleaseSafeLog` (debug only) per measurement; sensor failures and cancellation still propagate. The worker retains `getThermalState`, where event failures propagate into its existing retry policy. Both paths use the same singleton tracker and reset lock. |
-| Home/Battery charger-session tracking | Observation awaits the shared singleton tracker before display sampling. Session failures are debug-logged per update without replacing valid live state; cancellation propagates. No detached work is launched. Worker `onBatteryState` failures still reach its existing retry policy. |
 
 ## Navigation
 
@@ -385,7 +412,7 @@ Home
 └── Pro Upgrade
 ```
 
-Defined routes in code:
+Defined routes in code (15 destinations; 12 are argument-free direct routes):
 
 - `home`
 - `insights`
@@ -420,6 +447,7 @@ Navigation/runtime details:
 - Speed Test reuses the parent Network `NetworkViewModel` when that parent entry exists, keeping connection context consistent across the nested flow.
 - Route-level screen composables invoke their composable ViewModel provider internally. Network Detail and Speed Test are the parent-sharing case; other provider-based screens still use their own route scope by default.
 - Standard destination transitions combine horizontal slide and fade over 300ms. Fullscreen chart uses its own scale/fade motion tokens. Both paths remove transition motion when reduced motion is active.
+- `RuncheckNavHost` applies and consumes horizontal and bottom safe-drawing insets for every route; top bars handle the top inset.
 - `MainActivity` enables edge-to-edge layout, consumes the one-time destructive-database-reset notice, maintains pending notification navigation, refreshes purchase state on every resume, and keeps deep-link handling inside the same navigation host.
 
 ---
@@ -435,7 +463,7 @@ Navigation/runtime details:
 - Screen-state tracking repository
 - Periodic monitoring scheduling
 - Widget refreshes when Pro state changes
-- Source-set-specific `SentryInit` initialization; debug builds may report to Sentry through `sentry-android-core` only when `RUNCHECK_SENTRY_DSN`, `SENTRY_DSN`, or ignored `debug.credentials.properties` provides `sentry.dsn`; release builds are a no-op and do not include Sentry on the release classpath
+- Source-set-specific `SentryInit` initialization; debug may report through `sentry-android-core` when a supported DSN input is configured. Release initialization is a no-op and the dependency is declared only for debug; a fresh resolved release classpath/artifact was not inspected here.
 - Debug-only StrictMode policies for thread and VM issue logging
 - Hilt WorkManager factory through `Configuration.Provider`
 
@@ -445,7 +473,7 @@ Initialization uses an application coroutine scope backed by `SupervisorJob` and
 
 Three periodic WorkManager jobs are scheduled through `MonitorScheduler`:
 
-All three requests use `ExistingPeriodicWorkPolicy.UPDATE` and currently set no explicit WorkManager constraints. Disabling monitoring cancels all three unique jobs.
+All three requests use `ExistingPeriodicWorkPolicy.UPDATE` and currently set no explicit WorkManager constraints. `MonitorScheduler.cancel()` cancels all three, but there is no persisted monitoring-enabled preference or user-facing master stop switch. Startup and boot/unlock call `ensureScheduled()` using the interval preference. Disabling alert notifications does not disable collection, retention, or insight generation.
 
 - `HealthMonitorWorker`
   - unique work name: `health_monitor`
@@ -462,7 +490,7 @@ All three requests use `ExistingPeriodicWorkPolicy.UPDATE` and currently set no 
 - `HealthMaintenanceWorker`
   - unique work name: `health_maintenance`
   - interval: current `MonitoringInterval` preference
-  - has no battery-level constraint so maintenance cannot be deferred indefinitely on a persistently low-battery device
+  - has no explicit battery-level constraint; Android/OEM scheduling restrictions still apply
   - invokes `RefreshAppUsageSnapshotUseCase` first; that use case is a no-op unless the current `ProStatusProvider.isPro()` value is true
   - cleans up old readings only after Pro status is ready; unresolved Pro state makes this run retry, free access retains 24 hours, and purchased Pro uses the selected retention preference
   - refreshes widgets best-effort; widget refresh failure does not force a retry
@@ -470,8 +498,8 @@ All three requests use `ExistingPeriodicWorkPolicy.UPDATE` and currently set no 
 - `InsightGenerationWorker`
   - unique work name: `insight_generation`
   - evaluates persisted Room history through the Insights Engine
-  - refreshes the Home insights surface every 6 hours
-  - has no battery-level constraint so insight refresh cannot be deferred indefinitely on a persistently low-battery device
+  - requests periodic insight generation with a 6-hour interval
+  - has no explicit battery-level constraint; actual delivery timing remains platform-controlled
   - retries only on `SQLException`; cancellation is rethrown
 
 Supporting monitor components include:
@@ -480,6 +508,16 @@ Supporting monitor components include:
 - `ScreenStateTracker`
 - `MonitoringAlertStateStore`
 - `NotificationHelper`
+
+Boot recovery and notification rules:
+
+- `BootReceiver` accepts boot completed, package replaced, and user unlocked. It skips locked-user startup until unlock, uses `goAsync()`, initializes screen tracking, schedules periodic work, and conditionally restores the enabled live notification when permission allows. Its pending result is finished in `finally`.
+- Interval updates use the singleton `SetMonitoringIntervalUseCase` mutex, persist the preference, then reschedule. DataStore and WorkManager are not one transaction; a scheduling failure can follow a successful preference write.
+- Sensor steps are independent: a later failure does not roll back an earlier saved reading. The monitor still attempts remaining steps. A recoverable latency failure may yield a network row with null latency.
+- Low battery fires at `level <= threshold` on first/descending crossing; temperature and storage fire at `value > threshold` on first/upward crossing. Charge complete requires the prior state CHARGING and the new state FULL plus an unfired debounce flag. Master/type preferences control alerts, not collection.
+- Alert snapshot/debounce persistence precedes notification posting. This avoids duplicate posting on a repeated observation but does not guarantee delivery after a posting failure.
+- `HealthMonitorWorker` has four possible attempt indices (0 through 3) before abandoning a failed periodic cycle. Maintenance retries and insight SQL retries have no equivalent explicit attempt cap in their code. Insight non-SQL failures return failure.
+- WorkManager constraints and enqueue calls do not prove exact wall-clock delivery, OEM background survival, boot timing, notification visibility, or foreground-service policy acceptance.
 
 ### Live Notification
 
@@ -498,6 +536,8 @@ Supporting monitor components include:
 - “Screen stats” currently reports only that screen tracking is active; it does not render accumulated screen-on/off durations.
 - “Remaining time” currently shows an estimating placeholder while discharging; it is not yet a calculated remaining-time estimate.
 
+The 5-second delay follows each read/update, so it is a cadence rather than a hard real-time timer. Special-use foreground type is API-34 guarded. Live mode is free and separate from periodic monitoring; default current/status/temperature lines are on, screen/remaining lines off. HIGH current also has an Accurate label. `ACTION_STOP` returns START_NOT_STICKY, while normal starts return START_STICKY. Binding count, enabled preference, idle timeout, permission, and task-removal handling govern stopping; source code does not guarantee Android will restart the service.
+
 ### Widgets
 
 Two Glance widgets are present:
@@ -513,13 +553,15 @@ Widget data is read from the latest Room snapshots through a Hilt `WidgetDataEnt
 - Tapping any widget state opens `MainActivity`; locked widgets do not deep-link directly to purchase.
 - `RuncheckApp` refreshes widgets when Pro state changes, and maintenance work refreshes them best-effort. A widget refresh failure does not convert otherwise successful maintenance into a retry.
 
+Widget freshness is recalculated when its input flow emits, not on a continuous age timer. Its wall-clock threshold is three monitoring intervals; Home's heartbeat banner uses a different uptime-based policy. The health widget calls the four-input calculator without a recent speed test, so its score can differ from Home even with similar sensor data. Providers have no dedicated Error render state; a DAO/provider exception is not guaranteed to become Empty. The shared refresh helper updates Battery then Health, so a Battery update exception can prevent that invocation's Health update.
+
 ---
 
 ## Measurement Reliability and Health Score
 
 ### Measured values and confidence
 
-- Sensor values that can be unreliable use `MeasuredValue<T>` with `Confidence`.
+- Battery current uses `MeasuredValue<T>` with `Confidence`; other sensor fields use the scalar/nullable/default conventions detailed below.
 - Internal confidence enum values are `HIGH`, `LOW`, and `UNAVAILABLE`.
 - The UI maps those internal values to user-facing badge labels: `HIGH` → Accurate, `LOW` → Estimated, `UNAVAILABLE` → Unavailable.
 - `ConfidenceBadge` is the shared UI component and uses theme status tokens for backgrounds/text.
@@ -551,7 +593,7 @@ Thermal reliability:
 
 Network reliability:
 
-- Current connection details are read through Android network APIs.
+- Current connection details are read through Android network APIs. Wi-Fi quality thresholds are strictly >-50/>-60/>-70/>-80dBm; cellular 5G uses >=-65/>=-80/>=-90/>=-110 and other cellular uses >=-98/>=-108/>=-118/>=-128 for Excellent/Good/Fair/Poor. Below these thresholds is No Signal. These fixed model thresholds do not dynamically apply carrier tuning.
 - Latency uses five TCP-connect samples against `BuildConfig.LATENCY_HOST` / `BuildConfig.LATENCY_PORT`, with a 1.5s per-sample timeout and 6s total timeout.
 - Jitter is computed with an RFC 3550-style moving jitter formula when at least four samples are available.
 - Network detail and speed test may display signal, latency, Wi-Fi standard, cellular subtype, DNS/IP/MTU, and VPN state when Android exposes them.
@@ -562,6 +604,22 @@ Storage reliability:
 - App count is a distinct count of launchable packages visible through `PackageManager.queryIntentActivities(Intent.ACTION_MAIN + Intent.CATEGORY_LAUNCHER)`; it is not a full installed-app inventory.
 - Storage encryption status uses `DevicePolicyManager.storageEncryptionStatus` and maps public platform states to FBE, Encrypted, Inactive, Unsupported, or unavailable.
 - No `SystemProperties` reflection or `PackageManager.getInstalledApplications(...)` package inventory is used for these storage values.
+
+### Availability, fallback, and interpretation boundaries
+
+`MeasuredValue` is concretely used for battery current; the full sensor model is not uniformly confidence-wrapped. Other values use scalars, nullable fields, enum defaults, or estimated labels. Reviewers must distinguish a documented confidence policy from this actual representation.
+
+| Input | Current normalization/fallback | Interpretation limit |
+|-------|--------------------------------|----------------------|
+| Battery current | Missing/sentinel/error, zero, or out-of-range current is UNAVAILABLE; raw µA are integer-divided by 1,000 and sign-aligned. Samsung repeats of absolute current >=3,000mA reach LOW after three qualifying equal observations. | Unavailable objects may retain a numeric value; consumers must inspect confidence, not value alone. |
+| Battery level/voltage/temperature | Sticky-intent defaults include level 0, scale 100, voltage 0mV, temperature 0°C; non-positive scale produces level 0. | Voltage/temperature have no general plausibility filter; these defaults are not validated hardware observations. |
+| Charge counter and capacity | Positive µAh counter is integer-converted to mAh; full capacity uses level and a 500–20,000mAh filter. | Remaining/derived capacity is an estimate; health percentage and design capacity remain null. |
+| Thermal status/headroom | Before API 29 status defaults to NONE; before API 30 headroom is null. Unknown status codes map to NONE. Headroom rejects NaN/negative/error results. | NONE can mean platform fallback; headroom is not a CPU temperature and has no source-level upper plausibility cap. |
+| Network signal | Wi-Fi rejects sentinel/out-of-range RSSI. Cellular selects available signal data and rejects integer sentinels; non-radio transports use a GOOD fallback. | Signal category is transport-dependent; missing radio readings cannot be replaced by invented dBm. |
+| Primary storage | Validated StorageStats total/free values fall back to StatFs for the data directory. Optional media/app/cache values can remain null. | App data already includes cache; adding cache again double-counts. Separate portable-volume capacity can be unavailable even when a removable volume exists. |
+| Device capabilities | Cached profile includes public-API capabilities; current thermal-zone list is empty and storage-health availability flag is true. | The storage flag is not flash-wear measurement, and a capability flag is not proof every subsequent sensor read succeeds. |
+
+Battery source instances are selected/cached by manufacturer and API level through the factory. Shared battery broadcasts replay one sticky snapshot, while current/charge-counter sampling is demand-driven at two-second intervals. Closing/replacing the source cancels its own scope. Sampling intervals do not imply a continuously recorded two-second Room history; the worker writes on its separate periodic schedule.
 
 ### Health score calculation
 
@@ -595,6 +653,27 @@ Scoring details:
 - Thermal score penalizes battery temperature, known CPU temperature, and Android thermal status; a missing CPU temperature is neutral.
 - Storage score penalizes usage percent, with sharp penalties at high utilization.
 
+Exact score thresholds below come from `domain/scoring/HealthScoreCalculator.kt`. Each subsystem clamps to 0–100; overall score is the integer rounded weighted sum, `(battery*40 + network*25 + thermal*25 + storage*10 + 50) / 100`.
+
+| Component | Ordered ranges and penalties (points subtracted from 100) |
+|-----------|----------------------------------------------------------|
+| Battery health | GOOD 0; OVERHEAT 40; DEAD 80; OVER_VOLTAGE 50; COLD 20; UNKNOWN 10 |
+| Battery temperature °C | <0:30; [0,10):15; [10,20):6; [20,32):0; [32,35):3; [35,40):10; [40,45]:25; >45:40 |
+| Battery voltage mV | <3200:20; [3200,3500):10; [3500,4250]:0; >4250:15 |
+| Optional battery health % | null or >=95:0; [90,95):3; [85,90):7; [80,85):12; [75,80):18; [70,75):24; [60,70):35; [50,60):45; <50:60 |
+| Live network signal | EXCELLENT 0; GOOD 5; FAIR 15; POOR 35; NO_SIGNAL 70 |
+| Live network latency ms | null or <50:0; [50,100):5; [100,200):10; [200,500):20; [500,1000):35; >=1000:50 |
+| Thermal battery temperature °C | <10:20; [10,20):8; [20,30):0; [30,33):2; [33,35):5; [35,40):15; [40,45]:35; >45:60 |
+| Optional CPU temperature °C | null or <50:0; [50,60):5; [60,70):15; [70,80):30; >=80:50 |
+| Thermal status | NONE 0; LIGHT 10; MODERATE 25; SEVERE 45; CRITICAL 65; EMERGENCY 80; SHUTDOWN 95 |
+| Storage used % | <10:4; [10,25):2; [25,50):0; [50,70):5; [70,75):15; [75,85):35; [85,95):55; >=95:80 |
+
+The fresh-speed-test path uses **component scores**, not the live penalties: signal Excellent/Good/Fair/Poor/None is 100/90/70/40/0; ping <=0 is 80, then positive <30/<50/<100/<200/<500/otherwise is 100/95/85/70/50/30. Download score truncates `min(downloadMbps / expectedMbps, 1) * 100`, with expected 50Mbps for Wi-Fi/Ethernet and 20Mbps for cellular/VPN. Jitter <5/<15/<30/<50/otherwise scores 100/85/65/45/20. The 40/30/20/10 weighted component mean truncates; missing jitter removes its weight. Upload speed is not scored.
+
+Speed-result reuse matches only connection **type** and age; the stored result has no default-network handle or SSID identity check. A different Wi-Fi network within the hour can therefore reuse an earlier Wi-Fi test. The 55–60 minute blend uses rounded interpolation. `HealthScoreDiagnostics` records penalties, component scores, age/weight and DISCONNECTED/LIVE/SPEED_TEST/FADING_SPEED_TEST mode.
+
+Battery level/current/confidence do not directly enter battery scoring. Missing optional CPU/capacity/latency data generally adds no penalty, rather than reducing the score's confidence. Disconnected network still contributes its internal zero to the overall weighted score even though the UI labels that tile Unrated. These are product heuristics, not a calibrated probability of hardware failure.
+
 ---
 
 ## Home Screen
@@ -608,8 +687,8 @@ Main sections:
   The actual score and verdict remain visible; centered update age says Updated
   just now for the first minute, then pluralized minutes.
 - Peach Run full check action reuses `HomeViewModel.refresh()` -> `loadHome()`.
-  Duplicate taps remain disabled, progress lasts at least 900ms after a completed
-  snapshot, and timeout/failure/stop clear it through the existing lifecycle.
+  Duplicate taps remain disabled; the indicator finishes after a new snapshot and
+  at least 900ms from the tap. A 12-second timeout, failure, or stop clears it.
 - Persisted Insights move above the status tiles. Up to three ranked rows retain
   dismissal, destination navigation, unseen count, and access to additional insights.
 - Fixed status mosaic: Battery / Thermal with complementary curved edges, then
@@ -637,9 +716,11 @@ Pro UI handled on Home:
 - Free users encounter Pro explanations and purchase actions at the protected feature surfaces
 - Top-level Insights summary available to all users, with the full list available from the dedicated Insights screen
 - Insight targets for Pro-only destinations such as Charger Comparison and App Usage are hidden for free users and visible for purchased Pro users
-- Monitoring stale state is derived from the last worker heartbeat and becomes stale after more than 3x the longer of the heartbeat's interval and the current interval, measured in awake uptime so deep-sleep gaps do not trigger the banner.
+- Monitoring stale state is derived from the last worker heartbeat and becomes stale after more than 3x the longer of the heartbeat's interval and the current interval. Awake uptime normally avoids deep-sleep warnings; a detected uptime reset falls back to wall time. A missing heartbeat/recorded uptime does not itself trigger this banner.
 - Home marks only its currently displayed unseen insight rows as seen through `InsightRepository.markSeen(ids)`.
 - Home observation is lifecycle-owned through `LifecycleStartStopEffect`; leaving Home cancels the active load job and clears a running full-check indicator.
+
+Full Check reads the live observation graph; it neither persists a new four-table snapshot nor initiates NDT7 or explicit insight regeneration. Home uses the unmeasured network-state use case, so it does not itself add the Network Detail latency loop. A 15-second freshness tick updates age-dependent scoring; this does not reset the sensor update timestamp. The 12-second refresh timeout clears the progress indicator without necessarily stopping the ongoing live collector.
 
 ---
 
@@ -685,14 +766,24 @@ Battery-specific supporting behavior:
 - Remaining mAh comes from the public BatteryManager charge-counter value when the platform provides one.
 - Estimated full capacity is shown as an estimate only when it can be derived from remaining mAh and current battery level inside the repository's plausible range.
 - Design capacity is intentionally absent from the UI because no stable public design-capacity source is used.
-- Current stats are tracked in-memory and reset on status change
+- Current stats are tracked in-memory and reset when charging status or the selected charger session changes
 - Session and history charts can open a fullscreen landscape chart route
 - History charts use "Instrument Sweep" animation (grid fade → illuminated sweep reveal → latest-value emphasis)
 - Live charts use eased scroll interpolation and a single settling halo on new data; live current remains signed around a visible zero reference
 - Battery screen also consumes dismissed educational/info cards
 - Charger session tracking runs from Home and Battery live observation and from `HealthMonitorWorker` so charge sessions can be updated in foreground and background.
-- Available history periods are Since Unplug, 1 hour, 6 hours, 12 hours, 1 day, 1 week, 1 month, and All. Free repository access is clamped to the last day regardless of the requested long period; Pro receives the requested period, and All is capped at 5,000 rows.
+- Available history periods are Since Unplug, 1 hour, 6 hours, 12 hours, 1 day, 1 week, 1 month, and All. `GetBatteryHistoryUseCase` clamps free access to the last day; Pro receives the requested period, and All is capped at 5,000 rows. Raw repository reads are not entitlement-clamped.
 - The current charging-session chart remains available without Pro. Persisted long-range battery history and its fullscreen source are Pro-gated.
+
+Battery analysis contracts:
+
+- `ScreenStateTracker` owns persisted screen-on/off duration and percentage-point drain since charging/power transitions. It listens for screen, power, and device-idle broadcasts and reconciles state on reads. Its SharedPreferences file is `screen_state_tracker`, separate from Room and the three DataStores.
+- Screen drain uses level differences clamped non-negative and cumulative drain bounded to 100 points; rate appears only after more than one minute in that screen state. Sleep analysis appears after at least one minute of tracked screen-off time. "Deep sleep" means Android `isDeviceIdleMode`; "held awake" means screen-off without that flag. These are wall-clock state approximations, not measured CPU sleep residency or attribution to a wakelock/app. Missed process-off transitions and wall-clock changes limit precision.
+- In-memory live buffers and current min/max/mean are ViewModel-owned, with at least two available current samples required for stats. LOW samples remain estimates. Session statistics loading is cached until refresh; it is not recalculated on every history emission.
+- `GetBatteryStatisticsUseCase` reads a default ten-day raw history window, sums level gains/losses, counts observed charging transitions, and estimates 100% runtime from average discharge rate only above 0.1 percentage points/hour. The caller applies the Pro presentation gate.
+- The displayed history drain calculation needs two readings spanning at least ten minutes and a positive first-to-last level drop. It is separate from the engine's adjacent-discharge-pair algorithm.
+- `calculateChargingSessionSummary` takes the trailing contiguous CHARGING rows while the current status is CHARGING. Average pace needs ten minutes and positive gain; fallback recent pace uses the last four readings over at least five minutes. Remaining-to-80/100 estimates need pace >=0.25 percentage points/hour and a target above the current level. These linear estimates do not model charge taper.
+- Delivered mAh uses trapezoidal current integration only across positive intervals <=30 minutes with both currents present, clamping the interval mean current to non-negative. Average current divides that integrated value by the entire session duration, including gaps. Graphs break across gaps over 30 minutes; unavailable currents are absent. Chart availability needs only two non-null current readings and is independent of the stricter remaining-time panel conditions.
 
 ---
 
@@ -709,6 +800,8 @@ Current behavior:
 - Charger summaries are sorted by most recent use. They include all-session count and active-session state, while average/latest speed and power plus estimated time-to-full use completed sessions only.
 - Stored average power is preferred. When absent, comparison derives milliwatts from average current and average voltage; the UI falls back to current when power is unavailable.
 - Historical comparison ranks chargers by average power, then average charging current, and displays per-charger latest/completed-test context. Profiles without history remain listed but do not enter the comparison chart.
+
+The singleton tracker serializes updates, rejects timestamps older than its last successful update, and throttles unchanged observed charging state to 15 seconds. It opens a session only while CHARGING with a selected profile, completes it on stop/full/deselection, and transactionally completes/starts when the selected profile changes. Completed measurements derive from persisted charging rows; fallback live current is allowed only while still CHARGING and not UNAVAILABLE. Stored power is mW (`current mA * voltage mV / 1000`), while chart power is W. These measurements reflect battery-side samples and user-assigned charger labels, not detected USB charger identity or wall-outlet power. Clearing a selected profile in DataStore and deleting it in Room are separate operations.
 
 ---
 
@@ -739,13 +832,17 @@ Latency measurement:
 - Latency resets to null when disconnected or when `(connectionType, defaultNetworkHandle)` changes, including Wi-Fi-to-Wi-Fi handovers. `NetworkRepositoryImpl` binds measurement to the validated Android `Network` and discards the result if that network no longer matches afterward
 - Approved outbound latency surface is TCP connect only to `BuildConfig.LATENCY_HOST` / `BuildConfig.LATENCY_PORT` (`locate.measurementlab.net:443` by default).
 
+The detail loop measures immediately, then delays 30 seconds after each attempt. The worker independently probes the active validated network during its collection step. DNS resolves through the selected Android Network and sockets are network-bound; the latency timer measures the TCP connect after DNS, without a TLS handshake or ICMP echo. Successful samples are averaged and rounded. A total six-second timeout returns unavailable even if earlier samples succeeded. With four or more samples, jitter uses successive connect-time differences and `J += (abs(delta) - J) / 16`; positive results are rounded upward. This is connect-time variability, not measured packet loss or an end-to-end application request.
+
+Wi-Fi name/BSSID visibility depends on precise location permission and location services; placeholders are normalized away. API-31 callback flags/telephony display-info registration have version guards and registration cleanup. Cellular generation can use basic phone-state fallback, while signal dBm/ASU remain nullable. Android callbacks and link properties provide IP/DNS/MTU without additional probe traffic.
+
 Historical chart behavior:
 
 - Metrics: signal strength or latency
 - Period selection is stored in ViewModel saved state
 - Signal chart uses status gradient line (quality zone colors on the data line)
 - Fullscreen chart route is available from the chart section
-- The repository applies the same history periods as Battery. Free repository access is clamped to one day, Pro can request the selected period, and All is capped at 5,000 rows; the current UI exposes the persisted history chart only to Pro.
+- `GetNetworkHistoryUseCase` applies the shared period set, clamps free history to one day, and caps All at 5,000 rows. Raw repository reads are not Pro-clamped. The UI exposes persisted history only to Pro. Since Unplug uses the last charging timestamp for battery, but a zero start timestamp for network; it is not a shared network unplug event.
 
 ---
 
@@ -785,10 +882,15 @@ Implementation constraints:
 - Cellular starts are blocked with `CellularConfirmationRequired` until the user confirms.
 - The active default network is locked at test start; network loss or connection identity changes fail the test instead of mixing measurements.
 - Download and upload phases each use roughly 10 seconds of NDT7 progress.
+- Accessibility live announcements follow the test phase; frequently changing metric values remain readable without a live region.
 - The ViewModel wraps the complete run in a 90-second timeout.
 - Server metadata is extracted from NDT7 `ClientResponse.origin` / `ClientResponse.test` when present.
 - `FinalizeSpeedTestUseCase` always calls `saveResultAndTrim`: the caller's free limit (currently 5) or a fixed 100 for Pro. Save and trim share the repository transaction path.
 - Phase progress comes from NDT7 `ClientResponse.appInfo.elapsedTime` in microseconds divided by 10,000,000 and clamped to 0..1; it is not derived from time spent discovering a server or waiting for the first callback.
+
+Only cellular connections request the confirmation dialog; Ethernet/VPN are not treated as cellular solely because they are non-Wi-Fi. The active-session guard rejects concurrent tests. The NDT7 HTTP client binds both sockets and DNS to the selected Network. Cancellation/failure closes the session, stops NDT7, cancels HTTP calls, evicts connections, and unregisters the network callback.
+
+Initial TCP ping/jitter can be replaced by NDT7 `tcpInfo.rtt` / `rttVar` converted from microseconds to milliseconds. A stored jitter result therefore need not have the same algorithm as the initial latency measurer's jitter. The library selects its endpoint; source configuration alone does not prove the geographically nearest server, live server metadata, transfer accuracy, or successful persistence.
 
 ---
 
@@ -811,6 +913,8 @@ Important implementation constraints:
 - No sysfs-based thermal reads
 - Session min/max values are tracked while the screen is active
 - Free history access emits an empty list; Pro history supports the shared period set, with All capped at 5,000 rows.
+
+The singleton throttling tracker opens at SEVERE, updates a record only for a higher peak status, and closes below SEVERE. It restores an unfinished Room event after process recreation. Duration uses a monotonic clock for an event opened in the current process and a non-negative wall-clock difference for a restored event. Foreground-app labels require Usage Access and use recent usage evidence; they are contextual labels, not proof that the named app caused throttling.
 
 ---
 
@@ -837,6 +941,8 @@ Permission behavior:
 
 Storage-specific data behavior:
 
+- `StorageRepositoryImpl` reads current capacity and a seven-day Room history window, then delays 30 seconds between updates. `CalculateFillRateUseCase` delegates to `StorageGrowthAnalyzer`: at least three readings and a non-zero regression denominator are needed. Positive bytes/day and positive available bytes produce a truncated d/w/mo/y estimate. The 14-day Insight projections are a separate caller/window; neither estimate is a guaranteed fill date.
+- A non-positive total capacity yields a 0% live usage fallback. Missing app bytes are stored as -1 and mapped back to null; missing media breakdown is stored as 0 media bytes, so that historical field alone cannot distinguish unavailable media from none. Live/storage-DAO failures can prevent the combined state from emitting even when capacity itself was readable.
 - Aggregate app/data/cache bytes use `StorageStatsManager.queryStatsForUser(...)` and may be null without usage access or when Android denies the call.
 - App count means distinct launchable packages visible to this app through `ACTION_MAIN` + `CATEGORY_LAUNCHER`, not all installed packages on the device.
 - Encryption status comes from `DevicePolicyManager.storageEncryptionStatus`.
@@ -855,6 +961,10 @@ Free tier behavior:
 
 - Storage screen itself is available
 - Cleanup tools are gated behind a Pro callout
+
+Permission and deletion scope is narrower than the labels may suggest. On API 34+, `MediaAccessState.FULL` means READ_MEDIA_IMAGES **or** READ_MEDIA_VIDEO is granted, not that image/video/audio permissions are all granted. The Storage UI separately calculates `hasAllMediaPermissions` from an empty missing-permission list and gates its breakdown/cleanup affordances with that stricter check. Underlying MediaStore access still depends on actual per-category grants. Below API 34, the helper requires all permissions in that API's requested list.
+
+Trash uses a separate API-30+ system request for its URI list. On RESULT_OK Storage refreshes; it does not use Cleanup's 2,000-URI batching and per-selection freed-byte verification. Trash collection queries can degrade to an empty list on provider failure. Do not describe all MediaStore paths as uniformly strict or all successful consent results as verified deletion.
 
 ---
 
@@ -903,7 +1013,9 @@ Deletion and paging boundaries:
 - Resolving a selected group into URIs can fail; the ViewModel reports an error and does not start deletion with a partial inferred selection.
 - Legacy deletion and API 30+ consent both verify remaining MediaStore URIs against the original selection and captured sizes. If every selected URI remains, the selection is restored with a failure message. Partial deletion preserves remaining selection; freed bytes are based on verified disappearance.
 - An accepted system dialog alone is not proof of deletion. Verification failure or lost access must not produce an invented successful freed-byte count.
-- During the success overlay, the underlying Scaffold clears its semantics so accessibility focus does not remain on obscured controls.
+- During the success overlay, the underlying Scaffold clears its semantics. The overlay exits immediately when scanning resumes, removing its announcement before the underlying semantics return.
+
+Post-consent verification waits 200ms, queries the selected URIs again, and calculates disappearance from captured pre-delete sizes. Current `finishDeleteAttempt` catches generic Exception, including cancellation from that wait/query, and restores an error/selection state; this differs from Paging and other paths that explicitly rethrow cancellation. This documentation records the existing boundary without changing it. A verified URI disappearance is a MediaStore result, not a measurement that identical physical bytes were reclaimed from storage.
 
 ---
 
@@ -928,6 +1040,8 @@ Background support:
 - Data is persisted and then paged back into the UI
 
 Collection is serialized with a repository `Mutex`. `AppBatteryUsageDao.replaceSnapshotsAfter(startTime, usages)` transactionally deletes rows strictly after the collection start and inserts the replacement interval before the DataStore cursor advances. Room and DataStore do not share a transaction: retry after a cursor-write failure re-collects and replaces that interval. UI aggregation sums foreground time per package, selects the latest label by timestamp/id, and sorts by descending duration then package name. This is interval-snapshot accounting, not exact clipping of every historical event to the displayed 24-hour boundary.
+
+The source queries usage events with a 24-hour pre-window lookback to reconstruct initial activity state, then clips accumulation to the collection interval. It tracks resumed activities per package and assigns each elapsed interval to the most recently resumed active package rather than summing overlapping multi-window activity durations. Pause/stop/startup/shutdown events change that state. A successful empty event interval advances the cursor; missing permission/service does not. System/launcher packages are not categorically excluded, and label lookup can fall back to the package name.
 
 ---
 
@@ -965,6 +1079,8 @@ Behavior:
 - The route itself is `fullscreen_chart/{source}/{metric}/{period}`.
 - Pro lock is applied for `BATTERY_HISTORY` and `NETWORK_HISTORY`; `BATTERY_SESSION` remains available as the current-session fullscreen source.
 - Selection changes are sent back to the previous route with `FullscreenChartResult.KEY_SOURCE`, `KEY_METRIC`, and `KEY_PERIOD`.
+
+`FullscreenChartSeedStore` is one process-local slot for matching source/metric/period Success or Empty state. It is consumed once to reduce a loading transition; it is not persisted across process death and never replaces the Pro check or subsequent observation. Invalid route arguments are sanitized to supported fallback selections. Disposal sets orientation to unspecified rather than restoring a saved previous orientation.
 
 ---
 
@@ -1023,7 +1139,11 @@ Notes:
 
 - Notification permission handling is built into Settings for Android 13+ through `RuncheckPermissionPolicy`
 - Export shares one or more CSV files through `FileProvider`
-- All destructive actions (clear speed tests, clear all data, reset tips, reset thresholds) show a confirmation AlertDialog with primary blue confirm button
+- The normal Settings actions clear speed tests, clear all data, reset tips, and reset thresholds show a confirmation AlertDialog with primary blue confirm button
+
+The current `monitoringDataOperationMutex` serializes export preparation and clear-all **within one SettingsViewModel**. An UNDISPATCHED launch attempts `tryLock` immediately, rejects overlapping operations instead of queuing them, checks cancellation, and always releases the lock/reset export state in `finally`. It is not a process-wide lock over all possible repository callers. Clear-all success appears only after Room plus post-transaction preference/file cleanup succeeds.
+
+Changing Pro retention persists the new preference before invoking cleanup; cleanup failure does not roll back the preference. Retention choices are 90 days, 180 days, 365 days, or forever. Free effective retention remains 24 hours. "Reset tips" resets dismissed educational cards, not Learn article read history; clearing speed results is separate from the full monitoring reset.
 
 ---
 
@@ -1058,6 +1178,8 @@ Each category reads persisted history and filters by the selected data-retention
 
 `data/export/FileExportRepositoryImpl.kt` serializes cache operations with a Mutex, validates single `.csv` filenames without path separators, writes UTF-8 files into a unique staging directory, and requests an atomic move to a unique export directory. It returns FileProvider URI strings only after preparation; failed preparation attempts to remove staging/export directories. Old exports older than 15 minutes are cleaned on a subsequent preparation, not by an independent expiry timer. Review atomic-move support, partial cleanup, CSV consumers, and actual URI sharing separately from file generation.
 
+`clearPreparedExports()` now throws IOException when recursive export deletion reports failure. That failure reaches reset instead of falsely confirming completion. Atomic move has no non-atomic fallback, and stale cleanup is best-effort after a successful move. Export builds CSV content in memory and performs category checks/reads sequentially, so it is not a streaming export or one synchronized cross-category snapshot. FileProvider sharing uses read-granted ClipData for all URIs; external recipients control their own copies after sharing.
+
 ---
 
 ## Persistence
@@ -1088,14 +1210,36 @@ Persistence technologies:
 - DataStore `monitoring_status` for the last successful periodic worker heartbeat's wall time, awake uptime, and monitoring interval
 - DataStore `monitoring_alert_state` for the previous alert snapshot and charge-complete debounce state
 - SharedPreferences `pro_status_cache` for synchronous cached purchase status during release cold start
+- SharedPreferences `screen_state_tracker` for screen/power/idle session accounting; `runcheck_db_events` for the one-time destructive-migration notice
 
-Corruption and reset boundaries:
+`DeviceProfileRepositoryImpl` reuses decoded device-profile JSON when its API level matches the current OS. Refresh detects public capabilities, preserves first-seen time, writes the selected device row and removes other profiles. This is an API-level cache policy, not per-read revalidation of hardware behavior; JSON/DAO errors can still propagate.
+
+### Preference keys and deletion scope
+
+| Store | Current keys / ownership |
+|-------|---------------------------|
+| DataStore `settings` (22 keys) | `monitoring_interval`, `notifications`, `data_retention`, `permission_education_seen`, `app_usage_last_collected_at`, `selected_charger_id`; `notif_low_battery`, `notif_high_temp`, `notif_low_storage`, `notif_charge_complete`; `alert_battery_threshold`, `alert_temp_threshold`, `alert_storage_threshold`; `temp_unit`; `live_notif_enabled`, `live_notif_current`, `live_notif_drain_rate`, `live_notif_temperature`, `live_notif_screen_stats`, `live_notif_remaining_time`; `show_info_cards`, `dismissed_info_cards` |
+| DataStore `monitoring_status` (3 keys) | `last_worker_heartbeat_at`, `last_worker_heartbeat_uptime`, `last_worker_heartbeat_interval` |
+| DataStore `monitoring_alert_state` (5 keys) | `last_battery_level`, `last_battery_temp_c`, `last_storage_usage_percent`, `last_charging_status`, `charge_complete_fired` |
+| SharedPreferences `pro_status_cache` | `is_pro`; synchronous cached entitlement, reconciled with Play |
+| SharedPreferences `screen_state_tracker` (12 keys) | `screen_on`, `last_transition_time`, `last_transition_level`, `screen_on_duration_ms`, `screen_off_duration_ms`, `screen_on_drain_pct`, `screen_off_drain_pct`, `deep_sleep_duration_ms`, `held_awake_duration_ms`, `last_idle_check_time`, `last_idle_state`, `last_charging_status` |
+| SharedPreferences `runcheck_db_events` | `destructive_migration_occurred`; consumed/removed by MainActivity |
+
+Dismissed info-card IDs are normalized by base key, preserving the highest `_v<number>` variant. They are separate from Room insight seen/dismissed flags and from the unimplemented Learn read state.
+
+"Clear all data" is a monitoring-data reset, not an application factory reset. It preserves device profile, purchase cache, screen-state SharedPreferences, ordinary preferences, dismissed tips, and monitoring schedules. Only the app-usage cursor and selected charger are removed from settings. The coordinator protects insight generation and thermal-reset consistency, not every sensor writer or charger collector; later/in-flight collection can repopulate history.
+
+Retention cleanup deletes old battery/network/thermal/storage readings, throttling events, app usage, speed results, and completed charger sessions in one Room transaction. It does not delete device profiles or charger names, and insight expiry is managed separately by generation. Free rows become eligible after 24 hours; deletion happens when maintenance/cleanup actually runs, not exactly on the 24-hour clock. Pro FOREVER yields no time cutoff. Speed-result count limits (5/100) apply independently when saving a test.
+
+### Corruption and reset boundaries
 
 - The three preference DataStores (`settings`, `monitoring_status`, `monitoring_alert_state`) use `ReplaceFileCorruptionHandler { emptyPreferences() }`. Corrupt serialized preferences revert to defaults/empty state; this does not claim that every I/O failure is recoverable.
 - A wrong-type Boolean in `ProStatusCache` is removed and returns false. `ProManager.initialize()` applies the currently cached purchase value before awaiting purchase-status readiness, then follows subsequent purchase state.
 - `ClearMonitoringDataUseCase` deletes readings, throttling events, app usage, speed tests, insights, and charger profiles/sessions in one Room transaction. Device profile rows and the purchase cache are not in this deletion list.
 - `MonitoringDataCoordinator` serializes that transaction and debug history seeding with the complete insight read/evaluate/publish operation. Reset waits for admitted generation before deleting its results; later generation reads the remaining or newly collected history. Lock order is coordinator, thermal tracker, then Room. The tracker invalidates its cached active event in `finally` before releasing its lock, including failed or cancelled resets, and restores any surviving Room event on the next observation. Lock waits remain cancellable; monitoring schedules are unchanged.
 - After the Room transaction, it separately clears monitoring-related preference state, alert/debounce state through `MonitoringAlertStateRepository`, worker heartbeat, and prepared exports. All non-cancellation cleanup steps are attempted; the first failure is rethrown with subsequent failures suppressed. The overall reset is therefore not one transaction spanning Room, preferences, and files.
+
+Room has 11 entities/tables and ten DAO interfaces (charger profiles and sessions share a DAO). Schema exports 6–10 and the nine registered migrations are versioned separately from source-test counts. Nullable fields include current mA, health percentage, CPU temperature and estimated per-app mAh; battery current confidence is a non-null string. String/JSON decoding is not equivalent to universal corruption recovery.
 
 Room tables/entities:
 
@@ -1160,11 +1304,19 @@ Current product behavior:
 - App startup cancels legacy day-5/day-7 trial notification work and removes the obsolete trial notification channel from older installs
 - Debug builds can override the product id with `RUNCHECK_PRO_PRODUCT_ID`; release builds keep the checked-in product id so release artifacts are reproducible.
 - Pending purchases are tracked separately and do not unlock Pro until purchased
-- Purchased but unacknowledged purchases are acknowledged with up to 3 retries
+- Purchased but unacknowledged purchases receive at most 3 acknowledgement attempts total, with 2s and 4s waits between attempts
 - A purchased item unlocks Pro only after it was already acknowledged or acknowledgement succeeds; exhausted acknowledgement retries keep the entitlement inactive and emit a safe generic purchase error
 - Billing 9 purchase sub-response codes distinguish insufficient funds and user ineligibility; unknown codes fall back to a known response-code message or a generic localized error without exposing SDK debug text
 - Cached Pro state is restored synchronously in release builds to avoid a free-tier flash while Billing queries run
 - Billing availability remains false during service setup/product refresh and reconnectable purchase-query failures. Cached product details alone do not make checkout available while the billing service is reconnecting.
+
+Entitlement and readiness are distinct:
+
+- Release initialization starts from the cached Boolean. A successful INAPP query reconciles matching PURCHASED products: already acknowledged or successfully acknowledged purchases can activate Pro; pending-only/empty results deactivate it. If all acknowledgement attempts fail, access remains inactive.
+- A failed purchase query reports UNAVAILABLE without necessarily clearing the previously cached access. "Pro ready" means initialization completed, including failure paths; it is not proof of a fresh successful Play verification. Offline cached Pro can remain active until a successful reconciliation.
+- Restore reports ACTIVE, NOT_ACTIVE, or UNAVAILABLE distinctly. MainActivity refreshes purchases on resume. Connection recovery has up to three scheduled delays of 2/4/8 seconds.
+- The code uses Google Play Billing client purchase/acknowledgement results and a local cache; it does not implement a server-side receipt-verification backend.
+- Debug initialization forces Pro and billing availability but does not establish real ProductDetails or a working checkout. A debug purchase screen is not evidence of a successful paid flow. A formatted price is obtained dynamically from Play; no fixed price is authoritative in this document.
 
 Pro-gated areas currently include:
 
@@ -1188,20 +1340,20 @@ Pro-gated areas currently include:
 - `REMAINING_CHARGE_TIME`
 - `STORAGE_CLEANUP`
 
-All current features share the single `ProState.isPro` decision. The per-feature enum remains in place so a future per-feature gate can be added without changing all UI call sites.
+All current features share the single `ProState.isPro` decision. The enum classifies presentation; it does not implement separate purchases or per-feature entitlements.
 
 Current enforcement map:
 
 | Surface | Primary enforcement |
 |---------|---------------------|
 | Charger Comparison, App Usage | Navigation redirect plus feature ViewModel/use-case checks |
-| Battery/Network persisted history | UI lock/visibility plus repository period clamping; fullscreen history route also checks Pro |
+| Battery/Network persisted history | UI lock/visibility plus history-use-case period clamping; fullscreen history route also checks Pro |
 | Thermal/Storage history | UI lock/visibility plus free history flows that emit no rows |
 | Thermal throttling log | Pro UI state/use-case access |
 | Storage cleanup | Storage callout plus `CleanupViewModel` fail-closed check before scanning |
 | App-usage background collection | `RefreshAppUsageSnapshotUseCase` reads the current Pro state and returns without collecting unless it is already purchased Pro; unlike retention cleanup, this path does not wait for Pro-status readiness |
-| CSV export | Settings/ViewModel Pro check before export |
-| Widgets | Pro-driven refresh/access state |
+| CSV export | Settings/ViewModel check and independent `ExportDataUseCase` Pro checks |
+| Widgets | Pro checks in widget data providers before exposing stored readings |
 | Remaining charge time | Pro presentation gate |
 | Home Insights | Not Pro-gated; only insight destinations are filtered when their target feature is protected |
 
@@ -1224,13 +1376,15 @@ Manifest and network posture:
 - `RealTimeMonitorService` is not exported and uses `foregroundServiceType="specialUse"` with a declared special-use subtype.
 - FileProvider is not exported and exposes only cache path `exports/` as `csv_exports`.
 
+The source manifest declares 17 permissions and seven application component entries: MainActivity, RealTimeMonitorService, BootReceiver, two widget receivers, FileProvider, and the merge entry for InitializationProvider. Only MainActivity explicitly sets exported=true; BootReceiver is non-exported. There is no browsable HTTP/app-link filter. Notification "deep links" here mean validated route strings in an internal intent extra, consumed once, not an exported website routing contract. Dependency-added components and permissions require a merged-manifest/artifact check; this count is only the checked-in app manifest.
+
 Declared permission surface:
 
 | Permission | Purpose |
 |------------|---------|
 | `ACCESS_NETWORK_STATE` | Network type/capability detection |
 | `ACCESS_WIFI_STATE` | Wi-Fi connection details |
-| `INTERNET` | User-initiated NDT7 speed tests and TCP latency measurement |
+| `INTERNET` | NDT7, TCP latency, Billing, and the conditional debug-only Sentry path |
 | `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION` | Optional Wi-Fi SSID/BSSID visibility; requested together so Android can offer precise access |
 | `POST_NOTIFICATIONS` | Android 13+ notifications |
 | `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE` | Opt-in live monitoring notification |
@@ -1252,15 +1406,25 @@ Approved outbound network surfaces:
 Telemetry/logging boundary:
 
 - Release Sentry init is a no-op.
+- Sentry is a debug-only dependency and initializes only with a configured DSN. This is an additional debug outbound path beyond the release allowlist; do not describe all build variants as sending no crash data.
+- Source-set/dependency configuration supports release exclusion, but this audit did not inspect a fresh resolved release classpath or signed artifact.
 - Debug Sentry disables tracing, profiling, auto session tracking, breadcrumbs, activity lifecycle tracing, frames tracking, screenshots, view hierarchy, NDK, performance v2, and auto trace id generation.
 - `ReleaseSafeLog` emits Android logs only in debug builds.
 - Semgrep has project-specific rules for backup, cleartext, exported components, broad FileProvider paths, sensitive Android logging, outbound network primitives, and release telemetry expansion.
 
 ---
 
+### Stored and shared sensitive information
+
+Room can contain battery/thermal timestamps, network radio/carrier/subtype measurements, app package names/labels and foreground durations, thermal-event foreground labels, user-named chargers, and derived insights. DataStore/preferences retain user settings and monitoring state. Live network state can expose SSID/BSSID/IP/DNS to the UI without those fields being part of every persisted network row. Device profile stores manufacturer/model/capability JSON.
+
+The app has no application-layer Room encryption or backend history synchronization in its implementation. Android sandboxing, restrictive backup rules, FileProvider cache scope, and debug-only logging are separate controls, not an encryption claim. CSV is explicitly shared by the user through another application. Privacy-policy/store/feedback actions launch external intents rather than fetching those pages into a runcheck networking client.
+
+---
+
 ## Future Considerations
 
-- **Learn article read/unread tracking:** Currently no persistence of which Learn articles the user has read. With only 15 articles this isn't needed yet, but if the catalog grows significantly (30+), consider adding DataStore-backed read state with visual indicators (e.g., unread dot on `LearnArticleCard`).
+- **Learn article read/unread tracking:** Not implemented. Older prose proposed persisted read state for a larger catalog; this is an optional idea, not a committed requirement or current capability.
 
 ---
 
@@ -1464,6 +1628,18 @@ Current shared dimensions:
 
 `Theme.kt` reads the setting initially and registers a `ContentObserver` on `ANIMATOR_DURATION_SCALE`, updating composition when it changes. Disposal unregisters the observer. A failed initial read defaults to false; failed registration retains the last read value. Reduced motion is therefore reactive when the device permits observation.
 
+### Chart data and rendering contracts
+
+Shared `ui/chart/ChartModels.kt`, `ChartHelpers.kt`, `ChartRenderModel.kt`, and `ChartAccessibility.kt` own metric conversion, labels, tooltips, semantics summaries, and point budgets. Embedded history charts cap display data at 300 points and charging-session charts at 240; fullscreen raises these budgets to 600 and 480 respectively; this is independent of the 5,000-row history query cap. `downsamplePairs` uses triangle-area bucket selection, preserves first/last endpoints for budgets >=2, returns no points for <=0, and returns the first point for budget 1. It assumes ordered input rather than sorting arbitrary callers.
+
+Battery history supports level, temperature, current, and voltage; session graphs support current/power. Network supports dBm/latency; thermal and storage models preserve unavailable data and unit conversions. Storage used-space history ignores non-positive total capacity and bounds available bytes to the total; available-space history rejects negatives and displays SI GB. Session gaps greater than 30 minutes break the line. Missing current is skipped, not plotted as zero.
+
+The shared drawing layer provides trend/area/live charts, quality zones, an instrument-sweep reveal, live interpolation, tooltips and accessible summaries. A tooltip's formatted value and chart semantics do not prove physical-device touch exploration, TalkBack order, font-scale fit, frame time, or GPU cost. The dated host-JVM benchmark below measures data preparation only.
+
+### Localization and resources
+
+Only default English application strings are shipped by the configured locale filter and `locales_config.xml`; there are no translated `values-<language>/strings.xml` inventories in this snapshot. Debug-only insight strings have release-safe empty non-translatable counterparts. Formatters explicitly use English for numbers/dates and file-size formatting. Celsius is the stored/scoring unit; Fahrenheit is a presentation conversion, with the battery-widget exception documented above. Bundled font and launcher resources are local, not network-downloaded UI assets.
+
 ### Responsive layout and interaction reference
 
 The following are source-defined branches, not screenshot or device-test results from this refresh:
@@ -1486,7 +1662,7 @@ Home additionally overrides status healthy/poor/critical to `#8AD5AE`, `#E98548`
 
 Text formatting lives in `ui/common/UiFormatters.kt`: `appDisplayLocale()` is English, decimal/date helpers use it, and Android file-size formatting receives an English configuration context. Celsius remains the measurement/storage basis; Fahrenheit is a display conversion. Product copy uses resources, and separators should use punctuation or layout rather than U+00B7.
 
-**Contrast:** Minimum 4.5:1 body text, 3:1 large text (WCAG AA). Minimum touch target 48dp.
+**Accessibility targets:** 4.5:1 body-text contrast, 3:1 large-text contrast, and 48dp minimum touch targets. These are design requirements; token/helper tests and source inspection do not establish every rendered text pair, focus order, hit region, or system-font configuration meets them.
 
 ### Logo
 
@@ -1499,9 +1675,9 @@ The repository root contains `runcheck-logo.svg` and `icon.png`; Android launche
 
 Current test surface:
 
-- Unit tests: 126 Kotlin files under `app/src/test/java/com/runcheck/` in this working-tree snapshot
+- Unit-test tree: 131 Kotlin files under `app/src/test/java/com/runcheck/` in this working-tree snapshot
 - Debug unit tests: 2 Kotlin files under `app/src/testDebug/java/com/runcheck/`
-- Instrumented tests: 2 Kotlin files under `app/src/androidTest/java/com/runcheck/`
+- Instrumented tests: 3 Kotlin files under `app/src/androidTest/java/com/runcheck/`
 - Android test assets include exported Room schemas for migration tests; current exported assets cover versions 6-10.
 - Shared coroutine main dispatcher rule lives in `ui/MainDispatcherRule.kt`.
 - Home-specific unit coverage includes minute-age clamping, reference gauge-segment fills and score clamping, fixed status-tile order, compact-height/font-scale boundaries, refresh source reuse, the 900ms minimum indicator, the 12-second timeout, failure reset, and lifecycle-stop reset.
@@ -1524,8 +1700,6 @@ Named regression sources useful for review-question generation (under `app/src/t
 
 `HomeScreenTest` exercises pure helpers such as segment fill and layout-mode selection; its name does not establish a rendered Compose or touch-target test. Likewise, mocked Android unit tests cannot prove OEM APIs, system consent dialogs, live billing, or widget rendering on a device.
 
-Coverage interpretation: `app/build.gradle.kts` defines `jacocoDebugUnitTestReportExclusions`, excluding generated code, DI/startup, many framework-backed sources, billing implementations, workers/services, most Compose surfaces, theme, and widgets. The XML/HTML report is a scoped JVM coverage denominator, not coverage of the complete Android app. It depends on `testDebugUnitTest` and reads both traditional and AGP built-in Kotlin class output directories. Never infer runtime safety for excluded code from an aggregate Sonar/JaCoCo percentage.
-
 High-value unit coverage areas:
 
 - Battery source normalization and device capability detection
@@ -1540,18 +1714,51 @@ High-value unit coverage areas:
 - Debug/release-safe insight debug action boundaries
 - Worker behavior for monitor scheduler, health monitor, and insight generation
 
+### What the test inventory establishes
+
+Static counting of literal test declarations finds 747 `@Test` annotations across 124 test-bearing files in `src/test`, plus seven supporting Kotlin files; the 747 includes the opt-in benchmark declaration. `testDebug` has two declarations in two files, and `androidTest` has 11 in three files. These are 760 source declarations, not 760 passing tests; assumptions, runner behavior, source-set selection, and generated cases can change executed counts.
+
+- JVM tests cover rules, score boundaries, ViewModels, repository error contracts, parsing, and policy helpers. Some `*ContractTest` classes read source/config text or use mocks; they establish those assertions, not instrumented Android behavior.
+- `HomeScreenTest` exercises extracted geometry/order helpers, not an actual rendered Compose tree. No current instrumented class is a Compose screenshot, TalkBack, font-scale, or navigation end-to-end suite.
+- `RuncheckDatabaseMigrationTest` has six cases: 6→8, 7→8, 8→9, 6→9, 6→10 with preserved fixtures, and 9→10 indexes. Registered 1→6 migrations exist but no exported schemas 1–5 support equivalent historical-start migration tests here.
+- `MonitoringDataResetTransactionTest` has three real in-memory Room cases for committed reset, rollback, and cancelled-transaction recovery of the thermal tracker. `SpeedTestResultDaoTest` has two cases for flow invalidation and count trimming with protected insertion.
+- Additional current regression sources include `SamsungCurrentConfidenceOwnershipTest`, `MonitoringDataResetTest`, `UnseenInsightTrackerTest`, `FileExportRepositoryImplTest`, `SettingsViewModelTest`, `NetworkCallbackRegistrationTest`, `SessionGraphAvailabilityTest`, and `ChartRenderModelTest`. These sources were inspected, not executed.
+- Debug containment and seed tests live in `testDebug`; release-safe debug-action tests are in `test`. They do not replace inspecting a signed release for telemetry/debug tooling.
+
+### Coverage configuration and exclusions
+
+`:app:jacocoDebugUnitTestReport` depends on `:app:testDebugUnitTest`, emits XML and HTML under `app/build/reports/jacoco/jacocoDebugUnitTestReport/`, and reads source roots `src/main/java` and `src/main/kotlin`. It accepts the Javac, legacy Kotlin, and AGP built-in Kotlin debug class directories and either `jacoco/testDebugUnitTest.exec` or `outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec`.
+
+The exclusion list removes generated/Hilt/Room classes, R/BuildConfig, previews/tests, many rendering classes, theme/components/DI/widgets, startup and selected Android framework boundaries (including sources, preferences, billing, services/workers, logging, and URI handling). Broad `**/*Test*.*` matching also excludes production classes whose name contains Test, including SpeedTest classes. Sonar has its own extensive `sonar.coverage.exclusions`, which is not identical to JaCoCo's list. Coverage percentages consequently describe selected measurable code, not the entire app, all Pro/security boundaries, or all rendering paths. This audit produced no coverage percentage.
+
+Root Gradle lets the Android/Sonar plugin own source and binary discovery instead of applying stale manual paths from properties. The Sonar dependency chain assembles debug, generates JaCoCo, and creates an **empty Android Lint import placeholder** at `app/build/reports/lint-results-debug.xml`. That placeholder prevents unrelated/stale lint import and is not a clean Android Lint result; `lc` owns actual lint. Its task is ordered after lintDebug if both are scheduled.
+
 Current delegated Android-check contract:
 
+- Shared wrappers distinguish CLEAN (exit 0), FINDINGS (exit 1), and technical/configuration ERROR (exit 2) and publish run reports atomically. Read the classified status, exact scope and timestamp together; a partial report, empty report, baseline, or configured task is not a passing run. Wrapper implementation is delegated outside this repository, so its behavior also depends on the resolved Android-check checkout.
 - `config/android-check.json` declares one required Android application module, `:app`, with `debug` and `release` variants and the `main`, `debug`, `release`, `test`, `testDebug`, and `androidTest` source sets.
 - The configured build surface is `:app:assembleDebug`; the default test surface is `:app:testDebugUnitTest`, and `tc -Full` also runs `:app:connectedDebugAndroidTest` after confirming that a device or emulator is connected.
 - Configured quality tasks are `:app:ktlintCheck`, `:app:detekt`, `:app:lintDebug`, and `:app:stabilityCheck`; dependency analysis covers `debugRuntimeClasspath` and `releaseRuntimeClasspath`, and OWASP uses `:app:dependencyCheckAnalyze`.
-- `config/check-exceptions.json` currently contains 34 owned, time-bounded exceptions, all expiring `2026-10-31`: 30 exact mobsfscan entries, 2 CodeQL entries, 1 Detekt baseline registration, and 1 OWASP false-CPE group.
+- `config/check-exceptions.json` currently contains 35 owned, time-bounded exceptions, all expiring `2026-10-31`: 31 exact mobsfscan entries, 2 CodeQL entries, 1 Detekt baseline registration, and 1 OWASP false-CPE group.
 - The registered Detekt baseline contains 28 finding IDs in `app/detekt-baseline.xml`; a passing wrapper with that baseline is not the same as zero underlying recorded findings.
 - Every current MobSF exception includes one exact rule, one existing `findingPath`, and one or more exact `findingSelectors`. The delegated checker normalizes selector whitespace/casing and suppresses only a finding whose rule, normalized path, and normalized selector all match; another finding in the same file remains visible unless it has its own registered selector.
 - `ms -PlanOnly` currently prints each exception's rule and path but not its selector list. That abbreviated plan text does not weaken runtime classification: execution still applies the exact selector matching described above.
 - The target-SDK exception is limited to `android_task_hijacking2` at `app/src/main/AndroidManifest.xml` with its exact current finding selector. `.mobsf` contains path exclusions and severity filtering only; it must not suppress that rule globally.
 - CodeQL exceptions remain exact rule/path registrations. The Detekt and OWASP entries use their own source/selector contracts rather than MobSF's `findingSelectors` matching.
 - Scanner output must be interpreted after wrapper classification and exact exceptions. A raw-match count of zero is neither required for `CLEAN` nor sufficient if the wrapper reports a technical/configuration error.
+
+Other expiry/baseline scopes must be read separately:
+
+| Artifact | Current inventory and expiry |
+|----------|-------------------------------|
+| `config/check-exceptions.json` | 35 entries, owner project-maintainers, expiry 2026-10-31; includes the reset-transaction-test MobSF selector added in this worktree |
+| `config/dependency-check/suppressions.xml` | Three suppression blocks: two exact false-CPE groups expire 2026-10-31Z; the kotlin-stdlib 2.4.10 / CVE-2026-53914 block expires **2026-09-30Z** |
+| `gradle/osv-scanner.toml` | One exact advisory GHSA-r937-wjx7-w2jp, ignoreUntil **2026-09-30** |
+| `app/detekt-baseline.xml` | 28 CurrentIssues IDs; registration is time-bounded in the exception file |
+| `app/stability/app-debug.stability`, `app-release.stability` | Checked-in comparison baselines, already dirty; no passing regeneration implied by presence |
+| `.mobsf` | Path/severity filters; no global target-SDK rule bypass |
+
+No listed expiry has passed on the snapshot date; September 30 is the earliest and is not extended by the registry's October date. Advisory rationale text claiming Kotlin 2.4.20 is still pre-release is historical prose, whereas current configuration already constrains runtime libraries to 2.4.20 and keeps the compiler/plugin at 2.4.10. This audit did not consult upstream advisories or revalidate exception necessity; do not infer a vulnerability is fixed or an exception remains justified solely from these files.
 
 Low-CPU verification policy:
 
@@ -1583,21 +1790,55 @@ Report-reading convention:
 
 ---
 
+## Measured Chart Performance (2026-09-11)
+
+Two measured sources of avoidable work in `app/src/main/java/com/runcheck/ui/chart/ChartHelpers.kt` were improved:
+
+- `ChargingSessionSummary.hasGraphData()` now stops at the second reading with non-null `currentMa`, instead of constructing complete current and potentially power graph point lists. Both graph metrics use the same current-availability condition. An all-null input still requires one full scan.
+- `downsamplePairs()` now calculates timestamp and value sums in one pass per averaging bucket, removing temporary sublists and a second traversal. Point selection arithmetic and accumulation order within each sum are preserved.
+
+The opt-in `app/src/test/java/com/runcheck/ui/chart/ChartPerformanceBenchmark.kt` measures production functions on the host JVM. The recorded environment was Windows 11, AMD Ryzen AI 7 350, Java test runtime `17.0.20+8`, with the existing debug test/JaCoCo configuration. Each case uses at least one second of warmup followed by 15 batches of 200 calls; results below are median time and thread-allocated bytes per call. Input construction is excluded from timing.
+
+Results for the same deterministic 2,880-reading input. Confirmation used a second fresh JVM after the change; allocated bytes were identical in both post-change runs:
+
+| Operation | Before time | After time | Confirmation time | Before allocated bytes | After allocated bytes |
+|-----------|-------------|------------|-------------------|------------------------|-----------------------|
+| Graph availability, current present | 55.426 µs | 0.016 µs | 0.014 µs | 234,616 | 56 |
+| Graph availability, all currents missing | 13.225 µs | 4.638 µs | 4.573 µs | 80 | 32 |
+| Downsample to 300 points | 14.755 µs | 12.534 µs | 11.952 µs | 10,784 | 1,248 |
+
+The available-graph check allocated 99.98% less memory, and downsampling allocated 88.43% less. These are allocated bytes, not retained heap. Downsampling time was 15.1% lower in the first post-change run and 19.0% lower in confirmation. Timing results are descriptive: the baseline was measured in one fresh JVM, background workload and CPU frequency were uncontrolled, and even the unchanged no-op case varied. They do not establish equivalent Android device speedups.
+
+The pre-existing performance report records verification for that change: 28 focused functional tests plus the benchmark passed. Those results were not rerun during this documentation audit. The bounded-work regression failed before the fix (2,880 reads instead of the expected 3) and passed afterwards. Availability equivalence was checked across 256 combinations of input length and missing, zero, negative and positive current values. Downsampling tests covered small budgets, boundaries, extrema and unchanged baseline output fingerprints for 240, 2,880 and 28,800 points. Changed debug production/test Kotlin compiled, and `git diff --check` passed.
+
+No device or emulator was connected, so startup, frame timing, UI interaction, battery consumption, Android heap behavior and release performance remain unmeasured. Full test suites, full lint and release builds were not run for this change.
+
+Set `RUNCHECK_PERFORMANCE_BENCHMARK=1` to enable the benchmark; ordinary test runs skip it. Run the focused `:app:testDebugUnitTest` selection with `--tests 'com.runcheck.ui.chart.*'` and `--tests 'com.runcheck.ui.battery.BatteryRemainingTimePanelVisibilityTest'`. The [full measurement report](docs/performance-2026-09-11.md) includes all input sizes, the exact repeat command and methodology. Raw baseline/after XML, build logs and the pre-fix regression failure are retained locally under ignored `reports/performance-*` paths.
+
+The pre-existing report records a confirmation at 2026-09-11 14:35 UTC that passed the same 28 functional tests and benchmark, preserving all baseline output checksums. For 2,880 points, downsampling measured 11.952 µs and 1,248 allocated bytes per call versus the saved baseline's 14.755 µs and 10,784 bytes. The report records the full confirmation table and its host-JVM-only scope; evidence is under `reports/performance-confirmation-*`.
+
+---
+
 ## CI/CD Pipeline
 
 GitHub Actions workflows in `.github/workflows/`:
 
-| Workflow | Purpose | Status |
+| Workflow | Purpose | Configured triggers and tooling (not a passing-run claim) |
 |----------|---------|--------|
-| `codeql.yml` | CodeQL security analysis (`java-kotlin`, manual `assembleDebug`) | Active on main pushes, main PRs, manual dispatch, and weekly schedule; CodeQL Action `v4.37.6`, checkout `v7.0.1`, setup-java `v5.7.0`, setup-android `v4.0.1` |
-| `security.yml` | Semgrep SAST on PRs/main plus OWASP Dependency-Check on weekly/manual runs | Semgrep `1.175.0` runs for push/PR and uploads SARIF through CodeQL Action `v4.37.9` except on fork and Dependabot PRs, whose read-only tokens cannot publish code-scanning results; setup-python is `v7.0.0`. OWASP stays out of push/PR analysis, runs scheduled/manually with setup-java `v5.7.0`, setup-gradle `v6.3.0`, cache action `v6.1.0`, a 45-minute job timeout, a 35-minute step timeout, and artifact upload `v7.0.1` when a report exists. |
+| `codeql.yml` | CodeQL security analysis (`java-kotlin`, manual `assembleDebug`) | Active on main pushes, main PRs, manual dispatch, and weekly schedule; CodeQL Action `v4.37.9`, checkout `v7.0.1`, setup-java `v6.0.0`, setup-android `v4.0.1` |
+| `security.yml` | Semgrep plus scheduled/manual OWASP | Main push/PR, Monday 08:00 UTC, manual. Semgrep 1.175.0 runs on all these triggers with Python 3.13/setup-python 7.0.0; SARIF upload 4.37.9 requires an existing file and excludes fork/Dependabot PR publication. OWASP runs only schedule/manual: Java 17/setup-java 6.0.0, setup-gradle 6.3.0, cache 6.1.0, 195-minute job / 180-minute scan timeout, upload-artifact 7.0.1. |
 | `sonar.yml` | SonarCloud scan through Gradle (`assembleDebug`, `:app:jacocoDebugUnitTestReport`, `sonar`) | Active on main pushes; checkout `v7.0.1`, setup-java `v6.0.0`, setup-android `v4.0.1` |
 | `qodana.yml` | JetBrains Qodana main-branch scan through `JetBrains/qodana-action` pinned at `v2026.2.1` | Uses `jetbrains/qodana-jvm-community:2026.1`; retained after the documented AGP 9.1.x Android-linter import failure, while current AGP 9.4.0 Android-linter compatibility remains unverified |
 | `qodana_code_quality.yml` | JetBrains Qodana action pinned at `v2026.2.1` for `releases/*`, PRs, and manual dispatch | Uses the same JVM Community linter; `qodana.yml` owns `main` pushes, avoiding a duplicate scan. Current AGP 9.4.0 Android-linter compatibility remains unverified |
+| `deepsec-dependencies.yml` | Frozen helper dependency/type checks, not an AI source audit | Main push/PR filtered to `.deepsec/**` or this workflow, plus manual; 15-minute job, Node 26/setup-node 7.0.0, pnpm 11.25.0. Frozen install with scripts disabled, TypeScript no-emit, DeepSec help, moderate-level dependency audit, and a manifest/lock/workspace diff check. |
+
+There are exactly six checked-in workflows. Actions are pinned by full commit SHA; version labels above are the adjacent repository comments. CodeQL uses manual Java/Kotlin extraction via assembleDebug, runs weekly Monday 14:25 UTC, and has a 360-minute job limit. Sonar runs only on main pushes; Qodana's PR/release workflow uses PR head/full history with pr-mode disabled. No workflow here constitutes a signed Play release/deployment or physical-device acceptance pipeline.
+
+OWASP enables NVD updates with five retries, a 168-hour validity window, and an OS/week-keyed cache. It retains normal failure behavior (no continue-on-error), uploads available dependency reports, and uploads dependency-verification diagnostics on failure. These bounds do not guarantee initial NVD data can be obtained in time. Dependabot separately configures weekly Gradle, `.deepsec` npm, and GitHub Actions updates.
 
 External services:
 - **SonarCloud** — continuous code quality (`Insaner1980_runcheck`, org `insaner1980`). CI path is `.github/workflows/sonar.yml`; local path is `tools/sonar.ps1`.
-- **Qodana Cloud** — org "Finnvek Dev", project "runcheck"; current workflow files do not pass `QODANA_TOKEN`, so they should be read as local/action-based Qodana analysis unless a token is added later.
+- **Qodana** — current workflows do not pass `QODANA_TOKEN`. Older prose names a cloud organization/project, but their current existence, access and results were not verified; the checked-in evidence establishes action-based analysis configuration.
 
 Local PowerShell wrappers:
 
@@ -1620,6 +1861,7 @@ Local PowerShell wrappers:
 - `tools/sentry.ps1` (`sentry`) — verifies debug-only Sentry wiring and release classpath exclusion; writes `reports/sentry.txt`
 - `tools/sonar.ps1` — SonarCloud local path; requires `SONAR_TOKEN`, runs `assembleDebug`, `:app:jacocoDebugUnitTestReport`, prepares an empty Android Lint import placeholder because `lc` owns real lint findings, and runs `sonar`, then writes `reports/sonar.txt`
 - `tools/sonar-timeout-test.ps1` — isolated PowerShell fixture that verifies a timed-out Sonar Gradle process is terminated and that stdout/stderr plus the timeout marker are persisted
+- `tools/sonar-upload-retry-test.ps1` — isolated fixture covering upload-write-timeout recovery, retry exhaustion, retained attempt logs, and no retries for build, authentication, or read-timeout failures
 
 The checked-in `.deepsec` helper currently pins DeepSec `2.3.9`; `tools/ds.ps1` delegates to the shared Android-check implementation, which drives the package scripts rather than making DeepSec part of the Android app dependency graph. Every delegated DeepSec mode currently requires explicit per-run external-AI consent: `-AllowExternalAI`, a single-line `-Provider`, exact `-ExternalAIDataScope 'entire-project-working-tree'`, a single-line `-ExternalAICostEstimate`, and a single-line `-ExternalAIRetentionPolicy`. Without that complete declaration the wrapper fails closed with exit category `ERROR/2` and an `EXTERNAL_AI_*` reason; `-PlanOnly` reports the missing consent without uploading data. The default path is `deepsec:report:custom`; `-Full` selects `deepsec:report`, `-Scan` selects `deepsec:scan`, and `-Revalidate` selects `deepsec:revalidate`.
 
@@ -1636,27 +1878,20 @@ Compatibility wrappers and config:
 
 ## Project Management
 
-- **Linear:** Project "runcheck" in Finnvek team, priority High, status In Progress
+- **Linear:** Older documentation names project "runcheck" in the Finnvek team. Current priority, status, milestones and completion are unverified external metadata.
 - **Linear URL:** https://linear.app/loikka1/project/runcheck-5d6d01d874c1
-- **Milestones:**
-  - v1.0 — Play Store Release (all features, tested, security audited)
-  - Insights Engine (cross-category correlation — the differentiator)
+- **Historical milestone labels:** v1.0 / Play Store Release and Insights Engine. These labels do not establish publication, complete testing, or security-audit completion. The engine is already implemented and documented as a current subsystem below.
 - **GitHub:** https://github.com/Insaner1980/runcheck
 
-The product-management service state above is documentation metadata and was not live-queried during the 2026-09-08 source refresh. Treat code/configuration as current; verify external Linear/Qodana/Sonar/GitHub status live when a task depends on it.
+External product-management/service state was not live-queried during this 2026-09-11 source refresh. Treat code/configuration as current; verify external Linear/Qodana/Sonar/GitHub status live when a task depends on it.
 
 ---
 
-## Roadmap
+## Insights Engine
 
-### Current Major Differentiator: Insights Engine
+The implemented engine analyzes Room battery, thermal, network, storage, charger, and app-usage history and persists candidates for Home and Insights. It detects windowed drain anomalies, usage concentration, pressure projections, and co-occurring conditions. No registered rule analyzes recurring network degradation by time of day; rule names must not be interpreted as causal diagnoses or capabilities beyond their actual inputs.
 
-runcheck now includes a cross-category correlation engine that analyzes Room data across battery, thermal, network, storage, charger, and app-usage history and surfaces insights automatically on Home. It is one of the clearest product differentiators versus apps that only show siloed metrics. Examples:
-- Correlation between temperature rise and battery drain spike
-- Network quality degradation at specific times
-- Anomaly detection from normal usage patterns
-
-Current Insights rule set:
+Current Insights rule set (11 production Hilt bindings):
 
 - `BatteryDegradationTrendRule`
 - `BaselineAnomalyRule`
@@ -1692,18 +1927,63 @@ The production registry is `app/src/main/java/com/runcheck/di/InsightsModule.kt`
 
 The shared `SingleCandidateInsightRule`, `ContextualBatteryDrainRule`, and `StoragePressureInsightRule` encode orchestration; extend them rather than duplicating load/compare/candidate pipelines. Time-bounded network, heat, usage, and storage loaders explicitly discard future timestamps before analysis.
 
+Additional algorithm boundaries:
+
+- Adjacent discharge pairs require both endpoints in DISCHARGING/NOT_CHARGING. Generic drain rates sum non-negative level drops over elapsed durations; contextual comparison samples further require a positive drop and positive duration. There is no universal maximum-gap filter shared by all rules.
+- `TimeWindowAligner` selects the latest context **inside** each interval, including endpoints; it does not carry an older context across an empty interval or borrow a future reading. Aligned co-occurrence does not prove causation.
+- Baseline anomaly uses sample standard deviation with a 0.5 floor. HIGH begins at z>=4 or ratio>=3; confidence averages baseline-day support /14 and current-pair support /6, capped at one.
+- Drain correlation confidence uses the smaller class count /5. Network HIGH starts at ratio>=1.5 or weak-average signal<=-115dBm; heat HIGH starts at ratio>=1.4 or peak>=43°C. Thus three samples per class merely reaches the common 0.6 acceptance threshold.
+- Storage projection uses positive ordinary least-squares growth and available capacity, not a scheduled certainty that storage will fill. Projection confidence is count/10; impact confidence count/8. Recurring throttling treats unfinished duration as zero and is HIGH also at CRITICAL or worse. Thermal pattern is HIGH also at CRITICAL or worse.
+- Confidence values are bounded evidence-support heuristics, not calibrated probabilities. Candidate wording/keys and sample filters must be reviewed together, particularly "degradation", "wear" and "impact".
+
 `domain/insights/engine/InsightEngine.kt` evaluates every rule before calling `replaceGenerationResults` once. If evaluation throws, that generation does not reach replacement. If accepted recurring-throttling and thermal-pattern candidates coexist, the engine clears the thermal-pattern candidate list to avoid overlapping alerts. `data/insights/InsightRepositoryImpl.kt` and the DAO own transactional replacement and dedupe persistence.
 
 `InsightHomeRankingPolicy` sorts by priority, confidence descending, generation time descending, then id. It first selects distinct target buckets (type buckets for NONE), then fills any remaining slots from the ranked list, with a hard cap of three. The dedicated Insights screen retains DAO ordering instead. Neither Home's full-check refresh nor merely reading the Insights screen is equivalent to explicitly regenerating the rule engine.
+
+The Room unique key is `(rule_id, dedupe_key)`; severity/sample buckets can change a rule's dedupe key, allowing a new candidate despite a previously dismissed different key. Dismissed matching keys persist as tombstones until explicit insight/full-history clearing. Seen-state tracking commits its dedupe state only after the Room write succeeds; a failed write can retry on a later identical emission, not on an independent retry timer.
+
+Active/unseen flows filter expiry using current time **when Room emits**. They contain no expiry timer; an item may remain on screen past expiry until invalidation/reload/generation. Enum and JSON mapping failures are not uniformly swallowed into an empty list. Generation is separate from Pro display filtering and can consume retained historical inputs even when a target is hidden for free users.
 
 `AppBatteryImpactRule` is intentionally not part of the production rule set. Android does not expose other apps' battery statistics to ordinary third-party apps, and runcheck does not manufacture per-app mAh attribution from foreground time alone.
 
 ### Known Tool Limitations
 
 - **Qodana:** `qodana.yaml` still records the original AGP 9.1.x Android-linter import failure and selects `jetbrains/qodana-jvm-community:2026.1`. The app has since moved to AGP 9.4.0, so the recorded Android-linter incompatibility is historical evidence, not fresh proof for the current AGP line. Keep the JVM linter until the Android linter is explicitly re-tested, and update the comment/result together.
-- **CodeQL:** `.github/workflows/codeql.yml` pins `github/codeql-action/init` and `analyze` to `v4.37.6` and builds with `assembleDebug --no-configuration-cache`. Check the actual CodeQL Action runner and Kotlin extractor support before Kotlin plugin upgrades.
-- **Sonar:** AGP 9 support has had scanner-side compatibility churn. Keep `tools/sonar.ps1` and `.github/workflows/sonar.yml` verified when changing AGP, Gradle, or Kotlin.
+- **CodeQL:** `.github/workflows/codeql.yml` pins `github/codeql-action/init` and `analyze` to `v4.37.9` and builds with `assembleDebug --no-configuration-cache`. Check the actual CodeQL Action runner and Kotlin extractor support before Kotlin plugin upgrades.
+- **Sonar:** AGP 9 support has had scanner-side compatibility churn. Keep `tools/sonar.ps1` and `.github/workflows/sonar.yml` verified when changing AGP, Gradle, or Kotlin. The local wrapper retries HTTP/2 report-upload write timeouts up to three scan attempts within the existing overall Gradle timeout, preserving each attempt in `reports/sonar.txt`. Other failures are not retried. Scanner engine `13.12.0.5977` hardcodes a 60-second write timeout; `sonar.scanner.socketTimeout` does not change that limit.
 - **OWASP Dependency-Check:** NVD updates can take a very long time or return transient 503 responses, so PRs and ordinary main pushes run Semgrep/CodeQL/Qodana while Dependency-Check is reserved for weekly scheduled or manual runs with cache, bounded retries, a job timeout, and a shorter OWASP step timeout (no `continue-on-error` in the current workflow). Dependency-Check reports are uploaded as Actions artifacts instead of GitHub Code scanning SARIF so stale dependency analyses do not keep fixed Dependabot issues open.
+
+---
+
+## Companion Documentation and Unverified Boundaries
+
+This audit deliberately leaves companion files unchanged. The following differences matter when using them as review inputs:
+
+| File / claim | Source-backed interpretation at this snapshot |
+|--------------|-----------------------------------------------|
+| `AGENTS.md` / `CODEX.md`: confidence ACCURATE/ESTIMATED/UNAVAILABLE and every value wrapped | Actual enum HIGH/LOW/UNAVAILABLE; the universal wrapper rule is an aspiration, while current is wrapped and other sensor fields use scalar/null/default representations. |
+| `AGENTS.md` / `CODEX.md`: confirm every non-Wi-Fi test | Current speed-test code requires confirmation only for CELLULAR. |
+| `AGENTS.md` / `CODEX.md`: Per-App Battery and all live ViewModels sampled | Product displays foreground time without production per-app mAh; high-frequency sensor flows use 333ms sampling, not every state/event flow. |
+| `UI-SPEC.md` snapshot | Its 2026-09-08 branch/commit metadata predates this main/dirty-worktree snapshot. Many detailed tokens and responsive branches remain useful, but they do not certify current rendering/device behavior or current runtime changes. |
+| `docs/privacy-policy.md` | March 27 prose says no telemetry "ever", omitting conditional debug Sentry, and suggests deletion exactly after 24h instead of maintenance-driven cleanup. Contact remains a placeholder. This is not a verified current published policy. |
+| `docs/battery-enhancements-spec.md` | Private PowerProfile/design-capacity proposals do not describe production, where design capacity/health percentage remain unavailable. |
+| `docs/storage-cleanup-spec.md` | Old API-29 no-dialog deletion description conflicts with current RecoverableSecurityException consent/retry flow. |
+| Older settings/storage enhancement specs | Proposed keys and features are not evidence of implemented settings; use the actual 22-key inventory and route contracts above. |
+| `qodana.yaml`, advisory notes | Old AGP incompatibility and Kotlin availability statements are historical; configuration and expiry dates are current, external compatibility/advisory conclusions are not freshly verified. |
+| `tools/export-launcher-icons.ps1` | Expects three SVG inputs under root `icons/`, which is absent. Existing launcher assets do not prove this export command can be rerun. |
+| Old UI/Sonar/Detekt cleanup reports and plans | Findings, execution instructions and completion statements belong to their recorded scope/date. They do not authorize changes or establish today's clean result. |
+
+The original document's stale branch/date, source counts, Paging/OkHttp/Sentry versions, CodeQL/setup-java versions, OWASP timeouts and exception counts are corrected here. Duplicate failure-ownership rows, current-engine-as-roadmap placement, unsupported time-of-day network examples, and a claim that this audit updated all companions were removed or replaced. Existing detailed design documentation and dated chart-performance evidence were preserved.
+
+This was a repository-wide **static documentation audit**: build/configuration, source sets, feature/data flows, Room exports, test sources, manifests/resources, workflows, local wrappers and relevant historical docs were inspected. No build, test, scanner, wrapper plan execution, emulator/device session, network probe, service-status lookup, dependency resolution, or Git publication was run. In particular, these remain unverified:
+
+- Compilation, full/unit/instrumented test results, current analyzer cleanliness and coverage.
+- Signed/minified release contents, merged manifests, resource shrinking, signing/version acceptance and telemetry exclusion in a built artifact.
+- Live Billing acknowledgement/restoration/refund/offline behavior and actual product price/availability.
+- Real device sensor reliability across API 26–37/OEMs, radio/permission transitions, NDT7 transfer accuracy, media-provider consent/deletion and portable-storage behavior.
+- WorkManager scheduling, process death/reboot recovery, live notification survival, widget age refresh and permission policies under Android/OEM restrictions.
+- Rendered UI, TalkBack, keyboard/switch access, font-scale/inset/orientation behavior, frame/startup performance and energy use.
+- Current remote CI, CodeQL, Dependabot, Sonar, Qodana, Linear, advisory or Play Store state.
 
 ---
 
@@ -1711,4 +1991,4 @@ The shared `SingleCandidateInsightRule`, `ContextualBatteryDrainRule`, and `Stor
 
 - `PROJECT.md` should describe the code as it exists now, not the intended roadmap only.
 - `CODEX.md` and `AGENTS.md` should stay aligned when repository rules or project snapshot notes are updated.
-- This 2026-09-08 refresh coordinates changes across `PROJECT.md`, `UI-SPEC.md`, `AGENTS.md`, `CODEX.md`, and the related implementation files. Do not interpret this date as a fresh validation of every companion document.
+- This 2026-09-11 refresh changes only `PROJECT.md`. Companion-document discrepancies are recorded here without modifying those files or the implementation.

@@ -688,35 +688,22 @@ private fun SpeedMetricsCard(
 
     RuncheckCard(
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
-        contentModifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         SpeedMetricRow(
             metrics =
                 listOf(
-                    MetricPillItem(
+                    throughputMetric(
                         label = stringResource(R.string.speed_test_download),
-                        value =
-                            stringResource(
-                                R.string.value_with_unit_text,
-                                formatDecimal(measuredDownload.value, 1),
-                                stringResource(R.string.unit_mbps),
-                            ),
-                        valueColor = accent,
+                        measuredValue = measuredDownload,
+                        accent = accent,
                         infoKey = "download",
-                        confidence = measuredDownload.confidence,
                     ),
-                    MetricPillItem(
+                    throughputMetric(
                         label = stringResource(R.string.speed_test_upload),
-                        value =
-                            stringResource(
-                                R.string.value_with_unit_text,
-                                formatDecimal(measuredUpload.value, 1),
-                                stringResource(R.string.unit_mbps),
-                            ),
-                        valueColor = accent,
+                        measuredValue = measuredUpload,
+                        accent = accent,
                         infoKey = "upload",
-                        confidence = measuredUpload.confidence,
                     ),
                 ),
             onInfoClick = onInfoClick,
@@ -859,27 +846,15 @@ private fun LatestResultCard(result: SpeedTestResult) {
         SpeedMetricRow(
             metrics =
                 listOf(
-                    MetricPillItem(
+                    throughputMetric(
                         label = stringResource(R.string.speed_test_download),
-                        value =
-                            stringResource(
-                                R.string.value_with_unit_text,
-                                formatDecimal(measuredDownload.value, 1),
-                                stringResource(R.string.unit_mbps),
-                            ),
-                        valueColor = accent,
-                        confidence = measuredDownload.confidence,
+                        measuredValue = measuredDownload,
+                        accent = accent,
                     ),
-                    MetricPillItem(
+                    throughputMetric(
                         label = stringResource(R.string.speed_test_upload),
-                        value =
-                            stringResource(
-                                R.string.value_with_unit_text,
-                                formatDecimal(measuredUpload.value, 1),
-                                stringResource(R.string.unit_mbps),
-                            ),
-                        valueColor = accent,
-                        confidence = measuredUpload.confidence,
+                        measuredValue = measuredUpload,
+                        accent = accent,
                     ),
                     MetricPillItem(
                         label = stringResource(R.string.speed_test_ping),
@@ -899,6 +874,25 @@ private fun LatestResultCard(result: SpeedTestResult) {
         }
     }
 }
+
+@Composable
+private fun throughputMetric(
+    label: String,
+    measuredValue: MeasuredValue<Double>,
+    accent: Color,
+    infoKey: String? = null,
+) = MetricPillItem(
+    label = label,
+    value =
+        stringResource(
+            R.string.value_with_unit_text,
+            formatDecimal(measuredValue.value, 1),
+            stringResource(R.string.unit_mbps),
+        ),
+    valueColor = accent,
+    infoKey = infoKey,
+    confidence = measuredValue.confidence,
+)
 
 // ── History section ──────────────────────────────────────────────────────────────
 
@@ -1008,7 +1002,7 @@ private fun HistoryResultMetadata(
         Text(
             text = rememberTimestampLabel(result.timestamp),
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

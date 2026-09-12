@@ -22,6 +22,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 class ClearMonitoringDataUseCaseTest {
     private lateinit var transactionRunner: DatabaseTransactionRunner
@@ -125,6 +126,46 @@ class ClearMonitoringDataUseCaseTest {
             coVerify(exactly = 1) { monitoringAlertStateRepository.clearAlertState() }
             coVerify(exactly = 1) { monitoringStatusRepository.clearLastWorkerHeartbeat() }
             coVerify(exactly = 1) { fileExportRepository.clearPreparedExports() }
+        }
+
+    @Test
+    fun `export cleanup failure propagates after monitoring data deletion`() =
+        runTest {
+            val exportFailure = IOException("export deletion failed")
+            coEvery { fileExportRepository.clearPreparedExports() } throws exportFailure
+
+            val thrown = runCatching { useCase() }.exceptionOrNull()
+
+            assertSame(exportFailure, thrown)
+            coVerify(exactly = 1) { batteryRepository.deleteAll() }
+            coVerify(exactly = 1) { monitoringStatusRepository.clearLastWorkerHeartbeat() }
+        }
+
+    @Test
+    fun `export cleanup failure is preserved when earlier cleanup also fails`() =
+        runTest {
+            val preferenceFailure = IllegalStateException("preferences failed")
+            val exportFailure = IOException("export deletion failed")
+            coEvery { userPreferencesRepository.clearMonitoringDataState() } throws preferenceFailure
+            coEvery { fileExportRepository.clearPreparedExports() } throws exportFailure
+
+            val thrown = runCatching { useCase() }.exceptionOrNull()
+
+            assertSame(preferenceFailure, thrown)
+            assertSame(exportFailure, preferenceFailure.suppressed.single())
+        }
+
+    @Test
+    fun `export cleanup cancellation propagates even after earlier cleanup failure`() =
+        runTest {
+            val cancellation = CancellationException("export cleanup cancelled")
+            coEvery { userPreferencesRepository.clearMonitoringDataState() } throws
+                IllegalStateException("preferences failed")
+            coEvery { fileExportRepository.clearPreparedExports() } throws cancellation
+
+            val thrown = runCatching { useCase() }.exceptionOrNull()
+
+            assertSame(cancellation, thrown)
         }
 
     @Test

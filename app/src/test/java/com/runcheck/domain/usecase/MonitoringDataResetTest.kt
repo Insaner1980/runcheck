@@ -48,6 +48,7 @@ class MonitoringDataResetTest {
             assertEquals(100L, event.durationMs)
         }
 
+    // CPD-OFF: Keep this concurrency scenario self-contained and readable.
     @Test
     fun `old history generation cannot survive reset and new history can generate`() =
         runTest {
@@ -79,6 +80,7 @@ class MonitoringDataResetTest {
             fixture.engine.generateInsights(250)
             assertEquals(listOf("200"), fixture.insights.rows.map { it.dedupeKey })
         }
+    // CPD-ON
 
     @Test
     fun `cancelling a waiting reset leaves admitted generation and event intact`() =

@@ -95,7 +95,7 @@ fun SegmentedStatusBar(
                         if (isActive) {
                             segment.color
                         } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            MaterialTheme.colorScheme.onSurfaceVariant
                         },
                 )
             }

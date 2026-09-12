@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.runcheck.R
 import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.model.ThermalReading
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThrottlingEvent
 import com.runcheck.domain.usecase.GetThermalHistoryUseCase
@@ -15,6 +16,7 @@ import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.common.RefreshTracker
 import com.runcheck.ui.common.RefreshableViewModelState
+import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.messageOrRes
 import com.runcheck.util.appendLiveValue
 import com.runcheck.util.getEnumOrDefault
@@ -66,6 +68,8 @@ class ThermalViewModel
         private val liveTempC = mutableListOf<Float>()
         private val liveHeadroom = mutableListOf<Float>()
         private var lastObservedThermalState: ThermalState? = null
+        private var latestHistory: List<ThermalReading> = emptyList()
+        private var historyLoadError: UiText? = null
 
         private companion object {
             const val KEY_SESSION_MIN_TEMP = "thermal_session_min_temp"
@@ -124,12 +128,15 @@ class ThermalViewModel
                     getThermalHistory(selectedHistoryPeriod)
                         .sample(333L)
                         .catch { e ->
+                            historyLoadError = e.messageOrRes(R.string.common_error_generic)
                             screenState.updateUiState { current ->
                                 (current as? ThermalUiState.Success)?.copy(
-                                    historyLoadError = e.messageOrRes(R.string.common_error_generic),
+                                    historyLoadError = historyLoadError,
                                 ) ?: current
                             }
                         }.collect { readings ->
+                            latestHistory = readings
+                            historyLoadError = null
                             screenState.updateUiState { current ->
                                 (current as? ThermalUiState.Success)?.copy(
                                     thermalHistory = readings,
@@ -168,7 +175,6 @@ class ThermalViewModel
                             lastObservedThermalState = thermalState
                         }
 
-                        val currentSuccess = screenState.uiState.value as? ThermalUiState.Success
                         ThermalUiState.Success(
                             thermalState = thermalState,
                             throttlingEvents = events,
@@ -180,9 +186,6 @@ class ThermalViewModel
                             showInfoCards = preferences.showInfoCards,
                             liveTempC = liveTempC.toList(),
                             liveHeadroom = liveHeadroom.toList(),
-                            thermalHistory = currentSuccess?.thermalHistory ?: emptyList(),
-                            selectedHistoryPeriod = currentSuccess?.selectedHistoryPeriod ?: selectedHistoryPeriod,
-                            historyLoadError = currentSuccess?.historyLoadError,
                         )
                     }.sample(333L)
                         .catch { e ->
@@ -191,7 +194,13 @@ class ThermalViewModel
                                 ThermalUiState.Error(e.messageOrRes(R.string.common_error_generic))
                             }
                         }.collect { state ->
-                            screenState.updateUiState { state }
+                            screenState.updateUiState {
+                                state.copy(
+                                    thermalHistory = latestHistory,
+                                    selectedHistoryPeriod = selectedHistoryPeriod,
+                                    historyLoadError = historyLoadError,
+                                )
+                            }
                             screenState.refreshTracker.finish()
                         }
                 }

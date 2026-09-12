@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -228,7 +229,6 @@ private fun HomeStatusTile(
         } else {
             statusColor(status)
         }
-    val curved = shape is HomeTileShape
     Surface(
         onClick = onClick,
         modifier =
@@ -247,35 +247,7 @@ private fun HomeStatusTile(
         shadowElevation = 0.dp,
     ) {
         Column(
-            modifier =
-                Modifier.padding(
-                    start =
-                        tokens.homeStatusTilePaddingHorizontal +
-                            if (curved && category == HomeStatusTileCategory.THERMAL) {
-                                HOME_TILE_EDGE_BEND
-                            } else {
-                                0.dp
-                            },
-                    end =
-                        tokens.homeStatusTilePaddingHorizontal +
-                            if (curved && category == HomeStatusTileCategory.BATTERY) {
-                                HOME_TILE_EDGE_BEND
-                            } else {
-                                0.dp
-                            },
-                    top =
-                        if (compact) {
-                            tokens.homeCompactStatusTileVerticalPadding
-                        } else {
-                            tokens.homeStatusTileCategoryTop
-                        },
-                    bottom =
-                        if (compact) {
-                            tokens.homeCompactStatusTileVerticalPadding
-                        } else {
-                            tokens.homeStatusTileCategoryTop
-                        },
-                ),
+            modifier = Modifier.padding(homeStatusTilePadding(category, shape, compact)),
             verticalArrangement = Arrangement.spacedBy(tokens.homeStatusTileStatusGap),
         ) {
             Text(text = category.label(), style = typeScale.category)
@@ -285,12 +257,7 @@ private fun HomeStatusTile(
             TileValueLine(
                 value = content.value,
                 suffix = content.suffix,
-                valueStyle =
-                    when (category) {
-                        HomeStatusTileCategory.BATTERY -> typeScale.batteryValue
-                        HomeStatusTileCategory.NETWORK -> typeScale.networkValue
-                        else -> typeScale.standardValue
-                    },
+                valueStyle = category.valueStyle(),
                 suffixStyle = typeScale.suffix,
                 textColor = foreground,
             )
@@ -332,6 +299,38 @@ private fun HomeStatusTile(
                         ).padding(horizontal = 10.dp, vertical = 4.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun homeStatusTilePadding(
+    category: HomeStatusTileCategory,
+    shape: Shape,
+    compact: Boolean,
+): PaddingValues {
+    val tokens = MaterialTheme.uiTokens
+    val curved = shape is HomeTileShape
+    val verticalPadding =
+        if (compact) tokens.homeCompactStatusTileVerticalPadding else tokens.homeStatusTileCategoryTop
+    return PaddingValues(
+        start =
+            tokens.homeStatusTilePaddingHorizontal +
+                if (curved && category == HomeStatusTileCategory.THERMAL) HOME_TILE_EDGE_BEND else 0.dp,
+        end =
+            tokens.homeStatusTilePaddingHorizontal +
+                if (curved && category == HomeStatusTileCategory.BATTERY) HOME_TILE_EDGE_BEND else 0.dp,
+        top = verticalPadding,
+        bottom = verticalPadding,
+    )
+}
+
+@Composable
+private fun HomeStatusTileCategory.valueStyle(): TextStyle {
+    val typeScale = MaterialTheme.homeStatusTileTypeScale
+    return when (this) {
+        HomeStatusTileCategory.BATTERY -> typeScale.batteryValue
+        HomeStatusTileCategory.NETWORK -> typeScale.networkValue
+        else -> typeScale.standardValue
     }
 }
 

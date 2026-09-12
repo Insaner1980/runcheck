@@ -1,8 +1,8 @@
 package com.runcheck.data.preferences
 
 import android.content.Context
+import android.provider.Settings
 import androidx.datastore.core.DataStore
-import androidx.datastore.core.IOException
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -14,7 +14,6 @@ import com.runcheck.domain.model.MonitoringHeartbeat
 import com.runcheck.domain.repository.MonitoringStatusRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -27,19 +26,21 @@ private val Context.monitoringStatusDataStore: DataStore<Preferences>
 
 @Singleton
 class MonitoringStatusRepositoryImpl
-    @Inject
-    constructor(
-        @param:ApplicationContext private val context: Context,
+    internal constructor(
+        private val dataStore: DataStore<Preferences>,
+        private val bootCount: Int = -1,
     ) : MonitoringStatusRepository {
+        @Inject
+        constructor(
+            @ApplicationContext context: Context,
+        ) : this(
+            context.monitoringStatusDataStore,
+            Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, -1),
+        )
+
         override fun observeLastWorkerHeartbeat(): Flow<MonitoringHeartbeat?> =
-            context.monitoringStatusDataStore.data
-                .catch { error ->
-                    if (error is IOException) {
-                        emit(emptyPreferences())
-                    } else {
-                        throw error
-                    }
-                }.map { prefs ->
+            dataStore.data
+                .map { prefs ->
                     val recordedAtEpochMillis = prefs[KEY_LAST_WORKER_HEARTBEAT_AT]
                     val recordedAtUptimeMillis = prefs[KEY_LAST_WORKER_HEARTBEAT_UPTIME]
                     val intervalMinutes = prefs[KEY_LAST_WORKER_HEARTBEAT_INTERVAL]
@@ -48,6 +49,10 @@ class MonitoringStatusRepositoryImpl
                             recordedAtEpochMillis = recordedAtEpochMillis,
                             recordedAtUptimeMillis = recordedAtUptimeMillis,
                             intervalMinutes = intervalMinutes,
+                            isFromPreviousBoot =
+                                prefs[KEY_LAST_WORKER_HEARTBEAT_BOOT_COUNT]?.let { recordedBoot ->
+                                    bootCount >= 0 && recordedBoot != bootCount
+                                } ?: false,
                         )
                     } else {
                         null
@@ -55,15 +60,20 @@ class MonitoringStatusRepositoryImpl
                 }
 
         override suspend fun setLastWorkerHeartbeat(heartbeat: MonitoringHeartbeat) {
-            context.monitoringStatusDataStore.edit { prefs ->
+            dataStore.edit { prefs ->
                 prefs[KEY_LAST_WORKER_HEARTBEAT_AT] = heartbeat.recordedAtEpochMillis
                 prefs[KEY_LAST_WORKER_HEARTBEAT_UPTIME] = heartbeat.recordedAtUptimeMillis
                 prefs[KEY_LAST_WORKER_HEARTBEAT_INTERVAL] = heartbeat.intervalMinutes
+                if (bootCount >= 0) {
+                    prefs[KEY_LAST_WORKER_HEARTBEAT_BOOT_COUNT] = bootCount
+                } else {
+                    prefs.remove(KEY_LAST_WORKER_HEARTBEAT_BOOT_COUNT)
+                }
             }
         }
 
         override suspend fun clearLastWorkerHeartbeat() {
-            context.monitoringStatusDataStore.edit { prefs ->
+            dataStore.edit { prefs ->
                 prefs.clear()
             }
         }
@@ -72,5 +82,6 @@ class MonitoringStatusRepositoryImpl
             val KEY_LAST_WORKER_HEARTBEAT_AT = longPreferencesKey("last_worker_heartbeat_at")
             val KEY_LAST_WORKER_HEARTBEAT_UPTIME = longPreferencesKey("last_worker_heartbeat_uptime")
             val KEY_LAST_WORKER_HEARTBEAT_INTERVAL = intPreferencesKey("last_worker_heartbeat_interval")
+            val KEY_LAST_WORKER_HEARTBEAT_BOOT_COUNT = intPreferencesKey("last_worker_heartbeat_boot_count")
         }
     }

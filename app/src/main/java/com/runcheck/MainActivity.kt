@@ -39,7 +39,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         checkDatabaseReset()
-        deepLinkRoute.value = consumeNotificationRoute(intent)
+        deepLinkRoute.value =
+            savedInstanceState?.getString(KEY_PENDING_NOTIFICATION_ROUTE)?.takeIf(Screen::isDirectRoute)
+                ?: consumeNotificationRoute(intent)
         setContent {
             RuncheckTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
@@ -57,6 +59,11 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         deepLinkRoute.value = consumeNotificationRoute(intent)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString(KEY_PENDING_NOTIFICATION_ROUTE, deepLinkRoute.value)
+        super.onSaveInstanceState(outState)
     }
 
     @Suppress("TooGenericExceptionCaught") // Billing refresh must not crash the resumed activity.
@@ -97,5 +104,6 @@ class MainActivity : ComponentActivity() {
 
     private companion object {
         private const val TAG = "MainActivity"
+        private const val KEY_PENDING_NOTIFICATION_ROUTE = "pending_notification_route"
     }
 }

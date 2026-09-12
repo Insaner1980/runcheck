@@ -8,7 +8,8 @@ internal fun List<BatteryReading>.dischargingPairs(
     sortedBy { it.timestamp }
         .zipWithNext()
         .filter { (previous, current) ->
-            previous.status in dischargingStatuses && current.status in dischargingStatuses
+            previous.status in dischargingStatuses && current.status in dischargingStatuses &&
+                current.timestamp > previous.timestamp
         }
 
 internal fun Pair<BatteryReading, BatteryReading>.toDrainSample(): DrainSample? {

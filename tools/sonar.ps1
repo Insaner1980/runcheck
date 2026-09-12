@@ -81,7 +81,7 @@ if ($SonarArgs.Count -gt 0) {
     Invoke-SonarCli -Arguments $SonarArgs
 }
 
-$repoRoot = Get-RepositoryRoot -Start (Get-Location).Path
+$repoRoot = Get-RepositoryRoot -Start $PSScriptRoot
 $sonarProperties = Get-SonarProjectProperties -RepoRoot $repoRoot
 $reportsDir = Join-Path $repoRoot "reports"
 $scanReport = Join-Path $reportsDir "sonar.txt"
@@ -148,17 +148,40 @@ try {
     }
 
     try {
-        Import-Module "C:\Dev\Android-check\tools\CheckRuntime.psm1" -Force -ErrorAction Stop
-        $scanResult = Invoke-ManagedProcess `
-            -Executable (Join-Path $repoRoot "gradlew.bat") `
-            -Arguments @("assembleDebug", ":app:jacocoDebugUnitTestReport", "sonar", "--console=plain") `
-            -WorkingDirectory $repoRoot `
-            -TimeoutSeconds $GradleTimeoutSeconds
-        foreach ($streamText in @($scanResult.StandardOutput, $scanResult.StandardError)) {
-            if (-not [string]::IsNullOrWhiteSpace($streamText)) {
-                Add-Content -LiteralPath $scanReport -Encoding utf8 -Value $streamText
-                Write-Output $streamText
+        . "$PSScriptRoot\Invoke-RuncheckProjectCheck.ps1"
+        $checkerTools = Split-Path -Parent (Resolve-RuncheckProjectCheck)
+        Import-Module (Join-Path $checkerTools "CheckRuntime.psm1") -Force -ErrorAction Stop
+        $scanTimer = [Diagnostics.Stopwatch]::StartNew()
+        for ($attempt = 1; $attempt -le 3; $attempt++) {
+            $remainingSeconds = if ($attempt -eq 1) { $GradleTimeoutSeconds } else {
+                $GradleTimeoutSeconds - [int][Math]::Ceiling($scanTimer.Elapsed.TotalSeconds)
             }
+            if ($remainingSeconds -le 0) {
+                Add-Content -LiteralPath $scanReport -Encoding utf8 -Value "ERROR: SONAR_ANALYSIS_TIMEOUT ($GradleTimeoutSeconds s)"
+                exit 2
+            }
+            $scanResult = Invoke-ManagedProcess `
+                -Executable (Join-Path $repoRoot "gradlew.bat") `
+                -Arguments @("assembleDebug", ":app:jacocoDebugUnitTestReport", "sonar", "--console=plain") `
+                -WorkingDirectory $repoRoot `
+                -TimeoutSeconds $remainingSeconds
+            foreach ($streamText in @($scanResult.StandardOutput, $scanResult.StandardError)) {
+                if (-not [string]::IsNullOrWhiteSpace($streamText)) {
+                    Add-Content -LiteralPath $scanReport -Encoding utf8 -Value $streamText
+                    Write-Output $streamText
+                }
+            }
+
+            $scanOutput = $scanResult.StandardOutput + "`n" + $scanResult.StandardError
+            $uploadWriteTimeout = $scanOutput -match 'Fail to request https?://[^\s]+/api/ce/submit\?' -and
+                $scanOutput -match 'java\.net\.SocketTimeoutException' -and
+                $scanOutput -match 'okhttp3\.internal\.http2\.Http2Stream\$FramingSink\.(emitFrame|write)'
+            if ($scanResult.TimedOut -or $scanResult.ExitCode -eq 0 -or -not $uploadWriteTimeout -or $attempt -eq 3) {
+                break
+            }
+            $retryMessage = "RETRY: SONAR_UPLOAD_WRITE_TIMEOUT; scan attempt $($attempt + 1)/3."
+            Add-Content -LiteralPath $scanReport -Encoding utf8 -Value $retryMessage
+            Write-Output $retryMessage
         }
     }
     catch {
@@ -182,7 +205,7 @@ try {
     }
 
     try {
-        Import-Module "C:\Dev\Android-check\tools\SonarProjectChecks.psm1" -Force -ErrorAction Stop
+        Import-Module (Join-Path $checkerTools "SonarProjectChecks.psm1") -Force -ErrorAction Stop
         Invoke-SonarIssueExport `
             -Executable $cli.Source `
             -Arguments @("list", "issues", "--project", $projectKey, "--statuses", "OPEN,CONFIRMED", "--format", "json") `

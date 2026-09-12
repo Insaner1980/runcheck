@@ -34,8 +34,8 @@ class GetBatteryStatisticsUseCase
         private fun calculateChargeSummary(readings: List<com.runcheck.domain.model.BatteryReading>): ChargeSummary {
             var totalCharged = 0f
             var totalDischarged = 0f
-            var chargeSessions = 0
-            var wasCharging = false
+            var wasCharging = readings.first().status == "CHARGING"
+            var chargeSessions = if (wasCharging) 1 else 0
 
             for (index in 1 until readings.size) {
                 val previous = readings[index - 1]

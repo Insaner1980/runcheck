@@ -50,6 +50,13 @@ class InsightRepositoryImpl
             now: Long,
         ) {
             transactionRunner.runInTransaction {
+                val candidatesToStore = candidatesByRule.filterValues { it.isNotEmpty() }
+                val existingByRule =
+                    if (candidatesToStore.isEmpty()) {
+                        emptyMap()
+                    } else {
+                        insightDao.getByRules(candidatesToStore.keys).groupBy { it.ruleId }
+                    }
                 insightDao.deleteExpired(now)
                 if (candidatesByRule.isEmpty()) return@runInTransaction
 
@@ -58,13 +65,8 @@ class InsightRepositoryImpl
                     insightDao.deleteUndismissedByRules(emptyRuleIds)
                 }
 
-                val candidatesToStore = candidatesByRule.filterValues { it.isNotEmpty() }
                 if (candidatesToStore.isEmpty()) return@runInTransaction
 
-                val existingByRule =
-                    insightDao
-                        .getByRules(candidatesToStore.keys)
-                        .groupBy { it.ruleId }
                 val staleIds =
                     candidatesToStore.flatMap { (ruleId, candidates) ->
                         val incomingKeys = candidates.mapTo(mutableSetOf()) { it.dedupeKey }

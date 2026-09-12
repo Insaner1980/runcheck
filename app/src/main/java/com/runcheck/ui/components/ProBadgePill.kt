@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.runcheck.R
 import com.runcheck.ui.theme.spacing
@@ -22,6 +23,7 @@ import com.runcheck.ui.theme.uiTokens
 fun ProBadgePill(
     modifier: Modifier = Modifier,
     text: String? = null,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
 ) {
     val badgeText = text ?: stringResource(R.string.pro_feature_badge)
     val accentColor = MaterialTheme.colorScheme.primary
@@ -44,12 +46,12 @@ fun ProBadgePill(
                 imageVector = Icons.Outlined.Lock,
                 contentDescription = null,
                 modifier = Modifier.size(tokens.iconTiny),
-                tint = accentColor,
+                tint = contentColor,
             )
             Text(
                 text = badgeText,
                 style = MaterialTheme.typography.labelMedium,
-                color = accentColor,
+                color = contentColor,
             )
         }
     }

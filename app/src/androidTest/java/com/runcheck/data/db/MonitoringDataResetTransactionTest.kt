@@ -6,6 +6,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.runcheck.data.thermal.ThrottlingRepositoryImpl
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.domain.model.ThrottlingEvent
 import com.runcheck.domain.usecase.MonitoringDataCoordinator
 import com.runcheck.domain.usecase.TrackThrottlingEventsUseCase
 import com.runcheck.util.AppDispatchers
@@ -76,14 +77,7 @@ class MonitoringDataResetTransactionTest {
             val original = requireNotNull(repository.getOpenEvent())
             val failure = runCatching { reset { error("rollback") } }.exceptionOrNull()
             assertTrue(failure is IllegalStateException)
-            assertEquals(original, repository.getEventsSinceSync(0).single())
-            observe(200, ThermalStatus.NONE)
-            assertEquals(original.copy(durationMs = 100L), repository.getEventsSinceSync(0).single())
-            assertNull(repository.getOpenEvent())
-            reset()
-            assertTrue(repository.getEventsSinceSync(0).isEmpty())
-            observe(300)
-            assertNotEquals(original.id, requireNotNull(repository.getOpenEvent()).id)
+            assertRollbackRecovery(original)
         }
 
     @Test
@@ -101,15 +95,19 @@ class MonitoringDataResetTransactionTest {
                 }
             deleted.await()
             reset.cancelAndJoin()
-            assertEquals(original, repository.getEventsSinceSync(0).single())
-            observe(200, ThermalStatus.NONE)
-            assertEquals(original.copy(durationMs = 100L), repository.getEventsSinceSync(0).single())
-            assertNull(repository.getOpenEvent())
-            reset()
-            assertTrue(repository.getEventsSinceSync(0).isEmpty())
-            observe(300)
-            assertNotEquals(original.id, requireNotNull(repository.getOpenEvent()).id)
+            assertRollbackRecovery(original)
         }
+
+    private suspend fun assertRollbackRecovery(original: ThrottlingEvent) {
+        assertEquals(original, repository.getEventsSinceSync(0).single())
+        observe(200, ThermalStatus.NONE)
+        assertEquals(original.copy(durationMs = 100L), repository.getEventsSinceSync(0).single())
+        assertNull(repository.getOpenEvent())
+        reset()
+        assertTrue(repository.getEventsSinceSync(0).isEmpty())
+        observe(300)
+        assertNotEquals(original.id, requireNotNull(repository.getOpenEvent()).id)
+    }
 
     private suspend fun reset(afterDelete: suspend () -> Unit = {}) {
         coordinator.resetHistory {

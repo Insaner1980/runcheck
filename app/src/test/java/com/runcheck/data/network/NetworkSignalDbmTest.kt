@@ -6,6 +6,17 @@ import org.junit.Test
 
 class NetworkSignalDbmTest {
     @Test
+    fun `cellular ASU unknown values cannot replace a valid signal`() {
+        val values = listOf(Int.MIN_VALUE, -1, 40, 99, 255, Int.MAX_VALUE)
+
+        assertEquals(40, values.mapNotNull(::normalizeCellularSignalAsu).maxOrNull())
+        assertNull(normalizeCellularSignalAsu(99))
+        assertNull(normalizeCellularSignalAsu(255))
+        assertEquals(0, normalizeCellularSignalAsu(0))
+        assertEquals(97, normalizeCellularSignalAsu(97))
+    }
+
+    @Test
     fun `wifi uses capabilities RSSI dBm`() {
         assertEquals(
             -52,

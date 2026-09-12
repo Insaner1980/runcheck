@@ -5,7 +5,6 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,7 +52,7 @@ fun CleanupSuccessOverlay(
     AnimatedVisibility(
         visible = visible,
         enter = if (noMotion) EnterTransition.None else fadeIn(tween(MotionTokens.MEDIUM), initialAlpha = 0f),
-        exit = if (noMotion) ExitTransition.None else fadeOut(tween(MotionTokens.MEDIUM)),
+        exit = ExitTransition.None,
         modifier = modifier,
     ) {
         Box(

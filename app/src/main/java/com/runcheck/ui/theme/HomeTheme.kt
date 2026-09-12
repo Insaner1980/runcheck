@@ -5,14 +5,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.ExperimentalTextApi
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontVariation
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.runcheck.R
 
 // Home's reference palette is deliberately scoped to the dashboard.
 val HomeBackground = Color(0xFF10110F)
@@ -27,17 +21,7 @@ val HomeGreen = Color(0xFF8AD5AE)
 val HomeOrange = Color(0xFFE98548)
 val HomeRed = Color(0xFFF16C54)
 
-@OptIn(ExperimentalTextApi::class)
-val HomeManropeFontFamily =
-    FontFamily(
-        listOf(FontWeight.Normal, FontWeight.Medium, FontWeight.SemiBold, FontWeight.Bold).map { weight ->
-            Font(
-                R.font.manrope,
-                weight = weight,
-                variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight)),
-            )
-        },
-    )
+val HomeManropeFontFamily = ManropeFontFamily
 
 @Composable
 fun HomeTheme(content: @Composable () -> Unit) {

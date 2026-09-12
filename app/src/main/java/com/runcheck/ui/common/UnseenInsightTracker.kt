@@ -27,4 +27,17 @@ internal class UnseenInsightTracker {
         if (succeeded) previousIds = ids
         pendingIds = null
     }
+
+    suspend fun markSeen(
+        ids: Set<Long>,
+        persist: suspend (Set<Long>) -> Unit,
+    ) {
+        var succeeded = false
+        try {
+            persist(ids)
+            succeeded = true
+        } finally {
+            complete(ids, succeeded)
+        }
+    }
 }

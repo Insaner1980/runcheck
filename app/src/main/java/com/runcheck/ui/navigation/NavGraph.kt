@@ -9,7 +9,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -100,7 +105,10 @@ fun RuncheckNavHost(
     }
 
     NavHost(
-        modifier = modifier,
+        modifier =
+            modifier.windowInsetsPadding(
+                WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
+            ),
         navController = navController,
         startDestination = Screen.Home.route,
         enterTransition = {
@@ -384,10 +392,10 @@ private fun NavBackStackEntry.rememberFullscreenChartResult(): FullscreenChartRe
     return FullscreenChartResultState(source, metric, period)
 }
 
-private fun NavBackStackEntry.consumeFullscreenChartResult() {
-    savedStateHandle.remove<String>(FullscreenChartResult.KEY_SOURCE)
-    savedStateHandle.remove<String>(FullscreenChartResult.KEY_METRIC)
-    savedStateHandle.remove<String>(FullscreenChartResult.KEY_PERIOD)
+internal fun NavBackStackEntry.consumeFullscreenChartResult() {
+    savedStateHandle.set<String?>(FullscreenChartResult.KEY_SOURCE, null)
+    savedStateHandle.set<String?>(FullscreenChartResult.KEY_METRIC, null)
+    savedStateHandle.set<String?>(FullscreenChartResult.KEY_PERIOD, null)
 }
 
 @Composable

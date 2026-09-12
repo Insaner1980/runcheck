@@ -456,11 +456,18 @@ if (isReleaseArtifactTaskRequested()) {
     validateReleaseArtifactRequest()
 }
 
-tasks.configureEach {
-    if (isReleaseArtifactTaskName(name)) {
-        doFirst {
+val validateReleaseArtifactInputs =
+    tasks.register("validateReleaseArtifactInputs") {
+        group = "verification"
+        description = "Validates signing and version inputs before creating release artifacts."
+        doLast {
             validateReleaseArtifactRequest()
         }
+    }
+
+tasks.configureEach {
+    if (isReleaseArtifactTaskName(name)) {
+        dependsOn(validateReleaseArtifactInputs)
     }
 }
 

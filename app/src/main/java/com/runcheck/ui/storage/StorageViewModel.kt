@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.runcheck.R
 import com.runcheck.domain.model.HistoryPeriod
+import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.usecase.GetStorageHistoryUseCase
 import com.runcheck.domain.usecase.GetStorageStateUseCase
@@ -60,6 +61,8 @@ class StorageViewModel
             }
         private val liveUsagePercent = mutableListOf<Float>()
         private var lastObservedStorageState: StorageState? = null
+        private var latestHistory: List<StorageReading> = emptyList()
+        private var historyLoadError: UiText? = null
 
         private val _trashDeleteRequestUris = MutableSharedFlow<List<String>>(replay = 1)
         val trashDeleteRequestUris: SharedFlow<List<String>> = _trashDeleteRequestUris.asSharedFlow()
@@ -126,12 +129,15 @@ class StorageViewModel
                     getStorageHistory(selectedHistoryPeriod)
                         .sample(333L)
                         .catch { e ->
+                            historyLoadError = e.messageOrRes(R.string.common_error_generic)
                             screenState.updateUiState { current ->
                                 (current as? StorageUiState.Success)?.copy(
-                                    historyLoadError = e.messageOrRes(R.string.common_error_generic),
+                                    historyLoadError = historyLoadError,
                                 ) ?: current
                             }
                         }.collect { readings ->
+                            latestHistory = readings
+                            historyLoadError = null
                             screenState.updateUiState { current ->
                                 (current as? StorageUiState.Success)?.copy(
                                     storageHistory = readings,
@@ -158,16 +164,12 @@ class StorageViewModel
                             liveUsagePercent.appendLiveValue(state.usagePercent)
                             lastObservedStorageState = state
                         }
-                        val currentSuccess = screenState.uiState.value as? StorageUiState.Success
                         StorageUiState.Success(
                             storageState = state,
                             isPro = isPro,
                             dismissedInfoCards = dismissedCards,
                             showInfoCards = preferences.showInfoCards,
                             liveUsagePercent = liveUsagePercent.toList(),
-                            storageHistory = currentSuccess?.storageHistory ?: emptyList(),
-                            selectedHistoryPeriod = currentSuccess?.selectedHistoryPeriod ?: selectedHistoryPeriod,
-                            historyLoadError = currentSuccess?.historyLoadError,
                         )
                     }.sample(333L)
                         .catch { e ->
@@ -176,7 +178,13 @@ class StorageViewModel
                                 StorageUiState.Error(e.messageOrRes(R.string.common_error_generic))
                             }
                         }.collect { state ->
-                            screenState.updateUiState { state }
+                            screenState.updateUiState {
+                                state.copy(
+                                    storageHistory = latestHistory,
+                                    selectedHistoryPeriod = selectedHistoryPeriod,
+                                    historyLoadError = historyLoadError,
+                                )
+                            }
                             screenState.refreshTracker.finish()
                         }
                 }

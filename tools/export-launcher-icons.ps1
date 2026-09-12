@@ -94,17 +94,19 @@ function Assert-ImageSize {
     }
 }
 
-Assert-FileExists -Path $foregroundSource
-Assert-FileExists -Path $monochromeSource
-Assert-FileExists -Path $fallbackSource
+if (-not $VerifyOnly) {
+    Assert-FileExists -Path $foregroundSource
+    Assert-FileExists -Path $monochromeSource
+    Assert-FileExists -Path $fallbackSource
+}
 Assert-FileExists -Path $manifestPath
 
 $manifest = Get-Content -Raw -LiteralPath $manifestPath
 if ($manifest -notmatch 'android:icon="@mipmap/ic_launcher"') {
     throw "Manifestista puuttuu android:icon=@mipmap/ic_launcher."
 }
-if ($manifest -notmatch 'android:roundIcon="@mipmap/ic_launcher_round"') {
-    throw "Manifestista puuttuu android:roundIcon=@mipmap/ic_launcher_round."
+if ($manifest -notmatch 'android:roundIcon="@mipmap/ic_launcher"') {
+    throw "Manifestista puuttuu android:roundIcon=@mipmap/ic_launcher."
 }
 
 $magick = Get-MagickCommand
@@ -128,15 +130,12 @@ foreach ($entry in $fallbackDensities.GetEnumerator()) {
     $density = $entry.Key
     $size = [int]$entry.Value
     $launcherDestination = Join-Path $repoRoot "app\src\main\res\mipmap-$density\ic_launcher.webp"
-    $roundDestination = Join-Path $repoRoot "app\src\main\res\mipmap-$density\ic_launcher_round.webp"
 
     if (-not $VerifyOnly) {
         Convert-IconLayer -Magick $magick -Source $fallbackSource -Destination $launcherDestination -Size $size -OpaqueFallback
-        Convert-IconLayer -Magick $magick -Source $fallbackSource -Destination $roundDestination -Size $size -OpaqueFallback
     }
 
     Assert-ImageSize -Magick $magick -Path $launcherDestination -Size $size
-    Assert-ImageSize -Magick $magick -Path $roundDestination -Size $size
 }
 
 Write-Output "Launcher icon -exportit OK"

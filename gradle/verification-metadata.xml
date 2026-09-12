@@ -12053,14 +12053,17 @@
       </component>
       <component group="org.apache.groovy" name="groovy" version="4.0.29">
          <artifact name="groovy-4.0.29.jar">
+            <pgp value="34441E504A937F43EB0DAEF96A65176A0FB1CD0B"/>
             <sha256 value="16b1259f5404bc43bf066556e043769b1f7570b2ca23fdaf169f12499677e936" origin="Verified by independent HTTPS fetch from https://repo.maven.apache.org/maven2/org/apache/groovy/groovy/4.0.29/groovy-4.0.29.jar"/>
          </artifact>
          <artifact name="groovy-4.0.29.module">
+            <pgp value="34441E504A937F43EB0DAEF96A65176A0FB1CD0B"/>
             <sha256 value="e7af04464263212199236dd8f136a2ef56662654ff9125fe3573f1968b147738" origin="Verified by independent HTTPS fetch from https://repo.maven.apache.org/maven2/org/apache/groovy/groovy/4.0.29/groovy-4.0.29.module"/>
          </artifact>
       </component>
       <component group="org.apache.groovy" name="groovy-bom" version="4.0.29">
          <artifact name="groovy-bom-4.0.29.module">
+            <pgp value="34441E504A937F43EB0DAEF96A65176A0FB1CD0B"/>
             <sha256 value="2392853c20ff3b7474791d66f831909f25396cb397cf63bf15e1998a5c0b82fc" origin="Verified by independent HTTPS fetch from https://repo.maven.apache.org/maven2/org/apache/groovy/groovy-bom/4.0.29/groovy-bom-4.0.29.module"/>
          </artifact>
          <artifact name="groovy-bom-4.0.29.pom">
