@@ -23,7 +23,9 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -104,6 +106,33 @@ class NetworkViewModelTest {
         mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(334L)
         mainDispatcherRule.testDispatcher.scheduler.runCurrent()
     }
+
+    @Test
+    fun `speed history requests follow free pro and revoked entitlement limits`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val access = MutableStateFlow(false)
+            val requestedLimits = mutableListOf<Int>()
+            every { observeProAccess() } returns access
+            every { getMeasuredNetworkState() } returns emptyFlow()
+            every { getSpeedTestHistory(capture(requestedLimits)) } returns flowOf(emptyList())
+            viewModel = createViewModel()
+
+            try {
+                viewModel.startObserving()
+                runCurrent()
+                assertEquals(listOf(5), requestedLimits)
+
+                access.value = true
+                runCurrent()
+                assertEquals(listOf(5, 100), requestedLimits)
+
+                access.value = false
+                runCurrent()
+                assertEquals(listOf(5, 100, 5), requestedLimits)
+            } finally {
+                viewModel.stopObserving()
+            }
+        }
 
     private fun prepareSpeedTest(): MutableSharedFlow<SpeedTestProgress> =
         MutableSharedFlow<SpeedTestProgress>().also { speedTestFlow ->
@@ -254,7 +283,7 @@ class NetworkViewModelTest {
             assertEquals(12, speedState.pingMs)
 
             // Verify finalize was called
-            coVerify { finalizeSpeedTest(any(), any()) }
+            coVerify { finalizeSpeedTest(any()) }
             viewModel.stopObserving()
         }
 
@@ -277,6 +306,84 @@ class NetworkViewModelTest {
             // The second call should be blocked by isRunning guard
             verify(exactly = 1) { runSpeedTest(any()) }
             viewModel.stopObserving()
+        }
+
+    @Test
+    fun `completion waits for finalization and then permits another test`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val finalizationStarted = CompletableDeferred<Unit>()
+            val finishFinalization = CompletableDeferred<Unit>()
+            every { runSpeedTest(any()) } returns
+                flow {
+                    emit(SpeedTestProgress.UploadPhase(currentMbps = 35.0, progress = 1f))
+                    emit(
+                        SpeedTestProgress.Completed(
+                            downloadMbps = 95.0,
+                            uploadMbps = 35.0,
+                            pingMs = 12,
+                            jitterMs = 2,
+                            serverName = null,
+                            serverLocation = null,
+                            connectionInfo = SpeedTestConnectionInfo(ConnectionType.WIFI, "WiFi 6", -50),
+                        ),
+                    )
+                }
+            coEvery { finalizeSpeedTest(any()) } coAnswers {
+                finalizationStarted.complete(Unit)
+                finishFinalization.await()
+            }
+            viewModel = createViewModel()
+            viewModel.startSpeedTest()
+            runCurrent()
+
+            assertTrue(finalizationStarted.isCompleted)
+            assertEquals(SpeedTestPhase.Upload, viewModel.speedTestState.value.phase)
+            assertTrue(viewModel.speedTestState.value.isRunning)
+            viewModel.startSpeedTest()
+            verify(exactly = 1) { runSpeedTest(any()) }
+
+            finishFinalization.complete(Unit)
+            runCurrent()
+            assertEquals(SpeedTestPhase.Completed, viewModel.speedTestState.value.phase)
+            assertFalse(viewModel.speedTestState.value.isRunning)
+
+            viewModel.startSpeedTest()
+            assertEquals(SpeedTestPhase.Ping, viewModel.speedTestState.value.phase)
+            runCurrent()
+            verify(exactly = 2) { runSpeedTest(any()) }
+        }
+
+    @Test
+    fun `timeout cancels measurement and ends in non running failed phase`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            var measurementCancelled = false
+            every { runSpeedTest(any()) } returns
+                flow {
+                    try {
+                        emit(SpeedTestProgress.DownloadPhase(currentMbps = 85.5, progress = 0.5f))
+                        awaitCancellation()
+                    } finally {
+                        measurementCancelled = true
+                    }
+                }
+            viewModel = createViewModel()
+            viewModel.startSpeedTest()
+            runCurrent()
+            advanceTimeBy(89_999L)
+            runCurrent()
+            assertEquals(SpeedTestPhase.Download, viewModel.speedTestState.value.phase)
+            assertTrue(viewModel.speedTestState.value.isRunning)
+            assertFalse(measurementCancelled)
+
+            advanceTimeBy(1L)
+            runCurrent()
+            assertEquals(
+                SpeedTestPhase.Failed(UiText.Resource(R.string.speed_test_error_timeout)),
+                viewModel.speedTestState.value.phase,
+            )
+            assertFalse(viewModel.speedTestState.value.isRunning)
+            assertTrue(measurementCancelled)
+            coVerify(exactly = 0) { finalizeSpeedTest(any()) }
         }
 
     @Test
@@ -305,6 +412,8 @@ class NetworkViewModelTest {
             runCurrent()
 
             assertTrue(viewModel.speedTestState.value.showCellularWarning)
+            assertEquals(SpeedTestPhase.Idle, viewModel.speedTestState.value.phase)
+            assertFalse(viewModel.speedTestState.value.isRunning)
             assertEquals(listOf(false), allowCellularCalls)
 
             viewModel.confirmCellularSpeedTest()
@@ -369,7 +478,7 @@ class NetworkViewModelTest {
                         connectionInfo = SpeedTestConnectionInfo(ConnectionType.WIFI, "WiFi 6", -50),
                     ),
                 )
-            coEvery { finalizeSpeedTest(any(), any()) } throws
+            coEvery { finalizeSpeedTest(any()) } throws
                 IllegalStateException("Database path: /data/user/0/com.runcheck/databases/runcheck.db")
 
             viewModel = createViewModel()
@@ -407,7 +516,7 @@ class NetworkViewModelTest {
             assertTrue(speedState.phase is SpeedTestPhase.Failed)
             assertFalse(speedState.isRunning)
             assertEquals(85.5, speedState.downloadMbps, 0.01)
-            coVerify(exactly = 0) { finalizeSpeedTest(any(), any()) }
+            coVerify(exactly = 0) { finalizeSpeedTest(any()) }
             viewModel.stopObserving()
         }
 

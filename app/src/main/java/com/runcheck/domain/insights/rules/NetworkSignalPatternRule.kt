@@ -2,6 +2,7 @@ package com.runcheck.domain.insights.rules
 
 import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.model.InsightCandidate
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.insights.model.InsightType
@@ -60,8 +61,7 @@ class NetworkSignalPatternRule
                     type = InsightType.NETWORK,
                     priority = priority,
                     confidence = confidence,
-                    titleKey = TITLE_KEY,
-                    bodyKey = BODY_KEY,
+                    messageId = InsightMessageId.NETWORK_SIGNAL_PATTERN,
                     bodyArgs = listOf(weakPercent.toString(), averageWeakSignal.toString()),
                     generatedAt = now,
                     expiresAt = now + TTL_MS,
@@ -75,8 +75,6 @@ class NetworkSignalPatternRule
         companion object {
             const val RULE_ID = "network_signal_pattern"
 
-            private const val TITLE_KEY = "insight_network_signal_pattern_title"
-            private const val BODY_KEY = "insight_network_signal_pattern_body"
             private const val LOOKBACK_MS = 3L * 24L * 60L * 60L * 1000L
             private const val TTL_MS = 12L * 60L * 60L * 1000L
             private const val WEAK_SIGNAL_DBM = -110

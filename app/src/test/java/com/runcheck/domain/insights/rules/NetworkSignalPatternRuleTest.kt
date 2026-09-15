@@ -1,5 +1,6 @@
 package com.runcheck.domain.insights.rules
 
+import com.runcheck.domain.insights.model.InsightMessageId
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -16,6 +17,7 @@ class NetworkSignalPatternRuleTest {
             assertEquals(1, insights.size)
             val insight = insights.single()
             assertEquals(NetworkSignalPatternRule.RULE_ID, insight.ruleId)
+            assertEquals(InsightMessageId.NETWORK_SIGNAL_PATTERN, insight.messageId)
             assertEquals("cellular:75plus", insight.dedupeKey)
             assertEquals("83", insight.bodyArgs[0])
             assertEquals("-115", insight.bodyArgs[1])

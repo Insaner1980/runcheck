@@ -57,7 +57,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -79,19 +78,18 @@ import com.runcheck.service.monitor.RealTimeMonitorService
 import com.runcheck.ui.common.findActivity
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.formatTemperature
+import com.runcheck.ui.components.AdaptiveMetricPillGroup
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPillItem
-import com.runcheck.ui.components.MetricPillItems
-import com.runcheck.ui.components.MetricPillRow
 import com.runcheck.ui.components.RuncheckCard
 import com.runcheck.ui.components.ScrollableDetailColumn
 import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.learn.LearnArticleIds
-import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
+import com.runcheck.ui.theme.dividerColor
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
@@ -383,7 +381,6 @@ private fun SettingsMeasurementSection( // NOSONAR
     onInfoClick: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    val useStackedMetrics = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
     uiState.deviceProfile?.let { profile ->
         SettingsCard {
             CardSectionTitle(text = stringResource(R.string.settings_measurement_info))
@@ -407,8 +404,8 @@ private fun SettingsMeasurementSection( // NOSONAR
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            SettingsMeasurementMetricRow(
-                metrics =
+            AdaptiveMetricPillGroup(
+                items =
                     listOf(
                         MetricPillItem(
                             label = stringResource(R.string.settings_api_level_label),
@@ -433,12 +430,13 @@ private fun SettingsMeasurementSection( // NOSONAR
                             infoKey = "currentReading",
                         ),
                     ),
-                useStackedLayout = useStackedMetrics,
+                horizontalSpacing = MaterialTheme.spacing.md,
+                verticalSpacing = MaterialTheme.spacing.sm,
                 onInfoClick = onInfoClick,
             )
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            SettingsMeasurementMetricRow(
-                metrics =
+            AdaptiveMetricPillGroup(
+                items =
                     listOf(
                         MetricPillItem(
                             label = stringResource(R.string.settings_cycle_count_label),
@@ -458,7 +456,8 @@ private fun SettingsMeasurementSection( // NOSONAR
                             infoKey = "thermalZones",
                         ),
                     ),
-                useStackedLayout = useStackedMetrics,
+                horizontalSpacing = MaterialTheme.spacing.md,
+                verticalSpacing = MaterialTheme.spacing.sm,
                 onInfoClick = onInfoClick,
             )
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
@@ -472,36 +471,16 @@ private fun SettingsMeasurementSection( // NOSONAR
                         .MemoryInfo()
                         .also { activityManager?.getMemoryInfo(it) }
                 }
-            SettingsMeasurementMetricRow(
-                metrics =
+            AdaptiveMetricPillGroup(
+                items =
                     listOf(
                         MetricPillItem(
                             label = stringResource(R.string.settings_ram_label),
                             value = formatStorageSize(context, memoryInfo.totalMem),
                         ),
                     ),
-                useStackedLayout = useStackedMetrics,
-                onInfoClick = onInfoClick,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SettingsMeasurementMetricRow(
-    metrics: List<MetricPillItem>,
-    useStackedLayout: Boolean,
-    onInfoClick: (String) -> Unit,
-) {
-    if (useStackedLayout) {
-        Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
-            MetricPillItems(items = metrics, onInfoClick = onInfoClick)
-        }
-    } else {
-        MetricPillRow(spacing = MaterialTheme.spacing.md) {
-            MetricPillItems(
-                items = metrics,
-                modifier = Modifier.weight(1f),
+                horizontalSpacing = MaterialTheme.spacing.md,
+                verticalSpacing = MaterialTheme.spacing.sm,
                 onInfoClick = onInfoClick,
             )
         }
@@ -631,7 +610,7 @@ internal fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
 
 @Composable
 internal fun SettingsDivider() {
-    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    HorizontalDivider(color = MaterialTheme.dividerColor)
 }
 
 @Composable
@@ -922,4 +901,15 @@ internal val LOW_BATTERY_THRESHOLD_VALUES =
 internal val TEMPERATURE_THRESHOLD_VALUES =
     (AlertThresholds.MIN_TEMPERATURE_C..AlertThresholds.MAX_TEMPERATURE_C).toList()
 internal val LOW_STORAGE_THRESHOLD_VALUES =
-    (AlertThresholds.MIN_STORAGE_PERCENT..95 step 5).toList() + AlertThresholds.MAX_STORAGE_PERCENT
+    storageAlertThresholdValues(
+        min = AlertThresholds.MIN_STORAGE_PERCENT,
+        max = AlertThresholds.MAX_STORAGE_PERCENT,
+    )
+
+internal fun storageAlertThresholdValues(
+    min: Int,
+    max: Int,
+): List<Int> {
+    val regularValues = (min..max step 5).toList()
+    return if (regularValues.lastOrNull() == max) regularValues else regularValues + max
+}

@@ -2,10 +2,12 @@ package com.runcheck.domain.insights.rules
 
 import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.model.InsightCandidate
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.insights.model.InsightType
 import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.domain.model.ThermalStatusPersistence
 import com.runcheck.domain.repository.ThrottlingRepository
 import javax.inject.Inject
 
@@ -26,14 +28,14 @@ class RecurringThermalThrottlingRule
 
             val severeEvents =
                 events.filter { event ->
-                    parseThermalStatus(event.thermalStatus) >= ThermalStatus.SEVERE
+                    ThermalStatusPersistence.fromId(event.thermalStatus)?.let { it >= ThermalStatus.SEVERE } == true
                 }
             if (severeEvents.size < MINIMUM_EVENT_COUNT) return emptyList()
 
             val peakStatus =
-                severeEvents.maxOfOrNull { event ->
-                    parseThermalStatus(event.thermalStatus)
-                } ?: return emptyList()
+                severeEvents
+                    .mapNotNull { event -> ThermalStatusPersistence.fromId(event.thermalStatus) }
+                    .maxOrNull() ?: return emptyList()
             val peakTemp = severeEvents.maxOfOrNull { it.batteryTempC } ?: return emptyList()
             val totalDurationMs = severeEvents.sumOf { it.durationMs ?: 0L }
             val confidence = (severeEvents.size / CONFIDENCE_EVENT_COUNT.toFloat()).coerceIn(0f, 1f)
@@ -52,12 +54,11 @@ class RecurringThermalThrottlingRule
                     type = InsightType.THERMAL,
                     priority = priority,
                     confidence = confidence,
-                    titleKey = TITLE_KEY,
-                    bodyKey = BODY_KEY,
+                    messageId = InsightMessageId.RECURRING_THERMAL_THROTTLING,
                     bodyArgs =
                         listOf(
                             severeEvents.size.toString(),
-                            peakStatus.name.lowercase(),
+                            ThermalStatusPersistence.toId(peakStatus).lowercase(),
                             peakTemp.toInt().toString(),
                         ),
                     generatedAt = now,
@@ -79,17 +80,12 @@ class RecurringThermalThrottlingRule
                     count >= 4 -> "4plus"
                     else -> "3plus"
                 }
-            return "${peakStatus.name.lowercase()}:$countBucket"
+            return "${ThermalStatusPersistence.toId(peakStatus).lowercase()}:$countBucket"
         }
-
-        private fun parseThermalStatus(raw: String): ThermalStatus =
-            ThermalStatus.entries.firstOrNull { it.name == raw } ?: ThermalStatus.NONE
 
         companion object {
             const val RULE_ID = "recurring_thermal_throttling"
 
-            private const val TITLE_KEY = "insight_thermal_throttling_title"
-            private const val BODY_KEY = "insight_thermal_throttling_body"
             private const val LOOKBACK_MS = 7L * 24L * 60L * 60L * 1000L
             private const val TTL_MS = 24L * 60L * 60L * 1000L
             private const val MINIMUM_EVENT_COUNT = 3

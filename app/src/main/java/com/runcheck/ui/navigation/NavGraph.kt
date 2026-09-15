@@ -231,7 +231,7 @@ fun RuncheckNavHost(
         }
         composable(
             route = Screen.Cleanup.ROUTE,
-            arguments = listOf(navArgument("type") { type = NavType.StringType }),
+            arguments = listOf(navArgument(Screen.Cleanup.ARG_TYPE) { type = NavType.StringType }),
         ) {
             CleanupScreen(onBack = { navController.popBackStack() })
         }
@@ -302,9 +302,9 @@ fun RuncheckNavHost(
         }
         composable(
             route = Screen.LearnArticle.ROUTE,
-            arguments = listOf(navArgument("articleId") { type = NavType.StringType }),
+            arguments = listOf(navArgument(Screen.LearnArticle.ARG_ARTICLE_ID) { type = NavType.StringType }),
         ) {
-            val articleId = it.arguments?.getString("articleId") ?: ""
+            val articleId = it.arguments?.getString(Screen.LearnArticle.ARG_ARTICLE_ID) ?: ""
             LearnArticleDetailScreen(
                 articleId = articleId,
                 onBack = { navController.popBackStack() },
@@ -315,9 +315,9 @@ fun RuncheckNavHost(
             route = Screen.FullscreenChart.ROUTE,
             arguments =
                 listOf(
-                    navArgument("source") { type = NavType.StringType },
-                    navArgument("metric") { type = NavType.StringType },
-                    navArgument("period") { type = NavType.StringType },
+                    navArgument(Screen.FullscreenChart.ARG_SOURCE) { type = NavType.StringType },
+                    navArgument(Screen.FullscreenChart.ARG_METRIC) { type = NavType.StringType },
+                    navArgument(Screen.FullscreenChart.ARG_PERIOD) { type = NavType.StringType },
                 ),
             enterTransition = {
                 if (reducedMotion) {

@@ -19,6 +19,7 @@ import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.repository.BatteryRepository
 import com.runcheck.domain.repository.UserPreferencesRepository
+import com.runcheck.ui.common.chargingStatusLabelRes
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.util.AppDispatchers
@@ -223,7 +224,7 @@ class RealTimeMonitorService : Service() {
 
         // Title: level + status
         titleParts.add("${battery.level}%")
-        titleParts.add(chargingStatusLabel(battery.chargingStatus))
+        titleParts.add(getString(chargingStatusLabelRes(battery.chargingStatus)))
 
         if (prefs.liveNotifTemperature) {
             titleParts.add(formatTemperature(this, battery.temperatureC, prefs.temperatureUnit))
@@ -234,15 +235,10 @@ class RealTimeMonitorService : Service() {
             addCurrentLine(battery, bodyLines)
         }
 
-        if (prefs.liveNotifDrainRate) {
-            // Drain rate from voltage trend — simplified display
-            val drainLabel =
-                when (battery.chargingStatus) {
-                    ChargingStatus.CHARGING -> getString(R.string.live_notif_charging)
-                    else -> getString(R.string.live_notif_discharging)
-                }
-            bodyLines.add(drainLabel)
-        }
+        liveNotificationChargingStatusLabelRes(
+            status = battery.chargingStatus,
+            enabled = prefs.liveNotifDrainRate,
+        )?.let { bodyLines.add(getString(it)) }
 
         if (prefs.liveNotifScreenStats) {
             bodyLines.add(getString(R.string.live_notif_screen_on))
@@ -274,14 +270,6 @@ class RealTimeMonitorService : Service() {
             .setShowWhen(false)
             .build()
     }
-
-    private fun chargingStatusLabel(status: ChargingStatus): String =
-        when (status) {
-            ChargingStatus.CHARGING -> getString(R.string.charging_status_charging)
-            ChargingStatus.FULL -> getString(R.string.charging_status_full)
-            ChargingStatus.DISCHARGING -> getString(R.string.charging_status_discharging)
-            ChargingStatus.NOT_CHARGING -> getString(R.string.charging_status_not_charging)
-        }
 
     private fun addCurrentLine(
         battery: BatteryState,
@@ -365,3 +353,8 @@ internal fun liveNotificationCurrentLabelRes(confidence: Confidence): Int? =
         Confidence.LOW -> R.string.live_notif_estimated_current
         Confidence.UNAVAILABLE -> null
     }
+
+internal fun liveNotificationChargingStatusLabelRes(
+    status: ChargingStatus,
+    enabled: Boolean,
+): Int? = chargingStatusLabelRes(status).takeIf { enabled }

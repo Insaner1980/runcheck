@@ -9,12 +9,15 @@ import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.TemperatureUnit
+import com.runcheck.ui.common.BatteryTemperaturePresentation
+import com.runcheck.ui.common.StorageUsagePresentation
 import com.runcheck.ui.common.convertTemperature
 import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.formatLocalizedDateTime
 import com.runcheck.ui.components.ChartQualityZone
 import com.runcheck.ui.components.ChartXLabel
 import com.runcheck.ui.components.ChartYLabel
+import com.runcheck.ui.theme.StatusColors
 import com.runcheck.ui.theme.statusColors
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -177,8 +180,9 @@ fun calculateChargingSessionSummary(
     val gainPercent = currentLevel - first.level
     val averageSpeedPctPerHour = sessionAverageSpeed(gainPercent, durationMs)
     val recentSpeedPctPerHour = sessionRecentSpeed(session)
-    val deliveredMah = sessionDeliveredMah(session)
-    val averageCurrentMa = sessionAverageCurrent(session, deliveredMah)
+    val currentTotals = sessionCurrentTotals(session)
+    val deliveredMah = currentTotals.deliveredMah
+    val averageCurrentMa = currentTotals.averageCurrentMa
     val averagePowerW =
         averageCurrentMa?.let { currentMa ->
             val avgVoltageV = session.map { it.voltageMv / 1000f }.average().toFloat()
@@ -231,8 +235,14 @@ private fun sessionRecentSpeed(session: List<BatteryReading>): Float? {
     return levelGain * 3_600_000f / durationMs
 }
 
-private fun sessionDeliveredMah(session: List<BatteryReading>): Int? {
+private data class SessionCurrentTotals(
+    val deliveredMah: Int?,
+    val averageCurrentMa: Int?,
+)
+
+private fun sessionCurrentTotals(session: List<BatteryReading>): SessionCurrentTotals {
     var deliveredMah = 0f
+    var validDurationMs = 0L
     var hasIntervals = false
 
     session.zipWithNext().forEach { (start, end) ->
@@ -242,29 +252,20 @@ private fun sessionDeliveredMah(session: List<BatteryReading>): Int? {
         if (startCurrent != null && endCurrent != null && durationMs in 1..MAX_SESSION_SAMPLE_GAP_MS) {
             val averageCurrent = ((startCurrent + endCurrent) / 2f).coerceAtLeast(0f)
             deliveredMah += averageCurrent * (durationMs / 3_600_000f)
+            validDurationMs += durationMs
             hasIntervals = true
         }
     }
 
-    return if (hasIntervals) deliveredMah.roundToInt() else null
-}
-
-private fun sessionAverageCurrent(
-    session: List<BatteryReading>,
-    deliveredMah: Int?,
-): Int? {
-    if (deliveredMah == null || session.size < 2) return null
-    val durationMs =
-        session.zipWithNext().sumOf { (start, end) ->
-            val intervalMs = end.timestamp - start.timestamp
-            if (start.currentMa != null && end.currentMa != null && intervalMs in 1..MAX_SESSION_SAMPLE_GAP_MS) {
-                intervalMs
-            } else {
-                0L
-            }
+    val roundedDeliveredMah = if (hasIntervals) deliveredMah.roundToInt() else null
+    // Preserve the average derived from rounded delivered charge, not the Float accumulator.
+    val averageCurrentMa =
+        if (roundedDeliveredMah != null && validDurationMs > 0L) {
+            (roundedDeliveredMah / (validDurationMs / 3_600_000f)).roundToInt()
+        } else {
+            null
         }
-    if (durationMs <= 0L) return null
-    return (deliveredMah / (durationMs / 3_600_000f)).roundToInt()
+    return SessionCurrentTotals(roundedDeliveredMah, averageCurrentMa)
 }
 
 private fun estimateRemainingChargeMs(
@@ -356,19 +357,9 @@ fun buildNetworkYLabels(
 
 // ── X-axis label builders ───────────────────────────────────────────────────────
 
-fun buildBatteryXLabels(
-    timestamps: List<Long>,
-    period: HistoryPeriod,
-): List<ChartXLabel> = buildHistoryXLabels(timestamps, period)
-
 fun buildSessionXLabels(timestamps: List<Long>): List<ChartXLabel> = buildXLabels(timestamps, skeleton = "Hm")
 
-fun buildNetworkXLabels(
-    timestamps: List<Long>,
-    period: HistoryPeriod,
-): List<ChartXLabel> = buildHistoryXLabels(timestamps, period)
-
-private fun buildHistoryXLabels(
+internal fun buildHistoryXLabels(
     timestamps: List<Long>,
     period: HistoryPeriod,
 ): List<ChartXLabel> = buildXLabels(timestamps, skeleton = historyLabelSkeleton(period))
@@ -424,47 +415,13 @@ fun batteryQualityZones(
         }
 
         BatteryHistoryMetric.TEMPERATURE -> {
-            listOf(
-                ChartQualityZone(
-                    minValue = convertTemperature(0, temperatureUnit).toFloat(),
-                    maxValue = convertTemperature(35, temperatureUnit).toFloat(),
-                    color = colors.healthy.copy(alpha = 0.06f),
-                ),
-                ChartQualityZone(
-                    minValue = convertTemperature(35, temperatureUnit).toFloat(),
-                    maxValue = convertTemperature(40, temperatureUnit).toFloat(),
-                    color = colors.fair.copy(alpha = 0.06f),
-                ),
-                ChartQualityZone(
-                    minValue = convertTemperature(40, temperatureUnit).toFloat(),
-                    maxValue = convertTemperature(45, temperatureUnit).toFloat(),
-                    color = colors.poor.copy(alpha = 0.06f),
-                ),
-                ChartQualityZone(
-                    minValue = convertTemperature(45, temperatureUnit).toFloat(),
-                    maxValue = convertTemperature(60, temperatureUnit).toFloat(),
-                    color = colors.critical.copy(alpha = 0.06f),
-                ),
-            )
+            batteryTemperatureQualityZones(temperatureUnit, colors)
         }
 
         else -> {
             null
         }
     }
-}
-
-@Composable
-fun signalQualityZones(metric: NetworkHistoryMetric): List<ChartQualityZone>? {
-    if (metric != NetworkHistoryMetric.SIGNAL) return null
-    val colors = MaterialTheme.statusColors
-    return listOf(
-        ChartQualityZone(minValue = -50f, maxValue = 0f, color = colors.healthy.copy(alpha = 0.07f)),
-        ChartQualityZone(minValue = -60f, maxValue = -50f, color = colors.healthy.copy(alpha = 0.05f)),
-        ChartQualityZone(minValue = -70f, maxValue = -60f, color = colors.fair.copy(alpha = 0.06f)),
-        ChartQualityZone(minValue = -80f, maxValue = -70f, color = colors.poor.copy(alpha = 0.06f)),
-        ChartQualityZone(minValue = -120f, maxValue = -80f, color = colors.critical.copy(alpha = 0.06f)),
-    )
 }
 
 // ── Unit helpers ────────────────────────────────────────────────────────────────
@@ -516,27 +473,81 @@ fun networkHistoryMetricLabel(metric: NetworkHistoryMetric): String =
     }
 
 @Composable
-fun thermalQualityZones(temperatureUnit: TemperatureUnit): List<ChartQualityZone> {
-    val colors = MaterialTheme.statusColors
+fun thermalQualityZones(
+    metric: ThermalHistoryMetric,
+    temperatureUnit: TemperatureUnit,
+): List<ChartQualityZone>? = thermalQualityZones(metric, temperatureUnit, MaterialTheme.statusColors)
 
-    fun convert(celsius: Float) = convertTemperature(celsius, temperatureUnit).toFloat()
-    return listOf(
-        ChartQualityZone(minValue = convert(0f), maxValue = convert(35f), color = colors.healthy.copy(alpha = 0.06f)),
-        ChartQualityZone(minValue = convert(35f), maxValue = convert(42f), color = colors.fair.copy(alpha = 0.06f)),
-        ChartQualityZone(minValue = convert(42f), maxValue = convert(60f), color = colors.critical.copy(alpha = 0.06f)),
+internal fun thermalQualityZones(
+    metric: ThermalHistoryMetric,
+    temperatureUnit: TemperatureUnit,
+    colors: StatusColors,
+): List<ChartQualityZone>? =
+    when (metric) {
+        ThermalHistoryMetric.BATTERY_TEMP -> batteryTemperatureQualityZones(temperatureUnit, colors)
+
+        // No CPU quality-zone policy has been established.
+        ThermalHistoryMetric.CPU_TEMP -> null
+    }
+
+internal fun batteryTemperatureQualityZones(
+    temperatureUnit: TemperatureUnit,
+    colors: StatusColors,
+): List<ChartQualityZone> =
+    listOf(
+        ChartQualityZone(
+            minValue = convertTemperature(0, temperatureUnit).toFloat(),
+            maxValue = convertTemperature(BatteryTemperaturePresentation.FAIR_START_C, temperatureUnit).toFloat(),
+            color = colors.healthy.copy(alpha = 0.06f),
+        ),
+        ChartQualityZone(
+            minValue = convertTemperature(BatteryTemperaturePresentation.FAIR_START_C, temperatureUnit).toFloat(),
+            maxValue = convertTemperature(BatteryTemperaturePresentation.POOR_START_C, temperatureUnit).toFloat(),
+            color = colors.fair.copy(alpha = 0.06f),
+        ),
+        ChartQualityZone(
+            minValue = convertTemperature(BatteryTemperaturePresentation.POOR_START_C, temperatureUnit).toFloat(),
+            maxValue = convertTemperature(BatteryTemperaturePresentation.CRITICAL_START_C, temperatureUnit).toFloat(),
+            color = colors.poor.copy(alpha = 0.06f),
+        ),
+        ChartQualityZone(
+            minValue = convertTemperature(BatteryTemperaturePresentation.CRITICAL_START_C, temperatureUnit).toFloat(),
+            maxValue = convertTemperature(60, temperatureUnit).toFloat(),
+            color = colors.critical.copy(alpha = 0.06f),
+        ),
     )
-}
 
 @Composable
-fun storageQualityZones(metric: StorageHistoryMetric): List<ChartQualityZone>? {
-    val statusColors = MaterialTheme.statusColors
-    return when (metric) {
+fun storageQualityZones(metric: StorageHistoryMetric): List<ChartQualityZone>? =
+    storageQualityZones(metric, MaterialTheme.statusColors)
+
+fun storageQualityZones(
+    metric: StorageHistoryMetric,
+    statusColors: StatusColors,
+): List<ChartQualityZone>? =
+    when (metric) {
         StorageHistoryMetric.USED_SPACE -> {
             listOf(
-                ChartQualityZone(0f, 74.999f, statusColors.healthy.copy(alpha = 0.08f)),
-                ChartQualityZone(75f, 84.999f, statusColors.fair.copy(alpha = 0.08f)),
-                ChartQualityZone(85f, 94.999f, statusColors.poor.copy(alpha = 0.08f)),
-                ChartQualityZone(95f, 100f, statusColors.critical.copy(alpha = 0.08f)),
+                ChartQualityZone(
+                    0f,
+                    StorageUsagePresentation.FAIR_START_PERCENT,
+                    statusColors.healthy.copy(alpha = 0.08f),
+                ),
+                ChartQualityZone(
+                    StorageUsagePresentation.FAIR_START_PERCENT,
+                    StorageUsagePresentation.POOR_START_PERCENT,
+                    statusColors.fair.copy(alpha = 0.08f),
+                ),
+                ChartQualityZone(
+                    StorageUsagePresentation.POOR_START_PERCENT,
+                    StorageUsagePresentation.CRITICAL_START_PERCENT,
+                    statusColors.poor.copy(alpha = 0.08f),
+                ),
+                ChartQualityZone(
+                    StorageUsagePresentation.CRITICAL_START_PERCENT,
+                    100f,
+                    statusColors.critical.copy(alpha = 0.08f),
+                ),
             )
         }
 
@@ -544,7 +555,6 @@ fun storageQualityZones(metric: StorageHistoryMetric): List<ChartQualityZone>? {
             null
         }
     }
-}
 
 /**
  * Maps a [value] to the full-alpha color of the [ChartQualityZone] it falls within.

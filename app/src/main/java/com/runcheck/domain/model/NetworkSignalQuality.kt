@@ -1,5 +1,7 @@
 package com.runcheck.domain.model
 
+fun is5gNetworkSubtype(networkSubtype: String?): Boolean = networkSubtype?.contains("5G") == true
+
 fun classifyNetworkSignalQuality(
     dbm: Int?,
     type: ConnectionType,
@@ -39,7 +41,7 @@ private fun classifyCellularSignalQuality(
     dbm: Int,
     networkSubtype: String?,
 ): SignalQuality {
-    val is5g = networkSubtype?.contains("5G") == true
+    val is5g = is5gNetworkSubtype(networkSubtype)
     return if (is5g) {
         when {
             dbm >= -65 -> SignalQuality.EXCELLENT

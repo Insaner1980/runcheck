@@ -76,7 +76,6 @@ import com.runcheck.ui.chart.formatChartTooltip
 import com.runcheck.ui.chart.historyPeriodLabel
 import com.runcheck.ui.chart.networkHistoryMetricLabel
 import com.runcheck.ui.chart.rememberChartAccessibilitySummary
-import com.runcheck.ui.chart.signalQualityZones
 import com.runcheck.ui.common.ApplyFullscreenChartSelectionResult
 import com.runcheck.ui.common.EnumFilterChipRow
 import com.runcheck.ui.common.HistoryLoadErrorMessage
@@ -105,14 +104,15 @@ import com.runcheck.ui.components.RuncheckCardSurface
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.SignalBars
 import com.runcheck.ui.components.TrendChart
-import com.runcheck.ui.components.info.InfoCard
+import com.runcheck.ui.components.info.CatalogInfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.fullscreen.FullscreenChartSeedStore
-import com.runcheck.ui.fullscreen.FullscreenChartUiState
+import com.runcheck.ui.fullscreen.FullscreenChartSelection
 import com.runcheck.ui.fullscreen.sanitizeFullscreenMetric
 import com.runcheck.ui.fullscreen.sanitizeFullscreenPeriod
+import com.runcheck.ui.fullscreen.toFullscreenSuccess
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
@@ -482,9 +482,6 @@ private fun SignalHistoryCard(
             )
         }
 
-    // Quality zone bands (signal only — subtle background bands)
-    val qualityZones = signalQualityZones(metric)
-
     NetworkPanel {
         CardSectionTitle(text = stringResource(R.string.network_section_signal_history))
 
@@ -504,21 +501,8 @@ private fun SignalHistoryCard(
 
         val fullscreenSeed =
             remember(chartModel, metric, selectedPeriod) {
-                FullscreenChartUiState.Success(
-                    chartData = chartModel.chartData,
-                    chartTimestamps = chartModel.chartTimestamps,
-                    unit = chartModel.unit,
-                    selectedMetric = metric.name,
-                    selectedPeriod = selectedPeriod.name,
-                    metricOptions = NetworkHistoryMetric.entries.map { it.name },
-                    periodOptions =
-                        HistoryPeriod.entries
-                            .filter { it != HistoryPeriod.SINCE_UNPLUG }
-                            .map { it.name },
-                    yLabels = chartModel.yLabels,
-                    xLabels = chartModel.xLabels,
-                    tooltipDecimals = chartModel.tooltipDecimals,
-                    tooltipTimeSkeleton = chartModel.tooltipTimeSkeleton,
+                chartModel.toFullscreenSuccess(
+                    selection = FullscreenChartSelection.NetworkHistory(metric, selectedPeriod),
                 )
             }
         HistoryChartContent(
@@ -535,7 +519,7 @@ private fun SignalHistoryCard(
                 ),
             periodLabel = historyPeriodLabel(selectedPeriod),
             chartModel = chartModel,
-            qualityZones = qualityZones,
+            qualityZones = null,
             onExpandClick = {
                 FullscreenChartSeedStore.prime(
                     source = FullscreenChartSource.NETWORK_HISTORY,
@@ -791,37 +775,21 @@ private fun NetworkOverviewSection( // NOSONAR
                 )
 
         if (shouldShowWeakSignalInfoCard) {
-            InfoCard(
-                id = InfoCardCatalog.NetworkWeakSignalDrain.id,
-                headline = stringResource(InfoCardCatalog.NetworkWeakSignalDrain.headlineRes),
-                body = stringResource(InfoCardCatalog.NetworkWeakSignalDrain.bodyRes),
+            CatalogInfoCard(
+                definition = InfoCardCatalog.NetworkWeakSignalDrain,
+                dismissedInfoCards = state.dismissedInfoCards,
+                showInfoCards = state.showInfoCards,
                 onDismiss = onDismissInfoCard,
-                visible =
-                    InfoCardCatalog.NetworkWeakSignalDrain.id !in state.dismissedInfoCards &&
-                        state.showInfoCards,
-                onLearnMore = {
-                    InfoCardCatalog
-                        .resolveLearnArticleId(
-                            InfoCardCatalog.NetworkWeakSignalDrain,
-                        )?.let(onNavigateToLearnArticle)
-                },
+                onNavigateToLearnArticle = onNavigateToLearnArticle,
             )
         }
 
-        InfoCard(
-            id = InfoCardCatalog.NetworkSpeedTestScope.id,
-            headline = stringResource(InfoCardCatalog.NetworkSpeedTestScope.headlineRes),
-            body = stringResource(InfoCardCatalog.NetworkSpeedTestScope.bodyRes),
+        CatalogInfoCard(
+            definition = InfoCardCatalog.NetworkSpeedTestScope,
+            dismissedInfoCards = state.dismissedInfoCards,
+            showInfoCards = state.showInfoCards,
             onDismiss = onDismissInfoCard,
-            visible =
-                InfoCardCatalog.NetworkSpeedTestScope.id !in state.dismissedInfoCards &&
-                    state.showInfoCards,
-            onLearnMore = {
-                InfoCardCatalog
-                    .resolveLearnArticleId(
-                        InfoCardCatalog.NetworkSpeedTestScope,
-                    )?.let(onNavigateToLearnArticle)
-            },
+            onNavigateToLearnArticle = onNavigateToLearnArticle,
         )
 
         if (networkState.connectionType == ConnectionType.WIFI && networkState.wifiSsid == null) {

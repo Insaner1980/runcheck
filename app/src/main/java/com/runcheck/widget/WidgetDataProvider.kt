@@ -10,6 +10,7 @@ import com.runcheck.data.db.entity.BatteryReadingEntity
 import com.runcheck.data.db.entity.NetworkReadingEntity
 import com.runcheck.data.db.entity.StorageReadingEntity
 import com.runcheck.data.db.entity.ThermalReadingEntity
+import com.runcheck.data.storage.decodePersistedStorageBytes
 import com.runcheck.domain.model.BatteryHealth
 import com.runcheck.domain.model.BatteryState
 import com.runcheck.domain.model.ChargingStatus
@@ -23,7 +24,9 @@ import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.StorageState
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.domain.model.ThermalStatusPersistence
 import com.runcheck.domain.model.classifyNetworkSignalQuality
+import com.runcheck.domain.model.decodePersistedConnectionType
 import com.runcheck.domain.repository.ProStatusProvider
 import com.runcheck.domain.repository.UserPreferencesRepository
 import com.runcheck.domain.scoring.HealthScoreCalculator
@@ -178,12 +181,15 @@ internal fun healthWidgetRenderState(
             nowMillis - oldestTimestamp > staleThresholdMillis
     if (isInvalidOrStale) return WidgetRenderState.Stale
 
+    val thermalStatus =
+        ThermalStatusPersistence.fromCode(thermalReading.thermalStatus) ?: return WidgetRenderState.Empty
+    val connectionType = decodePersistedConnectionType(networkReading.type) ?: return WidgetRenderState.Empty
     val battery = batteryReading.toBatteryState()
     val score =
         calculator.calculate(
             battery = battery,
-            network = networkReading.toNetworkState(),
-            thermal = thermalReading.toThermalState(),
+            network = networkReading.toNetworkState(connectionType),
+            thermal = thermalReading.toThermalState(thermalStatus),
             storage = storageReading.toStorageState(),
         )
 
@@ -247,9 +253,8 @@ private fun BatteryReadingEntity.parsedCurrentConfidence(): Confidence =
     runCatching { Confidence.valueOf(currentConfidence) }
         .getOrDefault(Confidence.UNAVAILABLE)
 
-private fun NetworkReadingEntity.toNetworkState(): NetworkState {
-    val connectionType = enumValueOrDefault(type, ConnectionType.NONE)
-    return NetworkState(
+private fun NetworkReadingEntity.toNetworkState(connectionType: ConnectionType): NetworkState =
+    NetworkState(
         connectionType = connectionType,
         signalDbm = signalDbm,
         signalQuality = classifyNetworkSignalQuality(signalDbm, connectionType, networkSubtype),
@@ -259,17 +264,16 @@ private fun NetworkReadingEntity.toNetworkState(): NetworkState {
         networkSubtype = networkSubtype,
         latencyMs = latencyMs,
     )
-}
 
-private fun ThermalReadingEntity.toThermalState(): ThermalState =
+private fun ThermalReadingEntity.toThermalState(status: ThermalStatus): ThermalState =
     ThermalState(
         batteryTempC = batteryTempC,
         cpuTempC = cpuTempC,
-        thermalStatus = ThermalStatus.entries.getOrElse(thermalStatus) { ThermalStatus.NONE },
+        thermalStatus = status,
         isThrottling = throttling,
     )
 
-private fun StorageReadingEntity.toStorageState(): StorageState {
+internal fun StorageReadingEntity.toStorageState(): StorageState {
     val usedBytes = (totalBytes - availableBytes).coerceAtLeast(0L)
     val usagePercent =
         if (totalBytes > 0) {
@@ -283,6 +287,6 @@ private fun StorageReadingEntity.toStorageState(): StorageState {
         availableBytes = availableBytes,
         usedBytes = usedBytes,
         usagePercent = usagePercent,
-        appsBytes = appsBytes,
+        appsBytes = decodePersistedStorageBytes(appsBytes),
     )
 }

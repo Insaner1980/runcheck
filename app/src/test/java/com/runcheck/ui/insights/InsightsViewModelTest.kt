@@ -11,6 +11,8 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -29,7 +31,6 @@ class InsightsViewModelTest {
 
     private fun stubActiveInsight(insight: Insight) {
         every { insightRepository.getActiveInsights() } returns flowOf(listOf(insight))
-        every { insightRepository.getUnseenCount() } returns flowOf(1)
         every { observeProAccess() } returns flowOf(false)
     }
 
@@ -63,7 +64,6 @@ class InsightsViewModelTest {
                         insightFixture(id = 3L, target = InsightTarget.CHARGER),
                     ),
                 )
-            every { insightRepository.getUnseenCount() } returns flowOf(3)
             every { observeProAccess() } returns flowOf(false)
 
             val viewModel =
@@ -80,10 +80,66 @@ class InsightsViewModelTest {
         }
 
     @Test
+    fun `visible counts react to seen changes pro access and dismissal`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val battery = insightFixture(id = 1L, target = InsightTarget.BATTERY, seen = false)
+            val thermal = insightFixture(id = 2L, target = InsightTarget.THERMAL, seen = false)
+            val charger = insightFixture(id = 3L, target = InsightTarget.CHARGER, seen = false)
+            val activeInsights = MutableStateFlow(listOf(battery, thermal, charger))
+            val proAccess = MutableStateFlow(false)
+            every { insightRepository.getActiveInsights() } returns activeInsights
+            every { observeProAccess() } returns proAccess
+            coEvery { insightRepository.dismiss(2L) } answers {
+                activeInsights.value = activeInsights.value.filterNot { it.id == 2L }
+            }
+
+            val viewModel = InsightsViewModel(insightRepository, observeProAccess)
+            runCurrent()
+
+            val initial = viewModel.uiState.value as InsightsUiState.Success
+            assertEquals(listOf(battery, thermal), initial.insights)
+            assertEquals(2, initial.unseenInsightCount)
+
+            activeInsights.value = listOf(battery.copy(seen = true), thermal, charger)
+            runCurrent()
+
+            val seen = viewModel.uiState.value as InsightsUiState.Success
+            assertEquals(listOf(battery.copy(seen = true), thermal), seen.insights)
+            assertEquals(1, seen.unseenInsightCount)
+
+            proAccess.value = true
+            runCurrent()
+
+            val pro = viewModel.uiState.value as InsightsUiState.Success
+            assertEquals(activeInsights.value, pro.insights)
+            assertEquals(2, pro.unseenInsightCount)
+            assertTrue(pro.isPro)
+
+            viewModel.dismissInsight(2L)
+            runCurrent()
+
+            val dismissed = viewModel.uiState.value as InsightsUiState.Success
+            assertEquals(listOf(battery.copy(seen = true), charger), dismissed.insights)
+            assertEquals(1, dismissed.unseenInsightCount)
+            coVerify(exactly = 1) { insightRepository.dismiss(2L) }
+        }
+
+    @Test
+    fun `active insight flow failure produces error state`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            every { insightRepository.getActiveInsights() } returns flow { error("insights failed") }
+            every { observeProAccess() } returns flowOf(false)
+
+            val viewModel = InsightsViewModel(insightRepository, observeProAccess)
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value is InsightsUiState.Error)
+        }
+
+    @Test
     fun `dismiss delegates to repository`() =
         runTest(mainDispatcherRule.testDispatcher) {
             every { insightRepository.getActiveInsights() } returns flowOf(emptyList())
-            every { insightRepository.getUnseenCount() } returns flowOf(0)
             every { observeProAccess() } returns flowOf(false)
 
             val viewModel =

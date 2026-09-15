@@ -5,11 +5,9 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,10 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -36,11 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -53,13 +45,16 @@ import androidx.paging.compose.itemKey
 import com.runcheck.R
 import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.ScannedFile
+import com.runcheck.ui.common.EnumFilterChipRow
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.resolve
+import com.runcheck.ui.components.CenteredLoadingState
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.RuncheckCard
 import com.runcheck.ui.storage.MediaDeleteRequestResult
 import com.runcheck.ui.storage.buildMediaDeleteRequest
+import com.runcheck.ui.theme.dividerColor
 import com.runcheck.ui.theme.spacing
 import kotlinx.coroutines.flow.Flow
 
@@ -230,21 +225,12 @@ private fun CleanupScreenBody(
         // Filter chips
         if (cleanupType.filterOptions.isNotEmpty()) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-            ) {
-                cleanupType.filterOptions.forEachIndexed { index, option ->
-                    FilterChip(
-                        selected = selectedFilterIndex == index,
-                        onClick = { onFilterSelect(index) },
-                        label = { Text(stringResource(option.labelRes)) },
-                    )
-                }
-            }
+            EnumFilterChipRow(
+                values = cleanupType.filterOptions.indices.toList(),
+                selected = selectedFilterIndex,
+                onSelect = onFilterSelect,
+                labelFor = { index -> stringResource(cleanupType.filterOptions[index].labelRes) },
+            )
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
         }
 
@@ -252,19 +238,7 @@ private fun CleanupScreenBody(
             is CleanupUiState.Idle,
             is CleanupUiState.Scanning,
             -> {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .semantics {
-                                contentDescription = scanningDescription
-                                liveRegion =
-                                    LiveRegionMode.Polite
-                            },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
+                CenteredLoadingState(description = scanningDescription)
             }
 
             is CleanupUiState.Empty -> {
@@ -317,19 +291,7 @@ private fun CleanupScreenBody(
             }
 
             is CleanupUiState.Deleting -> {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .semantics {
-                                contentDescription = deletingDescription
-                                liveRegion =
-                                    LiveRegionMode.Polite
-                            },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
+                CenteredLoadingState(description = deletingDescription)
             }
 
             is CleanupUiState.Success -> {
@@ -421,7 +383,7 @@ private fun CleanupResultsList(
             item(key = "group_${group.category}") {
                 if (groupIndex > 0) {
                     HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                        color = MaterialTheme.dividerColor,
                     )
                 }
                 val onToggleExpansion =
@@ -504,7 +466,7 @@ private fun LazyListScope.expandedGroupItems(
                 Column {
                     if (index > 0) {
                         HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                            color = MaterialTheme.dividerColor,
                             modifier = Modifier.padding(start = 56.dp),
                         )
                     }

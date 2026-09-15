@@ -27,9 +27,11 @@ fun HistoryChartContent(
         if (chartModel.chartData.size < 2) {
             emptyContent()
         } else {
+            val networkContext = networkSignalHistoryContextLabel(chartModel.networkSignalFamilies)
+            val pointContexts = networkSignalContextLabels(chartModel.networkSignalContexts)
             val accessibilitySummary =
                 rememberChartAccessibilitySummary(
-                    title = accessibilityTitle,
+                    title = listOfNotNull(accessibilityTitle, networkContext).joinToString(". "),
                     chartData = chartModel.chartData,
                     unit = chartModel.unit,
                     decimals = chartModel.tooltipDecimals,
@@ -49,8 +51,10 @@ fun HistoryChartContent(
                 xLabels = chartModel.xLabels.ifEmpty { null },
                 showGrid = true,
                 qualityZones = qualityZones,
+                lineBreakIndices = chartModel.lineBreakIndices,
+                showIsolatedPoints = chartModel.networkSignalContexts.isNotEmpty(),
                 tooltipFormatter = { index ->
-                    formatChartTooltip(chartModel, index, tooltipSeparator)
+                    formatChartTooltip(chartModel, index, tooltipSeparator, pointContexts.getOrNull(index))
                 },
                 onExpandClick = onExpandClick,
             )

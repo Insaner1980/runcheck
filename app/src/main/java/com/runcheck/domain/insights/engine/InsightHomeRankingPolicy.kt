@@ -11,7 +11,7 @@ class InsightHomeRankingPolicy
     constructor() {
         fun selectHomeInsights(
             insights: List<Insight>,
-            limit: Int,
+            limit: Int = MAX_HOME_INSIGHTS,
         ): List<Insight> {
             if (limit <= 0 || insights.isEmpty()) return emptyList()
 

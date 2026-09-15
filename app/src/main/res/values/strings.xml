@@ -329,6 +329,11 @@
     <string name="signal_poor">Poor</string>
 
     <!-- Connection Type -->
+    <string name="network_signal_history_wifi">Wi-Fi history</string>
+    <string name="network_signal_history_5g">5G history</string>
+    <string name="network_signal_history_cellular">Cellular history</string>
+    <string name="network_signal_history_mixed">Mixed network types</string>
+    <string name="network_signal_history_unknown">Unknown radio context</string>
     <string name="connection_wifi">WiFi</string>
     <string name="connection_cellular">Cellular</string>
     <string name="connection_ethernet">Ethernet</string>

@@ -3,6 +3,7 @@ package com.runcheck.data.battery
 import android.database.sqlite.SQLiteException
 import com.runcheck.data.db.dao.BatteryReadingDao
 import com.runcheck.data.db.entity.BatteryReadingEntity
+import com.runcheck.data.device.DeviceProfile
 import com.runcheck.data.device.DeviceProfileProvider
 import com.runcheck.domain.model.BatteryHealth
 import com.runcheck.domain.model.BatteryState
@@ -16,14 +17,130 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BatteryRepositoryImplTest {
+    @Test
+    fun `concurrent first consumers share one source and later consumers reuse it`() =
+        runTest {
+            val fixture = SourceFixture()
+            val profileReady = CompletableDeferred<DeviceProfile>()
+            coEvery { fixture.provider.getDeviceProfile() } coAnswers { profileReady.await() }
+
+            val first = async(start = CoroutineStart.UNDISPATCHED) { fixture.repository.getBatteryState().first() }
+            val second = async(start = CoroutineStart.UNDISPATCHED) { fixture.repository.getBatteryState().first() }
+            assertFalse(first.isCompleted)
+            assertFalse(second.isCompleted)
+            coVerify(exactly = 1) { fixture.provider.getDeviceProfile() }
+            verify(exactly = 0) { fixture.factory.create(any()) }
+
+            profileReady.complete(fixture.profile)
+            assertSame(fixture.current, first.await().currentMa)
+            assertSame(fixture.current, second.await().currentMa)
+            assertSame(
+                fixture.current,
+                fixture.repository
+                    .getBatteryState()
+                    .first()
+                    .currentMa,
+            )
+            coVerify(exactly = 1) { fixture.provider.getDeviceProfile() }
+            verify(exactly = 1) { fixture.factory.create(fixture.profile) }
+            verify(exactly = 3) { fixture.source.getCurrentNow() }
+        }
+
+    @Test
+    fun `failed factory construction propagates and retries before caching success`() =
+        runTest {
+            val fixture = SourceFixture()
+            val failure = IllegalStateException("source construction failed")
+            every { fixture.factory.create(fixture.profile) } throws failure
+
+            assertSame(failure, runCatching { fixture.repository.getBatteryState().first() }.exceptionOrNull())
+            coVerify(exactly = 1) { fixture.provider.getDeviceProfile() }
+            verify(exactly = 1) { fixture.factory.create(fixture.profile) }
+            verify(exactly = 0) { fixture.source.getCurrentNow() }
+
+            every { fixture.factory.create(fixture.profile) } returns fixture.source
+            repeat(2) {
+                assertSame(
+                    fixture.current,
+                    fixture.repository
+                        .getBatteryState()
+                        .first()
+                        .currentMa,
+                )
+            }
+            coVerify(exactly = 2) { fixture.provider.getDeviceProfile() }
+            verify(exactly = 2) { fixture.factory.create(fixture.profile) }
+            verify(exactly = 2) { fixture.source.getCurrentNow() }
+        }
+
+    @Test
+    fun `failed profile retrieval propagates without construction and retries before caching success`() =
+        runTest {
+            val fixture = SourceFixture()
+            val failure = IllegalStateException("profile retrieval failed")
+            coEvery { fixture.provider.getDeviceProfile() } throws failure
+
+            assertSame(failure, runCatching { fixture.repository.getBatteryState().first() }.exceptionOrNull())
+            coVerify(exactly = 1) { fixture.provider.getDeviceProfile() }
+            verify(exactly = 0) { fixture.factory.create(any()) }
+
+            coEvery { fixture.provider.getDeviceProfile() } returns fixture.profile
+            repeat(2) {
+                assertSame(
+                    fixture.current,
+                    fixture.repository
+                        .getBatteryState()
+                        .first()
+                        .currentMa,
+                )
+            }
+            coVerify(exactly = 2) { fixture.provider.getDeviceProfile() }
+            verify(exactly = 1) { fixture.factory.create(fixture.profile) }
+            verify(exactly = 2) { fixture.source.getCurrentNow() }
+        }
+
+    @Test
+    fun `cancelling profile retrieval releases initialization mutex for a waiting consumer`() =
+        runTest {
+            val fixture = SourceFixture()
+            val profileReady = CompletableDeferred<DeviceProfile>()
+            coEvery { fixture.provider.getDeviceProfile() } coAnswers { profileReady.await() }
+            val first = async(start = CoroutineStart.UNDISPATCHED) { fixture.repository.getBatteryState().first() }
+            val waiting = async(start = CoroutineStart.UNDISPATCHED) { fixture.repository.getBatteryState().first() }
+            coVerify(exactly = 1) { fixture.provider.getDeviceProfile() }
+
+            first.cancelAndJoin()
+            assertTrue(first.isCancelled)
+            verify(exactly = 0) { fixture.factory.create(any()) }
+            profileReady.complete(fixture.profile)
+
+            assertSame(fixture.current, waiting.await().currentMa)
+            assertSame(
+                fixture.current,
+                fixture.repository
+                    .getBatteryState()
+                    .first()
+                    .currentMa,
+            )
+            coVerify(exactly = 2) { fixture.provider.getDeviceProfile() }
+            verify(exactly = 1) { fixture.factory.create(fixture.profile) }
+        }
+
     @Test
     fun `estimateFullCapacityMah estimates full battery capacity from charge counter and level`() {
         assertEquals(4_000, estimateFullCapacityMah(2_000, 50))
@@ -145,6 +262,31 @@ class BatteryRepositoryImplTest {
             assertEquals(1, result.size)
             assertEquals(123L, result.single().timestamp)
         }
+
+    private class SourceFixture {
+        val profile = DeviceProfile(manufacturer = "samsung")
+        val provider = mockk<DeviceProfileProvider>()
+        val factory = mockk<BatteryDataSourceFactory>()
+        val source = mockk<BatteryDataSource>()
+        val current = MeasuredValue(-250, Confidence.HIGH)
+        val repository = BatteryRepositoryImpl(factory, provider, mockk(), TestAppDispatchers())
+
+        init {
+            coEvery { provider.getDeviceProfile() } returns profile
+            every { factory.create(profile) } returns source
+            every { source.getLevel() } returns flowOf(55)
+            every { source.getVoltage() } returns flowOf(3900)
+            every { source.getTemperature() } returns flowOf(31f)
+            every { source.getCurrentNow() } returns flowOf(current)
+            every { source.getChargingStatus() } returns flowOf(ChargingStatus.DISCHARGING)
+            every { source.getPlugType() } returns flowOf(PlugType.NONE)
+            every { source.getHealth() } returns flowOf(BatteryHealth.GOOD)
+            every { source.getTechnology() } returns flowOf("Li-ion")
+            every { source.getCycleCount() } returns flowOf(null)
+            every { source.getHealthPercent() } returns flowOf(null)
+            every { source.getChargeCounter() } returns flowOf(null)
+        }
+    }
 
     private fun createRepository(dao: BatteryReadingDao): BatteryRepositoryImpl =
         BatteryRepositoryImpl(

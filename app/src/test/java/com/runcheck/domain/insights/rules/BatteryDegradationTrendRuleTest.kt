@@ -1,6 +1,7 @@
 package com.runcheck.domain.insights.rules
 
 import com.runcheck.domain.insights.analysis.BatteryDrainAnalyzer
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.insights.model.InsightType
@@ -33,6 +34,7 @@ class BatteryDegradationTrendRuleTest {
             assertEquals(1, result.size)
             val insight = result.single()
             assertEquals(BatteryDegradationTrendRule.RULE_ID, insight.ruleId)
+            assertEquals(InsightMessageId.BATTERY_DEGRADATION, insight.messageId)
             assertEquals(InsightType.BATTERY, insight.type)
             assertEquals(InsightPriority.HIGH, insight.priority)
             assertEquals(InsightTarget.BATTERY, insight.target)

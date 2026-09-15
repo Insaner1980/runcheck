@@ -25,9 +25,41 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.util.TimeZone
 import kotlin.coroutines.CoroutineContext
 
 class ExportDataUseCaseTest {
+    @Test
+    fun `thermal CSV preserves canonical identifiers and unknown raw codes`() =
+        runTest {
+            withUtcDefaultTimeZone {
+                coEvery { thermalRepository.getAllReadings() } returns
+                    listOf(
+                        ThermalReading(1_700_000_000_000L, 30f, null, 0, false),
+                        ThermalReading(1_700_000_001_000L, 31f, 51f, 1, false),
+                        ThermalReading(1_700_000_002_000L, 32f, 52f, 2, false),
+                        ThermalReading(1_700_000_003_000L, 33f, null, 3, true),
+                        ThermalReading(1_700_000_004_000L, 34f, 54f, 4, true),
+                        ThermalReading(1_700_000_005_000L, 35f, 55f, 5, true),
+                        ThermalReading(1_700_000_006_000L, 36f, 56f, 6, true),
+                        ThermalReading(1_700_000_007_000L, 37f, null, 99, false),
+                    )
+
+                assertEquals(
+                    "timestamp,battery_temp_c,cpu_temp_c,thermal_status,throttling\n" +
+                        "2023-11-14T22:13:20Z,30.0,,NONE,false\n" +
+                        "2023-11-14T22:13:21Z,31.0,51.0,LIGHT,false\n" +
+                        "2023-11-14T22:13:22Z,32.0,52.0,MODERATE,false\n" +
+                        "2023-11-14T22:13:23Z,33.0,,SEVERE,true\n" +
+                        "2023-11-14T22:13:24Z,34.0,54.0,CRITICAL,true\n" +
+                        "2023-11-14T22:13:25Z,35.0,55.0,EMERGENCY,true\n" +
+                        "2023-11-14T22:13:26Z,36.0,56.0,SHUTDOWN,true\n" +
+                        "2023-11-14T22:13:27Z,37.0,,99,false\n",
+                    useCase.exportThermalCsv(),
+                )
+            }
+        }
+
     private lateinit var useCase: ExportDataUseCase
     private lateinit var batteryRepository: BatteryRepository
     private lateinit var networkRepository: NetworkRepository
@@ -73,6 +105,17 @@ class ExportDataUseCaseTest {
             userPreferencesRepository = userPreferencesRepository,
             dispatchers = dispatchers,
         )
+
+    private suspend fun withUtcDefaultTimeZone(block: suspend () -> Unit) {
+        val originalTimeZone = TimeZone.getDefault()
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+            useCase = createUseCase()
+            block()
+        } finally {
+            TimeZone.setDefault(originalTimeZone)
+        }
+    }
 
     // --- CSV escaping tests (via battery export) ---
 
@@ -159,11 +202,11 @@ class ExportDataUseCaseTest {
         runTest {
             coEvery { batteryRepository.getAllReadings() } returns emptyList()
 
-            val csv = useCase.exportBatteryCsv()
-            val lines = csv.lines().filter { it.isNotBlank() }
-
-            assertEquals(1, lines.size)
-            assertTrue(lines[0].startsWith("timestamp,"))
+            assertEquals(
+                "timestamp,level,voltage_mv,temperature_c,current_ma,current_confidence," +
+                    "status,plug_type,health,cycle_count,health_pct\n",
+                useCase.exportBatteryCsv(),
+            )
         }
 
     @Test
@@ -171,11 +214,10 @@ class ExportDataUseCaseTest {
         runTest {
             coEvery { networkRepository.getAllReadings() } returns emptyList()
 
-            val csv = useCase.exportNetworkCsv()
-            val lines = csv.lines().filter { it.isNotBlank() }
-
-            assertEquals(1, lines.size)
-            assertTrue(lines[0].startsWith("timestamp,"))
+            assertEquals(
+                "timestamp,type,signal_dbm,wifi_speed_mbps,wifi_frequency,carrier,network_subtype,latency_ms\n",
+                useCase.exportNetworkCsv(),
+            )
         }
 
     @Test
@@ -183,11 +225,10 @@ class ExportDataUseCaseTest {
         runTest {
             coEvery { thermalRepository.getAllReadings() } returns emptyList()
 
-            val csv = useCase.exportThermalCsv()
-            val lines = csv.lines().filter { it.isNotBlank() }
-
-            assertEquals(1, lines.size)
-            assertTrue(lines[0].startsWith("timestamp,"))
+            assertEquals(
+                "timestamp,battery_temp_c,cpu_temp_c,thermal_status,throttling\n",
+                useCase.exportThermalCsv(),
+            )
         }
 
     @Test
@@ -195,11 +236,10 @@ class ExportDataUseCaseTest {
         runTest {
             coEvery { storageRepository.getAllReadings() } returns emptyList()
 
-            val csv = useCase.exportStorageCsv()
-            val lines = csv.lines().filter { it.isNotBlank() }
-
-            assertEquals(1, lines.size)
-            assertTrue(lines[0].startsWith("timestamp,"))
+            assertEquals(
+                "timestamp,total_bytes,available_bytes,apps_bytes,media_bytes\n",
+                useCase.exportStorageCsv(),
+            )
         }
 
     // --- Normal export tests ---
@@ -225,55 +265,117 @@ class ExportDataUseCaseTest {
         }
 
     @Test
-    fun `battery export formats values correctly`() =
+    fun `battery export preserves exact columns values row order and trailing newline`() =
         runTest {
-            coEvery { batteryRepository.getAllReadings() } returns
-                listOf(batteryReading())
+            withUtcDefaultTimeZone {
+                coEvery { batteryRepository.getAllReadings() } returns
+                    listOf(
+                        BatteryReading(
+                            timestamp = 1_700_000_000_123L,
+                            level = 81,
+                            voltageMv = 4217,
+                            temperatureC = 32.5f,
+                            currentMa = -463,
+                            currentConfidence = "HIGH",
+                            status = "CHARGING",
+                            plugType = "USB",
+                            health = "GOOD",
+                            cycleCount = 157,
+                            healthPct = 96,
+                        ),
+                        batteryReading(),
+                    )
 
-            val csv = useCase.exportBatteryCsv()
-            val dataLine = csv.lines().drop(1).first { it.isNotBlank() }
-
-            assertTrue("Should contain level 80", dataLine.contains(",80,"))
-            assertTrue("Should contain voltage 4200", dataLine.contains(",4200,"))
-            assertTrue("Should contain temp 32.5", dataLine.contains(",32.5,"))
-            assertTrue("Should contain current -450", dataLine.contains(",-450,"))
-            assertTrue("Should contain cycle count 150", dataLine.contains(",150,"))
-            assertTrue("Should contain health pct 95", dataLine.contains(",95"))
+                assertEquals(
+                    "timestamp,level,voltage_mv,temperature_c,current_ma,current_confidence," +
+                        "status,plug_type,health,cycle_count,health_pct\n" +
+                        "2023-11-14T22:13:20.123Z,81,4217,32.5,-463,HIGH,CHARGING,USB,GOOD,157,96\n" +
+                        "2023-11-14T22:13:20Z,80,4200,32.5,-450,HIGH,DISCHARGING,NONE,GOOD,150,95\n",
+                    useCase.exportBatteryCsv(),
+                )
+            }
         }
 
     @Test
     fun `battery export handles null optional fields as empty`() =
         runTest {
-            coEvery { batteryRepository.getAllReadings() } returns
-                listOf(
-                    batteryReading(
-                        currentMa = null,
-                        currentConfidence = "UNAVAILABLE",
-                        cycleCount = null,
-                        healthPct = null,
-                    ),
+            withUtcDefaultTimeZone {
+                coEvery { batteryRepository.getAllReadings() } returns
+                    listOf(
+                        BatteryReading(
+                            timestamp = 1_700_000_000_123L,
+                            level = 81,
+                            voltageMv = 4217,
+                            temperatureC = 32.5f,
+                            currentMa = null,
+                            currentConfidence = "UNAVAILABLE",
+                            status = "DISCHARGING",
+                            plugType = "NONE",
+                            health = "UNKNOWN",
+                            cycleCount = null,
+                            healthPct = null,
+                        ),
+                    )
+
+                assertEquals(
+                    "timestamp,level,voltage_mv,temperature_c,current_ma,current_confidence," +
+                        "status,plug_type,health,cycle_count,health_pct\n" +
+                        "2023-11-14T22:13:20.123Z,81,4217,32.5,,UNAVAILABLE,DISCHARGING,NONE,UNKNOWN,,\n",
+                    useCase.exportBatteryCsv(),
                 )
-
-            val csv = useCase.exportBatteryCsv()
-            val dataLine = csv.lines().drop(1).first { it.isNotBlank() }
-
-            // null fields should produce empty strings between commas
-            // currentMa is null -> ",,"
-            // cycleCount is null -> ",,"
-            // healthPct is null -> trailing empty
-            assertTrue("Null currentMa should be empty", dataLine.contains(",32.5,,"))
+            }
         }
 
     @Test
-    fun `network export has correct header`() =
+    fun `network export preserves exact columns values escaping and trailing newline`() =
         runTest {
-            val csv = useCase.exportNetworkCsv()
-            val header = csv.lines().first()
+            withUtcDefaultTimeZone {
+                coEvery { networkRepository.getAllReadings() } returns
+                    listOf(
+                        NetworkReading(
+                            timestamp = 1_700_000_000_123L,
+                            type = "WIFI",
+                            signalDbm = -53,
+                            wifiSpeedMbps = 173,
+                            wifiFrequency = 5180,
+                            carrier = "Nordic, \"5G\" Ω",
+                            networkSubtype = "LTE-A",
+                            latencyMs = 29,
+                        ),
+                    )
 
-            assertEquals(
-                "timestamp,type,signal_dbm,wifi_speed_mbps,wifi_frequency,carrier,network_subtype,latency_ms",
-                header,
-            )
+                assertEquals(
+                    "timestamp,type,signal_dbm,wifi_speed_mbps,wifi_frequency,carrier,network_subtype,latency_ms\n" +
+                        "2023-11-14T22:13:20.123Z,WIFI,-53,173,5180,\"Nordic, \"\"5G\"\" Ω\",LTE-A,29\n",
+                    useCase.exportNetworkCsv(),
+                )
+            }
+        }
+
+    @Test
+    fun `network export preserves unknown raw connection type`() =
+        runTest {
+            withUtcDefaultTimeZone {
+                coEvery { networkRepository.getAllReadings() } returns
+                    listOf(
+                        NetworkReading(
+                            timestamp = 1_700_000_000_123L,
+                            type = "SATELLITE",
+                            signalDbm = -45,
+                            wifiSpeedMbps = null,
+                            wifiFrequency = null,
+                            carrier = null,
+                            networkSubtype = null,
+                            latencyMs = 20,
+                        ),
+                    )
+
+                assertEquals(
+                    "timestamp,type,signal_dbm,wifi_speed_mbps,wifi_frequency,carrier,network_subtype,latency_ms\n" +
+                        "2023-11-14T22:13:20.123Z,SATELLITE,-45,,,,,20\n",
+                    useCase.exportNetworkCsv(),
+                )
+            }
         }
 
     @Test
@@ -494,26 +596,47 @@ class ExportDataUseCaseTest {
         }
 
     @Test
-    fun `storage export formats bytes correctly`() =
+    fun `storage export preserves exact positive byte values`() =
         runTest {
-            coEvery { storageRepository.getAllReadings() } returns
-                listOf(
-                    StorageReading(
-                        timestamp = 1_700_000_000_000L,
-                        totalBytes = 128_000_000_000L,
-                        availableBytes = 64_000_000_000L,
-                        appsBytes = 20_000_000_000L,
-                        mediaBytes = 30_000_000_000L,
-                    ),
+            withUtcDefaultTimeZone {
+                coEvery { storageRepository.getAllReadings() } returns
+                    listOf(
+                        StorageReading(
+                            timestamp = 1_700_000_000_123L,
+                            totalBytes = 128_000_000_000L,
+                            availableBytes = 64_000_000_000L,
+                            appsBytes = 20_000_000_000L,
+                            mediaBytes = 30_000_000_000L,
+                        ),
+                    )
+
+                assertEquals(
+                    "timestamp,total_bytes,available_bytes,apps_bytes,media_bytes\n" +
+                        "2023-11-14T22:13:20.123Z,128000000000,64000000000,20000000000,30000000000\n",
+                    useCase.exportStorageCsv(),
                 )
+            }
+        }
 
-            val csv = useCase.exportStorageCsv()
-            val dataLine = csv.lines().drop(1).first { it.isNotBlank() }
+    @Test
+    fun `storage export distinguishes positive zero and unavailable media bytes`() =
+        runTest {
+            withUtcDefaultTimeZone {
+                coEvery { storageRepository.getAllReadings() } returns
+                    listOf(
+                        StorageReading(1_700_000_000_123L, 128L, 64L, 20L, 30L),
+                        StorageReading(1_700_000_001_456L, 256L, 96L, null, 0L),
+                        StorageReading(1_700_000_002_789L, 512L, 128L, null, null),
+                    )
 
-            assertTrue("Should contain total bytes", dataLine.contains("128000000000"))
-            assertTrue("Should contain available bytes", dataLine.contains("64000000000"))
-            assertTrue("Should contain apps bytes", dataLine.contains("20000000000"))
-            assertTrue("Should contain media bytes", dataLine.contains("30000000000"))
+                assertEquals(
+                    "timestamp,total_bytes,available_bytes,apps_bytes,media_bytes\n" +
+                        "2023-11-14T22:13:20.123Z,128,64,20,30\n" +
+                        "2023-11-14T22:13:21.456Z,256,96,,0\n" +
+                        "2023-11-14T22:13:22.789Z,512,128,,\n",
+                    useCase.exportStorageCsv(),
+                )
+            }
         }
 
     @Test
@@ -574,29 +697,27 @@ class ExportDataUseCaseTest {
     @Test
     fun `null values in CSV are empty strings`() =
         runTest {
-            coEvery { networkRepository.getAllReadings() } returns
-                listOf(
-                    NetworkReading(
-                        timestamp = 1_700_000_000_000L,
-                        type = "WIFI",
-                        signalDbm = null,
-                        wifiSpeedMbps = null,
-                        wifiFrequency = null,
-                        carrier = null,
-                        networkSubtype = null,
-                        latencyMs = null,
-                    ),
+            withUtcDefaultTimeZone {
+                coEvery { networkRepository.getAllReadings() } returns
+                    listOf(
+                        NetworkReading(
+                            timestamp = 1_700_000_000_123L,
+                            type = "CELLULAR",
+                            signalDbm = null,
+                            wifiSpeedMbps = null,
+                            wifiFrequency = null,
+                            carrier = null,
+                            networkSubtype = null,
+                            latencyMs = null,
+                        ),
+                    )
+
+                assertEquals(
+                    "timestamp,type,signal_dbm,wifi_speed_mbps,wifi_frequency,carrier,network_subtype,latency_ms\n" +
+                        "2023-11-14T22:13:20.123Z,CELLULAR,,,,,,\n",
+                    useCase.exportNetworkCsv(),
                 )
-
-            val csv = useCase.exportNetworkCsv()
-            val dataLine = csv.lines().drop(1).first { it.isNotBlank() }
-            val cols = dataLine.split(",")
-
-            // 8 columns: timestamp, type, signalDbm, wifiSpeedMbps, wifiFrequency, carrier, networkSubtype, latencyMs
-            assertEquals(8, cols.size)
-            // null String fields should be empty
-            assertEquals("", cols[5]) // carrier
-            assertEquals("", cols[6]) // networkSubtype
+            }
         }
 
     private class TestAppDispatchers(

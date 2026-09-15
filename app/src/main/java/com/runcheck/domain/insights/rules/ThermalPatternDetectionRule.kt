@@ -1,11 +1,13 @@
 package com.runcheck.domain.insights.rules
 
 import com.runcheck.domain.insights.model.InsightCandidate
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.insights.model.InsightType
 import com.runcheck.domain.model.ThermalReading
 import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.domain.model.ThermalStatusPersistence
 import com.runcheck.domain.repository.ThermalRepository
 import javax.inject.Inject
 import kotlin.math.roundToInt
@@ -20,6 +22,7 @@ class ThermalPatternDetectionRule
                 thermalRepository
                     .getReadingsSinceSync(now - LOOKBACK_MS)
                     .filter { reading -> reading.timestamp <= now }
+                    .filter { reading -> ThermalStatusPersistence.fromCode(reading.thermalStatus) != null }
             if (readings.size < MINIMUM_READING_COUNT) return null
 
             val hotReadings = readings.filter(::isHotReading)
@@ -33,12 +36,12 @@ class ThermalPatternDetectionRule
 
         private fun isHotReading(reading: ThermalReading): Boolean =
             reading.batteryTempC >= HOT_BATTERY_TEMP_C ||
-                parseThermalStatus(reading.thermalStatus) >= ThermalStatus.MODERATE
+                ThermalStatusPersistence.fromCode(reading.thermalStatus)?.let { it >= ThermalStatus.MODERATE } == true
 
         private fun List<ThermalReading>.toThermalPatternSummary(totalReadingCount: Int): ThermalPatternSummary? {
             val hotRatio = size / totalReadingCount.toFloat()
             val peakTemp = maxOfOrNull { it.batteryTempC }
-            val peakStatus = maxOfOrNull { parseThermalStatus(it.thermalStatus) }
+            val peakStatus = mapNotNull { ThermalStatusPersistence.fromCode(it.thermalStatus) }.maxOrNull()
 
             return if (peakTemp != null && peakStatus != null) {
                 ThermalPatternSummary(
@@ -61,8 +64,7 @@ class ThermalPatternDetectionRule
                 type = InsightType.THERMAL,
                 priority = resolvePriority(),
                 confidence = confidence,
-                titleKey = TITLE_KEY,
-                bodyKey = BODY_KEY,
+                messageId = InsightMessageId.THERMAL_PATTERN,
                 bodyArgs = listOf(ratioPercent.toString(), averageHotTemp.roundToInt().toString()),
                 generatedAt = now,
                 expiresAt = now + TTL_MS,
@@ -88,14 +90,9 @@ class ThermalPatternDetectionRule
                 else -> "60plus"
             }
 
-        private fun parseThermalStatus(raw: Int): ThermalStatus =
-            ThermalStatus.entries.getOrElse(raw) { ThermalStatus.NONE }
-
         companion object {
             const val RULE_ID = "thermal_pattern_detection"
 
-            private const val TITLE_KEY = "insight_thermal_pattern_title"
-            private const val BODY_KEY = "insight_thermal_pattern_body"
             private const val LOOKBACK_MS = 48L * 60L * 60L * 1000L
             private const val TTL_MS = 12L * 60L * 60L * 1000L
             private const val HOT_BATTERY_TEMP_C = 39.5f

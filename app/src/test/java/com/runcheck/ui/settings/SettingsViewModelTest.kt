@@ -6,6 +6,8 @@ import com.runcheck.R
 import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.billing.ProPurchaseRefreshResult
 import com.runcheck.billing.PurchaseEvent
+import com.runcheck.domain.model.DataRetention
+import com.runcheck.domain.model.MonitoringInterval
 import com.runcheck.domain.model.UserPreferences
 import com.runcheck.domain.repository.InsightDebugActions
 import com.runcheck.domain.repository.SpeedTestRepository
@@ -47,23 +49,23 @@ import org.junit.Rule
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SettingsViewModelTest {
+abstract class SettingsViewModelFixture {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val observeSettings: ObserveSettingsUseCase = mockk()
-    private val proPurchaseManager: ProPurchaseManager = mockk()
-    private val observeProAccess: ObserveProAccessUseCase = mockk()
-    private val isProUser: IsProUserUseCase = mockk()
-    private val clearMonitoringDataUseCase: ClearMonitoringDataUseCase = mockk(relaxed = true)
-    private val exportDataUseCase: ExportDataUseCase = mockk(relaxed = true)
-    private val setDataRetentionUseCase: SetDataRetentionUseCase = mockk(relaxed = true)
-    private val setMonitoringIntervalUseCase: SetMonitoringIntervalUseCase = mockk(relaxed = true)
-    private val setNotificationsEnabledUseCase: SetNotificationsEnabledUseCase = mockk(relaxed = true)
-    private val manageUserPreferences: ManageUserPreferencesUseCase = mockk(relaxed = true)
-    private val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase = mockk(relaxed = true)
-    private val speedTestRepository: SpeedTestRepository = mockk(relaxed = true)
-    private val insightDebugActions: InsightDebugActions = mockk()
+    protected val observeSettings: ObserveSettingsUseCase = mockk()
+    protected val proPurchaseManager: ProPurchaseManager = mockk()
+    protected val observeProAccess: ObserveProAccessUseCase = mockk()
+    protected val isProUser: IsProUserUseCase = mockk()
+    protected val clearMonitoringDataUseCase: ClearMonitoringDataUseCase = mockk(relaxed = true)
+    protected val exportDataUseCase: ExportDataUseCase = mockk(relaxed = true)
+    protected val setDataRetentionUseCase: SetDataRetentionUseCase = mockk(relaxed = true)
+    protected val setMonitoringIntervalUseCase: SetMonitoringIntervalUseCase = mockk(relaxed = true)
+    protected val setNotificationsEnabledUseCase: SetNotificationsEnabledUseCase = mockk(relaxed = true)
+    protected val manageUserPreferences: ManageUserPreferencesUseCase = mockk(relaxed = true)
+    protected val manageInfoCardDismissals: ManageInfoCardDismissalsUseCase = mockk(relaxed = true)
+    protected val speedTestRepository: SpeedTestRepository = mockk(relaxed = true)
+    protected val insightDebugActions: InsightDebugActions = mockk()
 
     @Before
     fun setUp() {
@@ -81,6 +83,178 @@ class SettingsViewModelTest {
         coEvery { insightDebugActions.seedDemoInsights() } returns 9
     }
 
+    protected fun TestScope.assertResetSucceeds(viewModel: SettingsViewModel) {
+        viewModel.clearAllData()
+        runCurrent()
+        coVerify(exactly = 1) { clearMonitoringDataUseCase.invoke() }
+        assertEquals(UiText.Resource(R.string.settings_data_cleared), viewModel.uiState.value.clearDataStatus)
+    }
+
+    protected fun TestScope.assertExportSucceeds(
+        viewModel: SettingsViewModel,
+        uris: List<String>,
+    ) {
+        viewModel.exportData()
+        runCurrent()
+        coVerify(exactly = 1) { exportDataUseCase.prepareExportShare() }
+        assertEquals(uris, viewModel.uiState.value.exportUris)
+        assertEquals(UiText.Resource(R.string.settings_export_ready), viewModel.uiState.value.exportStatus)
+    }
+
+    protected fun createViewModel(): SettingsViewModel =
+        SettingsViewModel(
+            observeSettings = observeSettings,
+            proPurchaseManager = proPurchaseManager,
+            observeProAccess = observeProAccess,
+            isProUser = isProUser,
+            clearMonitoringDataUseCase = clearMonitoringDataUseCase,
+            exportDataUseCase = exportDataUseCase,
+            setDataRetentionUseCase = setDataRetentionUseCase,
+            setMonitoringIntervalUseCase = setMonitoringIntervalUseCase,
+            setNotificationsEnabledUseCase = setNotificationsEnabledUseCase,
+            manageUserPreferences = manageUserPreferences,
+            manageInfoCardDismissals = manageInfoCardDismissals,
+            speedTestRepository = speedTestRepository,
+            insightDebugActions = insightDebugActions,
+        )
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class SettingsPreferenceUpdateTest : SettingsViewModelFixture() {
+    @Test
+    fun `migrated preference updates delegate without optimistically changing state`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val viewModel = createViewModel()
+            runCurrent()
+            val initialState = viewModel.uiState.value
+
+            viewModel.setMonitoringInterval(MonitoringInterval.SIXTY)
+            viewModel.setNotifications(false)
+            viewModel.setDataRetention(DataRetention.ONE_YEAR)
+            runCurrent()
+
+            coVerify(exactly = 1) { setMonitoringIntervalUseCase(MonitoringInterval.SIXTY) }
+            coVerify(exactly = 1) { setNotificationsEnabledUseCase(false) }
+            coVerify(exactly = 1) { setDataRetentionUseCase(DataRetention.ONE_YEAR) }
+            assertEquals(initialState, viewModel.uiState.value)
+        }
+
+    @Test
+    fun `monitoring interval failure changes only the generic error message`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            coEvery { setMonitoringIntervalUseCase(MonitoringInterval.SIXTY) } throws IllegalStateException("failed")
+            val viewModel = createViewModel()
+            runCurrent()
+            viewModel.resetTips()
+            runCurrent()
+            val initialState = viewModel.uiState.value
+
+            viewModel.setMonitoringInterval(MonitoringInterval.SIXTY)
+            runCurrent()
+
+            coVerify(exactly = 1) { setMonitoringIntervalUseCase(MonitoringInterval.SIXTY) }
+            assertEquals(
+                initialState.copy(errorMessage = UiText.Resource(R.string.common_error_generic)),
+                viewModel.uiState.value,
+            )
+        }
+
+    @Test
+    fun `notifications failure changes only the generic error message`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            coEvery { setNotificationsEnabledUseCase(false) } throws IllegalStateException("failed")
+            val viewModel = createViewModel()
+            runCurrent()
+            viewModel.resetTips()
+            runCurrent()
+            val initialState = viewModel.uiState.value
+
+            viewModel.setNotifications(false)
+            runCurrent()
+
+            coVerify(exactly = 1) { setNotificationsEnabledUseCase(false) }
+            assertEquals(
+                initialState.copy(errorMessage = UiText.Resource(R.string.common_error_generic)),
+                viewModel.uiState.value,
+            )
+        }
+
+    @Test
+    fun `data retention failure changes only the generic error message`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            coEvery { setDataRetentionUseCase(DataRetention.ONE_YEAR) } throws IllegalStateException("failed")
+            val viewModel = createViewModel()
+            runCurrent()
+            viewModel.resetTips()
+            runCurrent()
+            val initialState = viewModel.uiState.value
+
+            viewModel.setDataRetention(DataRetention.ONE_YEAR)
+            runCurrent()
+
+            coVerify(exactly = 1) { setDataRetentionUseCase(DataRetention.ONE_YEAR) }
+            assertEquals(
+                initialState.copy(errorMessage = UiText.Resource(R.string.common_error_generic)),
+                viewModel.uiState.value,
+            )
+        }
+
+    @Test
+    fun `notification update cancellation terminates without changing settings state`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val operationJob = CompletableDeferred<Job>()
+            coEvery { setNotificationsEnabledUseCase(false) } coAnswers {
+                operationJob.complete(currentCoroutineContext().job)
+                awaitCancellation()
+            }
+            val viewModel = createViewModel()
+            runCurrent()
+            val initialState = viewModel.uiState.value
+
+            viewModel.setNotifications(false)
+            runCurrent()
+            val job = operationJob.await()
+            assertTrue(job.isActive)
+            job.cancel()
+            runCurrent()
+
+            assertTrue(job.isCancelled)
+            assertTrue(job.isCompleted)
+            assertEquals(initialState, viewModel.uiState.value)
+        }
+
+    @Test
+    fun `notification updates can overlap without rejecting or cancelling either call`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val firstJob = CompletableDeferred<Job>()
+            val persistenceGate = CompletableDeferred<Unit>()
+            coEvery { setNotificationsEnabledUseCase(false) } coAnswers {
+                firstJob.complete(currentCoroutineContext().job)
+                persistenceGate.await()
+            }
+            val viewModel = createViewModel()
+            runCurrent()
+            val initialState = viewModel.uiState.value
+
+            viewModel.setNotifications(false)
+            runCurrent()
+            viewModel.setNotifications(true)
+            runCurrent()
+
+            coVerify(exactly = 1) { setNotificationsEnabledUseCase(false) }
+            coVerify(exactly = 1) { setNotificationsEnabledUseCase(true) }
+            assertTrue(firstJob.await().isActive)
+            persistenceGate.complete(Unit)
+            runCurrent()
+
+            assertTrue(firstJob.await().isCompleted)
+            assertFalse(firstJob.await().isCancelled)
+            assertEquals(initialState, viewModel.uiState.value)
+        }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class SettingsViewModelTest : SettingsViewModelFixture() {
     @Test
     fun `debug availability is exposed in ui state`() =
         runTest(mainDispatcherRule.testDispatcher) {
@@ -605,39 +779,4 @@ class SettingsViewModelTest {
             assertEquals(null, viewModel.uiState.value.clearDataStatus)
             assertEquals(null, viewModel.uiState.value.errorMessage)
         }
-
-    private fun TestScope.assertResetSucceeds(viewModel: SettingsViewModel) {
-        viewModel.clearAllData()
-        runCurrent()
-        coVerify(exactly = 1) { clearMonitoringDataUseCase.invoke() }
-        assertEquals(UiText.Resource(R.string.settings_data_cleared), viewModel.uiState.value.clearDataStatus)
-    }
-
-    private fun TestScope.assertExportSucceeds(
-        viewModel: SettingsViewModel,
-        uris: List<String>,
-    ) {
-        viewModel.exportData()
-        runCurrent()
-        coVerify(exactly = 1) { exportDataUseCase.prepareExportShare() }
-        assertEquals(uris, viewModel.uiState.value.exportUris)
-        assertEquals(UiText.Resource(R.string.settings_export_ready), viewModel.uiState.value.exportStatus)
-    }
-
-    private fun createViewModel(): SettingsViewModel =
-        SettingsViewModel(
-            observeSettings = observeSettings,
-            proPurchaseManager = proPurchaseManager,
-            observeProAccess = observeProAccess,
-            isProUser = isProUser,
-            clearMonitoringDataUseCase = clearMonitoringDataUseCase,
-            exportDataUseCase = exportDataUseCase,
-            setDataRetentionUseCase = setDataRetentionUseCase,
-            setMonitoringIntervalUseCase = setMonitoringIntervalUseCase,
-            setNotificationsEnabledUseCase = setNotificationsEnabledUseCase,
-            manageUserPreferences = manageUserPreferences,
-            manageInfoCardDismissals = manageInfoCardDismissals,
-            speedTestRepository = speedTestRepository,
-            insightDebugActions = insightDebugActions,
-        )
 }

@@ -8,12 +8,14 @@ import com.runcheck.domain.insights.analysis.dischargingPairs
 import com.runcheck.domain.insights.analysis.toDrainSample
 import com.runcheck.domain.insights.analysis.toTimeIntervals
 import com.runcheck.domain.insights.model.InsightCandidate
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.insights.model.InsightType
 import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.ThermalReading
 import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.domain.model.ThermalStatusPersistence
 import com.runcheck.domain.repository.BatteryRepository
 import com.runcheck.domain.repository.ThermalRepository
 import javax.inject.Inject
@@ -74,7 +76,7 @@ class HeatAcceleratedBatteryWearRule
             input.dischargingPairs.zip(alignedIntervals).forEach { (pair, aligned) ->
                 val thermalReading = aligned.context ?: return@forEach
                 val sample = pair.toDrainSample() ?: return@forEach
-                val thermalStatus = parseThermalStatus(thermalReading.thermalStatus)
+                val thermalStatus = ThermalStatusPersistence.fromCode(thermalReading.thermalStatus) ?: return@forEach
 
                 when {
                     thermalReading.batteryTempC >= HOT_BATTERY_TEMP_C || thermalStatus >= ThermalStatus.SEVERE -> {
@@ -117,8 +119,7 @@ class HeatAcceleratedBatteryWearRule
                 type = InsightType.BATTERY,
                 priority = resolvePriority(comparison, peakHotTemperature),
                 confidence = confidence,
-                titleKey = TITLE_KEY,
-                bodyKey = BODY_KEY,
+                messageId = InsightMessageId.HEAT_ACCELERATED_BATTERY_WEAR,
                 bodyArgs =
                     listOf(
                         comparison.percentIncrease.coerceAtLeast(1).toString(),
@@ -162,14 +163,9 @@ class HeatAcceleratedBatteryWearRule
         private val HeatDrainSamples.peakHotTemperature: Float?
             get() = hotTemperatures.maxOrNull()
 
-        private fun parseThermalStatus(raw: Int): ThermalStatus =
-            ThermalStatus.entries.getOrElse(raw) { ThermalStatus.NONE }
-
         companion object {
             const val RULE_ID = "heat_accelerated_battery_wear"
 
-            private const val TITLE_KEY = "insight_heat_battery_wear_title"
-            private const val BODY_KEY = "insight_heat_battery_wear_body"
             private const val LOOKBACK_MS = 48L * 60L * 60L * 1000L
             private const val TTL_MS = 12L * 60L * 60L * 1000L
             private const val HOT_BATTERY_TEMP_C = 40f

@@ -490,21 +490,20 @@ ui/storage/
 ### Delete-mekanismi (API 30+)
 
 ```kotlin
+// MediaStoreDeleteRequests.kt
+fun createMediaStoreDeleteRequest(
+    context: Context,
+    uriStrings: List<String>,
+): PendingIntent? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || uriStrings.isEmpty()) return null
+    val uris = uriStrings.map { it.toUri() }
+    return MediaStore.createDeleteRequest(context.contentResolver, uris)
+}
+
 // StorageCleanupHelper.kt
 class StorageCleanupHelper @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    /**
-     * Luo PendingIntent joka näyttää järjestelmän vahvistusdialogin.
-     * Kutsutaan Activitystä ActivityResultLauncher-kautta.
-     */
-    fun createDeleteRequest(uris: List<Uri>): PendingIntent {
-        return MediaStore.createDeleteRequest(
-            context.contentResolver,
-            uris
-        )
-    }
-
     /**
      * API 29: poistaa yksitellen (ei batch-dialogia)
      */
@@ -523,7 +522,7 @@ class StorageCleanupHelper @Inject constructor(
 ### ActivityResult-integraatio
 
 ```kotlin
-// StorageDetailScreen.kt tai LargeFilesScreen.kt
+// CleanupScreen.kt
 val deleteLauncher = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.StartIntentSenderForResult()
 ) { result ->
@@ -533,10 +532,11 @@ val deleteLauncher = rememberLauncherForActivityResult(
 }
 
 // Kun käyttäjä painaa "Delete selected":
-val pendingIntent = cleanupHelper.createDeleteRequest(selectedUris)
-deleteLauncher.launch(
-    IntentSenderRequest.Builder(pendingIntent.intentSender).build()
-)
+when (val requestResult = buildMediaDeleteRequest(context, selectedUriStrings)) {
+    is MediaDeleteRequestResult.Ready -> deleteLauncher.launch(requestResult.request)
+    is MediaDeleteRequestResult.Failed ->
+        viewModel.onDeleteFailed(UiText.Resource(requestResult.messageRes))
+}
 ```
 
 ---

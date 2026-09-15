@@ -1,13 +1,11 @@
 package com.runcheck.ui.appusage
 
-import android.app.AppOpsManager
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Build
-import android.os.Process
 import android.provider.Settings
 import android.util.LruCache
 import androidx.compose.foundation.Image
@@ -67,12 +65,14 @@ import com.runcheck.ui.components.CenteredRetryState
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.IconCircle
+import com.runcheck.ui.components.PermissionExplanationCard
 import com.runcheck.ui.components.ProFeatureLockedState
 import com.runcheck.ui.components.RuncheckCard
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
+import com.runcheck.util.hasUsageStatsAccess
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
@@ -173,27 +173,14 @@ private fun AppUsageContent(
         when {
             !hasUsageAccess -> {
                 item {
-                    RuncheckCard(
-                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.app_usage_permission_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = stringResource(R.string.app_usage_permission_message),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        TextButton(
-                            onClick = {
-                                context.openUsageAccessSettings()
-                            },
-                        ) {
-                            Text(stringResource(R.string.app_usage_permission_open_settings))
-                        }
-                    }
+                    PermissionExplanationCard(
+                        title = stringResource(R.string.app_usage_permission_title),
+                        message = stringResource(R.string.app_usage_permission_message),
+                        actionLabel = stringResource(R.string.app_usage_permission_open_settings),
+                        onAction = {
+                            context.openUsageAccessSettings()
+                        },
+                    )
                 }
             }
 
@@ -470,15 +457,4 @@ private fun Context.openUsageAccessSettings() {
             ),
         )
     }
-}
-
-private fun Context.hasUsageStatsAccess(): Boolean {
-    val appOps = getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return false
-    val mode =
-        appOps.checkOpNoThrow(
-            AppOpsManager.OPSTR_GET_USAGE_STATS,
-            Process.myUid(),
-            packageName,
-        )
-    return mode == AppOpsManager.MODE_ALLOWED
 }

@@ -14,21 +14,17 @@ object FullscreenChartSeedStore {
         }
     }
 
-    fun take(
-        source: FullscreenChartSource,
-        metric: String,
-        period: String,
-    ): FullscreenChartUiState? {
+    fun take(selection: FullscreenChartSelection): FullscreenChartUiState? {
         val current = seed
         seed = null
-        if (current?.source != source) return null
+        if (current?.source != selection.source) return null
         return when (val state = current.state) {
             is FullscreenChartUiState.Success -> {
-                state.takeIf { it.selectedMetric == metric && it.selectedPeriod == period }
+                state.takeIf { it.selection == selection }
             }
 
             is FullscreenChartUiState.Empty -> {
-                state.takeIf { it.selectedMetric == metric && it.selectedPeriod == period }
+                state.takeIf { it.selection == selection }
             }
 
             else -> {

@@ -8,6 +8,7 @@ import com.runcheck.domain.insights.analysis.dischargingPairs
 import com.runcheck.domain.insights.analysis.toDrainSample
 import com.runcheck.domain.insights.analysis.toTimeIntervals
 import com.runcheck.domain.insights.model.InsightCandidate
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.insights.model.InsightType
@@ -116,8 +117,7 @@ class NetworkDrivenBatteryDrainRule
                 type = InsightType.NETWORK,
                 priority = resolvePriority(comparison, averageWeakSignal),
                 confidence = confidence,
-                titleKey = TITLE_KEY,
-                bodyKey = BODY_KEY,
+                messageId = InsightMessageId.NETWORK_DRIVEN_BATTERY_DRAIN,
                 bodyArgs =
                     listOf(
                         comparison.percentIncrease.coerceAtLeast(1).toString(),
@@ -164,8 +164,6 @@ class NetworkDrivenBatteryDrainRule
         companion object {
             const val RULE_ID = "network_driven_battery_drain"
 
-            private const val TITLE_KEY = "insight_network_drain_title"
-            private const val BODY_KEY = "insight_network_drain_body"
             private const val LOOKBACK_MS = 48L * 60L * 60L * 1000L
             private const val TTL_MS = 12L * 60L * 60L * 1000L
             private const val WEAK_SIGNAL_DBM = -110

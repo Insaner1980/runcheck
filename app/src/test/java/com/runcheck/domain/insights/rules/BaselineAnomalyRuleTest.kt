@@ -1,6 +1,7 @@
 package com.runcheck.domain.insights.rules
 
 import com.runcheck.domain.insights.analysis.BatteryDrainAnalyzer
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.insights.model.InsightType
@@ -29,6 +30,7 @@ class BaselineAnomalyRuleTest {
             assertEquals(1, result.size)
             val insight = result.single()
             assertEquals(BaselineAnomalyRule.RULE_ID, insight.ruleId)
+            assertEquals(InsightMessageId.BATTERY_BASELINE_ANOMALY, insight.messageId)
             assertEquals("battery_drain:3xplus", insight.dedupeKey)
             assertEquals(InsightType.BATTERY, insight.type)
             assertEquals(InsightPriority.HIGH, insight.priority)

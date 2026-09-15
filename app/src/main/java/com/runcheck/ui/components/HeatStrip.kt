@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import com.runcheck.R
 import com.runcheck.domain.model.TemperatureUnit
+import com.runcheck.ui.common.BatteryTemperaturePresentation
 import com.runcheck.ui.common.formatTemperature
 import com.runcheck.ui.common.temperatureBandLabel
 import com.runcheck.ui.theme.MotionTokens
@@ -36,8 +37,7 @@ fun HeatStrip(
     maxTempC: Float = 50f,
 ) {
     val normalizedTemp = ((temperatureC - minTempC) / (maxTempC - minTempC)).coerceIn(0f, 1f)
-    val isCritical = temperatureC > 42f
-    val reducedMotion = MaterialTheme.reducedMotion
+    val shouldPulse = shouldPulseHeatStrip(temperatureC, MaterialTheme.reducedMotion)
     val stripContentDescription =
         stringResource(
             R.string.a11y_heat_strip,
@@ -46,7 +46,7 @@ fun HeatStrip(
         )
 
     val pulseProgress =
-        if (isCritical && !reducedMotion) {
+        if (shouldPulse) {
             val infiniteTransition = rememberInfiniteTransition(label = "heat_pulse")
             infiniteTransition
                 .animateFloat(
@@ -69,7 +69,7 @@ fun HeatStrip(
     val criticalColor = MaterialTheme.statusColors.critical
     val indicatorColor = MaterialTheme.colorScheme.onSurface
 
-    // Color stops aligned with statusColorForTemperature thresholds (35/40/45°C)
+    // Color stops follow battery presentation severity boundaries.
     // with ±1°C soft transition zones for smooth blending
     val rangeC = maxTempC - minTempC
 
@@ -93,12 +93,13 @@ fun HeatStrip(
                     colorStops =
                         arrayOf(
                             0f to healthyColor,
-                            (tempToStop(35f) - transitionHalf) to healthyColor,
-                            (tempToStop(35f) + transitionHalf) to fairColor,
-                            (tempToStop(40f) - transitionHalf) to fairColor,
-                            (tempToStop(40f) + transitionHalf) to poorColor,
-                            (tempToStop(45f) - transitionHalf) to poorColor,
-                            (tempToStop(45f) + transitionHalf) to criticalColor,
+                            (tempToStop(BatteryTemperaturePresentation.FAIR_START_C) - transitionHalf) to healthyColor,
+                            (tempToStop(BatteryTemperaturePresentation.FAIR_START_C) + transitionHalf) to fairColor,
+                            (tempToStop(BatteryTemperaturePresentation.POOR_START_C) - transitionHalf) to fairColor,
+                            (tempToStop(BatteryTemperaturePresentation.POOR_START_C) + transitionHalf) to poorColor,
+                            (tempToStop(BatteryTemperaturePresentation.CRITICAL_START_C) - transitionHalf) to poorColor,
+                            (tempToStop(BatteryTemperaturePresentation.CRITICAL_START_C) + transitionHalf) to
+                                criticalColor,
                             1f to criticalColor,
                         ),
                 ),
@@ -110,7 +111,7 @@ fun HeatStrip(
                 indicatorX.coerceIn(8.dp.toPx(), size.width - 8.dp.toPx()),
                 size.height / 2,
             )
-        if (isCritical && !reducedMotion) {
+        if (shouldPulse) {
             drawCircle(
                 color = criticalColor.copy(alpha = lerp(0.26f, 0.08f, pulseProgress)),
                 radius = lerp(9f, 13f, pulseProgress).dp.toPx(),
@@ -124,3 +125,9 @@ fun HeatStrip(
         )
     }
 }
+
+// Independent fixed pulse rule, not a severity boundary or user alert preference.
+internal fun shouldPulseHeatStrip(
+    temperatureC: Float,
+    reducedMotion: Boolean,
+): Boolean = temperatureC > 42f && !reducedMotion

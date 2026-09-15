@@ -1,17 +1,24 @@
 package com.runcheck.data.battery
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.BatteryManager
+import androidx.core.content.ContextCompat
 import com.runcheck.data.device.DeviceProfile
 import com.runcheck.domain.model.BatteryHealth
 import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.Confidence
 import com.runcheck.domain.model.CurrentUnit
+import com.runcheck.domain.model.MeasuredValue
 import com.runcheck.domain.model.PlugType
 import com.runcheck.domain.model.SignConvention
 import com.runcheck.util.AppDispatchers
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -166,7 +173,7 @@ class GenericBatterySourceTest {
     }
 
     @Test
-    fun `battery intent integer mappings fall back safely for unknown values`() {
+    fun `battery health and plug mappings fall back safely for unknown values`() {
         val source =
             createTestSource(
                 unit = CurrentUnit.MILLIAMPS,
@@ -177,21 +184,44 @@ class GenericBatterySourceTest {
         assertEquals(BatteryHealth.OVERHEAT, source.testMapHealth(BatteryManager.BATTERY_HEALTH_OVERHEAT))
         assertEquals(BatteryHealth.UNKNOWN, source.testMapHealth(-1))
 
-        assertEquals(
-            ChargingStatus.CHARGING,
-            source.testMapChargingStatus(BatteryManager.BATTERY_STATUS_CHARGING),
-        )
-        assertEquals(
-            ChargingStatus.DISCHARGING,
-            source.testMapChargingStatus(BatteryManager.BATTERY_STATUS_DISCHARGING),
-        )
-        assertEquals(ChargingStatus.NOT_CHARGING, source.testMapChargingStatus(-1))
-
         assertEquals(PlugType.AC, source.testMapPlugType(BatteryManager.BATTERY_PLUGGED_AC))
         assertEquals(PlugType.USB, source.testMapPlugType(BatteryManager.BATTERY_PLUGGED_USB))
         assertEquals(PlugType.WIRELESS, source.testMapPlugType(BatteryManager.BATTERY_PLUGGED_WIRELESS))
         assertEquals(PlugType.NONE, source.testMapPlugType(-1))
     }
+
+    @Test
+    fun `charging status flow maps full battery intent`() =
+        runTest {
+            val batteryIntent: Intent =
+                mockk {
+                    every { getIntExtra(BatteryManager.EXTRA_STATUS, 0) } returns BatteryManager.BATTERY_STATUS_FULL
+                }
+            mockkStatic(ContextCompat::class)
+            every {
+                ContextCompat.registerReceiver(
+                    any(),
+                    any<BroadcastReceiver>(),
+                    any<IntentFilter>(),
+                    ContextCompat.RECEIVER_NOT_EXPORTED,
+                )
+            } answers {
+                arg<BroadcastReceiver>(1).onReceive(mockk(relaxed = true), batteryIntent)
+                batteryIntent
+            }
+            val source =
+                createTestSource(
+                    unit = CurrentUnit.MILLIAMPS,
+                    convention = SignConvention.POSITIVE_CHARGING,
+                )
+
+            try {
+                assertEquals(ChargingStatus.FULL, source.getChargingStatus().first())
+            } finally {
+                source.close()
+                unmockkStatic(ContextCompat::class)
+            }
+        }
 
     @Test
     fun `charge counter emits only positive values`() =
@@ -213,12 +243,75 @@ class GenericBatterySourceTest {
             assertEquals(null, negativeSource.getChargeCounter().first())
         }
 
+    @Test
+    fun `current flow preserves raw zero truncation confidence and charge state alignment`() =
+        runTest {
+            val cases =
+                listOf(
+                    Triple(0, 0, Confidence.UNAVAILABLE),
+                    Triple(999, 0, Confidence.HIGH),
+                    Triple(-999, 0, Confidence.HIGH),
+                    Triple(500_999, 500, Confidence.HIGH),
+                    Triple(-500_999, 500, Confidence.HIGH),
+                    Triple(10_000_000, 10_000, Confidence.HIGH),
+                    Triple(-10_000_000, 10_000, Confidence.HIGH),
+                    Triple(10_000_999, 10_000, Confidence.HIGH),
+                    Triple(-10_000_999, 10_000, Confidence.HIGH),
+                    Triple(10_001_000, 10_001, Confidence.UNAVAILABLE),
+                    Triple(-10_001_000, 10_001, Confidence.UNAVAILABLE),
+                    Triple(Int.MIN_VALUE, 0, Confidence.UNAVAILABLE),
+                )
+            for (reliable in listOf(true, false)) {
+                for (isCharging in listOf(true, false)) {
+                    for ((raw, magnitude, baseConfidence) in cases) {
+                        val source =
+                            createTestSource(
+                                unit = CurrentUnit.MICROAMPS,
+                                convention = SignConvention.POSITIVE_CHARGING,
+                                reliable = reliable,
+                                isCharging = isCharging,
+                                currentNowRaw = raw,
+                            )
+                        val confidence =
+                            if (!reliable && baseConfidence == Confidence.HIGH) Confidence.LOW else baseConfidence
+                        try {
+                            assertEquals(
+                                "raw=$raw reliable=$reliable charging=$isCharging",
+                                MeasuredValue(if (isCharging) magnitude else -magnitude, confidence),
+                                source.getCurrentNow().first(),
+                            )
+                        } finally {
+                            source.close()
+                        }
+                    }
+                }
+            }
+        }
+
+    @Test
+    fun `current property read failure remains unavailable`() =
+        runTest {
+            val source =
+                createTestSource(
+                    unit = CurrentUnit.MICROAMPS,
+                    convention = SignConvention.POSITIVE_CHARGING,
+                    currentNowError = IllegalStateException("Sensor unavailable"),
+                )
+            try {
+                assertEquals(MeasuredValue(0, Confidence.UNAVAILABLE), source.getCurrentNow().first())
+            } finally {
+                source.close()
+            }
+        }
+
     private fun createTestSource(
         unit: CurrentUnit,
         convention: SignConvention,
         reliable: Boolean = true,
         isCharging: Boolean = false,
         chargeCounterRaw: Int = 0,
+        currentNowRaw: Int = 0,
+        currentNowError: Exception? = null,
     ): TestableGenericBatterySource {
         val profile =
             DeviceProfile(
@@ -237,10 +330,15 @@ class GenericBatterySourceTest {
                 every { this@mockk.isCharging } returns isCharging
                 every { getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER) } returns
                     chargeCounterRaw
+                every { getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) } answers {
+                    currentNowError?.let { throw it }
+                    currentNowRaw
+                }
             }
         val mockContext: Context =
             mockk {
                 every { getSystemService(Context.BATTERY_SERVICE) } returns batteryManager
+                every { unregisterReceiver(any()) } returns Unit
             }
         return TestableGenericBatterySource(mockContext, profile, AppDispatchers())
     }
@@ -266,8 +364,6 @@ class GenericBatterySourceTest {
         fun testAlignCurrentSignWithChargeState(currentMa: Int): Int = alignCurrentSignWithChargeState(currentMa)
 
         fun testMapHealth(health: Int) = mapHealth(health)
-
-        fun testMapChargingStatus(status: Int) = mapChargingStatus(status)
 
         fun testMapPlugType(plugged: Int) = mapPlugType(plugged)
     }

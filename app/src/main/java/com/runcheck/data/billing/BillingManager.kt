@@ -19,7 +19,6 @@ import com.runcheck.BuildConfig
 import com.runcheck.R
 import com.runcheck.billing.ProPurchaseManager
 import com.runcheck.billing.ProPurchaseRefreshResult
-import com.runcheck.billing.ProPurchaseStatusRefresher
 import com.runcheck.billing.PurchaseEvent
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
@@ -59,8 +58,7 @@ class BillingManager
         private val dispatchers: AppDispatchers,
     ) : PurchasesUpdatedListener,
         com.runcheck.domain.repository.ProStatusProvider,
-        ProPurchaseManager,
-        ProPurchaseStatusRefresher {
+        ProPurchaseManager {
         private val scopeExceptionHandler =
             CoroutineExceptionHandler { _, throwable ->
                 ReleaseSafeLog.error(TAG, "Billing coroutine failed", throwable)
@@ -83,7 +81,6 @@ class BillingManager
 
         private var billingClient: BillingClient? = null
         private var cachedProductDetails: com.android.billingclient.api.ProductDetails? = null
-        private var cachedFormattedPrice: String? = null
         private var reconnectAttempts = 0
         private var reconnectJob: Job? = null
         private val initComplete = CompletableDeferred<Unit>()
@@ -245,7 +242,6 @@ class BillingManager
             when (result.billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
                     cachedProductDetails = result.productDetailsList?.firstOrNull()
-                    cachedFormattedPrice = cachedProductDetails?.oneTimePurchaseOfferDetails?.formattedPrice
                     _billingAvailable.value = purchaseStatusAvailable && cachedProductDetails != null
                 }
 
@@ -256,13 +252,11 @@ class BillingManager
 
                 in nonReadyBillingResponseCodes() -> {
                     cachedProductDetails = null
-                    cachedFormattedPrice = null
                     _billingAvailable.value = false
                 }
 
                 else -> {
                     cachedProductDetails = null
-                    cachedFormattedPrice = null
                     _billingAvailable.value = false
                 }
             }
@@ -270,7 +264,7 @@ class BillingManager
         }
 
         override suspend fun getFormattedPrice(): String? {
-            cachedFormattedPrice?.let { return it }
+            cachedProductDetails?.oneTimePurchaseOfferDetails?.formattedPrice?.let { return it }
             val purchaseRefreshResult = queryExistingPurchases()
             return queryProductDetails(
                 purchaseStatusAvailable =
@@ -279,13 +273,6 @@ class BillingManager
         }
 
         override suspend fun refreshPurchaseStatus(): ProPurchaseRefreshResult = queryExistingPurchases()
-
-        override suspend fun refreshPurchaseStatusAfterInitialization(): ProPurchaseRefreshResult {
-            initialize()
-            awaitInitialized()
-            if (isPro()) return ProPurchaseRefreshResult.ACTIVE
-            return refreshPurchaseStatus()
-        }
 
         override fun launchPurchaseFlow(activity: Activity) {
             val productDetails = cachedProductDetails
@@ -502,7 +489,6 @@ class BillingManager
             billingClient?.endConnection()
             billingClient = null
             cachedProductDetails = null
-            cachedFormattedPrice = null
             _billingAvailable.value = false
         }
 

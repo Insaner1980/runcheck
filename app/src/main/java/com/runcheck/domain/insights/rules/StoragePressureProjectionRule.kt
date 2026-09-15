@@ -3,6 +3,7 @@ package com.runcheck.domain.insights.rules
 import com.runcheck.domain.insights.analysis.StorageFillProjection
 import com.runcheck.domain.insights.analysis.StorageGrowthAnalyzer
 import com.runcheck.domain.insights.model.InsightCandidate
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.insights.model.InsightType
@@ -36,8 +37,7 @@ class StoragePressureProjectionRule
                 type = InsightType.STORAGE,
                 priority = resolvePriority(daysUntilFull, usedPercent),
                 confidence = (readingCount / CONFIDENCE_SAMPLE_COUNT.toFloat()).coerceIn(0f, 1f),
-                titleKey = TITLE_KEY,
-                bodyKey = BODY_KEY,
+                messageId = InsightMessageId.STORAGE_PRESSURE_PROJECTION,
                 bodyArgs = listOf(estimate),
                 generatedAt = now,
                 expiresAt = now + TTL_MS,
@@ -67,8 +67,6 @@ class StoragePressureProjectionRule
         companion object {
             const val RULE_ID = "storage_pressure_projection"
 
-            private const val TITLE_KEY = "insight_storage_pressure_title"
-            private const val BODY_KEY = "insight_storage_pressure_body"
             private const val TTL_MS = 24L * 60L * 60L * 1000L
             private const val MAX_DAYS_UNTIL_FULL = 30L
             private const val HIGH_PRIORITY_DAYS = 14L

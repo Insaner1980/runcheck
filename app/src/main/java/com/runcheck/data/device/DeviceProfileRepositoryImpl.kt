@@ -34,17 +34,8 @@ class DeviceProfileRepositoryImpl
             val profile = capabilityManager.detectCapabilities()
             val existing = deviceDao.getDeviceSync()
             val now = System.currentTimeMillis()
-            val entity =
-                DeviceEntity(
-                    id = profile.deviceId,
-                    manufacturer = profile.manufacturer,
-                    model = profile.model,
-                    apiLevel = profile.apiLevel,
-                    firstSeen = existing?.firstSeen ?: now,
-                    profileJson = gson.toJson(profile),
-                )
-            deviceDao.insertOrUpdate(entity)
-            deviceDao.deleteAllExcept(entity.id)
+            val entity = buildDeviceEntity(profile, firstSeen = existing?.firstSeen ?: now)
+            deviceDao.replaceCurrent(entity)
             return profile.toDomain()
         }
 
@@ -66,19 +57,23 @@ class DeviceProfileRepositoryImpl
             return capabilityManager.detectCapabilities().also { detected ->
                 val existing = deviceDao.getDeviceSync()
                 val now = System.currentTimeMillis()
-                val deviceEntity =
-                    DeviceEntity(
-                        id = detected.deviceId,
-                        manufacturer = detected.manufacturer,
-                        model = detected.model,
-                        apiLevel = detected.apiLevel,
-                        firstSeen = existing?.firstSeen ?: now,
-                        profileJson = gson.toJson(detected),
-                    )
-                deviceDao.insertOrUpdate(deviceEntity)
-                deviceDao.deleteAllExcept(deviceEntity.id)
+                val deviceEntity = buildDeviceEntity(detected, firstSeen = existing?.firstSeen ?: now)
+                deviceDao.replaceCurrent(deviceEntity)
             }
         }
+
+        private fun buildDeviceEntity(
+            profile: DeviceProfile,
+            firstSeen: Long,
+        ): DeviceEntity =
+            DeviceEntity(
+                id = profile.deviceId,
+                manufacturer = profile.manufacturer,
+                model = profile.model,
+                apiLevel = profile.apiLevel,
+                firstSeen = firstSeen,
+                profileJson = gson.toJson(profile),
+            )
     }
 
 private fun DeviceProfile.toDomain() =

@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.runcheck.R
 import com.runcheck.ui.components.info.InfoIcon
+import com.runcheck.ui.theme.dividerColor
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.spacing
 import com.runcheck.ui.theme.uiTokens
@@ -103,7 +104,7 @@ fun MetricRow(
         if (showDivider) {
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.sm))
             HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                color = MaterialTheme.dividerColor,
             )
         }
     }

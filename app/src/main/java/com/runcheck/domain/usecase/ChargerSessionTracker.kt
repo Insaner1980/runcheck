@@ -123,7 +123,7 @@ class ChargerSessionTracker
             val powerValues =
                 readings.mapNotNull { reading ->
                     reading.currentMa?.let { currentMa ->
-                        (currentMa * reading.voltageMv) / 1000
+                        calculatePowerMw(currentMa, reading.voltageMv)
                     }
                 }
             val fallbackCurrent =
@@ -145,7 +145,7 @@ class ChargerSessionTracker
                 }
             val effectivePowerValues =
                 if (powerValues.isEmpty() && fallbackCurrent != null) {
-                    listOf((fallbackCurrent * state.voltageMv) / 1000)
+                    listOfNotNull(calculatePowerMw(fallbackCurrent, state.voltageMv))
                 } else {
                     powerValues
                 }
@@ -159,6 +159,17 @@ class ChargerSessionTracker
                 avgVoltageMv = effectiveVoltageValues.averageOrNull(),
                 avgPowerMw = effectivePowerValues.averageOrNull(),
             )
+        }
+
+        private fun calculatePowerMw(
+            currentMa: Int,
+            voltageMv: Int,
+        ): Int? {
+            val powerMw = currentMa.toLong() * voltageMv.toLong() / 1000L
+
+            return powerMw
+                .takeIf { it in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong() }
+                ?.toInt()
         }
 
         private companion object {

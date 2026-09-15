@@ -8,4 +8,8 @@ enum class ThermalStatus {
     CRITICAL,
     EMERGENCY,
     SHUTDOWN,
+    ;
+
+    val isThrottling: Boolean
+        get() = this >= SEVERE
 }

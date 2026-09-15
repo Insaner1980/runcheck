@@ -29,7 +29,8 @@ sealed class Screen(
         val type: String,
     ) : Screen("cleanup/$type") {
         companion object {
-            const val ROUTE = "cleanup/{type}"
+            const val ARG_TYPE = "type"
+            const val ROUTE = "cleanup/{$ARG_TYPE}"
         }
     }
 
@@ -39,7 +40,8 @@ sealed class Screen(
         val articleId: String,
     ) : Screen("learn/$articleId") {
         companion object {
-            const val ROUTE = "learn/{articleId}"
+            const val ARG_ARTICLE_ID = "articleId"
+            const val ROUTE = "learn/{$ARG_ARTICLE_ID}"
         }
     }
 
@@ -49,7 +51,10 @@ sealed class Screen(
         val period: String,
     ) : Screen("fullscreen_chart/$source/$metric/$period") {
         companion object {
-            const val ROUTE = "fullscreen_chart/{source}/{metric}/{period}"
+            const val ARG_SOURCE = "source"
+            const val ARG_METRIC = "metric"
+            const val ARG_PERIOD = "period"
+            const val ROUTE = "fullscreen_chart/{$ARG_SOURCE}/{$ARG_METRIC}/{$ARG_PERIOD}"
         }
     }
 

@@ -1,6 +1,7 @@
 package com.runcheck.ui.common
 
 import com.runcheck.R
+import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.HealthStatus
 import com.runcheck.domain.model.TemperatureUnit
 import org.junit.Assert.assertEquals
@@ -10,6 +11,14 @@ import org.junit.Test
 import java.util.Locale
 
 class UiFormattersTest {
+    @Test
+    fun `charging status labels map every status to its exact resource`() {
+        assertEquals(R.string.charging_status_charging, chargingStatusLabelRes(ChargingStatus.CHARGING))
+        assertEquals(R.string.charging_status_discharging, chargingStatusLabelRes(ChargingStatus.DISCHARGING))
+        assertEquals(R.string.charging_status_full, chargingStatusLabelRes(ChargingStatus.FULL))
+        assertEquals(R.string.charging_status_not_charging, chargingStatusLabelRes(ChargingStatus.NOT_CHARGING))
+    }
+
     @Test
     fun `health status labels map from the shared status enum`() {
         assertEquals(R.string.status_healthy, healthStatusLabelRes(HealthStatus.HEALTHY))

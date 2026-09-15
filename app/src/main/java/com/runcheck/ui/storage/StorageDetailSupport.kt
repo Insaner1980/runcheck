@@ -10,9 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.HorizontalDivider
@@ -20,8 +18,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import com.runcheck.R
-import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.StorageState
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.components.ActionCard
@@ -29,14 +27,14 @@ import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.ListRow
 import com.runcheck.ui.components.MetricRow
 import com.runcheck.ui.components.RuncheckCard
-import com.runcheck.ui.theme.categoryColor
+import com.runcheck.ui.storage.cleanup.CleanupType
+import com.runcheck.ui.theme.dividerColor
 import com.runcheck.ui.theme.spacing
-import com.runcheck.ui.theme.statusColors
 
 @Composable
 internal fun StorageCleanupToolsSection(
     storage: StorageState,
-    onNavigateToCleanup: (com.runcheck.ui.storage.cleanup.CleanupType) -> Unit = {},
+    onNavigateToCleanup: (CleanupType) -> Unit = {},
     onEmptyTrash: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -50,56 +48,17 @@ internal fun StorageCleanupToolsSection(
     Column(
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
     ) {
-        ActionCard(
-            icon = Icons.Outlined.FolderOpen,
-            iconTint = MaterialTheme.statusColors.poor,
-            title =
-                androidx.compose.ui.res
-                    .stringResource(R.string.storage_large_files),
-            subtitle =
-                androidx.compose.ui.res
-                    .stringResource(R.string.storage_large_files_desc),
-            actionLabel =
-                androidx.compose.ui.res
-                    .stringResource(R.string.storage_scan),
-            onAction = {
-                onNavigateToCleanup(com.runcheck.ui.storage.cleanup.CleanupType.LARGE_FILES)
-            },
-        )
-
-        ActionCard(
-            icon = Icons.Outlined.Download,
-            iconTint = MaterialTheme.colorScheme.primary,
-            title =
-                androidx.compose.ui.res
-                    .stringResource(R.string.storage_old_downloads),
-            subtitle =
-                androidx.compose.ui.res
-                    .stringResource(R.string.storage_old_downloads_desc),
-            actionLabel =
-                androidx.compose.ui.res
-                    .stringResource(R.string.storage_scan),
-            onAction = {
-                onNavigateToCleanup(com.runcheck.ui.storage.cleanup.CleanupType.OLD_DOWNLOADS)
-            },
-        )
-
-        ActionCard(
-            icon = Icons.Outlined.PhoneAndroid,
-            iconTint = categoryColor(MediaCategory.APK),
-            title =
-                androidx.compose.ui.res
-                    .stringResource(R.string.storage_apk_files),
-            subtitle =
-                androidx.compose.ui.res
-                    .stringResource(R.string.storage_apk_files_desc),
-            actionLabel =
-                androidx.compose.ui.res
-                    .stringResource(R.string.storage_scan),
-            onAction = {
-                onNavigateToCleanup(com.runcheck.ui.storage.cleanup.CleanupType.APK_FILES)
-            },
-        )
+        CleanupType.entries.forEach { type ->
+            val presentation = type.toolPresentation()
+            ActionCard(
+                icon = presentation.icon,
+                iconTint = presentation.tint.color(),
+                title = stringResource(presentation.titleRes),
+                subtitle = stringResource(presentation.descriptionRes),
+                actionLabel = stringResource(R.string.storage_scan),
+                onAction = { onNavigateToCleanup(type) },
+            )
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             storage.trashInfo?.let { trash ->
@@ -200,7 +159,7 @@ internal fun StorageDetailsCard(
                 storage.storageVolumes > 0
         if (hasTechDetails) {
             HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                color = MaterialTheme.dividerColor,
             )
             storage.fileSystemType?.let { fs ->
                 MetricRow(
@@ -287,7 +246,7 @@ internal fun StorageQuickActionsCard() {
             },
         )
         HorizontalDivider(
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+            color = MaterialTheme.dividerColor,
         )
         ListRow(
             label =
@@ -299,7 +258,7 @@ internal fun StorageQuickActionsCard() {
             },
         )
         HorizontalDivider(
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+            color = MaterialTheme.dividerColor,
         )
         ListRow(
             label =

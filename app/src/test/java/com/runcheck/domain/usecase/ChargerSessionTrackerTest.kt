@@ -102,6 +102,130 @@ class ChargerSessionTrackerTest {
         }
 
     @Test
+    fun `historical power preserves an ordinary positive result`() =
+        runTest {
+            val completed =
+                completeSessionWith(
+                    readings = listOf(reading(timestamp = 2_000L, currentMa = 2_000, voltageMv = 5_000)),
+                )
+
+            assertEquals(10_000, completed.avgPowerMw)
+        }
+
+    @Test
+    fun `historical power preserves truncating integer division`() =
+        runTest {
+            val completed =
+                completeSessionWith(
+                    readings = listOf(reading(timestamp = 2_000L, currentMa = 1, voltageMv = 4_500)),
+                )
+
+            assertEquals(4, completed.avgPowerMw)
+        }
+
+    @Test
+    fun `historical power preserves zero`() =
+        runTest {
+            val completed =
+                completeSessionWith(
+                    readings = listOf(reading(timestamp = 2_000L, currentMa = 0, voltageMv = 5_000)),
+                )
+
+            assertEquals(0, completed.avgPowerMw)
+        }
+
+    @Test
+    fun `historical power preserves a representable negative result`() =
+        runTest {
+            val completed =
+                completeSessionWith(
+                    readings = listOf(reading(timestamp = 2_000L, currentMa = -2_000, voltageMv = 5_000)),
+                )
+
+            assertEquals(-10_000, completed.avgPowerMw)
+        }
+
+    @Test
+    fun `historical power widens before multiplying`() =
+        runTest {
+            val completed =
+                completeSessionWith(
+                    readings = listOf(reading(timestamp = 2_000L, currentMa = 10_000, voltageMv = 214_749)),
+                )
+
+            assertEquals(2_147_490, completed.avgPowerMw)
+        }
+
+    @Test
+    fun `historical power above Int range is unavailable without dropping source averages`() =
+        runTest {
+            val completed =
+                completeSessionWith(
+                    readings = listOf(reading(timestamp = 2_000L, currentMa = Int.MAX_VALUE, voltageMv = 1_001)),
+                )
+
+            assertEquals(Int.MAX_VALUE, completed.avgCurrentMa)
+            assertEquals(Int.MAX_VALUE, completed.maxCurrentMa)
+            assertEquals(1_001, completed.avgVoltageMv)
+            assertNull(completed.avgPowerMw)
+        }
+
+    @Test
+    fun `historical power below Int range is unavailable without dropping source averages`() =
+        runTest {
+            val completed =
+                completeSessionWith(
+                    readings = listOf(reading(timestamp = 2_000L, currentMa = Int.MIN_VALUE, voltageMv = 1_001)),
+                )
+
+            assertEquals(Int.MIN_VALUE, completed.avgCurrentMa)
+            assertEquals(Int.MIN_VALUE, completed.maxCurrentMa)
+            assertEquals(1_001, completed.avgVoltageMv)
+            assertNull(completed.avgPowerMw)
+        }
+
+    @Test
+    fun `live fallback power widens before multiplying`() =
+        runTest {
+            val completed =
+                completeSessionWith(
+                    readings = emptyList(),
+                    selectedChargerId = null,
+                    completionState =
+                        chargingBatteryState(
+                            level = 78,
+                            currentMa = 10_000,
+                            voltageMv = 214_749,
+                        ),
+                )
+
+            assertEquals(10_000, completed.avgCurrentMa)
+            assertEquals(214_749, completed.avgVoltageMv)
+            assertEquals(2_147_490, completed.avgPowerMw)
+        }
+
+    @Test
+    fun `live fallback power above Int range is unavailable without dropping source values`() =
+        runTest {
+            val completed =
+                completeSessionWith(
+                    readings = emptyList(),
+                    selectedChargerId = null,
+                    completionState =
+                        chargingBatteryState(
+                            level = 78,
+                            currentMa = 10_000,
+                            voltageMv = Int.MAX_VALUE,
+                        ),
+                )
+
+            assertEquals(10_000, completed.avgCurrentMa)
+            assertEquals(10_000, completed.maxCurrentMa)
+            assertEquals(Int.MAX_VALUE, completed.avgVoltageMv)
+            assertNull(completed.avgPowerMw)
+        }
+
+    @Test
     fun `switching chargers completes and starts sessions in one transaction`() =
         runTest {
             val chargerRepository =
@@ -155,6 +279,28 @@ class ChargerSessionTrackerTest {
 
     private val transactionRunner = DatabaseTransactionRunner { block -> block() }
 
+    private suspend fun completeSessionWith(
+        readings: List<BatteryReading>,
+        selectedChargerId: Long? = 7L,
+        completionState: BatteryState = chargingBatteryState(level = 78, status = ChargingStatus.NOT_CHARGING),
+    ): ChargingSession {
+        val chargerRepository =
+            FakeChargerRepository().apply {
+                activeSession = activeSession(chargerId = 7L)
+            }
+        val tracker =
+            ChargerSessionTracker(
+                chargerRepository,
+                TestBatteryRepository(readings = readings),
+                FakeUserPreferencesRepository(selectedChargerId = selectedChargerId),
+                transactionRunner,
+            )
+
+        tracker.onBatteryState(completionState, timestamp = 5_000L)
+
+        return requireNotNull(chargerRepository.completedSession)
+    }
+
     private fun activeSession(chargerId: Long) =
         ChargingSession(
             id = 11L,
@@ -173,11 +319,13 @@ class ChargerSessionTrackerTest {
     private fun chargingBatteryState(
         level: Int,
         status: ChargingStatus = ChargingStatus.CHARGING,
+        currentMa: Int = 2_200,
+        voltageMv: Int = 5_000,
     ) = BatteryState(
         level = level,
-        voltageMv = 5000,
+        voltageMv = voltageMv,
         temperatureC = 30f,
-        currentMa = MeasuredValue(2200, Confidence.HIGH),
+        currentMa = MeasuredValue(currentMa, Confidence.HIGH),
         chargingStatus = status,
         plugType = PlugType.USB,
         health = BatteryHealth.GOOD,

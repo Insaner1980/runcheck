@@ -174,38 +174,20 @@ class SettingsViewModel
         }
 
         fun setMonitoringInterval(interval: MonitoringInterval) {
-            viewModelScope.launch {
-                try {
-                    setMonitoringIntervalUseCase(interval)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    _uiState.update { it.copy(errorMessage = UiText.Resource(R.string.common_error_generic)) }
-                }
+            executePreferenceUpdate {
+                setMonitoringIntervalUseCase(interval)
             }
         }
 
         fun setNotifications(enabled: Boolean) {
-            viewModelScope.launch {
-                try {
-                    setNotificationsEnabledUseCase(enabled)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    _uiState.update { it.copy(errorMessage = UiText.Resource(R.string.common_error_generic)) }
-                }
+            executePreferenceUpdate {
+                setNotificationsEnabledUseCase(enabled)
             }
         }
 
         fun setDataRetention(retention: DataRetention) {
-            viewModelScope.launch {
-                try {
-                    setDataRetentionUseCase(retention)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    _uiState.update { it.copy(errorMessage = UiText.Resource(R.string.common_error_generic)) }
-                }
+            executePreferenceUpdate {
+                setDataRetentionUseCase(retention)
             }
         }
 

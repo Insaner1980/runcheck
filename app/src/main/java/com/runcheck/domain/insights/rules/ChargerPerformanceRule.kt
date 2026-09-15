@@ -1,11 +1,13 @@
 package com.runcheck.domain.insights.rules
 
 import com.runcheck.domain.insights.model.InsightCandidate
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.insights.model.InsightType
 import com.runcheck.domain.model.ChargerProfile
 import com.runcheck.domain.model.ChargingSession
+import com.runcheck.domain.model.reconstructedAveragePowerMw
 import com.runcheck.domain.repository.ChargerRepository
 import javax.inject.Inject
 import kotlin.math.roundToInt
@@ -87,8 +89,7 @@ class ChargerPerformanceRule
                         minOf(bestCharger.sampleCount, weakestCharger.sampleCount) /
                             CONFIDENCE_SAMPLE_COUNT.toFloat()
                     ).coerceIn(0f, 1f),
-                titleKey = TITLE_KEY,
-                bodyKey = BODY_KEY,
+                messageId = InsightMessageId.CHARGER_PERFORMANCE,
                 bodyArgs = listOf(weakestCharger.name, percentSlower.toString()),
                 generatedAt = now,
                 expiresAt = now + TTL_MS,
@@ -132,19 +133,11 @@ class ChargerPerformanceRule
         private fun ChargingSession.positivePowerMw(): Int? =
             avgPowerMw
                 ?.takeIf { it > 0 }
-                ?: avgCurrentMa?.let { currentMa ->
-                    avgVoltageMv?.let { voltageMv ->
-                        (currentMa.toLong() * voltageMv.toLong() / 1000L)
-                            .takeIf { it in 1..Int.MAX_VALUE.toLong() }
-                            ?.toInt()
-                    }
-                }
+                ?: reconstructedAveragePowerMw()?.takeIf { it > 0 }
 
         companion object {
             const val RULE_ID = "charger_performance"
 
-            private const val TITLE_KEY = "insight_charger_performance_title"
-            private const val BODY_KEY = "insight_charger_performance_body"
             private const val LOOKBACK_MS = 45L * 24L * 60L * 60L * 1000L
             private const val TTL_MS = 24L * 60L * 60L * 1000L
             private const val MINIMUM_CHARGER_COUNT = 2

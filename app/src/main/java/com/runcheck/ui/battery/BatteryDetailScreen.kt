@@ -114,16 +114,17 @@ import com.runcheck.ui.components.RuncheckCard
 import com.runcheck.ui.components.SectionDivider
 import com.runcheck.ui.components.SectionHeader
 import com.runcheck.ui.components.TrendChart
-import com.runcheck.ui.components.info.InfoCard
+import com.runcheck.ui.components.info.CatalogInfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.components.info.InfoSheetHost
 import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.components.observedScreenState
 import com.runcheck.ui.fullscreen.FullscreenChartSeedStore
-import com.runcheck.ui.fullscreen.FullscreenChartUiState
+import com.runcheck.ui.fullscreen.FullscreenChartSelection
 import com.runcheck.ui.fullscreen.sanitizeFullscreenMetric
 import com.runcheck.ui.fullscreen.sanitizeFullscreenPeriod
+import com.runcheck.ui.fullscreen.toFullscreenSuccess
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.heroCardColor
@@ -134,8 +135,8 @@ import com.runcheck.ui.theme.numericHeroLevelTextStyle
 import com.runcheck.ui.theme.numericHeroUnitTextStyle
 import com.runcheck.ui.theme.runcheckHeroCardColors
 import com.runcheck.ui.theme.spacing
+import com.runcheck.ui.theme.statusColorForBatteryTemperature
 import com.runcheck.ui.theme.statusColorForPercent
-import com.runcheck.ui.theme.statusColorForTemperature
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.util.enumValueOrDefault
 
@@ -353,47 +354,31 @@ private fun BatteryOverviewSection( // NOSONAR
             onInfoClick = onInfoClick,
         )
 
-        InfoCard(
-            id = InfoCardCatalog.BatteryLiveNotification.id,
-            headline = stringResource(InfoCardCatalog.BatteryLiveNotification.headlineRes),
-            body = stringResource(InfoCardCatalog.BatteryLiveNotification.bodyRes),
+        CatalogInfoCard(
+            definition = InfoCardCatalog.BatteryLiveNotification,
+            dismissedInfoCards = state.dismissedInfoCards,
+            showInfoCards = state.showInfoCards,
             onDismiss = onDismissInfoCard,
-            visible =
-                InfoCardCatalog.BatteryLiveNotification.id !in state.dismissedInfoCards &&
-                    state.showInfoCards,
+            onNavigateToLearnArticle = onNavigateToLearnArticle,
         )
 
         if (battery.healthPercent != null && battery.healthPercent < 90) {
-            InfoCard(
-                id = InfoCardCatalog.BatteryHealthDegraded.id,
-                headline = stringResource(InfoCardCatalog.BatteryHealthDegraded.headlineRes),
-                body = stringResource(InfoCardCatalog.BatteryHealthDegraded.bodyRes),
+            CatalogInfoCard(
+                definition = InfoCardCatalog.BatteryHealthDegraded,
+                dismissedInfoCards = state.dismissedInfoCards,
+                showInfoCards = state.showInfoCards,
                 onDismiss = onDismissInfoCard,
-                visible =
-                    InfoCardCatalog.BatteryHealthDegraded.id !in state.dismissedInfoCards && state.showInfoCards,
-                onLearnMore = {
-                    InfoCardCatalog
-                        .resolveLearnArticleId(
-                            InfoCardCatalog.BatteryHealthDegraded,
-                        )?.let(onNavigateToLearnArticle)
-                },
+                onNavigateToLearnArticle = onNavigateToLearnArticle,
             )
         }
 
         if (battery.healthPercent != null && battery.healthPercent < 80) {
-            InfoCard(
-                id = InfoCardCatalog.BatteryDiesBeforeZero.id,
-                headline = stringResource(InfoCardCatalog.BatteryDiesBeforeZero.headlineRes),
-                body = stringResource(InfoCardCatalog.BatteryDiesBeforeZero.bodyRes),
+            CatalogInfoCard(
+                definition = InfoCardCatalog.BatteryDiesBeforeZero,
+                dismissedInfoCards = state.dismissedInfoCards,
+                showInfoCards = state.showInfoCards,
                 onDismiss = onDismissInfoCard,
-                visible =
-                    InfoCardCatalog.BatteryDiesBeforeZero.id !in state.dismissedInfoCards && state.showInfoCards,
-                onLearnMore = {
-                    InfoCardCatalog
-                        .resolveLearnArticleId(
-                            InfoCardCatalog.BatteryDiesBeforeZero,
-                        )?.let(onNavigateToLearnArticle)
-                },
+                onNavigateToLearnArticle = onNavigateToLearnArticle,
             )
         }
 
@@ -416,7 +401,7 @@ private fun BatteryOverviewSection( // NOSONAR
                         temperatureC = battery.temperatureC,
                         temperatureUnit = state.temperatureUnit,
                     ),
-                valueColor = temperatureColor(battery.temperatureC),
+                valueColor = statusColorForBatteryTemperature(battery.temperatureC),
                 onInfoClick = { onInfoClick("temperature") },
             )
             MetricRow(
@@ -506,7 +491,7 @@ private fun BatteryOverviewSection( // NOSONAR
                             temperatureUnit = state.temperatureUnit,
                         ),
                     label = stringResource(R.string.battery_temperature),
-                    lineColor = temperatureColor(battery.temperatureC),
+                    lineColor = statusColorForBatteryTemperature(battery.temperatureC),
                     accessibilityDescription =
                         stringResource(
                             R.string.a11y_chart_trend,
@@ -701,19 +686,12 @@ private fun BatteryChargingSection( // NOSONAR
     }
 
     if (battery.chargingStatus == ChargingStatus.CHARGING) {
-        InfoCard(
-            id = InfoCardCatalog.BatteryChargingHabits.id,
-            headline = stringResource(InfoCardCatalog.BatteryChargingHabits.headlineRes),
-            body = stringResource(InfoCardCatalog.BatteryChargingHabits.bodyRes),
+        CatalogInfoCard(
+            definition = InfoCardCatalog.BatteryChargingHabits,
+            dismissedInfoCards = state.dismissedInfoCards,
+            showInfoCards = state.showInfoCards,
             onDismiss = onDismissInfoCard,
-            visible =
-                InfoCardCatalog.BatteryChargingHabits.id !in state.dismissedInfoCards && state.showInfoCards,
-            onLearnMore = {
-                InfoCardCatalog
-                    .resolveLearnArticleId(
-                        InfoCardCatalog.BatteryChargingHabits,
-                    )?.let(onNavigateToLearnArticle)
-            },
+            onNavigateToLearnArticle = onNavigateToLearnArticle,
         )
     }
 
@@ -762,19 +740,12 @@ private fun BatteryChargingSection( // NOSONAR
     if (state.screenUsage?.screenOffDrainRate != null &&
         state.screenUsage.screenOffDrainRate > 2f
     ) {
-        InfoCard(
-            id = InfoCardCatalog.BatteryScreenOffDrain.id,
-            headline = stringResource(InfoCardCatalog.BatteryScreenOffDrain.headlineRes),
-            body = stringResource(InfoCardCatalog.BatteryScreenOffDrain.bodyRes),
+        CatalogInfoCard(
+            definition = InfoCardCatalog.BatteryScreenOffDrain,
+            dismissedInfoCards = state.dismissedInfoCards,
+            showInfoCards = state.showInfoCards,
             onDismiss = onDismissInfoCard,
-            visible =
-                InfoCardCatalog.BatteryScreenOffDrain.id !in state.dismissedInfoCards && state.showInfoCards,
-            onLearnMore = {
-                InfoCardCatalog
-                    .resolveLearnArticleId(
-                        InfoCardCatalog.BatteryScreenOffDrain,
-                    )?.let(onNavigateToLearnArticle)
-            },
+            onNavigateToLearnArticle = onNavigateToLearnArticle,
         )
     }
 
@@ -1048,19 +1019,8 @@ private fun BatteryHistoryPanel(
 
             val fullscreenSeed =
                 remember(chartModel, selectedMetric, state.selectedPeriod, state.temperatureUnit) {
-                    FullscreenChartUiState.Success(
-                        chartData = chartModel.chartData,
-                        chartTimestamps = chartModel.chartTimestamps,
-                        unit = chartModel.unit,
-                        selectedMetric = selectedMetric.name,
-                        selectedPeriod = state.selectedPeriod.name,
-                        metricOptions = BatteryHistoryMetric.entries.map { it.name },
-                        periodOptions = HistoryPeriod.entries.map { it.name },
-                        yLabels = chartModel.yLabels,
-                        xLabels = chartModel.xLabels,
-                        tooltipDecimals = chartModel.tooltipDecimals,
-                        tooltipTimeSkeleton = chartModel.tooltipTimeSkeleton,
-                        temperatureUnit = state.temperatureUnit,
+                    chartModel.toFullscreenSuccess(
+                        selection = FullscreenChartSelection.BatteryHistory(selectedMetric, state.selectedPeriod),
                     )
                 }
             HistoryChartContent(
@@ -1385,19 +1345,8 @@ private fun BatterySessionGraphPanel(
                 )
             val fullscreenSeed =
                 remember(chartModel, selectedMetric, selectedWindow) {
-                    FullscreenChartUiState.Success(
-                        chartData = chartModel.chartData,
-                        chartTimestamps = chartModel.chartTimestamps,
-                        lineBreakIndices = chartModel.lineBreakIndices,
-                        unit = chartModel.unit,
-                        selectedMetric = selectedMetric.name,
-                        selectedPeriod = selectedWindow.name,
-                        metricOptions = SessionGraphMetric.entries.map { it.name },
-                        periodOptions = SessionGraphWindow.entries.map { it.name },
-                        yLabels = chartModel.yLabels,
-                        xLabels = chartModel.xLabels,
-                        tooltipDecimals = chartModel.tooltipDecimals,
-                        tooltipTimeSkeleton = chartModel.tooltipTimeSkeleton,
+                    chartModel.toFullscreenSuccess(
+                        selection = FullscreenChartSelection.BatterySession(selectedMetric, selectedWindow),
                     )
                 }
             Text(
@@ -1475,14 +1424,6 @@ private fun BatteryPanel(
         content = content,
     )
 }
-
-@Composable
-private fun temperatureColor(temperatureC: Float): Color =
-    when {
-        temperatureC >= 40f -> MaterialTheme.statusColors.critical
-        temperatureC >= 35f -> MaterialTheme.statusColors.fair
-        else -> MaterialTheme.colorScheme.onSurface
-    }
 
 @Composable
 private fun healthColor(health: BatteryHealth): Color =

@@ -2,6 +2,7 @@ package com.runcheck.domain.insights.rules
 
 import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.model.InsightCandidate
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.insights.model.InsightType
@@ -64,8 +65,7 @@ class HeavyAppUsageRule
                     type = InsightType.APP_USAGE,
                     priority = priority,
                     confidence = confidence,
-                    titleKey = TITLE_KEY,
-                    bodyKey = BODY_KEY,
+                    messageId = InsightMessageId.HEAVY_APP_USAGE,
                     bodyArgs = listOf(topApp.appLabel, sharePercent.toString(), durationLabel),
                     generatedAt = now,
                     expiresAt = now + TTL_MS,
@@ -100,8 +100,6 @@ class HeavyAppUsageRule
         companion object {
             const val RULE_ID = "heavy_app_usage"
 
-            private const val TITLE_KEY = "insight_app_usage_title"
-            private const val BODY_KEY = "insight_app_usage_body"
             private const val LOOKBACK_MS = 24L * 60L * 60L * 1000L
             private const val TTL_MS = 12L * 60L * 60L * 1000L
             private const val MIN_FOREGROUND_TIME_MS = 2L * 60L * 60L * 1000L

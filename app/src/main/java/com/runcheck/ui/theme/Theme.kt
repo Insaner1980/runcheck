@@ -42,6 +42,11 @@ val MaterialTheme.iconCircleColor: Color
     @ReadOnlyComposable
     get() = colorScheme.surfaceContainerHighest
 
+val MaterialTheme.dividerColor: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = colorScheme.outlineVariant.copy(alpha = 0.35f)
+
 val MaterialTheme.cardStrokeColor: Color
     @Composable
     @ReadOnlyComposable

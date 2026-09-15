@@ -10,75 +10,71 @@ import com.runcheck.ui.chart.SessionGraphWindow
 fun parseFullscreenChartSource(rawSource: String?): FullscreenChartSource? =
     FullscreenChartSource.entries.firstOrNull { it.name == rawSource }
 
-fun sanitizeFullscreenMetric(
+fun parseFullscreenChartSelection(
+    rawSource: String?,
+    rawMetric: String?,
+    rawPeriod: String?,
+): FullscreenChartSelection =
+    decodeFullscreenChartSelection(
+        parseFullscreenChartSource(rawSource) ?: FullscreenChartSource.BATTERY_SESSION,
+        rawMetric,
+        rawPeriod,
+    )
+
+private fun decodeFullscreenChartSelection(
     source: FullscreenChartSource,
     rawMetric: String?,
-): String =
+    rawPeriod: String?,
+): FullscreenChartSelection =
     when (source) {
         FullscreenChartSource.BATTERY_HISTORY -> {
-            sanitizeEnumName(
-                rawValue = rawMetric,
-                allowedNames = BatteryHistoryMetric.entries.map { it.name },
-                defaultValue = BatteryHistoryMetric.LEVEL.name,
+            FullscreenChartSelection.BatteryHistory(
+                BatteryHistoryMetric.entries.firstOrNull { it.name == rawMetric } ?: BatteryHistoryMetric.LEVEL,
+                HistoryPeriod.entries.firstOrNull { it.name == rawPeriod } ?: HistoryPeriod.DAY,
             )
         }
 
         FullscreenChartSource.BATTERY_SESSION -> {
-            sanitizeEnumName(
-                rawValue = rawMetric,
-                allowedNames = SessionGraphMetric.entries.map { it.name },
-                defaultValue = SessionGraphMetric.CURRENT.name,
+            FullscreenChartSelection.BatterySession(
+                SessionGraphMetric.entries.firstOrNull { it.name == rawMetric } ?: SessionGraphMetric.CURRENT,
+                SessionGraphWindow.entries.firstOrNull { it.name == rawPeriod } ?: SessionGraphWindow.ALL,
             )
         }
 
         FullscreenChartSource.NETWORK_HISTORY -> {
-            sanitizeEnumName(
-                rawValue = rawMetric,
-                allowedNames = NetworkHistoryMetric.entries.map { it.name },
-                defaultValue = NetworkHistoryMetric.SIGNAL.name,
+            FullscreenChartSelection.NetworkHistory(
+                NetworkHistoryMetric.entries.firstOrNull { it.name == rawMetric } ?: NetworkHistoryMetric.SIGNAL,
+                HistoryPeriod.entries.firstOrNull { it.name == rawPeriod && it != HistoryPeriod.SINCE_UNPLUG }
+                    ?: HistoryPeriod.DAY,
             )
         }
     }
 
+fun sanitizeFullscreenMetric(
+    source: FullscreenChartSource,
+    rawMetric: String?,
+): String = decodeFullscreenChartSelection(source, rawMetric, null).metricArgument()
+
 fun sanitizeFullscreenPeriod(
     source: FullscreenChartSource,
     rawPeriod: String?,
-): String =
-    when (source) {
-        FullscreenChartSource.BATTERY_HISTORY -> {
-            sanitizeEnumName(
-                rawValue = rawPeriod,
-                allowedNames = HistoryPeriod.entries.map { it.name },
-                defaultValue = HistoryPeriod.DAY.name,
-            )
-        }
+): String = decodeFullscreenChartSelection(source, null, rawPeriod).periodArgument()
 
-        FullscreenChartSource.BATTERY_SESSION -> {
-            sanitizeEnumName(
-                rawValue = rawPeriod,
-                allowedNames = SessionGraphWindow.entries.map { it.name },
-                defaultValue = SessionGraphWindow.ALL.name,
-            )
-        }
+/** Stable String encoding for SavedStateHandle and navigation results. */
+internal fun FullscreenChartSelection.metricArgument(): String =
+    when (this) {
+        is FullscreenChartSelection.BatteryHistory -> metric.name
+        is FullscreenChartSelection.BatterySession -> metric.name
+        is FullscreenChartSelection.NetworkHistory -> metric.name
+    }
 
-        FullscreenChartSource.NETWORK_HISTORY -> {
-            sanitizeEnumName(
-                rawValue = rawPeriod,
-                allowedNames =
-                    HistoryPeriod.entries
-                        .filter { it != HistoryPeriod.SINCE_UNPLUG }
-                        .map { it.name },
-                defaultValue = HistoryPeriod.DAY.name,
-            )
-        }
+internal fun FullscreenChartSelection.periodArgument(): String =
+    when (this) {
+        is FullscreenChartSelection.BatteryHistory -> period.name
+        is FullscreenChartSelection.BatterySession -> period.name
+        is FullscreenChartSelection.NetworkHistory -> period.name
     }
 
 fun fullscreenChartRequiresPro(source: FullscreenChartSource): Boolean =
     source == FullscreenChartSource.BATTERY_HISTORY ||
         source == FullscreenChartSource.NETWORK_HISTORY
-
-private fun sanitizeEnumName(
-    rawValue: String?,
-    allowedNames: List<String>,
-    defaultValue: String,
-): String = rawValue?.takeIf { it in allowedNames } ?: defaultValue

@@ -406,8 +406,8 @@ class GetChargerComparisonUseCaseTest {
                             endTime = 3_601_000L,
                             startLevel = 20,
                             endLevel = 80,
-                            avgCurrentMa = 2200,
-                            avgVoltageMv = 9000,
+                            avgCurrentMa = 1000,
+                            avgVoltageMv = 5000,
                             avgPowerMw = 19_800,
                         ),
                     ),
@@ -418,6 +418,52 @@ class GetChargerComparisonUseCaseTest {
 
             assertEquals(19_800, result[0].avgPowerMw)
             assertEquals(19_800, result[0].latestPowerMw)
+        }
+
+    @Test
+    fun `stored zero power wins over reconstruction`() =
+        runTest {
+            val result =
+                compare(
+                    chargers = listOf(charger(1L, "Zero power")),
+                    sessions =
+                        listOf(
+                            session(
+                                chargerId = 1L,
+                                startTime = 1_000L,
+                                endTime = 3_601_000L,
+                                avgCurrentMa = 2_000,
+                                avgVoltageMv = 5_000,
+                                avgPowerMw = 0,
+                            ),
+                        ),
+                )
+
+            assertEquals(0, result.single().avgPowerMw)
+            assertEquals(0, result.single().latestPowerMw)
+        }
+
+    @Test
+    fun `stored negative power wins over reconstruction`() =
+        runTest {
+            val result =
+                compare(
+                    chargers = listOf(charger(1L, "Negative power")),
+                    sessions =
+                        listOf(
+                            session(
+                                chargerId = 1L,
+                                startTime = 1_000L,
+                                endTime = 3_601_000L,
+                                avgCurrentMa = 2_000,
+                                avgVoltageMv = 5_000,
+                                avgPowerMw = -500,
+                            ),
+                        ),
+                )
+
+            assertEquals(-500, result.single().avgPowerMw)
+            assertEquals(-500, result.single().latestPowerMw)
         }
 
     @Test
@@ -449,5 +495,51 @@ class GetChargerComparisonUseCaseTest {
 
             assertEquals(10_000, result[0].avgPowerMw)
             assertEquals(10_000, result[0].latestPowerMw)
+        }
+
+    @Test
+    fun `power fallback widens before multiplying session averages`() =
+        runTest {
+            val result =
+                compare(
+                    chargers = listOf(charger(1L, "Extreme input")),
+                    sessions =
+                        listOf(
+                            session(
+                                chargerId = 1L,
+                                startTime = 1_000L,
+                                endTime = 3_601_000L,
+                                avgCurrentMa = 10_000,
+                                avgVoltageMv = 214_749,
+                                avgPowerMw = null,
+                            ),
+                        ),
+                )
+
+            assertEquals(2_147_490, result.single().avgPowerMw)
+            assertEquals(2_147_490, result.single().latestPowerMw)
+        }
+
+    @Test
+    fun `power fallback is unavailable outside Int range`() =
+        runTest {
+            val result =
+                compare(
+                    chargers = listOf(charger(1L, "Out of range")),
+                    sessions =
+                        listOf(
+                            session(
+                                chargerId = 1L,
+                                startTime = 1_000L,
+                                endTime = 3_601_000L,
+                                avgCurrentMa = Int.MAX_VALUE,
+                                avgVoltageMv = Int.MAX_VALUE,
+                                avgPowerMw = null,
+                            ),
+                        ),
+                )
+
+            assertNull(result.single().avgPowerMw)
+            assertNull(result.single().latestPowerMw)
         }
 }

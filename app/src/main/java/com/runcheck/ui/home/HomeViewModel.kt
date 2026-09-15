@@ -25,6 +25,7 @@ import com.runcheck.domain.usecase.GetStorageStateUseCase
 import com.runcheck.domain.usecase.GetThermalStateUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.pro.ProStateProvider
+import com.runcheck.ui.common.UI_STATE_SAMPLE_INTERVAL_MS
 import com.runcheck.ui.common.UnseenInsightTracker
 import com.runcheck.ui.common.launchUiMutation
 import com.runcheck.ui.common.messageOrRes
@@ -144,7 +145,7 @@ class HomeViewModel
 
                     val dataFlow = observeData(freshnessTicker)
 
-                    val insightFlow = observeInsights()
+                    val insightFlow = insightRepository.getActiveInsights()
                     val readyProStateFlow = observeReadyProState()
 
                     combine(
@@ -159,7 +160,6 @@ class HomeViewModel
                         val visibleInsights =
                             insightHomeRankingPolicy.selectHomeInsights(
                                 insights = visibleActiveInsights,
-                                limit = MAX_HOME_INSIGHTS,
                             )
 
                         HomeUiState.Success(
@@ -184,7 +184,7 @@ class HomeViewModel
                         } catch (error: Exception) {
                             ReleaseSafeLog.error(TAG, "Charger session tracking failed", error)
                         }
-                    }.sample(DISPLAY_UPDATE_INTERVAL_MS)
+                    }.sample(UI_STATE_SAMPLE_INTERVAL_MS)
                         .catch { e ->
                             if (e is CancellationException) throw e
                             _uiState.value = HomeUiState.Error(e.messageOrRes(R.string.common_error_generic))
@@ -260,12 +260,6 @@ class HomeViewModel
                 )
             }.distinctUntilChanged()
 
-        private fun observeInsights() =
-            combine(
-                insightRepository.getActiveInsights(),
-                insightRepository.getUnseenCount(),
-            ) { activeInsights, _ -> activeInsights }
-
         private fun observeReadyProState() =
             combine(
                 proStateProvider.proState,
@@ -324,8 +318,6 @@ class HomeViewModel
 
         companion object {
             private const val TAG = "HomeViewModel"
-            private const val MAX_HOME_INSIGHTS = 3
-            private const val DISPLAY_UPDATE_INTERVAL_MS = 333L
             private const val MIN_FULL_CHECK_INDICATOR_MILLIS = 900L
             private const val FULL_CHECK_TIMEOUT_MILLIS = 12_000L
             private const val MONITORING_STALE_CHECK_INTERVAL_MS = 15_000L

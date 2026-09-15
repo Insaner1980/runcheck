@@ -2,9 +2,9 @@ package com.runcheck.data.network
 
 import com.runcheck.data.db.dao.SpeedTestResultDao
 import com.runcheck.data.db.entity.SpeedTestResultEntity
-import com.runcheck.domain.model.ConnectionType
 import com.runcheck.domain.model.SpeedTestProgress
 import com.runcheck.domain.model.SpeedTestResult
+import com.runcheck.domain.model.decodePersistedConnectionType
 import com.runcheck.domain.repository.DatabaseTransactionRunner
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.TimestampSanitizer
@@ -46,7 +46,7 @@ class SpeedTestRepositoryImpl
             speedTestResultDao
                 .getLatestResult()
                 .map { entity ->
-                    entity?.toDomain()?.takeIf { TimestampSanitizer.isUsable(it.timestamp) }
+                    entity?.toDomainOrNull()?.takeIf { TimestampSanitizer.isUsable(it.timestamp) }
                 }.flowOn(dispatchers.io)
 
         override fun getRecentResults(limit: Int): Flow<List<SpeedTestResult>> =
@@ -54,8 +54,9 @@ class SpeedTestRepositoryImpl
                 .getRecentResults(limit)
                 .map { list ->
                     list
-                        .map { it.toDomain() }
-                        .filter { TimestampSanitizer.isUsable(it.timestamp) }
+                        .mapNotNull { entity ->
+                            entity.toDomainOrNull()?.takeIf { TimestampSanitizer.isUsable(it.timestamp) }
+                        }
                 }.flowOn(dispatchers.io)
 
         override suspend fun deleteOlderThan(cutoff: Long) = speedTestResultDao.deleteOlderThan(cutoff)
@@ -76,8 +77,9 @@ class SpeedTestRepositoryImpl
                 signalDbm = signalDbm,
             )
 
-        private fun SpeedTestResultEntity.toDomain(): SpeedTestResult =
-            SpeedTestResult(
+        private fun SpeedTestResultEntity.toDomainOrNull(): SpeedTestResult? {
+            val decodedConnectionType = decodePersistedConnectionType(connectionType) ?: return null
+            return SpeedTestResult(
                 id = id,
                 timestamp = timestamp,
                 downloadMbps = downloadMbps,
@@ -86,13 +88,9 @@ class SpeedTestRepositoryImpl
                 jitterMs = jitterMs,
                 serverName = serverName,
                 serverLocation = serverLocation,
-                connectionType =
-                    try {
-                        ConnectionType.valueOf(connectionType)
-                    } catch (_: IllegalArgumentException) {
-                        ConnectionType.NONE
-                    },
+                connectionType = decodedConnectionType,
                 networkSubtype = networkSubtype,
                 signalDbm = signalDbm,
             )
+        }
     }

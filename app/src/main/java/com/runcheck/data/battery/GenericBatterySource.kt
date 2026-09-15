@@ -32,6 +32,15 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.math.abs
 
+internal fun chargingStatusFromBatteryManager(status: Int): ChargingStatus =
+    when (status) {
+        BatteryManager.BATTERY_STATUS_CHARGING -> ChargingStatus.CHARGING
+        BatteryManager.BATTERY_STATUS_DISCHARGING -> ChargingStatus.DISCHARGING
+        BatteryManager.BATTERY_STATUS_FULL -> ChargingStatus.FULL
+        BatteryManager.BATTERY_STATUS_NOT_CHARGING -> ChargingStatus.NOT_CHARGING
+        else -> ChargingStatus.NOT_CHARGING
+    }
+
 open class GenericBatterySource(
     protected val context: Context,
     protected val profile: DeviceProfile,
@@ -117,7 +126,7 @@ open class GenericBatterySource(
         }
 
     protected fun normalizeCurrent(raw: Int): Int {
-        val milliamps = raw / 1000
+        val milliamps = batteryCurrentMicroampsToMilliamps(raw)
         return when (profile.currentNowSignConvention) {
             SignConvention.POSITIVE_CHARGING -> milliamps
             SignConvention.NEGATIVE_CHARGING -> -milliamps
@@ -134,7 +143,7 @@ open class GenericBatterySource(
     protected fun calculateCurrentConfidence(rawCurrent: Int): Confidence =
         when {
             rawCurrent == 0 -> Confidence.UNAVAILABLE
-            abs(normalizeCurrent(rawCurrent).toLong()) > MAX_PLAUSIBLE_CURRENT_MA -> Confidence.UNAVAILABLE
+            !isPlausibleBatteryCurrent(normalizeCurrent(rawCurrent)) -> Confidence.UNAVAILABLE
             !profile.currentNowReliable -> Confidence.LOW
             else -> Confidence.HIGH
         }
@@ -168,7 +177,7 @@ open class GenericBatterySource(
     override fun getChargingStatus(): Flow<ChargingStatus> =
         batteryChangedSharedFlow.map { intent ->
             val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, 0)
-            mapChargingStatus(status)
+            chargingStatusFromBatteryManager(status)
         }
 
     override fun getPlugType(): Flow<PlugType> =
@@ -269,15 +278,6 @@ open class GenericBatterySource(
             else -> BatteryHealth.UNKNOWN
         }
 
-    protected fun mapChargingStatus(status: Int): ChargingStatus =
-        when (status) {
-            BatteryManager.BATTERY_STATUS_CHARGING -> ChargingStatus.CHARGING
-            BatteryManager.BATTERY_STATUS_DISCHARGING -> ChargingStatus.DISCHARGING
-            BatteryManager.BATTERY_STATUS_FULL -> ChargingStatus.FULL
-            BatteryManager.BATTERY_STATUS_NOT_CHARGING -> ChargingStatus.NOT_CHARGING
-            else -> ChargingStatus.NOT_CHARGING
-        }
-
     protected fun mapPlugType(plugged: Int): PlugType =
         when (plugged) {
             BatteryManager.BATTERY_PLUGGED_AC -> PlugType.AC
@@ -294,6 +294,5 @@ open class GenericBatterySource(
         // Three polling intervals also cover the live notification's five-second one-shot cadence.
         private const val SAMSUNG_EVIDENCE_MAX_GAP_MS = 3 * POLLING_INTERVAL_MS
         private const val SAMSUNG_SUSPICIOUS_CONSTANT_CURRENT_MA = 3000
-        private const val MAX_PLAUSIBLE_CURRENT_MA = 10_000L
     }
 }

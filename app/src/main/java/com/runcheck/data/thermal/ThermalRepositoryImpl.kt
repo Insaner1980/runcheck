@@ -3,10 +3,9 @@ package com.runcheck.data.thermal
 import android.os.SystemClock
 import com.runcheck.data.db.dao.ThermalReadingDao
 import com.runcheck.data.db.entity.ThermalReadingEntity
-import com.runcheck.data.device.DeviceProfileProvider
 import com.runcheck.domain.model.ThermalReading
 import com.runcheck.domain.model.ThermalState
-import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.domain.model.ThermalStatusPersistence
 import com.runcheck.domain.usecase.TrackThrottlingEventsUseCase
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
@@ -27,7 +26,6 @@ class ThermalRepositoryImpl
     @Inject
     constructor(
         private val thermalDataSource: ThermalDataSource,
-        private val deviceProfileProvider: DeviceProfileProvider,
         private val thermalReadingDao: ThermalReadingDao,
         private val trackThrottlingEvents: TrackThrottlingEventsUseCase,
         private val dispatchers: AppDispatchers,
@@ -35,20 +33,18 @@ class ThermalRepositoryImpl
         @Suppress("TooGenericExceptionCaught")
         private fun observeThermalState(bestEffortTracking: Boolean): Flow<ThermalState> =
             flow {
-                val profile = deviceProfileProvider.getDeviceProfile()
                 emitAll(
                     combine(
                         thermalDataSource.getBatteryTemperature(),
-                        thermalDataSource.getCpuTemperature(profile.thermalZonesAvailable),
                         thermalDataSource.getThermalStatus(),
                         thermalDataSource.getThermalHeadroom(),
-                    ) { batteryTemp, cpuTemp, thermalStatus, headroom ->
+                    ) { batteryTemp, thermalStatus, headroom ->
                         ThermalState(
                             batteryTempC = batteryTemp,
-                            cpuTempC = cpuTemp,
+                            cpuTempC = null,
                             thermalHeadroom = headroom,
                             thermalStatus = thermalStatus,
-                            isThrottling = thermalStatus >= ThermalStatus.SEVERE,
+                            isThrottling = thermalStatus.isThrottling,
                         )
                     }.onEach { state ->
                         try {
@@ -95,7 +91,7 @@ class ThermalRepositoryImpl
                     timestamp = System.currentTimeMillis(),
                     batteryTempC = state.batteryTempC,
                     cpuTempC = state.cpuTempC,
-                    thermalStatus = state.thermalStatus.ordinal,
+                    thermalStatus = ThermalStatusPersistence.toCode(state.thermalStatus),
                     throttling = state.isThrottling,
                 )
             thermalReadingDao.insert(entity)

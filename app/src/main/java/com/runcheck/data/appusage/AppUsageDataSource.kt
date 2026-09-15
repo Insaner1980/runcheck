@@ -1,14 +1,13 @@
 package com.runcheck.data.appusage
 
-import android.app.AppOpsManager
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import android.os.Process
 import com.runcheck.domain.usecase.TrackThrottlingEventsUseCase
 import com.runcheck.util.AppDispatchers
+import com.runcheck.util.hasUsageStatsAccess
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -83,18 +82,7 @@ class AppUsageDataSource
                     ?.let { packageName -> resolveAppLabel(packageManager, packageName) }
             }
 
-        fun hasUsageStatsPermission(): Boolean {
-            val appOps =
-                context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager
-                    ?: return false
-            val mode =
-                appOps.checkOpNoThrow(
-                    AppOpsManager.OPSTR_GET_USAGE_STATS,
-                    Process.myUid(),
-                    context.packageName,
-                )
-            return mode == AppOpsManager.MODE_ALLOWED
-        }
+        fun hasUsageStatsPermission(): Boolean = context.hasUsageStatsAccess()
 
         private fun resolveAppLabel(
             packageManager: PackageManager,

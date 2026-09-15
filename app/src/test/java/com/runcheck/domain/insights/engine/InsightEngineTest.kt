@@ -1,6 +1,7 @@
 package com.runcheck.domain.insights.engine
 
 import com.runcheck.domain.insights.model.InsightCandidate
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.insights.model.InsightType
@@ -73,8 +74,7 @@ class InsightEngineTest {
             type = InsightType.THERMAL,
             priority = InsightPriority.HIGH,
             confidence = 0.9f,
-            titleKey = "title",
-            bodyKey = "body",
+            messageId = InsightMessageId.RECURRING_THERMAL_THROTTLING,
             bodyArgs = emptyList(),
             generatedAt = NOW,
             expiresAt = NOW + 1_000L,

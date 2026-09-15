@@ -17,6 +17,8 @@ import com.runcheck.ui.chart.FullscreenChartSource
 import com.runcheck.ui.chart.MAX_FULLSCREEN_CHART_POINTS
 import com.runcheck.ui.chart.MAX_FULLSCREEN_SESSION_POINTS
 import com.runcheck.ui.chart.NetworkHistoryMetric
+import com.runcheck.ui.chart.NetworkSignalContext
+import com.runcheck.ui.chart.NetworkSignalFamily
 import com.runcheck.ui.chart.SessionGraphMetric
 import com.runcheck.ui.chart.SessionGraphWindow
 import com.runcheck.ui.chart.buildBatteryHistoryChartModel
@@ -25,11 +27,8 @@ import com.runcheck.ui.chart.buildNetworkHistoryChartModel
 import com.runcheck.ui.chart.calculateChargingSessionSummary
 import com.runcheck.ui.components.ChartXLabel
 import com.runcheck.ui.components.ChartYLabel
+import com.runcheck.ui.navigation.Screen
 import com.runcheck.util.ReleaseSafeLog
-import com.runcheck.util.enumValueOrDefault
-import com.runcheck.util.getEnumOrDefault
-import com.runcheck.util.getSanitizedString
-import com.runcheck.util.putEnum
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -54,79 +53,73 @@ class FullscreenChartViewModel
         private val observeProAccess: ObserveProAccessUseCase,
         private val manageUserPreferences: ManageUserPreferencesUseCase,
     ) : ViewModel() {
-        val source: FullscreenChartSource =
-            savedStateHandle.getEnumOrDefault("source", FullscreenChartSource.BATTERY_SESSION)
+        var selection: FullscreenChartSelection =
+            parseFullscreenChartSelection(
+                savedStateHandle[Screen.FullscreenChart.ARG_SOURCE],
+                savedStateHandle[Screen.FullscreenChart.ARG_METRIC],
+                savedStateHandle[Screen.FullscreenChart.ARG_PERIOD],
+            )
+            private set
+        val source: FullscreenChartSource get() = selection.source
         private var isProUserCached: Boolean = isProUser()
         val isProLocked: Boolean
             get() = fullscreenChartRequiresPro(source) && !isProUserCached
 
-        /** Current metric selection, always up-to-date (backed by savedStateHandle). */
-        val selectedMetric: String get() = currentMetric
-
-        /** Current period selection, always up-to-date (backed by savedStateHandle). */
-        val selectedPeriod: String get() = currentPeriod
-
         private val _uiState = MutableStateFlow<FullscreenChartUiState>(FullscreenChartUiState.Loading)
         val uiState: StateFlow<FullscreenChartUiState> = _uiState.asStateFlow()
 
-        private var currentMetric: String
-            get() = savedStateHandle.getSanitizedString("metric") { sanitizeFullscreenMetric(source, it) }
-            set(value) {
-                savedStateHandle["metric"] = sanitizeFullscreenMetric(source, value)
-            }
-        private var currentPeriod: String
-            get() = savedStateHandle.getSanitizedString("period") { sanitizeFullscreenPeriod(source, it) }
-            set(value) {
-                savedStateHandle["period"] = sanitizeFullscreenPeriod(source, value)
-            }
         private var loadJob: Job? = null
 
         init {
-            savedStateHandle.putEnum("source", source)
-            FullscreenChartSeedStore.take(source, currentMetric, currentPeriod)?.let { seed ->
+            persistSelection()
+            FullscreenChartSeedStore.take(selection)?.let { seed ->
                 _uiState.value = seed
             }
             observeProState()
             loadData()
         }
 
-        fun setMetric(metric: String) {
-            currentMetric = metric
+        fun setMetric(metric: BatteryHistoryMetric) {
+            setSelection(requireNotNull(selection as? FullscreenChartSelection.BatteryHistory).copy(metric = metric))
+        }
+
+        fun setMetric(metric: SessionGraphMetric) {
+            setSelection(requireNotNull(selection as? FullscreenChartSelection.BatterySession).copy(metric = metric))
+        }
+
+        fun setMetric(metric: NetworkHistoryMetric) {
+            setSelection(requireNotNull(selection as? FullscreenChartSelection.NetworkHistory).copy(metric = metric))
+        }
+
+        fun setPeriod(period: HistoryPeriod) {
+            val updated =
+                when (val current = selection) {
+                    is FullscreenChartSelection.BatteryHistory -> current.copy(period = period)
+                    is FullscreenChartSelection.NetworkHistory -> current.copy(period = period)
+                    is FullscreenChartSelection.BatterySession -> error("History period is not a session window")
+                }
+            setSelection(updated)
+        }
+
+        fun setPeriod(period: SessionGraphWindow) {
+            setSelection(requireNotNull(selection as? FullscreenChartSelection.BatterySession).copy(period = period))
+        }
+
+        private fun setSelection(value: FullscreenChartSelection) {
+            selection = value
+            persistSelection()
             loadData()
         }
 
-        fun setPeriod(period: String) {
-            currentPeriod = period
-            loadData()
+        private fun persistSelection() {
+            savedStateHandle[Screen.FullscreenChart.ARG_SOURCE] = source.name
+            savedStateHandle[Screen.FullscreenChart.ARG_METRIC] = selection.metricArgument()
+            savedStateHandle[Screen.FullscreenChart.ARG_PERIOD] = selection.periodArgument()
         }
 
         fun retry() {
             loadData()
         }
-
-        private fun metricOptionsForSource(): List<String> =
-            when (source) {
-                FullscreenChartSource.BATTERY_HISTORY -> BatteryHistoryMetric.entries.map { it.name }
-                FullscreenChartSource.BATTERY_SESSION -> SessionGraphMetric.entries.map { it.name }
-                FullscreenChartSource.NETWORK_HISTORY -> NetworkHistoryMetric.entries.map { it.name }
-            }
-
-        private fun periodOptionsForSource(): List<String> =
-            when (source) {
-                FullscreenChartSource.BATTERY_HISTORY -> {
-                    HistoryPeriod.entries.map { it.name }
-                }
-
-                FullscreenChartSource.BATTERY_SESSION -> {
-                    SessionGraphWindow.entries.map { it.name }
-                }
-
-                FullscreenChartSource.NETWORK_HISTORY -> {
-                    HistoryPeriod.entries
-                        .filter { it != HistoryPeriod.SINCE_UNPLUG }
-                        .map { it.name }
-                }
-            }
 
         private fun observeProState() {
             if (!fullscreenChartRequiresPro(source)) return
@@ -159,10 +152,10 @@ class FullscreenChartViewModel
                         _uiState.value = FullscreenChartUiState.Loading
                     }
                     try {
-                        when (source) {
-                            FullscreenChartSource.BATTERY_HISTORY -> loadBatteryHistory()
-                            FullscreenChartSource.BATTERY_SESSION -> loadBatterySession()
-                            FullscreenChartSource.NETWORK_HISTORY -> loadNetworkHistory()
+                        when (val currentSelection = selection) {
+                            is FullscreenChartSelection.BatteryHistory -> loadBatteryHistory(currentSelection)
+                            is FullscreenChartSelection.BatterySession -> loadBatterySession(currentSelection)
+                            is FullscreenChartSelection.NetworkHistory -> loadNetworkHistory(currentSelection)
                         }
                     } catch (e: CancellationException) {
                         throw e
@@ -170,20 +163,14 @@ class FullscreenChartViewModel
                         ReleaseSafeLog.error("FullscreenChartVM", "Failed to load chart data", e)
                         _uiState.value =
                             FullscreenChartUiState.Error(
-                                selectedMetric = currentMetric,
-                                selectedPeriod = currentPeriod,
-                                metricOptions = metricOptionsForSource(),
-                                periodOptions = periodOptionsForSource(),
+                                selection = selection,
                             )
                     }
                 }
         }
 
-        private suspend fun loadBatteryHistory() {
-            val metric = enumValueOrDefault(currentMetric, BatteryHistoryMetric.LEVEL)
-            val period = enumValueOrDefault(currentPeriod, HistoryPeriod.DAY)
-            val metricOptions = BatteryHistoryMetric.entries.map { it.name }
-            val periodOptions = HistoryPeriod.entries.map { it.name }
+        private suspend fun loadBatteryHistory(selection: FullscreenChartSelection.BatteryHistory) {
+            val (metric, period) = selection
 
             combine(
                 getBatteryHistory(period),
@@ -202,22 +189,14 @@ class FullscreenChartViewModel
             }.collect { chartModel ->
                 _uiState.value =
                     chartModel.toFullscreenUiState(
-                        selectedMetric = metric.name,
-                        selectedPeriod = period.name,
-                        metricOptions = metricOptions,
-                        periodOptions = periodOptions,
-                        temperatureUnit = chartModel.temperatureUnit ?: TemperatureUnit.CELSIUS,
+                        selection = selection,
                     )
             }
         }
 
-        private suspend fun loadBatterySession() {
-            val metric = enumValueOrDefault(currentMetric, SessionGraphMetric.CURRENT)
-            val window = enumValueOrDefault(currentPeriod, SessionGraphWindow.ALL)
-
+        private suspend fun loadBatterySession(selection: FullscreenChartSelection.BatterySession) {
+            val (metric, window) = selection
             val period = HistoryPeriod.DAY
-            val metricOptions = SessionGraphMetric.entries.map { it.name }
-            val periodOptions = SessionGraphWindow.entries.map { it.name }
 
             combine(getBatteryHistory(period), getBatteryState()) { history, batteryState ->
                 calculateChargingSessionSummary(
@@ -229,10 +208,7 @@ class FullscreenChartViewModel
                 if (summary == null) {
                     _uiState.value =
                         FullscreenChartUiState.Empty(
-                            selectedMetric = metric.name,
-                            selectedPeriod = window.name,
-                            metricOptions = metricOptions,
-                            periodOptions = periodOptions,
+                            selection = selection,
                         )
                     return@collect
                 }
@@ -247,23 +223,13 @@ class FullscreenChartViewModel
 
                 _uiState.value =
                     chartModel.toFullscreenUiState(
-                        selectedMetric = metric.name,
-                        selectedPeriod = window.name,
-                        metricOptions = metricOptions,
-                        periodOptions = periodOptions,
+                        selection = selection,
                     )
             }
         }
 
-        private suspend fun loadNetworkHistory() {
-            val metric = enumValueOrDefault(currentMetric, NetworkHistoryMetric.SIGNAL)
-            val period = enumValueOrDefault(currentPeriod, HistoryPeriod.DAY)
-
-            val metricOptions = NetworkHistoryMetric.entries.map { it.name }
-            val periodOptions =
-                HistoryPeriod.entries
-                    .filter { it != HistoryPeriod.SINCE_UNPLUG }
-                    .map { it.name }
+        private suspend fun loadNetworkHistory(selection: FullscreenChartSelection.NetworkHistory) {
+            val (metric, period) = selection
 
             getNetworkHistory(period).collect { history ->
                 val chartModel =
@@ -276,46 +242,40 @@ class FullscreenChartViewModel
 
                 _uiState.value =
                     chartModel.toFullscreenUiState(
-                        selectedMetric = metric.name,
-                        selectedPeriod = period.name,
-                        metricOptions = metricOptions,
-                        periodOptions = periodOptions,
+                        selection = selection,
                     )
             }
         }
     }
 
-private fun ChartRenderModel.toFullscreenUiState(
-    selectedMetric: String,
-    selectedPeriod: String,
-    metricOptions: List<String>,
-    periodOptions: List<String>,
-    temperatureUnit: TemperatureUnit? = null,
-): FullscreenChartUiState =
+private fun ChartRenderModel.toFullscreenUiState(selection: FullscreenChartSelection): FullscreenChartUiState =
     if (chartData.size < 2) {
         FullscreenChartUiState.Empty(
-            selectedMetric = selectedMetric,
-            selectedPeriod = selectedPeriod,
-            metricOptions = metricOptions,
-            periodOptions = periodOptions,
+            selection = selection,
         )
     } else {
-        FullscreenChartUiState.Success(
-            chartData = chartData,
-            chartTimestamps = chartTimestamps,
-            lineBreakIndices = lineBreakIndices,
-            unit = unit,
-            selectedMetric = selectedMetric,
-            selectedPeriod = selectedPeriod,
-            metricOptions = metricOptions,
-            periodOptions = periodOptions,
-            yLabels = yLabels,
-            xLabels = xLabels,
-            tooltipDecimals = tooltipDecimals,
-            tooltipTimeSkeleton = tooltipTimeSkeleton,
-            temperatureUnit = temperatureUnit,
+        toFullscreenSuccess(
+            selection = selection,
         )
     }
+
+internal fun ChartRenderModel.toFullscreenSuccess(
+    selection: FullscreenChartSelection,
+): FullscreenChartUiState.Success =
+    FullscreenChartUiState.Success(
+        chartData = chartData,
+        chartTimestamps = chartTimestamps,
+        lineBreakIndices = lineBreakIndices,
+        networkSignalContexts = networkSignalContexts,
+        networkSignalFamilies = networkSignalFamilies,
+        unit = unit,
+        selection = selection,
+        yLabels = yLabels,
+        xLabels = xLabels,
+        tooltipDecimals = tooltipDecimals,
+        tooltipTimeSkeleton = tooltipTimeSkeleton,
+        temperatureUnit = temperatureUnit,
+    )
 
 sealed interface FullscreenChartUiState {
     data object Loading : FullscreenChartUiState
@@ -324,25 +284,16 @@ sealed interface FullscreenChartUiState {
 
     /** States that carry the user's current metric/period selection and available options. */
     interface HasSelections {
-        val selectedMetric: String
-        val selectedPeriod: String
-        val metricOptions: List<String>
-        val periodOptions: List<String>
+        val selection: FullscreenChartSelection
     }
 
     data class Empty(
-        override val selectedMetric: String,
-        override val selectedPeriod: String,
-        override val metricOptions: List<String>,
-        override val periodOptions: List<String>,
+        override val selection: FullscreenChartSelection,
     ) : FullscreenChartUiState,
         HasSelections
 
     data class Error(
-        override val selectedMetric: String,
-        override val selectedPeriod: String,
-        override val metricOptions: List<String>,
-        override val periodOptions: List<String>,
+        override val selection: FullscreenChartSelection,
     ) : FullscreenChartUiState,
         HasSelections
 
@@ -350,11 +301,10 @@ sealed interface FullscreenChartUiState {
         val chartData: List<Float>,
         val chartTimestamps: List<Long>,
         val lineBreakIndices: Set<Int> = emptySet(),
+        val networkSignalContexts: List<NetworkSignalContext> = emptyList(),
+        val networkSignalFamilies: Set<NetworkSignalFamily> = emptySet(),
         val unit: String,
-        override val selectedMetric: String,
-        override val selectedPeriod: String,
-        override val metricOptions: List<String>,
-        override val periodOptions: List<String>,
+        override val selection: FullscreenChartSelection,
         val yLabels: List<ChartYLabel>,
         val xLabels: List<ChartXLabel>,
         val tooltipDecimals: Int = 0,

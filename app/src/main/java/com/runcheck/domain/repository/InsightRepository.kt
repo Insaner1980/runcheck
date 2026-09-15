@@ -7,8 +7,6 @@ import kotlinx.coroutines.flow.Flow
 interface InsightRepository {
     fun getActiveInsights(): Flow<List<Insight>>
 
-    fun getUnseenCount(): Flow<Int>
-
     suspend fun dismiss(id: Long)
 
     suspend fun markSeen(ids: Set<Long>)

@@ -39,6 +39,7 @@ import com.runcheck.domain.model.HealthScore
 import com.runcheck.domain.model.HealthStatus
 import com.runcheck.domain.model.NetworkState
 import com.runcheck.domain.model.SignalQuality
+import com.runcheck.ui.common.BatteryTemperaturePresentation
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.formatTemperatureValue
 import com.runcheck.ui.common.temperatureUnitRes
@@ -53,7 +54,6 @@ import com.runcheck.ui.theme.homeStatusTileTypeScale
 import com.runcheck.ui.theme.statusColor
 import com.runcheck.ui.theme.statusColorForSignalQuality
 import com.runcheck.ui.theme.statusColorForStoragePercent
-import com.runcheck.ui.theme.statusColorForTemperature
 import com.runcheck.ui.theme.statusColors
 import com.runcheck.ui.theme.uiTokens
 
@@ -96,8 +96,7 @@ private fun homeStatusTileStatuses(state: HomeUiState.Success): HomeStatusTileSt
             statusColorForSignalQuality(state.networkState.signalQuality)
                 .toHealthStatus(statusColors),
         thermal =
-            statusColorForTemperature(state.thermalState.batteryTempC)
-                .toHealthStatus(statusColors),
+            BatteryTemperaturePresentation.classify(state.thermalState.batteryTempC).severity,
         storage =
             statusColorForStoragePercent(
                 state.storageState.usagePercent

@@ -1,13 +1,11 @@
 package com.runcheck.data.storage
 
-import android.app.PendingIntent
 import android.content.Context
 import android.os.Build
 import androidx.core.net.toUri
 import com.runcheck.domain.model.StorageDeleteFailure
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
-import com.runcheck.util.createMediaStoreDeleteRequest
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -20,12 +18,6 @@ class StorageCleanupHelper
         @param:ApplicationContext private val context: Context,
         private val dispatchers: AppDispatchers,
     ) {
-        /**
-         * API 30+: Creates a PendingIntent that shows the system confirmation dialog
-         * for batch deletion. Returns null on older API levels.
-         */
-        fun createDeleteRequest(uriStrings: List<String>): PendingIntent? = createDeleteRequest(context, uriStrings)
-
         /**
          * API 29 and below: Deletes files one by one without system dialog.
          * Returns the set of URIs successfully deleted.
@@ -59,11 +51,6 @@ class StorageCleanupHelper
             }
 
         companion object {
-            fun createDeleteRequest(
-                context: Context,
-                uriStrings: List<String>,
-            ): PendingIntent? = createMediaStoreDeleteRequest(context, uriStrings)
-
             private const val TAG = "StorageCleanupHelper"
             private const val RECOVERABLE_SECURITY_EXCEPTION =
                 "android.app.RecoverableSecurityException"

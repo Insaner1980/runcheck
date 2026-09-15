@@ -39,7 +39,8 @@ fun InsightRow(
 ) {
     val spacing = MaterialTheme.spacing
     val tokens = MaterialTheme.uiTokens
-    val title = resolveInsightTitle(insight)
+    val message = resolveInsightMessage(insight)
+    val title = message.title
     val dismissDescription = stringResource(R.string.a11y_dismiss_insight, title)
     val priorityTint =
         when (insight.priority) {
@@ -83,7 +84,7 @@ fun InsightRow(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = resolveInsightBody(insight),
+                    text = message.body,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

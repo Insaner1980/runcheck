@@ -28,6 +28,13 @@ sealed interface NetworkUiState {
 }
 
 sealed interface SpeedTestPhase {
+    val isRunning: Boolean
+        get() =
+            when (this) {
+                Ping, Download, Upload -> true
+                Idle, Completed, is Failed -> false
+            }
+
     data object Idle : SpeedTestPhase
 
     data object Ping : SpeedTestPhase
@@ -45,7 +52,6 @@ sealed interface SpeedTestPhase {
 
 data class SpeedTestUiState(
     val phase: SpeedTestPhase = SpeedTestPhase.Idle,
-    val isRunning: Boolean = false,
     val pingMs: Int = 0,
     val jitterMs: Int? = null,
     val downloadMbps: Double = 0.0,
@@ -57,6 +63,9 @@ data class SpeedTestUiState(
     val recentResults: List<SpeedTestResult> = emptyList(),
     val showCellularWarning: Boolean = false,
 ) {
+    val isRunning: Boolean
+        get() = phase.isRunning
+
     val measuredPingMs: MeasuredValue<Int>
         get() = measuredNetworkValue(pingMs, pingMs > 0)
     val measuredJitterMs: MeasuredValue<Int>?

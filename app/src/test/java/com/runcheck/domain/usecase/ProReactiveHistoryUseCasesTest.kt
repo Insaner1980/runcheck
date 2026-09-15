@@ -20,6 +20,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
@@ -33,6 +34,48 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProReactiveHistoryUseCasesTest {
     @Test
+    fun `non-ALL pro history preserves period starts without a row limit`() =
+        runTest {
+            for (period in HistoryPeriod.entries.filter { it != HistoryPeriod.ALL }) {
+                val battery = HistoryBatteryRepository()
+                val network = FakeNetworkRepository()
+                val thermal = FakeThermalRepository()
+                val storage = FakeStorageRepository()
+                val pro = FakeProStatusProvider(initial = true)
+                val before = System.currentTimeMillis()
+
+                GetBatteryHistoryUseCase(battery, pro)(period).first()
+                GetNetworkHistoryUseCase(network, pro)(period).first()
+                GetThermalHistoryUseCase(thermal, pro)(period).first()
+                GetStorageHistoryUseCase(storage, pro)(period).first()
+
+                val after = System.currentTimeMillis()
+                val starts =
+                    listOf(
+                        battery.requestedSince,
+                        network.requestedSince,
+                        thermal.requestedSince,
+                        storage.requestedSince,
+                    )
+                if (period == HistoryPeriod.SINCE_UNPLUG) {
+                    assertEquals(listOf(listOf(123L), listOf(0L), listOf(0L), listOf(0L)), starts)
+                } else {
+                    starts.forEach {
+                        assertTrue(
+                            it.single() in (before - period.durationMs)..(after - period.durationMs),
+                        )
+                    }
+                }
+                listOf(
+                    battery.requestedLimits,
+                    network.requestedLimits,
+                    thermal.requestedLimits,
+                    storage.requestedLimits,
+                ).forEach { assertEquals(listOf<Int?>(null), it) }
+            }
+        }
+
+    @Test
     fun `battery history re-queries when pro unlocks`() =
         runTest {
             val repo = HistoryBatteryRepository()
@@ -41,7 +84,7 @@ class ProReactiveHistoryUseCasesTest {
 
             val emissions = collectAfterProUnlock(proStatusProvider, useCase(HistoryPeriod.ALL))
 
-            assertAllPeriodRequery(emissions, repo.requestedSince)
+            assertAllPeriodRequery(emissions, repo.requestedSince, repo.requestedLimits)
         }
 
     @Test
@@ -53,7 +96,7 @@ class ProReactiveHistoryUseCasesTest {
 
             val emissions = collectAfterProUnlock(proStatusProvider, useCase(HistoryPeriod.ALL))
 
-            assertAllPeriodRequery(emissions, repo.requestedSince)
+            assertAllPeriodRequery(emissions, repo.requestedSince, repo.requestedLimits)
         }
 
     @Test
@@ -85,6 +128,7 @@ class ProReactiveHistoryUseCasesTest {
 
             assertEquals(listOf(emptyList<StorageReading>(), listOf(testStorageReading)), emissions)
             assertEquals(listOf(0L), repo.requestedSince)
+            assertEquals(listOf(ALL_HISTORY_QUERY_LIMIT), repo.requestedLimits)
         }
 
     @Test
@@ -98,13 +142,17 @@ class ProReactiveHistoryUseCasesTest {
 
             assertEquals(listOf(emptyList<ThermalReading>(), listOf(testThermalReading)), emissions)
             assertEquals(listOf(0L), repo.requestedSince)
+            assertEquals(listOf(ALL_HISTORY_QUERY_LIMIT), repo.requestedLimits)
         }
 }
 
 private fun <T> assertAllPeriodRequery(
     emissions: List<List<T>>,
     requestedSince: List<Long>,
+    requestedLimits: List<Int?>,
 ) {
+    assertEquals(5_000, ALL_HISTORY_QUERY_LIMIT)
+    assertEquals(listOf(ALL_HISTORY_QUERY_LIMIT, ALL_HISTORY_QUERY_LIMIT), requestedLimits)
     assertEquals(2, emissions.size)
     assertTrue(requestedSince[0] >= System.currentTimeMillis() - HistoryPeriod.DAY.durationMs - 5_000L)
     assertEquals(0L, requestedSince[1])
@@ -137,6 +185,7 @@ private class FakeProStatusProvider(
 
 private class HistoryBatteryRepository : BatteryRepository {
     val requestedSince = mutableListOf<Long>()
+    val requestedLimits = mutableListOf<Int?>()
 
     override fun getBatteryState() = emptyFlow<com.runcheck.domain.model.BatteryState>()
 
@@ -145,6 +194,7 @@ private class HistoryBatteryRepository : BatteryRepository {
         limit: Int?,
     ): Flow<List<BatteryReading>> {
         requestedSince += since
+        requestedLimits += limit
         return flowOf(emptyList())
     }
 
@@ -165,6 +215,7 @@ private class HistoryBatteryRepository : BatteryRepository {
 
 private class FakeNetworkRepository : NetworkRepository {
     val requestedSince = mutableListOf<Long>()
+    val requestedLimits = mutableListOf<Int?>()
 
     override fun getNetworkState() = emptyFlow<com.runcheck.domain.model.NetworkState>()
 
@@ -175,6 +226,7 @@ private class FakeNetworkRepository : NetworkRepository {
         limit: Int?,
     ): Flow<List<NetworkReading>> {
         requestedSince += since
+        requestedLimits += limit
         return flowOf(emptyList())
     }
 
@@ -211,6 +263,7 @@ private val testStorageReading =
 
 private class FakeStorageRepository : StorageRepository {
     val requestedSince = mutableListOf<Long>()
+    val requestedLimits = mutableListOf<Int?>()
 
     override fun getStorageState() = emptyFlow<StorageState>()
 
@@ -221,6 +274,7 @@ private class FakeStorageRepository : StorageRepository {
         limit: Int?,
     ): Flow<List<StorageReading>> {
         requestedSince += since
+        requestedLimits += limit
         return flowOf(listOf(testStorageReading))
     }
 
@@ -244,6 +298,7 @@ private val testThermalReading =
 
 private class FakeThermalRepository : ThermalRepository {
     val requestedSince = mutableListOf<Long>()
+    val requestedLimits = mutableListOf<Int?>()
 
     override fun getThermalState() = emptyFlow<ThermalState>()
 
@@ -252,6 +307,7 @@ private class FakeThermalRepository : ThermalRepository {
         limit: Int?,
     ): Flow<List<ThermalReading>> {
         requestedSince += since
+        requestedLimits += limit
         return flowOf(listOf(testThermalReading))
     }
 

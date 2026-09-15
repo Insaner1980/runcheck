@@ -1,6 +1,7 @@
 package com.runcheck.domain.insights.rules
 
 import com.runcheck.domain.insights.analysis.StorageGrowthAnalyzer
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.StorageState
@@ -28,9 +29,8 @@ class StoragePressureProjectionRuleTest {
             assertEquals(1, insights.size)
             val insight = insights.single()
             assertEquals(StoragePressureProjectionRule.RULE_ID, insight.ruleId)
+            assertEquals(InsightMessageId.STORAGE_PRESSURE_PROJECTION, insight.messageId)
             assertEquals("7d", insight.dedupeKey)
-            assertEquals("insight_storage_pressure_title", insight.titleKey)
-            assertEquals("insight_storage_pressure_body", insight.bodyKey)
             assertTrue(insight.bodyArgs.single().endsWith("d"))
         }
 

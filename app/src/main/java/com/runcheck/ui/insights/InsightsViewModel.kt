@@ -44,9 +44,8 @@ class InsightsViewModel
             viewModelScope.launch {
                 combine(
                     insightRepository.getActiveInsights(),
-                    insightRepository.getUnseenCount(),
                     observeProAccess(),
-                ) { insights, _, isPro ->
+                ) { insights, isPro ->
                     val visibleInsights = insights.visibleForProAccess(isPro)
                     InsightsUiState.Success(
                         insights = visibleInsights,

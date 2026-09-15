@@ -16,6 +16,7 @@ import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.common.RefreshTracker
 import com.runcheck.ui.common.RefreshableViewModelState
+import com.runcheck.ui.common.UI_STATE_SAMPLE_INTERVAL_MS
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.messageOrRes
 import com.runcheck.util.appendLiveValue
@@ -127,7 +128,7 @@ class StorageViewModel
             screenState.historyJob =
                 viewModelScope.launch {
                     getStorageHistory(selectedHistoryPeriod)
-                        .sample(333L)
+                        .sample(UI_STATE_SAMPLE_INTERVAL_MS)
                         .catch { e ->
                             historyLoadError = e.messageOrRes(R.string.common_error_generic)
                             screenState.updateUiState { current ->
@@ -171,7 +172,7 @@ class StorageViewModel
                             showInfoCards = preferences.showInfoCards,
                             liveUsagePercent = liveUsagePercent.toList(),
                         )
-                    }.sample(333L)
+                    }.sample(UI_STATE_SAMPLE_INTERVAL_MS)
                         .catch { e ->
                             screenState.refreshTracker.finish()
                             screenState.updateUiState {

@@ -2,6 +2,7 @@ package com.runcheck.domain.insights.rules
 
 import com.runcheck.domain.insights.analysis.BatteryDrainAnalyzer
 import com.runcheck.domain.insights.analysis.TimeWindowAligner
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.model.NetworkReading
 import kotlinx.coroutines.test.runTest
@@ -16,6 +17,7 @@ class NetworkDrivenBatteryDrainRuleTest {
             val now = 100L * INSIGHT_TEST_HOUR_MS
             val insight = evaluate(now, listOf(80, 79, 78, 77, 76, 73, 70, 67, 64)).single()
             assertEquals(NetworkDrivenBatteryDrainRule.RULE_ID, insight.ruleId)
+            assertEquals(InsightMessageId.NETWORK_DRIVEN_BATTERY_DRAIN, insight.messageId)
             assertEquals("cellular_drain:50plus", insight.dedupeKey)
             assertEquals("200", insight.bodyArgs[0])
             assertEquals("-115", insight.bodyArgs[1])

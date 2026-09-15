@@ -204,12 +204,15 @@ fun batteryHealthLabel(health: BatteryHealth): String =
     }
 
 @Composable
-fun chargingStatusLabel(status: ChargingStatus): String =
+fun chargingStatusLabel(status: ChargingStatus): String = stringResource(chargingStatusLabelRes(status))
+
+@StringRes
+fun chargingStatusLabelRes(status: ChargingStatus): Int =
     when (status) {
-        ChargingStatus.CHARGING -> stringResource(R.string.charging_status_charging)
-        ChargingStatus.DISCHARGING -> stringResource(R.string.charging_status_discharging)
-        ChargingStatus.FULL -> stringResource(R.string.charging_status_full)
-        ChargingStatus.NOT_CHARGING -> stringResource(R.string.charging_status_not_charging)
+        ChargingStatus.CHARGING -> R.string.charging_status_charging
+        ChargingStatus.DISCHARGING -> R.string.charging_status_discharging
+        ChargingStatus.FULL -> R.string.charging_status_full
+        ChargingStatus.NOT_CHARGING -> R.string.charging_status_not_charging
     }
 
 @Composable
@@ -223,12 +226,12 @@ fun plugTypeLabel(plugType: PlugType): String =
 
 @Composable
 fun temperatureBandLabel(temperatureC: Float): String =
-    when {
-        temperatureC >= 45f -> stringResource(R.string.thermal_critical)
-        temperatureC >= 40f -> stringResource(R.string.thermal_hot)
-        temperatureC >= 35f -> stringResource(R.string.thermal_warm)
-        temperatureC >= 25f -> stringResource(R.string.thermal_normal)
-        else -> stringResource(R.string.thermal_cool)
+    when (BatteryTemperaturePresentation.classify(temperatureC)) {
+        BatteryTemperaturePresentation.Band.CRITICAL -> stringResource(R.string.thermal_critical)
+        BatteryTemperaturePresentation.Band.HOT -> stringResource(R.string.thermal_hot)
+        BatteryTemperaturePresentation.Band.WARM -> stringResource(R.string.thermal_warm)
+        BatteryTemperaturePresentation.Band.NORMAL -> stringResource(R.string.thermal_normal)
+        BatteryTemperaturePresentation.Band.COOL -> stringResource(R.string.thermal_cool)
     }
 
 @Composable

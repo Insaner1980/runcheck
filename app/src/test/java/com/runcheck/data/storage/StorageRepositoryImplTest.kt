@@ -7,7 +7,6 @@ import com.runcheck.domain.insights.analysis.StorageGrowthAnalyzer
 import com.runcheck.domain.model.MediaBreakdown
 import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.StorageState
-import com.runcheck.domain.usecase.CalculateFillRateUseCase
 import com.runcheck.testutil.assertRepositoryReads
 import com.runcheck.util.TestAppDispatchers
 import io.mockk.coEvery
@@ -29,7 +28,7 @@ class StorageRepositoryImplTest {
         StorageRepositoryImpl(
             storageDataSource = storageDataSource,
             storageReadingDao = storageReadingDao,
-            calculateFillRate = CalculateFillRateUseCase(StorageGrowthAnalyzer()),
+            storageGrowthAnalyzer = StorageGrowthAnalyzer(),
             dispatchers = TestAppDispatchers(),
         )
 
@@ -38,7 +37,11 @@ class StorageRepositoryImplTest {
         runTest {
             coEvery { storageDataSource.getStorageInfo() } returns storageInfo()
             coEvery { storageReadingDao.getReadingsSinceSync(any()) } returns
-                listOf(storageReadingEntity(availableBytes = 5_000L))
+                listOf(
+                    storageReadingEntity(timestamp = 0L, availableBytes = 6_000L),
+                    storageReadingEntity(timestamp = DAY_MS, availableBytes = 5_000L),
+                    storageReadingEntity(timestamp = 2L * DAY_MS, availableBytes = 4_000L),
+                )
 
             val state = repository.getStorageState().first()
 
@@ -52,6 +55,38 @@ class StorageRepositoryImplTest {
             assertEquals(true, state.removableStorageAvailable)
             assertEquals("FBE", state.encryptionStatus)
             assertEquals(2, state.storageVolumes)
+            assertEquals(1_000L, state.fillRateBytesPerDay)
+            assertEquals("4d", state.fillRateEstimate)
+        }
+
+    @Test
+    fun `getStorageState publishes no fill rate when history is insufficient`() =
+        runTest {
+            coEvery { storageDataSource.getStorageInfo() } returns storageInfo()
+            coEvery { storageReadingDao.getReadingsSinceSync(any()) } returns
+                listOf(storageReadingEntity())
+
+            val state = repository.getStorageState().first()
+
+            assertEquals(null, state.fillRateBytesPerDay)
+            assertEquals(null, state.fillRateEstimate)
+        }
+
+    @Test
+    fun `getStorageState publishes no fill estimate when storage usage is flat`() =
+        runTest {
+            coEvery { storageDataSource.getStorageInfo() } returns storageInfo()
+            coEvery { storageReadingDao.getReadingsSinceSync(any()) } returns
+                listOf(
+                    storageReadingEntity(timestamp = 0L),
+                    storageReadingEntity(timestamp = DAY_MS),
+                    storageReadingEntity(timestamp = 2L * DAY_MS),
+                )
+
+            val state = repository.getStorageState().first()
+
+            assertEquals(0L, state.fillRateBytesPerDay)
+            assertEquals(null, state.fillRateEstimate)
         }
 
     @Test
@@ -107,6 +142,72 @@ class StorageRepositoryImplTest {
         }
 
     @Test
+    fun `media writes preserve zero and unavailable values through history`() =
+        runTest {
+            val cases =
+                listOf(
+                    MediaBreakdown(0L, 0L, 0L, 0L, 0L) to 0L,
+                    null to -1L,
+                    MediaBreakdown(-1L, 200L, 300L, 400L, 500L) to -1L,
+                    MediaBreakdown(Long.MAX_VALUE, 1L, 0L, 0L, 0L) to -1L,
+                    MediaBreakdown(Long.MAX_VALUE, Long.MAX_VALUE, 2L, 0L, 0L) to -1L,
+                    MediaBreakdown(Long.MAX_VALUE, 0L, 0L, 0L, 0L) to Long.MAX_VALUE,
+                )
+            val inserted = slot<StorageReadingEntity>()
+            coEvery { storageReadingDao.insert(capture(inserted)) } returns Unit
+
+            for ((breakdown, expected) in cases) {
+                repository.saveReading(
+                    StorageState(
+                        totalBytes = 10_000L,
+                        availableBytes = 4_000L,
+                        usedBytes = 6_000L,
+                        usagePercent = 60f,
+                        appsBytes = 2_000L,
+                        mediaBreakdown = breakdown,
+                    ),
+                )
+
+                assertEquals("Persisted media for $breakdown", expected, inserted.captured.mediaBytes)
+                assertEquals(2_000L, inserted.captured.appsBytes)
+                coEvery { storageReadingDao.getAll() } returns listOf(inserted.captured)
+                assertEquals(expected.takeIf { it >= 0L }, repository.getAllReadings().single().mediaBytes)
+            }
+        }
+
+    @Test
+    fun `history preserves zero and positive storage bytes and maps all negative values to null`() =
+        runTest {
+            val cases =
+                listOf(
+                    -1L to null,
+                    -42L to null,
+                    Long.MIN_VALUE to null,
+                    0L to 0L,
+                    1_500L to 1_500L,
+                )
+            val entities =
+                cases.map { (persistedBytes, _) ->
+                    storageReadingEntity().copy(appsBytes = persistedBytes, mediaBytes = persistedBytes)
+                }
+            val expected =
+                cases.map { (_, expectedBytes) ->
+                    storageReading().copy(appsBytes = expectedBytes, mediaBytes = expectedBytes)
+                }
+            every { storageReadingDao.getReadingsSince(10L) } returns flowOf(entities)
+            every { storageReadingDao.getReadingsSinceLimited(10L, 1) } returns flowOf(entities)
+            coEvery { storageReadingDao.getReadingsSinceSync(10L) } returns entities
+            coEvery { storageReadingDao.getAll() } returns entities
+
+            assertRepositoryReads(
+                expected,
+                { repository.getReadingsSince(10L, it) },
+                { repository.getReadingsSinceSync(10L) },
+                repository::getAllReadings,
+            )
+        }
+
+    @Test
     fun `saveReading propagates database failures`() =
         runTest {
             val failure = SQLiteException("database full")
@@ -140,9 +241,12 @@ class StorageRepositoryImplTest {
                     usedBytes = 6_000L,
                     usagePercent = 60f,
                     appsBytes = null,
+                    mediaBreakdown = MediaBreakdown(100L, 200L, 300L, 400L, 500L),
                 ),
             )
 
+            assertEquals(-1L, inserted.captured.appsBytes)
+            assertEquals(1_500L, inserted.captured.mediaBytes)
             every { storageReadingDao.getReadingsSince(10L) } returns flowOf(listOf(inserted.captured))
             assertEquals(
                 null,
@@ -172,15 +276,22 @@ class StorageRepositoryImplTest {
             storageVolumes = 2,
         )
 
-    private fun storageReadingEntity(availableBytes: Long = 4_000L): StorageReadingEntity =
+    private fun storageReadingEntity(
+        timestamp: Long = 1_234L,
+        availableBytes: Long = 4_000L,
+    ): StorageReadingEntity =
         StorageReadingEntity(
             id = 6L,
-            timestamp = 1_234L,
+            timestamp = timestamp,
             totalBytes = 10_000L,
             availableBytes = availableBytes,
             appsBytes = 2_000L,
             mediaBytes = 1_500L,
         )
+
+    private companion object {
+        const val DAY_MS = 24L * 60L * 60L * 1000L
+    }
 
     private fun storageReading(): StorageReading =
         StorageReading(

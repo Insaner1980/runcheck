@@ -5,6 +5,8 @@ import android.content.Context
 import android.os.BatteryManager
 import android.os.Build
 import androidx.annotation.VisibleForTesting
+import com.runcheck.data.battery.batteryCurrentMicroampsToMilliamps
+import com.runcheck.data.battery.isPlausibleBatteryCurrent
 import com.runcheck.data.battery.normalizeCycleCount
 import com.runcheck.domain.model.CurrentUnit
 import com.runcheck.domain.model.SignConvention
@@ -13,7 +15,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.abs
 
 @Singleton
 class DeviceCapabilityManager
@@ -71,9 +72,9 @@ class DeviceCapabilityManager
                 }
             }
 
-            val unit = inferUnit(readings)
+            val unit = Companion.inferUnit(readings)
             val isReliable = isCurrentNowReliable(readings)
-            val signConvention = inferSignConvention(batteryManager.isCharging, readings)
+            val signConvention = Companion.inferSignConvention(batteryManager.isCharging, readings)
 
             return CurrentValidation(
                 isReliable = isReliable,
@@ -81,13 +82,6 @@ class DeviceCapabilityManager
                 signConvention = signConvention,
             )
         }
-
-        private fun inferUnit(readings: List<Int>): CurrentUnit = Companion.inferUnit(readings)
-
-        private fun inferSignConvention(
-            isCharging: Boolean,
-            readings: List<Int>,
-        ): SignConvention = Companion.inferSignConvention(isCharging, readings)
 
         @SuppressLint("InlinedApi")
         private fun detectCycleCountAvailability(apiLevel: Int): Boolean {
@@ -107,20 +101,15 @@ class DeviceCapabilityManager
             private const val VALIDATION_SAMPLE_COUNT = 3
             private const val VALIDATION_SAMPLE_DELAY_MS = 300L
 
-            private const val MAX_PLAUSIBLE_CURRENT_MA = 10000
-
             @VisibleForTesting
             internal fun inferUnit(_readings: List<Int>): CurrentUnit = CurrentUnit.MICROAMPS
 
             @VisibleForTesting
-            internal fun isCurrentNowReliable(readings: List<Int>): Boolean {
-                val unit = inferUnit(readings)
-                return readings.any { it != 0 } &&
+            internal fun isCurrentNowReliable(readings: List<Int>): Boolean =
+                readings.any { it != 0 } &&
                     readings.all { reading ->
-                        val normalizedMa = if (unit == CurrentUnit.MICROAMPS) abs(reading) / 1000 else abs(reading)
-                        normalizedMa in 0..MAX_PLAUSIBLE_CURRENT_MA
+                        isPlausibleBatteryCurrent(batteryCurrentMicroampsToMilliamps(reading))
                     }
-            }
 
             @VisibleForTesting
             internal fun inferSignConvention(

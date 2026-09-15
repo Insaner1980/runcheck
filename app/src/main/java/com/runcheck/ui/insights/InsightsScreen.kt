@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +22,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.ui.common.resolve
+import com.runcheck.ui.components.CenteredLoadingState
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.home.insights.InsightNavigationHandlers
@@ -49,13 +49,7 @@ fun InsightsScreen(
         when (val state = uiState) {
             InsightsUiState.Loading -> {
                 ContentContainer(modifier = Modifier.fillMaxSize()) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                    CenteredLoadingState(description = stringResource(R.string.a11y_loading))
                 }
             }
 

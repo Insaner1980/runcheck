@@ -92,6 +92,12 @@ data class ChartYLabel(
     val label: String,
 )
 
+internal fun isIsolatedChartPoint(
+    index: Int,
+    size: Int,
+    lineBreakIndices: Set<Int>,
+): Boolean = (index == 0 || index in lineBreakIndices) && (index == size - 1 || index + 1 in lineBreakIndices)
+
 enum class TrendChartPresentation {
     Embedded,
     Fullscreen,
@@ -161,6 +167,7 @@ fun TrendChart(
     // Tooltip — called with data index when user taps/drags
     tooltipFormatter: ((index: Int) -> String)? = null,
     lineBreakIndices: Set<Int> = emptySet(),
+    showIsolatedPoints: Boolean = false,
     presentation: TrendChartPresentation = TrendChartPresentation.Embedded,
     // Fullscreen expand — when set, shows expand button overlay
     onExpandClick: (() -> Unit)? = null,
@@ -660,6 +667,21 @@ fun TrendChart(
                         color = lineColor,
                         style = Stroke(width = chartStyle.lineStrokeWidth.toPx(), cap = StrokeCap.Round),
                     )
+                }
+
+                // A one-point segment has no stroke; keep it visible when normal markers are hidden.
+                if (showIsolatedPoints && !shouldDrawPointMarkers && lineBreakIndices.isNotEmpty()) {
+                    for (i in data.indices) {
+                        if (!isIsolatedChartPoint(i, data.size, lineBreakIndices)) continue
+                        val x = chartLeft + i * stepX
+                        if (x > visibleSweepRight) break
+                        val y = chartTop + chartHeight - ((data[i] - minVal) / range * chartHeight)
+                        drawCircle(
+                            color = lineColor,
+                            radius = chartStyle.selectedPointInnerRadius.toPx(),
+                            center = Offset(x, y),
+                        )
+                    }
                 }
 
                 if (shouldDrawPointMarkers) {

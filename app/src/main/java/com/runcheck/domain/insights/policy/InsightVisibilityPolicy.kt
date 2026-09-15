@@ -11,5 +11,15 @@ fun List<Insight>.visibleForProAccess(isPro: Boolean): List<Insight> =
     }
 
 fun InsightTarget.requiresProAccess(): Boolean =
-    this == InsightTarget.APP_USAGE ||
-        this == InsightTarget.CHARGER
+    when (this) {
+        InsightTarget.APP_USAGE,
+        InsightTarget.CHARGER,
+        -> true
+
+        InsightTarget.NONE,
+        InsightTarget.BATTERY,
+        InsightTarget.THERMAL,
+        InsightTarget.NETWORK,
+        InsightTarget.STORAGE,
+        -> false
+    }

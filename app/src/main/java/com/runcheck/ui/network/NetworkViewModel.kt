@@ -7,6 +7,7 @@ import com.runcheck.R
 import com.runcheck.domain.model.HistoryPeriod
 import com.runcheck.domain.model.NetworkReading
 import com.runcheck.domain.model.NetworkState
+import com.runcheck.domain.model.SpeedTestHistoryPolicy
 import com.runcheck.domain.model.SpeedTestProgress
 import com.runcheck.domain.model.SpeedTestResult
 import com.runcheck.domain.usecase.FinalizeSpeedTestUseCase
@@ -18,6 +19,7 @@ import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.RunSpeedTestUseCase
 import com.runcheck.ui.common.RefreshTracker
+import com.runcheck.ui.common.UI_STATE_SAMPLE_INTERVAL_MS
 import com.runcheck.ui.common.UiText
 import com.runcheck.ui.common.messageOrRes
 import com.runcheck.util.ReleaseSafeLog
@@ -41,9 +43,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
-
-private const val FREE_HISTORY_LIMIT = 5
-private const val PRO_HISTORY_LIMIT = 100
 
 @HiltViewModel
 class NetworkViewModel
@@ -131,7 +130,6 @@ class NetworkViewModel
             updateSpeedTestState {
                 copy(
                     phase = SpeedTestPhase.Ping,
-                    isRunning = true,
                     pingMs = 0,
                     jitterMs = null,
                     downloadMbps = 0.0,
@@ -155,7 +153,6 @@ class NetworkViewModel
                                                 SpeedTestPhase.Failed(
                                                     UiText.Resource(R.string.speed_test_failed),
                                                 ),
-                                            isRunning = false,
                                         )
                                     }
                                 }.collect { progress ->
@@ -164,7 +161,6 @@ class NetworkViewModel
                                             updateSpeedTestState {
                                                 copy(
                                                     phase = SpeedTestPhase.Idle,
-                                                    isRunning = false,
                                                     showCellularWarning = true,
                                                 )
                                             }
@@ -215,7 +211,7 @@ class NetworkViewModel
                                                     signalDbm = progress.connectionInfo.signalDbm,
                                                 )
                                             try {
-                                                finalizeSpeedTest(result, FREE_HISTORY_LIMIT)
+                                                finalizeSpeedTest(result)
                                             } catch (e: CancellationException) {
                                                 throw e
                                             } catch (error: Exception) {
@@ -230,7 +226,6 @@ class NetworkViewModel
                                                             SpeedTestPhase.Failed(
                                                                 UiText.Resource(R.string.speed_test_error_generic),
                                                             ),
-                                                        isRunning = false,
                                                     )
                                                 }
                                                 return@collect
@@ -239,7 +234,6 @@ class NetworkViewModel
                                             updateSpeedTestState {
                                                 copy(
                                                     phase = SpeedTestPhase.Completed,
-                                                    isRunning = false,
                                                     downloadMbps = progress.downloadMbps,
                                                     uploadMbps = progress.uploadMbps,
                                                     pingMs = progress.pingMs,
@@ -257,7 +251,6 @@ class NetworkViewModel
                                                         SpeedTestPhase.Failed(
                                                             UiText.Dynamic(progress.error),
                                                         ),
-                                                    isRunning = false,
                                                 )
                                             }
                                         }
@@ -271,7 +264,6 @@ class NetworkViewModel
                                     SpeedTestPhase.Failed(
                                         UiText.Resource(R.string.speed_test_error_timeout),
                                     ),
-                                isRunning = false,
                             )
                         }
                     }
@@ -310,7 +302,7 @@ class NetworkViewModel
                         showInfoCards = preferences.showInfoCards,
                         isPro = isPro,
                     )
-                }.sample(333L)
+                }.sample(UI_STATE_SAMPLE_INTERVAL_MS)
                     .catch { error -> handleNetworkSnapshotError(error) }
                     .collect(::applyNetworkSnapshot)
             }
@@ -378,7 +370,7 @@ class NetworkViewModel
                     observeProAccess()
                         .distinctUntilChanged()
                         .flatMapLatest { isPro ->
-                            val limit = if (isPro) PRO_HISTORY_LIMIT else FREE_HISTORY_LIMIT
+                            val limit = SpeedTestHistoryPolicy.resultLimit(isPro = isPro)
                             getSpeedTestHistory(limit)
                         }.catch { e ->
                             updateSpeedTestState {

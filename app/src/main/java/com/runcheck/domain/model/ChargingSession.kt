@@ -13,3 +13,13 @@ data class ChargingSession(
     val avgPowerMw: Int?,
     val plugType: String,
 )
+
+fun ChargingSession.reconstructedAveragePowerMw(): Int? {
+    val averageCurrentMa = avgCurrentMa ?: return null
+    val averageVoltageMv = avgVoltageMv ?: return null
+    val powerMw = averageCurrentMa.toLong() * averageVoltageMv.toLong() / 1000L
+
+    return powerMw
+        .takeIf { it in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong() }
+        ?.toInt()
+}

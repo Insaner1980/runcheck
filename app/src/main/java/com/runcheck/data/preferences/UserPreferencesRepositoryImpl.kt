@@ -44,6 +44,8 @@ class UserPreferencesRepositoryImpl
             @ApplicationContext context: Context,
         ) : this(context.dataStore)
 
+        private val defaults = UserPreferences()
+
         private val preferencesFlow: Flow<Preferences> = dataStore.data
 
         // Dismissals are app-local UI state. Clearing app data or reinstalling should show cards again.
@@ -79,16 +81,16 @@ class UserPreferencesRepositoryImpl
                     monitoringInterval =
                         prefs[KEY_MONITORING_INTERVAL]
                             ?.let { stored -> enumValueOrNull<MonitoringInterval>(stored) }
-                            ?: MonitoringInterval.THIRTY,
-                    notificationsEnabled = prefs[KEY_NOTIFICATIONS] ?: true,
+                            ?: defaults.monitoringInterval,
+                    notificationsEnabled = prefs[KEY_NOTIFICATIONS] ?: defaults.notificationsEnabled,
                     dataRetention =
                         prefs[KEY_DATA_RETENTION]
                             ?.let { stored -> enumValueOrNull<DataRetention>(stored) }
-                            ?: DataRetention.THREE_MONTHS,
-                    notifLowBattery = prefs[KEY_NOTIF_LOW_BATTERY] ?: true,
-                    notifHighTemp = prefs[KEY_NOTIF_HIGH_TEMP] ?: true,
-                    notifLowStorage = prefs[KEY_NOTIF_LOW_STORAGE] ?: true,
-                    notifChargeComplete = prefs[KEY_NOTIF_CHARGE_COMPLETE] ?: false,
+                            ?: defaults.dataRetention,
+                    notifLowBattery = prefs[KEY_NOTIF_LOW_BATTERY] ?: defaults.notifLowBattery,
+                    notifHighTemp = prefs[KEY_NOTIF_HIGH_TEMP] ?: defaults.notifHighTemp,
+                    notifLowStorage = prefs[KEY_NOTIF_LOW_STORAGE] ?: defaults.notifLowStorage,
+                    notifChargeComplete = prefs[KEY_NOTIF_CHARGE_COMPLETE] ?: defaults.notifChargeComplete,
                     alertBatteryThreshold =
                         (prefs[KEY_ALERT_BATTERY] ?: AlertThresholds.DEFAULT_BATTERY_PERCENT)
                             .coerceIn(AlertThresholds.MIN_BATTERY_PERCENT, AlertThresholds.MAX_BATTERY_PERCENT),
@@ -101,14 +103,14 @@ class UserPreferencesRepositoryImpl
                     temperatureUnit =
                         prefs[KEY_TEMP_UNIT]
                             ?.let { stored -> enumValueOrNull<TemperatureUnit>(stored) }
-                            ?: TemperatureUnit.CELSIUS,
-                    liveNotificationEnabled = prefs[KEY_LIVE_NOTIF_ENABLED] ?: false,
-                    liveNotifCurrent = prefs[KEY_LIVE_NOTIF_CURRENT] ?: true,
-                    liveNotifDrainRate = prefs[KEY_LIVE_NOTIF_DRAIN_RATE] ?: true,
-                    liveNotifTemperature = prefs[KEY_LIVE_NOTIF_TEMPERATURE] ?: true,
-                    liveNotifScreenStats = prefs[KEY_LIVE_NOTIF_SCREEN_STATS] ?: false,
-                    liveNotifRemainingTime = prefs[KEY_LIVE_NOTIF_REMAINING_TIME] ?: false,
-                    showInfoCards = prefs[KEY_SHOW_INFO_CARDS] ?: true,
+                            ?: defaults.temperatureUnit,
+                    liveNotificationEnabled = prefs[KEY_LIVE_NOTIF_ENABLED] ?: defaults.liveNotificationEnabled,
+                    liveNotifCurrent = prefs[KEY_LIVE_NOTIF_CURRENT] ?: defaults.liveNotifCurrent,
+                    liveNotifDrainRate = prefs[KEY_LIVE_NOTIF_DRAIN_RATE] ?: defaults.liveNotifDrainRate,
+                    liveNotifTemperature = prefs[KEY_LIVE_NOTIF_TEMPERATURE] ?: defaults.liveNotifTemperature,
+                    liveNotifScreenStats = prefs[KEY_LIVE_NOTIF_SCREEN_STATS] ?: defaults.liveNotifScreenStats,
+                    liveNotifRemainingTime = prefs[KEY_LIVE_NOTIF_REMAINING_TIME] ?: defaults.liveNotifRemainingTime,
+                    showInfoCards = prefs[KEY_SHOW_INFO_CARDS] ?: defaults.showInfoCards,
                 )
             }
 

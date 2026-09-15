@@ -1,6 +1,7 @@
 package com.runcheck.data.insights
 
 import com.google.gson.Gson
+import com.google.gson.JsonParseException
 import com.google.gson.reflect.TypeToken
 import com.runcheck.data.db.dao.InsightDao
 import com.runcheck.data.db.entity.InsightEntity
@@ -28,14 +29,6 @@ class InsightRepositoryImpl
         private val dispatchers: AppDispatchers,
     ) : InsightRepository {
         override fun getActiveInsights(): Flow<List<Insight>> = observeActiveInsights().flowOn(dispatchers.io)
-
-        override fun getUnseenCount(): Flow<Int> =
-            insightDao
-                .observeUndismissedInsights()
-                .map { entities ->
-                    val now = System.currentTimeMillis()
-                    entities.count { !it.seen && it.expiresAt > now }
-                }.flowOn(dispatchers.io)
 
         override suspend fun dismiss(id: Long) = insightDao.dismiss(id)
 
@@ -101,26 +94,37 @@ class InsightRepositoryImpl
                     val now = System.currentTimeMillis()
                     entities
                         .filter { it.expiresAt > now }
-                        .map { it.toDomain(gson) }
+                        .mapNotNull { it.toDomainOrNull(gson) }
                 }
     }
 
-private fun InsightEntity.toDomain(gson: Gson): Insight =
-    Insight(
+private fun InsightEntity.toDomainOrNull(gson: Gson): Insight? {
+    val decodedType = InsightType.entries.firstOrNull { it.name == type } ?: return null
+    val decodedPriority = InsightPriority.entries.firstOrNull { it.sortOrder == priority } ?: return null
+    val decodedTarget = InsightTarget.entries.firstOrNull { it.name == target } ?: return null
+    val decodedBodyArgs =
+        try {
+            bodyArgsJson.toBodyArgs(gson)
+        } catch (_: JsonParseException) {
+            return null
+        }
+
+    return Insight(
         id = id,
         ruleId = ruleId,
-        type = enumValueOf(type),
-        priority = InsightPriority.entries.first { it.sortOrder == priority },
+        type = decodedType,
+        priority = decodedPriority,
         confidence = confidence,
         titleKey = titleKey,
         bodyKey = bodyKey,
-        bodyArgs = bodyArgsJson.toBodyArgs(gson),
+        bodyArgs = decodedBodyArgs,
         generatedAt = generatedAt,
         expiresAt = expiresAt,
-        target = enumValueOf(target),
+        target = decodedTarget,
         seen = seen,
         dismissed = dismissed,
     )
+}
 
 private fun InsightCandidate.toEntity(
     existing: InsightEntity?,

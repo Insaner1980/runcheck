@@ -47,7 +47,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -92,6 +91,7 @@ import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.common.rememberSaveableEnumState
 import com.runcheck.ui.common.resolve
 import com.runcheck.ui.components.ActionCard
+import com.runcheck.ui.components.AdaptiveMetricPillGroup
 import com.runcheck.ui.components.CardSectionTitle
 import com.runcheck.ui.components.CenteredLoadingState
 import com.runcheck.ui.components.CenteredRetryState
@@ -101,8 +101,8 @@ import com.runcheck.ui.components.ListRow
 import com.runcheck.ui.components.LiveChart
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.MetricPillItem
-import com.runcheck.ui.components.MetricPillItems
 import com.runcheck.ui.components.MetricRow
+import com.runcheck.ui.components.PermissionExplanationCard
 import com.runcheck.ui.components.ProFeatureCalloutCard
 import com.runcheck.ui.components.ProgressHeroMetric
 import com.runcheck.ui.components.ProgressRing
@@ -113,7 +113,7 @@ import com.runcheck.ui.components.SegmentData
 import com.runcheck.ui.components.SegmentedBar
 import com.runcheck.ui.components.SegmentedBarLegend
 import com.runcheck.ui.components.TrendChart
-import com.runcheck.ui.components.info.InfoCard
+import com.runcheck.ui.components.info.CatalogInfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.components.info.InfoSheetHost
@@ -121,7 +121,6 @@ import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.storage.MediaDeleteRequestResult
-import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
 import com.runcheck.ui.theme.categoryColor
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
@@ -397,19 +396,12 @@ private fun StorageOverviewSection( // NOSONAR
     )
 
     if (storage.usagePercent > 75f) {
-        InfoCard(
-            id = InfoCardCatalog.StorageFullSlowsPhone.id,
-            headline = stringResource(InfoCardCatalog.StorageFullSlowsPhone.headlineRes),
-            body = stringResource(InfoCardCatalog.StorageFullSlowsPhone.bodyRes),
+        CatalogInfoCard(
+            definition = InfoCardCatalog.StorageFullSlowsPhone,
+            dismissedInfoCards = state.dismissedInfoCards,
+            showInfoCards = state.showInfoCards,
             onDismiss = onDismissInfoCard,
-            visible =
-                InfoCardCatalog.StorageFullSlowsPhone.id !in state.dismissedInfoCards && state.showInfoCards,
-            onLearnMore = {
-                InfoCardCatalog
-                    .resolveLearnArticleId(
-                        InfoCardCatalog.StorageFullSlowsPhone,
-                    )?.let(onNavigateToLearnArticle)
-            },
+            onNavigateToLearnArticle = onNavigateToLearnArticle,
         )
     }
 
@@ -428,18 +420,12 @@ private fun StorageOverviewSection( // NOSONAR
     }
 
     if (hasAllMediaPermissions && storage.mediaBreakdown != null) {
-        InfoCard(
-            id = InfoCardCatalog.StorageOverview.id,
-            headline = stringResource(InfoCardCatalog.StorageOverview.headlineRes),
-            body = stringResource(InfoCardCatalog.StorageOverview.bodyRes),
+        CatalogInfoCard(
+            definition = InfoCardCatalog.StorageOverview,
+            dismissedInfoCards = state.dismissedInfoCards,
+            showInfoCards = state.showInfoCards,
             onDismiss = onDismissInfoCard,
-            visible = InfoCardCatalog.StorageOverview.id !in state.dismissedInfoCards && state.showInfoCards,
-            onLearnMore = {
-                InfoCardCatalog
-                    .resolveLearnArticleId(
-                        InfoCardCatalog.StorageOverview,
-                    )?.let(onNavigateToLearnArticle)
-            },
+            onNavigateToLearnArticle = onNavigateToLearnArticle,
         )
     }
 }
@@ -513,48 +499,35 @@ private fun StorageMediaPermissionCard(
     shouldOpenSettings: Boolean,
     onAction: () -> Unit,
 ) {
-    RuncheckCard(
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-    ) {
-        Text(
-            text =
-                stringResource(
-                    if (partialAccess) {
-                        R.string.storage_media_permission_partial_title
-                    } else {
-                        R.string.storage_media_permission_title
-                    },
-                ),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text =
-                stringResource(
-                    if (partialAccess) {
-                        R.string.storage_media_permission_partial_message
-                    } else {
-                        R.string.storage_media_permission_message
-                    },
-                ),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        TextButton(onClick = onAction) {
-            Text(
-                text =
-                    stringResource(
-                        if (shouldOpenSettings) {
-                            R.string.storage_media_permission_open_settings
-                        } else if (partialAccess) {
-                            R.string.storage_media_permission_manage_selection
-                        } else {
-                            R.string.storage_media_permission_grant
-                        },
-                    ),
-            )
-        }
-    }
+    PermissionExplanationCard(
+        title =
+            stringResource(
+                if (partialAccess) {
+                    R.string.storage_media_permission_partial_title
+                } else {
+                    R.string.storage_media_permission_title
+                },
+            ),
+        message =
+            stringResource(
+                if (partialAccess) {
+                    R.string.storage_media_permission_partial_message
+                } else {
+                    R.string.storage_media_permission_message
+                },
+            ),
+        actionLabel =
+            stringResource(
+                if (shouldOpenSettings) {
+                    R.string.storage_media_permission_open_settings
+                } else if (partialAccess) {
+                    R.string.storage_media_permission_manage_selection
+                } else {
+                    R.string.storage_media_permission_grant
+                },
+            ),
+        onAction = onAction,
+    )
 }
 
 // ── Hero card ──────────────────────────────────────────────────────────────────
@@ -565,7 +538,6 @@ private fun StorageHeroCard(
     liveUsagePercent: List<Float>,
     onInfoClick: (String) -> Unit = {},
 ) {
-    val useStackedMetrics = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
     val context = LocalContext.current
     val usedFormatted = formatStorageSize(context, storage.usedBytes)
     val totalFormatted = formatStorageSize(context, storage.totalBytes)
@@ -648,7 +620,6 @@ private fun StorageHeroCard(
 
             StorageHeroMetrics(
                 storage = storage,
-                useStackedLayout = useStackedMetrics,
                 onInfoClick = onInfoClick,
             )
         }
@@ -658,7 +629,6 @@ private fun StorageHeroCard(
 @Composable
 private fun StorageHeroMetrics(
     storage: StorageState,
-    useStackedLayout: Boolean,
     onInfoClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -700,23 +670,13 @@ private fun StorageHeroMetrics(
             )
         }
 
-    if (useStackedLayout) {
-        Column(modifier = modifier) {
-            MetricPillItems(items = metrics, onInfoClick = onInfoClick)
-        }
-    } else {
-        Row(
-            modifier = modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.base),
-            verticalAlignment = Alignment.Top,
-        ) {
-            MetricPillItems(
-                items = metrics,
-                modifier = Modifier.weight(1f),
-                onInfoClick = onInfoClick,
-            )
-        }
-    }
+    AdaptiveMetricPillGroup(
+        items = metrics,
+        onInfoClick = onInfoClick,
+        horizontalSpacing = MaterialTheme.spacing.base,
+        verticalSpacing = 0.dp,
+        modifier = modifier,
+    )
 }
 
 // ── Media Breakdown card ───────────────────────────────────────────────────────

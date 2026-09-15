@@ -197,6 +197,31 @@ class ScreenStateTrackerTest {
     }
 
     @Test
+    fun `sticky full battery status is persisted as full`() {
+        val fullBatteryIntent: Intent = mockk(relaxed = true)
+        every {
+            fullBatteryIntent.getIntExtra(
+                BatteryManager.EXTRA_STATUS,
+                BatteryManager.BATTERY_STATUS_UNKNOWN,
+            )
+        } returns BatteryManager.BATTERY_STATUS_FULL
+        every { context.registerReceiver(null, any<IntentFilter>()) } returns fullBatteryIntent
+
+        ScreenStateTracker(context).getScreenUsageStats()
+
+        assertEquals(ChargingStatus.FULL.name, prefs.getString("last_charging_status", null))
+    }
+
+    @Test
+    fun `missing sticky battery intent is persisted as not charging`() {
+        every { context.registerReceiver(null, any<IntentFilter>()) } returns null
+
+        ScreenStateTracker(context).getScreenUsageStats()
+
+        assertEquals(ChargingStatus.NOT_CHARGING.name, prefs.getString("last_charging_status", null))
+    }
+
+    @Test
     fun `cold start idle reconciliation avoids backfilling unknown held awake time`() {
         val now = System.currentTimeMillis() - 60 * 60_000L
         persistScreenState(now)

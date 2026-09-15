@@ -4,7 +4,6 @@ import android.content.Context
 import android.os.SystemClock
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
-import com.runcheck.data.device.DeviceProfileProvider
 import com.runcheck.data.thermal.ThermalDataSource
 import com.runcheck.data.thermal.ThermalRepositoryImpl
 import com.runcheck.domain.model.BatteryHealth
@@ -236,18 +235,11 @@ class HealthMonitorWorkerTest {
             coEvery { events.getOpenEvent() } throws IllegalStateException("event database full")
             val source = mockk<ThermalDataSource>()
             every { source.getBatteryTemperature() } returns flowOf(42f)
-            every { source.getCpuTemperature(emptyList()) } returns flowOf(null)
             every { source.getThermalStatus() } returns flowOf(ThermalStatus.SEVERE)
             every { source.getThermalHeadroom() } returns flowOf(null)
-            val profile = mockk<DeviceProfileProvider>()
-            coEvery { profile.getDeviceProfile() } returns
-                mockk {
-                    every { thermalZonesAvailable } returns emptyList()
-                }
             val repository =
                 ThermalRepositoryImpl(
                     source,
-                    profile,
                     mockk(),
                     TrackThrottlingEventsUseCase(events, mockk()),
                     TestAppDispatchers(),

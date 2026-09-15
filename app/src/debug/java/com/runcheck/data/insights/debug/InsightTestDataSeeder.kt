@@ -17,6 +17,7 @@ import com.runcheck.data.db.entity.StorageReadingEntity
 import com.runcheck.data.db.entity.ThermalReadingEntity
 import com.runcheck.data.db.entity.ThrottlingEventEntity
 import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.domain.model.ThermalStatusPersistence
 import com.runcheck.domain.repository.DatabaseTransactionRunner
 import com.runcheck.domain.usecase.MonitoringDataCoordinator
 import javax.inject.Inject
@@ -239,7 +240,7 @@ class InsightTestDataSeeder
                         timestamp = currentStart + ((20 + index) * intervalMs),
                         batteryTempC = batteryTempC,
                         cpuTempC = cpuTempC,
-                        thermalStatus = thermalStatus.ordinal,
+                        thermalStatus = ThermalStatusPersistence.toCode(thermalStatus),
                         throttling = thermalStatus >= ThermalStatus.SEVERE,
                     ),
                 )
@@ -251,7 +252,7 @@ class InsightTestDataSeeder
                 listOf(
                     ThrottlingEventEntity(
                         timestamp = now - (6L * DAY_MS),
-                        thermalStatus = ThermalStatus.SEVERE.name,
+                        thermalStatus = ThermalStatusPersistence.toId(ThermalStatus.SEVERE),
                         batteryTempC = 41.8f,
                         cpuTempC = 71.4f,
                         foregroundApp = "StreamBox",
@@ -259,7 +260,7 @@ class InsightTestDataSeeder
                     ),
                     ThrottlingEventEntity(
                         timestamp = now - (4L * DAY_MS),
-                        thermalStatus = ThermalStatus.CRITICAL.name,
+                        thermalStatus = ThermalStatusPersistence.toId(ThermalStatus.CRITICAL),
                         batteryTempC = 43.1f,
                         cpuTempC = 75.6f,
                         foregroundApp = "StreamBox",
@@ -267,7 +268,7 @@ class InsightTestDataSeeder
                     ),
                     ThrottlingEventEntity(
                         timestamp = now - (2L * DAY_MS),
-                        thermalStatus = ThermalStatus.SEVERE.name,
+                        thermalStatus = ThermalStatusPersistence.toId(ThermalStatus.SEVERE),
                         batteryTempC = 42.4f,
                         cpuTempC = 73.0f,
                         foregroundApp = "Open World Arena",
@@ -275,7 +276,7 @@ class InsightTestDataSeeder
                     ),
                     ThrottlingEventEntity(
                         timestamp = now - (18L * HOUR_MS),
-                        thermalStatus = ThermalStatus.SEVERE.name,
+                        thermalStatus = ThermalStatusPersistence.toId(ThermalStatus.SEVERE),
                         batteryTempC = 44.0f,
                         cpuTempC = 74.2f,
                         foregroundApp = "Open World Arena",

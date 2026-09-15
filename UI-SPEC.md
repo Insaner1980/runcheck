@@ -153,8 +153,8 @@ Thresholds:
 | Domain | Healthy | Fair | Poor | Critical |
 |---|---|---|---|---|
 | Percent status | `>= 75` | `>= 50` | `>= 25` | `< 25` |
-| Temperature C | `< 35` | `35..39.999` | `40..44.999` | `>= 45` |
-| Storage used % | `< 75` | `75..84.999` | `85..94.999` | `>= 95` |
+| Battery temperature C | `< 35` | `35..<40` | `40..<45` | `>= 45` |
+| Storage used % | `< 75` | `75 <= used < 85` | `85 <= used < 95` | `>= 95` |
 | Signal quality | Excellent/Good | Fair | Poor | No signal |
 
 Confidence badge colors:
@@ -672,7 +672,9 @@ for new Home work or extend its decorative status strip.
 - Shape: large 16dp.
 - Default temperature range: 15C to 50C.
 - Critical threshold for pulse: above 42C.
-- Gradient aligns status colors around 35C, 40C, and 45C transitions.
+- Gradient uses `BatteryTemperaturePresentation` boundaries at 35C, 40C, and 45C
+  with the existing ±1C smooth transitions; accessibility uses its descriptive band.
+- The fixed >42C pulse is independent of severity and configurable alerts.
 - Indicator: on-surface/white circle, radius 8dp, clamped inside strip.
 - Critical pulse:
   - The gradient remains stable; only the indicator halo animates.
@@ -1070,7 +1072,7 @@ Battery level zones:
 - 20..50 fair, alpha 0.06.
 - 0..20 critical, alpha 0.06.
 
-Battery temperature zones:
+Battery temperature zones (shared by Battery history/fullscreen and Thermal battery history):
 
 - 0..35 healthy, alpha 0.06.
 - 35..40 fair, alpha 0.06.
@@ -1087,16 +1089,18 @@ Signal zones:
 
 Thermal zones:
 
-- 0..35 healthy, alpha 0.06.
-- 35..42 fair, alpha 0.06.
-- 42..60 critical, alpha 0.06.
+- Battery metric uses the shared battery temperature zones above.
+- CPU metric has no quality zones; no CPU zone policy has been established.
 
 Storage used zones:
 
-- 0..74.999 healthy, alpha 0.08.
-- 75..84.999 fair, alpha 0.08.
-- 85..94.999 poor, alpha 0.08.
+- 0..75 healthy, alpha 0.08.
+- 75..85 fair, alpha 0.08.
+- 85..95 poor, alpha 0.08.
 - 95..100 critical, alpha 0.08.
+
+These closed chart ranges share exact boundaries; the later matching zone wins.
+StorageUsagePresentation owns the 75 / 85 / 95 presentation thresholds.
 
 ### 8.6 Chart Stats Row
 
@@ -1294,6 +1298,9 @@ Other battery panels:
   and statistics sections use the same `BatteryPanel` card grammar.
 - Dividers use outlineVariant alpha 0.35.
 - Live charts are used when enough session points exist.
+- Battery temperature values and the live-temperature line use canonical severity
+  colors: Healthy <35C, Fair 35..<40C, Poor 40..<45C, Critical >=45C.
+  Descriptive words remain Cool / Normal / Warm / Hot / Critical.
 
 ### 9.3 Network Detail
 
@@ -1337,7 +1344,11 @@ Signal history:
 - History period chip row.
 - Load error if present.
 - Chart label: period and metric.
-- `TrendChart` with signal quality zones.
+- `TrendChart` with a neutral numeric dBm line and no quality zones, consistently for Wi-Fi, 5G, other cellular, and mixed history. Historical dBm does not apply live quality thresholds.
+- Connection-family transitions (Wi-Fi / 5G cellular / other cellular), missing readings, and disconnected/non-radio intervals without dBm break the line. No zero placeholders. Breaks survive 300/600-point reduction through original segment identities, including omitted intervening intervals; isolated retained signal points use neutral dots.
+- The numeric axis follows actual dBm data, including values below -120; constant history has a neutral ±1 dBm margin.
+- Tooltips preserve dBm/time and add the persisted connection type/subtype label when known, without guessing missing cellular generation. Accessibility identifies the complete history as Wi-Fi, 5G, cellular, or mixed network types; numeric trend is not a quality verdict.
+- Live `NetworkSignalQuality` behavior and latency history are unchanged.
 - Expanded fullscreen action is available.
 - Stats row below chart.
 
@@ -1477,15 +1488,20 @@ Thermal hero:
 - Temperature value: `numericHeroDisplayTextStyle`.
 - Unit: `numericHeroDisplayUnitTextStyle`.
 - Unit padding: start 2dp, bottom 12dp.
-- Thermal band: `titleMedium` with status color.
+- Thermal band: `titleMedium` with canonical battery severity color.
+- `BatteryTemperaturePresentation` classifies raw Celsius before conversion or rounding:
+  Cool <25 / Healthy; Normal 25..<35 / Healthy; Warm 35..<40 / Fair;
+  Hot 40..<45 / Poor; Critical >=45 / Critical.
+- `temperatureBandLabel` retains these five descriptive words independently of
+  the four severity segment labels.
 - Optional session min/max: `bodySmall`, top gap 4dp.
 - Segmented status bar after 24dp.
 - Gap after status bar: 8dp.
 - Thermal segments:
-  - Cool/healthy: 0..35.
-  - Normal/fair: 35..40.
-  - Warm/poor: 40..45.
-  - Critical: 45..60.
+  - Healthy: <35 (display range starts at 0).
+  - Fair: 35..<40.
+  - Poor: 40..<45.
+  - Critical: >=45 (display range ends at 60).
 
 Thermal metrics card:
 
@@ -2157,9 +2173,9 @@ Chart content:
 - `TrendChart` fills width and uses fullscreen presentation.
 - Quality zones:
   - Battery history: battery zones by selected metric and temperature unit.
-  - Network history: signal zones by selected metric.
+  - Network history: no quality zones for signal or latency. Signal uses the same neutral presentation, historical context, and original-segment breaks as the embedded chart.
   - Battery session: no quality zones.
-- Tooltip uses chart timestamps, unit, decimals, and selected skeleton.
+- Tooltip uses chart timestamps, unit, decimals, and selected skeleton; Network SIGNAL also includes the persisted connection label when known.
 
 Empty content:
 

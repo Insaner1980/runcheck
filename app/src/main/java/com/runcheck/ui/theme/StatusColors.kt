@@ -10,6 +10,8 @@ import com.runcheck.domain.model.HealthScore
 import com.runcheck.domain.model.HealthStatus
 import com.runcheck.domain.model.MediaCategory
 import com.runcheck.domain.model.SignalQuality
+import com.runcheck.ui.common.BatteryTemperaturePresentation
+import com.runcheck.ui.common.StorageUsagePresentation
 
 @Immutable
 data class StatusColors(
@@ -63,7 +65,13 @@ fun StatusColors.forHealthStatus(status: HealthStatus): Color =
 
 @Composable
 @ReadOnlyComposable
-fun statusColorForTemperature(tempC: Float): Color {
+fun statusColorForBatteryTemperature(tempC: Float): Color =
+    statusColor(BatteryTemperaturePresentation.classify(tempC).severity)
+
+// Preserve the legacy CPU pill colors independently of battery presentation.
+@Composable
+@ReadOnlyComposable
+fun statusColorForCpuTemperature(tempC: Float): Color {
     val colors = MaterialTheme.statusColors
     return when {
         tempC >= 45f -> colors.critical
@@ -75,15 +83,8 @@ fun statusColorForTemperature(tempC: Float): Color {
 
 @Composable
 @ReadOnlyComposable
-fun statusColorForStoragePercent(usedPercent: Int): Color {
-    val colors = MaterialTheme.statusColors
-    return when {
-        usedPercent >= 95 -> colors.critical
-        usedPercent >= 85 -> colors.poor
-        usedPercent >= 75 -> colors.fair
-        else -> colors.healthy
-    }
-}
+fun statusColorForStoragePercent(usedPercent: Int): Color =
+    statusColor(StorageUsagePresentation.classify(usedPercent.toFloat()))
 
 @Composable
 @ReadOnlyComposable

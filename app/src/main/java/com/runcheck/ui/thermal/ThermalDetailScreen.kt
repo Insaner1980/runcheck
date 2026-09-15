@@ -66,6 +66,7 @@ import com.runcheck.ui.chart.historyPeriodLabel
 import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.chart.thermalHistoryMetricLabel
 import com.runcheck.ui.chart.thermalQualityZones
+import com.runcheck.ui.common.BatteryTemperaturePresentation
 import com.runcheck.ui.common.EnumFilterChipRow
 import com.runcheck.ui.common.HistoryLoadErrorMessage
 import com.runcheck.ui.common.UiText
@@ -94,7 +95,7 @@ import com.runcheck.ui.components.SegmentedStatusBar
 import com.runcheck.ui.components.StatusDot
 import com.runcheck.ui.components.StatusSegment
 import com.runcheck.ui.components.TrendChart
-import com.runcheck.ui.components.info.InfoCard
+import com.runcheck.ui.components.info.CatalogInfoCard
 import com.runcheck.ui.components.info.InfoCardCatalog
 import com.runcheck.ui.components.info.InfoSheetContent
 import com.runcheck.ui.components.info.InfoSheetHost
@@ -103,6 +104,7 @@ import com.runcheck.ui.components.observedScreenState
 import com.runcheck.ui.learn.LearnArticleIds
 import com.runcheck.ui.learn.RelatedArticlesSection
 import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
+import com.runcheck.ui.theme.dividerColor
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericHeroDisplayTextStyle
 import com.runcheck.ui.theme.numericHeroDisplayUnitTextStyle
@@ -112,7 +114,8 @@ import com.runcheck.ui.theme.runcheckCardColors
 import com.runcheck.ui.theme.runcheckCardElevation
 import com.runcheck.ui.theme.runcheckHeroCardColors
 import com.runcheck.ui.theme.spacing
-import com.runcheck.ui.theme.statusColorForTemperature
+import com.runcheck.ui.theme.statusColorForBatteryTemperature
+import com.runcheck.ui.theme.statusColorForCpuTemperature
 import com.runcheck.ui.theme.statusColors
 
 @Composable
@@ -279,40 +282,24 @@ private fun LazyListScope.thermalInfoCards(
 ) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         item {
-            InfoCard(
-                id = InfoCardCatalog.ThermalThrottlingExplainer.id,
-                headline = stringResource(InfoCardCatalog.ThermalThrottlingExplainer.headlineRes),
-                body = stringResource(InfoCardCatalog.ThermalThrottlingExplainer.bodyRes),
+            CatalogInfoCard(
+                definition = InfoCardCatalog.ThermalThrottlingExplainer,
+                dismissedInfoCards = state.dismissedInfoCards,
+                showInfoCards = state.showInfoCards,
                 onDismiss = onDismissInfoCard,
-                visible =
-                    InfoCardCatalog.ThermalThrottlingExplainer.id !in state.dismissedInfoCards &&
-                        state.showInfoCards,
-                onLearnMore = {
-                    InfoCardCatalog
-                        .resolveLearnArticleId(
-                            InfoCardCatalog.ThermalThrottlingExplainer,
-                        )?.let(onNavigateToLearnArticle)
-                },
+                onNavigateToLearnArticle = onNavigateToLearnArticle,
             )
         }
     }
 
     if (thermal.batteryTempC > 35f) {
         item {
-            InfoCard(
-                id = InfoCardCatalog.ThermalHeatBatteryLoop.id,
-                headline = stringResource(InfoCardCatalog.ThermalHeatBatteryLoop.headlineRes),
-                body = stringResource(InfoCardCatalog.ThermalHeatBatteryLoop.bodyRes),
+            CatalogInfoCard(
+                definition = InfoCardCatalog.ThermalHeatBatteryLoop,
+                dismissedInfoCards = state.dismissedInfoCards,
+                showInfoCards = state.showInfoCards,
                 onDismiss = onDismissInfoCard,
-                visible =
-                    InfoCardCatalog.ThermalHeatBatteryLoop.id !in state.dismissedInfoCards &&
-                        state.showInfoCards,
-                onLearnMore = {
-                    InfoCardCatalog
-                        .resolveLearnArticleId(
-                            InfoCardCatalog.ThermalHeatBatteryLoop,
-                        )?.let(onNavigateToLearnArticle)
-                },
+                onNavigateToLearnArticle = onNavigateToLearnArticle,
             )
         }
     }
@@ -381,22 +368,42 @@ private fun ThermalHeroCard(
     sessionMaxTemp: Float? = null,
 ) {
     val useStackedTemperature = LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE
-    val tempColor = statusColorForTemperature(thermal.batteryTempC)
+    val tempColor = statusColorForBatteryTemperature(thermal.batteryTempC)
     val bandLabel = temperatureBandLabel(thermal.batteryTempC)
     val statusColors = MaterialTheme.statusColors
 
-    val optimalLabel = stringResource(R.string.thermal_cool)
-    val normalLabel = stringResource(R.string.thermal_normal)
-    val warmLabel = stringResource(R.string.thermal_warm)
-    val criticalLabel = stringResource(R.string.thermal_critical)
+    val healthyLabel = stringResource(R.string.status_healthy)
+    val fairLabel = stringResource(R.string.status_fair)
+    val poorLabel = stringResource(R.string.status_poor)
+    val criticalLabel = stringResource(R.string.status_critical)
 
     val thermalSegments =
         remember(statusColors) {
             listOf(
-                StatusSegment(label = optimalLabel, color = statusColors.healthy, rangeStart = 0f, rangeEnd = 35f),
-                StatusSegment(label = normalLabel, color = statusColors.fair, rangeStart = 35f, rangeEnd = 40f),
-                StatusSegment(label = warmLabel, color = statusColors.poor, rangeStart = 40f, rangeEnd = 45f),
-                StatusSegment(label = criticalLabel, color = statusColors.critical, rangeStart = 45f, rangeEnd = 60f),
+                StatusSegment(
+                    label = healthyLabel,
+                    color = statusColors.healthy,
+                    rangeStart = 0f,
+                    rangeEnd = BatteryTemperaturePresentation.FAIR_START_C,
+                ),
+                StatusSegment(
+                    label = fairLabel,
+                    color = statusColors.fair,
+                    rangeStart = BatteryTemperaturePresentation.FAIR_START_C,
+                    rangeEnd = BatteryTemperaturePresentation.POOR_START_C,
+                ),
+                StatusSegment(
+                    label = poorLabel,
+                    color = statusColors.poor,
+                    rangeStart = BatteryTemperaturePresentation.POOR_START_C,
+                    rangeEnd = BatteryTemperaturePresentation.CRITICAL_START_C,
+                ),
+                StatusSegment(
+                    label = criticalLabel,
+                    color = statusColors.critical,
+                    rangeStart = BatteryTemperaturePresentation.CRITICAL_START_C,
+                    rangeEnd = 60f,
+                ),
             )
         }
 
@@ -457,7 +464,7 @@ private fun ThermalHeroCard(
             Text(
                 text =
                     buildAnnotatedString {
-                        withStyle(SpanStyle(color = statusColorForTemperature(sessionMinTemp))) {
+                        withStyle(SpanStyle(color = statusColorForBatteryTemperature(sessionMinTemp))) {
                             append(
                                 stringResource(
                                     R.string.value_direction_down,
@@ -466,7 +473,7 @@ private fun ThermalHeroCard(
                             )
                         }
                         append(stringResource(R.string.value_separator))
-                        withStyle(SpanStyle(color = statusColorForTemperature(sessionMaxTemp))) {
+                        withStyle(SpanStyle(color = statusColorForBatteryTemperature(sessionMaxTemp))) {
                             append(
                                 stringResource(
                                     R.string.value_direction_up,
@@ -514,7 +521,7 @@ private fun ThermalMetricsCard(
         } ?: unavailableText
     val cpuTempColor =
         thermal.cpuTempC?.let {
-            statusColorForTemperature(it)
+            statusColorForCpuTemperature(it)
         } ?: defaultOnSurface
 
     // Pre-compute headroom pill values
@@ -572,7 +579,7 @@ private fun ThermalMetricsCard(
                 valueColor = headroomValueColor,
                 onInfoClick = { onInfoClick("thermalHeadroom") },
             )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+            HorizontalDivider(color = MaterialTheme.dividerColor)
             MetricPill(
                 label = stringResource(R.string.thermal_status),
                 value = statusValue,
@@ -608,7 +615,7 @@ private fun ThermalMetricsCard(
                 )
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+            HorizontalDivider(color = MaterialTheme.dividerColor)
 
             // Row 2: Thermal Status + Throttling
             Row(
@@ -651,12 +658,12 @@ private fun ThermalLiveCharts(
 ) {
     Column {
         if (liveTempC.size >= 2) {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+            HorizontalDivider(color = MaterialTheme.dividerColor)
             LiveChart(
                 data = liveTempC,
                 currentValueLabel = formatTemperature(thermal.batteryTempC, temperatureUnit),
                 label = stringResource(R.string.thermal_battery_temp),
-                lineColor = statusColorForTemperature(thermal.batteryTempC),
+                lineColor = statusColorForBatteryTemperature(thermal.batteryTempC),
                 accessibilityDescription =
                     stringResource(
                         R.string.a11y_chart_trend,
@@ -714,7 +721,7 @@ private fun ThermalHistoryCard(
             )
         }
 
-    val qualityZones = thermalQualityZones(temperatureUnit)
+    val qualityZones = thermalQualityZones(metric, temperatureUnit)
 
     RuncheckCard(
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
@@ -787,12 +794,7 @@ private fun ThrottlingEventItem(
     temperatureUnit: TemperatureUnit,
 ) {
     val formattedTime = rememberFormattedDateTime(event.timestamp, "yMMMdHm")
-    val statusColor =
-        when (event.thermalStatus.lowercase()) {
-            "severe" -> MaterialTheme.statusColors.poor
-            "critical", "emergency", "shutdown" -> MaterialTheme.statusColors.critical
-            else -> MaterialTheme.statusColors.fair
-        }
+    val statusColor = MaterialTheme.statusColors.forThrottlingEvent(event.thermalStatus)
 
     RuncheckCard(
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
@@ -825,7 +827,7 @@ private fun ThrottlingEventItem(
                     MaterialTheme.typography.bodyMedium.copy(
                         fontFamily = MaterialTheme.numericFontFamily,
                     ),
-                color = statusColorForTemperature(event.batteryTempC),
+                color = statusColorForBatteryTemperature(event.batteryTempC),
             )
         }
 

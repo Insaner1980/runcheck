@@ -17,6 +17,7 @@ import com.runcheck.domain.usecase.IsProUserUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.domain.usecase.StorageCleanupUseCase
 import com.runcheck.ui.common.UiText
+import com.runcheck.ui.navigation.Screen
 import com.runcheck.util.ReleaseSafeLog
 import com.runcheck.util.api29RecoverableDeleteAction
 import com.runcheck.util.getIntOrDefault
@@ -46,7 +47,7 @@ class CleanupViewModel
         private val observeProAccess: ObserveProAccessUseCase,
         private val isProUser: IsProUserUseCase,
     ) : ViewModel() {
-        private val suppliedCleanupType = savedStateHandle.get<String>("type")
+        private val suppliedCleanupType = savedStateHandle.get<String>(Screen.Cleanup.ARG_TYPE)
         private val parsedCleanupType =
             suppliedCleanupType?.let { value ->
                 CleanupType.entries.firstOrNull { it.name == value }
@@ -113,6 +114,10 @@ class CleanupViewModel
         private var explicitSelectedUris: Set<String> = emptySet()
         private var explicitDeselectedUris: Set<String> = emptySet()
         private var selectionToRestoreAfterScan: CleanupSelectionSnapshot? = null
+
+        private fun savedMediaCategoryOrNull(value: String?): MediaCategory? =
+            MediaCategory.entries.firstOrNull { it.name == value }
+
         private var pendingSelectionSnapshot: CleanupSelectionSnapshot?
             get() {
                 val selectedGroupNames =
@@ -127,14 +132,12 @@ class CleanupViewModel
                     metadataUris
                         .mapIndexedNotNull { index, uri ->
                             val category =
-                                categoryNames
-                                    .getOrNull(index)
-                                    ?.let { MediaCategory.valueOf(it) }
+                                savedMediaCategoryOrNull(categoryNames.getOrNull(index))
                                     ?: return@mapIndexedNotNull null
                             uri to (category to sizes.getOrElse(index) { 0L })
                         }.toMap()
                 return CleanupSelectionSnapshot(
-                    selectedGroups = selectedGroupNames.map { MediaCategory.valueOf(it) }.toSet(),
+                    selectedGroups = selectedGroupNames.mapNotNull(::savedMediaCategoryOrNull).toSet(),
                     explicitSelectedUris =
                         savedStateHandle.get<ArrayList<String>>(PENDING_SELECTED_URIS_KEY)?.toSet().orEmpty(),
                     explicitDeselectedUris =
@@ -201,7 +204,7 @@ class CleanupViewModel
                             )
                         return@launch
                     }
-                    if (isVersionRestrictedCleanup() && Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                    if (!cleanupType.isSupportedOnApi(Build.VERSION.SDK_INT)) {
                         _uiState.value = CleanupUiState.UnsupportedVersion
                         return@launch
                     }
@@ -424,18 +427,10 @@ class CleanupViewModel
                 restorePendingSelection(UiText.Resource(R.string.cleanup_delete_failed))
                 return
             }
-            completeLegacyDeleteSafely(UiText.Resource(R.string.cleanup_delete_failed))
-        }
-
-        private suspend fun completeLegacyDelete(emptyResultMessage: UiText) {
-            val result = verifyDeleteResult()
-            if (result.remainingUris.size == pendingDeleteUris.size) {
-                restorePendingSelection(emptyResultMessage)
-                return
-            }
-            onDeleteSuccess(
-                freedBytes = result.freedBytes,
-                remainingSelectedUris = result.remainingUris,
+            finalizeVerifiedDelete(
+                failureMessage = UiText.Resource(R.string.cleanup_delete_failed),
+                accessDeniedLogMessage = "Legacy delete result access denied",
+                verificationFailedLogMessage = "Legacy delete result verification failed",
             )
         }
 
@@ -448,21 +443,37 @@ class CleanupViewModel
                         R.string.cleanup_delete_failed
                     },
                 )
-            completeLegacyDeleteSafely(message)
+            finalizeVerifiedDelete(
+                failureMessage = message,
+                accessDeniedLogMessage = "Legacy delete result access denied",
+                verificationFailedLogMessage = "Legacy delete result verification failed",
+            )
         }
 
         // Content providers may fail with implementation-specific exceptions during result verification.
         @Suppress("TooGenericExceptionCaught")
-        private suspend fun completeLegacyDeleteSafely(failureMessage: UiText) {
+        private suspend fun finalizeVerifiedDelete(
+            failureMessage: UiText,
+            accessDeniedLogMessage: String,
+            verificationFailedLogMessage: String,
+        ) {
             try {
-                completeLegacyDelete(failureMessage)
+                val result = verifyDeleteResult()
+                if (result.remainingUris.size == pendingDeleteUris.size) {
+                    restorePendingSelection(failureMessage)
+                    return
+                }
+                onDeleteSuccess(
+                    freedBytes = result.freedBytes,
+                    remainingSelectedUris = result.remainingUris,
+                )
             } catch (verificationError: CancellationException) {
                 throw verificationError
             } catch (verificationError: SecurityException) {
-                ReleaseSafeLog.error("CleanupVM", "Legacy delete result access denied", verificationError)
+                ReleaseSafeLog.error("CleanupVM", accessDeniedLogMessage, verificationError)
                 restorePendingSelection(UiText.Resource(R.string.cleanup_delete_permission_error))
             } catch (verificationError: Exception) {
-                ReleaseSafeLog.error("CleanupVM", "Legacy delete result verification failed", verificationError)
+                ReleaseSafeLog.error("CleanupVM", verificationFailedLogMessage, verificationError)
                 restorePendingSelection(failureMessage)
             }
         }
@@ -677,23 +688,12 @@ class CleanupViewModel
         }
 
         private suspend fun finishDeleteAttempt() {
-            try {
-                delay(200)
-                val result = verifyDeleteResult()
-                if (result.remainingUris.size == pendingDeleteUris.size) {
-                    restorePendingSelection(UiText.Resource(R.string.cleanup_delete_failed))
-                } else {
-                    onDeleteSuccess(result.freedBytes, result.remainingUris)
-                }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: SecurityException) {
-                ReleaseSafeLog.error("CleanupVM", "Delete result access denied", error)
-                restorePendingSelection(UiText.Resource(R.string.cleanup_delete_permission_error))
-            } catch (error: Exception) {
-                ReleaseSafeLog.error("CleanupVM", "Delete result verification failed", error)
-                restorePendingSelection(UiText.Resource(R.string.cleanup_delete_failed))
-            }
+            delay(200)
+            finalizeVerifiedDelete(
+                failureMessage = UiText.Resource(R.string.cleanup_delete_failed),
+                accessDeniedLogMessage = "Delete result access denied",
+                verificationFailedLogMessage = "Delete result verification failed",
+            )
         }
 
         // Helper to avoid smart-cast issues
@@ -762,9 +762,6 @@ class CleanupViewModel
                         }.toMap(),
             )
 
-        private fun isVersionRestrictedCleanup(): Boolean =
-            cleanupType in setOf(CleanupType.OLD_DOWNLOADS, CleanupType.APK_FILES)
-
         private fun defaultFilterValue(): Long =
             cleanupType.filterOptions
                 .getOrNull(cleanupType.defaultFilterIndex)
@@ -812,3 +809,5 @@ class CleanupViewModel
             }
         }
     }
+
+internal fun CleanupType.isSupportedOnApi(sdkInt: Int): Boolean = minimumSupportedApi?.let { sdkInt >= it } ?: true

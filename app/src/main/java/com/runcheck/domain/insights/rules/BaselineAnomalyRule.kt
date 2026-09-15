@@ -3,6 +3,7 @@ package com.runcheck.domain.insights.rules
 import com.runcheck.domain.insights.analysis.BatteryDrainAnalyzer
 import com.runcheck.domain.insights.analysis.dischargingPairs
 import com.runcheck.domain.insights.model.InsightCandidate
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.insights.model.InsightType
@@ -50,8 +51,7 @@ class BaselineAnomalyRule
                 type = InsightType.BATTERY,
                 priority = resolvePriority(anomalyScore.zScore, anomalyScore.rateRatio),
                 confidence = resolveConfidence(baselineRates.size, currentDrainWindow.dischargingPairs),
-                titleKey = TITLE_KEY,
-                bodyKey = BODY_KEY,
+                messageId = InsightMessageId.BATTERY_BASELINE_ANOMALY,
                 bodyArgs =
                     listOf(
                         currentDrainWindow.currentRate
@@ -154,8 +154,6 @@ class BaselineAnomalyRule
         companion object {
             const val RULE_ID = "battery_baseline_anomaly"
 
-            private const val TITLE_KEY = "insight_battery_baseline_anomaly_title"
-            private const val BODY_KEY = "insight_battery_baseline_anomaly_body"
             private const val HOUR_MS = 60L * 60L * 1000L
             private const val DAY_MS = 24L * HOUR_MS
             private const val CURRENT_WINDOW_MS = DAY_MS

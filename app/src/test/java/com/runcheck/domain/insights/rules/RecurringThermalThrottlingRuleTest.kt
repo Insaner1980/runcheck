@@ -1,5 +1,6 @@
 package com.runcheck.domain.insights.rules
 
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.model.ThrottlingEvent
 import com.runcheck.domain.repository.ThrottlingRepository
 import kotlinx.coroutines.flow.Flow
@@ -10,6 +11,32 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RecurringThermalThrottlingRuleTest {
+    @Test
+    fun `unknown identifiers do not contribute to recurrence or candidate values`() =
+        runTest {
+            val now = 14L * 24L * INSIGHT_TEST_HOUR_MS
+            val valid = List(3) { index -> throttlingEvent(index.toLong(), now - index) }
+            val unknown =
+                listOf("UNKNOWN", "severe", "Severe", " SEVERE ").mapIndexed { index, status ->
+                    throttlingEvent(10L + index, now).copy(
+                        thermalStatus = status,
+                        batteryTempC = 99f,
+                        durationMs = 60L * 60L * 1000L,
+                    )
+                }
+            val expected = RecurringThermalThrottlingRule(TestThrottlingRepository(valid)).evaluate(now).single()
+            val actual =
+                RecurringThermalThrottlingRule(TestThrottlingRepository(valid + unknown)).evaluate(now).single()
+
+            assertEquals(expected, actual)
+            assertEquals(0.6f, actual.confidence, 0f)
+            assertTrue(
+                RecurringThermalThrottlingRule(
+                    TestThrottlingRepository(valid.take(2) + unknown),
+                ).evaluate(now).isEmpty(),
+            )
+        }
+
     @Test
     fun `returns thermal insight when severe events recur`() =
         runTest {
@@ -55,6 +82,7 @@ class RecurringThermalThrottlingRuleTest {
             assertEquals(1, insights.size)
             val insight = insights.single()
             assertEquals(RecurringThermalThrottlingRule.RULE_ID, insight.ruleId)
+            assertEquals(InsightMessageId.RECURRING_THERMAL_THROTTLING, insight.messageId)
             assertEquals("critical:3plus", insight.dedupeKey)
             assertEquals("3", insight.bodyArgs[0])
             assertEquals("critical", insight.bodyArgs[1])

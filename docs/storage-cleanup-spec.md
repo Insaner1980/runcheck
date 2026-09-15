@@ -46,7 +46,7 @@ ui/storage/
 
 data/storage/
 ├── MediaStoreScanner.kt           (olemassa)
-├── StorageCleanupHelper.kt        ← createDeleteRequest wrapper
+├── StorageCleanupHelper.kt        ← legacy-poisto
 └── ThumbnailLoader.kt             ← pikkukuvien lataus + LRU-cache
 ```
 
@@ -371,11 +371,6 @@ AnimatedVisibility(
 class StorageCleanupHelper @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    // API 30+: batch-poisto järjestelmädialogin kautta
-    fun createDeleteRequest(uris: List<Uri>): PendingIntent {
-        return MediaStore.createDeleteRequest(context.contentResolver, uris)
-    }
-
     // API 29: yksitellen, ei järjestelmädialogia
     suspend fun deleteLegacy(uris: List<Uri>): Int = withContext(Dispatchers.IO) {
         var deleted = 0
@@ -419,7 +414,7 @@ LaunchedEffect(pendingDeleteIntent) {
 Käyttäjä painaa "Empty trash" ActionCardissa
 → StorageViewModel.emptyTrash()
 → MediaStoreScanner hae trashed URIt
-→ StorageCleanupHelper.createDeleteRequest(uris)
+→ buildMediaDeleteRequest(context, uris)
 → Side-effect → StorageDetailScreen catches it
 → ActivityResultLauncher → järjestelmädialogi
 → Onnistuminen → refresh storage state

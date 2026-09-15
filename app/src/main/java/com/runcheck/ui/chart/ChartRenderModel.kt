@@ -22,6 +22,8 @@ data class ChartRenderModel(
     val tooltipTimeSkeleton: String = DEFAULT_TOOLTIP_TIME_SKELETON,
     val temperatureUnit: TemperatureUnit? = null,
     val lineBreakIndices: Set<Int> = emptySet(),
+    val networkSignalContexts: List<NetworkSignalContext> = emptyList(),
+    val networkSignalFamilies: Set<NetworkSignalFamily> = emptySet(),
 ) {
     val minValue: Float? get() = chartData.minOrNull()
     val maxValue: Float? get() = chartData.maxOrNull()
@@ -56,6 +58,7 @@ fun formatChartTooltip(
     model: ChartRenderModel,
     index: Int,
     separator: String,
+    pointContext: String? = null,
 ): String =
     formatChartTooltip(
         chartData = model.chartData,
@@ -65,6 +68,7 @@ fun formatChartTooltip(
         decimals = model.tooltipDecimals,
         timeSkeleton = model.tooltipTimeSkeleton,
         separator = separator,
+        pointContext = pointContext,
     )
 
 fun formatChartTooltip(
@@ -75,10 +79,11 @@ fun formatChartTooltip(
     decimals: Int,
     timeSkeleton: String,
     separator: String,
+    pointContext: String? = null,
 ): String {
     val value = formatDecimal(chartData[index], decimals)
     val time = formatLocalizedDateTime(chartTimestamps[index], timeSkeleton)
-    return "$value$unit$separator$time"
+    return "$value$unit$separator$time" + (pointContext?.let { "$separator$it" } ?: "")
 }
 
 fun buildBatteryHistoryChartModel(
@@ -98,7 +103,7 @@ fun buildBatteryHistoryChartModel(
         chartTimestamps = series.timestamps,
         unit = batteryMetricUnit(metric, temperatureUnit),
         yLabels = series.labelsWith(::buildBatteryYLabels),
-        xLabels = series.xLabelsWith { buildBatteryXLabels(it, period) },
+        xLabels = series.xLabelsWith { buildHistoryXLabels(it, period) },
         tooltipDecimals =
             when (metric) {
                 BatteryHistoryMetric.VOLTAGE -> 2
@@ -145,23 +150,34 @@ fun buildNetworkHistoryChartModel(
     period: HistoryPeriod,
     maxPoints: Int,
 ): ChartRenderModel {
+    val signal = if (metric == NetworkHistoryMetric.SIGNAL) buildNetworkSignalSeries(history, maxPoints) else null
     val series =
-        history
-            .mapNotNull { reading ->
-                val value =
-                    when (metric) {
-                        NetworkHistoryMetric.SIGNAL -> reading.signalDbm?.toFloat()
-                        NetworkHistoryMetric.LATENCY -> reading.latencyMs?.toFloat()
-                    }
-                value?.let { reading.timestamp to it }
-            }.toChartSeries(maxPoints)
+        if (signal != null) {
+            ChartSeries(signal.points.map { it.second }, signal.points.map { it.first })
+        } else {
+            history
+                .mapNotNull { reading -> reading.latencyMs?.let { reading.timestamp to it.toFloat() } }
+                .toChartSeries(maxPoints)
+        }
 
     return ChartRenderModel(
         chartData = series.data,
         chartTimestamps = series.timestamps,
         unit = networkMetricUnit(metric),
-        yLabels = series.labelsWith(::buildNetworkYLabels),
-        xLabels = series.xLabelsWith { buildNetworkXLabels(it, period) },
+        lineBreakIndices = signal?.lineBreakIndices.orEmpty(),
+        networkSignalContexts = signal?.contexts.orEmpty(),
+        networkSignalFamilies = signal?.families.orEmpty(),
+        yLabels =
+            series.labelsWith { min, max ->
+                if (signal != null &&
+                    min == max
+                ) {
+                    buildNetworkYLabels(min - 1f, max + 1f)
+                } else {
+                    buildNetworkYLabels(min, max)
+                }
+            },
+        xLabels = series.xLabelsWith { buildHistoryXLabels(it, period) },
     )
 }
 
@@ -190,7 +206,7 @@ fun buildThermalHistoryChartModel(
         chartTimestamps = series.timestamps,
         unit = unit,
         yLabels = series.labelsWith(::buildNetworkYLabels),
-        xLabels = series.xLabelsWith { buildNetworkXLabels(it, period) },
+        xLabels = series.xLabelsWith { buildHistoryXLabels(it, period) },
         tooltipDecimals = 1,
         temperatureUnit = temperatureUnit,
     )
@@ -230,7 +246,7 @@ fun buildStorageHistoryChartModel(
         chartTimestamps = series.timestamps,
         unit = if (metric == StorageHistoryMetric.USED_SPACE) "%" else " GB",
         yLabels = series.labelsWith(::buildNetworkYLabels),
-        xLabels = series.xLabelsWith { buildNetworkXLabels(it, period) },
+        xLabels = series.xLabelsWith { buildHistoryXLabels(it, period) },
         tooltipDecimals = 1,
     )
 }

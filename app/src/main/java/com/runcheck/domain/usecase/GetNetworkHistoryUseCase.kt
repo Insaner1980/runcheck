@@ -35,11 +35,7 @@ class GetNetworkHistoryUseCase
                                 System.currentTimeMillis() - period.durationMs
                             }
                         }
-                    val limit = if (period == HistoryPeriod.ALL) MAX_HISTORY_POINTS else null
+                    val limit = if (period == HistoryPeriod.ALL) ALL_HISTORY_QUERY_LIMIT else null
                     networkRepository.getReadingsSince(since, limit)
                 }
-
-        companion object {
-            private const val MAX_HISTORY_POINTS = 5_000
-        }
     }

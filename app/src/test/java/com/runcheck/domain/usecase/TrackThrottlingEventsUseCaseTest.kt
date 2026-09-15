@@ -15,6 +15,56 @@ import org.junit.Before
 import org.junit.Test
 
 class TrackThrottlingEventsUseCaseTest {
+    @Test
+    fun `unknown restored status fails before any event write on every transition`() =
+        runTest {
+            coEvery { throttlingRepository.getOpenEvent() } returns
+                ThrottlingEvent(
+                    id = 7L,
+                    timestamp = 1_000L,
+                    thermalStatus = "UNKNOWN",
+                    batteryTempC = 40f,
+                    cpuTempC = null,
+                    foregroundApp = null,
+                    durationMs = null,
+                )
+
+            listOf(ThermalStatus.SEVERE, ThermalStatus.CRITICAL, ThermalStatus.NONE).forEach { status ->
+                val failure = runCatching { useCase(thermalState(status)) }.exceptionOrNull()
+                assertTrue(failure is IllegalStateException)
+                assertEquals("Unknown persisted thermal status in active event 7", failure?.message)
+            }
+
+            coVerify(exactly = 0) { throttlingRepository.insert(any()) }
+            coVerify(exactly = 0) { throttlingRepository.updateSnapshot(any(), any(), any(), any(), any()) }
+            coVerify(exactly = 0) { throttlingRepository.updateDuration(any(), any()) }
+        }
+
+    @Test
+    fun `restored critical peak stays unchanged until emergency`() =
+        runTest {
+            coEvery { throttlingRepository.getOpenEvent() } returns
+                ThrottlingEvent(
+                    id = 7L,
+                    timestamp = 1_000L,
+                    thermalStatus = "CRITICAL",
+                    batteryTempC = 45f,
+                    cpuTempC = null,
+                    foregroundApp = null,
+                    durationMs = null,
+                )
+
+            useCase(thermalState(ThermalStatus.SEVERE))
+            useCase(thermalState(ThermalStatus.CRITICAL))
+            useCase(thermalState(ThermalStatus.EMERGENCY))
+
+            coVerify(exactly = 0) { throttlingRepository.insert(any()) }
+            coVerify(exactly = 1) {
+                throttlingRepository.updateSnapshot(7L, "EMERGENCY", 40f, 75f, "com.example.app")
+            }
+            coVerify(exactly = 0) { throttlingRepository.updateDuration(any(), any()) }
+        }
+
     private lateinit var useCase: TrackThrottlingEventsUseCase
     private lateinit var throttlingRepository: ThrottlingRepository
     private lateinit var foregroundAppProvider: TrackThrottlingEventsUseCase.ForegroundAppProvider

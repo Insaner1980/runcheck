@@ -129,7 +129,6 @@ class HomeViewModelTest {
         every { getStorageState() } returns flowOf(testStorage)
         every { getSpeedTestHistory.getLatest() } returns flowOf(null)
         every { insightRepository.getActiveInsights() } returns flowOf(emptyList())
-        every { insightRepository.getUnseenCount() } returns flowOf(0)
         every { proStateProvider.proState } returns proStateFlow
         every { proStateProvider.proAccessReady } returns proAccessReadyFlow
         every { manageUserPreferences.observePreferences() } returns flowOf(UserPreferences())
@@ -439,7 +438,6 @@ class HomeViewModelTest {
         runTest(mainDispatcherRule.testDispatcher) {
             val insight = insightFixture(id = 7L, target = InsightTarget.BATTERY, seen = false)
             every { insightRepository.getActiveInsights() } returns flowOf(listOf(insight))
-            every { insightRepository.getUnseenCount() } returns flowOf(1)
             coEvery { insightRepository.markSeen(any()) } returns Unit
 
             viewModel = createViewModel()
@@ -500,7 +498,6 @@ class HomeViewModelTest {
             val networkInsight = insightFixture(5L, InsightTarget.NETWORK, seen = false)
             every { insightRepository.getActiveInsights() } returns
                 flowOf(listOf(appUsageInsight, chargerInsight, batteryInsight, thermalInsight, networkInsight))
-            every { insightRepository.getUnseenCount() } returns flowOf(5)
             proStateFlow.value = ProState(status = ProStatus.FREE)
 
             viewModel = createViewModel()
@@ -516,6 +513,54 @@ class HomeViewModelTest {
             assertEquals(3, state.unseenInsightCount)
             coVerify(exactly = 1) { insightRepository.markSeen(setOf(3L, 4L, 5L)) }
 
+            viewModel.stopObserving()
+        }
+
+    @Test
+    fun `home counts seen changes across the complete visible list before curation`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val insights =
+                listOf(
+                    insightFixture(1L, InsightTarget.BATTERY, seen = false),
+                    insightFixture(2L, InsightTarget.BATTERY, seen = false),
+                    insightFixture(3L, InsightTarget.THERMAL, seen = false),
+                    insightFixture(4L, InsightTarget.NETWORK, seen = false),
+                )
+            val activeInsights = MutableStateFlow(insights)
+            every { insightRepository.getActiveInsights() } returns activeInsights
+
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceAll()
+
+            val state = viewModel.uiState.value as HomeUiState.Success
+            assertEquals(listOf(1L, 3L, 4L), state.insights.map { it.id })
+            assertEquals(4, state.totalInsightCount)
+            assertEquals(4, state.unseenInsightCount)
+            coVerify(exactly = 1) { insightRepository.markSeen(setOf(1L, 3L, 4L)) }
+
+            activeInsights.value = insights.map { if (it.id == 2L) it.copy(seen = true) else it }
+            advanceAll()
+
+            val updated = viewModel.uiState.value as HomeUiState.Success
+            assertEquals(state.insights, updated.insights)
+            assertEquals(4, updated.totalInsightCount)
+            assertEquals(3, updated.unseenInsightCount)
+            coVerify(exactly = 1) { insightRepository.markSeen(setOf(1L, 3L, 4L)) }
+
+            viewModel.stopObserving()
+        }
+
+    @Test
+    fun `active insight flow failure produces Home error state`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            every { insightRepository.getActiveInsights() } returns flow { error("insights failed") }
+
+            viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceAll()
+
+            assertTrue(viewModel.uiState.value is HomeUiState.Error)
             viewModel.stopObserving()
         }
 

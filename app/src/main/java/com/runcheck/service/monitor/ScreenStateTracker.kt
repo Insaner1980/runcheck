@@ -10,6 +10,7 @@ import android.os.SystemClock
 import android.provider.Settings
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import com.runcheck.data.battery.chargingStatusFromBatteryManager
 import com.runcheck.domain.model.ChargingStatus
 import com.runcheck.domain.model.ScreenUsageStats
 import com.runcheck.domain.model.SleepAnalysis
@@ -397,13 +398,7 @@ class ScreenStateTracker
             val status =
                 batteryIntent?.getIntExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_UNKNOWN)
                     ?: BatteryManager.BATTERY_STATUS_UNKNOWN
-            return when (status) {
-                BatteryManager.BATTERY_STATUS_CHARGING -> ChargingStatus.CHARGING
-                BatteryManager.BATTERY_STATUS_DISCHARGING -> ChargingStatus.DISCHARGING
-                BatteryManager.BATTERY_STATUS_FULL -> ChargingStatus.FULL
-                BatteryManager.BATTERY_STATUS_NOT_CHARGING -> ChargingStatus.NOT_CHARGING
-                else -> ChargingStatus.NOT_CHARGING
-            }
+            return chargingStatusFromBatteryManager(status)
         }
 
         private fun getCurrentIdleState(): Boolean = powerManager.isDeviceIdleMode

@@ -52,11 +52,6 @@ class ThermalDataSource
                 awaitClose { context.unregisterReceiver(receiver) }
             }
 
-        fun getCpuTemperature(_unusedThermalZones: List<String>): Flow<Float?> =
-            flow {
-                emit(null)
-            }
-
         fun getThermalHeadroom(): Flow<Float?> =
             flow {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

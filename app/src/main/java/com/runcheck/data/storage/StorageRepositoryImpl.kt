@@ -2,9 +2,10 @@ package com.runcheck.data.storage
 
 import com.runcheck.data.db.dao.StorageReadingDao
 import com.runcheck.data.db.entity.StorageReadingEntity
+import com.runcheck.domain.insights.analysis.StorageGrowthAnalyzer
+import com.runcheck.domain.model.MediaBreakdown
 import com.runcheck.domain.model.StorageReading
 import com.runcheck.domain.model.StorageState
-import com.runcheck.domain.usecase.CalculateFillRateUseCase
 import com.runcheck.util.AppDispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -25,7 +26,7 @@ class StorageRepositoryImpl
     constructor(
         private val storageDataSource: StorageDataSource,
         private val storageReadingDao: StorageReadingDao,
-        private val calculateFillRate: CalculateFillRateUseCase,
+        private val storageGrowthAnalyzer: StorageGrowthAnalyzer,
         private val dispatchers: AppDispatchers,
     ) : StorageRepositoryContract {
         override fun getStorageState(): Flow<StorageState> =
@@ -44,7 +45,7 @@ class StorageRepositoryImpl
                         storageReadingDao
                             .getReadingsSinceSync(since)
                             .map { it.toDomain() }
-                    val fillRate = calculateFillRate(readings)
+                    val fillRate = storageGrowthAnalyzer.calculateFillRateBytesPerDay(readings)
 
                     emit(
                         StorageState(
@@ -66,7 +67,7 @@ class StorageRepositoryImpl
                             fillRateBytesPerDay = fillRate,
                             fillRateEstimate =
                                 fillRate?.let { rate ->
-                                    calculateFillRate.formatEstimate(info.availableBytes, rate)
+                                    storageGrowthAnalyzer.formatEstimate(info.availableBytes, rate)
                                 },
                         ),
                     )
@@ -81,11 +82,7 @@ class StorageRepositoryImpl
                     totalBytes = state.totalBytes,
                     availableBytes = state.availableBytes,
                     appsBytes = state.appsBytes ?: UNAVAILABLE_STORAGE_BYTES,
-                    mediaBytes =
-                        state.mediaBreakdown?.let {
-                            it.imagesBytes + it.videosBytes + it.audioBytes + it.documentsBytes +
-                                it.downloadsBytes
-                        } ?: 0L,
+                    mediaBytes = state.mediaBreakdown?.persistedTotalBytes() ?: UNAVAILABLE_STORAGE_BYTES,
                 )
             storageReadingDao.insert(entity)
         }
@@ -115,11 +112,20 @@ class StorageRepositoryImpl
         override suspend fun deleteAll() = storageReadingDao.deleteAll()
     }
 
+private fun MediaBreakdown.persistedTotalBytes(): Long {
+    var total = 0L
+    for (bytes in longArrayOf(imagesBytes, videosBytes, audioBytes, documentsBytes, downloadsBytes)) {
+        if (bytes < 0L || bytes > Long.MAX_VALUE - total) return UNAVAILABLE_STORAGE_BYTES
+        total += bytes
+    }
+    return total
+}
+
 private fun StorageReadingEntity.toDomain() =
     StorageReading(
         timestamp = timestamp,
         totalBytes = totalBytes,
         availableBytes = availableBytes,
-        appsBytes = appsBytes.takeIf { it >= 0L },
-        mediaBytes = mediaBytes,
+        appsBytes = decodePersistedStorageBytes(appsBytes),
+        mediaBytes = decodePersistedStorageBytes(mediaBytes),
     )

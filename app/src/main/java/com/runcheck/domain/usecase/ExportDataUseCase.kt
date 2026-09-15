@@ -1,7 +1,11 @@
 package com.runcheck.domain.usecase
 
+import com.runcheck.domain.model.BatteryReading
 import com.runcheck.domain.model.DataRetention
-import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.domain.model.NetworkReading
+import com.runcheck.domain.model.StorageReading
+import com.runcheck.domain.model.ThermalReading
+import com.runcheck.domain.model.ThermalStatusPersistence
 import com.runcheck.domain.repository.BatteryRepository
 import com.runcheck.domain.repository.FileExportRepository
 import com.runcheck.domain.repository.NetworkRepository
@@ -29,10 +33,60 @@ class ExportDataUseCase
         private val userPreferencesRepository: UserPreferencesRepository,
         private val dispatchers: AppDispatchers,
     ) {
+        private data class CsvColumn<T>(
+            val header: String,
+            val value: (T) -> String,
+        )
+
         private val isoFormatter: DateTimeFormatter =
             DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault())
 
         private fun formatTimestamp(epochMs: Long): String = isoFormatter.format(Instant.ofEpochMilli(epochMs))
+
+        private val batteryColumns =
+            listOf(
+                CsvColumn<BatteryReading>("timestamp") { formatTimestamp(it.timestamp) },
+                CsvColumn("level") { it.level.toString() },
+                CsvColumn("voltage_mv") { it.voltageMv.toString() },
+                CsvColumn("temperature_c") { it.temperatureC.toString() },
+                CsvColumn("current_ma") { it.currentMa?.toString().orEmpty() },
+                CsvColumn("current_confidence") { it.currentConfidence },
+                CsvColumn("status") { it.status },
+                CsvColumn("plug_type") { it.plugType },
+                CsvColumn("health") { it.health },
+                CsvColumn("cycle_count") { it.cycleCount?.toString().orEmpty() },
+                CsvColumn("health_pct") { it.healthPct?.toString().orEmpty() },
+            )
+
+        private val networkColumns =
+            listOf(
+                CsvColumn<NetworkReading>("timestamp") { formatTimestamp(it.timestamp) },
+                CsvColumn("type") { it.type },
+                CsvColumn("signal_dbm") { it.signalDbm?.toString().orEmpty() },
+                CsvColumn("wifi_speed_mbps") { it.wifiSpeedMbps?.toString().orEmpty() },
+                CsvColumn("wifi_frequency") { it.wifiFrequency?.toString().orEmpty() },
+                CsvColumn("carrier") { it.carrier.orEmpty() },
+                CsvColumn("network_subtype") { it.networkSubtype.orEmpty() },
+                CsvColumn("latency_ms") { it.latencyMs?.toString().orEmpty() },
+            )
+
+        private val thermalColumns =
+            listOf(
+                CsvColumn<ThermalReading>("timestamp") { formatTimestamp(it.timestamp) },
+                CsvColumn("battery_temp_c") { it.batteryTempC.toString() },
+                CsvColumn("cpu_temp_c") { it.cpuTempC?.toString().orEmpty() },
+                CsvColumn("thermal_status") { formatThermalStatus(it.thermalStatus) },
+                CsvColumn("throttling") { it.throttling.toString() },
+            )
+
+        private val storageColumns =
+            listOf(
+                CsvColumn<StorageReading>("timestamp") { formatTimestamp(it.timestamp) },
+                CsvColumn("total_bytes") { it.totalBytes.toString() },
+                CsvColumn("available_bytes") { it.availableBytes.toString() },
+                CsvColumn("apps_bytes") { it.appsBytes?.toString().orEmpty() },
+                CsvColumn("media_bytes") { it.mediaBytes?.toString().orEmpty() },
+            )
 
         private fun escapeCsv(value: String?): String {
             if (value == null) return ""
@@ -64,7 +118,18 @@ class ExportDataUseCase
         ): List<T> = if (cutoff == null) this else filter { timestampOf(it) >= cutoff }
 
         private fun formatThermalStatus(status: Int): String =
-            ThermalStatus.entries.getOrNull(status)?.name ?: status.toString()
+            ThermalStatusPersistence.fromCode(status)?.let(ThermalStatusPersistence::toId) ?: status.toString()
+
+        private fun <T> buildCsv(
+            columns: List<CsvColumn<T>>,
+            rows: List<T>,
+        ): String =
+            buildString {
+                appendLine(columns.joinToString(",") { it.header })
+                for (row in rows) {
+                    appendLine(columns.joinToString(",") { column -> escapeCsv(column.value(row)) })
+                }
+            }
 
         suspend fun exportBatteryCsv(): String {
             requirePro()
@@ -73,20 +138,7 @@ class ExportDataUseCase
                 batteryRepository
                     .getAllReadings()
                     .filterByRetention(cutoff) { it.timestamp }
-            return buildString {
-                appendLine(
-                    "timestamp,level,voltage_mv,temperature_c,current_ma,current_confidence,status,plug_type,health,cycle_count,health_pct",
-                )
-                for (r in readings) {
-                    appendLine(
-                        "${formatTimestamp(r.timestamp)},${r.level},${r.voltageMv},${r.temperatureC}," +
-                            "${r.currentMa ?: ""},${escapeCsv(r.currentConfidence)},${escapeCsv(r.status)}," +
-                            "${escapeCsv(
-                                r.plugType,
-                            )},${escapeCsv(r.health)},${r.cycleCount ?: ""},${r.healthPct ?: ""}",
-                    )
-                }
-            }
+            return buildCsv(batteryColumns, readings)
         }
 
         suspend fun exportNetworkCsv(): String {
@@ -96,18 +148,7 @@ class ExportDataUseCase
                 networkRepository
                     .getAllReadings()
                     .filterByRetention(cutoff) { it.timestamp }
-            return buildString {
-                appendLine(
-                    "timestamp,type,signal_dbm,wifi_speed_mbps,wifi_frequency,carrier,network_subtype,latency_ms",
-                )
-                for (r in readings) {
-                    appendLine(
-                        "${formatTimestamp(r.timestamp)},${escapeCsv(r.type)},${r.signalDbm ?: ""}," +
-                            "${r.wifiSpeedMbps ?: ""},${r.wifiFrequency ?: ""},${escapeCsv(r.carrier)}," +
-                            "${escapeCsv(r.networkSubtype)},${r.latencyMs ?: ""}",
-                    )
-                }
-            }
+            return buildCsv(networkColumns, readings)
         }
 
         suspend fun exportThermalCsv(): String {
@@ -117,15 +158,7 @@ class ExportDataUseCase
                 thermalRepository
                     .getAllReadings()
                     .filterByRetention(cutoff) { it.timestamp }
-            return buildString {
-                appendLine("timestamp,battery_temp_c,cpu_temp_c,thermal_status,throttling")
-                for (r in readings) {
-                    appendLine(
-                        "${formatTimestamp(r.timestamp)},${r.batteryTempC},${r.cpuTempC ?: ""}," +
-                            "${escapeCsv(formatThermalStatus(r.thermalStatus))},${r.throttling}",
-                    )
-                }
-            }
+            return buildCsv(thermalColumns, readings)
         }
 
         suspend fun exportStorageCsv(): String {
@@ -135,15 +168,7 @@ class ExportDataUseCase
                 storageRepository
                     .getAllReadings()
                     .filterByRetention(cutoff) { it.timestamp }
-            return buildString {
-                appendLine("timestamp,total_bytes,available_bytes,apps_bytes,media_bytes")
-                for (r in readings) {
-                    appendLine(
-                        "${formatTimestamp(r.timestamp)},${r.totalBytes},${r.availableBytes}," +
-                            "${r.appsBytes?.toString().orEmpty()},${r.mediaBytes}",
-                    )
-                }
-            }
+            return buildCsv(storageColumns, readings)
         }
 
         suspend fun exportAllCsv(): Map<String, String> =

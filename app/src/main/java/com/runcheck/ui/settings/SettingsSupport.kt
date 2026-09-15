@@ -94,112 +94,91 @@ internal fun SettingsDialogs(
     actions: SettingsDialogActions,
 ) {
     if (handles.showResetThresholdsDialog.value) {
-        AlertDialog(
-            onDismissRequest = { handles.showResetThresholdsDialog.value = false },
-            shape = MaterialTheme.shapes.large,
-            title = { Text(stringResource(R.string.settings_reset_thresholds_confirm_title)) },
-            text = { Text(stringResource(R.string.settings_reset_thresholds_confirm_message)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        handles.showResetThresholdsDialog.value = false
-                        actions.onConfirmResetThresholds()
-                    },
-                ) { Text(stringResource(R.string.settings_reset_thresholds)) }
+        SettingsConfirmationDialog(
+            title = stringResource(R.string.settings_reset_thresholds_confirm_title),
+            message = stringResource(R.string.settings_reset_thresholds_confirm_message),
+            confirmLabel = stringResource(R.string.settings_reset_thresholds),
+            onConfirm = {
+                handles.showResetThresholdsDialog.value = false
+                actions.onConfirmResetThresholds()
             },
-            dismissButton = {
-                TextButton(onClick = { handles.showResetThresholdsDialog.value = false }) {
-                    Text(stringResource(R.string.common_cancel))
-                }
-            },
+            onDismiss = { handles.showResetThresholdsDialog.value = false },
         )
     }
 
     if (handles.showResetTipsDialog.value) {
-        AlertDialog(
-            onDismissRequest = { handles.showResetTipsDialog.value = false },
-            shape = MaterialTheme.shapes.large,
-            title = { Text(stringResource(R.string.settings_reset_tips_confirm_title)) },
-            text = { Text(stringResource(R.string.settings_reset_tips_confirm_message)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        handles.showResetTipsDialog.value = false
-                        actions.onConfirmResetTips()
-                    },
-                ) { Text(stringResource(R.string.settings_reset_tips)) }
+        SettingsConfirmationDialog(
+            title = stringResource(R.string.settings_reset_tips_confirm_title),
+            message = stringResource(R.string.settings_reset_tips_confirm_message),
+            confirmLabel = stringResource(R.string.settings_reset_tips),
+            onConfirm = {
+                handles.showResetTipsDialog.value = false
+                actions.onConfirmResetTips()
             },
-            dismissButton = {
-                TextButton(onClick = { handles.showResetTipsDialog.value = false }) {
-                    Text(stringResource(R.string.common_cancel))
-                }
-            },
+            onDismiss = { handles.showResetTipsDialog.value = false },
         )
     }
 
     if (handles.showClearSpeedTestsDialog.value) {
-        AlertDialog(
-            onDismissRequest = { handles.showClearSpeedTestsDialog.value = false },
-            shape = MaterialTheme.shapes.large,
-            title = { Text(stringResource(R.string.settings_clear_speed_tests_confirm_title)) },
-            text = { Text(stringResource(R.string.settings_clear_speed_tests_confirm_message)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        handles.showClearSpeedTestsDialog.value = false
-                        actions.onConfirmClearSpeedTests()
-                    },
-                ) { Text(stringResource(R.string.settings_clear_action)) }
+        SettingsConfirmationDialog(
+            title = stringResource(R.string.settings_clear_speed_tests_confirm_title),
+            message = stringResource(R.string.settings_clear_speed_tests_confirm_message),
+            confirmLabel = stringResource(R.string.settings_clear_action),
+            onConfirm = {
+                handles.showClearSpeedTestsDialog.value = false
+                actions.onConfirmClearSpeedTests()
             },
-            dismissButton = {
-                TextButton(onClick = { handles.showClearSpeedTestsDialog.value = false }) {
-                    Text(stringResource(R.string.common_cancel))
-                }
-            },
+            onDismiss = { handles.showClearSpeedTestsDialog.value = false },
         )
     }
 
     if (handles.showNotifPermissionDeniedDialog.value) {
-        AlertDialog(
-            onDismissRequest = { handles.showNotifPermissionDeniedDialog.value = false },
-            shape = MaterialTheme.shapes.large,
-            title = { Text(stringResource(R.string.notification_permission_denied_title)) },
-            text = { Text(stringResource(R.string.notification_permission_denied_message)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        handles.showNotifPermissionDeniedDialog.value = false
-                        actions.onOpenNotificationSettings()
-                    },
-                ) { Text(stringResource(R.string.notification_permission_denied_open_settings)) }
+        SettingsConfirmationDialog(
+            title = stringResource(R.string.notification_permission_denied_title),
+            message = stringResource(R.string.notification_permission_denied_message),
+            confirmLabel = stringResource(R.string.notification_permission_denied_open_settings),
+            onConfirm = {
+                handles.showNotifPermissionDeniedDialog.value = false
+                actions.onOpenNotificationSettings()
             },
-            dismissButton = {
-                TextButton(onClick = { handles.showNotifPermissionDeniedDialog.value = false }) {
-                    Text(stringResource(R.string.common_cancel))
-                }
-            },
+            onDismiss = { handles.showNotifPermissionDeniedDialog.value = false },
         )
     }
 
     if (handles.showClearDialog.value) {
-        AlertDialog(
-            onDismissRequest = { handles.showClearDialog.value = false },
-            shape = MaterialTheme.shapes.large,
-            title = { Text(stringResource(R.string.settings_clear_confirm_title)) },
-            text = { Text(stringResource(R.string.settings_clear_confirm_message)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        handles.showClearDialog.value = false
-                        actions.onConfirmClearDialog()
-                    },
-                ) { Text(stringResource(R.string.settings_clear_action)) }
+        SettingsConfirmationDialog(
+            title = stringResource(R.string.settings_clear_confirm_title),
+            message = stringResource(R.string.settings_clear_confirm_message),
+            confirmLabel = stringResource(R.string.settings_clear_action),
+            onConfirm = {
+                handles.showClearDialog.value = false
+                actions.onConfirmClearDialog()
             },
-            dismissButton = {
-                TextButton(onClick = { handles.showClearDialog.value = false }) {
-                    Text(stringResource(R.string.common_cancel))
-                }
-            },
+            onDismiss = { handles.showClearDialog.value = false },
         )
     }
+}
+
+@Composable
+private fun SettingsConfirmationDialog(
+    title: String,
+    message: String,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.large,
+        title = { Text(title) },
+        text = { Text(message) },
+        confirmButton = {
+            Button(onClick = onConfirm) { Text(confirmLabel) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.common_cancel))
+            }
+        },
+    )
 }

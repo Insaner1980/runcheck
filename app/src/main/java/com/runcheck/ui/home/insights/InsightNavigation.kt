@@ -2,6 +2,7 @@ package com.runcheck.ui.home.insights
 
 import com.runcheck.domain.insights.model.Insight
 import com.runcheck.domain.insights.model.InsightTarget
+import com.runcheck.domain.insights.policy.requiresProAccess
 
 data class InsightNavigationAction(
     val onClick: (() -> Unit)?,
@@ -23,41 +24,37 @@ fun resolveInsightNavigationAction(
     navigationHandlers: InsightNavigationHandlers,
 ): InsightNavigationAction {
     val onClick =
-        when (insight.target) {
-            InsightTarget.BATTERY -> {
-                navigationHandlers.onNavigateToBattery
-            }
+        if (!isPro && insight.target.requiresProAccess()) {
+            navigationHandlers.onNavigateToProUpgrade
+        } else {
+            when (insight.target) {
+                InsightTarget.BATTERY -> {
+                    navigationHandlers.onNavigateToBattery
+                }
 
-            InsightTarget.THERMAL -> {
-                navigationHandlers.onNavigateToThermal
-            }
+                InsightTarget.THERMAL -> {
+                    navigationHandlers.onNavigateToThermal
+                }
 
-            InsightTarget.NETWORK -> {
-                navigationHandlers.onNavigateToNetwork
-            }
+                InsightTarget.NETWORK -> {
+                    navigationHandlers.onNavigateToNetwork
+                }
 
-            InsightTarget.STORAGE -> {
-                navigationHandlers.onNavigateToStorage
-            }
+                InsightTarget.STORAGE -> {
+                    navigationHandlers.onNavigateToStorage
+                }
 
-            InsightTarget.CHARGER -> {
-                if (isPro) {
+                InsightTarget.CHARGER -> {
                     navigationHandlers.onNavigateToCharger
-                } else {
-                    navigationHandlers.onNavigateToProUpgrade
                 }
-            }
 
-            InsightTarget.APP_USAGE -> {
-                if (isPro) {
+                InsightTarget.APP_USAGE -> {
                     navigationHandlers.onNavigateToAppUsage
-                } else {
-                    navigationHandlers.onNavigateToProUpgrade
                 }
-            }
 
-            InsightTarget.NONE -> {
-                null
+                InsightTarget.NONE -> {
+                    null
+                }
             }
         }
 

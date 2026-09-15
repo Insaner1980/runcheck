@@ -35,6 +35,7 @@ import com.runcheck.R
 import com.runcheck.ui.common.formatStorageSize
 import com.runcheck.ui.components.MiniBar
 import com.runcheck.ui.theme.MotionTokens
+import com.runcheck.ui.theme.dividerColor
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.reducedMotion
 import com.runcheck.ui.theme.spacing
@@ -71,7 +72,7 @@ fun CleanupBottomBar(
         ) {
             Column {
                 HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                    color = MaterialTheme.dividerColor,
                 )
                 Column(
                     modifier =

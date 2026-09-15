@@ -2,6 +2,7 @@ package com.runcheck.domain.insights.rules
 
 import com.runcheck.domain.insights.analysis.BatteryDrainAnalyzer
 import com.runcheck.domain.insights.analysis.TimeWindowAligner
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.model.ThermalReading
 import kotlinx.coroutines.test.runTest
@@ -11,11 +12,31 @@ import org.junit.Test
 
 class HeatAcceleratedBatteryWearRuleTest {
     @Test
+    fun `unknown aligned status is not cool and does not reuse older valid context`() =
+        runTest {
+            val now = 100L * INSIGHT_TEST_HOUR_MS
+            val valid = heatDrainThermalReadings(now)
+            val levels = listOf(80, 79, 78, 77, 76, 73, 70, 67, 64)
+            assertEquals(1, evaluate(now, levels, valid).size)
+            val readings =
+                valid.flatMapIndexed { index, reading ->
+                    if (index == 1 || index == 2) {
+                        listOf(reading.copy(timestamp = reading.timestamp - 1L), reading.copy(thermalStatus = 99))
+                    } else {
+                        listOf(reading)
+                    }
+                }
+
+            assertTrue(evaluate(now, levels, readings).isEmpty())
+        }
+
+    @Test
     fun `returns heat insight when hot windows drain faster`() =
         runTest {
             val now = 100L * INSIGHT_TEST_HOUR_MS
             val insight = evaluate(now, listOf(80, 79, 78, 77, 76, 73, 70, 67, 64)).single()
             assertEquals(HeatAcceleratedBatteryWearRule.RULE_ID, insight.ruleId)
+            assertEquals(InsightMessageId.HEAT_ACCELERATED_BATTERY_WEAR, insight.messageId)
             assertEquals("heat_drain:60plus", insight.dedupeKey)
             assertEquals("200", insight.bodyArgs[0])
             assertEquals("43", insight.bodyArgs[1])

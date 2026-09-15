@@ -1,5 +1,6 @@
 package com.runcheck.domain.insights.rules
 
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.model.ChargerProfile
 import com.runcheck.domain.model.ChargingSession
@@ -28,6 +29,7 @@ class ChargerPerformanceRuleTest {
             assertEquals(1, insights.size)
             val insight = insights.single()
             assertEquals(ChargerPerformanceRule.RULE_ID, insight.ruleId)
+            assertEquals(InsightMessageId.CHARGER_PERFORMANCE, insight.messageId)
             assertEquals("charger:2:35plus", insight.dedupeKey)
             assertEquals("Desk Charger", insight.bodyArgs[0])
             assertEquals("43", insight.bodyArgs[1])
@@ -50,6 +52,121 @@ class ChargerPerformanceRuleTest {
             assertEquals(InsightPriority.HIGH, insight.priority)
             assertEquals("Travel Charger", insight.bodyArgs[0])
             assertEquals("84", insight.bodyArgs[1])
+        }
+
+    @Test
+    fun `positive stored power wins over conflicting reconstruction`() =
+        runTest {
+            val sessions =
+                listOf(
+                    session(1L, NOW - 12L * DAY_MS, avgPowerMw = 20_000, avgCurrentMa = 200, avgVoltageMv = 5_000),
+                    session(1L, NOW - 8L * DAY_MS, avgPowerMw = 20_000, avgCurrentMa = 200, avgVoltageMv = 5_000),
+                    session(2L, NOW - 6L * DAY_MS, avgPowerMw = 10_000),
+                    session(2L, NOW - 2L * DAY_MS, avgPowerMw = 10_000),
+                )
+
+            val insight = evaluate(sessions).single()
+
+            assertEquals("50", insight.bodyArgs[1])
+            assertEquals("charger:2:50plus", insight.dedupeKey)
+        }
+
+    @Test
+    fun `zero stored power falls back to positive reconstruction`() =
+        runTest {
+            val sessions =
+                listOf(
+                    session(1L, NOW - 12L * DAY_MS, avgPowerMw = 20_000),
+                    session(1L, NOW - 8L * DAY_MS, avgPowerMw = 20_000),
+                    session(2L, NOW - 6L * DAY_MS, avgPowerMw = 0, avgCurrentMa = 2_000, avgVoltageMv = 5_000),
+                    session(2L, NOW - 2L * DAY_MS, avgPowerMw = 0, avgCurrentMa = 2_000, avgVoltageMv = 5_000),
+                )
+
+            val insight = evaluate(sessions).single()
+
+            assertEquals("50", insight.bodyArgs[1])
+            assertEquals("charger:2:50plus", insight.dedupeKey)
+        }
+
+    @Test
+    fun `negative stored power falls back to positive reconstruction`() =
+        runTest {
+            val sessions =
+                listOf(
+                    session(1L, NOW - 12L * DAY_MS, avgPowerMw = 20_000),
+                    session(1L, NOW - 8L * DAY_MS, avgPowerMw = 20_000),
+                    session(2L, NOW - 6L * DAY_MS, avgPowerMw = -500, avgCurrentMa = 2_000, avgVoltageMv = 5_000),
+                    session(2L, NOW - 2L * DAY_MS, avgPowerMw = -500, avgCurrentMa = 2_000, avgVoltageMv = 5_000),
+                )
+
+            val insight = evaluate(sessions).single()
+
+            assertEquals("50", insight.bodyArgs[1])
+            assertEquals("charger:2:50plus", insight.dedupeKey)
+        }
+
+    @Test
+    fun `reconstructed zero power remains unusable`() =
+        runTest {
+            val sessions =
+                listOf(
+                    session(1L, NOW - 12L * DAY_MS, avgPowerMw = 20_000),
+                    session(1L, NOW - 8L * DAY_MS, avgPowerMw = 20_000),
+                    session(2L, NOW - 6L * DAY_MS, avgCurrentMa = 0, avgVoltageMv = 5_000),
+                    session(2L, NOW - 2L * DAY_MS, avgCurrentMa = 0, avgVoltageMv = 5_000),
+                )
+
+            assertTrue(evaluate(sessions).isEmpty())
+        }
+
+    @Test
+    fun `reconstructed negative power remains unusable`() =
+        runTest {
+            val sessions =
+                listOf(
+                    session(1L, NOW - 12L * DAY_MS, avgPowerMw = 20_000),
+                    session(1L, NOW - 8L * DAY_MS, avgPowerMw = 20_000),
+                    session(2L, NOW - 6L * DAY_MS, avgCurrentMa = -2_000, avgVoltageMv = 5_000),
+                    session(2L, NOW - 2L * DAY_MS, avgCurrentMa = -2_000, avgVoltageMv = 5_000),
+                )
+
+            assertTrue(evaluate(sessions).isEmpty())
+        }
+
+    @Test
+    fun `reconstructed power widens before multiplying session averages`() =
+        runTest {
+            val sessions =
+                listOf(
+                    session(1L, NOW - 12L * DAY_MS, avgCurrentMa = 10_000, avgVoltageMv = 214_749),
+                    session(1L, NOW - 8L * DAY_MS, avgCurrentMa = 10_000, avgVoltageMv = 214_749),
+                    session(2L, NOW - 6L * DAY_MS, avgPowerMw = 1_000_000),
+                    session(2L, NOW - 2L * DAY_MS, avgPowerMw = 1_000_000),
+                )
+
+            val insight = evaluate(sessions, firstChargerName = "Extreme input").single()
+
+            assertEquals("53", insight.bodyArgs[1])
+            assertEquals("charger:2:50plus", insight.dedupeKey)
+            assertEquals(InsightPriority.HIGH, insight.priority)
+        }
+
+    @Test
+    fun `rounded charger average preserves the 35 percent priority boundary`() =
+        runTest {
+            val sessions =
+                listOf(
+                    session(1L, NOW - 12L * DAY_MS, avgPowerMw = 9_999),
+                    session(1L, NOW - 8L * DAY_MS, avgPowerMw = 10_000),
+                    session(2L, NOW - 6L * DAY_MS, avgPowerMw = 6_550),
+                    session(2L, NOW - 2L * DAY_MS, avgPowerMw = 6_550),
+                )
+
+            val insight = evaluate(sessions).single()
+
+            assertEquals("35", insight.bodyArgs[1])
+            assertEquals("charger:2:35plus", insight.dedupeKey)
+            assertEquals(InsightPriority.HIGH, insight.priority)
         }
 
     @Test

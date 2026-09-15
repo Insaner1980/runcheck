@@ -1,6 +1,5 @@
 package com.runcheck.data.storage
 
-import android.app.AppOpsManager
 import android.app.admin.DevicePolicyManager
 import android.app.usage.StorageStatsManager
 import android.content.Context
@@ -15,6 +14,7 @@ import com.runcheck.domain.model.MediaBreakdown
 import com.runcheck.domain.model.TrashInfo
 import com.runcheck.util.AppDispatchers
 import com.runcheck.util.ReleaseSafeLog
+import com.runcheck.util.hasUsageStatsAccess
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
@@ -106,16 +106,7 @@ class StorageDataSource
             }
         }
 
-        fun hasUsageStatsPermission(): Boolean {
-            val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-            val mode =
-                appOps.checkOpNoThrow(
-                    AppOpsManager.OPSTR_GET_USAGE_STATS,
-                    android.os.Process.myUid(),
-                    context.packageName,
-                )
-            return mode == AppOpsManager.MODE_ALLOWED
-        }
+        fun hasUsageStatsPermission(): Boolean = context.hasUsageStatsAccess()
 
         private fun calculateAppStats(): AppStats? {
             val ssm = storageStatsManager ?: return null

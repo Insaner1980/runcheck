@@ -87,6 +87,17 @@ class NetworkRepositoryImplTest {
         }
 
     @Test
+    fun `reading query preserves unknown persisted connection type`() =
+        runTest {
+            coEvery { networkReadingDao.getAll() } returns
+                listOf(networkReadingEntity().copy(type = "SATELLITE"))
+
+            val reading = repository.getAllReadings().single()
+
+            assertEquals("SATELLITE", reading.type)
+        }
+
+    @Test
     fun `save and delete methods delegate mapped values to dao`() =
         runTest {
             val inserted = slot<NetworkReadingEntity>()

@@ -3,6 +3,7 @@ package com.runcheck.domain.usecase
 import com.runcheck.domain.insights.engine.InsightEngine
 import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.model.InsightCandidate
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.insights.model.InsightType
@@ -287,8 +288,7 @@ class MonitoringDataResetTest {
                             type = InsightType.THERMAL,
                             priority = InsightPriority.HIGH,
                             confidence = 0.9f,
-                            titleKey = "title",
-                            bodyKey = "body",
+                            messageId = InsightMessageId.RECURRING_THERMAL_THROTTLING,
                             bodyArgs = emptyList(),
                             generatedAt = now,
                             expiresAt = now + 1000,

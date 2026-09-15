@@ -21,7 +21,7 @@ class InsightHomeRankingPolicyTest {
                 insight(id = 4, target = InsightTarget.NETWORK, type = InsightType.NETWORK),
             )
 
-        val selected = policy.selectHomeInsights(insights, limit = 3)
+        val selected = policy.selectHomeInsights(insights)
 
         assertEquals(listOf(1L, 3L, 4L), selected.map { it.id })
     }
@@ -35,7 +35,7 @@ class InsightHomeRankingPolicyTest {
                 insight(id = 3, target = InsightTarget.NONE, type = InsightType.STORAGE),
             )
 
-        val selected = policy.selectHomeInsights(insights, limit = 3)
+        val selected = policy.selectHomeInsights(insights)
 
         assertEquals(listOf(1L, 3L, 2L), selected.map { it.id })
     }
@@ -64,9 +64,40 @@ class InsightHomeRankingPolicyTest {
                 insight(id = 1, priority = InsightPriority.HIGH, confidence = 0.9f, generatedAt = 400L),
             )
 
-        val selected = policy.selectHomeInsights(insights, limit = 3)
+        val selected = policy.selectHomeInsights(insights)
 
         assertEquals(listOf(1L, 2L, 3L), selected.map { it.id })
+    }
+
+    @Test
+    fun `default selection returns all insights when fewer than three exist`() {
+        for (count in 0..2) {
+            val insights = List(count) { insight(id = it + 1L) }
+
+            assertEquals(insights, policy.selectHomeInsights(insights))
+        }
+    }
+
+    @Test
+    fun `explicit smaller limits retain ranked target diversification`() {
+        val insights =
+            listOf(
+                insight(id = 1, target = InsightTarget.BATTERY),
+                insight(id = 2, target = InsightTarget.BATTERY),
+                insight(id = 3, target = InsightTarget.THERMAL),
+                insight(id = 4, target = InsightTarget.NETWORK),
+            )
+
+        assertEquals(listOf(1L), policy.selectHomeInsights(insights, limit = 1).map { it.id })
+        assertEquals(listOf(1L, 3L), policy.selectHomeInsights(insights, limit = 2).map { it.id })
+    }
+
+    @Test
+    fun `non positive limits return no insights`() {
+        val insights = listOf(insight(id = 1))
+
+        assertEquals(emptyList<Insight>(), policy.selectHomeInsights(insights, limit = 0))
+        assertEquals(emptyList<Insight>(), policy.selectHomeInsights(insights, limit = -1))
     }
 
     private fun insight(

@@ -81,14 +81,13 @@ import com.runcheck.ui.common.formatDecimal
 import com.runcheck.ui.common.formatPing
 import com.runcheck.ui.common.rememberFormattedDateTime
 import com.runcheck.ui.common.resolve
+import com.runcheck.ui.components.AdaptiveMetricPillGroup
 import com.runcheck.ui.components.AnimatedFloatText
 import com.runcheck.ui.components.ConfidenceBadge
 import com.runcheck.ui.components.ContentContainer
 import com.runcheck.ui.components.DetailTopBar
 import com.runcheck.ui.components.MetricPill
 import com.runcheck.ui.components.MetricPillItem
-import com.runcheck.ui.components.MetricPillItems
-import com.runcheck.ui.components.MetricPillRow
 import com.runcheck.ui.components.ObservedScreenScaffold
 import com.runcheck.ui.components.RuncheckCard
 import com.runcheck.ui.components.RuncheckCardSurface
@@ -98,6 +97,7 @@ import com.runcheck.ui.components.info.rememberInfoSheetState
 import com.runcheck.ui.theme.LARGE_CONTENT_FONT_SCALE
 import com.runcheck.ui.theme.MotionTokens
 import com.runcheck.ui.theme.RuncheckTheme
+import com.runcheck.ui.theme.dividerColor
 import com.runcheck.ui.theme.numericFontFamily
 import com.runcheck.ui.theme.numericSpeedHeroValueTextStyle
 import com.runcheck.ui.theme.reducedMotion
@@ -319,26 +319,14 @@ private fun SpeedMetricRow(
     onInfoClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (LocalDensity.current.fontScale >= LARGE_CONTENT_FONT_SCALE) {
-        Column(
-            modifier = modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-        ) {
-            MetricPillItems(
-                items = metrics,
-                modifier = Modifier.fillMaxWidth(),
-                onInfoClick = onInfoClick,
-            )
-        }
-    } else {
-        MetricPillRow(modifier = modifier, spacing = 12.dp) {
-            MetricPillItems(
-                items = metrics,
-                modifier = Modifier.weight(1f),
-                onInfoClick = onInfoClick,
-            )
-        }
-    }
+    AdaptiveMetricPillGroup(
+        items = metrics,
+        onInfoClick = onInfoClick,
+        horizontalSpacing = 12.dp,
+        verticalSpacing = MaterialTheme.spacing.sm,
+        modifier = modifier.fillMaxWidth(),
+        stackedItemModifier = Modifier.fillMaxWidth(),
+    )
 }
 
 // ── Speed test hero ring ─────────────────────────────────────────────────────────
@@ -709,7 +697,7 @@ private fun SpeedMetricsCard(
             onInfoClick = onInfoClick,
         )
 
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+        HorizontalDivider(color = MaterialTheme.dividerColor)
 
         SpeedMetricRow(
             metrics =
@@ -866,7 +854,7 @@ private fun LatestResultCard(result: SpeedTestResult) {
         )
 
         result.serverName?.let { server ->
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+            HorizontalDivider(color = MaterialTheme.dividerColor)
             MetricPill(
                 label = stringResource(R.string.speed_test_server),
                 value = server,

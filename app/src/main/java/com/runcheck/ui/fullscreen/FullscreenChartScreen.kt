@@ -24,7 +24,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,7 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
@@ -48,21 +46,20 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.runcheck.R
 import com.runcheck.domain.model.TemperatureUnit
-import com.runcheck.ui.chart.BatteryHistoryMetric
 import com.runcheck.ui.chart.FullscreenChartSource
-import com.runcheck.ui.chart.NetworkHistoryMetric
-import com.runcheck.ui.chart.SessionGraphMetric
 import com.runcheck.ui.chart.SessionGraphWindow
 import com.runcheck.ui.chart.batteryQualityZones
 import com.runcheck.ui.chart.formatChartTooltip
 import com.runcheck.ui.chart.historyMetricLabel
 import com.runcheck.ui.chart.historyPeriodLabel
 import com.runcheck.ui.chart.networkHistoryMetricLabel
+import com.runcheck.ui.chart.networkSignalContextLabels
+import com.runcheck.ui.chart.networkSignalHistoryContextLabel
 import com.runcheck.ui.chart.rememberChartAccessibilitySummary
 import com.runcheck.ui.chart.sessionGraphMetricLabel
 import com.runcheck.ui.chart.sessionGraphWindowLabel
-import com.runcheck.ui.chart.signalQualityZones
 import com.runcheck.ui.common.findActivity
+import com.runcheck.ui.components.CenteredLoadingState
 import com.runcheck.ui.components.ProFeatureLockedState
 import com.runcheck.ui.components.TrendChart
 import com.runcheck.ui.components.TrendChartPresentation
@@ -97,11 +94,11 @@ fun FullscreenChartScreen(
 
     val title =
         when (val state = uiState) {
-            is FullscreenChartUiState.Success -> resolveChartTitle(viewModel.source, state.selectedMetric)
+            is FullscreenChartUiState.Success -> resolveChartTitle(state.selection)
 
-            is FullscreenChartUiState.Empty -> resolveChartTitle(viewModel.source, state.selectedMetric)
+            is FullscreenChartUiState.Empty -> resolveChartTitle(state.selection)
 
-            is FullscreenChartUiState.Error -> resolveChartTitle(viewModel.source, state.selectedMetric)
+            is FullscreenChartUiState.Error -> resolveChartTitle(state.selection)
 
             FullscreenChartUiState.Locked,
             FullscreenChartUiState.Loading,
@@ -121,18 +118,15 @@ fun FullscreenChartScreen(
                     val sel = state as FullscreenChartUiState.HasSelections
                     {
                         FullscreenChartControls(
-                            source = viewModel.source,
-                            selectedMetric = sel.selectedMetric,
-                            selectedPeriod = sel.selectedPeriod,
-                            metricOptions = sel.metricOptions,
-                            periodOptions = sel.periodOptions,
-                            onMetricChange = {
-                                viewModel.setMetric(it)
-                                onSelectionChange(viewModel.source.name, it, viewModel.selectedPeriod)
-                            },
-                            onPeriodChange = {
-                                viewModel.setPeriod(it)
-                                onSelectionChange(viewModel.source.name, viewModel.selectedMetric, it)
+                            selection = sel.selection,
+                            viewModel = viewModel,
+                            onSelectionChange = {
+                                val selection = viewModel.selection
+                                onSelectionChange(
+                                    selection.source.name,
+                                    selection.metricArgument(),
+                                    selection.periodArgument(),
+                                )
                             },
                         )
                     }
@@ -147,15 +141,10 @@ fun FullscreenChartScreen(
     ) { contentModifier ->
         when (val state = uiState) {
             is FullscreenChartUiState.Loading -> {
-                Box(contentModifier, contentAlignment = Alignment.Center) {
-                    val loadingDescription = stringResource(R.string.a11y_loading)
-                    CircularProgressIndicator(
-                        modifier =
-                            Modifier.semantics {
-                                contentDescription = loadingDescription
-                            },
-                    )
-                }
+                CenteredLoadingState(
+                    description = stringResource(R.string.a11y_loading),
+                    modifier = contentModifier,
+                )
             }
 
             FullscreenChartUiState.Locked -> {
@@ -170,7 +159,6 @@ fun FullscreenChartScreen(
                 FullscreenChartEmptyContent(
                     modifier = contentModifier,
                     state = state,
-                    source = viewModel.source,
                 )
             }
 
@@ -194,7 +182,6 @@ fun FullscreenChartScreen(
                 FullscreenChartContent(
                     modifier = contentModifier,
                     state = state,
-                    source = viewModel.source,
                 )
             }
         }
@@ -275,13 +262,80 @@ private fun FullscreenChartScaffold(
 
 @Composable
 private fun FullscreenChartControls(
-    source: FullscreenChartSource,
-    selectedMetric: String,
-    selectedPeriod: String,
-    metricOptions: List<String>,
-    periodOptions: List<String>,
-    onMetricChange: (String) -> Unit,
-    onPeriodChange: (String) -> Unit,
+    selection: FullscreenChartSelection,
+    viewModel: FullscreenChartViewModel,
+    onSelectionChange: () -> Unit,
+) {
+    when (selection) {
+        is FullscreenChartSelection.BatteryHistory -> {
+            FullscreenSelectionChips(
+                selection.metric,
+                selection.period,
+                selection.metricOptions,
+                selection.periodOptions,
+                {
+                    viewModel.setMetric(it)
+                    onSelectionChange()
+                },
+                {
+                    viewModel.setPeriod(it)
+                    onSelectionChange()
+                },
+                { historyMetricLabel(it) },
+                { historyPeriodLabel(it) },
+            )
+        }
+
+        is FullscreenChartSelection.BatterySession -> {
+            FullscreenSelectionChips(
+                selection.metric,
+                selection.period,
+                selection.metricOptions,
+                selection.periodOptions,
+                {
+                    viewModel.setMetric(it)
+                    onSelectionChange()
+                },
+                {
+                    viewModel.setPeriod(it)
+                    onSelectionChange()
+                },
+                { sessionGraphMetricLabel(it) },
+                { sessionGraphWindowLabel(it) },
+            )
+        }
+
+        is FullscreenChartSelection.NetworkHistory -> {
+            FullscreenSelectionChips(
+                selection.metric,
+                selection.period,
+                selection.metricOptions,
+                selection.periodOptions,
+                {
+                    viewModel.setMetric(it)
+                    onSelectionChange()
+                },
+                {
+                    viewModel.setPeriod(it)
+                    onSelectionChange()
+                },
+                { networkHistoryMetricLabel(it) },
+                { historyPeriodLabel(it) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun <M, P> FullscreenSelectionChips(
+    selectedMetric: M,
+    selectedPeriod: P,
+    metricOptions: List<M>,
+    periodOptions: List<P>,
+    onMetricChange: (M) -> Unit,
+    onPeriodChange: (P) -> Unit,
+    metricLabel: @Composable (M) -> String,
+    periodLabel: @Composable (P) -> String,
 ) {
     Row(
         modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -291,7 +345,7 @@ private fun FullscreenChartControls(
             FilterChip(
                 selected = selectedPeriod == period,
                 onClick = { onPeriodChange(period) },
-                label = { Text(resolvePeriodLabel(source, period)) },
+                label = { Text(periodLabel(period)) },
             )
         }
         Spacer(modifier = Modifier.width(MaterialTheme.spacing.xs))
@@ -299,7 +353,7 @@ private fun FullscreenChartControls(
             FilterChip(
                 selected = selectedMetric == metric,
                 onClick = { onMetricChange(metric) },
-                label = { Text(resolveMetricLabel(source, metric)) },
+                label = { Text(metricLabel(metric)) },
             )
         }
     }
@@ -331,38 +385,33 @@ private fun FullscreenChartLockedContent(
 @Composable
 private fun FullscreenChartContent(
     state: FullscreenChartUiState.Success,
-    source: FullscreenChartSource,
     modifier: Modifier = Modifier,
 ) {
     val qualityZones =
-        when (source) {
-            FullscreenChartSource.BATTERY_HISTORY -> {
-                val metric =
-                    runCatching { BatteryHistoryMetric.valueOf(state.selectedMetric) }
-                        .getOrDefault(BatteryHistoryMetric.LEVEL)
-                batteryQualityZones(metric, state.temperatureUnit ?: TemperatureUnit.CELSIUS)
+        when (val selection = state.selection) {
+            is FullscreenChartSelection.BatteryHistory -> {
+                batteryQualityZones(selection.metric, state.temperatureUnit ?: TemperatureUnit.CELSIUS)
             }
 
-            FullscreenChartSource.NETWORK_HISTORY -> {
-                val metric =
-                    runCatching { NetworkHistoryMetric.valueOf(state.selectedMetric) }
-                        .getOrDefault(NetworkHistoryMetric.SIGNAL)
-                signalQualityZones(metric)
+            is FullscreenChartSelection.BatterySession -> {
+                null
             }
 
-            FullscreenChartSource.BATTERY_SESSION -> {
+            is FullscreenChartSelection.NetworkHistory -> {
                 null
             }
         }
 
-    val title = resolveChartTitle(source, state.selectedMetric)
+    val networkContext = networkSignalHistoryContextLabel(state.networkSignalFamilies)
+    val pointContexts = networkSignalContextLabels(state.networkSignalContexts)
+    val title = resolveChartTitle(state.selection)
     val chartAccessibilitySummary =
         rememberChartAccessibilitySummary(
-            title = title,
+            title = listOfNotNull(title, networkContext).joinToString(". "),
             chartData = state.chartData,
             unit = state.unit,
             decimals = state.tooltipDecimals,
-            timeContext = resolveChartTimeContext(source, state.selectedPeriod),
+            timeContext = resolveChartTimeContext(state.selection),
         )
 
     val tooltipSeparator = stringResource(R.string.value_separator)
@@ -382,6 +431,7 @@ private fun FullscreenChartContent(
             xLabels = state.xLabels.ifEmpty { null },
             showGrid = true,
             lineBreakIndices = state.lineBreakIndices,
+            showIsolatedPoints = state.networkSignalContexts.isNotEmpty(),
             qualityZones = qualityZones,
             tooltipFormatter = { index ->
                 formatChartTooltip(
@@ -392,6 +442,7 @@ private fun FullscreenChartContent(
                     decimals = state.tooltipDecimals,
                     timeSkeleton = state.tooltipTimeSkeleton,
                     separator = tooltipSeparator,
+                    pointContext = pointContexts.getOrNull(index),
                 )
             },
             presentation = TrendChartPresentation.Fullscreen,
@@ -402,7 +453,6 @@ private fun FullscreenChartContent(
 @Composable
 private fun FullscreenChartEmptyContent(
     state: FullscreenChartUiState.Empty,
-    source: FullscreenChartSource,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
@@ -420,7 +470,7 @@ private fun FullscreenChartEmptyContent(
             )
             Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
             Text(
-                text = resolveEmptyStateMessage(source, state.selectedPeriod),
+                text = resolveEmptyStateMessage(state.selection),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -429,82 +479,46 @@ private fun FullscreenChartEmptyContent(
 }
 
 @Composable
-private fun resolveEmptyStateMessage(
-    source: FullscreenChartSource,
-    period: String,
-): String =
-    when (source) {
-        FullscreenChartSource.BATTERY_HISTORY,
-        FullscreenChartSource.NETWORK_HISTORY,
-        -> {
-            stringResource(
-                R.string.fullscreen_chart_empty_history_message,
-                resolvePeriodLabel(source, period),
-            )
-        }
+private fun resolveEmptyStateMessage(selection: FullscreenChartSelection): String =
+    when (selection) {
+        is FullscreenChartSelection.BatteryHistory,
+        is FullscreenChartSelection.NetworkHistory,
+        -> stringResource(R.string.fullscreen_chart_empty_history_message, resolvePeriodLabel(selection))
 
-        FullscreenChartSource.BATTERY_SESSION -> {
-            stringResource(
-                R.string.fullscreen_chart_empty_session_message,
-            )
-        }
+        is FullscreenChartSelection.BatterySession -> stringResource(R.string.fullscreen_chart_empty_session_message)
     }
 
 @Composable
-private fun resolveChartTimeContext(
-    source: FullscreenChartSource,
-    period: String,
-): String? =
-    when (source) {
-        FullscreenChartSource.BATTERY_HISTORY,
-        FullscreenChartSource.NETWORK_HISTORY,
+internal fun resolveChartTimeContext(selection: FullscreenChartSelection): String =
+    when (selection) {
+        is FullscreenChartSelection.BatteryHistory,
+        is FullscreenChartSelection.NetworkHistory,
         -> {
-            stringResource(
-                R.string.a11y_chart_context_history,
-                resolvePeriodLabel(source, period),
-            )
+            stringResource(R.string.a11y_chart_context_history, resolvePeriodLabel(selection))
         }
 
-        FullscreenChartSource.BATTERY_SESSION -> {
-            val window =
-                runCatching { SessionGraphWindow.valueOf(period) }
-                    .getOrDefault(SessionGraphWindow.ALL)
-            if (window == SessionGraphWindow.ALL) {
+        is FullscreenChartSelection.BatterySession -> {
+            if (selection.period == SessionGraphWindow.ALL) {
                 stringResource(R.string.a11y_chart_context_session)
             } else {
-                stringResource(
-                    R.string.a11y_chart_context_session_window,
-                    sessionGraphWindowLabel(window),
-                )
+                stringResource(R.string.a11y_chart_context_session_window, sessionGraphWindowLabel(selection.period))
             }
         }
     }
 
 @Composable
-private fun resolveChartTitle(
-    source: FullscreenChartSource,
-    metric: String,
-): String =
-    when (source) {
-        FullscreenChartSource.BATTERY_HISTORY -> {
-            val m =
-                runCatching { BatteryHistoryMetric.valueOf(metric) }
-                    .getOrDefault(BatteryHistoryMetric.LEVEL)
-            stringResource(R.string.fullscreen_chart_title_battery, historyMetricLabel(m))
+internal fun resolveChartTitle(selection: FullscreenChartSelection): String =
+    when (selection) {
+        is FullscreenChartSelection.BatteryHistory -> {
+            stringResource(R.string.fullscreen_chart_title_battery, historyMetricLabel(selection.metric))
         }
 
-        FullscreenChartSource.BATTERY_SESSION -> {
-            val m =
-                runCatching { SessionGraphMetric.valueOf(metric) }
-                    .getOrDefault(SessionGraphMetric.CURRENT)
-            stringResource(R.string.fullscreen_chart_title_session, sessionGraphMetricLabel(m))
+        is FullscreenChartSelection.BatterySession -> {
+            stringResource(R.string.fullscreen_chart_title_session, sessionGraphMetricLabel(selection.metric))
         }
 
-        FullscreenChartSource.NETWORK_HISTORY -> {
-            val m =
-                runCatching { NetworkHistoryMetric.valueOf(metric) }
-                    .getOrDefault(NetworkHistoryMetric.SIGNAL)
-            stringResource(R.string.fullscreen_chart_title_network, networkHistoryMetricLabel(m))
+        is FullscreenChartSelection.NetworkHistory -> {
+            stringResource(R.string.fullscreen_chart_title_network, networkHistoryMetricLabel(selection.metric))
         }
     }
 
@@ -517,46 +531,9 @@ private fun resolveSourceTitle(source: FullscreenChartSource): String =
     }
 
 @Composable
-private fun resolveMetricLabel(
-    source: FullscreenChartSource,
-    metric: String,
-): String =
-    when (source) {
-        FullscreenChartSource.BATTERY_HISTORY -> {
-            val m = runCatching { BatteryHistoryMetric.valueOf(metric) }.getOrNull()
-            m?.let { historyMetricLabel(it) } ?: metric
-        }
-
-        FullscreenChartSource.BATTERY_SESSION -> {
-            val m = runCatching { SessionGraphMetric.valueOf(metric) }.getOrNull()
-            m?.let { sessionGraphMetricLabel(it) } ?: metric
-        }
-
-        FullscreenChartSource.NETWORK_HISTORY -> {
-            val m = runCatching { NetworkHistoryMetric.valueOf(metric) }.getOrNull()
-            m?.let { networkHistoryMetricLabel(it) } ?: metric
-        }
-    }
-
-@Composable
-private fun resolvePeriodLabel(
-    source: FullscreenChartSource,
-    period: String,
-): String =
-    when (source) {
-        FullscreenChartSource.BATTERY_HISTORY,
-        FullscreenChartSource.NETWORK_HISTORY,
-        -> {
-            val p =
-                runCatching {
-                    com.runcheck.domain.model.HistoryPeriod
-                        .valueOf(period)
-                }.getOrNull()
-            p?.let { historyPeriodLabel(it) } ?: period
-        }
-
-        FullscreenChartSource.BATTERY_SESSION -> {
-            val w = runCatching { SessionGraphWindow.valueOf(period) }.getOrNull()
-            w?.let { sessionGraphWindowLabel(it) } ?: period
-        }
+internal fun resolvePeriodLabel(selection: FullscreenChartSelection): String =
+    when (selection) {
+        is FullscreenChartSelection.BatteryHistory -> historyPeriodLabel(selection.period)
+        is FullscreenChartSelection.BatterySession -> sessionGraphWindowLabel(selection.period)
+        is FullscreenChartSelection.NetworkHistory -> historyPeriodLabel(selection.period)
     }

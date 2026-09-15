@@ -2,6 +2,7 @@ package com.runcheck.domain.usecase
 
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
+import com.runcheck.domain.model.ThermalStatusPersistence
 import com.runcheck.domain.model.ThrottlingEvent
 import com.runcheck.domain.repository.ThrottlingRepository
 import kotlinx.coroutines.sync.Mutex
@@ -49,12 +50,12 @@ class TrackThrottlingEventsUseCase
                 val current = activeEvent ?: restoreOpenEvent()
                 when {
                     // Start new event
-                    state.thermalStatus >= THROTTLING_THRESHOLD && current == null -> {
+                    state.thermalStatus.isThrottling && current == null -> {
                         val eventId =
                             throttlingRepository.insert(
                                 ThrottlingEvent(
                                     timestamp = wallClockMillis,
-                                    thermalStatus = state.thermalStatus.name,
+                                    thermalStatus = ThermalStatusPersistence.toId(state.thermalStatus),
                                     batteryTempC = state.batteryTempC,
                                     cpuTempC = state.cpuTempC,
                                     foregroundApp = foregroundAppProvider.getCurrentForegroundApp(),
@@ -71,12 +72,12 @@ class TrackThrottlingEventsUseCase
                     }
 
                     // Update peak
-                    state.thermalStatus >= THROTTLING_THRESHOLD &&
+                    state.thermalStatus.isThrottling &&
                         current != null &&
                         state.thermalStatus > current.peakStatus -> {
                         throttlingRepository.updateSnapshot(
                             id = current.id,
-                            thermalStatus = state.thermalStatus.name,
+                            thermalStatus = ThermalStatusPersistence.toId(state.thermalStatus),
                             batteryTempC = state.batteryTempC,
                             cpuTempC = state.cpuTempC,
                             foregroundApp = foregroundAppProvider.getCurrentForegroundApp(),
@@ -85,7 +86,7 @@ class TrackThrottlingEventsUseCase
                     }
 
                     // Close event
-                    state.thermalStatus < THROTTLING_THRESHOLD && current != null -> {
+                    !state.thermalStatus.isThrottling && current != null -> {
                         throttlingRepository.updateDuration(
                             id = current.id,
                             durationMs = current.durationUntil(wallClockMillis, elapsedRealtimeMillis),
@@ -102,7 +103,10 @@ class TrackThrottlingEventsUseCase
                     id = event.id,
                     startTimeMs = event.timestamp,
                     startElapsedRealtimeMs = null,
-                    peakStatus = ThermalStatus.valueOf(event.thermalStatus),
+                    peakStatus =
+                        checkNotNull(ThermalStatusPersistence.fromId(event.thermalStatus)) {
+                            "Unknown persisted thermal status in active event ${event.id}"
+                        },
                 ).also { activeEvent = it }
             }
 
@@ -131,7 +135,6 @@ class TrackThrottlingEventsUseCase
         }
 
         private companion object {
-            val THROTTLING_THRESHOLD = ThermalStatus.SEVERE
             const val NANOS_PER_MILLISECOND = 1_000_000L
         }
     }

@@ -2,6 +2,7 @@ package com.runcheck.domain.usecase
 
 import com.runcheck.domain.model.ChargerSummary
 import com.runcheck.domain.model.ChargingSession
+import com.runcheck.domain.model.reconstructedAveragePowerMw
 import com.runcheck.domain.repository.ChargerRepository
 import com.runcheck.domain.repository.ProStatusProvider
 import kotlinx.coroutines.flow.Flow
@@ -58,11 +59,7 @@ class GetChargerComparisonUseCase
 
         private fun resolveSessionPowerMw(session: ChargingSession): Int? =
             session.avgPowerMw
-                ?: session.avgCurrentMa?.let { currentMa ->
-                    session.avgVoltageMv?.let { voltageMv ->
-                        (currentMa * voltageMv) / 1000
-                    }
-                }
+                ?: session.reconstructedAveragePowerMw()
 
         private fun estimateTimeToFullMinutes(session: ChargingSession): Int? {
             val endTime = session.endTime ?: return null

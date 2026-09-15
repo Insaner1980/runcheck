@@ -1,5 +1,6 @@
 package com.runcheck.domain.insights.rules
 
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -7,6 +8,37 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ThermalPatternDetectionRuleTest {
+    @Test
+    fun `unknown rows cannot satisfy minimum evaluable count even at high temperature`() =
+        runTest {
+            val readings =
+                moderateReadings().mapIndexed { index, reading ->
+                    if (index == 0) reading.copy(thermalStatus = 99, batteryTempC = 50f) else reading
+                }
+
+            assertTrue(ThermalPatternDetectionRule(TestThermalRepository(readings)).evaluate(NOW).isEmpty())
+        }
+
+    @Test
+    fun `unknown rows do not dilute hot ratio or change confidence and peak`() =
+        runTest {
+            val valid = moderateReadings()
+            val expected = ThermalPatternDetectionRule(TestThermalRepository(valid)).evaluate(NOW).single()
+            val readings =
+                valid +
+                    listOf(
+                        thermalReading(NOW - 1L, 25f, 99),
+                        thermalReading(NOW - 2L, 55f, -1),
+                        thermalReading(NOW - 3L, 25f, 7),
+                    )
+
+            val actual = ThermalPatternDetectionRule(TestThermalRepository(readings)).evaluate(NOW).single()
+
+            assertEquals(expected, actual)
+            assertEquals("67", actual.bodyArgs[0])
+            assertEquals(0.75f, actual.confidence, 0f)
+        }
+
     @Test
     fun `returns thermal pattern insight when heat stays elevated`() =
         runTest {
@@ -29,6 +61,7 @@ class ThermalPatternDetectionRuleTest {
             assertEquals(1, insights.size)
             val insight = insights.single()
             assertEquals(ThermalPatternDetectionRule.RULE_ID, insight.ruleId)
+            assertEquals(InsightMessageId.THERMAL_PATTERN, insight.messageId)
             assertEquals("hot_pattern:70plus", insight.dedupeKey)
             assertEquals(InsightPriority.HIGH, insight.priority)
             assertEquals("75", insight.bodyArgs[0])

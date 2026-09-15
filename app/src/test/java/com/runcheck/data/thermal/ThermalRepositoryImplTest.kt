@@ -4,10 +4,6 @@ import android.database.sqlite.SQLiteException
 import android.os.SystemClock
 import com.runcheck.data.db.dao.ThermalReadingDao
 import com.runcheck.data.db.entity.ThermalReadingEntity
-import com.runcheck.data.device.DeviceProfile
-import com.runcheck.data.device.DeviceProfileProvider
-import com.runcheck.domain.model.CurrentUnit
-import com.runcheck.domain.model.SignConvention
 import com.runcheck.domain.model.ThermalReading
 import com.runcheck.domain.model.ThermalState
 import com.runcheck.domain.model.ThermalStatus
@@ -36,6 +32,8 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -44,6 +42,26 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ThermalRepositoryImplTest {
+    @Test
+    fun `saveReading writes literal stable codes for endpoints and severe states`() =
+        runTest {
+            val inserted = mutableListOf<ThermalReadingEntity>()
+            coEvery { thermalReadingDao.insert(capture(inserted)) } returns Unit
+
+            listOf(ThermalStatus.NONE, ThermalStatus.SEVERE, ThermalStatus.CRITICAL, ThermalStatus.SHUTDOWN)
+                .forEach { status ->
+                    repository.saveReading(
+                        ThermalState(
+                            batteryTempC = 42f,
+                            thermalStatus = status,
+                            isThrottling = status >= ThermalStatus.SEVERE,
+                        ),
+                    )
+                }
+
+            assertEquals(listOf(0, 3, 4, 6), inserted.map { it.thermalStatus })
+        }
+
     @Before
     fun setUpClock() {
         mockkStatic(SystemClock::class)
@@ -153,20 +171,47 @@ class ThermalRepositoryImplTest {
             assertTrue(thrown is CancellationException)
         }
 
+    @Test
+    fun `real streams combine with CPU temperature unavailable`() =
+        runTest {
+            val events = mockk<ThrottlingRepository>(relaxed = true)
+            coEvery { events.getOpenEvent() } returns null
+
+            val state = liveRepository(events, headroom = 0.73f).getThermalState().first()
+
+            assertEquals(42f, state.batteryTempC)
+            assertEquals(ThermalStatus.SEVERE, state.thermalStatus)
+            assertEquals(0.73f, state.thermalHeadroom)
+            assertNull(state.cpuTempC)
+            assertTrue(state.isThrottling)
+        }
+
+    @Test
+    fun `thermal status boundary maps to throttling state`() =
+        runTest {
+            val events = mockk<ThrottlingRepository>(relaxed = true)
+            coEvery { events.getOpenEvent() } returns null
+
+            val moderate = liveRepository(events, flowOf(ThermalStatus.MODERATE)).getThermalState().first()
+            val severe = liveRepository(events, flowOf(ThermalStatus.SEVERE)).getThermalState().first()
+            val critical = liveRepository(events, flowOf(ThermalStatus.CRITICAL)).getThermalState().first()
+
+            assertFalse(moderate.isThrottling)
+            assertTrue(severe.isThrottling)
+            assertTrue(critical.isThrottling)
+        }
+
     private fun liveRepository(
         events: ThrottlingRepository,
         statuses: Flow<ThermalStatus> = flowOf(ThermalStatus.SEVERE),
+        headroom: Float? = null,
     ): ThermalRepositoryImpl {
         val source = mockk<ThermalDataSource>()
         every { source.getBatteryTemperature() } returns flowOf(42f)
-        every { source.getCpuTemperature(emptyList()) } returns flowOf(null)
         every { source.getThermalStatus() } returns statuses
-        every { source.getThermalHeadroom() } returns flowOf(null)
-        val profile = mockk<DeviceProfileProvider>()
-        coEvery { profile.getDeviceProfile() } returns deviceProfile()
+        every { source.getThermalHeadroom() } returns flowOf(headroom)
         return ThermalRepositoryImpl(
             thermalDataSource = source,
-            deviceProfileProvider = profile,
             thermalReadingDao = thermalReadingDao,
             trackThrottlingEvents = TrackThrottlingEventsUseCase(events, mockk(relaxed = true)),
             dispatchers = TestAppDispatchers(),
@@ -177,7 +222,6 @@ class ThermalRepositoryImplTest {
     private val repository =
         ThermalRepositoryImpl(
             thermalDataSource = mockk(relaxed = true),
-            deviceProfileProvider = mockk<DeviceProfileProvider>(relaxed = true),
             thermalReadingDao = thermalReadingDao,
             trackThrottlingEvents = mockk<TrackThrottlingEventsUseCase>(relaxed = true),
             dispatchers = TestAppDispatchers(),
@@ -219,7 +263,7 @@ class ThermalRepositoryImplTest {
             coVerify(exactly = 1) { thermalReadingDao.insert(capture(inserted)) }
             assertEquals(42.5f, inserted.captured.batteryTempC)
             assertEquals(55.5f, inserted.captured.cpuTempC)
-            assertEquals(ThermalStatus.SEVERE.ordinal, inserted.captured.thermalStatus)
+            assertEquals(3, inserted.captured.thermalStatus)
             assertEquals(true, inserted.captured.throttling)
             coVerify(exactly = 1) { thermalReadingDao.deleteOlderThan(1_000L) }
             coVerify(exactly = 1) { thermalReadingDao.deleteAll() }
@@ -251,16 +295,12 @@ class ThermalRepositoryImplTest {
         runTest {
             val failure = IllegalStateException("thermal failed")
             val thermalDataSource: ThermalDataSource = mockk()
-            val deviceProfileProvider: DeviceProfileProvider = mockk()
             every { thermalDataSource.getBatteryTemperature() } returns flow { throw failure }
-            every { thermalDataSource.getCpuTemperature(emptyList()) } returns flowOf(null)
             every { thermalDataSource.getThermalStatus() } returns flowOf(ThermalStatus.NONE)
             every { thermalDataSource.getThermalHeadroom() } returns flowOf(null)
-            coEvery { deviceProfileProvider.getDeviceProfile() } returns deviceProfile()
             val repository =
                 ThermalRepositoryImpl(
                     thermalDataSource = thermalDataSource,
-                    deviceProfileProvider = deviceProfileProvider,
                     thermalReadingDao = thermalReadingDao,
                     trackThrottlingEvents = mockk<TrackThrottlingEventsUseCase>(relaxed = true),
                     dispatchers = TestAppDispatchers(),
@@ -279,26 +319,13 @@ class ThermalRepositoryImplTest {
         io.mockk.coEvery { thermalReadingDao.getAll() } returns listOf(thermalReadingEntity())
     }
 
-    private fun deviceProfile(): DeviceProfile =
-        DeviceProfile(
-            manufacturer = "google",
-            model = "Pixel 8",
-            apiLevel = 34,
-            currentNowReliable = true,
-            currentNowUnit = CurrentUnit.MICROAMPS,
-            currentNowSignConvention = SignConvention.POSITIVE_CHARGING,
-            cycleCountAvailable = true,
-            thermalZonesAvailable = emptyList(),
-            storageHealthAvailable = true,
-        )
-
     private fun thermalReadingEntity(): ThermalReadingEntity =
         ThermalReadingEntity(
             id = 2L,
             timestamp = 1_234L,
             batteryTempC = 42.5f,
             cpuTempC = 55.5f,
-            thermalStatus = ThermalStatus.SEVERE.ordinal,
+            thermalStatus = 3,
             throttling = true,
         )
 
@@ -307,7 +334,7 @@ class ThermalRepositoryImplTest {
             timestamp = 1_234L,
             batteryTempC = 42.5f,
             cpuTempC = 55.5f,
-            thermalStatus = ThermalStatus.SEVERE.ordinal,
+            thermalStatus = 3,
             throttling = true,
         )
 }

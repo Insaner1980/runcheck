@@ -16,17 +16,7 @@ class BatteryDataSourceFactory
         @param:ApplicationContext private val context: Context,
         private val dispatchers: AppDispatchers,
     ) {
-        private var cachedSource: BatteryDataSource? = null
-        private var cachedProfileKey: String? = null
-
-        @Synchronized
         fun create(profile: DeviceProfile): BatteryDataSource {
-            val key = "${profile.manufacturer}_${profile.apiLevel}"
-            cachedSource?.let { source ->
-                if (cachedProfileKey == key) return source
-                (source as? GenericBatterySource)?.close()
-            }
-
             val isApi34Plus = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
             val source =
                 when {
@@ -54,8 +44,6 @@ class BatteryDataSourceFactory
                         GenericBatterySource(context, profile, dispatchers)
                     }
                 }
-            cachedSource = source
-            cachedProfileKey = key
             return source
         }
 

@@ -1,6 +1,7 @@
 package com.runcheck.domain.insights.rules
 
 import androidx.paging.PagingData
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.model.AppBatteryUsage
 import com.runcheck.domain.model.AppUsageListSummary
 import com.runcheck.domain.repository.AppBatteryUsageRepository
@@ -60,6 +61,7 @@ class HeavyAppUsageRuleTest {
             assertEquals(1, insights.size)
             val insight = insights.single()
             assertEquals(HeavyAppUsageRule.RULE_ID, insight.ruleId)
+            assertEquals(InsightMessageId.HEAVY_APP_USAGE, insight.messageId)
             assertEquals("video.app:70plus", insight.dedupeKey)
             assertEquals("VideoApp", insight.bodyArgs[0])
             assertEquals("76", insight.bodyArgs[1])

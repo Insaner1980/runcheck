@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.runcheck.data.db.entity.DeviceEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -14,6 +15,12 @@ interface DeviceDao {
 
     @Query("DELETE FROM devices WHERE id != :currentId")
     suspend fun deleteAllExcept(currentId: String)
+
+    @Transaction
+    suspend fun replaceCurrent(device: DeviceEntity) {
+        insertOrUpdate(device)
+        deleteAllExcept(device.id)
+    }
 
     @Query("SELECT * FROM devices ORDER BY first_seen DESC, id DESC LIMIT 1")
     fun getDevice(): Flow<DeviceEntity?>

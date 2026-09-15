@@ -7,3 +7,6 @@ enum class ConnectionType {
     VPN,
     NONE,
 }
+
+internal fun decodePersistedConnectionType(raw: String): ConnectionType? =
+    ConnectionType.entries.firstOrNull { it.name == raw }

@@ -3,6 +3,7 @@ package com.runcheck.domain.insights.rules
 import com.runcheck.domain.insights.analysis.BatteryDrainAnalyzer
 import com.runcheck.domain.insights.engine.InsightRule
 import com.runcheck.domain.insights.model.InsightCandidate
+import com.runcheck.domain.insights.model.InsightMessageId
 import com.runcheck.domain.insights.model.InsightPriority
 import com.runcheck.domain.insights.model.InsightTarget
 import com.runcheck.domain.insights.model.InsightType
@@ -64,8 +65,7 @@ class BatteryDegradationTrendRule
                     type = InsightType.BATTERY,
                     priority = InsightPriority.HIGH,
                     confidence = confidence,
-                    titleKey = TITLE_KEY,
-                    bodyKey = BODY_KEY,
+                    messageId = InsightMessageId.BATTERY_DEGRADATION,
                     bodyArgs = listOf(percentIncrease),
                     generatedAt = now,
                     expiresAt = now + TTL_MS,
@@ -87,8 +87,6 @@ class BatteryDegradationTrendRule
         companion object {
             const val RULE_ID = "battery_degradation_trend"
 
-            private const val TITLE_KEY = "insight_battery_degradation_title"
-            private const val BODY_KEY = "insight_battery_degradation_body"
             private const val WINDOW_MS = 7L * 24L * 60L * 60L * 1000L
             private const val TTL_MS = 24L * 60L * 60L * 1000L
             private const val MINIMUM_READING_COUNT_PER_WINDOW = 20

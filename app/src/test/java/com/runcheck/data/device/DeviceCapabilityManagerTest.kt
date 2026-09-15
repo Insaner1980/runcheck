@@ -93,6 +93,25 @@ class DeviceCapabilityManagerTest {
         )
     }
 
+    @Test
+    fun `reliability needs a nonzero raw sample but allows zero samples and sub milliamp readings`() {
+        assertEquals(false, DeviceCapabilityManager.isCurrentNowReliable(emptyList()))
+        assertEquals(false, DeviceCapabilityManager.isCurrentNowReliable(listOf(0, 0, 0)))
+        assertEquals(true, DeviceCapabilityManager.isCurrentNowReliable(listOf(0, 500_000, 0)))
+        assertEquals(true, DeviceCapabilityManager.isCurrentNowReliable(listOf(0, -500_000, 0)))
+        assertEquals(true, DeviceCapabilityManager.isCurrentNowReliable(listOf(0, 999, -999)))
+    }
+
+    @Test
+    fun `one implausible sample rejects the set after signed integer conversion`() {
+        for (raw in listOf(10_000_000, -10_000_000, 10_000_999, -10_000_999)) {
+            assertEquals("raw=$raw", true, DeviceCapabilityManager.isCurrentNowReliable(listOf(0, raw, 500_000)))
+        }
+        for (raw in listOf(10_001_000, -10_001_000, Int.MIN_VALUE, Int.MAX_VALUE)) {
+            assertEquals("raw=$raw", false, DeviceCapabilityManager.isCurrentNowReliable(listOf(0, raw, 500_000)))
+        }
+    }
+
     // -- inferSignConvention tests --
 
     @Test

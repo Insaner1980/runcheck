@@ -21,6 +21,7 @@ import com.runcheck.domain.usecase.ManageInfoCardDismissalsUseCase
 import com.runcheck.domain.usecase.ManageUserPreferencesUseCase
 import com.runcheck.domain.usecase.ObserveProAccessUseCase
 import com.runcheck.ui.common.RefreshTracker
+import com.runcheck.ui.common.UI_STATE_SAMPLE_INTERVAL_MS
 import com.runcheck.ui.common.messageOrRes
 import com.runcheck.util.ReleaseSafeLog
 import com.runcheck.util.appendLiveValue
@@ -137,7 +138,7 @@ class BatteryViewModel
                             dismissedCards = update.dismissedCards,
                             selectedChargerId = selectedChargerId,
                         )
-                    }.sample(333L)
+                    }.sample(UI_STATE_SAMPLE_INTERVAL_MS)
                         .catch { e ->
                             if (e is CancellationException) throw e
                             refreshTracker.finish()

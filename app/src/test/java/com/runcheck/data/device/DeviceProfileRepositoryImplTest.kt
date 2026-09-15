@@ -9,6 +9,7 @@ import com.runcheck.domain.model.DeviceProfileInfo
 import com.runcheck.domain.model.SignConvention
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifySequence
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -16,6 +17,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DeviceProfileRepositoryImplTest {
@@ -36,6 +39,8 @@ class DeviceProfileRepositoryImplTest {
 
             assertEquals(expected, repository.getProfile().first())
             assertEquals(expected, repository.getProfileSync())
+            coVerify(exactly = 0) { capabilityManager.detectCapabilities() }
+            verifyNoWrites()
         }
 
     @Test
@@ -83,22 +88,109 @@ class DeviceProfileRepositoryImplTest {
             val result = repository.refreshProfile()
 
             assertEquals(profileInfo(manufacturer = "Samsung", model = "S24", apiLevel = 35), result)
-            coVerify(exactly = 1) { deviceDao.insertOrUpdate(capture(inserted)) }
-            assertEquals("samsung_s24_35", inserted.captured.id)
-            assertEquals(123L, inserted.captured.firstSeen)
+            coVerifySequence {
+                capabilityManager.detectCapabilities()
+                deviceDao.getDeviceSync()
+                deviceDao.replaceCurrent(capture(inserted))
+            }
+            assertEquals(deviceEntity(detected, firstSeen = 123L), inserted.captured)
             assertEquals(detected, gson.fromJson(inserted.captured.profileJson, DeviceProfile::class.java))
-            coVerify(exactly = 1) { deviceDao.deleteAllExcept("samsung_s24_35") }
+        }
+
+    @Test
+    fun `refreshProfile retains firstSeen for same identity`() =
+        runTest {
+            val detected = deviceProfile(apiLevel = 34)
+            coEvery { capabilityManager.detectCapabilities() } returns detected
+            coEvery { deviceDao.getDeviceSync() } returns
+                deviceEntity(detected.copy(currentNowReliable = false), firstSeen = 456L)
+
+            assertEquals(profileInfo(apiLevel = 34), repository.refreshProfile())
+
+            coVerifySequence {
+                capabilityManager.detectCapabilities()
+                deviceDao.getDeviceSync()
+                deviceDao.replaceCurrent(deviceEntity(detected, firstSeen = 456L))
+            }
+        }
+
+    @Test
+    fun `refreshProfile uses current time when table is empty`() =
+        runTest {
+            val detected = deviceProfile(apiLevel = 34)
+            val inserted = slot<DeviceEntity>()
+            coEvery { capabilityManager.detectCapabilities() } returns detected
+            coEvery { deviceDao.getDeviceSync() } returns null
+
+            val before = System.currentTimeMillis()
+            assertEquals(profileInfo(apiLevel = 34), repository.refreshProfile())
+            val after = System.currentTimeMillis()
+
+            coVerifySequence {
+                capabilityManager.detectCapabilities()
+                deviceDao.getDeviceSync()
+                deviceDao.replaceCurrent(capture(inserted))
+            }
+            assertTrue(inserted.captured.firstSeen in before..after)
+            assertEquals(deviceEntity(detected, inserted.captured.firstSeen), inserted.captured)
+        }
+
+    @Test
+    fun `stale and missing profiles inherit firstSeen from second read`() =
+        runTest {
+            val stale = deviceEntity(deviceProfile(apiLevel = Build.VERSION.SDK_INT + 1), firstSeen = 111L)
+            for (initial in listOf(stale, null)) {
+                val dao = mockk<DeviceDao>(relaxed = true)
+                val detector = mockk<DeviceCapabilityManager>()
+                val subject = DeviceProfileRepositoryImpl(dao, detector, gson)
+                val detected = deviceProfile(apiLevel = Build.VERSION.SDK_INT)
+                val second = deviceEntity(deviceProfile(apiLevel = 34), firstSeen = 222L)
+                coEvery { dao.getDeviceSync() } returnsMany listOf(initial, second)
+                coEvery { detector.detectCapabilities() } returns detected
+
+                assertSame(detected, subject.getDeviceProfile())
+
+                coVerifySequence {
+                    dao.getDeviceSync()
+                    detector.detectCapabilities()
+                    dao.getDeviceSync()
+                    dao.replaceCurrent(deviceEntity(detected, firstSeen = 222L))
+                }
+            }
+        }
+
+    @Test
+    fun `refreshProfile propagates replacement failure`() =
+        runTest {
+            val failure = IllegalStateException("replacement failed")
+            coEvery { capabilityManager.detectCapabilities() } returns deviceProfile(apiLevel = 34)
+            coEvery { deviceDao.getDeviceSync() } returns null
+            coEvery { deviceDao.replaceCurrent(any()) } throws failure
+
+            assertSame(failure, runCatching { repository.refreshProfile() }.exceptionOrNull())
+            coVerify(exactly = 1) { deviceDao.replaceCurrent(any()) }
         }
 
     @Test
     fun `getDeviceProfile returns stored profile when api level matches runtime`() =
         runTest {
             val stored = deviceProfile(apiLevel = Build.VERSION.SDK_INT)
-            coEvery { deviceDao.getDeviceSync() } returns deviceEntity(profile = stored)
+            coEvery { deviceDao.getDeviceSync() } returns
+                deviceEntity(profile = stored).copy(apiLevel = Build.VERSION.SDK_INT + 1)
 
             assertEquals(stored, repository.getDeviceProfile())
             coVerify(exactly = 0) { capabilityManager.detectCapabilities() }
+            coVerify(exactly = 1) { deviceDao.getDeviceSync() }
+            verifyNoWrites()
         }
+
+    private fun verifyNoWrites() {
+        coVerify(exactly = 0) {
+            deviceDao.replaceCurrent(any())
+            deviceDao.insertOrUpdate(any())
+            deviceDao.deleteAllExcept(any())
+        }
+    }
 
     private fun deviceEntity(
         profile: DeviceProfile,

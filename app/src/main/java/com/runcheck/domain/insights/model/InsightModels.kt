@@ -50,12 +50,17 @@ data class InsightCandidate(
     val type: InsightType,
     val priority: InsightPriority,
     val confidence: Float,
-    val titleKey: String,
-    val bodyKey: String,
+    val messageId: InsightMessageId,
     val bodyArgs: List<String>,
     val generatedAt: Long,
     val expiresAt: Long,
     val dataWindowStart: Long,
     val dataWindowEnd: Long,
     val target: InsightTarget,
-)
+) {
+    val titleKey: String
+        get() = messageId.titleKey
+
+    val bodyKey: String
+        get() = messageId.bodyKey
+}
