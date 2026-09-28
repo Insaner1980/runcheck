@@ -205,7 +205,7 @@ These pins are deliberately configuration-scoped in root `build.gradle.kts`; the
 - Both debug and release stability baselines are checked in. Analyzer 0.15.0 is configured with `includeTests = false`, `failOnStabilityChange = true`, `ignoreNonRegressiveChanges = false`, and missing baselines disallowed. Earlier documentation records resolution of the Kotlin 2.4 compatibility issue; this source-only refresh did not regenerate either variant.
 - Compose library versions come from the Compose BOM, while the Compose compiler is managed through the Kotlin Compose plugin. Treat Kotlin, Compose, KSP, Detekt, analyzer, AGP, dependency verification, and CI extractor changes as a compatibility set.
 - Gradle configuration cache is enabled. Build cache and parallel execution are disabled, `org.gradle.workers.max = 2`, and the Kotlin compiler execution strategy is in-process.
-- Gradle and Kotlin task build caches are disabled through `org.gradle.caching=false` and `kotlin.caching.enabled=false` while the time-bounded CVE-2026-53914 advisory exception remains active.
+- Gradle and Kotlin task build caches are enabled after upgrading to the fixed Kotlin 2.4.20 toolchain. The obsolete advisory exceptions were removed.
 - Release builds are minified and resource-shrunk. `copyReleaseArtifacts` names outputs `runcheck-1.0.0-code1-release.apk` and `.aab`.
 - Release artifact tasks validate signing inputs, require `--no-configuration-cache`, and require the version-code floor described in the Technical Snapshot. Ordinary debug checks do not require release signing.
 - Debug BuildConfig values may read validated local/environment overrides for Sentry DSN, latency host/port, and Pro product id. Release keeps the checked-in product id and no-op Sentry path.
@@ -1810,13 +1810,13 @@ Other expiry/baseline scopes must be read separately:
 | Artifact | Current inventory and expiry |
 |----------|-------------------------------|
 | `config/check-exceptions.json` | 33 entries, owner project-maintainers, expiry 2026-10-31; includes the exact reset-transaction-test MobSF selector |
-| `config/dependency-check/suppressions.xml` | Three suppression blocks: two exact false-CPE groups expire 2026-10-31Z; the kotlin-stdlib 2.4.10 / CVE-2026-53914 block expires **2026-09-30Z** |
-| `gradle/osv-scanner.toml` | One exact advisory GHSA-r937-wjx7-w2jp, ignoreUntil **2026-09-30** |
+| `config/dependency-check/suppressions.xml` | Two exact false-CPE groups expire 2026-10-31Z; the obsolete Kotlin workaround was removed after the 2.4.20 upgrade |
+| `gradle/osv-scanner.toml` | No ignored advisories; GHSA-r937-wjx7-w2jp was removed after the fixed Kotlin 2.4.20 upgrade |
 | `app/detekt-baseline.xml` | 28 CurrentIssues IDs; registration is time-bounded in the exception file |
 | `app/stability/app-debug.stability`, `app-release.stability` | Checked-in comparison baselines; no passing regeneration implied by presence |
 | `.mobsf` | Path/severity filters; no global target-SDK rule bypass |
 
-No listed expiry has passed on the snapshot date; September 30 is the earliest and is not extended by the registry's October date. Advisory rationale text claiming Kotlin 2.4.20 is still pre-release is historical prose, whereas current configuration already constrains runtime libraries to 2.4.20 and uses compiler/plugin 2.4.20. This audit did not consult upstream advisories or revalidate exception necessity; do not infer a vulnerability is fixed or an exception remains justified solely from these files.
+The Kotlin build-cache advisory is fixed in the selected 2.4.20 line, as confirmed against [GHSA-r937-wjx7-w2jp](https://github.com/advisories/GHSA-r937-wjx7-w2jp). The former September 30 OSV and Dependency-Check workarounds have been removed; unrelated October exceptions retain their existing bounds.
 
 Low-CPU verification policy:
 

@@ -22,15 +22,4 @@
         <cve>CVE-2020-10518</cve>
         <cve>CVE-2020-10519</cve>
     </suppress>
-    <suppress until="2026-09-30Z">
-        <notes><![CDATA[
-        Dependency-Check incorrectly maps Kotlin CVE-2026-53914 to the kotlin-stdlib 2.4.10
-        runtime artifact through a generic JetBrains Kotlin CPE. The advisory affects unsafe build-cache
-        metadata deserialization in kotlin-gradle-plugin, not kotlin-stdlib. The build-tool finding is
-        reviewed separately by the OSV exception, and Gradle and Kotlin build caches are disabled in
-        gradle.properties. Revisit when stable Kotlin 2.4.20 or newer is available.
-        ]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib@2\.4\.10$</packageUrl>
-        <cve>CVE-2026-53914</cve>
-    </suppress>
 </suppressions>
