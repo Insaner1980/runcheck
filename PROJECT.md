@@ -178,7 +178,7 @@ Local checker-helper versions outside the Android application dependency graph:
 |------|---------------|---------------------|
 | DeepSec | `2.3.10` | Exact dependency in `.deepsec/package.json` and `.deepsec/pnpm-lock.yaml`; used only by the local DeepSec scan/process/export scripts |
 | TypeScript | `^7.0.2` (locked `7.0.2`) | `.deepsec` development dependency, not an Android runtime dependency |
-| Node type declarations | `^26.5.0` (locked `26.5.1`) | `.deepsec` development dependency, not an Android runtime dependency |
+| Node type declarations | `^26.6.3` (locked `26.6.3`) | `.deepsec` development dependency, not an Android runtime dependency |
 
 The `.deepsec` scripts expose full/custom scan, process, revalidate, and Markdown export paths. The custom scan is restricted to the repository's named Android/export/FileProvider/URI-sharing/network/telemetry/logging matcher set. OSV source scanning excludes `.deepsec`, so these helper dependencies are reviewed through the DeepSec/helper-tool path rather than being reported as app dependencies.
 
@@ -186,16 +186,16 @@ Build-tool-only transitive security pins from `gradle.properties`:
 
 | Property family | Current value | Applied scope |
 |-----------------|---------------|---------------|
-| Jackson | `2.22.1` (`jackson-annotations` remains on compatible `2.22`) | Affected Gradle buildscript modules |
-| jose4j | `0.9.6` | Gradle buildscript classpath |
-| Bouncy Castle | `1.84` | Gradle buildscript plus affected Android Lint / Unified Test Platform configurations |
+| Jackson | `2.22.3` (`jackson-annotations` remains on compatible `2.22`) | Affected Gradle buildscript modules |
+| jose4j | `0.9.7` | Gradle buildscript classpath |
+| Bouncy Castle | `1.86` | Gradle buildscript plus affected Android Lint / Unified Test Platform configurations |
 | JDOM | `2.0.6.1` | Gradle buildscript classpath |
-| Logback | `1.5.34` | ktlint configuration only |
-| Netty | `4.1.137.Final` | Affected Android Lint / Unified Test Platform configurations |
+| Logback | `1.5.38` | ktlint configuration only |
+| Netty | `4.1.138.Final` | Affected Android Lint / Unified Test Platform configurations |
 | Commons Lang | `3.20.0` | Affected Android Lint / Unified Test Platform configurations |
 | Apache HttpClient 4 | `4.5.14` | Affected Android Lint / Unified Test Platform configurations |
 | Apache HttpClient 5 / HttpCore 5 | `5.6.3` / `5.4.3` | Gradle buildscript classpath |
-| jsoup | `1.23.1` | Gradle buildscript classpath |
+| jsoup | `1.23.2` | Gradle buildscript classpath |
 
 These pins are deliberately configuration-scoped in root `build.gradle.kts`; they must not be converted into application-runtime-wide forcing or broad package-level vulnerability suppression.
 
@@ -1816,7 +1816,7 @@ Other expiry/baseline scopes must be read separately:
 | `app/stability/app-debug.stability`, `app-release.stability` | Checked-in comparison baselines; no passing regeneration implied by presence |
 | `.mobsf` | Path/severity filters; no global target-SDK rule bypass |
 
-No listed expiry has passed on the snapshot date; September 30 is the earliest and is not extended by the registry's October date. Advisory rationale text claiming Kotlin 2.4.20 is still pre-release is historical prose, whereas current configuration already constrains runtime libraries to 2.4.20 and keeps the compiler/plugin at 2.4.10. This audit did not consult upstream advisories or revalidate exception necessity; do not infer a vulnerability is fixed or an exception remains justified solely from these files.
+No listed expiry has passed on the snapshot date; September 30 is the earliest and is not extended by the registry's October date. Advisory rationale text claiming Kotlin 2.4.20 is still pre-release is historical prose, whereas current configuration already constrains runtime libraries to 2.4.20 and uses compiler/plugin 2.4.20. This audit did not consult upstream advisories or revalidate exception necessity; do not infer a vulnerability is fixed or an exception remains justified solely from these files.
 
 Low-CPU verification policy:
 
@@ -1885,9 +1885,9 @@ GitHub Actions workflows in `.github/workflows/`:
 
 | Workflow | Purpose | Configured triggers and tooling (not a passing-run claim) |
 |----------|---------|--------|
-| `codeql.yml` | CodeQL security analysis (`java-kotlin`, manual `assembleDebug`) | Active on main pushes, main PRs, manual dispatch, and weekly schedule; CodeQL Action `v4.37.9`, checkout `v7.0.1`, setup-java `v6.0.0`, setup-android `v4.0.1` |
-| `security.yml` | Semgrep plus scheduled/manual OWASP | Main push/PR, Monday 08:00 UTC, manual. Semgrep 1.175.0 runs on all these triggers with Python 3.13/setup-python 7.0.0; SARIF upload 4.37.9 requires an existing file and excludes fork/Dependabot PR publication. OWASP runs only schedule/manual: Java 17/setup-java 6.0.0, setup-gradle 6.3.0, cache 6.1.0, 195-minute job / 180-minute scan timeout, upload-artifact 7.0.1. |
-| `sonar.yml` | SonarCloud scan through Gradle (`assembleDebug`, `:app:jacocoDebugUnitTestReport`, `sonar`) | Active on main pushes; checkout `v7.0.1`, setup-java `v6.0.0`, setup-android `v4.0.1` |
+| `codeql.yml` | CodeQL security analysis (`java-kotlin`, manual `assembleDebug`) | Active on main pushes, main PRs, manual dispatch, and weekly schedule; CodeQL Action `v4.38.2`, checkout `v7.0.1`, setup-java `v6.0.1`, setup-android `v4.0.4` |
+| `security.yml` | Semgrep plus scheduled/manual OWASP | Main push/PR, Monday 08:00 UTC, manual. Semgrep 1.175.0 runs on all these triggers with Python 3.13/setup-python 7.0.0; SARIF upload 4.38.2 requires an existing file and excludes fork/Dependabot PR publication. OWASP runs only schedule/manual: Java 17/setup-java 6.0.1, setup-gradle 6.3.0, cache 6.1.0, 195-minute job / 180-minute scan timeout, upload-artifact 7.0.1. |
+| `sonar.yml` | SonarCloud scan through Gradle (`assembleDebug`, `:app:jacocoDebugUnitTestReport`, `sonar`) | Active on main pushes; checkout `v7.0.1`, setup-java `v6.0.1`, setup-android `v4.0.4` |
 | `qodana.yml` | JetBrains Qodana main-branch scan through `JetBrains/qodana-action` pinned at `v2026.2.1` | Uses `jetbrains/qodana-jvm-community:2026.1`; retained after the documented AGP 9.1.x Android-linter import failure, while current AGP 9.4.1 Android-linter compatibility remains unverified |
 | `qodana_code_quality.yml` | JetBrains Qodana action pinned at `v2026.2.1` for `releases/*`, PRs, and manual dispatch | Uses the same JVM Community linter; `qodana.yml` owns `main` pushes, avoiding a duplicate scan. Current AGP 9.4.1 Android-linter compatibility remains unverified |
 | `deepsec-dependencies.yml` | Frozen helper dependency/type checks, not an AI source audit | Main push/PR filtered to `.deepsec/**` or this workflow, plus manual; 15-minute job, Node 26/setup-node 7.0.0, pnpm 11.25.0. Frozen install with scripts disabled, TypeScript no-emit, DeepSec help, moderate-level dependency audit, and a manifest/lock/workspace diff check. |
@@ -1927,7 +1927,7 @@ Local PowerShell wrappers:
 - `tools/sonar-timeout-test.ps1` — isolated PowerShell fixture that verifies a timed-out Sonar Gradle process is terminated and that stdout/stderr plus the timeout marker are persisted
 - `tools/sonar-upload-retry-test.ps1` — isolated fixture covering upload-write-timeout recovery, retry exhaustion, retained attempt logs, and no retries for build, authentication, or read-timeout failures
 
-The checked-in `.deepsec` helper currently pins DeepSec `2.3.9`; `tools/ds.ps1` delegates to the shared Android-check implementation, which drives the package scripts rather than making DeepSec part of the Android app dependency graph. Every delegated DeepSec mode currently requires explicit per-run external-AI consent: `-AllowExternalAI`, a single-line `-Provider`, exact `-ExternalAIDataScope 'entire-project-working-tree'`, a single-line `-ExternalAICostEstimate`, and a single-line `-ExternalAIRetentionPolicy`. Without that complete declaration the wrapper fails closed with exit category `ERROR/2` and an `EXTERNAL_AI_*` reason; `-PlanOnly` reports the missing consent without uploading data. The default path is `deepsec:report:custom`; `-Full` selects `deepsec:report`, `-Scan` selects `deepsec:scan`, and `-Revalidate` selects `deepsec:revalidate`.
+The checked-in `.deepsec` helper currently pins DeepSec `2.3.10`; `tools/ds.ps1` delegates to the shared Android-check implementation, which drives the package scripts rather than making DeepSec part of the Android app dependency graph. Every delegated DeepSec mode currently requires explicit per-run external-AI consent: `-AllowExternalAI`, a single-line `-Provider`, exact `-ExternalAIDataScope 'entire-project-working-tree'`, a single-line `-ExternalAICostEstimate`, and a single-line `-ExternalAIRetentionPolicy`. Without that complete declaration the wrapper fails closed with exit category `ERROR/2` and an `EXTERNAL_AI_*` reason; `-PlanOnly` reports the missing consent without uploading data. The default path is `deepsec:report:custom`; `-Full` selects `deepsec:report`, `-Scan` selects `deepsec:scan`, and `-Revalidate` selects `deepsec:revalidate`.
 
 When `osv-scanner`, gitleaks, TruffleHog, or PMD are missing from `PATH`, the shared Android-check wrappers may download and cache verified tool binaries under `.gradle/android-check-tools/`; offline first runs can therefore skip or fail before a cached tool exists. The OSV source scan excludes `.deepsec` so Android-check's own DeepSec tooling dependencies do not fail app dependency scans.
 
@@ -2019,7 +2019,7 @@ Active/unseen flows filter expiry using current time **when Room emits**. They c
 ### Known Tool Limitations
 
 - **Qodana:** `qodana.yaml` still records the original AGP 9.1.x Android-linter import failure and selects `jetbrains/qodana-jvm-community:2026.1`. The app has since moved to AGP 9.4.1, so the recorded Android-linter incompatibility is historical evidence, not fresh proof for the current AGP line. Keep the JVM linter until the Android linter is explicitly re-tested, and update the comment/result together.
-- **CodeQL:** `.github/workflows/codeql.yml` pins `github/codeql-action/init` and `analyze` to `v4.37.9` and builds with `assembleDebug --no-configuration-cache`. Check the actual CodeQL Action runner and Kotlin extractor support before Kotlin plugin upgrades.
+- **CodeQL:** `.github/workflows/codeql.yml` pins `github/codeql-action/init` and `analyze` to `v4.38.2` and builds with `assembleDebug --no-configuration-cache`. Check the actual CodeQL Action runner and Kotlin extractor support before Kotlin plugin upgrades.
 - **Sonar:** AGP 9 support has had scanner-side compatibility churn. Keep `tools/sonar.ps1` and `.github/workflows/sonar.yml` verified when changing AGP, Gradle, or Kotlin. The local wrapper retries HTTP/2 report-upload write timeouts up to three scan attempts within the existing overall Gradle timeout, preserving each attempt in `reports/sonar.txt`. Other failures are not retried. Older troubleshooting identified scanner engine `13.12.0.5977` and a 60-second write-timeout boundary; that is historical external-engine evidence, not the currently resolved engine or behavior established by this source audit.
 - **OWASP Dependency-Check:** NVD updates can take a very long time or return transient 503 responses, so PRs and ordinary main pushes run Semgrep/CodeQL/Qodana while Dependency-Check is reserved for weekly scheduled or manual runs with cache, bounded retries, a job timeout, and a shorter OWASP step timeout (no `continue-on-error` in the current workflow). Dependency-Check reports are uploaded as Actions artifacts instead of GitHub Code scanning SARIF so stale dependency analyses do not keep fixed Dependabot issues open.
 
