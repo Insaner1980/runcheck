@@ -33,8 +33,8 @@ class DependencyVersionCatalogContractTest {
                 "okhttp" to "5.5.0",
                 "gson" to "2.14.0",
                 "mockk" to "1.14.11",
-                "dependencyAnalysis" to "3.19.1",
-                "sentry" to "8.54.0",
+                "dependencyAnalysis" to "3.19.2",
+                "sentry" to "8.58.0",
             )
 
         expectedVersions.forEach { (alias, expected) ->
@@ -43,22 +43,22 @@ class DependencyVersionCatalogContractTest {
     }
 
     @Test
-    fun `core toolchain stays on the documented stability analyzer compatibility exception`() {
+    fun `core toolchain stays on the documented compatible stability analyzer toolchain`() {
         val versionsCatalog = rootDir.resolve("gradle/libs.versions.toml").readText()
         val expectedVersions =
             mapOf(
-                "agp" to "9.4.0",
-                "kotlin" to "2.4.10",
+                "agp" to "9.4.1",
+                "kotlin" to "2.4.20",
                 "kotlinRuntime" to "2.4.20",
-                "ksp" to "2.3.11",
+                "ksp" to "2.3.12",
                 "hilt" to "2.60.1",
                 "detekt" to "2.0.0-alpha.6",
-                "stabilityAnalyzer" to "0.12.0",
+                "stabilityAnalyzer" to "0.15.0",
             )
 
         expectedVersions.forEach { (alias, expected) ->
             assertEquals(
-                "Unexpected compatibility-exception version for $alias",
+                "Unexpected toolchain version for $alias",
                 expected,
                 versionsCatalog.versionFor(alias),
             )
@@ -121,8 +121,8 @@ class DependencyVersionCatalogContractTest {
             detektVersion == "2.0.0-alpha.6",
         )
         assertTrue(
-            "compose-rules Detekt version $composeRulesDetektVersion is not on the Detekt 2 compatible 0.6.4 line",
-            composeRulesDetektVersion == "0.6.4",
+            "compose-rules Detekt version $composeRulesDetektVersion is not on the Detekt 2 compatible 0.6.7 line",
+            composeRulesDetektVersion == "0.6.7",
         )
         assertTrue(
             "Detekt Gradle plugin id $detektPluginId must use the Detekt 2 dev.detekt id",

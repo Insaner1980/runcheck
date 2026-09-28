@@ -273,9 +273,9 @@ fun RuncheckNavHost(
                 },
             )
         }
-        composable(Screen.SpeedTest.route) {
+        composable(Screen.SpeedTest.route) { backStackEntry ->
             val networkParentEntry =
-                remember(navController) {
+                remember(navController, backStackEntry) {
                     runCatching { navController.getBackStackEntry(Screen.Network.route) }.getOrNull()
                 }
             val networkViewModel: NetworkViewModel =
