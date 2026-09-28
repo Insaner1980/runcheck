@@ -204,7 +204,7 @@ These pins are deliberately configuration-scoped in root `build.gradle.kts`; the
 - The active coordinated toolchain is AGP 9.4.1, Kotlin Gradle/Compose plugin 2.4.20, Kotlin runtime constraints 2.4.20, KSP 2.3.12, Hilt 2.60.1, Detekt 2.0.0-alpha.6, and Compose Stability Analyzer 0.15.0.
 - Both debug and release stability baselines are checked in. Analyzer 0.15.0 is configured with `includeTests = false`, `failOnStabilityChange = true`, `ignoreNonRegressiveChanges = false`, and missing baselines disallowed. Earlier documentation records resolution of the Kotlin 2.4 compatibility issue; this source-only refresh did not regenerate either variant.
 - Compose library versions come from the Compose BOM, while the Compose compiler is managed through the Kotlin Compose plugin. Treat Kotlin, Compose, KSP, Detekt, analyzer, AGP, dependency verification, and CI extractor changes as a compatibility set.
-- Gradle configuration cache is enabled. Build cache and parallel execution are disabled, `org.gradle.workers.max = 2`, and the Kotlin compiler execution strategy is in-process.
+- Gradle configuration cache is enabled. Parallel execution is disabled, `org.gradle.workers.max = 2`, and the Kotlin compiler execution strategy is in-process.
 - Gradle and Kotlin task build caches are enabled after upgrading to the fixed Kotlin 2.4.20 toolchain. The obsolete advisory exceptions were removed.
 - Release builds are minified and resource-shrunk. `copyReleaseArtifacts` names outputs `runcheck-1.0.0-code1-release.apk` and `.aab`.
 - Release artifact tasks validate signing inputs, require `--no-configuration-cache`, and require the version-code floor described in the Technical Snapshot. Ordinary debug checks do not require release signing.
