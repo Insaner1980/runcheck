@@ -38,7 +38,7 @@ owaspDependencyCheck = "13.0.0"
 sonarqube = "7.5.0.8588"
 stabilityAnalyzer = "0.15.0"
 androidSecurityLints = "1.0.4"
-sentry = "8.58.0"
+sentry = "8.59.0"
 
 [libraries]
 # Compose BOM
